@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def test_wrap_string_literal_keeps_escape_sequences_whole(output_file: Path) -> None:
-    r"""Split a long description between characters and escape sequences, so that the pieces join to the same text.
+    r"""Split a long description only at spaces outside escape sequences, as black does, so the pieces join alike.
 
     A split used to fall inside ``\\`` and ``\x7f``, which wrote a literal that does not parse.
     """
@@ -52,12 +52,12 @@ def test_wrap_string_literal_keeps_escape_sequences_whole(output_file: Path) -> 
         )
 
 
-@pytest.mark.parametrize("line_length", [18, 21])
+@pytest.mark.parametrize("line_length", [18, 20, 21])
 def test_wrap_string_literal_with_a_line_length_that_leaves_no_room(output_file: Path, line_length: int) -> None:
     """Finish when the line length leaves no room for content, or room for less than one escape sequence.
 
-    The literal stays whole when the content width is zero or less; otherwise each piece takes at least one character
-    or escape sequence, so wrapping ends. It used to loop for ever, or raise IndexError.
+    Each piece takes at least one word, as black splits only at spaces, so wrapping ends. It used to loop for ever,
+    or raise IndexError.
     """
     input_path = JSON_SCHEMA_DATA_PATH / "builtin_wrap_string_narrow.json"
     run_generate_file_and_assert(
@@ -247,4 +247,291 @@ def test_one_key_functional_typed_dict_keeps_its_trailing_comma(output_file: Pat
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "typing.TypedDict", "--formatters", *formatters],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_docstrings_keep_line_ends_black_keeps(output_file: Path, formatters: list[str]) -> None:
+    """Lay out docstrings as black does, and keep the line ends of those black leaves as they are.
+
+    A docstring with a backslash at a line end is left alone by black; the builtin formatter stripped its trailing
+    spaces, and those of every attribute docstring, which black never changes.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_docstring_line_ends.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--use-schema-description", "--use-field-description", "--formatters", *formatters],
+    )
+
+
+def _write_custom_base_model_template(output_file: Path, body: str) -> Path:
+    template_dir = output_file.parent / "templates"
+    (template_dir / "pydantic_v2").mkdir(parents=True)
+    (template_dir / "pydantic_v2" / "BaseModel.jinja2").write_text(
+        "class {{ class_name }}({{ base_class }}):\n" + body, encoding="utf-8"
+    )
+    (input_path := output_file.parent / "custom_template_model.json").write_text(
+        json.dumps({"title": "Model", "type": "object", "properties": {"name": {"type": "string"}}}), encoding="utf-8"
+    )
+    return input_path
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_custom_template_return_annotation_is_split_at_its_brackets(output_file: Path, formatters: list[str]) -> None:
+    """Split a too long return annotation of a method without parameters at its brackets, as black does.
+
+    The builtin formatter put the annotation in parentheses with a trailing comma, which made it a tuple, and split
+    a union the same way.
+    """
+    input_path = _write_custom_base_model_template(
+        output_file,
+        "    name: str | None = None\n\n"
+        "    def first_names() -> tuple[dict[str, frozenset[bytes]], dict[str, frozenset[bytearray]]"
+        ", memoryview, int]:\n"
+        "        pass\n\n"
+        "    def other_names() -> frozenset[bytearray] | frozenset[memoryview] | frozenset[bytes] | None:\n"
+        "        pass\n",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--custom-template-dir",
+            str(output_file.parent / "templates"),
+            "--formatters",
+            *formatters,
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_wrap_string_literal_joins_implicitly_concatenated_strings(output_file: Path, formatters: list[str]) -> None:
+    """Wrap a long keyword value of implicitly concatenated strings as one string, as black does.
+
+    The builtin formatter wrapped the first string alone and left the next one after the parentheses, which does not
+    parse.
+    """
+    input_path = _write_custom_base_model_template(
+        output_file,
+        "    name: dict[str, str] = dict(\n"
+        "        description='A name written by a custom template with a long description that goes on'\n"
+        "        ' Done.'\n"
+        "    )\n",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--custom-template-dir",
+            str(output_file.parent / "templates"),
+            "--formatters",
+            *formatters,
+            "--wrap-string-literal",
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_imported_names_with_digit_runs_sort_naturally(output_dir: Path, formatters: list[str]) -> None:
+    """Sort imported names with digit runs by their numbers, as isort does: ``Schema4`` before ``Schema10``.
+
+    The builtin formatter compared the digits as text and wrote ``Band10, Band6, Schema10, Schema100, Schema3``.
+    """
+    names = ["Schema3", "Schema10", "Schema4", "Schema100", "Band6", "Band10"]
+    (input_path := output_dir.parent / "digit_run_names.json").write_text(
+        json.dumps({
+            "title": "Holder",
+            "type": "object",
+            "properties": {name.lower(): {"$ref": f"#/$defs/bands.{name}"} for name in names},
+            "$defs": {f"bands.{name}": {"type": "object", "properties": {"a": {"type": "string"}}} for name in names},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--all-exports-scope", "children", "--formatters", *formatters, "--disable-timestamp"],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_msgspec_convert_default_factory_has_one_space_before_its_type(
+    output_file: Path, formatters: list[str]
+) -> None:
+    """Write one space before the ``type`` argument of a msgspec ``convert`` default factory, as black lays it out.
+
+    The generator wrote ``convert({},  type=Param)``; black closed the gap and the builtin formatter kept it.
+    """
+    (input_path := output_file.parent / "msgspec_convert_default.json").write_text(
+        json.dumps({
+            "title": "Holder",
+            "type": "object",
+            "properties": {"param": {"$ref": "#/$defs/Param", "default": {}}},
+            "$defs": {"Param": {"type": "object", "properties": {"a": {"type": "string"}}}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct", "--formatters", *formatters, "--disable-timestamp"],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_wide_characters_count_twice_toward_the_line_length(output_file: Path, formatters: list[str]) -> None:
+    """Split a field line of 77 characters that is 89 columns wide, as black measures it (#6648).
+
+    Each CJK character takes two columns; the builtin formatter counted characters and kept the line whole.
+    """
+    (input_path := output_file.parent / "wide_description.json").write_text(
+        json.dumps({
+            "title": "A",
+            "type": "object",
+            "properties": {"timestamp": {"type": "string", "description": "数据的时间戳\uff0c使用 ISO 8601 格式。"}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", *formatters, "--disable-timestamp"],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_use_double_quotes_chooses_the_quotes_black_chooses(output_file: Path, formatters: list[str]) -> None:
+    r"""Choose double quotes unless they need more escapes, drop escapes they make unneeded, then lay out (#6652).
+
+    The builtin formatter kept ``"won\'t fix"``, kept single quotes whenever a string held a double quote (black takes
+    double quotes when both need as many escapes), and laid out a line before its escapes were dropped, so a line of
+    88 columns that was 90 with them was split.
+    """
+    (input_path := output_file.parent / "quoted_texts.json").write_text(
+        json.dumps({
+            "title": "Report",
+            "type": "object",
+            "properties": {
+                "state": {"type": "string", "enum": ["open", "won't fix"]},
+                "range": {"type": "string", "description": "the report's 'range' is not \"NOW\" y"},
+                "correlator": {
+                    "type": "string",
+                    "description": "Only the \"latest\" snapshot counts for a repository's dependencies; it's kept.",
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-double-quotes",
+            "--formatters",
+            *formatters,
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize("quotes", [[], ["--use-double-quotes"]], ids=["as-written", "double-quotes"])
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_wrap_string_literal_splits_strings_like_black(
+    output_file: Path, formatters: list[str], quotes: list[str]
+) -> None:
+    r"""Wrap and split long strings as black's string processing does (#6651).
+
+    A string just over the width in a keyword argument goes into parentheses; a word without spaces, such as a URL,
+    stays whole past the width; strings with ``\\n`` escapes, field defaults, enum values, list elements and
+    dictionary values are split at the spaces black picks. The builtin formatter left most of them on one line and
+    broke a URL inside a word.
+    """
+    (input_path := output_file.parent / "long_strings.json").write_text(
+        json.dumps({
+            "title": "Wrapped",
+            "type": "object",
+            "required": ["category"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the custom property that is included in the OIDC token",
+                },
+                "secret": {
+                    "type": "string",
+                    "description": (
+                        "If provided, the `secret` will be used as the `key` to generate the HMAC hex digest value"
+                        " for [delivery signature headers](https://docs.github.com/webhooks/event-payloads/#delivery-headers)."
+                    ),
+                },
+                "conduct": {
+                    "type": "string",
+                    "examples": [
+                        (
+                            "# Contributor Covenant Code of Conduct\n\n## Our Pledge\n\nIn the interest of fostering"
+                            " an open and welcoming environment, we as contributors and maintainers"
+                        )
+                    ],
+                },
+                "category": {
+                    "type": "string",
+                    "description": "The category of reference to an external resource this reference refers to.",
+                    "examples": ["PACKAGE-MANAGER"],
+                },
+                "body": {
+                    "type": "string",
+                    "default": (
+                        "It looks like the new widget form is broken on Safari. When I try and create the widget,"
+                        " Safari crashes. This is reproducible on 10.8, but not 10.9. Maybe a browser bug?"
+                    ),
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "examples": [
+                        ["The first label of a long list of labels that the issue tracker shows next to it", "bug"]
+                    ],
+                },
+                "meta": {
+                    "type": "object",
+                    "examples": [
+                        {"summary": "A summary of the change that the reviewers read before they open the pull request"}
+                    ],
+                },
+                "level": {
+                    "type": "string",
+                    "enum": ["A level whose name is a long sentence that goes past the width of the line", "low"],
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--wrap-string-literal",
+            *quotes,
+            "--formatters",
+            *formatters,
+            "--disable-timestamp",
+        ],
     )

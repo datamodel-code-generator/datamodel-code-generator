@@ -1,0 +1,3 @@
+CollisionDerived(x_y='s', a_b='t', x_y_1=1, a_b_1=2)
+{"x-y":"s","a-b":"t","x_y":1,"a_b":2}
+Object missing required field `a-b`

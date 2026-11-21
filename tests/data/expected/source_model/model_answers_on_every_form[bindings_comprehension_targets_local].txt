@@ -1,0 +1,30 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  item: assign@3 [always]; value "module"
+  f: def@6 [always]
+scope function f#0 'f': code yes; first line 6
+  opened by a node evaluated in <module>#0
+  rows: param@6 [function:body@6]
+  a: assign@7 [function:body@6]; value [item for item in rows]
+  b: assign@8 [function:body@6]; value {item for item in rows}
+  c: assign@9 [function:body@6]; value {key: item for key, item in rows}
+  d: assign@10 [function:body@6]; value list(item for item in rows)
+  e: assign@11 [function:body@6]; value [cell for row in rows for cell in row if cell]
+scope comprehension f.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 7
+  opened by a node evaluated in f#0
+  item: comprehension@7 [function:body@6|loop:body@7]
+scope comprehension f.<locals>.<setcomp>#0 '<setcomp>': code 3.11 only; first line 8
+  opened by a node evaluated in f#0
+  item: comprehension@8 [function:body@6|loop:body@8]
+scope comprehension f.<locals>.<dictcomp>#0 '<dictcomp>': code 3.11 only; first line 9
+  opened by a node evaluated in f#0
+  key: comprehension@9 [function:body@6|loop:body@9]
+  item: comprehension@9 [function:body@6|loop:body@9]
+scope comprehension f.<locals>.<genexpr>#0 '<genexpr>': code yes; first line 10
+  opened by a node evaluated in f#0
+  item: comprehension@10 [function:body@6|loop:body@10]
+scope comprehension f.<locals>.<listcomp>#1 '<listcomp>': code 3.11 only; first line 11
+  opened by a node evaluated in f#0
+  row: comprehension@11 [function:body@6|loop:body@11]
+  cell: comprehension@11 [function:body@6|loop:body@11]
+== code objects: one per scope that compiles on this Python

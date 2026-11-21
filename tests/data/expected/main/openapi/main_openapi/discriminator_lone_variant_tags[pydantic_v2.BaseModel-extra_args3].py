@@ -81,12 +81,12 @@ class MemberKind(Enum):
 
 
 class MemberShared(BaseModel):
-    type: Literal[MemberKind.shared]
+    type: Literal[MemberKind.shared, 'shared']
     id: int | None = None
 
 
 class MemberOther(BaseModel):
-    type: Literal[MemberKind.other]
+    type: Literal[MemberKind.other, 'other']
 
 
 class MemberBoth(RootModel[MemberShared | MemberOther]):

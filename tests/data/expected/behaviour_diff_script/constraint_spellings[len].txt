@@ -1,0 +1,3 @@
+runtime: same: Annotated[str, max_length=4, min_length=1] | Annotated[str, max_length=4, min_length=1]
+string: same: Annotated[str, max_length=4, min_length=1] | Annotated[str, max_length=4, min_length=1]
+model-field: same: Annotated[str, max_length=4, min_length=1] | Annotated[str, max_length=4, min_length=1]

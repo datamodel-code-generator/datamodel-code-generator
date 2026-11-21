@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Earlier": {
+      "$anchor": "twice",
+      "type": "object",
+      "properties": {"earlier": {"type": "integer"}},
+      "required": ["earlier"]
+    },
+    "Later": {
+      "$anchor": "twice",
+      "type": "object",
+      "properties": {"later": {"type": "string"}},
+      "required": ["later"]
+    },
+    "Outer": {
+      "$anchor": "nested",
+      "type": "object",
+      "properties": {
+        "inner": {"$anchor": "nested", "type": "boolean"}
+      },
+      "required": ["inner"]
+    },
+    "v1": {
+      "Pet": {
+        "$anchor": "pet",
+        "type": "object",
+        "properties": {"name": {"type": "string"}}
+      }
+    }
+  }
+}

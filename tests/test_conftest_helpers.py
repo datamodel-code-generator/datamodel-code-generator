@@ -11,7 +11,7 @@ import textwrap
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import call
 
@@ -21,13 +21,16 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 from tests import conftest as shared_conftest
 from tests import units
+from tests.capabilities import needs
 from tests.conftest import (
     _infer_expected_file,
+    _refuse_home_directory,
     assert_exact_directory_content,
     assert_inputs_not_mutated,
     assert_output,
     assert_parser_modules,
     assert_parser_results,
+    home_directory_in,
     slow_test_durations,
     worksteal_chunk_sizes,
 )
@@ -35,7 +38,7 @@ from tests.main import _builtin_parity
 from tests.main import conftest as main_conftest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
 
     from pytest_mock import MockerFixture
 
@@ -543,6 +546,7 @@ class LedgerProject:
 
     pytester: pytest.Pytester
     monkeypatch: pytest.MonkeyPatch
+    modules: ImportedModules
 
     @property
     def suite(self) -> Path:
@@ -583,16 +587,74 @@ class LedgerProject:
         }
 
     def run(self, *args: str, env: dict[str, str] | None = None) -> pytest.RunResult:
-        """Run pytest in the project with extra environment variables."""
+        """Run pytest in the project with extra environment variables, keeping the modules the run imports."""
         with self.monkeypatch.context() as context:
             for name, value in (env or {}).items():
                 context.setenv(name, value)
-            return self.pytester.runpytest_inprocess("-p", "no:cacheprovider", "-p", "no:randomly", *args)
+            result = self.pytester.runpytest_inprocess(
+                "-p", "no:cacheprovider", "-p", "no:randomly", *args, plugins=[self.modules]
+            )
+        _put_back(self.modules.kept)
+        return result
+
+
+@dataclass(eq=False)
+class ImportedModules:
+    """The modules a ledger test imports from outside its project, which stay imported for the rest of the process.
+
+    Pytester restores ``sys.modules`` after each in-process run and when the test ends: every module first imported
+    meanwhile goes, while the modules imported before still hold its objects. The next import of such a module would
+    run it a second time, with classes of its own: a second ``datamodel_code_generator.model.typed_dict`` made the
+    models a later generation builds unknown to the target binder, which keys the first one. Only the project's own
+    modules (its conftest and test modules) are dropped.
+    """
+
+    project: Path
+    before: frozenset[str]
+    kept: dict[str, ModuleType]
+
+    def keep(self) -> None:
+        """Remember the modules imported since the test started from outside the project."""
+        project = self.project.resolve()
+        self.kept.update(
+            (name, module)
+            for name, module in sys.modules.items()
+            if name not in self.before
+            and isinstance(module, ModuleType)
+            and not any(Path(location).resolve().is_relative_to(project) for location in _module_locations(module))
+        )
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_unconfigure(self) -> None:
+        """Remember the modules of a run before pytester drops them."""
+        self.keep()
+
+
+def _module_locations(module: ModuleType) -> list[str]:
+    """Return the file and the package directories a module was loaded from."""
+    file = getattr(module, "__file__", None)
+    return [*([file] if isinstance(file, str) else []), *getattr(module, "__path__", ())]
+
+
+def _put_back(kept: dict[str, ModuleType]) -> None:
+    """Import again, as the same objects, the kept modules that pytester dropped."""
+    for name, module in kept.items():
+        sys.modules.setdefault(name, module)
 
 
 @pytest.fixture
-def ledger(pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch) -> LedgerProject:
-    """Return an empty project whose conftest is the shared one and whose tests live in suite/."""
+def kept_modules() -> Generator[dict[str, ModuleType], None, None]:
+    """Hold the modules a ledger test keeps; set up before ``pytester``, it puts them back after pytester's teardown."""
+    kept: dict[str, ModuleType] = {}
+    yield kept
+    _put_back(kept)
+
+
+@pytest.fixture
+def ledger(
+    kept_modules: dict[str, ModuleType], pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> Generator[LedgerProject, None, None]:
+    """Yield an empty project whose conftest is the shared one and whose tests live in suite/."""
     for name in _ISOLATED_VARIABLES:
         monkeypatch.delenv(name, raising=False)
     pytester.makepyprojecttoml(
@@ -607,7 +669,9 @@ def ledger(pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch) -> Ledger
     )
     pytester.makeconftest("from tests.conftest import *  # noqa: F403\n")
     (pytester.path / "suite" / "data" / "expected").mkdir(parents=True)
-    return LedgerProject(pytester, monkeypatch)
+    modules = ImportedModules(pytester.path, frozenset(sys.modules), kept_modules)
+    yield LedgerProject(pytester, monkeypatch, modules)
+    modules.keep()
 
 
 SHARED = """
@@ -954,7 +1018,7 @@ def test_format_refs_writes_each_line_once() -> None:
         ("[test_a]\n\tm/a.txt\t?\t?\n", "line 2: unexpected column '?'", units.BROKEN),
         (
             "[test_a]\n\tm/a.txt\t@os=nt\n",
-            "line 2: unknown predicate 'os=nt'; facts are python, formatter, black, isort, platform",
+            "line 2: unknown predicate 'os=nt'; facts are python, formatter, black, isort, platform, pydantic",
             units.BROKEN,
         ),
         (
@@ -1335,7 +1399,14 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
         """,
     )
     ledger.run("suite").assert_outcomes(passed=1)
-    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+    facts = {
+        "python": "3.10",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "5.13.2",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+    }
     item = "suite/test_m.py::test_a"
     payloads = [
         {
@@ -1432,7 +1503,11 @@ def test_ledger_resolves_cli_doc_paths(ledger: LedgerProject) -> None:
     session = pytest.Session.from_config(config)
     config.hook.pytest_sessionstart(session=session)
     session.perform_collect()
-    kwargs = next(item["marker_kwargs"] for item in config._cli_doc_items if item["node_id"].endswith("test_doc"))
+    kwargs = next(
+        item["marker_kwargs"]
+        for item in config.stash[shared_conftest.CLI_DOC_ITEMS]
+        if item["node_id"].endswith("test_doc")
+    )
     assert kwargs | {"options": None, "option_description": None, "cli_args": None} == {
         "options": None,
         "option_description": None,
@@ -1826,11 +1901,27 @@ def test_ledger_merge_and_payload_rules() -> None:
 
     The platform joins a predicate only when nothing else tells the environments apart.
     """
-    py310 = {"python": "3.10", "formatter": "builtin", "black": "26.1.0", "isort": "7.0.0", "platform": "linux"}
+    py310 = {
+        "python": "3.10",
+        "formatter": "builtin",
+        "black": "26.1.0",
+        "isort": "7.0.0",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+    }
     py311 = {**py310, "python": "3.11"}
-    black22 = {"python": "3.12", "formatter": "external", "black": "22.1.0", "isort": "7.0.0", "platform": "linux"}
+    black22 = {
+        "python": "3.12",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "7.0.0",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+    }
     windows = {**py310, "platform": "win32"}
+    pydantic20 = {**py311, "formatter": "external", "pydantic": "2.0"}
     assert units._distinguishing([py310], [py311, black22]) == (("python", "3.10"),)
+    assert units._distinguishing([pydantic20], [py310, py311, black22]) == (("pydantic", "2.0"),)
     assert units._distinguishing([py310, py311], [black22]) == (("formatter", "builtin"),)
     assert units._distinguishing([windows], [py310, py311]) == (("platform", "win32"),)
     with pytest.raises(ValueError, match="no predicate separates"):
@@ -1841,10 +1932,12 @@ def test_ledger_merge_and_payload_rules() -> None:
         units._fact_value("black", "26.1a1"),
         units._fact_value("isort", "dev"),
         units._fact_value("python", "3.10"),
+        units._fact_value("pydantic", "2.0.3"),
     ] == [
         "26",
         "dev",
         "3.10",
+        "2.0",
     ]
     with pytest.raises(ValueError, match="run its test here"):
         units.apply_payload(base, [], payload, py310, exists=True)
@@ -1863,6 +1956,8 @@ def test_ledger_merge_and_payload_rules() -> None:
     assert units.facts_fit({**py310, "black": "26.1.0.post1+local.7", "isort": "7.0.0.dev3"})
     assert not units.facts_fit({**py310, "black": "26.1+a/b"})
     assert units.payload_predicate({**py310, "black": "22.1.0"}, py310) == (("black", "22"),)
+    assert units.payload_predicate(pydantic20, py311) == (("pydantic", "2.0"),)
+    assert units.payload_predicate({**py310, "pydantic": "2.14.0"}, py310) is None
     assert units.payload_predicate({**black22, "isort": "5.13.2"}, {**black22, "black": "22.3.0"}) == (("isort", "5"),)
     assert units.payload_predicate(py311, py310) == (("formatter", "builtin"), ("python", "3.11"))
     assert units.payload_predicate(black22, {**black22, "black": "22.3.0", "python": "3.14"}) == (
@@ -1989,6 +2084,177 @@ def test_ledger_generation_helpers_name_outputs(ledger: LedgerProject) -> None:
     assert "expected: test_named now has the same output as e.py; it uses that file" in first.stdout.str()
     assert "CLASS PET(BASEMODEL)" in files["main/directory/models.py"]
     ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=10)
+
+
+NAMED_OUTPUT_TESTS = """
+from pathlib import Path
+
+from datamodel_code_generator import Error, InputFileType
+from tests.conftest import (
+    MockHttpxResponse,
+    assert_directory_content,
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    assert_parser_modules,
+    assert_parser_results,
+)
+from tests.main.conftest import (
+    run_generate_and_assert,
+    run_generate_file_and_assert,
+    run_main_and_assert,
+    run_main_url_and_assert,
+    run_main_with_args,
+)
+
+SCHEMA = Path(__file__).parent / "schema.json"
+ARGS = ["--disable-timestamp", "--input-file-type", "jsonschema"]
+OPTIONS = {"input_file_type": InputFileType.JsonSchema, "disable_timestamp": True}
+MODULES = {("pkg", "__init__.py"): "", ("pkg", "a.py"): "A = 1\\n", ("README.md",): "# pkg\\n"}
+MISSING = '{"type": "object", "properties": {"a": {"$ref": "#/definitions/missing"}}}'
+
+
+def test_runs(tmp_path):
+    run_main_and_assert(input_path=SCHEMA, output_path=tmp_path / "a.py", extra_args=ARGS, name="model")
+    run_generate_file_and_assert(input_path=SCHEMA, output_path=tmp_path / "b.py", name="model", **OPTIONS)
+    run_generate_and_assert(input_=SCHEMA, name="returned", **OPTIONS)
+
+
+def test_runs_differ(tmp_path):
+    run_main_and_assert(input_path=SCHEMA, output_path=tmp_path / "a.py", extra_args=ARGS, name="model")
+    run_main_and_assert(
+        input_path=SCHEMA, output_path=tmp_path / "b.py", extra_args=[*ARGS, "--class-name", "B"], name="model"
+    )
+
+
+def test_error():
+    run_generate_and_assert(input_=MISSING, expected_error=Error, strict_refs=True, **OPTIONS)
+
+
+def test_url(mock_httpx_get, tmp_path):
+    mock_httpx_get(*(MockHttpxResponse("https://example.com/schema.json", SCHEMA) for _ in range(2)))
+    run_main_url_and_assert(
+        url="https://example.com/schema.json",
+        output_path=tmp_path / "m.py",
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp"],
+    )
+    run_main_url_and_assert(
+        url="https://example.com/schema.json",
+        output_path=tmp_path / "n.py",
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--class-name", "B"],
+        name="renamed",
+    )
+
+
+def test_stdout_beside_file(tmp_path, capsys):
+    run_main_and_assert(
+        input_path=SCHEMA, output_path=tmp_path / "m.py", extra_args=ARGS, capsys=capsys, derived_stdout=True
+    )
+
+
+def test_stdout_suffix(capsys):
+    run_main_and_assert(input_path=SCHEMA, extra_args=ARGS, stdout_suffix=".py")
+    run_main_and_assert(input_path=SCHEMA, extra_args=ARGS, capsys=capsys, stdout_suffix=".py", name="captured")
+    run_main_with_args(["--input", str(SCHEMA), *ARGS], capsys=capsys, derived_stdout=True, stdout_suffix=".py")
+
+
+def test_suffix():
+    assert_output("A = 1\\n", suffix=".py")
+    assert_output({"b": [1, "x"]}, name="value", suffix=".json")
+
+
+def test_trees(tmp_path):
+    for name, text in {"a.py": "A = 1\\n", "notes.txt": "skip\\n"}.items():
+        (tmp_path / name).write_text(text)
+    assert_directory_content(tmp_path)
+    assert_exact_directory_content(tmp_path, pattern="*.txt", name="notes")
+    assert_generated_modules_output(MODULES, pattern="*", name="whole")
+    assert_parser_modules(MODULES, name="modules")
+    assert_parser_results({"pkg/a.py": "A = 1\\n", "README.md": "# pkg\\n"}, name="results")
+"""
+
+
+def test_ledger_helpers_store_named_outputs_without_paths(ledger: LedgerProject) -> None:
+    """Helpers without an expected path store outputs under ``name``, ``suffix`` and stdout roles of their own.
+
+    Two runs under one name compare one stored output and must be equal; an expected error without a match pattern
+    stores its text, and a tree helper without a directory stores the files its pattern selects as the test's tree.
+    """
+    ledger.write("schema.json", '{"title": "A", "type": "object", "properties": {"x": {"type": "string"}}}')
+    ledger.write("test_named.py", NAMED_OUTPUT_TESTS)
+    first = ledger.run("suite", "--inline-snapshot=fix")
+    first.assert_outcomes(passed=7, failed=1)
+    assert "test_runs_differ compares two different outputs against named/runs_differ.model.py" in first.stdout.str()
+    files = ledger.files()
+    assert files["named/error.txt"] == "Unresolved local $ref targets:\n- <input>: #/definitions/missing\n"
+    assert files["named/suffix.py"] == "A = 1\n"
+    assert files["named/suffix.value.json"] == '{\n  "b": [\n    1,\n    "x"\n  ]\n}'
+    assert not files["named/stdout_beside_file.stdout.txt"]
+    assert "class B(BaseModel)" in files["named/url.renamed.py"]
+    assert {name: text for name, text in files.items() if name.startswith("named/trees")} == {
+        "named/trees.modules/pkg/__init__.py": "",
+        "named/trees.modules/pkg/a.py": "A = 1\n",
+        "named/trees.notes/notes.txt": "skip\n",
+        "named/trees.results/pkg/a.py": "A = 1\n",
+        "named/trees.whole/README.md": "# pkg\n",
+        "named/trees.whole/pkg/__init__.py": "",
+        "named/trees.whole/pkg/a.py": "A = 1\n",
+        "named/trees/a.py": "A = 1\n",
+    }
+    refs = ledger.refs("test_named")
+    assert "[test_runs]\n\tnamed/runs.model.py\n\tnamed/runs.returned.py\n" in refs
+    assert (
+        "[test_stdout_beside_file]\n\tnamed/stdout_beside_file.py\t= named/runs.model.py\n"
+        "\tnamed/stdout_beside_file.stdout.txt\n"
+    ) in refs
+    assert (
+        "[test_stdout_suffix]\n\tnamed/stdout_suffix.2.stdout.py\t= named/runs.model.py\n"
+        "\tnamed/stdout_suffix.captured.stdout.py\t= named/runs.model.py\n"
+        "\tnamed/stdout_suffix.stdout.py\t= named/runs.model.py\n"
+    ) in refs
+    assert (
+        "[test_trees]\n\tnamed/trees.modules/\n\tnamed/trees.notes/\n\tnamed/trees.results/\n\tnamed/trees.whole/\n"
+        "\tnamed/trees/\n"
+    ) in refs
+    assert "[test_url]\n\tnamed/url.py\n\tnamed/url.renamed.py\n" in refs
+    again = ledger.run("suite", "--inline-snapshot=disable", "--deselect", "suite/test_named.py::test_runs_differ")
+    again.assert_outcomes(passed=7)
+
+
+KEPT_MODULE_TESTS = """
+from tests.test_conftest_helpers import kept_modules, ledger
+
+
+def test_import_in_a_run(ledger):
+    ledger.write("test_m.py", "import ledger_kept\\n\\n\\ndef test_a():\\n    pass\\n")
+    ledger.run("suite").assert_outcomes(passed=1)
+
+
+def test_import_after_the_run():
+    import ledger_kept
+"""
+
+
+def test_ledger_runs_keep_the_modules_they_import(
+    ledger: LedgerProject, kept_modules: dict[str, ModuleType], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A module a ledger run imports runs once: a later test of the process imports the same module, not a copy."""
+    (tmp_path / "ledger_kept.py").write_text(
+        "from pathlib import Path\n\n"
+        "with (Path(__file__).parent / 'runs.txt').open('a', encoding='utf-8') as runs:\n"
+        "    runs.write('run\\n')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(tmp_path)
+    ledger.write("test_keep.py", KEPT_MODULE_TESTS)
+    try:
+        ledger.run("-p", "pytester", "suite").assert_outcomes(passed=2)
+        assert (tmp_path / "runs.txt").read_text(encoding="utf-8") == "run\n"
+    finally:  # the kept module goes away even when the run fails, so it leaks into no later test
+        kept_modules.pop("ledger_kept", None)
+        sys.modules.pop("ledger_kept", None)
 
 
 def test_ledger_observe_ignores_failures(ledger: LedgerProject, tmp_path: Path) -> None:
@@ -2209,7 +2475,14 @@ def test_fix_expected_drops_tests_no_environment_collects(
 
 ONE_TEST = "from tests.conftest import assert_output\n\nOUT = 'x\\n'\n\n\ndef test_a():\n    assert_output(OUT)\n"
 GITHUB = {"CI": "true", "GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": "7"}
-LANE = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+LANE = {
+    "python": "3.10",
+    "formatter": "external",
+    "black": "22.1.0",
+    "isort": "5.13.2",
+    "platform": "linux",
+    "pydantic": "2.14.1",
+}
 
 
 def _fix_expected(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, *arguments: str) -> int:
@@ -2728,6 +3001,227 @@ def test_ledger_payload_from_this_environment_is_refused(
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=1)
 
 
+TWO_TESTS = ONE_TEST + "\n\ndef test_b():\n    assert_output('b\\n')\n"
+
+
+def _lanes(count: int) -> list[dict[str, str]]:
+    """Return the facts of lanes on the other platform that differ from each other and from here by Python.
+
+    No lane runs this environment's Python, so each lane's override predicate is its tools and Python on every
+    interpreter, platform and black the module runs with, and the lanes come in the order of their sidecar lines.
+    """
+    local = shared_conftest.expected_environment_facts()
+    minors = [minor for minor in range(10, 20) if f"3.{minor}" != local["python"]]
+    return [{**_other_platform(local), "python": f"3.{minor}"} for minor in minors[:count]]
+
+
+def _storage(facts: dict[str, str], label: str = "m/a.txt") -> str:
+    """Return where a lane's override of a label is stored."""
+    predicate = units.payload_predicate(facts, shared_conftest.expected_environment_facts())
+    stem, _, suffix = label.rpartition(".")
+    return f"{stem}@{units._environment_slug(predicate)}.{suffix}"
+
+
+def _override(facts: dict[str, str], label: str = "m/a.txt", storage: str | None = None) -> str:
+    """Return the sidecar line of a lane's override of a label, by default stored under the lane's name."""
+    predicate = units.payload_predicate(facts, shared_conftest.expected_environment_facts())
+    return f"\t{label}\t@{units.predicate_text(predicate)}\t= {storage or _storage(facts, label)}\n"
+
+
+def _apply_in_process(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run the apply sessions of scripts/fix_expected.py in this process, so coverage records them."""
+    from scripts import fix_expected
+
+    monkeypatch.setattr(
+        fix_expected.subprocess, "run", lambda command, **_: SimpleNamespace(returncode=ledger.run(*command[3:]).ret)
+    )
+
+
+def _held(*labels: str) -> str:
+    """Return the report of an apply session that held labels of test_a, each sent alike by the lanes given."""
+    advice = (
+        "or rerun this command with --as-base, which writes the common content as the base file and removes the "
+        "overrides equal to it. Every environment without an override of its own then compares that content: this "
+        "one, and the lanes that sent no payload because they passed or did not run. Check this environment with: "
+        "pytest suite/test_m.py::test_a; check those lanes with a dispatch run of the Test workflow on your branch (gh "
+        "workflow run test.yaml --ref <branch>), which also runs the lanes pull requests skip. Keep one override per "
+        "lane instead: rerun this command with --per-environment.\n"
+    )
+    return "\n".join([
+        (
+            "expected: not applied: lanes of different overrides sent the same content for these labels, a change "
+            "common to them that belongs in the base file rather than in one override per lane:"
+        ),
+        *labels,
+        (
+            "Nothing was written for these labels or the stale payloads of their tests. Store the content as the base "
+            "file: regenerate it here, if this environment produces it too, with"
+        ),
+        "  pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite",
+        advice,
+    ])
+
+
+def test_fix_expected_stores_a_change_common_to_lanes_once(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Lanes of different overrides sending the same content for a label stop the run, which says how to store it.
+
+    Labels whose payloads differ are applied as before, and so are stale payloads of other tests; a stale payload of a
+    held label's test is held with it. ``--as-base`` stores the content most lanes sent as the base file, keeps
+    overrides of other content, and drops the overrides that now equal what their lanes compare.
+    """
+    ledger.write("test_m.py", TWO_TESTS)
+    ledger.run("suite").assert_outcomes(passed=2)
+    _apply_in_process(ledger, monkeypatch)
+    lanes = _lanes(4)
+    common = [_encoded(_payload(facts=facts)) for facts in lanes[:3]]
+    other = _encoded(_payload(facts=lanes[3], value="z\n"))
+    second = _encoded(_payload(facts=lanes[0], item="suite/test_m.py::test_b", label="m/b.txt", value="c\n"))
+    stale = _encoded(_payload(facts=lanes[1], item="suite/test_m.py::test_b", label=None, value=None, stale=True))
+    gone = _encoded(_payload(facts=lanes[3], label=None, value=None, stale=True))
+    stored = (ledger.refs(), ledger.files())
+    capsys.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--apply", *common, gone) == 1
+    message = _held("  suite/test_m.py::test_a m/a.txt (3 lanes)")
+    assert (message in capsys.readouterr().out, ledger.refs(), ledger.files()) == (True, *stored)
+    assert _fix_expected(ledger, monkeypatch, "--apply", *common, other, second, stale, gone) == 1
+    assert f"stage them all: git add -A suite\n{message}" in capsys.readouterr().out
+    test_b = f"[test_b]\n\tm/b.txt\t?\n{_override(lanes[0], 'm/b.txt')}"
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{test_b}"
+    assert _fix_expected(ledger, monkeypatch, "--apply", *common, other, second, stale, "--as-base") == 0
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{_override(lanes[3])}{test_b}"
+    assert ledger.files() == {
+        "m/a.txt": "y\n",
+        _storage(lanes[3]): "z\n",
+        "m/b.txt": "b\n",
+        _storage(lanes[0], "m/b.txt"): "c\n",
+    }
+    everyone = [_encoded(_payload(facts=facts, value="q\n")) for facts in lanes]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *everyone, "--as-base") == 0
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{test_b}"
+    assert ledger.files() == {"m/a.txt": "q\n", "m/b.txt": "b\n", _storage(lanes[0], "m/b.txt"): "c\n"}
+    with pytest.raises(SystemExit):
+        _fix_expected(ledger, monkeypatch, "--where", "suite/test_m.py::test_a", "--per-environment")
+    assert "--as-base and --per-environment only go with --apply and --from-ci" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("values", "option"),
+    [
+        pytest.param(("y\n", "y\n", "y\n"), ("--per-environment",), id="equal-per-environment"),
+        pytest.param(("y\n", "z\n", "w\n"), (), id="different"),
+    ],
+)
+def test_fix_expected_stores_one_override_per_lane(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, values: tuple[str, ...], option: tuple[str, ...]
+) -> None:
+    """Content the lanes differ in, or any content with --per-environment, becomes one override per lane."""
+    ledger.write("test_m.py", ONE_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    _apply_in_process(ledger, monkeypatch)
+    lanes = _lanes(3)
+    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip(lanes, values, strict=True)]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, *option) == 0
+    stored = {value: _storage(facts) for facts, value in reversed(list(zip(lanes, values, strict=True)))}
+    lines = "".join(_override(facts, storage=stored[value]) for facts, value in zip(lanes, values, strict=True))
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{lines}"
+    assert ledger.files() == {"m/a.txt": "x\n", **{storage: value for value, storage in stored.items()}}
+
+
+def test_fix_expected_stores_lanes_of_one_override_once(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Lanes that share one override, one Python on two platforms, are one lane: their content is that override."""
+    ledger.write("test_m.py", ONE_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    _apply_in_process(ledger, monkeypatch)
+    lane = _lanes(1)[0]
+    payloads = [_encoded(_payload(facts={**lane, "platform": platform})) for platform in ("linux", "darwin")]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads) == 0
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{_override(lane)}"
+    assert ledger.files() == {"m/a.txt": "x\n", _storage(lane): "y\n"}
+
+
+@pytest.mark.parametrize("values", [("a\n", "a\n", "b\n", "b\n"), ("b\n", "b\n", "a\n", "a\n")])
+def test_fix_expected_breaks_a_tie_by_the_lowest_predicate(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], values: tuple[str, ...]
+) -> None:
+    """Of contents as many lanes sent, the one whose lowest predicate sorts first is the common content."""
+    ledger.write("test_m.py", ONE_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    _apply_in_process(ledger, monkeypatch)
+    lanes = _lanes(4)
+    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip(lanes, values, strict=True)]
+    capsys.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads) == 1
+    assert _held("  suite/test_m.py::test_a m/a.txt (2 lanes)") in capsys.readouterr().out
+    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, "--as-base") == 0
+    shared = _storage(lanes[2])
+    lines = "".join(_override(facts, storage=shared) for facts in lanes[2:])
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{lines}"
+    assert ledger.files() == {"m/a.txt": values[0], shared: values[2]}
+
+
+@pytest.mark.parametrize(
+    ("values", "option", "lines", "files"),
+    [
+        pytest.param(("q\n", "q\n"), "--as-base", {"broad": "w", "near": "base"}, {"m/a.txt": "q\n"}, id="as-base"),
+        pytest.param(
+            ("x\n", "z\n"),
+            "--per-environment",
+            {"broad": "w", "near": "base", "far": "z"},
+            {"m/a.txt": "x\n"},
+            id="base-content",
+        ),
+        pytest.param(
+            ("w\n", "z\n"), "--per-environment", {"broad": "w", "far": "z"}, {"m/a.txt": "x\n"}, id="broader-content"
+        ),
+    ],
+)
+def test_fix_expected_keeps_a_lane_off_a_broader_override(
+    ledger: LedgerProject,
+    monkeypatch: pytest.MonkeyPatch,
+    values: tuple[str, str],
+    option: str,
+    lines: dict[str, str],
+    files: dict[str, str],
+) -> None:
+    """A lane a broader override matches keeps an override of the content it sent unless that override stores it.
+
+    The lane's override goes only when it equals what the lane compares without it: the broader override, not the
+    base. The expected sidecar is written in the order pytest writes, whatever the facts of this environment.
+    """
+    ledger.write("test_m.py", ONE_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    _apply_in_process(ledger, monkeypatch)
+    near, far = _lanes(2)
+    local = shared_conftest.expected_environment_facts()
+    broad = (("python", near["python"]),)
+    stored = {"w": f"m/a@python{near['python']}.txt", "base": "m/a.txt", "z": _storage(far)}
+    ledger.store(stored["w"], "w\n")
+    ledger.suite.joinpath("test_m.refs").write_text(
+        units.format_refs([
+            units.RefLine("test_a", "", "m/a.txt"),
+            units.RefLine("test_a", "", "m/a.txt", False, broad, stored["w"]),
+        ]),
+        encoding="utf-8",
+    )
+    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip((near, far), values, strict=True)]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, option) == 0
+    predicates = {
+        "broad": broad,
+        "near": units.payload_predicate(near, local),
+        "far": units.payload_predicate(far, local),
+    }
+    expected = [units.RefLine("test_a", "", "m/a.txt")] + [
+        units.RefLine("test_a", "", "m/a.txt", False, predicates[name] or (), stored[content])
+        for name, content in lines.items()
+    ]
+    assert ledger.refs() == units.format_refs(expected)
+    assert ledger.files() == files | {
+        stored[content]: f"{content}\n" for content in lines.values() if content != "base"
+    }
+
+
 def test_ledger_refuses_writes_outside_its_files(ledger: LedgerProject) -> None:
     """A run whose plan writes outside the expected files and sidecars of the tests root writes nothing and fails."""
     (ledger.pytester.path / "test_out.py").write_text(
@@ -2936,7 +3430,6 @@ import pytest
 from tests.conftest import assert_generated_modules_output, assert_output, stored_expected
 
 EXPECTED = Path(__file__).parent / "data" / "expected"
-OUTSIDE_A_TEST = stored_expected(EXPECTED / "m" / "a.txt")
 
 
 def test_a():
@@ -2959,7 +3452,6 @@ def test_reader(tmp_path):
     assert stored_expected(EXPECTED / "tree" / "notes.txt") == EXPECTED / "tree" / "notes.txt"
     assert stored_expected(EXPECTED / "unknown.txt") == EXPECTED / "unknown.txt"
     assert stored_expected(tmp_path) == tmp_path
-    assert OUTSIDE_A_TEST == EXPECTED / "m" / "a.txt"
     assert stored_expected(EXPECTED / "o.txt").read_text() == "base\\n"
     assert stored_expected(EXPECTED / "mixed" / "r.md") == EXPECTED / "mixed" / "r.md"
     assert stored_expected(EXPECTED / "mixed" / "a.py") == EXPECTED / "pyfiles" / "a.py"
@@ -3600,13 +4092,14 @@ def test_ledger_merges_a_copy_into_its_label(ledger: LedgerProject) -> None:
     assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/a.txt\n"
 
 
+@pytest.mark.parametrize("value", ["y\n", "z\n"], ids=["same-content", "other-content"])
 def test_ledger_refuses_payloads_no_predicate_tells_apart(
-    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str], value: str
 ) -> None:
     """A payload differing from here only in what override predicates ignore (minor tool versions) is refused.
 
     --apply then writes nothing; --from-ci reports it and applies the run's other payloads, whose tool versions may
-    carry PEP 440 suffixes.
+    carry PEP 440 suffixes. Sending the same content as another lane does not make it a lane of a common change.
     """
     from scripts import fix_expected
 
@@ -3619,7 +4112,8 @@ def test_ledger_refuses_payloads_no_predicate_tells_apart(
     minor = {tool: f"{local[tool]}.post1+ci" if local[tool] else "" for tool in ("black", "isort")}
     near = units.encode_payload({**payload, "facts": {**local, **minor}}, 1 << 20) or ""
     foreign = {**_other_platform(local), **minor}
-    far = units.encode_payload({**payload, "facts": foreign}, 1 << 20) or ""
+    other = {"value": value, "digest": units.unit_digest(payload["label"], value)}
+    far = units.encode_payload({**payload, **other, "facts": foreign}, 1 << 20) or ""
     refusal = (
         "it comes from this environment, so there is no other environment to add an override for; "
         "this environment is yours, run: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
@@ -3636,7 +4130,7 @@ def test_ledger_refuses_payloads_no_predicate_tells_apart(
     assert (
         ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@{units.predicate_text(predicate)}\t= {storage}\n"
     )
-    assert ledger.files() == {"m/a.txt": "x\n", storage: "y\n"}
+    assert ledger.files() == {"m/a.txt": "x\n", storage: value}
 
 
 def test_fix_expected_from_ci_skips_rejected_payloads(
@@ -3673,7 +4167,7 @@ def test_ledger_leaves_a_missing_storage_in_place(ledger: LedgerProject) -> None
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_ledger_reports_a_refused_sidecar_rewrite(ledger: LedgerProject) -> None:
     """A sidecar resolving outside the tests root is not rewritten into the form pytest writes; the run fails."""
     ledger.write("test_m.py", ONE_TEST)
@@ -3688,3 +4182,43 @@ def test_ledger_reports_a_refused_sidecar_rewrite(ledger: LedgerProject) -> None
     assert "expected: refused to write expected output; nothing was written:\n" in output
     assert "suite/test_m.refs: it resolves to" in output
     assert outside.read_text(encoding="utf-8") == "[test_a]\n\tm/a.txt\n"
+
+
+@pytest.mark.parametrize(
+    ("text", "home", "found"),
+    [
+        ("/home/alice/work/x", "/home/alice", "/home/alice"),
+        ("PATH=/usr/bin:/home/alice/bin", "/home/alice", "/home/alice"),
+        ("PATH=/usr/bin", "/home/alice", None),
+        ("/h/x", "/h", None),
+        ("anything", "/", None),
+        ("C:/Users/alice/x", "C:\\Users\\alice", "C:/Users/alice"),
+        ("C:\\Users\\alice\\x", "C:\\Users\\alice", "C:\\Users\\alice"),
+        ('"C:\\\\Users\\\\alice"', "C:\\Users\\alice", "C:\\\\Users\\\\alice"),
+    ],
+)
+def test_home_directory_in(text: str, home: str, found: str | None) -> None:
+    """The detector finds the home directory in every spelling and ignores a short one."""
+    result = home_directory_in(text, home)
+    if found is None:
+        assert result is None
+    else:
+        assert result == found
+
+
+def test_refuse_home_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Stored output holding the session's home directory fails the comparison, nested JSON values included."""
+    home = str(tmp_path / "developer")
+    monkeypatch.setattr(shared_conftest, "_SESSION_HOME", home)
+    _refuse_home_directory({"a.py": "clean", "b.bin": b"x", "c.json": {"k": [1, {"n": "clean"}]}})
+    with pytest.raises(pytest.fail.Exception, match="holds the home directory"):
+        _refuse_home_directory({"a.py": f"path = {home}/x"})
+    with pytest.raises(pytest.fail.Exception, match="holds the home directory"):
+        _refuse_home_directory({"k": [1, {"n": f"{home}/x"}]})
+
+
+def test_a_placeholder_home_is_not_the_session_home(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test that sets HOME to a placeholder may store it: the guard compares with the session's own home."""
+    monkeypatch.setenv("HOME", "<HOME>")
+    monkeypatch.setenv("USERPROFILE", "<HOME>")
+    _refuse_home_directory({"a.txt": "<HOME>/x"})

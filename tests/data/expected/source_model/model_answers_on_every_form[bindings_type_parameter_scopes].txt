@@ -1,0 +1,75 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Base: class@8 [always]
+  Box: class@15 [always]
+  first: def@20 [always]
+scope class Base#0 'Base': code yes; first line 8
+  opened by a node evaluated in <module>#0
+  Alias: assign@9 [always]; value int
+  method: def@11 [always]
+  members: Alias, method
+scope type-params Base.<generic parameters of method>#0 '<generic parameters of method>': code yes; first line 11
+  T: type-param@11 [always]
+  Ts: type-param@11 [always]
+  P: type-param@11 [always]
+scope type-bound Base.T#0 'T': code yes; first line 11
+  opened by a node evaluated in Base.T#0
+scope function Base.method#0 'method': code yes; first line 11
+  opened by a node evaluated in Base#0
+  self: param@11 [function:body@11]
+  value: param@11 [function:body@11]
+  default: param@11 [function:body@11]
+  receiver: self@11
+scope type-params <generic parameters of Box>#0 '<generic parameters of Box>': code yes; first line 15
+  T: type-param@15 [always]
+  U: type-param@15 [always]
+scope type-bound T#0 'T': code yes; first line 15
+  opened by a node evaluated in T#0
+scope type-bound U#0 'U': code yes; first line 15
+  opened by a node evaluated in U#0
+scope class Box#0 'Box': code yes; first line 15
+  opened by a node evaluated in <module>#0
+  get: def@16 [always]
+  members: get
+scope function Box.get#0 'get': code yes; first line 16
+  opened by a node evaluated in Box#0
+  self: param@16 [function:body@16]
+  receiver: self@16
+scope type-params <generic parameters of first>#0 '<generic parameters of first>': code yes; first line 20
+  X: type-param@20 [always]
+scope function first#0 'first': code yes; first line 20
+  opened by a node evaluated in <module>#0
+  items: param@20 [function:body@20]
+== references
+9:4 Alias store in Base -> local Base @9, else unbound
+9:12 int load in Base -> builtin; origin builtins.int
+11:59 Alias load in Base -> local Base @9, else unbound; origin builtins.int
+11:18 Alias load in Base.T -> enclosing Base @9, else unbound; origin builtins.int
+11:48 T load (evaluated annotation) in Base.<generic parameters of method> -> local Base.<generic parameters of method> @11
+11:69 Alias load (evaluated annotation) in Base.<generic parameters of method> -> enclosing Base @9, else unbound; origin builtins.int
+12:15 value load in Base.method -> local Base.method @11
+15:14 int load in T -> builtin; origin builtins.int
+15:19 str load in T -> builtin; origin builtins.str
+15:29 list load in U -> builtin; origin builtins.list
+15:34 int load in U -> builtin; origin builtins.int
+15:40 list load in <generic parameters of Box> -> builtin; origin builtins.list
+15:45 T load in <generic parameters of Box> -> local <generic parameters of Box> @15
+16:21 T load (evaluated annotation) in Box -> enclosing <generic parameters of Box> @15
+17:15 self load in Box.get -> local Box.get @16
+20:20 list load (evaluated annotation) in <generic parameters of first> -> builtin; origin builtins.list
+20:25 X load (evaluated annotation) in <generic parameters of first> -> local <generic parameters of first> @20
+20:32 X load (evaluated annotation) in <generic parameters of first> -> local <generic parameters of first> @20
+21:11 items load in first -> local first @20
+uses of Base:Alias@9: read@11, read@11, read@11
+uses of Base.<generic parameters of method>:T@11: read@11
+uses of Base.method:value@11: read@12
+uses of <generic parameters of Box>:T@15: read@15, read@16
+uses of Box.get:self@16: read@17
+uses of <generic parameters of first>:X@20: read@20, read@20
+uses of first:items@20: read@21
+type positions @20: X
+type positions @11: Alias
+type positions @16: T
+type positions @20: list, X
+type positions @11: T
+== code objects: one per scope that compiles on this Python

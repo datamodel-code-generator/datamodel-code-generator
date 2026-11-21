@@ -135,6 +135,22 @@
       "pydantic_v2.dataclass"
     ]
   },
+  "applied-config": {
+    "input": "applied-config.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "allow_population_by_field_name": true,
+      "extra_template_data": {
+        "Person": {"config": {"populate_by_name": false, "validate_by_name": false}}
+      }
+    },
+    "package_snapshots": [
+      "pydantic_v2.dataclass"
+    ]
+  },
   "media-kept": {
     "input": "media-errors.yaml",
     "backends": [
@@ -211,6 +227,13 @@
       "output_datetime_class": "datetime"
     },
     "package_snapshots": []
+  },
+  "containers": {
+    "input": "containers.yaml",
+    "model": {
+      "use_x_python_type_as_written": true,
+      "collapse_root_models": true
+    }
   },
   "unbound": {
     "input": "unbound.yaml",
@@ -374,6 +397,9 @@
   "security-errors": {
     "input": "security-errors.yaml"
   },
+  "auth-parameters": {
+    "input": "auth-parameters.yaml"
+  },
   "security-roles": {
     "input": "auth-roles.yaml"
   },
@@ -425,6 +451,56 @@
   },
   "pointer-references": {
     "input": "pointer-references.yaml"
+  },
+  "served-self-names": {
+    "input": "served-self-names.yaml"
+  },
+  "served-root-id": {
+    "input": "served-root-id.yaml",
+    "files": [
+      "served-root-id-pet.json"
+    ]
+  },
+  "served-ids-30": {
+    "input": "served-ids-30.yaml",
+    "model": {
+      "allow_remote_refs": false
+    }
+  },
+  "served-embedded-id": {
+    "input": "served-embedded-id.yaml",
+    "files": [
+      "served-embedded-id-pet.json"
+    ]
+  },
+  "served-same-root-id": {
+    "input": "served-same-root-id.yaml",
+    "files": [
+      "served-same-root-id-v1.json",
+      "served-same-root-id-v2.json"
+    ]
+  },
+  "served-relative-root-id": {
+    "input": "served-relative-root-id.yaml",
+    "files": [
+      "served-relative-root-id-pet.json"
+    ]
+  },
+  "served-inline-id": {
+    "input": "served-inline-id.yaml"
+  },
+  "served-held-by-path-item": {
+    "input": "openapi/anchor_object_documents/held_by_path_item/api.yaml",
+    "files": [
+      "openapi/anchor_object_documents/held_by_path_item/path_item.yaml",
+      "openapi/anchor_object_documents/held_by_path_item/parameter.yaml"
+    ]
+  },
+  "served-id-after-pointer": {
+    "input": "openapi/anchor_object_documents/held_after_pointer/id_api.yaml",
+    "files": [
+      "openapi/anchor_object_documents/held_after_pointer/id_parameter.yaml"
+    ]
   },
   "link-errors": {
     "input": "link-errors.yaml",
@@ -561,5 +637,20 @@
   },
   "parts-bound-types-errors": {
     "input": "parts-bound-types-errors.yaml"
+  },
+  "nullable-parameters": {
+    "input": "server-nullable-parameters.yaml",
+    "model": {
+      "strict_nullable": true
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "nullable-parameters-31": {
+    "input": "server-nullable-parameters-31.yaml",
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

@@ -1,0 +1,18 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  enum: import@3 [always]; origin enum
+  Color: class@6 [always]
+  f: def@10 [always]
+scope class Color#0 'Color': code yes; first line 6
+  opened by a node evaluated in <module>#0
+  RED: assign@7 [always]; value 1
+  members: RED
+scope function f#0 'f': code yes; first line 10
+  opened by a node evaluated in <module>#0
+  p: param@10 [function:body@10]
+  first: match@12 [function:body@10|case:body@12]
+  rest: match@12 [function:body@10|case:body@12]
+  value: match@14 [function:body@10|case:body@14]
+  others: match@14 [function:body@10|case:body@14]
+  whole: match@18 [function:body@10|case:body@18]
+== code objects: one per scope that compiles on this Python

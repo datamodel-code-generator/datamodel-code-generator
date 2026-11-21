@@ -1,0 +1,4 @@
+{"pet": {"petType": "cat"}}: Holder(pet=Cat(petType=<PetType.cat: 'cat'>, a=None))
+{"pet": {"petType": "lion", "b": "x"}}: Holder(pet=Dog(petType=<PetType.lion: 'lion'>, b='x'))
+{"pet": {"petType": "dog"}}: rejected
+Holder(pet=Cat(petType=PetType.cat)) from Python: Holder(pet=Cat(petType=<PetType.cat: 'cat'>, a=None))

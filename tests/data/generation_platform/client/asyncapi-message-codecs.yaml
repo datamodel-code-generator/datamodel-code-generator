@@ -1,0 +1,139 @@
+asyncapi: 3.0.0
+info:
+  title: Plant floor
+  version: 1.0.0
+servers:
+  floor:
+    host: floor.example.com
+    protocol: wss
+  feed:
+    host: feed.example.com
+    protocol: https
+channels:
+  states:
+    address: /states
+    messages:
+      state:
+        contentType: text/plain
+        payload:
+          $ref: '#/components/schemas/State'
+  tables:
+    address: /tables
+    messages:
+      table:
+        contentType: text/csv
+        payload:
+          type: string
+  packs:
+    address: /packs
+    messages:
+      pack:
+        contentType: application/x-msgpack
+        payload:
+          type: object
+          properties:
+            line:
+              type: integer
+  blobs:
+    address: /blobs
+    messages:
+      blob:
+        contentType: application/json
+        payload:
+          type: string
+          format: binary
+  readings:
+    address: /readings
+    servers:
+      - $ref: '#/servers/feed'
+    messages:
+      reading:
+        contentType: application/json
+        payload:
+          type: string
+          format: binary
+      tick:
+        contentType: text/event-stream
+        payload:
+          type: object
+          properties:
+            at:
+              type: string
+  counts:
+    address: /counts
+    messages:
+      count:
+        contentType: text/plain
+        payload:
+          type: integer
+  uploads:
+    address: /uploads
+    messages:
+      upload:
+        contentType: multipart/form-data
+        payload:
+          type: string
+          format: binary
+  forms:
+    address: /forms
+    messages:
+      form:
+        contentType: application/x-www-form-urlencoded
+        payload:
+          type: object
+          properties:
+            line:
+              type: integer
+  parts:
+    address: /parts
+    messages:
+      part:
+        contentType: multipart/form-data
+        payload:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+operations:
+  sendState:
+    action: send
+    channel:
+      $ref: '#/channels/states'
+  sendTable:
+    action: send
+    channel:
+      $ref: '#/channels/tables'
+  sendPack:
+    action: send
+    channel:
+      $ref: '#/channels/packs'
+  receiveBlob:
+    action: receive
+    channel:
+      $ref: '#/channels/blobs'
+  sendReading:
+    action: send
+    channel:
+      $ref: '#/channels/readings'
+  sendCount:
+    action: send
+    channel:
+      $ref: '#/channels/counts'
+  receiveUpload:
+    action: receive
+    channel:
+      $ref: '#/channels/uploads'
+  sendForm:
+    action: send
+    channel:
+      $ref: '#/channels/forms'
+  receivePart:
+    action: receive
+    channel:
+      $ref: '#/channels/parts'
+components:
+  schemas:
+    State:
+      type: string
+      enum: [running, stopped]

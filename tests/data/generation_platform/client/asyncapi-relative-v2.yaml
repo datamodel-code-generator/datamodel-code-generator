@@ -1,0 +1,32 @@
+asyncapi: 2.6.0
+info:
+  title: Chat rooms
+  version: 1.0.0
+servers:
+  local:
+    url: ws://chat.example.com/ws
+    protocol: ws
+  bare:
+    url: chat.example.com:8765
+    protocol: ws
+channels:
+  chat:
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            text:
+              type: string
+          required: [text]
+  rooms/{room}:
+    servers: [bare]
+    parameters:
+      room:
+        schema:
+          type: string
+    publish:
+      message:
+        contentType: text/plain
+        payload:
+          type: string

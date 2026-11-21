@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Manifest",
+  "type": "object",
+  "properties": {
+    "default_icon": {"$ref": "#/definitions/icon"},
+    "page_icon": {
+      "anyOf": [{"type": "string"}, {"type": "object"}],
+      "patternProperties": {"^[1-9]\\d+$": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "theme": {
+      "oneOf": [{"type": ["string", "null"]}, {"type": "object"}],
+      "properties": {"light": {"type": "string"}, "dark": {"type": "string"}},
+      "required": ["light"]
+    },
+    "action_icon": {
+      "anyOf": [{"$ref": "#/definitions/path"}, {"type": "object"}],
+      "patternProperties": {"^[1-9]\\d+$": {"type": "string"}}
+    },
+    "sidebar_theme": {
+      "anyOf": [{"$ref": "#/definitions/path"}, {"type": "object"}],
+      "properties": {"light": {"type": "string"}},
+      "required": ["light"]
+    }
+  },
+  "definitions": {
+    "path": {"type": "string"},
+    "icon": {
+      "anyOf": [{"type": "string"}, {"type": "object"}],
+      "additionalProperties": false,
+      "patternProperties": {"^[1-9]\\d+$": {"type": "string", "format": "uri-reference"}},
+      "format": "uri-reference"
+    }
+  }
+}

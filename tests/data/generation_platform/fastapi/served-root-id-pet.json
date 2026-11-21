@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/pet",
+  "type": "object",
+  "properties": {
+    "name": {"$ref": "#petname"},
+    "nick": {"$ref": "https://example.com/schemas/pet#/$defs/Nick"}
+  },
+  "$defs": {
+    "Name": {"$anchor": "petname", "type": "string", "maxLength": 20},
+    "Nick": {"type": "string", "maxLength": 10}
+  }
+}

@@ -48,12 +48,14 @@ class AsyncStatusesResource:
         """
         Call GET /statuses.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (code,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (code,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncStatusesWithResponse:

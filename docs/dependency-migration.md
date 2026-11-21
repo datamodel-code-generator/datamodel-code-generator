@@ -1,8 +1,70 @@
 # Dependency migration notices
 
-This release prepares later changes. Black and isort remain the default formatters and required dependencies;
-all current dependency ranges, compatibility code and minimum-version tests remain in place. Generation still
-continues when formatters are omitted. The built-in formatter remains experimental.
+Black and isort remain the default formatters and required dependencies. All current dependency ranges,
+compatibility code and minimum-version tests remain in place. Generation still continues when formatters are
+omitted. This page is the migration guide for the planned change of the default formatter to `builtin`, which also
+makes Jinja2, Genson and argcomplete optional.
+
+## Timeline
+
+- 0.95.0 announces that `jinja2`, `genson` and `argcomplete` become optional together with Black and isort, so you
+  migrate once. The release that changes the default formatter makes all five optional; it comes no earlier than
+  three months after 0.95.0 and is announced in the release notes of the release before it.
+
+- Black and isort stay the default in 0.92.0, which starts a transition period of at least three months.
+- The default changes no earlier than three months after 0.92.0 is released. The release notes announce the
+  release that changes it beforehand.
+- Until then, when nothing selects a formatter (`--formatters`, `[tool.datamodel-codegen]` `formatters`, a preset or
+  the Python API), dcg keeps writing Black/isort output and emits the default formatter notice.
+
+## What builtin matches today
+
+For the code the standard templates generate, `--formatters builtin` writes what Black writes in its stable style
+(the current Black release), with isort's default import ordering. The builtin formatter reads these settings:
+
+| Setting | Source |
+| --- | --- |
+| Line length | `builtin_format_line_length` (API), `[tool.datamodel-codegen]` `builtin-format-line-length`, `[tool.ruff]` `line-length`, `[tool.black]` `line-length`, `[tool.isort]` `line_length`, then `88`. The first valid value wins; an invalid API value raises an error instead of falling back. |
+| String quotes | Double quotes with `--use-double-quotes` or `[tool.black]` `skip-string-normalization = false`; otherwise quotes stay as generated. |
+| First-party modules | `[tool.isort]` `known_first_party`, added to the built-in defaults. |
+| Long strings | `--wrap-string-literal` wraps long keyword string arguments. |
+
+It does not read any other Black or isort setting. Output differs from Black/isort when you rely on one of these:
+
+- isort options other than `known_first_party` and `line_length`, such as `profile` and `force_single_line`.
+- Black's `target-version`, `preview` and `skip-magic-trailing-comma`. Builtin always follows the stable style
+  and always honors magic trailing commas.
+- A line length that differs between Ruff and Black. Builtin takes `[tool.ruff]` `line-length` before
+  `[tool.black]` `line-length`; set `builtin-format-line-length` to Black's value to match Black.
+- The layout of older Black releases. The dependency range still allows them, and their output can differ from
+  the current stable style.
+
+Custom templates: builtin formats any valid Python, but leaves a construct it does not cover unchanged. For example,
+it does not lay out statements inside function bodies, or statements with comments, multi-line strings or
+backslash continuations. See [Formatter behavior](formatter-behavior.md) for the full scope.
+
+## How to migrate
+
+- **Keep Black and isort.** Select them explicitly and declare the extras (`datamodel-code-generator[black,isort]`).
+  This also silences the default formatter notice. It keeps the formatter choice, not every byte: the output follows
+  the Black and isort versions you install, so pin them (for example in your lock file) when you need identical output.
+
+    ```bash
+    datamodel-codegen --input schema.json --output models.py --formatters black isort
+    ```
+
+    ```toml
+    [tool.datamodel-codegen]
+    formatters = ["black", "isort"]
+    ```
+
+    The Python API takes `formatters=[Formatter.BLACK, Formatter.ISORT]`.
+
+- **Switch now.** First compare, before regenerating anything: run
+  `datamodel-codegen --input schema.json --output models.py --check --formatters builtin` against the output you
+  committed from Black/isort. `--check` exits non-zero when the output would differ and does not write files (see
+  [CI/CD](ci-cd.md)). Then regenerate with `--formatters builtin`.
+- **Use Ruff.** Pass `--formatters ruff-check ruff-format` and install `datamodel-code-generator[ruff]`.
 
 ## Choose formatting independently of the default
 
@@ -40,18 +102,20 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | --- | --- |
 | Default formatter change | Effective formatters are unspecified, including older presets and custom formatters added to the implicit pipeline. |
 | Black/isort optional installation | Black or isort is explicitly selected, including through resolved configuration or a formatter-supplying preset. Not also emitted for an implicit pipeline. |
+| Jinja2 optional installation | A custom template directory is set (`--custom-template-dir`, `custom-template-dir`, `custom_template_dir`), however it is set. |
+| Genson optional installation | The input type is JSON, YAML, CSV or a dict, whose schema Genson infers. Schema inputs (JSON Schema, OpenAPI, GraphQL and the others) do not warn. Nor does any input once an installed package requires `datamodel-code-generator[genson]` or `[all]` with no environment marker; a requirement with a marker, even `extra == "..."`, does not count. Installing the extra by hand (`pip install`, `uvx --from`, a requirements file) or declaring it in a project that is not installed as a package does not silence the notice. |
+| argcomplete optional installation | Registered without a runtime warning: a shell discards the error output of completion, and a warning promoted to an error would break it. This page, the registry and the release notes carry it. |
 | Old Black/isort support | A selected formatter is below its proposed future minimum, whether the pipeline was implicit or explicit. Merely having it installed does not warn. |
 | Old runtime Pydantic support | DCG generates code using Pydantic below 2.8.2 in its own runtime, even when generating dataclasses, TypedDict or msgspec models. |
-| Python 3.10 runtime | DCG itself runs on Python 3.10 and generates code through the CLI or the Python API. `--target-python-version 3.10` alone does not warn. |
 
-Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
-original 0.52.0 history; the formatter and dependency-floor notices are recorded for the planned 0.78.0 release,
-and the Python 3.10 runtime notice is recorded since 0.84.0 with removal in 0.85.0. The registry contains the
-[exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
+Each notice is registered separately as a `FutureWarning`, except the argcomplete one, which is `scheduled`. The default formatter notice retains its
+original 0.52.0 history, and the formatter and dependency-floor notices are recorded for the planned 0.78.0 release.
+The registry contains the [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including
 `always`, `ignore` and `error`; the CLI continues to support `--disable-warnings`. Warnings do not enter stdout or
-generated code.
+generated code. A notice names the code that called the Python API, not a line inside DCG, so a filter can target the
+calling module, for example `warnings.filterwarnings("ignore", category=FutureWarning, module="mypackage.models")`.
 
 ## Prepare for optional Black/isort installation
 
@@ -72,6 +136,26 @@ For a Python API or shared environment, declare `datamodel-code-generator[black,
 dependencies and pass `formatters=[Formatter.BLACK, Formatter.ISORT]`. Declare only the extras you actually use.
 `uvx` can isolate the CLI's dependencies from application dependencies. Shared environments and API use remain
 supported migration scenarios; application constraints alone do not imply a fixed long transition period.
+
+## Prepare for optional Jinja2, Genson and argcomplete installation
+
+Default generation imports none of the three: Jinja2 is needed only for custom templates, Genson only to infer a
+schema from JSON, YAML, CSV or dict data, and argcomplete only for shell completion. The new `[jinja2]`, `[genson]`
+and `[argcomplete]` extras currently repeat the mandatory dependency ranges; `[all]` includes them. Declare the ones
+you use, as for Black and isort:
+
+```bash
+uvx --from 'datamodel-code-generator[jinja2,genson,argcomplete]' datamodel-codegen --help
+```
+
+| You use | Declare |
+| --- | --- |
+| `--custom-template-dir` | `datamodel-code-generator[jinja2]` |
+| `--input-file-type json`, `yaml` or `csv`, or `generate()` with a dict | `datamodel-code-generator[genson]` |
+| Shell completion (`register-python-argcomplete`) | `datamodel-code-generator[argcomplete]` |
+
+`inflect`, `pyyaml`, `pydantic` and `typing-extensions` stay mandatory dependencies. When the extras become optional,
+a feature whose extra is missing reports an installation error naming the extra.
 
 ## Proposed future dependency floors
 
@@ -145,15 +229,23 @@ actually be removed. Changing target-version semantics would require a separate,
 
 ## Running on Python 3.10
 
-Running datamodel-code-generator on Python 3.10 is deprecated in 0.84.0 and will be removed in 0.85.0, because
-Python 3.10 reached end of life in October 2026. Generation on Python 3.10 emits a `FutureWarning`; run DCG on
-Python 3.11 or newer to prepare. This concerns only the interpreter running DCG: generating code for Python 3.10
-with `--target-python-version 3.10` is unchanged.
+datamodel-code-generator runs on Python 3.11 or newer since 0.93.0; running it on Python 3.10 was deprecated in
+0.84.0, and Python 3.10 reached end of life in October 2026. pip and uv keep a Python 3.10 environment on the last
+release that runs there, 0.92.x. This concerns only the interpreter running DCG: the default target is still
+Python 3.10, and the code generated for Python 3.10, with or without `--target-python-version 3.10`, is unchanged.
+
+Projects that still run on Python 3.10 can keep generating code for it by running DCG on a newer Python, for example
+`uvx datamodel-code-generator --target-python-version 3.10 ...` (uv fetches a supported Python),
+`uvx --from datamodel-code-generator datamodel-codegen ...` (the `datamodel-code-generator` command is new in 0.93.0;
+this form works with every release), or pipx on a newer Python
+(`pipx run --python 3.12 --spec datamodel-code-generator datamodel-codegen ...`). The generated code for Python 3.10 is
+unchanged.
 
 ## Follow-up changes remain separate
 
 1. Change the implicit default to builtin, retaining explicit Ruff and Black/isort choices.
-2. Remove Black/isort from mandatory dependencies, retaining the extras and explicit dependency errors.
+2. Remove Black/isort, Jinja2, Genson and argcomplete from mandatory dependencies, retaining the extras and explicit
+   dependency errors.
 3. Raise the runtime dependency floors and reassess compatibility code and producer/consumer tests.
 
-None of these three changes is performed by this preparation release.
+None of these three changes is performed yet. The first one follows the [timeline](#timeline) above.

@@ -1,0 +1,12 @@
+[
+  "/base64 enum null: invalid, model accepts",
+  "/int_then_bool const \"1\": invalid, model accepts",
+  "/int_then_bool const null: invalid, model accepts",
+  "/int_then_float const null: invalid, model accepts",
+  "/int_then_str const null: invalid, model accepts",
+  "/integral_floats enum \"1\": invalid, model accepts",
+  "/integral_floats enum \"2\": invalid, model accepts",
+  "/integral_floats enum null: invalid, model accepts",
+  "/numbers enum null: invalid, model accepts",
+  "/str_then_int const null: invalid, model accepts"
+]

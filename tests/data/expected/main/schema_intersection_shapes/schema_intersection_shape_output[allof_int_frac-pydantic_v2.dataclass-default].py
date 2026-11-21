@@ -3,18 +3,21 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 Number = TypeAliasType("Number", int)
 
 
-Frac = TypeAliasType("Frac", Number)
+Frac = TypeAliasType("Frac", Annotated[Number, Field(..., ge=1, le=9)])
 
 
 @dataclass
 class Model:
     frac: Frac | None = None
-    frac_prop: Number | None = None
+    frac_prop: Annotated[Number | None, Field(ge=1, le=9)] = None
     frac_items: list[Number] | None = None
     frac_map: dict[str, Number] | None = None

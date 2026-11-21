@@ -1,0 +1,4 @@
+[
+  "/untyped_minimum minimum 4: invalid, model accepts",
+  "/untyped_minimum minimum 4.9: invalid, model accepts"
+]

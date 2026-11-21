@@ -1,0 +1,25 @@
+# auth-roles-30
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /billing (operationId 'billing'), which the client cannot generate: /paths/~1billing/get: The security of GET /billing lists scopes for scheme 'key', whose type takes none in OpenAPI 3.0
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /bearer (operationId 'bearer'), which the client cannot generate: /paths/~1bearer/get: The security of GET /bearer lists scopes for scheme 'bearer', whose type takes none in OpenAPI 3.0
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/auth.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py

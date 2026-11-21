@@ -1,0 +1,30 @@
+exit status 0
+option --treat-dot-as-module (config field treat_dot_as_module)
+  Model customization; no documentation row
+  help: Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' becomes 'foo/bar.py'). U...
+  recommender: rules dotted-keys.flat-when-namespaces-cycle
+  presets: no dated preset sets it
+  docs: docs/cli-reference/template-customization.md#treat-dot-as-module
+  declared as a field in (9):
+    src/datamodel_code_generator/_types/generate_config_dict.py
+    src/datamodel_code_generator/_types/parser_config_dicts.py
+    src/datamodel_code_generator/base_config.py
+    src/datamodel_code_generator/config.py
+    ... 5 more (--all)
+  readers by name (attribute types are not resolved) (16):
+    src/datamodel_code_generator/__main__.py .treat_dot_as_module x1
+    src/datamodel_code_generator/_target_binding.py .treat_dot_as_module x1
+    src/datamodel_code_generator/model/msgspec.py .treat_dot_as_module x1
+    src/datamodel_code_generator/parser/_inherited_schemas.py .treat_dot_as_module x1
+    src/datamodel_code_generator/parser/_passes/cross_module.py .treat_dot_as_module x1
+    src/datamodel_code_generator/parser/_passes/imports.py .treat_dot_as_module x12
+    src/datamodel_code_generator/parser/_passes/modules.py .treat_dot_as_module x1
+    src/datamodel_code_generator/parser/_passes/structure.py .treat_dot_as_module x1
+    src/datamodel_code_generator/parser/_rw_split.py .treat_dot_as_module x1
+    src/datamodel_code_generator/parser/_stdout_repair.py .treat_dot_as_module x3
+    src/datamodel_code_generator/parser/base.py .treat_dot_as_module x6
+    src/datamodel_code_generator/parser/graphql.py .treat_dot_as_module x1
+    ... 4 more (--all)
+  decision rows that name it (2):
+    row: whether text is a name Python binds (an identifier and no keyword), alone or as a dotted path: ro... [Placement Guide]
+    row: the path that the output writes a module's file at: each `-` of a name as `_`, then without `--tr... [Placement Guide]

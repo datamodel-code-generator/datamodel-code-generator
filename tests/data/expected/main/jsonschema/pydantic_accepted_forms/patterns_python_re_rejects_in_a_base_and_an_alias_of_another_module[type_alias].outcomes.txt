@@ -1,0 +1,12 @@
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Base.handle is generated without this constraint.
+module a
+valid: valid
+digits: valid
+too long: string_too_long
+module b child
+valid: valid
+no capital: string_pattern_mismatch
+module b user
+valid: valid
+no capital: string_pattern_mismatch

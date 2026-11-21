@@ -45,8 +45,6 @@ def test_main_protobuf_complex_proto3(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="protobuf",
         extra_args=["--use-field-description"],
-        assert_func=assert_file_content,
-        expected_file="complex_proto3.py",
         importable_module_name="generated_protobuf",
         importable_module_attribute="ExampleShopV1Order",
     )
@@ -68,8 +66,6 @@ def test_main_protobuf_output_model_types(
         input_path=PROTOBUF_DATA_PATH / "complex_proto3.proto",
         output_path=output_file,
         input_file_type="protobuf",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/complex_proto3_{expected_name}.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--output-model-type",
@@ -105,13 +101,17 @@ def test_main_protobuf_output_model_types(
             )
 
 
-def test_main_protobuf_infer_input_file_type(output_file: Path) -> None:
-    """Infer Protocol Buffers input and generate a model."""
+def test_main_protobuf_infer_input_file_type(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
+    """Infer Protocol Buffers input and generate a model, printing protoc's warning with the file's own name."""
     run_main_and_assert(
         input_path=PROTOBUF_DATA_PATH / "proto3_optional.proto",
         output_path=output_file,
-        assert_func=assert_file_content,
-        expected_file="proto3_optional.py",
+        capsys=capsys,
+        expected_stderr=(
+            "The input file type was determined to be: protobuf\n"
+            "This can be specified explicitly with the `--input-file-type` option.\n"
+            "input_0.proto:7:1: warning: Import common.proto is unused.\n"
+        ),
     )
 
 
@@ -122,8 +122,6 @@ def test_main_protobuf_proto2_schema_version(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="protobuf",
         extra_args=["--schema-version", "proto2"],
-        assert_func=assert_file_content,
-        expected_file="proto2.py",
     )
 
 
@@ -134,8 +132,6 @@ def test_main_protobuf_proto3_optional_schema_version(output_file: Path) -> None
         output_path=output_file,
         input_file_type="protobuf",
         extra_args=["--schema-version", "proto3"],
-        assert_func=assert_file_content,
-        expected_file="proto3_optional.py",
     )
 
 
@@ -145,8 +141,6 @@ def test_main_protobuf_well_known_wrappers(output_file: Path) -> None:
         input_path=PROTOBUF_DATA_PATH / "well_known_wrappers.proto",
         output_path=output_file,
         input_file_type="protobuf",
-        assert_func=assert_file_content,
-        expected_file="well_known_wrappers.py",
     )
 
 
@@ -193,7 +187,6 @@ def test_convert_protobuf_schema_data_preserves_yaml_safe_non_finite_defaults() 
             )
             for schema in converted_schemas
         ),
-        EXPECTED_PROTOBUF_PATH / "converted_non_finite_defaults.txt",
     )
 
 
@@ -214,8 +207,6 @@ def test_main_protobuf_spec_proto3(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="protobuf",
         extra_args=["--schema-version", "proto3", "--use-field-description"],
-        assert_func=assert_file_content,
-        expected_file="spec_proto3.py",
     )
 
 
@@ -226,8 +217,6 @@ def test_main_protobuf_spec_proto2(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="protobuf",
         extra_args=["--schema-version", "proto2"],
-        assert_func=assert_file_content,
-        expected_file="spec_proto2.py",
     )
 
 
@@ -243,8 +232,6 @@ def test_main_protobuf_custom_template_non_finite_raw(output_file: Path) -> None
             "--custom-template-dir",
             str(DATA_PATH / "templates_non_finite_raw"),
         ],
-        assert_func=assert_file_content,
-        expected_file="custom_template_non_finite_raw.py",
         force_exec_validation=True,
     )
 
@@ -255,8 +242,6 @@ def test_main_protobuf_edition_2023_schema_version(output_file: Path) -> None:
         input_path=PROTOBUF_DATA_PATH / "edition_2023.proto",
         output_path=output_file,
         extra_args=["--schema-version", "2023"],
-        assert_func=assert_file_content,
-        expected_file="edition_2023.py",
     )
 
 
@@ -266,8 +251,6 @@ def test_generate_api_protobuf(output_file: Path) -> None:
         input_path=PROTOBUF_DATA_PATH / "complex_proto3.proto",
         output_path=output_file,
         input_file_type=InputFileType.Protobuf,
-        assert_func=assert_file_content,
-        expected_file="complex_proto3_generate.py",
     )
 
 
@@ -310,7 +293,6 @@ def test_generate_api_protobuf_from_path_list() -> None:
         input_=cast(Any, [(PROTOBUF_DATA_PATH / "spec_proto3.proto").resolve()]),  # noqa: TC006
         input_file_type=InputFileType.Protobuf,
         disable_timestamp=True,
-        expected_file=EXPECTED_PROTOBUF_PATH / "spec_proto3_list_input.py",
         assert_input_unchanged=True,
     )
 
@@ -356,7 +338,7 @@ def test_main_protobuf_parse_error(capsys: pytest.CaptureFixture[str], tmp_path:
         input_file_type="protobuf",
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="Invalid Protocol Buffers schema",
+        expected_stderr_contains="Invalid Protocol Buffers schema: invalid.proto:3:1: Expected",
         output_should_not_exist=True,
     )
 
@@ -402,8 +384,6 @@ def test_generate_api_protobuf_strict_schema_version_warning(output_file: Path) 
         input_path=PROTOBUF_DATA_PATH / "proto3_optional.proto",
         output_path=output_file,
         input_file_type=InputFileType.Protobuf,
-        assert_func=assert_file_content,
-        expected_file="proto3_optional_strict_proto2.py",
         schema_version="proto2",
         schema_version_mode="strict",
         expected_warnings=["declares proto3"],
@@ -459,7 +439,6 @@ def test_native_referenced_standard_types(name: str) -> None:
         json_format.Parse((payloads / "nullvalue_null.json").read_text(), model())
         assert_output(
             json.dumps(json_format.MessageToDict(value), indent=2) + "\n",
-            EXPECTED_PROTOBUF_PATH / "referenced_standard/native_nullvalue.txt",
         )
 
 
@@ -565,3 +544,27 @@ def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoin
             json.dumps(value.value if isinstance(value, Enum) else value) + "\n",
             EXPECTED_PROTOBUF_PATH / "referenced_standard/enum_value.txt",
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_protobuf_enum_field_defaults_beside_ref(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the ``[default = ...]`` of an enum field under --ignore-ref-siblings-by-schema-version (#6394).
+
+    The converter writes it beside the ``$ref`` to the enum, as a part of the field, so the option, which ignores the
+    keywords beside a draft 7 ``$ref``, keeps ``status = 'LEGACY_ACTIVE'`` as without it.
+    """
+    run_main_and_assert(
+        input_path=PROTOBUF_DATA_PATH / "proto2.proto",
+        output_path=output_file,
+        input_file_type="protobuf",
+        extra_args=["--schema-version", "proto2", *extra_args],
+        force_exec_validation=True,
+    )

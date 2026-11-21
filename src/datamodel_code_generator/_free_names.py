@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-__all__ = ["Numbering", "candidate_at", "first_free", "is_numbered"]
+__all__ = ["Numbering", "candidate_at", "first_free", "is_numbered", "numbered_class"]
 
 Numbering: TypeAlias = Literal["underscore", "joined", "joined-from-2", "underscore-from-2", "joined-from-0", "padded"]
 """How one feature numbers a name its scope already holds (see the module docstring)."""
@@ -79,3 +79,8 @@ def is_numbered(name: str, base: str, numbering: Numbering, suffix: str | None =
             return True
         base = first
     return name.startswith(prefix := f"{base}{delimiter}") and name[len(prefix) :].isdecimal()
+
+
+def numbered_class(duplicate_name: str | None) -> str:
+    """Return the class of the name a model was numbered from (its duplicate name), ``""`` where it was not numbered."""
+    return (duplicate_name or "").rpartition(".")[2]

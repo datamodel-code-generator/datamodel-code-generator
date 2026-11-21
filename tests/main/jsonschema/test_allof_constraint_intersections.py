@@ -26,6 +26,8 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from _pytest.recwarn import WarningsRecorder
+
 
 @pytest.mark.parametrize("entry_point", ["api", "cli"])
 @pytest.mark.parametrize(
@@ -132,7 +134,6 @@ def test_allof_empty_enum_intersection(
     An ``enum`` written empty is reported where it is written.
     """
     input_path = DATA_PATH / "parser/jsonschema/allof_constraint_intersections" / f"{fixture}.json"
-    expected_file = f"allof_constraint_intersections/{fixture}.py"
     with (
         pytest.warns(UserWarning, match=r"admits no value: its enum is empty")
         if fixture == "empty_enums"
@@ -145,8 +146,6 @@ def test_allof_empty_enum_intersection(
                 input_file_type=InputFileType.JsonSchema,
                 disable_timestamp=True,
                 generate_schema_validators=schema_validators,
-                assert_func=assert_file_content,
-                expected_file=expected_file,
             )
         else:
             run_main_and_assert(
@@ -154,8 +153,6 @@ def test_allof_empty_enum_intersection(
                 output_path=output_file,
                 input_file_type="jsonschema",
                 extra_args=["--disable-timestamp", *(["--generate-schema-validators"] if schema_validators else [])],
-                assert_func=assert_file_content,
-                expected_file=expected_file,
             )
     payloads = json.loads((DATA_PATH / "payloads/allof_constraint_intersection_empty.json").read_text())
     Draft202012Validator(json.loads(input_path.read_text())).validate(payloads["valid"])
@@ -190,12 +187,9 @@ def test_allof_enum_scalar_subclasses(output_file: Path, mode: str, scalar_kind:
                 attributes["__hash__"] = base.__hash__
             scalar = type("Scalar", (base,), attributes)
             field["enum"] = [scalar(value) for value in field["enum"]]
-    suffix = "_parent" if mode == "equal" and subclass_side == "parent" else ""
-    expected = EXPECTED_JSON_SCHEMA_PATH / "allof_constraint_intersections" / f"scalars_{mode}_api{suffix}.py"
     run_generate_and_assert(
         input_=schema,
         output=output_file,
-        expected_file=expected,
         assert_input_unchanged=True,
         input_file_type=InputFileType.JsonSchema,
         disable_timestamp=True,
@@ -223,8 +217,6 @@ def test_allof_enum_scalar_cli_control(output_file: Path, mode: str) -> None:
         input_file_type="jsonschema",
         output_path=output_file,
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file=f"allof_constraint_intersections/scalars_{mode}.py",
         force_exec_validation=True,
     )
 
@@ -234,7 +226,6 @@ def test_allof_enum_scalar_cli_control(output_file: Path, mode: str) -> None:
 def test_allof_enum_metadata(output_file: Path, fixture: str, entry_point: str) -> None:
     """Retain enum annotation ownership and unchanged alias order through real generation."""
     input_path = JSON_SCHEMA_DATA_PATH / "allof_constraint_intersections" / f"{fixture}.json"
-    expected = f"allof_constraint_intersections/{fixture}.py"
     if entry_point == "api":
         run_generate_file_and_assert(
             input_path=input_path,
@@ -242,8 +233,6 @@ def test_allof_enum_metadata(output_file: Path, fixture: str, entry_point: str) 
             input_file_type=InputFileType.JsonSchema,
             disable_timestamp=True,
             use_field_description=True,
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     else:
         run_main_and_assert(
@@ -251,8 +240,6 @@ def test_allof_enum_metadata(output_file: Path, fixture: str, entry_point: str) 
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp", "--use-field-description"],
-            assert_func=assert_file_content,
-            expected_file=expected,
             force_exec_validation=True,
         )
     if fixture == "metadata_control":
@@ -272,7 +259,7 @@ def test_allof_enum_metadata(output_file: Path, fixture: str, entry_point: str) 
         }
         assert_output(
             json.dumps(observations, indent=2) + "\n",
-            EXPECTED_JSON_SCHEMA_PATH / "allof_constraint_intersections/metadata_runtime.txt",
+            name="metadata_runtime",
         )
     for valid in payloads["valid"]:
         for value in invalid:
@@ -294,5 +281,25 @@ def test_allof_property_named_like_schema_keyword(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
+    )
+
+
+@pytest.mark.parametrize("order", ["child_first", "parent_first"])
+def test_allof_unsatisfiable_inherited_property_warning(
+    output_file: Path, recwarn: WarningsRecorder, order: str
+) -> None:
+    """Warn once that no value satisfies a property two allOf members declare, whether its child comes first or not.
+
+    Reading the inherited properties of the child checks the property with its warnings ignored; the parse of the
+    schema that declares it still reports it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"allof_unsatisfiable_inherited_{order}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
     )

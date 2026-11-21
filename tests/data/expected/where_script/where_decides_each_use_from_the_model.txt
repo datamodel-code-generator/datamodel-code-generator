@@ -1,0 +1,9 @@
+exit status 0
+symbol scripts/provider.py:answer
+  defined (1):
+    scripts/provider.py:4 function answer
+  users (1):
+    scripts/shapes.py: one, parenthesised, spaced
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (1):
+    mirror: none

@@ -1,0 +1,46 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "allOf beside an external discriminated branch",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Fish": {
+        "type": "object",
+        "properties": {
+          "fins": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fins"
+        ]
+      },
+      "Owned": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "owner": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner"
+            ]
+          }
+        ],
+        "anyOf": [
+          {
+            "$ref": "./base.json#/components/schemas/Base"
+          },
+          {
+            "$ref": "#/components/schemas/Fish"
+          }
+        ]
+      }
+    }
+  }
+}

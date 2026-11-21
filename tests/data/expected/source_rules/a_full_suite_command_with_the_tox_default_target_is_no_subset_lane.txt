@@ -1,0 +1,5 @@
+exit: 0
+
+rule counts:
+  dead-capability: 0 (absolute); fix: delete the capability and its uses (no lane of .github/workflows/test.yaml has it, so the tests it guards always run, or never), or fix the clause or the lane the message names
+  never-run: 0 (absolute); fix: delete the test, or the capability that excludes every lane; a test no lane of .github/workflows/test.yaml runs checks nothing

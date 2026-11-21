@@ -1,0 +1,934 @@
+verdict problems: none
+undeclared questions: none
+bindings/annotation_without_value: annotation_without_value.py:20: class Fields
+        name: str
+        size: int = 0
+bindings/annotation_without_value: annotation_without_value.py:9: def f()
+bindings/annotation_without_value: annotation_without_value.py:14: def g()
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:5: bottom = 0
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:3: first = 1
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:4: left = 'ab'
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:5: middle = 0
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:6: pairs = {}
+        then pairs['key'], value = (1, 2)
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:3: rest = (2, 3, 4)
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:4: right = 'ab'
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:3: second = (2, 3, 4)
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:5: top = 0
+bindings/assignment_targets_destructured: assignment_targets_destructured.py:7: value = 2
+bindings/assignment_targets_take: assignment_targets_take.py:8: bad = values
+bindings/assignment_targets_take: assignment_targets_take.py:6: first = 1
+bindings/assignment_targets_take: assignment_targets_take.py:21: found = make()
+bindings/assignment_targets_take: assignment_targets_take.py:7: left = make()
+bindings/assignment_targets_take: assignment_targets_take.py:8: ok = values
+bindings/assignment_targets_take: assignment_targets_take.py:6: rest = 3
+bindings/assignment_targets_take: assignment_targets_take.py:7: right = make()
+bindings/assignment_targets_take: assignment_targets_take.py:6: second = 2
+bindings/assignment_targets_take: assignment_targets_take.py:17: total: int = 1
+    total += 2
+bindings/assignment_targets_take: assignment_targets_take.py:6: first leads to form.assignment_targets_take.first, bound by del
+bindings/assignment_targets_take: assignment_targets_take.py:13: handle leads to form.assignment_targets_take.handle, bound by with
+bindings/assignment_targets_take: assignment_targets_take.py:9: key leads to form.assignment_targets_take.key, bound by for
+bindings/assignment_targets_take: assignment_targets_take.py:11: one leads to form.assignment_targets_take.one, bound by for
+bindings/assignment_targets_take: assignment_targets_take.py:13: other leads to form.assignment_targets_take.other, bound by with
+bindings/assignment_targets_take: assignment_targets_take.py:11: two leads to form.assignment_targets_take.two, bound by for
+bindings/assignment_targets_take: assignment_targets_take.py:9: value leads to form.assignment_targets_take.value, bound by for
+bindings/augmented_assignment: augmented_assignment.py:3: TOTAL = 0
+    TOTAL += 1
+bindings/augmented_assignment: augmented_assignment.py:7: def bump(counter, table)
+bindings/binding_of_a_node: binding_of_a_node.py:45: class Holder
+        size = 0
+        def grow(self)
+bindings/binding_of_a_node: binding_of_a_node.py:31: def handle(value, *rest, flag=False, **extra)
+bindings/binding_of_a_node: binding_of_a_node.py:13: def load()
+bindings/binding_of_a_node: binding_of_a_node.py:20: def outer()
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:14: class A(Protocol[T], metaclass=type)
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:18: class B(t.Protocol, Generic[T], models.Base, models.Sub[int])
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:22: class C(make_base())
+        def method(self, other: 'C', *rest: models.Host, key: Host | None=None, **extra: type[Host]) -> None
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:11: T = TypeVar('T')
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:27: def plain(a, b: int=0)
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:9: models leads to form.models, which nothing binds
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:22: a base the record cannot follow: make_base()
+bindings/class_members_cited: class_members_cited.py:14: LIMIT = 3
+bindings/class_members_cited: class_members_cited.py:18: class Parser
+        kind = 'json'
+        def parse(self)
+        @classmethod
+        def helper(cls)
+        def closure(self)
+        @staticmethod
+        def static(other)
+bindings/class_members_cited: class_members_cited.py:15: build = lambda: None
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:13: class Box
+        size: Annotated[int, {k: k for k in 'ef'}] = 0
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:17: TOP: Annotated[int, [m for m in 'gh']] = 1
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:9: def f(x: Literal[tuple((i for i in 'ab'))], y: Annotated[int, [j for j in 'cd']]) -> None
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:14: class Order(BaseModel)
+        items: Annotated[list[int], Field(default_factory=lambda: [i * 2 for i in range(3)])]
+        tags: Annotated[dict[str, str], Field(default_factory=lambda: {k: k for k in "ab"})]
+        nested: Annotated[list[str], lambda: lambda: [s for s in "cd"]] = []
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:28: TOP: Annotated[set[int], lambda: {n for n in range(2)}] = set()
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:24: def pick(x: Literal[tuple(([j for j in i] for i in ('ef',)))]) -> None
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:20: def read(q: Annotated[list[str], Query(default_factory=lambda: [s for s in ("a", "b")])]) -> list[str]
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:9: def collect() -> list[int]
+bindings/comprehension_targets_local: comprehension_targets_local.py:6: def f(rows)
+bindings/comprehension_targets_local: comprehension_targets_local.py:3: item = 'module'
+bindings/conditional_def_try_else: conditional_def_try_else.py:6: def helper()  [except ImportError]
+    def helper()  [try else]
+bindings/conditional_module_bindings: conditional_module_bindings.py:14: LIMIT = 12  [if sys.version_info >= (3, 12)]
+    LIMIT = 11  [else of sys.version_info >= (3, 12)]
+bindings/decorators_rebind: decorators_rebind.py:6: class C
+        @property
+        def x(self)
+        @x.setter
+        def x(self, value)
+bindings/decorators_rebind: decorators_rebind.py:17: @functools.cache
+    def g()
+    g = functools.wraps(g)(g)
+bindings/del_makes_local: del_makes_local.py:6: def f()
+bindings/del_makes_local: del_makes_local.py:11: def g(table)
+bindings/del_makes_local: del_makes_local.py:3: x = 1
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:4: def f(pairs)
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:8: def g(rows)
+bindings/dynamic_globals_write: dynamic_globals_write.py:6: def f()
+bindings/dynamic_globals_write: dynamic_globals_write.py:3: a dynamic namespace write (globals) the record cannot read
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:12: def f(name)
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:6: a dynamic namespace write (globals) the record cannot read
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:7: a dynamic namespace write (vars) the record cannot read
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:8: a dynamic namespace write (setattr-module) the record cannot read
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:9: a dynamic namespace write (exec) the record cannot read
+bindings/except_name: except_name.py:4: def f()
+bindings/except_star_name: except_star_name.py:4: def f()
+bindings/global_declared_anywhere: global_declared_anywhere.py:10: class JsonConfig  [built by _define()]
+        strict = True
+bindings/global_declared_anywhere: global_declared_anywhere.py:17: def reader()
+bindings/global_in_nested_function: global_in_nested_function.py:4: def outer()
+bindings/global_in_nested_function: global_in_nested_function.py:9: x = 2  [built by outer(); built by inner()]
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:9: class FixtureHost(Protocol)
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:13: class FixtureParser
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:37: def annotated_assignment(parser: FixtureHost, model: FixtureParser) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:17: def assignment(parser: FixtureHost, models: list[FixtureParser]) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:29: def augmented_assignment(parser: FixtureHost) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:206: def class_bodies(parser: FixtureHost, models: list[FixtureParser]) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:58: def comprehension_targets(parser: FixtureHost, models: list[FixtureParser]) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:115: def def_and_class_names(parser: FixtureHost) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:174: def delete_target(parser: FixtureHost) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:76: def except_name(parser: FixtureHost, error: type[Exception]) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:49: def for_target(parser: FixtureHost, models: list[FixtureParser]) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:183: def global_and_nonlocal(parser: FixtureHost, other: FixtureHost) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:86: def import_names(parser: FixtureHost) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:135: def match_captures(parser: FixtureHost, value: object) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:157: def walrus_targets(parser: FixtureHost, models: list[FixtureParser]) -> int
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:68: def with_target(parser: FixtureHost, model: FixtureParser) -> int
+bindings/host_private_access_concern: host_private_access_concern.py:15: class FixtureBaseHost(Protocol)
+bindings/host_private_access_concern: host_private_access_concern.py:19: class FixtureHost(FixtureBaseHost, Protocol)
+bindings/host_private_access_concern: host_private_access_concern.py:30: class FixtureNotProtocolHost(FixtureBaseHost)
+bindings/host_private_access_concern: host_private_access_concern.py:34: class FixtureParser
+        def method(self, other: FixtureParser) -> int
+        @classmethod
+        def build(cls) -> int
+bindings/host_private_access_concern: host_private_access_concern.py:26: class FixtureView(Protocol)
+bindings/host_private_access_concern: host_private_access_concern.py:96: MODULE_STATE = FixtureParser()._state
+bindings/host_private_access_concern: host_private_access_concern.py:45: def declared(parser: FixtureHost, graph: GraphBuilderHost, dotted: _shared.GraphBuilderHost, quoted: 'FixtureHost') -> int
+bindings/host_private_access_concern: host_private_access_concern.py:91: async def declared_async(parser: FixtureHost, fallback: FixtureHost | None=None) -> int
+bindings/host_private_access_concern: host_private_access_concern.py:99: def other_annotations(count: int, names: list[FixtureHost], attribute: _shared.Missing, unnamed: NoSuchHost) -> int
+bindings/host_private_access_concern: host_private_access_concern.py:81: def shadowed(parser: FixtureHost) -> int
+bindings/host_private_access_concern: host_private_access_concern.py:62: def undeclared(parser: FixtureHost, graph: GraphBuilderHost, view: FixtureView, concrete: FixtureNotProtocolHost, plain) -> int
+bindings/host_private_access_receivers: host_private_access_receivers.py:9: class FixtureHost(Protocol)
+bindings/host_private_access_receivers: host_private_access_receivers.py:13: class FixtureParser
+        def method(self) -> int
+        @classmethod
+        def build(cls) -> int
+        def __init_subclass__(cls) -> None
+        @staticmethod
+        def static(self: FixtureParser) -> int
+        def rebinds(self, models: list[FixtureParser]) -> int
+        def second(other, self: FixtureParser) -> int
+bindings/host_private_access_receivers: host_private_access_receivers.py:52: TABLE = {'state': lambda self: self._state}
+bindings/host_private_access_receivers: host_private_access_receivers.py:44: def module_function(self: FixtureParser) -> int
+bindings/host_private_access_receivers: host_private_access_receivers.py:48: def module_function_on_a_host(self: FixtureHost, cls: type[FixtureHost]) -> int
+bindings/host_private_access_unions: host_private_access_unions.py:12: class FixtureHost(Protocol)
+bindings/host_private_access_unions: host_private_access_unions.py:16: def read(plain: FixtureHost, optional: FixtureHost | None, quoted: 'FixtureHost | None', wrapped: Optional[FixtureHost], kind: type[FixtureHost], kinds: type[FixtureHost | None]) -> int
+bindings/import_binding_names: import_binding_names.py:11: def f()
+bindings/lambda_in_class_annotation_future: lambda_in_class_annotation_future.py:8: class M
+        x: Annotated[list[int], lambda: []] = []
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:9: def f(x: Annotated[int, lambda v: v]) -> None
+bindings/lambda_parameters_and_defaults: lambda_parameters_and_defaults.py:4: def f(callbacks)
+bindings/loop_and_with_targets: loop_and_with_targets.py:4: async def read(paths, opener)
+bindings/match_at_module: match_at_module.py:6: args = <match target>  [case [_, 'run', *args]]
+bindings/match_at_module: match_at_module.py:7: mode = 'run'  [case [_, 'run', *args]]
+    mode = None  [case _]
+bindings/match_captures: match_captures.py:10: class Color(enum.Enum)
+        RED = 1
+bindings/match_captures: match_captures.py:6: class Point
+        __match_args__ = ('x', 'y')
+bindings/match_captures: match_captures.py:14: def f(subject)
+bindings/match_mapping_rest_reads_keys: match_mapping_rest_reads_keys.py:6: class Color(enum.Enum)
+        RED = 1
+bindings/match_mapping_rest_reads_keys: match_mapping_rest_reads_keys.py:10: def f(p)
+bindings/name_mangling: name_mangling.py:6: class Parser
+        __slots__ = ('__context',)
+        def __init__(self, __context)
+bindings/nested_names: nested_names.py:8: class Outer
+        def method(self)
+        class Nested
+            attribute = [value for value in ()]
+bindings/nested_names: nested_names.py:19: def outer()
+bindings/nested_names: nested_names.py:22: def rebased()  [built by outer()]
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:14: def chain()
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:4: def outer()
+bindings/nonlocal_in_class_body: nonlocal_in_class_body.py:4: def f()
+bindings/reexport_forms: reexport_forms.py:10: Counter = collections.Counter
+bindings/reexport_forms: reexport_forms.py:15: Thing = form.sub.Thing
+bindings/reexport_forms: reexport_forms.py:8: json = json
+bindings/reexport_forms: reexport_forms.py:13: other leads to form.other, which nothing binds
+bindings/reexport_forms: reexport_forms.py:12: sibling leads to form.sibling, which nothing binds
+bindings/star_import_open_scope: star_import_open_scope.py:6: def f()
+bindings/star_import_open_scope: star_import_open_scope.py:3: a dynamic namespace write (star-import) the record cannot read
+bindings/walrus_in_comprehension_condition: walrus_in_comprehension_condition.py:4: def f(xs)
+bindings/walrus_in_comprehension_function: walrus_in_comprehension_function.py:4: def f(values)
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:4: FOUND = [last for v in VALUES if (last := v)]
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:5: GEN = sum(((total := v) for v in VALUES))
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:6: NESTED = [[(deep := w) for w in row] for row in [VALUES]]
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:3: VALUES = [1, 2, 3]
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:6: deep = w  [loop body; loop body]
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:4: last = v  [loop body]
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:5: total = v  [loop body]
+bindings/walrus_in_function: walrus_in_function.py:4: def f(values)
+bindings/with_parenthesized_and_for_else: with_parenthesized_and_for_else.py:4: def f(a, b)
+extents/annotations_without_future: annotations_without_future.py:7: def convert(value: int=1) -> int
+extents/clause_headers: clause_headers.py:4: def f(x, items)
+extents/code_token_lines: code_token_lines.py:4: def f()
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:40: class Holder
+        @decorate
+        def method(self)
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:19: def clauses(items, subject)
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:46: def continued(flag)
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:8: def decorate(function)
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:13: @decorate
+    def decorated(value)
+extents/decorated_definitions: decorated_definitions.py:13: @functools.total_ordering
+    class Ordered
+        @property
+        def value(self)
+extents/decorated_definitions: decorated_definitions.py:8: @functools.cache
+    @staticmethod
+    def cached()
+extents/decorated_definitions: decorated_definitions.py:20: @functools.wraps(cached)
+    async def waits()
+extents/elif_branch_on_base_side: elif_branch_on_base_side.py:4: class Base
+        def run(self, x)
+extents/elif_branch_on_base_side: elif_branch_on_base_side.py:13: class Child(Base)
+        def run(self, x)
+extents/folded_constants: folded_constants.py:8: EMPTY = ()
+extents/folded_constants: folded_constants.py:9: FLAG = not True
+extents/folded_constants: folded_constants.py:10: FORMATTED = f"{SIZE!r:>10}" f"{NAME}"
+extents/folded_constants: folded_constants.py:5: MASK = 1 << 4 | 1
+extents/folded_constants: folded_constants.py:4: NAME = 'ab'
+extents/folded_constants: folded_constants.py:3: SIZE = 2 ** 10
+extents/match_case_extents: match_case_extents.py:4: def f(command)
+extents/multi_line_statements: multi_line_statements.py:7: NAME = 'ab'
+extents/multi_line_statements: multi_line_statements.py:9: TEXT = 'line\ninside'
+extents/multi_line_statements: multi_line_statements.py:3: TOTAL = 1 + 2
+extents/multi_line_statements: multi_line_statements.py:13: def call(x)
+extents/nested_first_iterables: nested_first_iterables.py:7: def f(rows, kinds)
+extents/non_ascii_columns: non_ascii_columns.py:3: LABEL = '名前'
+extents/non_ascii_columns: non_ascii_columns.py:3: VALUE = lambda 値: 値('データ')
+extents/non_ascii_columns: non_ascii_columns.py:6: def f()
+extents/one_line_compound_statements: one_line_compound_statements.py:5: class C
+extents/one_line_compound_statements: one_line_compound_statements.py:4: def f()
+extents/one_line_compound_statements: one_line_compound_statements.py:6: x = 1  [if f()]
+    x = i  [loop body]
+extents/one_line_compound_statements: one_line_compound_statements.py:9: h leads to form.one_line_compound_statements.h, bound by with
+extents/one_line_compound_statements: one_line_compound_statements.py:7: i leads to form.one_line_compound_statements.i, bound by for
+extents/shared_lines: shared_lines.py:4: def outer(rows)
+extents/skippable_segments: skippable_segments.py:26: class Holder(dict, metaclass=type)
+        size = 1
+extents/skippable_segments: skippable_segments.py:8: @staticmethod
+    def pick(flag, value, default=1 if True else 2)
+extents/typing_only_parts: typing_only_parts.py:32: class Base
+        size: int = 1
+        @typing_extensions.override
+        @final
+        @staticmethod
+        def label(value: str) -> str
+extents/typing_only_parts: typing_only_parts.py:18: LIMIT = 2
+extents/typing_only_parts: typing_only_parts.py:24: @overload
+    def convert(value: int) -> int
+    @typing_extensions.overload
+    def convert(value: str) -> str
+    def convert(value: object) -> object
+imports/a6_conditional_bindings: a6_conditional_bindings.py:33: Callable = builtins.object
+imports/a6_conditional_bindings: a6_conditional_bindings.py:16: DEFAULT_TARGET = int(f"{sys.version_info.major}{sys.version_info.minor}")  [try]
+    DEFAULT_TARGET = 314  [except ValueError]
+imports/a6_conditional_bindings: a6_conditional_bindings.py:45: class JsonConfig  [built by _define_configs()]
+        strict = True
+imports/a6_conditional_bindings: a6_conditional_bindings.py:58: WATCH_BACKEND = 'polling'  [if sys.platform == 'win32']
+    WATCH_BACKEND = 'native'  [else of sys.platform == 'win32']
+imports/a6_conditional_bindings: a6_conditional_bindings.py:49: def get_safe_loader()
+imports/a6_conditional_bindings: a6_conditional_bindings.py:26: resolver_kind = graphql.TypeResolvers().kind  [try]
+    resolver_kind = graphql.TypeFields.kind  [except AttributeError]
+imports/calls_in_deferred_annotations: calls_in_deferred_annotations.py:12: loaded = import_module('pkg.loaded')
+imports/calls_in_deferred_annotations: calls_in_deferred_annotations.py:15: def local() -> None
+imports/dynamic_imports: dynamic_imports.py:18: absolute = __import__('email', globals(), level=0)
+imports/dynamic_imports: dynamic_imports.py:23: def by_name(name)
+imports/dynamic_imports: dynamic_imports.py:20: dotted = __import__('.leaf', globals())
+imports/dynamic_imports: dynamic_imports.py:13: escape = importlib.import_module('..far', 'pkg')
+imports/dynamic_imports: dynamic_imports.py:8: json = importlib.import_module('json')
+imports/dynamic_imports: dynamic_imports.py:16: leaf = __import__('leaf', globals(), level=1)
+imports/dynamic_imports: dynamic_imports.py:19: nowhere = __import__('leaf', level=1)
+imports/dynamic_imports: dynamic_imports.py:11: own = importlib.import_module('.child', __name__)
+imports/dynamic_imports: dynamic_imports.py:12: parent = importlib.import_module('..up', 'pkg.sub')
+imports/dynamic_imports: dynamic_imports.py:9: parser = load('pkg.parser')
+imports/dynamic_imports: dynamic_imports.py:10: sibling = importlib.import_module('.sibling', package='pkg')
+imports/dynamic_imports: dynamic_imports.py:14: unknown = importlib.import_module('.x', package=None)
+imports/dynamic_imports: dynamic_imports.py:17: upper = __import__('up', globals(), None, (), 2)
+imports/dynamic_imports: dynamic_imports.py:15: xml = __import__('xml.dom')
+imports/dynamic_imports: dynamic_imports.py:13: a dynamic namespace write (import-module) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:14: a dynamic namespace write (import-module) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:16: a dynamic namespace write (globals) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:17: a dynamic namespace write (import-module) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:17: a dynamic namespace write (globals) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:18: a dynamic namespace write (globals) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:19: a dynamic namespace write (import-module) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:20: a dynamic namespace write (import-module) the record cannot read
+imports/dynamic_imports: dynamic_imports.py:20: a dynamic namespace write (globals) the record cannot read
+imports/function_and_class_level_imports: function_and_class_level_imports.py:6: class Codec
+        def dump(self)
+imports/function_and_class_level_imports: function_and_class_level_imports.py:15: def outer()
+imports/function_and_class_level_imports: function_and_class_level_imports.py:7: a class member bound by import
+imports/import_dotted_as: import_dotted_as.py:8: def f()
+imports/import_error_fallback: import_error_fallback.py:23: bare = bare  [try]
+    bare = None  [except]
+imports/modules_in_written_order: modules_in_written_order/__init__.py:6: PUBLIC = (Pet, show)
+imports/modules_in_written_order: modules_in_written_order/Models.py:3: Pet = 'pet'
+imports/modules_in_written_order: modules_in_written_order/views.py:6: def show()
+imports/package_binding_before_submodule: package_binding_before_submodule/__init__.py:7: def tool()
+imports/package_binding_before_submodule: package_binding_before_submodule/helper.py:3: VALUE = 2
+imports/package_binding_before_submodule: package_binding_before_submodule/reader.py:5: PAIR = (tool, helper)
+imports/package_binding_before_submodule: package_binding_before_submodule/tool.py:3: VALUE = 1
+imports/platform_branches: platform_branches.py:8: WATCH_BACKEND = 'polling'  [if sys.platform == 'win32']
+    WATCH_BACKEND = 'native'  [else of sys.platform == 'win32']
+imports/redundant_local_imports: redundant_local_imports/cycle.py:4: NAME = module form.redundant_local_imports.loader
+imports/redundant_local_imports: redundant_local_imports/cycle.py:2: loader = module form.redundant_local_imports.loader
+imports/redundant_local_imports: redundant_local_imports/leaf.py:3: VALUE = 1
+imports/redundant_local_imports: redundant_local_imports/loader.py:60: class Holder
+        def method(self)
+imports/redundant_local_imports: redundant_local_imports/loader.py:48: def after_a_try()
+imports/redundant_local_imports: redundant_local_imports/loader.py:36: def closes_the_cycle()
+imports/redundant_local_imports: redundant_local_imports/loader.py:8: cycle = module form.redundant_local_imports.cycle
+imports/redundant_local_imports: redundant_local_imports/loader.py:54: def deferred()
+imports/redundant_local_imports: redundant_local_imports/loader.py:8: leaf = module form.redundant_local_imports.leaf
+imports/redundant_local_imports: redundant_local_imports/loader.py:67: def nested()
+imports/redundant_local_imports: redundant_local_imports/loader.py:14: newer = module form.redundant_local_imports.newer  [if sys.version_info >= (3, 12)]
+imports/redundant_local_imports: redundant_local_imports/loader.py:18: optional = module form.redundant_local_imports.optional  [try]
+    optional = None  [except ImportError]
+imports/redundant_local_imports: redundant_local_imports/loader.py:23: def redundant()
+imports/redundant_local_imports: redundant_local_imports/loader.py:30: def several()
+imports/redundant_local_imports: redundant_local_imports/loader.py:42: def under_guards()
+imports/redundant_local_imports: redundant_local_imports/loader.py:16: windows = module form.redundant_local_imports.windows  [else of sys.version_info >= (3, 12); if sys.platform == 'win32']
+imports/relative_imports: relative_imports.py:7: sibling leads to form.sibling, which nothing binds
+imports/submodule_and_parent_packages: submodule_and_parent_packages/__init__.py:6: leaf = module form.submodule_and_parent_packages.leaf
+imports/submodule_and_parent_packages: submodule_and_parent_packages/inner/deep.py:9: def load()
+imports/try_import_error_by_origin: try_import_error_by_origin.py:4: fast = fast  [try]
+    fast = None  [except Exception]
+imports/try_import_error_by_origin: try_import_error_by_origin.py:12: local_error = local_error  [try]
+    local_error = None  [except ImportError]
+imports/try_import_error_by_origin: try_import_error_by_origin.py:17: def shadowing()
+imports/try_import_error_by_origin: try_import_error_by_origin.py:8: value = int('x')  [try]
+    value = 0  [except ValueError]
+imports/type_checking_spellings: type_checking_spellings.py:9: TYPE = typing.TYPE_CHECKING
+imports/type_checking_spellings: type_checking_spellings.py:24: def local()
+imports/version_branches: version_branches.py:16: def later()
+references/a6_lazy_exports: a6_lazy_exports/table.py:46: class Chosen  [if LIMIT]
+        # identity form.a6_lazy_exports._values.Base
+    class Chosen  [else of LIMIT]
+        # identity form.a6_lazy_exports.table.Other
+references/a6_lazy_exports: a6_lazy_exports/table.py:51: class Public(Chosen)
+        # identity form.elsewhere.Public
+references/a6_lazy_exports: a6_lazy_exports/table.py:36: class Remote  [lazy]
+        # identity form.a6_lazy_exports._values.Remote
+references/a6_lazy_exports: a6_lazy_exports/table.py:38: alias = 16  [lazy]
+references/a6_lazy_exports: a6_lazy_exports/table.py:39: computed = lazy LIMIT * 2  [lazy]
+references/a6_lazy_exports: a6_lazy_exports/table.py:41: dumps = json.dumps  [lazy]
+references/a6_lazy_exports: a6_lazy_exports/table.py:34: made = lazy _load_class()  [lazy]
+        | class Built(Base)
+        |     size: int = LIMIT
+        |     def describe(self) -> str
+        | def helper()
+        | return helper()
+references/a6_lazy_exports: a6_lazy_exports/table.py:35: values = module form.a6_lazy_exports._values  [lazy]
+references/a6_lazy_exports: a6_lazy_exports/table.py:11: Hidden leads to nothing that runs
+references/a6_lazy_exports: a6_lazy_exports/_values.py:20: a lazy table that is no literal dict with string keys
+references/a6_lazy_exports: a6_lazy_exports/table.py:37: Missing leads to form.a6_lazy_exports._values.Missing, which nothing binds
+references/a6_lazy_exports: a6_lazy_exports/table.py:40: the lazy entry of broken is no module path, loader, name or lambda
+references/a6_lazy_exports: a6_lazy_exports/table.py:56: a __module__ the record cannot read: str(LIMIT)
+references/a6_lazy_exports: a6_lazy_exports/table.py:51: a base the record cannot follow: Chosen
+references/aliased_library_names: aliased_library_names.py:9: TC = typing.TYPE_CHECKING
+references/aliased_library_names: aliased_library_names.py:15: @no_check
+    def f(x)
+references/aliased_library_names: aliased_library_names.py:10: first = second
+references/aliased_library_names: aliased_library_names.py:8: no_check = typing.no_type_check
+references/aliased_library_names: aliased_library_names.py:11: second = first
+references/aliases_of_names_bound_twice: aliases_of_names_bound_twice.py:14: load = loader
+references/aliases_of_names_bound_twice: aliases_of_names_bound_twice.py:10: loader = importlib.import_module  [if sys.platform == 'win32']
+    loader = sys.exit  [else of sys.platform == 'win32']
+references/aliases_of_names_bound_twice: aliases_of_names_bound_twice.py:17: read = registry
+references/aliases_of_names_bound_twice: aliases_of_names_bound_twice.py:15: registry = sys.modules
+    registry = {}
+references/all_augmented: all_augmented.py:6: join = os.path.join
+references/all_augmented: all_augmented.py:10: __all__ is changed by call:extend
+references/all_augmented: all_augmented.py:8: sep leads to form.all_augmented.sep, which nothing binds
+references/allowlist_entries_by_statement: allowlist_entries_by_statement.py:22: EXEMPT = ['y']
+        then EXEMPT.extend(['z'])
+references/allowlist_entries_by_statement: allowlist_entries_by_statement.py:18: FROZEN = frozenset({'x', 'x'})
+references/allowlist_entries_by_statement: allowlist_entries_by_statement.py:10: JUSTIFIED = {'g': ('a', 'b')}
+        then JUSTIFIED['h'] = ('c', 'd')
+        then JUSTIFIED['g'] += ('e',)
+references/annotation_modes: annotation_modes.py:11: class Box
+        size: int
+references/annotation_modes: annotation_modes.py:15: def f(x: int) -> str
+references/annotation_modes: annotation_modes.py:8: top: int = 1
+references/annotations_and_string_reads: annotations_and_string_reads.py:11: Alias: TypeAlias = 'Mapping[str, Later]'
+references/annotations_and_string_reads: annotations_and_string_reads.py:19: class Later
+        field: 'Later'
+        pending: int
+        def method(self, other: 'Later', *, flag: bool=True) -> 'Mapping[str, int]'
+references/annotations_and_string_reads: annotations_and_string_reads.py:14: broken: 'not valid(' = None
+references/annotations_and_string_reads: annotations_and_string_reads.py:13: chosen: Literal['value', 'other'] = 'value'
+references/annotations_and_string_reads: annotations_and_string_reads.py:16: letter: 'Later\u0378' = None
+references/annotations_and_string_reads: annotations_and_string_reads.py:12: plain: 'Later | None' = None
+references/annotations_and_string_reads: annotations_and_string_reads.py:15: spaced: ' Later' = None
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:7: class Parser
+        kind = 'json'
+        def parse(self)
+references/backend_strings_and_modules: backend_strings_and_modules.py:14: BACKEND_MODULE = 'datamodel_code_generator.model.dataclass'
+references/backend_strings_and_modules: backend_strings_and_modules.py:15: BACKEND_MODULE_ALIAS = form.backend_strings_and_modules.BACKEND_MODULE
+references/backend_strings_and_modules: backend_strings_and_modules.py:17: OVERWRITTEN_BACKEND_MODULE = 'datamodel_code_generator.model.dataclass'
+    OVERWRITTEN_BACKEND_MODULE = None
+references/backend_strings_and_modules: backend_strings_and_modules.py:16: TYPED_BACKEND_MODULE_ALIAS = form.backend_strings_and_modules.BACKEND_MODULE
+references/backend_strings_and_modules: backend_strings_and_modules.py:45: def build_backend(value)
+references/backend_strings_and_modules: backend_strings_and_modules.py:41: async def inspect_async_backend(value)
+references/backend_strings_and_modules: backend_strings_and_modules.py:32: def inspect_backend(value)
+references/backend_strings_and_modules: backend_strings_and_modules.py:49: def inspect_output_metadata(model, python_version)
+references/backend_strings_and_modules: backend_strings_and_modules.py:83: def inspect_typed_dict_requirements(python_version)
+references/backend_strings_and_modules: backend_strings_and_modules.py:22: def load_backends()
+references/backend_strings_and_modules: backend_strings_and_modules.py:28: def load_private_facade_helper()
+references/backend_strings_and_modules: backend_strings_and_modules.py:67: def neutral_output_capabilities(model, field)
+references/backend_strings_and_modules: backend_strings_and_modules.py:60: def select_output_policy()
+references/backend_strings_and_modules: backend_strings_and_modules.py:18: a dynamic namespace write (import-module) the record cannot read
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:3: TABLE = tuple(globals().items())
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:10: def module_rebinding()
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:14: open = None
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:6: def shadowed(globals)
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:3: a dynamic namespace write (globals) the record cannot read
+references/builtins_of_some_platforms_and_versions: builtins_of_some_platforms_and_versions.py:16: CYCLE = builtins.ImportCycleError  [if sys.version_info >= (3, 15)]
+references/builtins_of_some_platforms_and_versions: builtins_of_some_platforms_and_versions.py:14: EMPTY = frozendict()  [if sys.version_info >= (3, 15)]
+references/builtins_of_some_platforms_and_versions: builtins_of_some_platforms_and_versions.py:11: FINALIZING = (PythonFinalizationError, _IncompleteInputError)  [if sys.version_info >= (3, 13)]
+references/builtins_of_some_platforms_and_versions: builtins_of_some_platforms_and_versions.py:17: LAZY = builtins.__lazy_import__  [if sys.version_info >= (3, 15)]
+references/builtins_of_some_platforms_and_versions: builtins_of_some_platforms_and_versions.py:15: MISSING = sentinel('MISSING')  [if sys.version_info >= (3, 15)]
+references/builtins_of_some_platforms_and_versions: builtins_of_some_platforms_and_versions.py:6: NATIVE_ERRORS = (WindowsError, OSError)  [if sys.platform == 'win32']
+    NATIVE_ERRORS = (OSError,)  [else of sys.platform == 'win32']
+references/call_arguments_by_parameter: call_arguments_by_parameter.py:9: def cut(ref, args, options)
+references/check_main_calls: check_main_calls.py:27: def helper()
+references/check_main_calls: check_main_calls.py:23: def test_discarded()
+references/check_main_calls: check_main_calls.py:14: def test_fixture(tmp_path)
+references/check_main_calls: check_main_calls.py:31: def test_nested()
+references/check_main_calls: check_main_calls.py:18: def test_rooted()
+references/check_main_calls: check_main_calls.py:8: def test_tree()
+references/class_body_comprehension: class_body_comprehension.py:6: class C
+        n = 3
+        xs = [i * n for i in range(n)]
+        ok = any((v > n for v in xs))
+references/class_body_comprehension: class_body_comprehension.py:3: n = 0
+references/class_body_reads_function_locals: class_body_reads_function_locals.py:4: def build(kind)
+references/class_body_reads_later_binding: class_body_reads_later_binding.py:6: class C
+        y = x
+        x = 'class'
+references/class_body_reads_later_binding: class_body_reads_later_binding.py:3: x = 'module'
+references/class_body_rebinds_global: class_body_rebinds_global.py:6: class C
+references/class_cell_and_super: class_cell_and_super.py:4: class Base
+        def name(self)
+references/class_cell_and_super: class_cell_and_super.py:9: class Child(Base)
+        def name(self)
+        def nested(self)
+        def explicit(self, __class__)
+        def enclosing(self)
+references/class_scope_skipped: class_scope_skipped.py:6: class C
+        y = 'class'
+        items = [1, 2]
+        z = [y for _ in items]
+        first = [v for v in items]
+        f = lambda self: y
+        def m(self)
+references/class_scope_skipped: class_scope_skipped.py:3: y = 'global'
+references/comprehension_in_method_default: comprehension_in_method_default.py:4: class C
+        size = 3
+        def m(self, d=[i for i in range(size)])
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:4: def comprehension(field, models)
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:18: def except_name(field)
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:8: def match_capture(field, value)
+references/conditional_expression_guards: conditional_expression_guards.py:14: CONFIG = object()
+references/conditional_expression_guards: conditional_expression_guards.py:22: chained = CONFIG and sys.platform != 'win32' and importlib.import_module('resource')
+references/conditional_expression_guards: conditional_expression_guards.py:17: fcntl = sys.platform != 'win32' and importlib.import_module('fcntl')
+references/conditional_expression_guards: conditional_expression_guards.py:19: late = importlib.import_module('fcntl') if CONFIG else None
+references/conditional_expression_guards: conditional_expression_guards.py:20: newer = importlib.import_module('resource') if sys.version_info >= (3, 12) else None
+references/conditional_expression_guards: conditional_expression_guards.py:18: posix = sys.platform == 'win32' or importlib.import_module('fcntl')
+references/conditional_expression_guards: conditional_expression_guards.py:16: resource = None if sys.platform == 'win32' else importlib.import_module('resource')
+references/conditional_expression_guards: conditional_expression_guards.py:21: typed = int if TYPE_CHECKING else str
+references/consumers_of_expressions: consumers_of_expressions.py:28: class Built(dict, metaclass=type)
+        entries = list(map(str, range(3)))
+references/consumers_of_expressions: consumers_of_expressions.py:12: COPY = dict(globals())
+references/consumers_of_expressions: consumers_of_expressions.py:20: FOUND = globals().get('COPY')
+references/consumers_of_expressions: consumers_of_expressions.py:11: KEYS = [key for key in globals().keys()]
+references/consumers_of_expressions: consumers_of_expressions.py:17: LOOKUP = globals()['REGISTRY']
+references/consumers_of_expressions: consumers_of_expressions.py:14: MERGED = {**globals()}
+references/consumers_of_expressions: consumers_of_expressions.py:15: OPTIONS = dict(**vars())
+references/consumers_of_expressions: consumers_of_expressions.py:8: REGISTRY = {}
+        then REGISTRY[_name] = 1
+references/consumers_of_expressions: consumers_of_expressions.py:16: SORTED = sorted(REGISTRY, key=str.lower)
+references/consumers_of_expressions: consumers_of_expressions.py:13: SPREAD = [*globals()]
+references/consumers_of_expressions: consumers_of_expressions.py:19: TOTAL = sum((1 for _ in globals()))
+references/consumers_of_expressions: consumers_of_expressions.py:23: async def stream(source)
+references/consumers_of_expressions: consumers_of_expressions.py:9: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:11: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:12: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:13: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:14: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:15: a dynamic namespace write (vars) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:17: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:18: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:19: a dynamic namespace write (globals) the record cannot read
+references/consumers_of_expressions: consumers_of_expressions.py:20: a dynamic namespace write (globals) the record cannot read
+references/decorator_origins: decorator_origins.py:21: @manager
+    def aliased()
+references/decorator_origins: decorator_origins.py:16: @asynccontextmanager
+    async def arecorded()
+references/decorator_origins: decorator_origins.py:26: @cached(maxsize=1)
+    def cached_value()
+references/decorator_origins: decorator_origins.py:7: manager = contextlib.contextmanager
+references/decorator_origins: decorator_origins.py:11: @contextlib.contextmanager
+    def recorded()
+references/entrypoint_parser_private_access: entrypoint_parser_private_access.py:5: PRIVATE_ATTRIBUTE = '_formatter_cwd'
+references/entrypoint_parser_private_access: entrypoint_parser_private_access.py:8: def mutate_parser(parser, retry_parser, worker_parser_instance)
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:5: EXPECTED = Path(__file__).parent / 'data' / 'expected'
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:6: TEXTS = [path.read_text() for path in [EXPECTED / 'f.txt']]
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:9: def test_reads()
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:16: pytestmark = pytest.mark.flaky(reruns=3)
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:33: def test_local()
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:20: @retry(max_runs=3)
+    def test_marked()
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:27: def test_parameter(flaky, nap)
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py:20: def group()
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py:10: def match_it(value, /, *, other=None)
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py:29: def walrus(items)
+references/global_declared_in_middle_scope: global_declared_in_middle_scope.py:6: def a()
+references/global_declared_in_middle_scope: global_declared_in_middle_scope.py:3: x = 0
+references/globals_registry_shapes: globals_registry_shapes.py:16: COUNT = len(globals())
+references/globals_registry_shapes: globals_registry_shapes.py:11: ITEMS = [*builtins.globals().values()]
+references/globals_registry_shapes: globals_registry_shapes.py:13: KEYS = sorted(namespace().keys())
+references/globals_registry_shapes: globals_registry_shapes.py:14: LOOKUP = globals()['LOOKUP']
+references/globals_registry_shapes: globals_registry_shapes.py:12: SPREAD = {**namespace()}
+references/globals_registry_shapes: globals_registry_shapes.py:31: def method_in_hook()
+references/globals_registry_shapes: globals_registry_shapes.py:27: def shadowed(globals)
+references/globals_registry_shapes: globals_registry_shapes.py:9: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:11: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:12: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:13: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:14: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:15: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:16: a dynamic namespace write (globals) the record cannot read
+references/globals_registry_shapes: globals_registry_shapes.py:9: key leads to form.globals_registry_shapes.key, bound by for
+references/hash_split_receivers: hash_split_receivers.py:9: def builtin(ref)
+references/hash_split_receivers: hash_split_receivers.py:17: def local(ref)
+references/hash_split_receivers: hash_split_receivers.py:22: def others(ref, other)
+references/hash_split_receivers: hash_split_receivers.py:13: def parameter(str, ref)
+references/header_parts_evaluated_outside: header_parts_evaluated_outside.py:4: def factory(decorate, default, base, meta, rows, kind)
+references/keyword_separator: keyword_separator.py:7: def cut(ref)
+references/lambda_closure_in_comprehension: lambda_closure_in_comprehension.py:4: def f(xs)
+references/late_attribute_writes: late_attribute_writes.py:4: class A
+references/late_attribute_writes: late_attribute_writes.py:7: class B
+        PARSER_CONSTRUCTOR = staticmethod(print)  [set in form.late_attribute_writes]
+references/late_attribute_writes: late_attribute_writes.py:11: value leads to form.late_attribute_writes.value, bound by for
+references/lazy_table_module_getattr: lazy_table_module_getattr.py:9: COMPLEX_TYPES = frozenset({'record', 'enum', 'array'})
+references/legacy_row_reading_lines: legacy_row_reading_lines/reader.py:5: AT_IMPORT = form.legacy_row_reading_lines.rows.KEPT
+references/legacy_row_reading_lines: legacy_row_reading_lines/reader.py:8: def read(value: str) -> str
+references/legacy_row_reading_lines: legacy_row_reading_lines/reader.py:14: def read_attribute() -> str
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:44: ATTRIBUTE_READ = 'legacy-attribute-constant'
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:6: DOCUMENTED: TypeAlias = Literal['new', 'old']
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:5: KEPT = 'legacy-constant'
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:11: class Policy
+        row = 'legacy-class-attribute'
+        def choose(self, row: str) -> str
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:43: TABLE = {'legacy-tabled': 'a table of rows names no line'}
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:8: UNREAD = 'legacy-unread-constant'
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:55: def branch(row: str, rows: frozenset[str]) -> str
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:47: def collect(flag: bool) -> frozenset[str]
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:20: def decide(row: str, flag: bool) -> str
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:33: def documented(row: str='legacy-default') -> str
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:39: def empty() -> None
+references/legacy_row_reading_lines: legacy_row_reading_lines/rows.py:63: def hand(row: Literal['new', 'legacy-annotated']='new') -> str
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:14: APPENDED = []
+        then APPENDED.append(1)
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:18: CALLED = sorted(['b', 'a'])
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:11: FINAL: Final = {'k': None}
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:21: MALFORMED = dict([('ok', 1), ('bad', 2, 3)])
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:10: NEGATIVE = (-1, +2.5)
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:9: NESTED = {'x': frozenset({'y'}), 'z': [1, (2, 3)], 'w': set(), 'v': dict()}
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:26: OPAQUE = MappingProxyType(PLAIN)
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:8: PLAIN = ('a', 'b')
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:25: READ_ONLY = MappingProxyType({'set_fields': 'copied'})
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:16: REBOUND = 1
+    REBOUND = 2
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:19: STARRED = {**PLAIN}
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:22: TUPLE_CALL = tuple(['a'])
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:20: UNHASHABLE = {[1]: 2}
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:12: WRITTEN = {'a': 1}
+        then WRITTEN['b'] = 2
+references/mangled_module_global: mangled_module_global.py:6: class C
+        def m(self)
+references/method_receiver_by_position: method_receiver_by_position.py:7: class C
+        def plain(self)
+        def renamed(this)
+        def positional_only(self, /, value)
+        @classmethod
+        def build(cls)
+        @staticmethod
+        def make(other)
+        def closure(self)
+        def none()
+references/nested_scope_shadows: nested_scope_shadows.py:4: def outer(result, error, json)
+references/output_policy_by_origin: output_policy_by_origin.py:9: class Config
+        output_type = output_backend.TypedDict
+        literal_type = LiteralType
+references/output_policy_by_origin: output_policy_by_origin.py:17: OUTPUT_FAMILY = datamodel_code_generator.DataModelType.MsgspecStruct
+references/output_policy_by_origin: output_policy_by_origin.py:18: OUTPUT_NAMING = datamodel_code_generator.reference.ModelType.PYDANTIC
+references/output_policy_by_origin: output_policy_by_origin.py:21: def rewrite_schema(schema)
+references/output_policy_by_origin: output_policy_by_origin.py:27: def rewrite_shared_schema(schema)
+references/parameter_shadows_global: parameter_shadows_global.py:7: def f(_CACHE)
+references/parameter_shadows_global: parameter_shadows_global.py:11: def g()
+references/parser_pass_public_import: parser_pass_public_import.py:5: generation = datamodel_code_generator.parser.generation
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:15: class Parser
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:28: class Store
+        @decorate(FinalFacts())
+        def seal(self, facts=FinalFacts())
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:11: def decorate(value)
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:34: def outside(parser, getattr)
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:40: def reaches_by_name(parser)
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:45: def warns(level)
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:56: async def warns_later()
+references/portable_names_by_key: portable_names_by_key.py:11: CASES = {'ok': {'fine': 'x', 'bad:name': 'y'}, 'other': {'quote"': 'z'}}
+references/portable_names_by_key: portable_names_by_key.py:13: KEY = 'var:key'
+references/portable_names_by_key: portable_names_by_key.py:12: UNUSED = {'not:passed': 1}
+references/portable_names_by_key: portable_names_by_key.py:21: def count(files)
+references/portable_names_by_key: portable_names_by_key.py:26: def run(root: Path, case)
+references/portable_names_by_key: portable_names_by_key.py:32: def run_through_a_name(root: Path)
+references/portable_names_by_key: portable_names_by_key.py:16: def write(root, files)
+references/portable_names_in_paths: portable_names_in_paths.py:34: FILES = [('a:b.json', '{}'), ('ok.json', '{}')]
+references/portable_names_in_paths: portable_names_in_paths.py:35: NAME = 'c:d.json'
+references/portable_names_in_paths: portable_names_in_paths.py:36: RENAMED = form.portable_names_in_paths.NAME
+references/portable_names_in_paths: portable_names_in_paths.py:17: def build(root, name)
+references/portable_names_in_paths: portable_names_in_paths.py:39: def from_variables(root, value)
+references/portable_names_in_paths: portable_names_in_paths.py:55: @pytest.mark.parametrize('name', ['g:h.json', 'nul.json', 'fine.json'])
+    def test_parametrized(tmp_path, name)
+references/portable_names_in_paths: portable_names_in_paths.py:60: @pytest.mark.parametrize(('name', 'text'), [pytest.param('k:l.json', 'x'), ('ok.json', 'y')])
+    def test_parametrized_pairs(tmp_path, name, text)
+references/posix_only_across_modules: posix_only_across_modules/cases.py:35: @needs('posix')
+    def test_marked()
+references/posix_only_across_modules: posix_only_across_modules/cases.py:30: def test_package_only()
+references/posix_only_across_modules: posix_only_across_modules/cases.py:22: def test_passed_on(pool)
+references/posix_only_across_modules: posix_only_across_modules/cases.py:26: def test_portable_function()
+references/posix_only_across_modules: posix_only_across_modules/cases.py:18: def test_through_a_class()
+references/posix_only_across_modules: posix_only_across_modules/cases.py:14: def test_through_a_from_import()
+references/posix_only_across_modules: posix_only_across_modules/cases.py:10: def test_through_the_module()
+references/posix_only_across_modules: posix_only_across_modules/script.py:22: class Runner
+        def start(self)
+references/posix_only_across_modules: posix_only_across_modules/script.py:14: def main(argv)
+references/posix_only_across_modules: posix_only_across_modules/script.py:18: def portable(argv)
+references/posix_only_across_modules: posix_only_across_modules/script.py:10: def run(argv)
+references/posix_only_across_modules: posix_only_across_modules/script.py:6: def worker()
+references/posix_only_at_import: posix_only_at_import.py:31: class Holder
+        signal = KILL
+        def method(self)
+references/posix_only_at_import: posix_only_at_import.py:28: LATE = importlib.import_module('resource')
+references/posix_only_at_import: posix_only_at_import.py:26: OTHER = os.mkfifo
+references/posix_only_at_import: posix_only_at_import.py:25: PIPE = os.mkfifo
+references/posix_only_at_import: posix_only_at_import.py:27: TEXT = 'os.fork'
+references/posix_only_at_import: posix_only_at_import.py:38: def lazy()
+references/posix_only_at_import: posix_only_at_import.py:21: limits = resource  [try]
+    limits = None  [except ImportError]
+references/posix_only_at_import: posix_only_at_import.py:44: def shadowed(os)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/cases.py:10: def test_asks_for_a_fixture_that_asks(pipe_user)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/cases.py:6: def test_asks_for_the_fixture(pipe)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/cases.py:20: @needs('posix')
+    def test_marked(pipe)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/cases.py:24: def test_portable_fixture(portable)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/cases.py:15: @pytest.mark.usefixtures('pipe')
+    def test_usefixtures()
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/cases.py:28: def test_without_fixtures()
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/conftest.py:7: @pytest.fixture
+    def pipe(tmp_path)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/conftest.py:13: @pytest.fixture
+    def pipe_user(pipe)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/conftest.py:18: @pytest.fixture
+    def portable(tmp_path)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/conftest.py:23: @pytest.fixture
+    def unused(tmp_path)
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/quiet/cases.py:4: def test_autouse_of_the_folder()
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/quiet/cases.py:9: @needs('linux')
+    def test_marked()
+references/posix_only_fixtures_by_pytest: posix_only_fixtures_by_pytest/quiet/conftest.py:7: @pytest.fixture(autouse=True)
+    def pipe_everywhere(tmp_path)
+references/posix_only_in_tests: posix_only_in_tests.py:183: class TestAutouse
+        def test_runs_after_the_fixture(self)
+references/posix_only_in_tests: posix_only_in_tests.py:160: class TestInherits(TestSelf)
+        def test_inherited_method_called_on_self(self)
+references/posix_only_in_tests: posix_only_in_tests.py:100: class TestMarked
+        pytestmark = needs('posix')
+        def test_method(self)
+references/posix_only_in_tests: posix_only_in_tests.py:107: class TestPlain
+        def test_method(self)
+references/posix_only_in_tests: posix_only_in_tests.py:146: class TestSelf
+        def test_method_called_on_self(self)
+        def test_portable_method_called_on_self(self)
+references/posix_only_in_tests: posix_only_in_tests.py:176: class TestUsefixturesMark
+        pytestmark = pytest.mark.usefixtures('pipe_dir')
+        def test_pytestmark(self)
+references/posix_only_in_tests: posix_only_in_tests.py:116: fcntl = fcntl  [try]
+    fcntl = None  [except ImportError]
+references/posix_only_in_tests: posix_only_in_tests.py:130: def lock(handle)
+references/posix_only_in_tests: posix_only_in_tests.py:125: def lock_when_present(handle)
+references/posix_only_in_tests: posix_only_in_tests.py:23: def make_pipe(path)
+references/posix_only_in_tests: posix_only_in_tests.py:121: def peak()
+references/posix_only_in_tests: posix_only_in_tests.py:32: @pytest.fixture
+    def pipe_dir(tmp_path)
+references/posix_only_in_tests: posix_only_in_tests.py:66: def test_fixture(pipe_dir)
+references/posix_only_in_tests: posix_only_in_tests.py:70: def test_from_import()
+references/posix_only_in_tests: posix_only_in_tests.py:83: def test_guarded()
+references/posix_only_in_tests: posix_only_in_tests.py:134: def test_guarded_import_does_not_guard_its_readers()
+references/posix_only_in_tests: posix_only_in_tests.py:47: @needs('linux')
+    def test_linux()
+references/posix_only_in_tests: posix_only_in_tests.py:76: def test_nested()
+references/posix_only_in_tests: posix_only_in_tests.py:52: @needs('symlinks', 'type-statements')
+    def test_one_capability_excludes_windows()
+references/posix_only_in_tests: posix_only_in_tests.py:42: @needs('posix')
+    def test_posix()
+references/posix_only_in_tests: posix_only_in_tests.py:57: @needs('type-statements')
+    def test_python_version_is_no_platform()
+references/posix_only_in_tests: posix_only_in_tests.py:142: def test_read_of_a_name_that_may_be_none()
+references/posix_only_in_tests: posix_only_in_tests.py:138: def test_read_under_a_test_of_the_name()
+references/posix_only_in_tests: posix_only_in_tests.py:92: def test_shadowed(os)
+references/posix_only_in_tests: posix_only_in_tests.py:88: def test_string()
+references/posix_only_in_tests: posix_only_in_tests.py:62: @needs('gpu')
+    def test_unknown_capability()
+references/posix_only_in_tests: posix_only_in_tests.py:37: def test_unmarked()
+references/posix_only_in_tests: posix_only_in_tests.py:166: @pytest.mark.usefixtures('pipe_dir')
+    def test_usefixtures_decorator()
+references/posix_only_in_tests: posix_only_in_tests.py:172: @needs('posix')
+    @pytest.mark.usefixtures('pipe_dir')
+    def test_usefixtures_marked()
+references/posix_only_in_tests: posix_only_in_tests.py:27: def through_a_helper(path)
+references/posix_only_in_tests: posix_only_in_tests.py:96: def unused_helper()
+references/posonly_receiver_members: posonly_receiver_members.py:7: class C
+        def __init__(self, /, value)
+        @staticmethod
+        def make(other)
+        self.value
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:43: class Holder
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:10: _LISTED = 5
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:6: _UNUSED = 1
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:39: def annotated(value: _TYPE) -> None
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:34: def bump()
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:30: def comprehension()
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:47: def late()
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:22: def reader()
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:26: def shadow(_SHADOWED)
+references/private_names_by_string_argument: private_names_by_string_argument.py:9: def read(obj, suffix)
+references/qualified_enum_receivers: qualified_enum_receivers.py:10: FIRST = datamodel_code_generator.enums.DataModelType.PydanticV2BaseModel
+references/qualified_enum_receivers: qualified_enum_receivers.py:11: SECOND = datamodel_code_generator.enums.DataModelType.PydanticV2BaseModel
+references/reexport_chain_across_modules: reexport_chain_across_modules/__init__.py:7: DEFAULT_LINE_LENGTH = 88
+references/reexport_chain_across_modules: reexport_chain_across_modules/__init__.py:11: One = form.reexport_chain_across_modules.format.LiteralType.One
+references/reexport_chain_across_modules: reexport_chain_across_modules/__init__.py:6: sub = module form.reexport_chain_across_modules.sub
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:15: Choice = Versioned
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:8: DEFAULT_LINE_LENGTH = form.reexport_chain_across_modules.DEFAULT_LINE_LENGTH
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:9: class LiteralType(enum.Enum)
+        # identity form.reexport_chain_across_modules._format_types.LiteralType
+        One = 'one'
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:10: SEP = os.sep
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:12: Versioned = form.reexport_chain_across_modules.format.LiteralType  [if sys.version_info >= (3, 12)]
+    Versioned = None  [else of sys.version_info >= (3, 12)]
+references/reexport_chain_across_modules: reexport_chain_across_modules/other.py:6: def late()
+references/reexport_chain_across_modules: reexport_chain_across_modules/sub/__init__.py:5: READER = importlib.import_module('.reader', __name__)
+references/reexport_chain_across_modules: reexport_chain_across_modules/sub/reader.py:3: VALUE = 1
+references/reexported_names_by_origin: reexported_names_by_origin.py:10: BACKEND = 'datamodel_code_generator.model.pydantic_v2'
+references/reexported_names_by_origin: reexported_names_by_origin.py:11: OUTPUT_FAMILY = datamodel_code_generator.base_config.DataModelType.PydanticV2BaseModel
+references/reexported_names_by_origin: reexported_names_by_origin.py:14: def load()
+references/reference_backend_definitions: reference_backend_definitions.py:11: BACKEND_MODULE = 'datamodel_code_generator.model.pydantic_base'
+references/reference_backend_definitions: reference_backend_definitions.py:12: EXTERNAL_BACKEND_MODULE = 'msgspec.json'
+references/reference_backend_definitions: reference_backend_definitions.py:15: class PydanticFieldNameResolver
+references/reference_backend_definitions: reference_backend_definitions.py:19: def build_dataclass_resolver()
+references/reference_backend_definitions: reference_backend_definitions.py:23: def load_backend()
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py:13: def aliased()
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py:9: package = 'neutral'
+    package = 'datamodel_code_generator.model'
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py:17: def two_packages()
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:10: CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:19: class NeutralImporter
+        def import_module(self, module: str) -> None
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:12: load_module = importlib.import_module
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:25: neutral_loader = form.shared_model_dynamic_import_neutral.neutral_provider.import_module
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:24: neutral_provider = NeutralImporter()
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:15: def use_shadowed_alias(load_module: Callable[[str], None]) -> None
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:29: def use_shadowed_provider(import_provider: NeutralImporter) -> None
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:12: CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:49: class ReboundImporter
+        def import_module(self, module: str) -> None
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:21: annotated_provider = importlib
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:35: enabled = True
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:42: def inspect_conditional_provider() -> None
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:29: def inspect_forward_provider() -> None
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:14: load_module = importlib.import_module
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:19: provider_alias = importlib
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:23: provider_import = builtins.__import__
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:17: provider_load_module = importlib.import_module
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:46: rebound_provider = importlib
+    rebound_provider = ReboundImporter()
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:15: a dynamic namespace write (import-module) the record cannot read
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:16: a dynamic namespace write (import-module) the record cannot read
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:18: a dynamic namespace write (import-module) the record cannot read
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:20: a dynamic namespace write (import-module) the record cannot read
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:22: a dynamic namespace write (import-module) the record cannot read
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:24: a dynamic namespace write (import-module) the record cannot read
+references/shared_model_importlib_dunder_import: shared_model_importlib_dunder_import.py:8: CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/shared_model_importlib_dunder_import: shared_model_importlib_dunder_import.py:10: a dynamic namespace write (import-module) the record cannot read
+references/skip_markers_by_origin: skip_markers_by_origin.py:15: REFERENCE = 'pytest.mark.skipif'
+references/skip_markers_by_origin: skip_markers_by_origin.py:24: class TestCase(ut.TestCase)
+        skip = staticmethod(lambda reason: reason)
+        @ut.skipIf(True, 'never')
+        def test_method(self)
+references/skip_markers_by_origin: skip_markers_by_origin.py:19: @when(sys.platform == 'win32', reason='POSIX only')
+    def test_aliased()
+references/skip_markers_by_origin: skip_markers_by_origin.py:37: def test_local()
+references/skip_markers_by_origin: skip_markers_by_origin.py:32: def test_parameter(skip, mark)
+references/skip_markers_by_origin: skip_markers_by_origin.py:14: when = pytest.mark.skipif
+references/star_import_hides_builtins: star_import_hides_builtins.py:10: TABLE = [value for value in globals().values()]
+references/star_import_hides_builtins: star_import_hides_builtins.py:13: def cut(ref)
+references/star_import_hides_builtins: star_import_hides_builtins.py:17: def shadowed(str, ref)
+references/star_import_hides_builtins: star_import_hides_builtins.py:6: a dynamic namespace write (star-import) the record cannot read
+references/star_import_hides_builtins: star_import_hides_builtins.py:8: key leads to form.star_import_hides_builtins.key, bound by for
+references/star_import_hides_dynamic_imports: star_import_hides_dynamic_imports.py:9: CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/star_import_hides_dynamic_imports: star_import_hides_dynamic_imports.py:14: def shadowed(import_module)
+references/star_import_hides_dynamic_imports: star_import_hides_dynamic_imports.py:7: a dynamic namespace write (star-import) the record cannot read
+references/store_writes_through_bindings: store_writes_through_bindings.py:28: class Holder
+        shared = JsonSchemaObject.model_validate({})
+        def method(self)
+references/store_writes_through_bindings: store_writes_through_bindings.py:83: def annotation_keeps_the_alias(field)
+references/store_writes_through_bindings: store_writes_through_bindings.py:95: def bound_twice(field, other)
+references/store_writes_through_bindings: store_writes_through_bindings.py:60: def capture_rebinds(field, subject)
+references/store_writes_through_bindings: store_writes_through_bindings.py:21: def closure_keeps_the_schema_object(obj: JsonSchemaObject)
+references/store_writes_through_bindings: store_writes_through_bindings.py:12: def closure_writes_the_alias(field)
+references/store_writes_through_bindings: store_writes_through_bindings.py:49: def comprehension_target(field, items)
+references/store_writes_through_bindings: store_writes_through_bindings.py:74: def def_rebinds(field)
+references/store_writes_through_bindings: store_writes_through_bindings.py:67: def import_rebinds(field)
+references/store_writes_through_bindings: store_writes_through_bindings.py:89: def in_place_operator_keeps_the_alias(field)
+references/store_writes_through_bindings: store_writes_through_bindings.py:44: def lambda_parameter(field, items)
+references/store_writes_through_bindings: store_writes_through_bindings.py:35: def local_setattr_alias(model)
+references/store_writes_through_bindings: store_writes_through_bindings.py:114: def right_side_reads_the_old_binding(field)
+references/store_writes_through_bindings: store_writes_through_bindings.py:55: def schema_object_in_a_string(obj: list['JsonSchemaObject'], other: 'JsonSchemaObject | None')
+references/store_writes_through_bindings: store_writes_through_bindings.py:40: def shadowed_setattr(model, setattr)
+references/store_writes_through_bindings: store_writes_through_bindings.py:104: def uncalled_nonlocal_keeps_the_alias(field)
+references/string_annotation_forward: string_annotation_forward.py:15: class Fwd
+        children: list['Fwd']
+        broken: 'not a type ('
+references/string_annotation_forward: string_annotation_forward.py:11: def f(x: 'Later', y: Optional['Fwd']) -> 'list[Fwd]'
+references/string_annotation_type_positions: string_annotation_type_positions.py:8: def f(a: Literal['Any'], b: Annotated[int, 'Any'], c: 'Any', d: list['Any'], e: "Literal['Any']") -> Any
+references/syntax_read_by_origin: syntax_read_by_origin.py:41: class Finder(ast.NodeVisitor)
+        def visit_Lambda(self, node: ast.Lambda) -> None
+        def visit_Call(self, node: ast.Call) -> None
+references/syntax_read_by_origin: syntax_read_by_origin.py:29: def built() -> ast.expr
+references/syntax_read_by_origin: syntax_read_by_origin.py:37: def comment(token: tokenize.TokenInfo) -> bool
+references/syntax_read_by_origin: syntax_read_by_origin.py:25: def definitions(tree: ast.Module) -> list[ast.stmt]
+references/syntax_read_by_origin: syntax_read_by_origin.py:14: def stores(tree: ast.Module) -> list[str]
+references/syntax_read_by_origin: syntax_read_by_origin.py:33: def table(text: str) -> list[str]
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:7: CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:44: class ClassScope
+        registry = sys.modules
+        def method(self) -> None
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:19: def conditional_neutral_backend(enabled: bool) -> None
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:36: def first_sibling() -> None
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:15: def parameter_shadow(registry: object, concrete_backend: str) -> None
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:11: def rebuild_namespace(model_type: type[object]) -> dict[str, object]
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:8: registry = {}
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:40: def second_sibling() -> None
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:27: def shadowed_import_aliases() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:117: class BaseEvaluatedClass(module_registry.get(CONCRETE_BACKEND))
+        module_registry = {}
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:132: CLASS_LATER_CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:169: CLEARED_LATER_BACKEND = form.sys_modules_registry_reads.CONCRETE_BACKEND
+    CLEARED_LATER_BACKEND = None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:135: CLEARED_MODULE_BACKEND = form.sys_modules_registry_reads.CONCRETE_BACKEND
+    CLEARED_MODULE_BACKEND = object()
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:18: CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:19: CONCRETE_BACKEND_ALIAS = form.sys_modules_registry_reads.CONCRETE_BACKEND
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:28: CONDITIONAL_LATER_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'  [if enabled]
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:121: class ClassBackend
+        local_registry = runtime.modules
+        model = local_registry[CONCRETE_BACKEND]
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:113: @module_registry.get(CONCRETE_BACKEND)
+    class DecoratedClass
+        module_registry = {}
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:126: class ForwardModuleClass
+        def inspect(self) -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:131: LATER_CONCRETE_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:137: REASSIGNED_MODULE_BACKEND = form.sys_modules_registry_reads.CONCRETE_BACKEND
+    REASSIGNED_MODULE_BACKEND = object()
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:24: TOP_LEVEL_BACKEND = 'datamodel_code_generator.model.pydantic_v2.base_model'
+    TOP_LEVEL_BACKEND = object()
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:20: TYPED_CONCRETE_BACKEND = form.sys_modules_registry_reads.CONCRETE_BACKEND
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:163: def cleared_later_module_constant() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:153: def cleared_module_constant() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:31: def inspect_backend() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:93: def inspect_conditional_backend(enabled: bool) -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:82: def inspect_conditional_later_module_constant() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:86: def inspect_conditional_registry(enabled: bool) -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:108: @module_registry.get(CONCRETE_BACKEND)
+    def inspect_decorator() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:103: def inspect_default(module_registry=module_registry.get(CONCRETE_BACKEND)) -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:78: def inspect_later_module_constant() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:73: def inspect_local_dynamic_alias() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:49: def inspect_local_import_aliases() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:42: def inspect_local_registry() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:60: def inspect_local_strings() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:68: def inspect_registry_rebinding() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:21: module_registry = sys.modules
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:158: def reassigned_module_constant() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:140: def reassigned_registry() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:146: def reassigned_string() -> None
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:22: runtime_modules = sys.modules
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:23: typed_registry = sys.modules
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:117: a base the record cannot follow: module_registry.get(CONCRETE_BACKEND)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:19: Config = typing.Any
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:21: Payload: TypeAlias = dict[str, Any]
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:20: Plain = typing.Any
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:17: Table = typing.Any
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:24: def read(first: typing.Any, second: 't.Any', third: list[typing.Any], fourth: Config, fifth: Plain, sixth: Table, seventh: Payload, eighth: Annotated[int, typing.Any], ninth: Literal['typing.Any']) -> typing.Mapping[str, t.Any]
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:7: Alias: TypeAlias = 'list[Later]'
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:8: Forward = 'list[Later]'
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:15: class Later
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:6: S = TypeVar('S', 'Later', 'int')
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:5: T = TypeVar('T', bound='Later')
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:11: def f(x: object)
+references/writes_through_a_name: writes_through_a_name.py:13: FROZEN = (1, 2)
+references/writes_through_a_name: writes_through_a_name.py:9: ITEMS = []
+        then ITEMS.append(1)
+references/writes_through_a_name: writes_through_a_name.py:3: JUSTIFIED_VIOLATIONS = {'g': ('a',)}
+        then JUSTIFIED_VIOLATIONS['g'] += ('b',)
+        then JUSTIFIED_VIOLATIONS['h'] = ('c',)
+        then JUSTIFIED_VIOLATIONS.update({'i': ('d',)})
+        then JUSTIFIED_VIOLATIONS.setdefault('j', ())
+        then del JUSTIFIED_VIOLATIONS['h']
+references/writes_through_a_name: writes_through_a_name.py:11: REGISTRY = type('Registry', (), {})
+        then REGISTRY.entry = 1
+        entry = 1  [set in form.writes_through_a_name]
+references/writes_through_a_name: writes_through_a_name.py:16: def read()

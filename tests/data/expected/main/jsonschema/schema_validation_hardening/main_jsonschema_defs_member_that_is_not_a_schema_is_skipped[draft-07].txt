@@ -1,0 +1,1 @@
+The member schema.json#/$defs/description of $defs is not a schema, so it is skipped: $defs is no keyword of the JSON Schema version the document is read by (draft 7 or older), which does not constrain its members.

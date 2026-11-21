@@ -1,0 +1,78 @@
+asyncapi: 2.6.0
+info:
+  title: Desk
+  version: 1.0.0
+  description: Servers reached with TLS when their URLs or their protocols say so.
+servers:
+  rest:
+    url: https://api.example.com/base
+    protocol: http
+    security:
+      - token: []
+  socket:
+    url: wss://ws.example.com/desk
+    protocol: ws
+  legacy:
+    url: ws://localhost:6789
+    protocol: wss
+  templated:
+    url: '{server}:{port}/desk'
+    protocol: ws
+    variables:
+      server:
+        default: ws://localhost
+        enum: [ws://localhost, wss://desk.example.com]
+      port:
+        default: '9090'
+  switched:
+    url: '{protocol}://{host}/desk'
+    protocol: ws
+    variables:
+      protocol:
+        default: wss
+        enum: [ws, wss]
+      host:
+        default: desk.example.com
+  secured:
+    url: '{protocol}://{host}/desk'
+    protocol: wss
+    variables:
+      protocol:
+        default: ws
+        enum: [ws, wss]
+      host:
+        default: desk.example.com
+  pinned:
+    url: '{server}/desk'
+    protocol: wss
+    variables:
+      server:
+        default: ws://localhost:9090
+        enum: [ws://localhost:9090, wss://desk.example.com]
+channels:
+  /tickets:
+    servers: [rest]
+    subscribe:
+      message:
+        contentType: text/event-stream
+        payload:
+          $ref: '#/components/schemas/Ticket'
+  /desk:
+    servers: [socket, legacy, templated, switched, secured, pinned]
+    publish:
+      message:
+        payload:
+          $ref: '#/components/schemas/Ticket'
+components:
+  securitySchemes:
+    token:
+      type: httpApiKey
+      in: query
+      name: token
+  schemas:
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+      required: [id]

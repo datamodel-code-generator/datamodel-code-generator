@@ -27,7 +27,7 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator
     from contextlib import AbstractContextManager
     from pathlib import Path
 
@@ -81,7 +81,7 @@ def _package_models(output_dir: Path) -> Callable[[str], AbstractContextManager[
     """Open a class, named ``module.Class``, of the generated package, imported while the block runs."""
 
     @contextmanager
-    def open_model(name: str) -> Iterator[Any]:
+    def open_model(name: str) -> Generator[Any, None, None]:
         module_path, _, class_name = name.rpartition(".")
         with _generated_package_module(output_dir, module_path) as module:
             yield getattr(module, class_name)

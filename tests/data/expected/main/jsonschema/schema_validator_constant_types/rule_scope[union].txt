@@ -1,0 +1,6 @@
+{"objects": {"x": 1}} (valid): accepted/accepted
+{"objects": {"x": true}} (valid): accepted/accepted
+{"objects": {"x": 2}} (invalid): rejected/rejected
+{"arrays": [1]} (valid): accepted/accepted
+{"arrays": [true]} (valid): accepted/accepted
+{"arrays": [2]} (invalid): rejected/rejected

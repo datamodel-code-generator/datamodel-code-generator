@@ -1,0 +1,6 @@
+[
+  "/c/e enum \"c\": invalid, model accepts",
+  "/c/x maximum 11: invalid, model accepts",
+  "/c/x maximum 19: invalid, model accepts",
+  "/c/x maximum 20: invalid, model accepts"
+]

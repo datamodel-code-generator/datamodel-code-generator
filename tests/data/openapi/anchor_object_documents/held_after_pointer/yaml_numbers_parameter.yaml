@@ -1,0 +1,17 @@
+name: page
+in: query
+schema:
+  title: Page
+  type: object
+  properties:
+    size:
+      $anchor: size
+      type: integer
+    limit:
+      $ref: "#size"
+    since:
+      type: string
+      pattern: 00:00:00.00
+    code:
+      type: string
+      format: unknown-format

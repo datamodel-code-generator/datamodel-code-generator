@@ -1,0 +1,16 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  _define_format_parser_configs: def@4 [always]
+scope function _define_format_parser_configs#0 '_define_format_parser_configs': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  GraphQLParserConfig: class@5 [function:body@4]
+scope class _define_format_parser_configs.<locals>.GraphQLParserConfig#0 'GraphQLParserConfig': code yes; first line 5
+  opened by a node evaluated in _define_format_parser_configs#0
+  graphql_no_typename: annassign@6 [function:body@4]; value False
+  describe: def@8 [function:body@4]
+  members: describe, graphql_no_typename
+scope function _define_format_parser_configs.<locals>.GraphQLParserConfig.describe#0 'describe': code yes; first line 8
+  opened by a node evaluated in _define_format_parser_configs.<locals>.GraphQLParserConfig#0
+  self: param@8 [function:body@4|function:body@8]
+  receiver: self@8
+== code objects: one per scope that compiles on this Python

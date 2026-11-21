@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: A parameter document that holds a YAML 1.1-only number and that a pointer into it loaded first
+  version: "1.0"
+paths:
+  /notes:
+    get:
+      parameters:
+        - $ref: yaml_numbers_parameter.yaml
+      responses:
+        "200":
+          description: The notes.
+components:
+  schemas:
+    Size:
+      $ref: yaml_numbers_parameter.yaml#/schema/properties/size

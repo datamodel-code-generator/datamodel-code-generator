@@ -52,12 +52,14 @@ class AsyncUsersResource:
         """
         Call GET /users.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (cursor, limit, X_Snapshot),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (cursor, limit, X_Snapshot),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def search_users(
         self,
@@ -71,14 +73,16 @@ class AsyncUsersResource:
         """
         Call POST /users/search.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (cursor,),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (cursor,),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncUsersWithResponse:

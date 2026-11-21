@@ -14,7 +14,6 @@ from datamodel_code_generator.__main__ import (
     Exit,
     OutputComparisonOptions,
     _compare_generated_outputs,
-    _output_comparison_policy,
     _write_comparison_output,
 )
 from tests.conftest import assert_output, create_assert_file_content, stored_expected
@@ -72,9 +71,31 @@ assert_file_content = create_assert_file_content(INPUT_DIFF_EXPECTED_PATH)
     ],
 )
 @pytest.mark.allow_direct_assert
-def test_output_comparison_policy(input_diff: bool, expected_policy: tuple[str, str, str, str, str]) -> None:
-    """Return an explicit policy for both normal and two-input comparisons."""
-    assert _output_comparison_policy(input_diff=input_diff) == expected_policy
+def test_output_comparison_policy(
+    tmp_path: Path, input_diff: bool, expected_policy: tuple[str, str, str, str, str]
+) -> None:
+    """Report missing and extra files with an explicit policy for both normal and two-input comparisons.
+
+    The policy reads from the reports: the kind and reason of a file only the generation has and of one only the
+    existing output has in a directory, and the reason of a missing single file.
+    """
+    generated, actual = tmp_path / "generated", tmp_path / "actual"
+    generated.mkdir()
+    actual.mkdir()
+    (generated / "new.py").write_text("", encoding="utf-8")
+    (actual / "old.py").write_text("", encoding="utf-8")
+    directory = _compare_generated_outputs(
+        generated, actual, "utf-8", OutputComparisonOptions(is_directory_output=True, input_diff=input_diff)
+    )
+    single = _compare_generated_outputs(
+        generated / "new.py", actual / "new.py", "utf-8", OutputComparisonOptions(False, input_diff=input_diff)
+    )
+    missing, extra = directory.differences
+    (missing_file,) = single.differences
+    missing_reason, missing_file_reason, extra_reason = (
+        str(difference.message).rpartition(" (")[2].removesuffix(")") for difference in (missing, missing_file, extra)
+    )
+    assert (missing.kind, missing_reason, missing_file_reason, extra.kind, extra_reason) == expected_policy
 
 
 def test_diff_against_identical_single_file_does_not_write_virtual_output(
@@ -90,7 +111,7 @@ def test_diff_against_identical_single_file_does_not_write_virtual_output(
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -181,6 +202,33 @@ def test_diff_against_reports_changed_single_file_without_writing_virtual_output
         output_should_not_exist=True,
         capsys=capsys,
         assert_no_stderr=True,
+    )
+
+
+def test_diff_against_reports_type_overrides_keys_that_match_nothing_of_the_current_input(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report once the --type-overrides keys that match nothing of the current input, whatever the baseline has."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPENAPI_INPUT_DIFF_PATH / "model_name_map_new.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--diff-against",
+                str(OPENAPI_INPUT_DIFF_PATH / "model_name_map_old.yaml"),
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps({"Owner.name": "builtins.str", "PetOwner.name": "builtins.str"}),
+            ],
+            expected_exit=Exit.DIFF,
+            output_should_not_exist=True,
+            capsys=capsys,
+            assert_no_stderr=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning), name="warnings"
     )
 
 
@@ -543,7 +591,7 @@ use-double-quotes = true
 
 def test_diff_against_json_fixture_matches_structured_output_schema() -> None:
     """The input-diff payload remains part of the public structured-output schema."""
-    schema_path = DATA_PATH / "expected" / "main_kr" / "output_format_json" / "structured_output_schema.txt"
+    schema_path = DATA_PATH / "expected" / "main_kr" / "output_format_json_schema_structured_output.stdout.txt"
     jsonschema.validate(
         instance=json.loads(
             stored_expected(INPUT_DIFF_EXPECTED_PATH / "different_file_json.txt").read_text(encoding="utf-8")

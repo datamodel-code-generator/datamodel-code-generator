@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-19)
+Option recommendations (experimental; quick mode; rules 2026-11-19)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       0, 0 operations
@@ -35,7 +35,7 @@ Add (1 option)
       minLength: 1: Model | Literal['gpt-live-1'] instead of a second root model Model1
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261106
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261120
 
 Command
   datamodel-codegen --input redundant_root_constraint.json --omit-redundant-constraints --preset standard-py314-20261017

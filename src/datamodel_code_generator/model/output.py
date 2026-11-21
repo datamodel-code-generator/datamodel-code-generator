@@ -6,7 +6,11 @@ import ast
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator.model._rendered_names import _class_bodies, _expression_names, _parsed
-from datamodel_code_generator.model.base import _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY, ALL_MODEL
+from datamodel_code_generator.model.base import (
+    _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY,
+    ALL_MODEL,
+    _mark_forbids_unknown_fields,
+)
 from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
@@ -23,7 +27,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.validators import ModelValidators
 
 
-def prepare_output_model_config(  # noqa: PLR0913, PLR0912
+def prepare_output_model_config(  # noqa: PLR0912
     extra_template_data: defaultdict[str, dict[str, Any]],
     *,
     validators: Mapping[str, ModelValidators] | None,
@@ -33,6 +37,7 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     no_alias: bool,
     allow_extra_fields: bool,
     extra_fields: str | None,
+    use_msgspec_forbid_unknown_fields: bool,
     enable_faux_immutability: bool,
     use_attribute_docstrings: bool,
     use_single_line_docstring: bool,
@@ -41,7 +46,11 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     generate_schema_validators: bool,
     pin_aliases_with_alias_generator: bool,
 ) -> dict[str, Any]:
-    """Prepare output configuration while retaining template keys and insertion order."""
+    """Prepare output configuration while retaining template keys and insertion order.
+
+    Under --use-msgspec-forbid-unknown-fields, --extra-fields forbid marks every model for msgspec's
+    forbid_unknown_fields; with --use-generic-base-class the base class carries it already.
+    """
     if validators:
         for name, model_config in validators.items():
             extra_template_data[name]["validators"] = [
@@ -67,6 +76,8 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["allow_extra_fields"] = True
     if extra_fields:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["extra_fields"] = extra_fields
+        if extra_fields == "forbid" and use_msgspec_forbid_unknown_fields and not use_generic_base_class:
+            _mark_forbids_unknown_fields(extra_template_data[ALL_MODEL])
     if enable_faux_immutability:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["allow_mutation"] = False
     if use_attribute_docstrings:
@@ -84,13 +95,17 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     return base_config
 
 
-def _model_field_name_collisions(model: DataModel, import_names: Collection[str]) -> set[str]:
-    """Find imported names hidden by assignments in the emitted model body."""
+def _model_field_name_collisions(model: DataModel, rendered: str | None, import_names: Collection[str]) -> set[str]:
+    """Find imported names hidden by assignments in the emitted model body, ``rendered`` or rendered now.
+
+    A field annotation loads its names wherever it stands; a default and a method decorator load the names of the
+    fields assigned before them.
+    """
     field_names = {field.name for field in model.fields if field.name is not None}
     candidates = field_names.intersection(import_names)
     if not candidates:
         return set()
-    tree, restore_name = _parsed(model.render())
+    tree, restore_name = _parsed(model.render() if rendered is None else rendered)
     if (class_body := next(_class_bodies(tree, restore_name, model.class_name), None)) is None:
         return set()
     fields = [
@@ -106,11 +121,19 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
     candidates.intersection_update(assigned_names)
     collisions: set[str] = set()
     previous_names: set[str] = set()
-    for name, node in fields:
-        collisions.update(candidates.intersection(_expression_names(node.annotation, restore_name)))
-        if node.value is not None:
-            collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
-            previous_names.add(name)
+    for node in class_body:
+        if isinstance(node, ast.FunctionDef):
+            collisions.update(
+                candidates.intersection(
+                    previous_names,
+                    {name for decorator in node.decorator_list for name in _expression_names(decorator, restore_name)},
+                )
+            )
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            collisions.update(candidates.intersection(_expression_names(node.annotation, restore_name)))
+            if node.value is not None:
+                collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
+                previous_names.add(restore_name(node.target.id))
     return collisions
 
 
@@ -131,9 +154,10 @@ class OutputModelContext:
         "supports_boolean_literals",
         "supports_internal_annotated_constraints",
         "writes_constrained_types",
+        "writes_discriminator_argument",
     )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         data_model_type: type[DataModel],
@@ -149,8 +173,13 @@ class OutputModelContext:
         literal_holds_enum_members: bool = True,
         layers_repeated_constraints: bool = True,
         checks_constraints: bool = False,
+        writes_discriminator_argument: bool = False,
     ) -> None:
-        """Initialize capabilities with the established keyword signature."""
+        """Initialize capabilities with the established keyword signature.
+
+        ``writes_discriminator_argument`` tells whether a union field writes ``discriminator=``, which Pydantic builds
+        and checks (``DataModelFieldBase.SUPPORTS_DISCRIMINATOR``).
+        """
         self._data_model_type = data_model_type
         self._data_model_root_type = data_model_root_type
         self.supports_annotated_constraints = supports_annotated_constraints
@@ -164,9 +193,10 @@ class OutputModelContext:
         self.literal_holds_enum_members = literal_holds_enum_members
         self.layers_repeated_constraints = layers_repeated_constraints
         self.checks_constraints = checks_constraints
+        self.writes_discriminator_argument = writes_discriminator_argument
 
     @classmethod
-    def from_generation_types(  # noqa: PLR0913
+    def from_generation_types(
         cls,
         *,
         data_model_type: type[DataModel],
@@ -206,6 +236,7 @@ class OutputModelContext:
             literal_holds_enum_members=data_model_type._LITERAL_HOLDS_ENUM_MEMBERS,  # noqa: SLF001
             layers_repeated_constraints=data_model_type._LAYERS_REPEATED_CONSTRAINTS,  # ruff: ignore[private-member-access]
             checks_constraints=data_model_type._CHECKS_CONSTRAINTS,  # ruff: ignore[private-member-access]
+            writes_discriminator_argument=data_model_field_type.SUPPORTS_DISCRIMINATOR,
         )
 
     def resolve_nested_constrained_model_type(self) -> type[DataModel]:
@@ -238,7 +269,7 @@ class OutputModelContext:
         """Return the data type a typed additional-properties entry was rendered from, while it names classes."""
         return getattr(extra_template_data.get(_ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY), "source", None)
 
-    def store_additional_properties_type(  # noqa: PLR0913
+    def store_additional_properties_type(
         self,
         extra_template_data: dict[str, Any],
         type_hint: str,

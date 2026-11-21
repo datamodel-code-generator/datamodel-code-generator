@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "customer": {"$ref": "../external_ref_mapping_all_of_keywords/shared.json#/$defs/Base"},
+    "total": {"$ref": "#/$defs/Money"}
+  },
+  "$defs": {
+    "Money": {"type": "string", "x-python-import": {"module": "mycompany.money", "name": "Money"}}
+  }
+}

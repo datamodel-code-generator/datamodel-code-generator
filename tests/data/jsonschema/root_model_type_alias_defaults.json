@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings",
+  "type": "object",
+  "properties": {
+    "tags": {"$ref": "#/$defs/Tags", "default": ["a", "b"]},
+    "count": {"$ref": "#/$defs/Count", "default": 10},
+    "pets": {"$ref": "#/$defs/Pets", "default": [{"name": "rex"}]},
+    "tagLists": {"type": "array", "items": {"$ref": "#/$defs/Tags"}, "default": [["x"]]},
+    "tagMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Tags"}, "default": {"k": ["v"]}},
+    "tagsOrText": {"anyOf": [{"$ref": "#/$defs/Tags"}, {"type": "string"}], "default": ["a"]},
+    "plain": {"type": "array", "items": {"type": "string"}, "default": ["p"]},
+    "pet": {"$ref": "#/$defs/Pet", "default": {"name": "rex"}}
+  },
+  "$defs": {
+    "Tags": {"type": "array", "items": {"type": "string"}},
+    "Count": {"type": "integer"},
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "Pets": {"type": "array", "items": {"$ref": "#/$defs/Pet"}}
+  }
+}

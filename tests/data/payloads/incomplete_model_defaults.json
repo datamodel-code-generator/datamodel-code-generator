@@ -1,0 +1,13 @@
+{
+  "valid": [
+    {},
+    {"spec": {"containers": ["app"]}, "nullableSpec": null, "completeSpec": {"containers": []}, "workload": {"matchLabels": {"a": "b"}}},
+    {"spec": {"containers": []}, "nullableSpec": {"containers": ["c"], "hostname": "h"}}
+  ],
+  "invalid": [
+    {"spec": {}},
+    {"completeSpec": {"hostname": "h"}},
+    {"workload": {"replicas": 2}},
+    {"spec": null}
+  ]
+}

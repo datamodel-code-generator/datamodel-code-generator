@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+from typing import Any, Union
+
+from pydantic import BaseModel, RootModel
+
+
+class Model(RootModel[Any]):
+    root: Any
+
+
+class Target1(BaseModel):
+    first: str
+
+
+class Target2(BaseModel):
+    second: str
+
+
+class Target3(BaseModel):
+    third: str
+
+
+class Target4(Target1, Target3):
+    pass
+
+
+class Target5(Target2, Target3):
+    pass
+
+
+class Target(RootModel[Union[Target4, Target5]]):
+    root: Union[Target4, Target5]

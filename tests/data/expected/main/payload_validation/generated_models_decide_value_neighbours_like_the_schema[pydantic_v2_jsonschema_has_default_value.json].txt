@@ -1,0 +1,4 @@
+[
+  "/anotherTeam enum null: invalid, model accepts",
+  "/team enum null: invalid, model accepts"
+]

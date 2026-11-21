@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info: {title: Stripped defaults, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Pet'}
+      responses:
+        '200':
+          description: The created pet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+  /pages:
+    get:
+      operationId: listPages
+      parameters:
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of pets.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}
+        tag: {type: string}
+        note: {type: [string, "null"]}
+    Page:
+      type: object
+      properties:
+        wrap: {$ref: '#/components/schemas/Wrap'}
+        next: {type: string}
+    Wrap:
+      type: object
+      required: [data]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Pet'}}

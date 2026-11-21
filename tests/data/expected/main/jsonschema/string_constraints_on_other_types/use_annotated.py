@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import BaseModel, Field, RootModel
 
 
 class MapOrNullMinLength(RootModel[dict[str, int]]):
@@ -26,6 +26,8 @@ class StringConstraintsOnOtherTypes(BaseModel):
     boolean_max_length: bool | None = None
     nullable_integer_max_length: int | None = None
     array_length: Annotated[list[str] | None, Field(max_length=4)] = None
-    string_or_integer_min_length: constr(min_length=2) | int | None = None
+    string_or_integer_min_length: Annotated[str, Field(min_length=2)] | int | None = (
+        None
+    )
     map_or_null_min_length: MapOrNullMinLength | MapOrNullMinLength1 | None = None
     overridden_min_length: Any | None = None

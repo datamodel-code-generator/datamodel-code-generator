@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-19)
+Option recommendations (experimental; quick mode; rules 2026-11-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: paths)
   components                       0, 1 operations
@@ -35,7 +35,7 @@ Add (1 option)
       null] gains ScoresPostRequest; every other model is unchanged
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261106
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261120
 
 Command
   datamodel-codegen --input paths_bodies_path_item_ref.yaml --openapi-as-definitions paths-bodies ref-components --openapi-scopes paths --preset standard-py314-20261017

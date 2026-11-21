@@ -1,0 +1,4 @@
+exception=True
+warnings=True
+value=True
+data=['x\ty']

@@ -1,0 +1,12 @@
+{
+  "root_class": "MapState",
+  "models_by_source_ref": {
+    "#": "MapState",
+    "#/allOf/0/anyOf/0/properties/bearing": "Bearing",
+    "#/allOf/0/anyOf/0/properties/dragRotate": "DragRotate",
+    "#/allOf/0/anyOf/0/properties/latitude": "Latitude",
+    "#/allOf/0/anyOf/0/properties/longitude": "Longitude",
+    "#/allOf/0/anyOf/0/properties/pitch": "Pitch",
+    "#/allOf/0/anyOf/0/properties/zoom": "Zoom"
+  }
+}

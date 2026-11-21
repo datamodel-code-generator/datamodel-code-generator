@@ -1,0 +1,3 @@
+# skip-operations-helper-later
+render pydantic_v2.BaseModel
+  Error: /paths/~1users/get: The security of GET /users has overlapping header ownership in one AND alternative; --client-protocols['status.all'].operation: GET /status must declare exactly one JSON success response for the pagination helper 'status.all'

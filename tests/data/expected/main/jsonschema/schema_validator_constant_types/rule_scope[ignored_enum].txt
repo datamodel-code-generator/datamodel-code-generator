@@ -1,0 +1,6 @@
+{"flag": true} (valid): accepted/accepted
+{"flag": 1} (valid): accepted/accepted
+{"flag": 2} (valid): accepted/accepted
+{"fixed": 1} (valid): accepted/accepted
+{"fixed": true} (invalid): rejected/rejected
+{"fixed": 2} (invalid): rejected/rejected

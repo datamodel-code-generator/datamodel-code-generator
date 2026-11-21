@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import tempfile
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass, replace
@@ -26,37 +25,67 @@ from datamodel_code_generator._fastapi.packages import (
     implementations_owner,
     services_package,
 )
+from datamodel_code_generator._format_types import RUFF_FORMATTERS
+from datamodel_code_generator._generation import (
+    _absolute_generation_path,
+    _build_file_header_parts,
+    _build_module_content,
+    _check_facade_outputs,
+    _default_input_filename,
+    _ensure_output_text_encodable,
+    _format_file_header,
+    _output_context_path,
+    _prepare_atomic_generation_remote_lock,
+    _read_custom_file_header,
+    _refuse_output_layout,
+    _resolve_generation_remote_lock,
+    _run_generation,
+    _settings_path_from,
+    _uses_legacy_process_state,
+    _warn_facade_dependencies,
+)
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._option_stages import _resolve_run_options
 from datamodel_code_generator._paths import (
     concrete,
     concrete_parent,
+    file_uri,
     lexical,
     output_files,
     output_layout,
     overlaps,
     resolved,
 )
+from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_config import (
-    _diagnostic,  # pyright: ignore[reportPrivateUsage]
+    _diagnostic,
     config_error,
 )
-from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
+from datamodel_code_generator._target_documents import (
+    ROOT_URN,
+    DocumentTable,
+    RootInput,
+    document_identity,
+    named_document,
+    shown,
+)
 from datamodel_code_generator._target_naming import fold_key
-from datamodel_code_generator.base_config import implied_target_settings as implied_settings
+from datamodel_code_generator.enums import DataModelType, InputFileType, OpenAPIScope
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     import re
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_types import ArtifactKind, TargetKind
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
     from datamodel_code_generator._publication import PublicationAnchor, StagedFile
+    from datamodel_code_generator._shared_types import GenerationInput as _GenerationInput
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -65,7 +94,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
-    from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 _PYTHON_MINIMUM = (3, 11)
@@ -140,7 +169,12 @@ class TargetRequest:
 
     @property
     def unresolved(self) -> str:
-        """Say why an operation reference resolved to nothing, naming the include filter when one is set."""
+        """Say why an operation reference resolved to nothing, naming the include filter when one is set.
+
+        The operations of an AsyncAPI input are its channels.
+        """
+        if self.batch.channels is not None:
+            return "selects no channel"
         if self.model_config.openapi_include_paths:
             return "selects no root path operation that --openapi-include-paths keeps"
         return "selects no root path operation"
@@ -205,42 +239,39 @@ def prepare_target(
 ) -> GenerateConfig:
     """Validate target settings in the contract order and return the effective model settings.
 
-    A setting the target needs that no option, configuration key, `generate()` argument, or preset set takes the value
-    the target needs, as `implied_settings` says, so a target writes the models a model-only run writes with those
-    settings given; a setting given a value the target cannot use is an `Error` that names the option.
+    The target's row of `_resolve_run_options` resolves the settings: a setting the target needs that no option,
+    configuration key, `generate()` argument, or preset set takes the value the target needs, as
+    `implied_target_settings` says, so a target writes the models a model-only run writes with those settings given; a
+    setting given a value the target cannot use is an `Error` that names the option. The checks after it read the
+    resolved settings.
     """
-    from datamodel_code_generator import (  # noqa: PLC0415
-        Error,
-        _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
-    )
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
-    from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
-    if sys.version_info < _PYTHON_MINIMUM:
-        raise config_error(
-            code="E_PYTHON_UNSUPPORTED",
-            option_path=None,
-            message=f"The {generator.kind} target needs Python {_PYTHON_MINIMUM_TEXT} or later to run",
-        )
     if model_config.output is None:
         raise config_error(
             code="E_CONFIG_VALUE",
             option_path="model_config.output",
             message=f"The {generator.kind} target needs model_config.output",
         )
-    if implied := implied_settings(model_config, _given_fields(model_config)):
-        model_config = model_config.model_copy(update=implied)
-    target = model_config.target_pydantic_version
-    if sentinel := model_config.use_missing_sentinel:
-        _check_pydantic_target(
-            generator,
-            model_config.output_model_type.value,
-            target,
-            sentinel=True,
-            implied="use_missing_sentinel" in implied,
-        )
-    effective = _prepare_generate_facade_config(model_config)
-    if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
+
+    def after_implied_settings(config: GenerateConfig, implied: Mapping[str, Any]) -> None:
+        if config.use_missing_sentinel:
+            _check_pydantic_target(
+                generator,
+                config.output_model_type.value,
+                config.target_pydantic_version,
+                sentinel=True,
+                implied="use_missing_sentinel" in implied,
+            )
+        _warn_facade_dependencies(config)
+
+    effective = _resolve_run_options(
+        model_config,
+        ("preset", "implied-target", "sentinel", "implied-model"),
+        {"implied-target": after_implied_settings},
+    )
+    _check_facade_outputs(effective)
+    if (requirement := model_requirement(effective, generator.selector)) is not None:
         raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = english_list(
@@ -253,7 +284,7 @@ def prepare_target(
         )
     if (problem := python_problem(effective, generator.kind)) is not None:
         raise config_error(code="E_CONFIG_VALUE", option_path="model_config.target_python_version", message=problem)
-    if backend is DataModelType.PydanticV2Dataclass and not sentinel:
+    if backend is DataModelType.PydanticV2Dataclass and not effective.use_missing_sentinel:
         raise config_error(
             code="E_CONFIG_VALUE",
             option_path="model_config.use_missing_sentinel",
@@ -263,7 +294,7 @@ def prepare_target(
                 "member from None"
             ),
         )
-    _check_pydantic_target(generator, backend.value, target, sentinel=False)
+    _check_pydantic_target(generator, backend.value, effective.target_pydantic_version, sentinel=False)
     if backend is DataModelType.MsgspecStruct and (
         missing := tuple(
             _diagnostic(
@@ -273,12 +304,8 @@ def prepare_target(
                 f"that their {decoded} can be decoded",
             )
             for enabled, name, decoded in (
-                (model_config.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),
-                (
-                    model_config.use_msgspec_nullable_enum_alias,
-                    "use_msgspec_nullable_enum_alias",
-                    "enums that list null",
-                ),
+                (effective.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),
+                (effective.use_msgspec_nullable_enum_alias, "use_msgspec_nullable_enum_alias", "enums that list null"),
             )
             if not enabled
         )
@@ -292,24 +319,14 @@ def prepare_target(
     ))
 
 
-def implied_conflict(config: Any, implied: dict[str, Any], generator: TargetGenerator) -> None:
-    """Refuse a given target pydantic version older than the MISSING sentinel the target implied needs, saying so."""
-    from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
+def implied_conflict(config: Any, generator: TargetGenerator) -> None:
+    """Refuse a given target pydantic version older than the MISSING sentinel the target implied needs, saying so.
 
+    The command line's config names the settings its target implied in its record (stage `implied-target`).
+    """
     backend = DataModelType(config.output_model_type).value
-    if "use_missing_sentinel" in implied:
+    if "use_missing_sentinel" in config._run_options.staged_by("implied-target"):  # noqa: SLF001
         _check_pydantic_target(generator, backend, config.target_pydantic_version, sentinel=True, implied=True)
-
-
-def _given_fields(config: GenerateConfig) -> set[str]:
-    """Return the fields a config sets: the ones it was given, and the ones its preset sets, applied later."""
-    if config.preset is None:
-        return set(config.model_fields_set)
-    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
-
-    preset = _resolve_config_preset(config.preset, config, config.model_fields_set)
-    fixed = () if preset.target_python_version is None else ("target_python_version",)
-    return {*config.model_fields_set, *fixed, *(item.field_name for item in preset.items)}
 
 
 def python_problem(config: Any, kind: str) -> str | None:
@@ -323,7 +340,7 @@ def python_problem(config: Any, kind: str) -> str | None:
     message = f"The {kind} target needs a target Python version of {_PYTHON_MINIMUM_TEXT} or later"
     if config.preset is None:
         return message
-    from datamodel_code_generator.preset import _coerce_preset_name  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator.preset import _coerce_preset_name  # noqa: PLC0415
 
     name = _coerce_preset_name(config.preset).value
     return f"{message}, which the preset {name} sets to {version.value}: use a preset for Python 3.11 or later"
@@ -348,11 +365,15 @@ def _check_pydantic_target(
         )
 
 
-def model_requirement(scopes: Iterable[OpenAPIScope] | None, selector: str) -> str | None:
-    """Return the "X requires Y" message for the api scope a target needs, or None while the scopes include it."""
-    from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
+def model_requirement(config: GenerateConfig, selector: str) -> str | None:
+    """Return the "X requires Y" message for the api scope a target needs, or None while the scopes include it.
 
-    if scopes is not None and OpenAPIScope.Api in scopes:
+    An AsyncAPI input, which has no api scope, needs none.
+    """
+    scopes = config.openapi_scopes
+    if InputFileType(config.input_file_type) is InputFileType.AsyncAPI or (
+        scopes is not None and OpenAPIScope.Api in scopes
+    ):
         return None
     return f"{selector} requires --openapi-scopes to include api"
 
@@ -370,7 +391,7 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     match input_:
         case Path():
             path = resolved(input_, cwd)
-            return RootInput(path.as_uri(), path.parent)
+            return RootInput(file_uri(path), path.parent)
         case ParseResult():
             return RootInput(input_.geturl(), cwd)
     return RootInput(ROOT_URN, cwd)
@@ -380,19 +401,13 @@ def _remote_lock(
     input_: _GenerationInput, config: GenerateConfig, target: TargetConfig, cwd: Path
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
     """Resolve the remote lock of the models; an update must not overlap the package, as it must not the models."""
-    from datamodel_code_generator import (  # noqa: PLC0415
-        _prepare_atomic_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
-        _resolve_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
-    )
     from datamodel_code_generator._lock_plan import owns_lock_update  # noqa: PLC0415
 
     if owns_lock_update(config):
         config, lockfile, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
         package = lexical(target.output, cwd)
         if any(overlaps(lockfile, root) for root in (package, package.resolve())):
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
-            label = (target._option_prefix or "target").capitalize()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            label = (target._option_prefix or "target").capitalize()  # noqa: SLF001
             msg = f"{label} output and Remote lock paths must not overlap: {package}"
             raise Error(msg)
         return config, lock
@@ -418,7 +433,7 @@ def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArti
     )
 
 
-def _generate_models(  # noqa: PLR0913
+def _generate_models(
     input_: _GenerationInput,
     config: GenerateConfig,
     target: TargetConfig,
@@ -427,17 +442,12 @@ def _generate_models(  # noqa: PLR0913
     use_output_cwd: bool,
     compares: bool = False,
 ) -> _Models:
-    from datamodel_code_generator import (  # noqa: PLC0415
-        _absolute_generation_path,  # pyright: ignore[reportPrivateUsage]
-        _default_input_filename,  # pyright: ignore[reportPrivateUsage]
-        _output_context_path,  # pyright: ignore[reportPrivateUsage]
-        _read_custom_file_header,  # pyright: ignore[reportPrivateUsage]
-        _refuse_output_layout,  # pyright: ignore[reportPrivateUsage]
-        _run_generation,  # pyright: ignore[reportPrivateUsage]
-        _settings_path_from,  # pyright: ignore[reportPrivateUsage]
-    )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
-    from datamodel_code_generator._publication import staged_artifact_path  # noqa: PLC0415
+    from datamodel_code_generator._publication import (  # noqa: PLC0415
+        STAGED_METADATA_NAME,
+        STAGED_OUTPUT_NAME,
+        staged_artifact_path,
+    )
     from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -450,23 +460,26 @@ def _generate_models(  # noqa: PLR0913
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
         staged_output = staged_artifact_path(
-            _staging(stack, output, cwd, target.output), output, "output", make_directory=(cwd / output).is_dir()
+            _staging(stack, output, cwd, target.output),
+            output,
+            STAGED_OUTPUT_NAME,
+            make_directory=(cwd / output).is_dir(),
         )
         updates: dict[str, Any] = {"output": staged_output}
         if (metadata := config.emit_model_metadata) is not None:
             updates["emit_model_metadata"] = staged_artifact_path(
-                _staging(stack, metadata, cwd), metadata, "model-metadata.json", make_directory=False
+                _staging(stack, metadata, cwd), metadata, STAGED_METADATA_NAME, make_directory=False
             )
         staged = prepared.model_copy(update=updates)
-        staged._logical_output = output  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-        staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        staged._logical_output = output  # noqa: SLF001
+        staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001
         if lock is not None or not staged.remote_lock_resolved:
             staged.resolve_remote_lock(lock)
         session = TargetGenerationSession(
             output=output,
             model_package=target.model_package,
             root_selector_document=source.identity,
-            serves_source=target._serves_source,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            serves_source=target._serves_source,  # noqa: SLF001
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
@@ -475,8 +488,6 @@ def _generate_models(  # noqa: PLR0913
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
         except MetadataCycleError as error:
-            from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
-
             identity = document_identity(error.document, source.base)
             named = "" if identity == source.identity else named_document(identity, identity)
             raise APIGenerationError((
@@ -596,7 +607,7 @@ def _collision(message: str, path: Path) -> Diagnostic:
 
 
 class _Planner:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         models: _Models,
         effective: GenerateConfig,
@@ -689,7 +700,11 @@ class _Planner:
     def project(self) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
         operations = _root_operations(models.product.batch)
-        self.operations = {operation.id.use_site.pointer: operation for operation in operations}
+        handshakes = (channel.handshake for channel in models.product.batch.channels or ())
+        self.operations = {
+            operation.id.use_site.pointer: operation
+            for operation in (*operations, *(handshake for handshake in handshakes if handshake is not None))
+        }
         rendered = generator.render(
             TargetRequest(
                 config=config,
@@ -836,12 +851,6 @@ class _Planner:
         their `implementation_text`. Every final text, Ruff's output included (it stages UTF-8 whatever the encoding),
         is checked against the encoding of its file before any is encoded, as model files are before any is written.
         """
-        from datamodel_code_generator import (  # noqa: PLC0415
-            _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
-            _build_module_content,  # pyright: ignore[reportPrivateUsage]
-            _ensure_output_text_encodable,  # pyright: ignore[reportPrivateUsage]
-            _format_file_header,  # pyright: ignore[reportPrivateUsage]
-        )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
         from datamodel_code_generator.format import _model_formatter_arguments  # noqa: PLC0415
         from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
@@ -909,10 +918,9 @@ class _Planner:
         modules, `own`, are staged beside it as they lie beside the package. Ruff reads and writes UTF-8 only, so the
         staged files are UTF-8 whatever encoding the files are written in.
         """
-        from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
         from datamodel_code_generator.format import _RUFF_ENCODING  # noqa: PLC0415
 
-        if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
+        if not paths or not RUFF_FORMATTERS.intersection(formatter.formatters):
             return
         with ExitStack() as stack:
             staged = _staging(stack, self.config.output, self.cwd) / self.root.name
@@ -996,8 +1004,8 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
         publication_anchor,
     )
     from datamodel_code_generator.remote_lock import (  # noqa: PLC0415
-        _open_lock_staging,  # pyright: ignore[reportPrivateUsage]
-        _staged_lock,  # pyright: ignore[reportPrivateUsage]
+        _open_lock_staging,
+        _staged_lock,
     )
 
     cwd = target.cwd
@@ -1109,9 +1117,6 @@ def _quietly(cleanup: Callable[[], None]) -> None:
 def _run_models(
     input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig, *, compares: bool = False
 ) -> _Models:
-    from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
-
     if _uses_legacy_process_state(effective):
         with PROCESS_STATE_LOCK:
             return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True, compares=compares)
@@ -1120,7 +1125,7 @@ def _run_models(
     return _generate_models(input_, effective, config, cwd, use_output_cwd=False, compares=compares)
 
 
-def plan_target(  # noqa: PLR0913
+def plan_target(
     input_: _GenerationInput,
     *,
     model_config: GenerateConfig,

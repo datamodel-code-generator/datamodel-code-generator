@@ -1,0 +1,65 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  JUSTIFIED: assign@10 [always]; value { "g": ("a", "b"), }
+  FROZEN: assign@18 [always]; value frozenset({ "x", "x", })
+  EXEMPT: assign@22 [always]; value ["y"]
+== references
+10:0 JUSTIFIED store in <module> -> local <module> @10
+13:0 JUSTIFIED load in <module> -> local <module> @10; origin forms.references.allowlist_entries_by_statement.JUSTIFIED
+17:0 JUSTIFIED load in <module> -> local <module> @10; origin forms.references.allowlist_entries_by_statement.JUSTIFIED
+18:0 FROZEN store in <module> -> local <module> @18
+18:9 frozenset load in <module> -> builtin; origin builtins.frozenset
+22:0 EXEMPT store in <module> -> local <module> @22
+23:0 EXEMPT load in <module> -> local <module> @22; origin forms.references.allowlist_entries_by_statement.EXEMPT
+uses of <module>:JUSTIFIED@10: subscript-store@13, subscript-store@17
+uses of <module>:EXEMPT@22: call:extend@23
+constant JUSTIFIED: Unreadable(reason='JUSTIFIED is written through', lines=(13, 17))
+constant FROZEN: frozenset({'x'})
+constant EXEMPT: Unreadable(reason='EXEMPT is written through', lines=(23,))
+== extents
+Expr@1 lines 1-8
+Assign@10 lines 10-12
+Assign@13 lines 13-16
+AugAssign@17 lines 17
+Assign@18 lines 18-21
+Assign@22 lines 22
+Expr@23 lines 23
+code lines: 1-8,10-23
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: Expr@1; owner <module>#0; tokens -
+line 3: Expr@1; owner <module>#0; tokens -
+line 4: Expr@1; owner <module>#0; tokens -
+line 5: Expr@1; owner <module>#0; tokens -
+line 6: Expr@1; owner <module>#0; tokens -
+line 7: Expr@1; owner <module>#0; tokens -
+line 8: Expr@1; owner <module>#0; tokens -
+line 9: -; owner <module>#0; tokens -
+line 10: Assign@10; owner <module>#0; tokens <module>#0:body
+line 11: Assign@10; owner <module>#0; tokens <module>#0:body
+line 12: Assign@10; owner <module>#0; tokens <module>#0:body
+line 13: Assign@13; owner <module>#0; tokens <module>#0:body
+line 14: Assign@13; owner <module>#0; tokens <module>#0:body
+line 15: Assign@13; owner <module>#0; tokens <module>#0:body
+line 16: Assign@13; owner <module>#0; tokens <module>#0:body
+line 17: AugAssign@17; owner <module>#0; tokens <module>#0:body
+line 18: Assign@18; owner <module>#0; tokens <module>#0:body
+line 19: Assign@18; owner <module>#0; tokens <module>#0:body
+line 20: Assign@18; owner <module>#0; tokens <module>#0:body
+line 21: Assign@18; owner <module>#0; tokens <module>#0:body
+line 22: Assign@22; owner <module>#0; tokens <module>#0:body
+line 23: Expr@23; owner <module>#0; tokens <module>#0:body
+source @1: """SD (step 2, allowlist entries): a table's entries with their lines, read through its binding, uses and statements.
+
+`constant()` gives values without lines, folds a set's repeated members and is unreadable once the table is written
+through; a check that counts entries reads the binding's value, the subscript stores and method calls among its uses,
+and the statement at each use's line.
+questions: bindings, extents
+constants: JUSTIFIED FROZEN EXEMPT
+"""
+source @10: JUSTIFIED = { "g": ("a", "b"), }
+source @13: JUSTIFIED["h"] = ( "c", "d", )
+source @17: JUSTIFIED["g"] += ("e",)
+source @18: FROZEN = frozenset({ "x", "x", })
+source @22: EXEMPT = ["y"]
+source @23: EXEMPT.extend(["z"])
+== code objects: one per scope that compiles on this Python

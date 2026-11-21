@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pet",
+  "type": "object",
+  "properties": {
+    "id": {"type": "integer", "readOnly": true},
+    "name": {"type": "string"}
+  },
+  "x-python-import": {"module": "pets", "name": "Pet"}
+}

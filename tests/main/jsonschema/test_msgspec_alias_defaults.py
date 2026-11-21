@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
@@ -13,10 +12,10 @@ from typing_extensions import TypeAliasType
 
 from datamodel_code_generator import DataModelType, InputFileType, PythonVersion
 from datamodel_code_generator.format import Formatter
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
@@ -41,7 +40,7 @@ _BACKPORT_ALIAS_WARNING = r"msgspec may not decode the type alias(es)? .* typing
         PythonVersion.PY_310,
         pytest.param(
             PythonVersion.PY_312,
-            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="Runtime requires Python type statements"),
+            marks=needs("type-statements"),
         ),
     ],
 )
@@ -128,8 +127,6 @@ def test_msgspec_alias_default_controls(output_model_type: DataModelType, output
         input_path=JSON_SCHEMA_DATA_PATH / "msgspec_alias_default_controls.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file=f"msgspec_alias_default_controls_{output_model_type.value.replace('.', '_')}.py",
         output_model_type=output_model_type,
         use_type_alias=True,
         target_python_version=PythonVersion.PY_310,
@@ -150,8 +147,6 @@ def test_msgspec_recursive_alias_default(output_file: Path) -> None:
             input_path=JSON_SCHEMA_DATA_PATH / "msgspec_alias_defaults_recursive.json",
             output_path=output_file,
             input_file_type=InputFileType.JsonSchema,
-            assert_func=assert_file_content,
-            expected_file="msgspec_alias_defaults_recursive.py",
             output_model_type=DataModelType.MsgspecStruct,
             use_type_alias=True,
             target_python_version=PythonVersion.PY_310,
@@ -163,7 +158,6 @@ def test_msgspec_recursive_alias_default(output_file: Path) -> None:
 @pytest.mark.parametrize("use_alias_type", [False, True])
 def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: bool, output_file: Path) -> None:
     """Scalar aliases with no model fields retain their original default factories."""
-    expected = EXPECTED_GRAPHQL_PATH / f"msgspec_scalar_alias_defaults_{use_alias_type}.py"
     input_path = GRAPHQL_DATA_PATH / "msgspec_scalar_alias_defaults.graphql"
     with pytest.warns(UserWarning, match=_BACKPORT_ALIAS_WARNING) if use_alias_type else nullcontext():
         if entrypoint == "cli":
@@ -171,8 +165,6 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="graphql",
-                assert_func=assert_file_content,
-                expected_file=expected,
                 extra_args=[
                     "--output-model-type",
                     "msgspec.Struct",
@@ -187,8 +179,6 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.GraphQL,
-                assert_func=assert_file_content,
-                expected_file=expected,
                 output_model_type=DataModelType.MsgspecStruct,
                 target_python_version=PythonVersion.PY_310,
                 use_type_alias_type=use_alias_type,
@@ -205,9 +195,7 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
         with pytest.raises(msgspec.ValidationError):
             msgspec.convert(payloads["invalid"], type=model)
         actual = {"defaults": msgspec.to_builtins(default), "explicit": msgspec.to_builtins(explicit)}
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / "msgspec_scalar_alias_defaults_runtime.txt"
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="msgspec_scalar_alias_defaults_runtime")
 
 
 def test_msgspec_union_member_defaults(output_file: Path) -> None:
@@ -535,7 +523,7 @@ def test_msgspec_tagged_alias_beside_struct_list_defaults(collapse: list[str], o
         PythonVersion.PY_310,
         pytest.param(
             PythonVersion.PY_312,
-            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="Runtime requires Python type statements"),
+            marks=needs("type-statements"),
         ),
     ],
 )

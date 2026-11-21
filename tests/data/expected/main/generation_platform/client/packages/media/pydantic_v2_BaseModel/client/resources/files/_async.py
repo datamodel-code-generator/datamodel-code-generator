@@ -160,14 +160,16 @@ class AsyncFilesResource:
         """
         Call POST /files.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_13,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_13,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     @overload
     async def replace_file(
@@ -195,13 +197,15 @@ class AsyncFilesResource:
         """
         Call PUT /files.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_14,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_14,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncFilesWithResponse:

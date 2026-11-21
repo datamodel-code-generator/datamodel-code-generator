@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator import _runtime
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
 
 
 def import_generated(package: str, *, copied: bool = False) -> ModuleType:
@@ -80,7 +80,7 @@ def forget_generated(package: str) -> None:
 
 
 @contextmanager
-def generated_root(root: Path, *packages: str) -> Iterator[None]:
+def generated_root(root: Path, *packages: str) -> Generator[None, None, None]:
     """Put a generation root on the import path, then remove it and forget the packages imported from it."""
     sys.path.insert(0, str(root))
     try:

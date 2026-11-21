@@ -3,20 +3,27 @@
 from __future__ import annotations
 
 import contextlib
+import json
+import marshal
+import re
 import sys
+from contextvars import ContextVar
 from dataclasses import dataclass
 from functools import lru_cache
 from hashlib import sha256
 from importlib.util import source_from_cache
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TextIO, TypeAlias, cast
 
 from datamodel_code_generator._caches import BoundedLru, SeenKeys
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._module_paths import is_package_init
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator, Mapping
+    from contextlib import AbstractContextManager
+    from typing import Any
 
 # Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
 if sys.version_info >= (3, 14):
@@ -46,6 +53,39 @@ _parser_source_data_seen_keys: SeenKeys[_ParserSourceDataSeenKey] = SeenKeys()
 _parser_source_data_cache_lock = RLock()
 _parsed_source_cache_enable_count = 0
 _enable_parsed_source_cache = False
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DecodedInput:
+    """The input document as input type inference decoded it, which the first parser of a run reads instead of its text.
+
+    ``decoder`` names the decode that read ``text`` to ``value``; ``yaml_bools`` are the details of the deprecated YAML
+    bools PyYAML warned for as it read them, which a decode of the text from the record warns for again.
+    """
+
+    text: str
+    value: dict[str, YamlValue]
+    decoder: Literal["json", "yaml"]
+    yaml_bools: tuple[str, ...] = ()
+
+
+_DECODED_INPUT: Final[ContextVar[DecodedInput | None]] = ContextVar("decoded_input", default=None)
+
+
+def decoding_from(decoded: DecodedInput | None) -> AbstractContextManager[None]:
+    """Return the block in which a decode of the text of ``decoded`` gives its value instead of decoding it again.
+
+    That decode warns as the decode of the record did: the ryaml text scan runs at its place in ``load_yaml``, and the
+    deprecated bools PyYAML read are warned for again.
+    """
+    return contextlib.nullcontext() if decoded is None else context_values({_DECODED_INPUT: decoded})
+
+
+def _decoded_input_of(text: str, decoder: Literal["json", "yaml"]) -> DecodedInput | None:
+    """Return the record of the ``decoding_from`` block when ``decoder`` decodes its text, else None."""
+    if (decoded := _DECODED_INPUT.get()) is not None and decoded.decoder == decoder and decoded.text == text:
+        return decoded
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,8 +136,6 @@ class DirectoryInputFilter:
 
     def iter_files(self, paths: Iterable[Path], encoding: str) -> Iterator[tuple[Path, bytes | None]]:
         """Retain candidate bytes so recognizing an artifact never rereads a schema."""
-        from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
-
         for path in paths:
             if not path.is_file() or path in self.files:
                 continue
@@ -109,12 +147,21 @@ class DirectoryInputFilter:
                         source_path = Path(source_from_cache(str(path)))
                 if source_path.suffix == ".py" and (source_path == path or source_path.is_file()):
                     source_data = source_path.read_bytes()
-                    text = normalize_newlines(source_data.decode(encoding))
+                    text = input_text(source_path, encoding, source_data)
                     if self._is_generated(text) or (is_package_init(source_path.name) and not text.strip()):
                         continue
                     if source_path == path:
                         data = source_data
             yield path, data
+
+
+def input_text(path: Path, encoding: str, data: bytes | None = None) -> str:
+    """Return the text of an input file as reading it as text does, decoding ``data`` when the file was read already."""
+    if data is None:
+        return path.read_text(encoding=encoding)
+    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
+    return normalize_newlines(data.decode(encoding))
 
 
 def enable_parsed_source_cache() -> Callable[[], None]:
@@ -149,18 +196,27 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
 
     PyYAML reads a document that ryaml cannot, such as one holding an integer outside 64 bits; when PyYAML cannot
     read it either, such as an integer beyond Python's digit limit or nesting beyond the stack, ryaml's error is raised.
+    The text of a decoded input is not decoded again (``decoding_from``): it warns as its decode did.
     """
-    from datamodel_code_generator.util import get_yaml_backend, reject_unsupported_yaml_tags  # noqa: PLC0415
+    from datamodel_code_generator.util import (  # noqa: PLC0415
+        get_yaml_backend,
+        reject_unsupported_yaml_tags,
+        warn_deprecated_yaml_bools,
+        warn_yaml_deprecated_bool_values,
+    )
 
     text = stream if isinstance(stream, str) else stream.read()
-    reject_unsupported_yaml_tags(text)
+    if (decoded := _decoded_input_of(text, "yaml")) is None:
+        reject_unsupported_yaml_tags(text)
 
-    if get_yaml_backend() == "ryaml":
-        import ryaml  # noqa: PLC0415  # ty: ignore[unresolved-import]
-
-        from datamodel_code_generator.util import warn_yaml_deprecated_bool_values  # noqa: PLC0415
-
+    if ryaml_backend := get_yaml_backend() == "ryaml":
         warn_yaml_deprecated_bool_values(text)
+    if decoded is not None:
+        warn_deprecated_yaml_bools(decoded.yaml_bools)
+        return decoded.value
+    if ryaml_backend:
+        import ryaml  # noqa: PLC0415  # ty: ignore[import-not-found]
+
         try:
             return ryaml.loads(text)
         except ryaml.InvalidYamlError:
@@ -173,12 +229,12 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
 
 
 def _load_pyyaml(text: str) -> YamlValue:
-    """Load YAML content with PyYAML."""
+    """Load YAML content with PyYAML, its YAML 1.1-only numbers read as the generation run reads them."""
     import yaml  # noqa: PLC0415
 
-    from datamodel_code_generator.util import SafeLoader  # noqa: PLC0415
+    from datamodel_code_generator.util import read_yaml_text, settle_yaml_numbers  # noqa: PLC0415
 
-    return yaml.load(text, Loader=SafeLoader)  # noqa: S506
+    return settle_yaml_numbers(read_yaml_text(yaml.load, text))
 
 
 def _expect_dict(result: YamlValue) -> dict[str, YamlValue]:
@@ -194,12 +250,12 @@ def load_yaml_dict(stream: str | TextIO) -> dict[str, YamlValue]:
 
 
 def load_yaml_dict_from_path(path: Path, encoding: str) -> dict[str, YamlValue]:
-    """Load a YAML mapping from a path, caching by path and modification time."""
-    from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
+    """Load a YAML mapping from a path, caching by path, modification time and the reading of YAML 1.1-only numbers."""
+    from datamodel_code_generator.util import record_watch_dependency, yaml_number_reading_key  # noqa: PLC0415
 
     record_watch_dependency(path)
     cache_path = path if path.is_absolute() else path.absolute()
-    return _load_yaml_dict_from_path_cached(cache_path, cache_path.stat().st_mtime, encoding)
+    return _load_yaml_dict_from_path_cached(cache_path, cache_path.stat().st_mtime, encoding, yaml_number_reading_key())
 
 
 @lru_cache(maxsize=128)
@@ -207,10 +263,26 @@ def _load_yaml_dict_from_path_cached(
     path: Path,
     mtime: float,  # noqa: ARG001  # Used as cache key for invalidation
     encoding: str,
+    reading: str,  # noqa: ARG001  # Used as cache key: the reading of YAML 1.1-only numbers
 ) -> dict[str, YamlValue]:
     """Load a YAML mapping from a path after cache-key normalization."""
     with path.open(encoding=encoding) as stream:
         return load_yaml_dict(stream)
+
+
+def is_openapi(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is an OpenAPI specification."""
+    return "openapi" in data
+
+
+def is_swagger_2(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is a Swagger 2.0 document: its root has a `swagger` key and no `openapi` key."""
+    return "swagger" in data and not is_openapi(data)
+
+
+def is_asyncapi(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is an AsyncAPI specification."""
+    return "asyncapi" in data
 
 
 def _first_significant_text_char(text: str) -> str | None:
@@ -225,14 +297,21 @@ def _is_json_text(text: str) -> bool:
     return _first_significant_text_char(text) in {"{", "["}
 
 
+def _load_json(text: str) -> YamlValue:
+    """Decode text as JSON; the text of a decoded input is not decoded again (``decoding_from``)."""
+    if (decoded := _decoded_input_of(text, "json")) is not None:
+        return decoded.value
+
+    return json.loads(text)
+
+
 def _load_json_document(text: str) -> YamlValue | None:
     """Return the value of text when it is a JSON document, or None when it is not (it may still be YAML)."""
     if not _is_json_text(text):
         return None
-    import json  # noqa: PLC0415
 
     try:
-        return json.loads(text)
+        return _load_json(text)
     except json.JSONDecodeError:
         return None
 
@@ -246,7 +325,6 @@ def _has_protobuf_declaration(text: str) -> bool:
     """Recognize an explicit Protobuf declaration before attempting YAML decoding."""
     if _first_significant_text_char(text) not in {"s", "e", "/"}:
         return False
-    import re  # noqa: PLC0415
 
     return re.match(_PROTOBUF_DECLARATION_PATTERN, text) is not None
 
@@ -308,21 +386,29 @@ def _load_parser_source_data_from_path_bytes(resolved_path: Path, data: bytes, e
 
 
 def _load_cached_parser_source_data(cache_key: _ParserSourceDataCacheKey) -> YamlValue | None:
+    """Return a cached decode, counting the YAML 1.1-only numbers the document held for the generation run."""
     with _parser_source_data_cache_lock:
         if (cached_data := _parser_source_data_cache.recent(cache_key)) is None:
             return None
 
-    import marshal  # noqa: PLC0415
+    from datamodel_code_generator.util import note_yaml_numbers_held  # noqa: PLC0415
 
     # Entries are process-local values emitted by marshal.dumps below, never external bytes.
-    return marshal.loads(cached_data)  # noqa: S302
+    held, parsed_data = marshal.loads(cached_data)  # noqa: S302
+    note_yaml_numbers_held(held)
+    return parsed_data
 
 
-def _store_parser_source_data(cache_key: _ParserSourceDataCacheKey, parsed_data: YamlValue) -> YamlValue:
-    import marshal  # noqa: PLC0415
+def _store_parser_source_data(
+    cache_key: _ParserSourceDataCacheKey, load: Callable[[str], YamlValue], text: str
+) -> YamlValue:
+    """Decode ``text`` with ``load`` and cache the value with the count of YAML 1.1-only numbers the document held."""
+    from datamodel_code_generator.util import yaml_numbers_held  # noqa: PLC0415
 
+    held = yaml_numbers_held()
+    parsed_data = load(text)
     try:
-        cached_data = marshal.dumps(parsed_data)
+        cached_data = marshal.dumps((yaml_numbers_held() - held, parsed_data))
     except Exception:  # noqa: BLE001
         # Values outside the primitive YamlValue shape remain valid uncached input.
         return parsed_data
@@ -332,10 +418,8 @@ def _store_parser_source_data(cache_key: _ParserSourceDataCacheKey, parsed_data:
 
 
 def _load_parser_source_data_from_bytes(path: Path, data: bytes, encoding: str, digest: str | None) -> YamlValue:
-    """Decode JSON by suffix, else YAML; with a ``digest``, memoize each decode per parser backend."""
-    import json  # noqa: PLC0415
-
-    from datamodel_code_generator.util import get_yaml_backend  # noqa: PLC0415
+    """Decode JSON by suffix, else YAML; with a ``digest``, memoize each decode per parser backend and YAML reading."""
+    from datamodel_code_generator.util import get_yaml_backend, yaml_number_reading_key  # noqa: PLC0415
 
     text = data.decode(encoding)
 
@@ -345,12 +429,12 @@ def _load_parser_source_data_from_bytes(path: Path, data: bytes, encoding: str, 
         cache_key = (path, digest, encoding, backend())
         if (cached_data := _load_cached_parser_source_data(cache_key)) is not None:
             return cached_data
-        return _store_parser_source_data(cache_key, load(text))
+        return _store_parser_source_data(cache_key, load, text)
 
     if path.suffix.lower() == ".json":
         with contextlib.suppress(json.JSONDecodeError):
             return decode(json.loads, lambda: "json")
-    return decode(load_yaml, lambda: f"yaml:{get_yaml_backend()}")
+    return decode(load_yaml, lambda: f"yaml:{get_yaml_backend()}:{yaml_number_reading_key()}")
 
 
 def _clear_parser_source_data_cache() -> None:

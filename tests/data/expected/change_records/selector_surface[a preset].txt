@@ -1,0 +1,1 @@
+["--preset", "--preset standard-py314-20260201", "preset:20260201", "--preset", "--preset practical-py310-20260101", "preset:20260101"]

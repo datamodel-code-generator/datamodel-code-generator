@@ -1,0 +1,7 @@
+# discriminator-values typing.TypedDict, dataclasses.dataclass
+  > POST https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 32] b'{"level":1,"since":"2024-01-02"}'
+  send one = None
+  > POST https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 51] b'{"level":2,"certified":"2024-01-02T03:04:05+00:00"}'
+  send two = None

@@ -84,8 +84,7 @@ class PClosed(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 
 
 class PNames(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -101,8 +100,7 @@ class PNames(
 
 
 class PRefNames(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -132,8 +130,7 @@ class POpen(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 
 
 class PNullableCount(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[str, Any] | None],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any] | None]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -167,8 +164,7 @@ class PNoKeys(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         {
             'declared_properties': (),
             'rejected_patterns': ('^a',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': None,
             'allow_unmatched': False,
         },
@@ -206,8 +202,7 @@ class MClosed(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 
 
 class IName(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -223,8 +218,7 @@ class IName(
 
 
 class MNames(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -240,8 +234,7 @@ class MNames(
 
 
 class IRefName(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -257,8 +250,7 @@ class IRefName(
 
 
 class MRefNames(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -302,8 +294,7 @@ class MOpen(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 
 
 class INullableCountItem(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[str, Any] | None],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any] | None]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -319,8 +310,7 @@ class INullableCountItem(
 
 
 class MNullableCount(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[str, Any] | None],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any] | None]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -368,8 +358,7 @@ class INoKey(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         {
             'declared_properties': (),
             'rejected_patterns': ('^a',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': None,
             'allow_unmatched': False,
         },
@@ -383,8 +372,7 @@ class MNoKeys(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         {
             'declared_properties': (),
             'rejected_patterns': ('^a',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': None,
             'allow_unmatched': False,
         },
@@ -408,8 +396,7 @@ class Closed(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 
 
 class Names(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -425,8 +412,7 @@ class Names(
 
 
 class RefNames(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -492,8 +478,7 @@ class NoKeys(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         {
             'declared_properties': (),
             'rejected_patterns': ('^a',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': None,
             'allow_unmatched': False,
         },

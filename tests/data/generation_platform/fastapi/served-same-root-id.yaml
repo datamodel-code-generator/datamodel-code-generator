@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info: {title: Two versions of a schema document that keep one root id, version: "1"}
+paths:
+  /v1/pets:
+    get:
+      operationId: getPetV1
+      responses:
+        "200":
+          description: A version 1 pet.
+          content:
+            application/json:
+              schema: {$ref: "served-same-root-id-v1.json#/$defs/Pet"}
+  /v2/pets:
+    get:
+      operationId: getPetV2
+      responses:
+        "200":
+          description: A version 2 pet.
+          content:
+            application/json:
+              schema: {$ref: "served-same-root-id-v2.json#/$defs/Pet"}

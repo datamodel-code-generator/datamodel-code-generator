@@ -1,0 +1,3 @@
+exits 1, 0, 0
+Invalid migration data:
+- presets: dates 20260301, 20260401 are unreleased; add the options of this release to one date; if the latest tag is not stamped yet, stamp it first

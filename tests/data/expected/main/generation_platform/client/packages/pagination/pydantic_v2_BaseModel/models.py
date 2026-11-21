@@ -56,14 +56,18 @@ UsersGetQueryCursorParameter = TypeAliasType("UsersGetQueryCursorParameter", str
 UsersGetQueryLimitParameter = TypeAliasType("UsersGetQueryLimitParameter", int)
 
 
-UsersGetHeaderXSnapshotParameter = TypeAliasType("UsersGetHeaderXSnapshotParameter", str)
+UsersGetHeaderXSnapshotParameter = TypeAliasType(
+    "UsersGetHeaderXSnapshotParameter", str
+)
 
 
 class UsersGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-UsersSearchPostQueryCursorParameter = TypeAliasType("UsersSearchPostQueryCursorParameter", str)
+UsersSearchPostQueryCursorParameter = TypeAliasType(
+    "UsersSearchPostQueryCursorParameter", str
+)
 
 
 LooseGetQueryCursorParameter = TypeAliasType("LooseGetQueryCursorParameter", int)
@@ -90,10 +94,14 @@ class LabelSetsGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-ArchiveCursorGetPathCursorParameter = TypeAliasType("ArchiveCursorGetPathCursorParameter", str)
+ArchiveCursorGetPathCursorParameter = TypeAliasType(
+    "ArchiveCursorGetPathCursorParameter", str
+)
 
 
 StatusesGetQueryCodeParameter = TypeAliasType("StatusesGetQueryCodeParameter", int)
 
 
-SecureUsersGetQueryCursorParameter = TypeAliasType("SecureUsersGetQueryCursorParameter", str)
+SecureUsersGetQueryCursorParameter = TypeAliasType(
+    "SecureUsersGetQueryCursorParameter", str
+)

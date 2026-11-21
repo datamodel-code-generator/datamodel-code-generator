@@ -1,0 +1,7 @@
+readme: none missing
+config-types: none missing
+schema-docs: none missing
+generation-store-usage: none missing
+architecture-boundaries: none missing
+source-rules: none missing
+compiled-templates: none missing

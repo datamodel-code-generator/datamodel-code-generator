@@ -1,0 +1,2 @@
+exit status 1
+no table knows legacy-no-such-row

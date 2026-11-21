@@ -1,0 +1,7 @@
+== references
+3:0 x store in <module> -> local <module> @3
+10:15 x load in a.<locals>.b -> global <module> @3; origin forms.references.global_declared_in_middle_scope.x
+12:11 b load in a -> local a @9
+uses of <module>:x@3: read@10
+uses of a:b@9: read@12
+== code objects: one per scope that compiles on this Python

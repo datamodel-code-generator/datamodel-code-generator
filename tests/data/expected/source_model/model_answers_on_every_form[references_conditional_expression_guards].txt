@@ -1,0 +1,41 @@
+== references
+14:0 CONFIG store in <module> -> local <module> @14
+14:9 object load in <module> -> builtin; origin builtins.object
+16:0 resource store in <module> -> local <module> @16
+16:19 sys load in <module> -> local <module> @11; origin sys
+16:48 importlib load in <module> -> local <module> @10; origin importlib
+17:0 fcntl store in <module> -> local <module> @17
+17:8 sys load in <module> -> local <module> @11; origin sys
+17:36 importlib load in <module> -> local <module> @10; origin importlib
+18:0 posix store in <module> -> local <module> @18
+18:8 sys load in <module> -> local <module> @11; origin sys
+18:35 importlib load in <module> -> local <module> @10; origin importlib
+19:0 late store in <module> -> local <module> @19
+19:43 CONFIG load in <module> -> local <module> @14; origin forms.references.conditional_expression_guards.CONFIG
+19:7 importlib load in <module> -> local <module> @10; origin importlib
+20:0 newer store in <module> -> local <module> @20
+20:47 sys load in <module> -> local <module> @11; origin sys
+20:8 importlib load in <module> -> local <module> @10; origin importlib
+21:0 typed store in <module> -> local <module> @21
+21:15 TYPE_CHECKING load in <module> -> local <module> @12; origin typing.TYPE_CHECKING
+21:8 int load in <module> -> builtin; origin builtins.int
+21:34 str load in <module> -> builtin; origin builtins.str
+22:0 chained store in <module> -> local <module> @22
+22:10 CONFIG load in <module> -> local <module> @14; origin forms.references.conditional_expression_guards.CONFIG
+22:21 sys load in <module> -> local <module> @11; origin sys
+22:49 importlib load in <module> -> local <module> @10; origin importlib
+uses of <module>:importlib@10: call:import_module@16, call:import_module@17, call:import_module@18, call:import_module@19, call:import_module@20, call:import_module@22
+uses of <module>:sys@11: read@16, read@17, read@18, read@20, read@22
+uses of <module>:TYPE_CHECKING@12: read@21
+uses of <module>:CONFIG@14: read@19, read@22
+== imports
+import@10 importlib as importlib from importlib in <module> [always]; unconditional
+import@11 sys as sys from sys in <module> [always]; unconditional
+from@12 typing.TYPE_CHECKING as TYPE_CHECKING from typing in <module> [always]; unconditional
+dynamic@16 resource from resource in <module> [platform:else@16]
+dynamic@17 fcntl from fcntl in <module> [platform:body@17]
+dynamic@18 fcntl from fcntl in <module> [platform:else@18]
+dynamic@19 fcntl from fcntl in <module> [if:body@19]
+dynamic@20 resource from resource in <module> [version:body@20]
+dynamic@22 resource from resource in <module> [if:body@22|platform:body@22]
+== code objects: one per scope that compiles on this Python

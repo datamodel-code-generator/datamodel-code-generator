@@ -13,7 +13,7 @@ from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES
 from datamodel_code_generator._target_config import (
     TargetConfig,
-    _diagnostic,  # pyright: ignore[reportPrivateUsage]
+    _diagnostic,
 )
 from datamodel_code_generator._target_contract import parameter_name_key
 from datamodel_code_generator._target_naming import explicit_name

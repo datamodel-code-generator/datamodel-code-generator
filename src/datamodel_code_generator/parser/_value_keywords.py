@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import compress
+from math import isfinite
 from operator import and_
-from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
+from typing import TYPE_CHECKING, Any, Final, cast
+from warnings import warn
 
 from typing_extensions import Protocol
 
@@ -39,25 +41,34 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
-from datamodel_code_generator.imports import IMPORT_ANY, _import_path
-from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
+from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.imports import _import_path
+from datamodel_code_generator.model._decisions.enum_kind import (
+    enum_as_literal,
+    is_literal_kind,
+    json_type,
+    literal_value_kind,
+)
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model.base import ConstraintsBase
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._intersection import (
     declared_positional_tail,
     declared_types,
     inherited_positional_tail,
 )
-from datamodel_code_generator.parser._null_facts import NullSources, dump_null_sources, resolve_null_facts
+from datamodel_code_generator.parser._null_facts import NullSources, null_sources, resolve_null_facts
+from datamodel_code_generator.parser._passes._shared import _TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _locate
 from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
+    _declares_key_keywords,
     _get_json_value_type,
     _object_map_other_types,
     _schema_dump,
 )
-from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
+from datamodel_code_generator.types import Types, _is_plain_none, _is_value_literal, untyped_value_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -72,15 +83,16 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
     from datamodel_code_generator.parser.generation import GraphBuilder
-    from datamodel_code_generator.reference import ModelResolver
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
     "ArrayBoundsHost",
     "ValueKeywordsHost",
     "accepts_number_constraints",
+    "bounded_const_type",
     "check_literal_const",
     "combined_values_admitted",
+    "const_bounds",
     "const_is_literal",
     "const_literal_enforces_constraints",
     "const_type_is_exact",
@@ -118,6 +130,7 @@ __all__ = [
     "mark_type_dependent_constraints",
     "partition_enum_values",
     "positions_with_tail",
+    "reads_length_keywords_by_type",
     "resolve_array_field_required_nullable",
     "schema_kinds",
     "should_parse_empty_object_as_dict",
@@ -129,13 +142,17 @@ __all__ = [
     "union_sibling_constraints",
 ]
 
-_CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
-    "str": "string",
-    "bool": "boolean",
-    "int": "integer",
-    "float": "number",
+_UNTYPED_CONST_KINDS: Final[frozenset[LiteralValueKind]] = frozenset({"none", "other"})
+"""The kinds of a const that give a merged enum of const branches no ``type``: a null, and a list, an object or any
+other value; the first const of another kind gives the merged enum its JSON type (``json_type``)."""
+_SCALAR_VALUE_TYPES: Final[Mapping[LiteralValueKind, Types]] = {
+    "none": Types.null,
+    "bool": Types.boolean,
+    "int": Types.integer,
+    "float": Types.float,
+    "str": Types.string,
 }
-"""The ``type`` a merged enum of const branches takes from the kind of the first const that has one."""
+"""The type a scalar JSON value of each kind is read as where no schema names one."""
 _NON_ASSERTING_KEYWORDS = _ANNOTATION_KEYWORDS | {"contentEncoding", "contentMediaType", "contentSchema", "format"}
 
 
@@ -204,10 +221,8 @@ def _literal_met(
 def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
     """Return the keywords that a type, or a member of a union it is, consumed itself, which its field leaves out."""
     if data_type in CONTAINERS.without("legacy-abstract-containers-as-unions"):
-        return data_type._consumed_constraints  # noqa: SLF001
-    return data_type._consumed_constraints.union(  # noqa: SLF001
-        *(member._consumed_constraints for member in data_type.data_types)  # noqa: SLF001
-    )
+        return data_type._consumed_constraints
+    return data_type._consumed_constraints.union(*(member._consumed_constraints for member in data_type.data_types))
 
 
 def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequence[object]]]:
@@ -260,10 +275,6 @@ def _imported_type_paths(data_type: DataType) -> Iterator[str]:
                 yield _import_path(import_)
 
 
-_NULL_TYPE_SOURCES: Final[NullSources] = NullSources(type_null=True)
-"""The null sources of a branch whose ``type`` is null as written, which ``_extract_const_enum_from_combined`` reads."""
-
-
 class ArrayBoundsHost(Protocol):
     """The parser class whose derived array length constraints ``get_effective_array_length`` reads."""
 
@@ -272,10 +283,8 @@ class ArrayBoundsHost(Protocol):
         """Return array length constraints derived from boolean items."""
 
 
-class ValueKeywordsHost(Protocol):
+class ValueKeywordsHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the value keywords read."""
-
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
 
     @property
     def checks_literal_values(self) -> bool:
@@ -306,14 +315,6 @@ class ValueKeywordsHost(Protocol):
         """Whether constraints are written on fields (``--field-constraints``)."""
 
     @property
-    def ignore_enum_constraints(self) -> bool:
-        """Whether an enum leaves its constraints out (``--ignore-enum-constraints``)."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
-
-    @property
     def read_const_beside_enum(self) -> bool:
         """Whether a const beside an enum is read (``--read-const-beside-enum``)."""
 
@@ -328,6 +329,10 @@ class ValueKeywordsHost(Protocol):
     @property
     def type_mappings(self) -> dict[tuple[str, str], str]:
         """The ``--type-mappings`` entries."""
+
+    @property
+    def use_bounds_for_float_const(self) -> bool:
+        """Whether a float const is fixed by equal bounds (``--use-bounds-for-float-const``)."""
 
     @property
     def use_single_value_enum_as_const(self) -> bool:
@@ -365,10 +370,6 @@ class ValueKeywordsHost(Protocol):
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the scoped type overrides."""
 
-    @classmethod
-    def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
-        """Return array length constraints derived from boolean items."""
-
     @staticmethod
     def _property_names_forbids_all_keys(property_names: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
         """Return whether a propertyNames schema rejects every JSON object key."""
@@ -378,24 +379,8 @@ class ValueKeywordsHost(Protocol):
     ) -> tuple[bool, ...] | None:
         """Return whether the field keeps each value (``kept``), None when it keeps all."""
 
-    def _get_data_type_from_json_value(self, value: object) -> DataType:
-        """Infer a normal Python type from a JSON value."""
-
-    def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
-        """Return the length of an opted-in homogeneous fixed-length tuple."""
-
-    def _get_fixed_positional_items(
-        self,
-        obj: JsonSchemaObject,
-        canonical_ref: Callable[[str], str] | None = None,
-    ) -> list[JsonSchemaObject | bool] | None:
-        """Return the positions of a positional array written as a tuple, or None when it is written as a list."""
-
     def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
         """Get the Types enum for a given type and format, applying custom type mappings."""
-
-    def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
-        """Check if an array field represents a fixed-length tuple."""
 
     def _literal_values_type(self, values: list[Any]) -> DataType:
         """Return the Literal type of enum values, joined with the types of values no Literal holds."""
@@ -406,22 +391,28 @@ class ValueKeywordsHost(Protocol):
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
 
-    def _null_facts(self, obj: JsonSchemaObject, site: NullSite, *, has_default: bool = False) -> NullFacts:
-        """Return the null facts of a schema at a site."""
+    def _null_facts(
+        self,
+        obj: JsonSchemaObject,
+        site: NullSite,
+        *,
+        required: bool = False,
+        has_default: bool = False,
+        parts: Sequence[NullSources] = (),
+    ) -> NullFacts:
+        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
+    def _reads_enum(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
+
+    def _open_enum_without_base(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the enum of a schema is open with no base for its class, so it is written as a Literal."""
 
     def _ref_schema_exists(self, resolved_ref: str) -> bool:
         """Return whether a resolved JSON pointer identifies a source schema."""
 
-    def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
-        """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
-
-    def _split_constraint_values(
-        self, obj: JsonSchemaObject, data_type: DataType | None = None
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out."""
+    def _with_open_enum_type(self, obj: JsonSchemaObject, literal: DataType) -> DataType:
+        """Return the Literal type of an open enum joined with the type of its schema, else the Literal type."""
 
 
 def should_parse_enum_as_literal(
@@ -453,13 +444,16 @@ def enum_as_literal_under(
     property_name: str | None,
     property_obj: JsonSchemaObject | None,
 ) -> bool:
-    """Return whether an enum is written as a Literal under an ``--enum-field-as-literal`` setting."""
+    """Return whether an enum is written as a Literal under an ``--enum-field-as-literal`` setting.
+
+    An open enum with no base for its class (``--open-enum-base-class-map``) is a Literal whatever the setting.
+    """
     return enum_as_literal(
         extension=(property_obj if property_obj is not None else obj).x_enum_field_as_literal,
         mapped=parser.enum_field_as_literal_map.get(property_name) if property_name else None,
         setting=setting,
         member_count=len(obj.enum),
-    )
+    ) or parser._open_enum_without_base(obj)
 
 
 def extract_const_enum_from_combined(  # noqa: PLR0912
@@ -485,8 +479,8 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
             continue
         if item is True:
             return None
-        if item.type == "null" and "const" not in item.extras:
-            null_branches.append(_NULL_TYPE_SOURCES)
+        if "const" not in item.extras and (sources := null_sources(item.type)).type_null:
+            null_branches.append(sources)
             continue
 
         if "const" not in item.extras:
@@ -500,10 +494,10 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         branches.append(item)
         read_as_const = read_as_const and item.read_as_const
 
-        if inferred_type is None:
-            inferred_type = _CONST_ENUM_TYPES.get(literal_value_kind(const_value))
+        if inferred_type is None and literal_value_kind(const_value) not in _UNTYPED_CONST_KINDS:
+            inferred_type = json_type(const_value)
 
-    if not enum_values:  # pragma: no cover
+    if not enum_values:
         return None
     if read_as_const and (
         len(values := [value for value in enum_values if value is not None]) == 1
@@ -530,9 +524,7 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         [item.title for item in branches if item.title],
         [item.description or "" for item in branches],
         final_type,
-        bool(
-            resolve_null_facts(dump_null_sources({"type": parent.type}), "const-enum", parts=null_branches).admits_null
-        ),
+        bool(resolve_null_facts(null_sources(parent.type), "const-enum", parts=null_branches).admits_null),
         values_as_written,
     )
 
@@ -563,7 +555,7 @@ def combined_values_admitted(
         parent, values, literal_written(parser, parent, values, writes=writes)
     )
     keywords.update(dict.fromkeys(decided))
-    return parser._admitted_or_warn(  # noqa: SLF001
+    return parser._admitted_or_warn(
         parent, tuple(map(and_, own, met_parent)), tuple(map(and_, own, kept_parent)), ("const", *keywords)
     )
 
@@ -574,7 +566,7 @@ def literal_written(
     """Return the keywords a literal check leaves to the field of a schema's values, as the field writes them.
 
     A field that writes Field() arguments (``writes`` at its site) writes beside the ``Literal`` of the values the
-    keywords ``_split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
+    keywords ``split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
     ``--omit-redundant-constraints`` the literal check decides them all and the field writes none of them.
     """
     if not (
@@ -588,7 +580,7 @@ def literal_written(
     ):
         return NO_KEYWORDS
     return (
-        frozenset(parser._split_constraint_values(obj, parser._literal_values_type(values))[0])  # noqa: SLF001
+        frozenset(split_constraint_values(parser, obj, parser._literal_values_type(values))[0])
         & LITERAL_DECIDABLE_KEYWORDS
     )
 
@@ -598,22 +590,23 @@ def check_literal_const(parser: ValueKeywordsHost, obj: JsonSchemaObject, const:
     if not parser.checks_literal_values:
         return
     decided, met, _ = _literal_met(obj, [const], NO_KEYWORDS)
-    parser._admitted_or_warn(obj, met, met, ("const", *decided))  # noqa: SLF001
+    parser._admitted_or_warn(obj, met, met, ("const", *decided))
 
 
 def enum_literal(parser: ValueKeywordsHost, obj: JsonSchemaObject, written: frozenset[str] = NO_KEYWORDS) -> DataType:
     """Return the Literal type of the enum values that meet the constraints its field leaves out.
 
-    A type of only some of the values (``_literal_view``) keeps them as written.
+    A type of only some of the values (``_literal_view``) keeps them as written. An open enum's Literal type is joined
+    with the type of its schema (``_with_open_enum_type``).
     """
-    view = parser._literal_view(obj, written)  # noqa: SLF001
-    data_type = parser._literal_values_type(view.enum)  # noqa: SLF001
+    view = parser._literal_view(obj, written)
+    data_type = parser._with_open_enum_type(obj, parser._literal_values_type(view.enum))
     if (values_as_written := view.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None:
-        parser._graph_builder.record_values_as_written(data_type, values_as_written)  # noqa: SLF001
+        parser._graph_builder.record_values_as_written(data_type, values_as_written)
     return data_type
 
 
-def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
+def create_synthetic_enum_obj(  # noqa: PLR0917
     parser: ValueKeywordsHost,
     original: JsonSchemaObject,
     enum_values: list[Any],
@@ -669,17 +662,13 @@ def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_
     ``Literal`` (``data_type``), and a oneOf or anyOf whose consts are, leave them to its field as a const does, unless
     the literal check removed the values they reject.
     """
-    holds_literal = _field_holds_literal(parser, data_type)
-    return obj.is_array or (
-        parser.field_constraints
-        and not (
-            obj.ref
-            or (is_union_schema(obj) and not holds_literal)
-            or obj.allOf
-            or obj.is_object
-            or (obj.enum and not parser.ignore_enum_constraints and not holds_literal)
-        )
-    )
+    if obj.is_array:
+        return True
+    if not parser.field_constraints or obj.ref or obj.allOf or obj.is_object:
+        return False
+    if is_union_schema(obj) or parser._reads_enum(obj):
+        return _field_holds_literal(parser, data_type)
+    return True
 
 
 def is_union_schema(obj: JsonSchemaObject) -> bool:
@@ -695,7 +684,7 @@ def union_sibling_constraints(obj: JsonSchemaObject, constraints: object) -> dic
     """
     if not is_union_schema(obj) or not isinstance(constraints, ConstraintsBase):
         return None
-    return constraints.model_dump(by_alias=True, exclude_none=True) or None
+    return constraints.set_values() or None
 
 
 def _field_holds_literal(parser: ValueKeywordsHost, data_type: DataType | None) -> bool:
@@ -714,7 +703,7 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
     if obj.is_object or obj.propertyNames is not None:
         return bool(get_property_count_constraints(type(parser), obj))
     if obj.is_array:
-        return bool(obj.minItems is not None or obj.maxItems is not None or parser._get_array_items_constraints(obj))  # noqa: SLF001
+        return bool(obj.minItems is not None or obj.maxItems is not None or parser._get_array_items_constraints(obj))
 
     match obj.type:
         case str() as schema_type:
@@ -744,9 +733,9 @@ def accepts_number_constraints(parser: ValueKeywordsHost, types: Sequence[str], 
         or (
             (
                 (type_, format_) in parser.type_mappings
-                or (type_ == "string" and format_ in parser._data_formats["string"])  # noqa: SLF001
+                or (type_ == "string" and format_ in parser._data_formats["string"])
             )
-            and holds_number_format(parser._get_type_with_mappings(type_, format_).name)  # noqa: SLF001
+            and holds_number_format(parser._get_type_with_mappings(type_, format_).name)
         )
         for type_ in types
     )
@@ -765,7 +754,7 @@ def declared_kinds(parser: ValueKeywordsHost, type_: str | list[str] | None, for
     )
 
 
-def _reads_by_type(parser: ValueKeywordsHost) -> bool:
+def reads_length_keywords_by_type(parser: ValueKeywordsHost) -> bool:
     """Return whether ``--read-length-keywords-by-type`` reads the string and array keywords for their own kind."""
     return length_keywords_by_type(parser.data_type_manager.constraint_options)
 
@@ -788,7 +777,7 @@ def declared_constraint_keywords(parser: ValueKeywordsHost, obj: JsonSchemaObjec
     declared array also holds minLength and maxLength, which are written as their length bounds, unless
     ``--read-length-keywords-by-type`` reads each kind's own keywords and leaves out those of the other.
     """
-    kinds = schema_kinds(parser, obj, by_type=(by_type := _reads_by_type(parser)))
+    kinds = schema_kinds(parser, obj, by_type=(by_type := reads_length_keywords_by_type(parser)))
     return declared_keywords(kinds, by_type=by_type) | other_kind_keywords(kinds, by_type=by_type)
 
 
@@ -826,11 +815,14 @@ def get_constraint_values(
     parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None
 ) -> dict[str, Any]:
     """Return JSON Schema constraint values, with the type-dependent keywords that the field takes."""
-    return parser._split_constraint_values(obj, data_type)[0]  # noqa: SLF001
+    return split_constraint_values(parser, obj, data_type)[0]
 
 
 def split_constraint_values(
-    parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None
+    parser: ValueKeywordsHost,
+    obj: JsonSchemaObject,
+    data_type: DataType | None = None,
+    bounds: Mapping[str, float] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out.
 
@@ -838,14 +830,15 @@ def split_constraint_values(
     the emitted Python type decides the others. The left-out ones are the declared keywords the type does not
     take, to warn about, ``minItems`` and ``maxItems`` of a declared string as the lengths they are written as.
     Under ``--read-length-keywords-by-type`` each kind holds its own keywords, and the string and array keywords of
-    another kind are left out silently (``other_kind_keywords``).
+    another kind are left out silently (``other_kind_keywords``). ``bounds`` replace the schema's ``minimum`` and
+    ``maximum`` before the type decides them (the bounds of a float const, ``const_bounds``).
     """
-    values = _constraint_values(obj, obj.__constraint_field_order__)
+    values = _constraint_values(obj, obj.__constraint_field_order__) | dict(bounds or {})
     if data_type is not None and (carried := type_enforced_keywords(parser, obj, data_type)):
         values = {key: value for key, value in values.items() if key not in carried}
     if not values:
         return values, {}
-    kinds = schema_kinds(parser, obj, by_type=(by_type := _reads_by_type(parser)))
+    kinds = schema_kinds(parser, obj, by_type=(by_type := reads_length_keywords_by_type(parser)))
     if data_type is None:
         declared = declared_keywords(kinds, by_type=by_type)
         return {key: value for key, value in values.items() if key in declared}, {}
@@ -897,7 +890,7 @@ def mark_type_dependent_constraints(
     parser: ValueKeywordsHost, model_field: DataModelFieldBase, obj: JsonSchemaObject
 ) -> None:
     """Remember the keywords the emitted type decides, so a scoped type override decides them again."""
-    if not parser._type_override_imports:  # noqa: SLF001
+    if not parser._type_override_imports:
         return
     declared = declared_constraint_keywords(parser, obj)
     if type_dependent_constraints := _constraint_values(
@@ -909,8 +902,8 @@ def mark_type_dependent_constraints(
 def is_fixed_length_tuple(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> bool:
     """Check if an array field represents a fixed-length tuple."""
     return (
-        parser._get_fixed_positional_items(obj) is not None  # noqa: SLF001
-        or parser._get_fixed_length_homogeneous_tuple_length(obj) is not None  # noqa: SLF001
+        get_fixed_positional_items(parser, obj) is not None
+        or get_fixed_length_homogeneous_tuple_length(parser, obj) is not None
     )
 
 
@@ -956,15 +949,19 @@ def get_array_item_schemas(
     *,
     include_true_tail_schema: bool = False,
     force_prefix_items: bool = False,
-) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
-    """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
-    if (fixed_items := parser._get_fixed_positional_items(obj)) is not None:  # noqa: SLF001
-        return fixed_items, True, True, None
+) -> tuple[list[JsonSchemaObject | bool], bool, int | None]:
+    """Return item schemas, whether the array is a fixed-length tuple, and the length of a homogeneous one.
+
+    The type of a fixed-length tuple fixes its length, so its item counts are dropped
+    (``suppress_array_length_constraints``).
+    """
+    if (fixed_items := get_fixed_positional_items(parser, obj)) is not None:
+        return fixed_items, True, None
     if (
         isinstance(item_schema := obj.items, JsonSchemaObject)
-        and (tuple_item_count := parser._get_fixed_length_homogeneous_tuple_length(obj)) is not None  # noqa: SLF001
+        and (tuple_item_count := get_fixed_length_homogeneous_tuple_length(parser, obj)) is not None
     ):
-        return [item_schema] if tuple_item_count else [], True, True, tuple_item_count
+        return [item_schema] if tuple_item_count else [], True, tuple_item_count
     return (
         get_list_item_schemas(
             parser,
@@ -972,7 +969,6 @@ def get_array_item_schemas(
             include_true_tail_schema=include_true_tail_schema,
             force_prefix_items=force_prefix_items,
         ),
-        False,
         False,
         None,
     )
@@ -1028,8 +1024,8 @@ def dropped_property_counts(parser: ValueKeywordsHost, obj: JsonSchemaObject, da
     on the field.
     """
     if (
-        "legacy-map-null-left-to-field" in parser._legacy_object_maps  # noqa: SLF001
-        or not (obj.patternProperties or obj.propertyNames is not None)
+        "legacy-map-null-left-to-field" in parser._legacy_object_maps
+        or not _declares_key_keywords(obj)
         or _object_map_other_types(obj) is None
         or not any(member in MAPPINGS for member in data_type.data_types)
     ):
@@ -1141,12 +1137,55 @@ def get_fixed_positional_items(
         return None
     if explicit:
         return items
-    read_ref = canonical_ref or parser.model_resolver.resolve_ref
-    first, *others = (
-        get_position_validation_keywords(parser, schema, read_ref)
-        for schema in [*items, *(get_list_item_schemas(parser, obj) or [True])]
+    return (
+        None
+        if _list_form_is_exact(
+            parser,
+            [*items, *(get_list_item_schemas(parser, obj) or [True])],
+            canonical_ref or parser.model_resolver.resolve_ref,
+        )
+        else items
     )
-    return None if all(other == first for other in others) else items
+
+
+def _list_form_is_exact(
+    parser: ValueKeywordsHost, schemas: Sequence[JsonSchemaObject | bool], canonical_ref: Callable[[str], str]
+) -> bool:
+    """Return whether the list form of an array checks what its positions do: every one of ``schemas`` accepts the same.
+
+    ``schemas`` are the positions the list form stands for, then the schemas of the items it holds.
+    """
+    keywords = [get_position_validation_keywords(parser, schema, canonical_ref) for schema in schemas]
+    return all(other == keywords[0] for other in keywords[1:])
+
+
+def warn_unchecked_prefix_positions(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> None:
+    """Warn that the list an array with ``prefixItems`` is written as checks no position (#4849).
+
+    The list holds the union of the position types, or any item, so an item in the wrong position is accepted. It is
+    exact, and no warning is written, where every position and the tail accept the same values; a ``false`` position
+    ends the array, so neither it, the positions after it nor the tail are compared.
+    """
+    prefix = obj.prefixItems or []
+    schemas = (
+        prefix[:false_index]
+        if (false_index := get_first_false_schema_index(type(parser), prefix)) is not None
+        else [*prefix, *(get_list_item_schemas(parser, obj) or [True])]
+    )
+    if _list_form_is_exact(parser, schemas, parser.model_resolver.resolve_ref):
+        return
+    hint = ""
+    if not parser.use_tuple_for_closed_arrays and (length := get_effective_array_length(type(parser), obj)) is not None:
+        hint = (
+            f" --use-tuple-for-closed-arrays writes it as a tuple of {length} positions, whose length "
+            "the bounds of the schema fix."
+        )
+    warn(
+        f"{named_location(obj.schema_location, 'schema')}: the positions of prefixItems are not checked, since the "
+        "array is written as a list, which accepts an item of any position's type at every position."
+        f"{hint}",
+        stacklevel=2,
+    )
 
 
 def get_position_validation_keywords(
@@ -1164,14 +1203,14 @@ def get_position_validation_keywords(
         isinstance(keywords, dict)
         and keywords.keys() == {"$ref"}
         and (ref := keywords["$ref"]) not in followed
-        and parser._resolve_external_ref_mapping(ref) is None  # noqa: SLF001
-        and parser._ref_schema_exists(ref)  # noqa: SLF001
+        and parser._resolve_external_ref_mapping(ref) is None
+        and parser._ref_schema_exists(ref)
     ):
         followed.add(ref)
-        target = parser._load_inherited_schema_object(ref)  # noqa: SLF001
+        target = parser._load_inherited_schema_object(ref)
         keywords = _validation_keywords(
             False if target.is_boolean_schema_false else target.model_dump(exclude_unset=True, by_alias=True),
-            parser._ref_path,  # noqa: SLF001
+            partial(_schema_refs.ref_path, parser),
         )
     return keywords
 
@@ -1179,7 +1218,7 @@ def get_position_validation_keywords(
 def get_array_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType) -> dict[str, Any]:
     """Return direct and boolean-schema array constraints."""
     constraints = get_constraint_values(parser, obj, data_type)
-    constraints.update(parser._get_array_items_constraints(obj))  # noqa: SLF001
+    constraints.update(parser._get_array_items_constraints(obj))
     return constraints
 
 
@@ -1204,34 +1243,22 @@ def has_prefix_items_tail_schema_or_boolean(parser: ValueKeywordsHost, obj: Json
     )
 
 
-def suppress_array_length_constraints(
-    parser: ValueKeywordsHost, constraints: dict[str, Any] | None, obj: JsonSchemaObject
-) -> None:
-    if not constraints:
-        return
-    if parser._is_fixed_length_tuple(obj):  # noqa: SLF001
-        constraints.pop("minItems", None)
-        constraints.pop("maxItems", None)
+def suppress_array_length_constraints(constraints: dict[str, Any]) -> None:
+    """Drop the item counts of a fixed-length tuple (``is_fixed_length_tuple``), whose type fixes its length."""
+    constraints.pop("minItems", None)
+    constraints.pop("maxItems", None)
 
 
 def resolve_array_field_required_nullable(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> tuple[bool, bool | None]:
-    facts = parser._null_facts(obj, "array-field", has_default=obj.has_default)  # noqa: SLF001
+    facts = parser._null_facts(obj, "array-field", has_default=obj.has_default)
     return bool(facts.required), facts.admits_null
 
 
 def get_scalar_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> DataType | None:
     """Infer a normal Python type from a scalar JSON value."""
-    if value is None:
-        return parser.data_type_manager.get_data_type(Types.null)
-    if isinstance(value, bool):
-        return parser.data_type_manager.get_data_type(Types.boolean)
-    if isinstance(value, int):
-        return parser.data_type_manager.get_data_type(Types.integer)
-    if isinstance(value, float):
-        return parser.data_type_manager.get_data_type(Types.float)
-    if isinstance(value, str):
-        return parser.data_type_manager.get_data_type(Types.string)
-    return None
+    if (type_ := _SCALAR_VALUE_TYPES.get(literal_value_kind(value))) is None:
+        return None
+    return parser.data_type_manager.get_data_type(type_)
 
 
 def get_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> DataType:
@@ -1240,15 +1267,17 @@ def get_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> D
     if scalar_type is not None:
         return scalar_type
     if isinstance(value, list):
-        item_types = [parser._get_data_type_from_json_value(item) for item in value]  # noqa: SLF001
+        item_types = [get_data_type_from_json_value(parser, item) for item in value]
         return parser.data_type(
-            data_types=item_types or [parser.data_type(type=ANY, import_=IMPORT_ANY)],
+            data_types=item_types
+            or [untyped_value_data_type(parser.data_type, parser.data_type_manager.untyped_value)],
             is_list=True,
         )
     if isinstance(value, dict):
-        value_types = [parser._get_data_type_from_json_value(item) for item in value.values()]  # noqa: SLF001
+        value_types = [get_data_type_from_json_value(parser, item) for item in value.values()]
         return parser.data_type(
-            data_types=value_types or [parser.data_type(type=ANY, import_=IMPORT_ANY)],
+            data_types=value_types
+            or [untyped_value_data_type(parser.data_type, parser.data_type_manager.untyped_value)],
             is_dict=True,
         )
     return parser.data_type_manager.get_data_type(Types.any)
@@ -1256,7 +1285,7 @@ def get_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> D
 
 def const_is_literal(parser: ValueKeywordsHost, const: object) -> bool:
     """Return whether the output model writes a JSON Schema const value as a Literal (``const_type``)."""
-    return const_type(const, bool_literals=parser._output_model_context.supports_boolean_literals) == "literal"  # noqa: SLF001
+    return const_type(const, bool_literals=parser._output_model_context.supports_boolean_literals) == "literal"
 
 
 def const_type_is_exact(parser: ValueKeywordsHost, const: object) -> bool:
@@ -1277,23 +1306,71 @@ def get_const_data_type(parser: ValueKeywordsHost, const: object, obj: JsonSchem
         if obj is not None:
             check_literal_const(parser, obj, const)
         return parser.data_type(literals=[const])
-    return parser._get_data_type_from_json_value(const)  # noqa: SLF001
+    return get_data_type_from_json_value(parser, const)
+
+
+def bounded_const_type(parser: ValueKeywordsHost, const: object, obj: JsonSchemaObject | None) -> DataType | None:
+    """Return the type of a float const of the schema ``obj`` that takes the bounds fixing it, or None.
+
+    Under ``--use-bounds-for-float-const`` without ``--field-constraints`` an output that checks constraints writes
+    them on the type with the other number keywords of ``obj``, as it writes those of a number; with it the field
+    takes them (``JsonSchemaParser._field_const_bounds``). Row ``legacy-float-const-unbounded``: without the option
+    none. The option never changes the type of a field: where the other number keywords would turn the bounded float
+    into another kind, as a ``multipleOf`` under ``--use-decimal-for-multiple-of`` into a decimal, the const stays
+    ``float``, whose parsed values are those written without the option.
+    """
+    if obj is None or obj.enum or not _type_takes_const_bounds(parser) or not (bounds := _value_bounds(const, obj)):
+        return None
+    others = tuple(keyword for keyword in NUMBER_KEYWORD_ORDER if keyword not in bounds)
+    manager = parser.data_type_manager
+    bounded = manager.get_data_type(Types.float, **bounds, **_constraint_values(obj, others, as_numbers=True))
+    return bounded if bounded.type == manager.get_data_type(Types.float, **bounds).type else None
+
+
+def _type_takes_const_bounds(parser: ValueKeywordsHost) -> bool:
+    """Return whether the type of a float const takes its bounds: under the option, where the field does not."""
+    return (
+        parser.use_bounds_for_float_const
+        and not parser.field_constraints
+        and parser._output_model_context.checks_constraints
+    )
+
+
+def const_bounds(obj: JsonSchemaObject) -> dict[str, float]:
+    """Return the ``minimum`` and ``maximum`` that fix a number to the float const typing a schema without an enum.
+
+    No ``Literal`` holds a float, so its type admits other numbers; the bounds admit the const alone.
+    """
+    return {} if obj.enum else _value_bounds(obj.extras.get("const"), obj)
+
+
+def _value_bounds(value: object, obj: JsonSchemaObject) -> dict[str, float]:
+    """Return the ``minimum`` and ``maximum`` that admit a finite float value alone, or none for another value.
+
+    They replace those of ``obj``, so they keep the tighter of each: a ``minimum`` above the value or a ``maximum``
+    below it admits nothing, as the schema does.
+    """
+    if not isinstance(value, float) or not isfinite(value):
+        return {}
+    declared = _constraint_values(obj, ("minimum", "maximum"), as_numbers=True)
+    return {
+        "minimum": max(value, declared.get("minimum", value)),
+        "maximum": min(value, declared.get("maximum", value)),
+    }
 
 
 def partition_enum_values(
     parser: ValueKeywordsHost, enum_values: list[Any]
-) -> tuple[list[JsonSchemaLiteral], list[object], bool]:
+) -> tuple[list[JsonSchemaLiteral], list[object]]:
     """Split enum values into literal (``is_literal_kind``) and non-literal values."""
     literal_values: list[JsonSchemaLiteral] = []
     non_literal_values: list[object] = []
-    has_null = False
-    bool_literals = parser._output_model_context.supports_boolean_literals  # noqa: SLF001
+    bool_literals = parser._output_model_context.supports_boolean_literals
     for enum_value in enum_values:
         if (kind := literal_value_kind(enum_value)) == "none":
-            has_null = True
             non_literal_values.append(enum_value)
         elif is_literal_kind(kind, bool_literals=bool_literals):
             literal_values.append(enum_value)
         else:
             non_literal_values.append(enum_value)
-    return literal_values, non_literal_values, has_null
+    return literal_values, non_literal_values

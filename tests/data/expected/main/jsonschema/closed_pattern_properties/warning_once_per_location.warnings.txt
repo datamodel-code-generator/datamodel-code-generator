@@ -1,0 +1,1 @@
+closed_pattern_properties_property_ref.json#/properties/home: additionalProperties is false beside patternProperties, so the generated model rejects the keys the patterns admit. With --output-model-type pydantic_v2.BaseModel, --generate-schema-validators writes the pattern key rule that accepts them.

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import shutil
-import sys
 import warnings
 from pathlib import Path
 from typing import Any
@@ -28,21 +27,18 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
+from tests.capabilities import needs
 from tests.conftest import (
     assert_directory_content,
     assert_generated_modules_output,
     assert_output,
-    create_assert_file_content,
+    write_generated_modules,
 )
 from tests.main.conftest import run_generate_and_assert, run_generate_file_and_assert
 
 DATA = Path(__file__).parents[1] / "data"
 SERVER_SOURCE = DATA / "generation_platform" / "fastapi"
 CLIENT_SOURCE = DATA / "generation_platform" / "client" / "cli"
-EXPECTED = DATA / "expected" / "main" / "generation_platform"
-SERVER_PACKAGE = EXPECTED / "fastapi" / "packages" / "pets" / "pydantic_v2_BaseModel"
-CLIENT_OPTIONS = EXPECTED / "client" / "cli" / "options"
-GENERATE = EXPECTED / "generate"
 MODELS: dict[str, Any] = {
     "input_file_type": InputFileType.OpenAPI,
     "target_python_version": PythonVersion.PY_311,
@@ -70,8 +66,6 @@ CLIENT: dict[str, Any] = {
     "client_model_package": "models",
 }
 
-assert_file_content = create_assert_file_content(EXPECTED)
-
 
 def _server(root: Path, source: str = "pets.yaml") -> Path:
     shutil.copy2(SERVER_SOURCE / source, root / source)
@@ -90,12 +84,6 @@ def _split(modules: dict[tuple[str, ...], str]) -> tuple[dict[tuple[str, ...], s
     return python, {path: text for path, text in modules.items() if path not in python}
 
 
-def _as_text(root: Path, *path: str) -> Path:
-    """Copy a written file that is not a module to a text file under root, which the comparison reads as text."""
-    (copies := root / "text").mkdir(exist_ok=True)
-    return Path(shutil.copyfile(root.joinpath(*path), copies / f"{'-'.join(path)}.txt"))
-
-
 def _compare_written(modules: Any, root: Path) -> None:
     """Compare every returned file with the file a write run left at the same path under root.
 
@@ -104,9 +92,25 @@ def _compare_written(modules: Any, root: Path) -> None:
     for services in [path for path in root.rglob("services") if path.is_dir()]:
         shutil.rmtree(services)
     python, other = _split(modules)
-    assert_generated_modules_output(python, root)
-    for path, text in other.items():
-        assert_output(text, _as_text(root, *path))
+    copied = {path: text for path, text in python.items() if path[:2] == ("client", "_runtime")}
+    kept = {path: text for path, text in python.items() if path not in copied}
+    if copied:
+        write_generated_modules(returned := root.with_name(f"{root.name}-returned"), copied)
+        assert_directory_content(root / "client" / "_runtime", returned / "client" / "_runtime")
+    assert_generated_modules_output(kept, name="python")
+    written = [path.relative_to(root).parts for path in root.rglob("*.py")]
+    assert_generated_modules_output(
+        {
+            parts: root.joinpath(*parts).read_text(encoding="utf-8")
+            for parts in written
+            if parts[:2] != ("client", "_runtime")
+        },
+        name="python",
+    )
+    assert_generated_modules_output(other, pattern="*", name="files")
+    assert_generated_modules_output(
+        {path: root.joinpath(*path).read_text(encoding="utf-8") for path in other}, pattern="*", name="files"
+    )
 
 
 @pytest.mark.parametrize("form", ["enums", "strings", "config", "loaded"])
@@ -142,16 +146,20 @@ def test_generate_server(form: str, tmp_path: Path, monkeypatch: pytest.MonkeyPa
             (elsewhere := tmp_path / "elsewhere").mkdir()
             monkeypatch.chdir(elsewhere)
             generate(tmp_path / source, config=load_pyproject_config(tmp_path, overrides=MODELS))
-    assert_file_content(tmp_path / "models.py", SERVER_PACKAGE / "models.py")
-    assert_directory_content(tmp_path / "server", SERVER_PACKAGE / "server")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), suffix=".py")
+    assert_directory_content(tmp_path / "server")
 
 
 def test_generate_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Write the models and the client package the command line writes."""
     monkeypatch.chdir(tmp_path)
     generate(_client(tmp_path), **MODELS, **CLIENT, output=Path("models.py"), client_output=Path("client"))
-    assert_file_content(tmp_path / "models.py", CLIENT_OPTIONS / "models.py")
-    assert_file_content(tmp_path / "client" / "resources" / "pets" / "_sync.py", CLIENT_OPTIONS / "_sync.py")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output(
+        (tmp_path / "client" / "resources" / "pets" / "_sync.py").read_text(encoding="utf-8"),
+        name="client",
+        suffix=".py",
+    )
 
 
 def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -160,15 +168,13 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
     run_generate_file_and_assert(
         input_path=_server(tmp_path),
         output_path=tmp_path / "models.py",
-        assert_func=assert_file_content,
-        expected_file=SERVER_PACKAGE / "models.py",
         **MODELS,
         server_output=Path("server"),
         server_layout="single",
         server_primary_responses={"/paths/~1pets/get": {"status_code": 999}},
         client_signature_style="unpack",
     )
-    assert_output(f"server written: {(tmp_path / 'server').exists()}\n", GENERATE / "unselected.txt")
+    assert_output(f"server written: {(tmp_path / 'server').exists()}\n")
 
 
 @pytest.mark.parametrize(
@@ -190,7 +196,7 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         ({**SERVER, "input_file_type": "auto"}, "--generate-server requires --input-file-type openapi, not auto"),
         (
             {**CLIENT, "input_file_type": InputFileType.JsonSchema},
-            "--generate-client requires --input-file-type openapi, not jsonschema",
+            "--generate-client requires --input-file-type openapi or asyncapi, not jsonschema",
         ),
         ({**SERVER, "openapi_scopes": ["schemas"]}, "--generate-server requires --openapi-scopes to include api"),
         (
@@ -345,7 +351,7 @@ def test_generate_target_errors(options: dict[str, Any], message: str, tmp_path:
             **options,
         },
     )
-    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "nothing-written.txt")
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
 
 
 def test_generate_server_lock_overlap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -376,7 +382,7 @@ def test_generate_server_lock_overlap(tmp_path: Path, monkeypatch: pytest.Monkey
         ),
         config=config,
     )
-    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
 
 
 @pytest.mark.parametrize(
@@ -410,7 +416,7 @@ def test_generate_server_collisions(
         **{**SERVER, "server_model_package": model_package},
         **({"output": Path(output), "server_output": Path("server")} if written else {}),
     )
-    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
 
 
 @pytest.mark.parametrize("output", ["models.py", None])
@@ -430,7 +436,7 @@ def test_generate_server_unencodable_text(output: str | None, tmp_path: Path, mo
         server_output=Path("server"),
         encoding="latin-1",
     )
-    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "nothing-written.txt")
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
 
 
 def test_generate_target_input_errors(tmp_path: Path) -> None:
@@ -536,7 +542,6 @@ def test_generate_server_warnings(output: str | None, tmp_path: Path, monkeypatc
             for item in recorded
             if issubclass(item.category, DocumentationAnnotationWarning)
         ),
-        GENERATE / "documentation-warning.txt",
     )
 
 
@@ -583,7 +588,7 @@ def test_generate_reads_a_leading_tilde_of_an_output_as_the_home_directory(
     assert_output(f"package: {(package / '__init__.py').is_file()}\nwritten: {written}\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@needs("posix")
 @pytest.mark.parametrize(
     ("field", "option", "options"),
     [
@@ -615,11 +620,10 @@ def test_generate_server_lock(output: str | None, tmp_path: Path, monkeypatch: p
     generate(_server(tmp_path), **MODELS, **SERVER, output=output, server_output=Path("server"), update_lock=True)
     assert_output(
         (tmp_path / "datamodel-codegen.lock").read_text(encoding="utf-8"),
-        DATA / "expected" / "http" / "remote_lock_empty.txt",
     )
     assert_output(
         f"written: {sorted(path.name for path in tmp_path.iterdir())}\n",
-        GENERATE / f"lock-{'write' if output else 'memory'}.txt",
+        name="written",
     )
 
 
@@ -627,9 +631,9 @@ def test_generate_server_without_output(tmp_path: Path, monkeypatch: pytest.Monk
     """Return every model and server file under its import path, as the write run writes them, and write nothing."""
     monkeypatch.chdir(tmp_path)
     modules = generate(_server(tmp_path), **MODELS, **SERVER)
-    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
     python, _ = _split(modules)
-    assert_generated_modules_output(python, SERVER_PACKAGE)
+    assert_generated_modules_output(python, name="python")
     generate(Path("pets.yaml"), **MODELS, **SERVER, output=Path("models.py"), server_output=Path("server"))
     _compare_written(modules, tmp_path)
 
@@ -670,7 +674,7 @@ def test_generate_server_without_output_modular(tmp_path: Path, monkeypatch: pyt
     monkeypatch.chdir(root)
     side = {"emit_model_metadata": Path("metadata.json")}
     modules = generate(tmp_path / "spec" / "modular.yaml", **MODELS, **SERVER, **side)
-    assert_output(f"written: {sorted(path.name for path in root.iterdir())}\n", GENERATE / "memory-metadata.txt")
+    assert_output(f"written: {sorted(path.name for path in root.iterdir())}\n")
     (write := tmp_path / "write").mkdir()
     monkeypatch.chdir(write)
     generate(
@@ -682,7 +686,8 @@ def test_generate_server_without_output_modular(tmp_path: Path, monkeypatch: pyt
         server_output=Path("server"),
     )
     _compare_written(modules, write)
-    assert_output((root / "metadata.json").read_text(encoding="utf-8"), _as_text(write, "metadata.json"))
+    assert_output((root / "metadata.json").read_text(encoding="utf-8"), name="metadata", suffix=".json")
+    assert_output((write / "metadata.json").read_text(encoding="utf-8"), name="metadata", suffix=".json")
 
 
 @pytest.mark.parametrize("form", ["keywords", "loaded", "settings-path"])
@@ -707,7 +712,7 @@ def test_generate_server_without_output_settings(form: str, tmp_path: Path, monk
         modules = generate(source, **options)
     generate(source, **options, output=Path("models.py"), server_output=Path("server"))
     _compare_written(modules, tmp_path)
-    assert_output(modules["server", "application.py"], GENERATE / "line-length" / "application.py")
+    assert_output(modules["server", "application.py"], suffix=".py")
 
 
 def test_generate_client_without_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -756,5 +761,4 @@ def test_generate_server_implied_settings(
     same = (tmp_path / "given.py").read_text(encoding="utf-8") == (tmp_path / "models.py").read_text(encoding="utf-8")
     assert_output(
         f"printed {printed.out + printed.err!r}; models equal those of a model-only run given the settings: {same}\n",
-        GENERATE / "implied.txt",
     )

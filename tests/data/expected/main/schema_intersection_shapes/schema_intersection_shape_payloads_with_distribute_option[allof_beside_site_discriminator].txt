@@ -1,0 +1,104 @@
+pydantic_v2.BaseModel default named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel default named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel default named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel default named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel default mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel default mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel default mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel default mapped {"id": "i", "petType": "d"} rejected
+pydantic_v2.dataclass default named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.dataclass default named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.dataclass default named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.dataclass default named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.dataclass default mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.dataclass default mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.dataclass default mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.dataclass default mapped {"id": "i", "petType": "d"} rejected
+msgspec.Struct default named {"id": "i", "petType": "Cat", "meow": "m"} import error
+msgspec.Struct default named {"id": "i", "petType": "Dog", "bark": "b"} import error
+msgspec.Struct default named {"petType": "Cat", "meow": "m"} import error
+msgspec.Struct default named {"id": "i", "petType": "Cat"} import error
+msgspec.Struct default mapped {"id": "i", "petType": "c", "meow": "m"} import error
+msgspec.Struct default mapped {"id": "i", "petType": "d", "bark": "b"} import error
+msgspec.Struct default mapped {"petType": "c", "meow": "m"} import error
+msgspec.Struct default mapped {"id": "i", "petType": "d"} import error
+pydantic_v2.BaseModel --field-constraints named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --field-constraints named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel --field-constraints named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --field-constraints named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel --field-constraints mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel --field-constraints mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel --field-constraints mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel --field-constraints mapped {"id": "i", "petType": "d"} rejected
+pydantic_v2.BaseModel --use-annotated named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --use-annotated named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel --use-annotated named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --use-annotated named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel --use-annotated mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel --use-annotated mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel --use-annotated mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel --use-annotated mapped {"id": "i", "petType": "d"} rejected
+pydantic_v2.BaseModel --collapse-root-models named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --collapse-root-models named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --collapse-root-models named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel --collapse-root-models mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel --collapse-root-models mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel --collapse-root-models mapped {"id": "i", "petType": "d"} rejected
+msgspec.Struct --collapse-root-models named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+msgspec.Struct --collapse-root-models named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+msgspec.Struct --collapse-root-models named {"petType": "Cat", "meow": "m"} rejected
+msgspec.Struct --collapse-root-models named {"id": "i", "petType": "Cat"} rejected
+msgspec.Struct --collapse-root-models mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+msgspec.Struct --collapse-root-models mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+msgspec.Struct --collapse-root-models mapped {"petType": "c", "meow": "m"} rejected
+msgspec.Struct --collapse-root-models mapped {"id": "i", "petType": "d"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat", "meow": "m"} import error
+msgspec.Struct --use-site-models-for-constrained-refs named {"id": "i", "petType": "Dog", "bark": "b"} import error
+msgspec.Struct --use-site-models-for-constrained-refs named {"petType": "Cat", "meow": "m"} import error
+msgspec.Struct --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat"} import error
+msgspec.Struct --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "c", "meow": "m"} import error
+msgspec.Struct --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d", "bark": "b"} import error
+msgspec.Struct --use-site-models-for-constrained-refs mapped {"petType": "c", "meow": "m"} import error
+msgspec.Struct --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d"} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named {"petType": "Cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named {"id": "i", "petType": "Cat"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mapped {"petType": "c", "meow": "m"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mapped {"id": "i", "petType": "d"} rejected
+msgspec.Struct --use-msgspec-tagged-unions named {"id": "i", "petType": "Cat", "meow": "m"} accepted
+msgspec.Struct --use-msgspec-tagged-unions named {"id": "i", "petType": "Dog", "bark": "b"} accepted
+msgspec.Struct --use-msgspec-tagged-unions named {"petType": "Cat", "meow": "m"} rejected
+msgspec.Struct --use-msgspec-tagged-unions named {"id": "i", "petType": "Cat"} rejected
+msgspec.Struct --use-msgspec-tagged-unions mapped {"id": "i", "petType": "c", "meow": "m"} accepted
+msgspec.Struct --use-msgspec-tagged-unions mapped {"id": "i", "petType": "d", "bark": "b"} accepted
+msgspec.Struct --use-msgspec-tagged-unions mapped {"petType": "c", "meow": "m"} rejected
+msgspec.Struct --use-msgspec-tagged-unions mapped {"id": "i", "petType": "d"} rejected

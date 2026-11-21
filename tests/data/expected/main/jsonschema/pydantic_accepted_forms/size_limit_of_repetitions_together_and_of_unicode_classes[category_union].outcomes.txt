@@ -1,0 +1,3 @@
+The pattern '[\\p{L}\\p{N}_-]{1,256}' of the schema at pattern_size_category_union.yaml#/components/schemas/TagValue is left out: no regex engine of the output compiles it, so the generated code does not check it.
+tag: valid
+punctuation: valid

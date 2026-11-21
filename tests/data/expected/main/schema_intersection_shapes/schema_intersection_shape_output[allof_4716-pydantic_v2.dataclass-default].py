@@ -24,7 +24,7 @@ class Point:
     x: int | None = None
 
 
-Score = TypeAliasType("Score", Count)
+Score = TypeAliasType("Score", Annotated[Count, Field(..., le=100)])
 
 
 class Status(Enum):
@@ -40,9 +40,9 @@ Quantity = TypeAliasType("Quantity", Annotated[int, Field(ge=1)])
 
 @dataclass
 class Measurement:
-    count: Count | None = None
-    code: Code | None = None
-    tags: Tags | None = None
+    count: Annotated[Count | None, Field(ge=5)] = None
+    code: Annotated[Code | None, Field(max_length=3)] = None
+    tags: Annotated[Tags | None, Field(min_length=1)] = None
     score: Score | None = None
     counts: list[Count] | None = None
     limits: dict[str, Count] | None = None
@@ -54,7 +54,7 @@ class Measurement:
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
     pp: dict[constr(pattern=r'^a|^b'), Count] | None = None
     ap: dict[str, Count] | None = None
-    q_allof: Quantity | None = None
+    q_allof: Annotated[Quantity | None, Field(le=10)] = None
     q_items: list[Quantity] | None = None
     q_map: dict[str, Quantity] | None = None
     short_status: Status | None = None

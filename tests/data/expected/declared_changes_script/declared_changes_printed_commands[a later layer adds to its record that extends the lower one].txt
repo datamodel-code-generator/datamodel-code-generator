@@ -1,0 +1,40 @@
+$ check --base base
+exit 1
+declared changes: the working tree against base, release since 0.1.0
+1 stored outputs this change moves are not declared:
+  changed  models/d.json  tests/test_models.py::test_model[d]
+Declare them:
+  python scripts/declared_changes.py declare more --rest --base base
+Categories: docs/development-contributing.md#declared-changes
+failed
+
+$ declare more --rest --base base
+exit 0
+docs/data/migration/unreleased/more.toml covers 1 more stored outputs
+
+$ prune --base base
+exit 0
+
+$ check --base base
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+ok
+
+--- lower.toml ---
+[[change]]
+id = "lower"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "models/b.py",
+    "models/d.json",
+]
+--- more.toml ---
+[[change]]
+id = "more"
+extends = "lower"
+covers = [
+    "models/b.py",
+    "models/d.json",
+]

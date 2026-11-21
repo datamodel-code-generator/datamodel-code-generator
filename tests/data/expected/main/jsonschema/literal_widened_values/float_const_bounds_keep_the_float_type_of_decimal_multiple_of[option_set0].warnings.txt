@@ -1,0 +1,1 @@
+a Literal of the output model cannot hold the value 0.3, so it is written as its type, which admits other values; Model.c is generated without this constraint.

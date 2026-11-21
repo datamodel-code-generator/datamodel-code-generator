@@ -8,7 +8,7 @@ call them through the parser.
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 from typing_extensions import Protocol, final
 
@@ -20,26 +20,32 @@ from datamodel_code_generator.model._decisions.tag_value import (
     MappingPath,
     distinct_tags,
     field_tag,
+    same_tag,
     tagged_union_discriminator,
     union_tag_values,
 )
 from datamodel_code_generator.model.base import sanitize_module_name
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._naming import Ordinal, Tag, composed_name
 from datamodel_code_generator.parser._schema_object import Discriminator, JsonSchemaObject
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
-    from datamodel_code_generator.reference import ModelResolver, SchemaLocation
+    from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType
 
 __all__ = [
     "TaggedUnionValue",
+    "UnionTagReading",
     "UnionTagsHost",
     "all_of_adds_properties",
+    "discriminator_inference",
     "discriminator_mapping_refs",
     "get_referenced_single_literal_value",
     "get_single_literal_value",
@@ -58,19 +64,26 @@ __all__ = [
 ]
 
 TaggedUnionValue = Union[int, str]  # noqa: UP007
+UnionTagReading = Literal["legacy-branch-own-tags", "branch-and-all-of-tags"]
+"""How the branches of a union are read for the property that tags them (``get_tagged_union_field_values``).
+
+``legacy-branch-own-tags`` reads every branch, or the schema its local ``$ref`` names, as msgspec output did up to
+0.96.0; ``branch-and-all-of-tags`` (``--infer-union-discriminators``) also reads the allOf members of each, and leaves
+out the branches that admit only null, which the union keeps as its ``None``.
+"""
 _MIN_UNION_VARIANT_LITERAL_VALUES = 2
 
 
-class UnionTagsHost(Protocol):
+class UnionTagsHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the union tags read and write."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def use_tag_as_union_variant_name(self) -> bool:
         """Whether union branches are named after their tags (``--use-tag-as-union-variant-name``)."""
+
+    @property
+    def _output_model_context(self) -> OutputModelContext:
+        """The capabilities of the output model types."""
 
     def _claiming(self, claim: Claim | None) -> NamingScope:
         """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records them."""
@@ -79,48 +92,18 @@ class UnionTagsHost(Protocol):
     def _tag_key_variants(self) -> dict[SchemaLocation | None, tuple[str, str]]:
         """The key and the name of each branch named after its key, by the location of the branch schema."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
     def _raw_location(self, raw: object) -> SchemaLocation | None:
         """Return the location of a JSON container of a loaded document."""
 
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
 
-    def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
-        """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
-
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load the schema object a reference names."""
-
-    def _is_local_ref(self, ref: str) -> bool:
-        """Return whether a reference is a fragment of the document parsed now."""
-
     def _get_single_literal_value(
         self,
         obj: JsonSchemaObject,
-        seen_refs: set[_TargetNode] | None = None,
+        seen_refs: frozenset[_TargetNode] = frozenset(),
     ) -> JsonSchemaLiteral | None:
         """Return the one value a property schema admits as a tag (``get_single_literal_value``)."""
-
-    def _get_union_variant_literal_values(
-        self,
-        combined_schemas: Sequence[JsonSchemaObject],
-        field_name: str,
-        tag_keys: Mapping[int, str] | None = None,
-    ) -> dict[int, JsonSchemaLiteral] | None:
-        """Return each property branch's distinct literal for a field (``get_union_variant_literal_values``)."""
-
-    def _iter_union_variant_literal_field_names(
-        self,
-        obj: JsonSchemaObject,
-        combined_schemas: Sequence[JsonSchemaObject],
-    ) -> Iterator[str]:
-        """Yield the fields that may tag the branches (``iter_union_variant_literal_field_names``)."""
 
     def parse_item(
         self,
@@ -150,7 +133,7 @@ class _SchemaTagFacts:
 
     parser: UnionTagsHost
     obj: JsonSchemaObject
-    seen_refs: set[_TargetNode] | None
+    seen_refs: frozenset[_TargetNode]
 
     def has_const(self) -> bool:
         """Return whether the schema has a ``const``, null included."""
@@ -174,8 +157,13 @@ class _SchemaTagFacts:
         return None if value is None else FieldTag(value, "referenced-schema")
 
 
-def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None:
+def _variant_prefix(name: str) -> str:
+    """Return what the branch names composed from a union's name ``name`` start with: its module, its class, ``_``."""
     module_name, separator, class_name = name.rpartition(".")
+    return f"{module_name}{separator}{class_name or name}_" if module_name else f"{class_name or name}_"
+
+
+def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None:
     if isinstance(literal, str):
         literal_text = literal
     elif isinstance(literal, bool):
@@ -185,8 +173,7 @@ def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None
     literal_name = sanitize_module_name(literal_text, treat_dot_as_module=False)
     if not literal_name:
         return None
-    variant_name = f"{class_name or name}_{literal_name}"
-    return f"{module_name}{separator}{variant_name}" if module_name else variant_name
+    return f"{_variant_prefix(name)}{literal_name}"
 
 
 def union_variant_tag(name: str, variant_name: str) -> str | None:
@@ -194,15 +181,14 @@ def union_variant_tag(name: str, variant_name: str) -> str | None:
 
     None for a name it did not compose from ``name``.
     """
-    module_name, separator, class_name = name.rpartition(".")
-    prefix = f"{module_name}{separator}{class_name or name}_" if module_name else f"{class_name or name}_"
+    prefix = _variant_prefix(name)
     return variant_name.removeprefix(prefix) if variant_name.startswith(prefix) else None
 
 
 def get_single_literal_value(
     parser: UnionTagsHost,
     obj: JsonSchemaObject,
-    seen_refs: set[_TargetNode] | None = None,
+    seen_refs: frozenset[_TargetNode] = frozenset(),
 ) -> JsonSchemaLiteral | None:
     """Return the one value a property schema admits as a tag (``field_tag`` at ``schema``)."""
     tag = field_tag("schema", _SchemaTagFacts(parser, obj, seen_refs))
@@ -210,17 +196,12 @@ def get_single_literal_value(
 
 
 def get_referenced_single_literal_value(
-    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: set[_TargetNode] | None
+    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: frozenset[_TargetNode]
 ) -> JsonSchemaLiteral | None:
     """Return the one value the schema a ``$ref`` names admits as a tag, reading each schema node once."""
-    if not obj.ref:
+    if not obj.ref or (target := _schema_refs.unmapped_ref_target(parser, obj.ref, seen_refs)) is None:
         return None
-    seen_refs = seen_refs or set()
-    resolved_ref = parser._ref_path(obj.ref)  # noqa: SLF001
-    if parser._resolve_external_ref_mapping(obj.ref) or (node := parser._key_node(resolved_ref)) in seen_refs:  # noqa: SLF001
-        return None
-    seen_refs.add(node)
-    return parser._get_single_literal_value(parser._load_ref_schema_object(obj.ref), seen_refs)  # noqa: SLF001
+    return parser._get_single_literal_value(*target)
 
 
 def get_union_variant_literal_values(
@@ -243,7 +224,7 @@ def get_union_variant_literal_values(
         field = item.properties.get(field_name)
         if not isinstance(field, JsonSchemaObject):
             return None
-        value = parser._get_single_literal_value(field)  # noqa: SLF001
+        value = parser._get_single_literal_value(field)
         if value is None:
             return None
         values[index] = value
@@ -274,24 +255,19 @@ def iter_union_variant_literal_field_names(
 
 
 def is_null_only_schema(
-    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: set[_TargetNode] | None = None
+    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: frozenset[_TargetNode] = frozenset()
 ) -> bool:
     """Return whether a schema, or the schema its `$ref` chain reaches, admits only null by type, const, or enum."""
     if obj.type in ("null", ["null"]) or obj.enum == [None] or ("const" in obj.extras and obj.extras["const"] is None):
         return True
-    if not obj.ref:
+    if not obj.ref or (target := _schema_refs.unmapped_ref_target(parser, obj.ref, seen_refs)) is None:
         return False
-    seen_refs = seen_refs or set()
-    resolved_ref = parser._ref_path(obj.ref)  # noqa: SLF001
-    if parser._resolve_external_ref_mapping(obj.ref) or (node := parser._key_node(resolved_ref)) in seen_refs:  # noqa: SLF001
-        return False
-    seen_refs.add(node)
-    return is_null_only_schema(parser, parser._load_ref_schema_object(obj.ref), seen_refs)  # noqa: SLF001
+    return is_null_only_schema(parser, *target)
 
 
 def is_single_literal_schema(parser: UnionTagsHost, obj: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
     """Return whether a property schema admits a single literal value."""
-    return isinstance(obj, JsonSchemaObject) and parser._get_single_literal_value(obj) is not None  # noqa: SLF001
+    return isinstance(obj, JsonSchemaObject) and parser._get_single_literal_value(obj) is not None
 
 
 def all_of_adds_properties(parser: UnionTagsHost, items: Iterable[JsonSchemaObject | bool]) -> bool:
@@ -356,7 +332,7 @@ def get_union_variant_tag_keys(
     return tag_keys
 
 
-def infer_union_variant_literal_names(  # noqa: PLR0913, PLR0917
+def infer_union_variant_literal_names(  # noqa: PLR0917
     parser: UnionTagsHost,
     name: str,
     obj: JsonSchemaObject,
@@ -365,10 +341,10 @@ def infer_union_variant_literal_names(  # noqa: PLR0913, PLR0917
     skipped_fields: Container[str] = (),
 ) -> list[str | None] | None:
     """Name the branches after the first field not in `skipped_fields` whose literals give distinct names."""
-    for field_name in parser._iter_union_variant_literal_field_names(obj, combined_schemas):  # noqa: SLF001
+    for field_name in iter_union_variant_literal_field_names(parser, obj, combined_schemas):
         if field_name in skipped_fields:
             continue
-        values = parser._get_union_variant_literal_values(combined_schemas, field_name, tag_keys)  # noqa: SLF001
+        values = get_union_variant_literal_values(parser, combined_schemas, field_name, tag_keys)
         if values is None:
             continue
         variant_names: list[str | None] = [None] * len(combined_schemas)
@@ -417,19 +393,96 @@ def infer_union_variant_names(
     return tag_names
 
 
+def _branch_own_tag_schema(parser: UnionTagsHost, item: JsonSchemaObject) -> JsonSchemaObject:
+    """Return the schema a branch reads its own tag from: the one its local ``$ref`` names, else the branch itself."""
+    if (ref := item.ref) and _schema_refs.is_local_ref(parser, ref):
+        return parser._load_ref_schema_object(ref)
+    return item
+
+
+def _branch_tag_parts(
+    parser: UnionTagsHost, item: JsonSchemaObject, seen_refs: frozenset[_TargetNode]
+) -> Iterator[JsonSchemaObject]:
+    """Yield a branch, or the schema its local ``$ref`` names, and its allOf members read the same way, in order.
+
+    A ``$ref`` into another document is not read: the branch stands as written. A local ``$ref`` that a fact walk reads
+    no schema at (``unmapped_ref_target``: a mapped or a visited one) gives no part.
+    """
+    if item.ref and _schema_refs.is_local_ref(parser, item.ref):
+        if (target := _schema_refs.unmapped_ref_target(parser, item.ref, seen_refs)) is None:
+            return
+        item, seen_refs = target
+    yield item
+    for member in item.allOf:
+        if isinstance(member, JsonSchemaObject):
+            yield from _branch_tag_parts(parser, member, seen_refs)
+
+
+def _pinned_value(parser: UnionTagsHost, schema: JsonSchemaObject | bool) -> JsonSchemaLiteral | None:  # noqa: FBT001
+    """Return the one value a property schema admits as a tag, None for a boolean schema."""
+    return parser._get_single_literal_value(schema) if isinstance(schema, JsonSchemaObject) else None
+
+
+def _part_property_schema(
+    parser: UnionTagsHost,
+    kept: JsonSchemaObject | bool,  # noqa: FBT001
+    schema: JsonSchemaObject | bool,  # noqa: FBT001
+) -> JsonSchemaObject | bool:
+    """Return the schema a property of a branch reads its tag from, given the one kept so far and that of a next part.
+
+    The part that pins the property to one value gives it; two parts pinning different values, or a part that forbids
+    the property (false), leave it no value (false).
+    """
+    if kept is False or schema is False:
+        return False
+    if (value := _pinned_value(parser, schema)) is None:
+        return kept
+    if (kept_value := _pinned_value(parser, kept)) is None:
+        return schema
+    return kept if same_tag(kept_value, value, "type-and-value") else False
+
+
+def _branch_tag_view(parser: UnionTagsHost, item: JsonSchemaObject) -> JsonSchemaObject:
+    """Return the properties and the required names a branch reads its tag from, with those of its allOf members.
+
+    The parts are the branch, or the schema its local ``$ref`` names, and its allOf members (``_branch_tag_parts``). A
+    name is required where a part requires it; a property takes its schema from the part that pins it
+    (``_part_property_schema``). A branch of one part is that part; otherwise the view is a new object that holds only
+    these two keywords, read and never written or put in the schema graph.
+    """
+    parts = list(_branch_tag_parts(parser, item, frozenset()))
+    if len(parts) == 1:
+        return parts[0]
+    properties: dict[str, JsonSchemaObject | bool] = {}
+    required: dict[str, None] = {}
+    for part in parts:
+        required.update(dict.fromkeys(part.required))
+        for name, schema in (part.properties or {}).items():
+            properties[name] = (
+                schema if name not in properties else _part_property_schema(parser, properties[name], schema)
+            )
+    return JsonSchemaObject.model_construct(properties=properties, required=list(required))
+
+
 def get_tagged_union_field_values(
     parser: UnionTagsHost,
     obj: JsonSchemaObject,
     combined_schemas: Sequence[JsonSchemaObject],
+    reading: UnionTagReading,
 ) -> tuple[str, dict[int, TaggedUnionValue]] | None:
-    """Return the shared required literal field and the msgspec tags of the branches (``union_tag_values``)."""
-    discriminator_schemas = [
-        parser._load_ref_schema_object(item.ref) if item.ref and parser._is_local_ref(item.ref) else item  # noqa: SLF001
-        for item in combined_schemas
-    ]
-    for field_name in parser._iter_union_variant_literal_field_names(obj, discriminator_schemas):  # noqa: SLF001
+    """Return the shared required literal field and the tags of the branches (``union_tag_values``).
+
+    ``reading`` names how the branches are read (``UnionTagReading``); the tags are keyed by the index of the branch
+    among those read.
+    """
+    discriminator_schemas = (
+        [_branch_own_tag_schema(parser, item) for item in combined_schemas]
+        if reading == "legacy-branch-own-tags"
+        else [_branch_tag_view(parser, item) for item in combined_schemas if not is_null_only_schema(parser, item)]
+    )
+    for field_name in iter_union_variant_literal_field_names(parser, obj, discriminator_schemas):
         if (
-            literal_values := parser._get_union_variant_literal_values(discriminator_schemas, field_name)  # noqa: SLF001
+            literal_values := get_union_variant_literal_values(parser, discriminator_schemas, field_name)
         ) is not None and (
             tag_values := union_tag_values(
                 literal_values,
@@ -448,9 +501,9 @@ def discriminator_mapping_refs(parser: UnionTagsHost, mapping: Mapping[str, Any]
     declares the mapping resolves its references, whichever document holds the union. A mapping the schema graph does
     not locate gives references without an edge, which resolve in the current context, as every such reference does.
     """
-    location = parser._raw_location(mapping)  # noqa: SLF001
+    location = parser._raw_location(mapping)
     return {
-        tag: parser._discriminator_mapping_ref(tag, value, location)  # noqa: SLF001
+        tag: parser._discriminator_mapping_ref(tag, value, location)
         for tag, value in mapping.items()
         if isinstance(value, str)
     }
@@ -467,7 +520,9 @@ def located_mapping_paths(
     JSON pointer, has one (``_names_local_file``); a path that resolves to a URL has none.
     """
     return {
-        tag: MappingPath(path, key if _names_local_file(path) and not is_url(key := parser._ref_path(ref)) else None)  # noqa: SLF001
+        tag: MappingPath(
+            path, key if _names_local_file(path) and not is_url(key := _schema_refs.ref_path(parser, ref)) else None
+        )
         for tag, ref in refs.items()
         for path in (paths[tag],)
     }
@@ -483,20 +538,38 @@ def _names_local_file(path: str) -> bool:
     return "/" in path and bool(file_part) and not is_url(path) and is_pointer_fragment(fragment)
 
 
+def discriminator_inference(parser: UnionTagsHost, obj: JsonSchemaObject) -> UnionTagReading | None:
+    """Return how the branches of a union are read for the property that tags them, or None where no tag is inferred.
+
+    msgspec output tags every union a property tags, also beside a discriminator the union declares (row
+    ``legacy-branch-own-tags`` of ``UnionTagReading`` unless ``--infer-union-discriminators`` is given). With the
+    option, a union that declares no discriminator is tagged too in an output whose union fields write
+    ``discriminator=`` (Pydantic); dataclasses and TypedDicts validate nothing, so the option leaves them alone.
+    """
+    infers = parser.config.infer_union_discriminators
+    context = parser._output_model_context
+    if context.requires_tagged_union_discriminator:
+        return "branch-and-all-of-tags" if infers else "legacy-branch-own-tags"
+    if infers and context.writes_discriminator_argument and "discriminator" not in obj.extras:
+        return "branch-and-all-of-tags"
+    return None
+
+
 def set_tagged_union_discriminator(
     parser: UnionTagsHost,
     obj: JsonSchemaObject,
     combined_schemas: Sequence[JsonSchemaObject],
+    reading: UnionTagReading,
 ) -> None:
-    """Set a discriminator extra when the output requires a tagged union."""
-    if not (tag_data := get_tagged_union_field_values(parser, obj, combined_schemas)):
+    """Capture the discriminator of the property that tags every branch of a union, read as ``reading`` reads them."""
+    if not (tag_data := get_tagged_union_field_values(parser, obj, combined_schemas, reading)):
         return
     obj.extras["discriminator"] = tagged_union_discriminator(
         obj.extras.get("discriminator"), literal_property=tag_data[0]
     )
 
 
-def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
+def parse_combined_schema_items(  # noqa: PLR0917
     parser: UnionTagsHost,
     name: str,
     obj: JsonSchemaObject,
@@ -514,7 +587,7 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
     if variant_names:
         for index, key in variant_keys.items():
             location = combined_schemas[index].schema_location
-            parser._tag_key_variants[location] = (key, variant_names[index] or parent_name)  # noqa: SLF001
+            parser._tag_key_variants[location] = (key, variant_names[index] or parent_name)
     data_types: list[DataType] = []
     for index, item in enumerate(combined_schemas):
         variant_name = variant_names[index] if variant_names else None
@@ -525,7 +598,7 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
             if (tag := union_variant_tag(name, variant_name))
             else None
         )
-        with parser._claiming(claim) as claimed:  # noqa: SLF001
+        with parser._claiming(claim) as claimed:
             data_types.append(
                 claimed.built(
                     parser.parse_item(

@@ -4,8 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Collection, MutableSequence, Set
-from typing import Set as Set_1
-from typing import Sized, SupportsInt, Text, Tuple, Union
 from typing import (
     Annotated,
     Any,
@@ -18,6 +16,8 @@ from typing import (
     Optional,
     Sequence,
 )
+from typing import Set as Set_1
+from typing import Sized, SupportsInt, Text, Tuple, Union
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 from typing_extensions import Buffer

@@ -1,0 +1,42 @@
+openapi: 3.0.0
+info: {title: Audience, version: '1'}
+paths: {}
+components:
+  schemas:
+    18_24:
+      type: object
+      description: 10:30
+      required: [10:30, group]
+      properties:
+        group: {type: string}
+        10:30:
+          type: string
+          pattern: 00:00:00.00
+          example: 10:30
+        ratio:
+          type: string
+          enum: [16:9, 4:3]
+          default: 16:9
+        level:
+          type: integer
+          enum: [1, 2]
+          x-enum-varnames: [1_0, 2_0]
+        sizes:
+          type: object
+          default: !!omap [{wide: 16:9}]
+    25_34: &group
+      type: object
+      required: [group]
+      properties:
+        group: {type: string}
+        value: {type: integer}
+    35_44: *group
+    Audience:
+      oneOf:
+        - $ref: '#/components/schemas/18_24'
+        - $ref: '#/components/schemas/25_34'
+      discriminator:
+        propertyName: group
+        mapping:
+          young: 18_24
+          adult: 25_34

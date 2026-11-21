@@ -1,0 +1,5 @@
+[
+  "/child/count minimum 0: invalid, model accepts",
+  "/child/count minimum 0.9: invalid, model accepts",
+  "/child/count minimum 1.1: invalid, model accepts"
+]

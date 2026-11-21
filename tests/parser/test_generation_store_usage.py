@@ -10,14 +10,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+import tomllib
 from inline_snapshot import snapshot
 
 from tests.conftest import assert_output
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -328,8 +324,11 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "name_enum_member_literal_class",
             "name_reference",
             "note_changed_models",
+            "omit_field_default",
             "override_type_import",
             "record_dropped_multiple_of",
+            "record_nullable_without_default",
+            "record_site_constraints",
             "record_values_as_written",
             "record_widened_values",
             "redirect_model_reference_users",
@@ -353,6 +352,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "set_field_extras",
             "set_field_identity",
             "set_fields",
+            "set_module_models",
             "set_nested_data_types",
             "set_type_discriminator",
             "set_type_expressions",
@@ -360,6 +360,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "update_model_reference",
             "use_assignment_for_forward_references",
             "use_typing_generics",
+            "write_field_call_in_annotated",
             "write_rendered_null",
         ],
     )
@@ -425,7 +426,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 71, "PRESENTATION": 59, "BOOKKEEPING": 28, "CACHE": 11})
+        Counter({"FACT": 75, "PRESENTATION": 59, "BOOKKEEPING": 32, "CACHE": 11})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
@@ -573,7 +574,7 @@ def concern_function(parser: Host) -> None:
             17,
             "Parser.method",
             "nullable",
-            "use GenerationStore.apply_literal_default() instead of writing nullable",
+            "use GenerationStore.apply_literal_default() or omit_field_default() instead of writing nullable",
         ),
     ])
 
@@ -1109,6 +1110,13 @@ class External(BaseModel):
 
 class Other(typing.NamedTuple):
     value: int
+
+
+class Derived(Base):
+    shadowed: int
+
+    def method(self):
+        from pydantic import BaseModel as Base
 """,
     )
 
@@ -1171,6 +1179,12 @@ class Other(typing.NamedTuple):
             "DataModel",
             "dynamic",
             "DataModel.dynamic has no ATTRIBUTE_FACTS row in scripts/fact_tables.py",
+        ),
+        (
+            42,
+            "Derived",
+            "shadowed",
+            "Derived.shadowed has no ATTRIBUTE_FACTS row in scripts/fact_tables.py",
         ),
         (
             0,

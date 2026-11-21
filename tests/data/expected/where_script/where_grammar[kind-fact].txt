@@ -1,0 +1,16 @@
+exit status 0
+fact RenderFact.PLANS
+  freezes at B1 (facts-final)
+  final after its last declared writer: set_circular_root_model_paths (PLAN)
+  the tables disagree: ATTRIBUTE_FACTS rows say CROSS_MODULE, MODULES, SETTLE, the last writer of PASS_DECLS runs in PLAN
+  read by 6 passes, first delete_duplicate_models (STRUCTURE), last render_modules (RENDER)
+  attribute rows (4):
+    Parser._tag_plan fact, final after CROSS_MODULE, frozen at B1; store ops: -
+    Parser._recursion_facts fact, final after MODULES, frozen at B1; store ops: -
+    Parser._reuse_groups fact, final after SETTLE, frozen at B1; store ops: -
+    Parser._naming_plan fact, final after SETTLE, frozen at B1; store ops: -
+  written by (pipeline order) (4):
+    settle_yielding_names (SETTLE)
+    name_models (SETTLE)
+    snapshot_union_tags (STRUCTURE)
+    set_circular_root_model_paths (PLAN)

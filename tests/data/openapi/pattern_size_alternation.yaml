@@ -1,0 +1,8 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Principal:
+      type: string
+      pattern: 'user-[\w-]{1,128}|group-[\w-]{1,128}'

@@ -1,0 +1,15 @@
+exit status 0
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+allowlist:host-private-access                      2       0      -2
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+No key rose.

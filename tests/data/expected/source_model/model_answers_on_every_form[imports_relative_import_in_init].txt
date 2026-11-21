@@ -1,0 +1,5 @@
+== imports
+from@7 pkg.sibling as s from pkg in <module> [always]; level 1; unconditional
+from@8 unreadable: the relative import leaves the package of pkg (lines 8) as parent from unreadable: the relative import leaves the package of pkg (lines 8) in <module> [always]; level 2; unconditional
+from@9 pkg.sub.thing as thing from pkg.sub in <module> [always]; level 1; unconditional
+== code objects: one per scope that compiles on this Python

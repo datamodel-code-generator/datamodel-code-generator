@@ -1,0 +1,4 @@
+[
+  "/foo const null: invalid, model accepts",
+  "/int_default const 3.0: valid, model rejects"
+]

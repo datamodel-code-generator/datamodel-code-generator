@@ -1,0 +1,4 @@
+msgspec cannot decode the union OwnedListed: its Struct types Cat, Dog, Fish are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Holder.owned: its Struct types Cat, Dog, Fish are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Holder.based: its Struct types Square, Circle are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Holder.field_: its Struct types Cat, Dog, Fish are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

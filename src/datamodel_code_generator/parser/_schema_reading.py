@@ -8,23 +8,24 @@ JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_jso
 
 from __future__ import annotations
 
-from dataclasses import replace
+from functools import partial
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
-from typing_extensions import Sentinel
+from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member, member_key
 from datamodel_code_generator._json_pointer import decode_token, fragment_pointer, is_pointer_fragment
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
-    SCHEMA_MAP_KEYS,
     SCHEMA_POSITIONS,
     admitted_types,
+    json_value_type,
     schema_positions,
 )
-from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
+from datamodel_code_generator._openapi_objects import OBJECT_MEMBERS
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
-from datamodel_code_generator.parser._intersection import intersect_keywords
+from datamodel_code_generator.parser._intersection import ENUM_ENTRY_NAMES, intersect_keywords, kept_enum_entries
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject, _type_null_sources
 from datamodel_code_generator.types import DataType, UnionIntFloat
@@ -43,25 +44,26 @@ def _merges_ref_siblings(obj: JsonSchemaObject) -> bool:
     return obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only
 
 
+class _RefSiblingsMerger(Protocol):
+    """What ``with_ref_siblings`` reads of the parser."""
+
+    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
+        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
+
+
+def _with_ref_siblings(parser: _RefSiblingsMerger, schema: JsonSchemaObject) -> JsonSchemaObject:
+    """Return ``schema`` merged with the keywords beside its `$ref` where they are parts of it, else itself."""
+    return parser._merge_ref_with_schema(schema) if _merges_ref_siblings(schema) else schema
+
+
 def _schema_dump(schema: JsonSchemaObject | bool) -> dict[str, Any] | bool:  # ruff: ignore[boolean-type-hint-positional-argument]
     """Return the keywords a schema object sets as a dict, or a boolean schema itself."""
     return schema.model_dump(exclude_unset=True, by_alias=True) if isinstance(schema, JsonSchemaObject) else schema
 
 
-_JSON_VALUE_TYPES: Final = (
-    (bool, "boolean"),
-    (int, "integer"),
-    (float, "number"),
-    (str, "string"),
-    (list, "array"),
-    (dict, "object"),
-    (type(None), "null"),
-)
-
-
 def _get_json_value_type(value: object) -> str:
-    """Return a JSON Schema primitive type name for a concrete value."""
-    return next((name for kind, name in _JSON_VALUE_TYPES if isinstance(value, kind)), "")
+    """Return a JSON Schema primitive type name for a concrete value, ``""`` for a value outside JSON."""
+    return json_value_type(value) or ""
 
 
 def _json_value_admitted(schema_types: AbstractSet[str], value: object) -> bool:
@@ -97,27 +99,12 @@ def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]], *, own_last: bool
     )
 
 
-def _dump_parts_without_own_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
-    """Return ``_dump_parts_admit_null`` of parts none of which is the site's own."""
-    return _dump_parts_admit_null(parts, own_last=False)
-
-
 def _dump_enum_entries_skip_null(dump: Mapping[str, Any]) -> bool:
     """Return whether the ``x-enum-*`` entries of a dumped schema leave out the null of its enum (site ``enum``)."""
-    return (
-        resolve_null_facts(
-            replace(
-                dump_null_sources(dump),
-                type_string=dump.get("type") == "string",
-                enum_null=None in (dump.get("enum") or ()),
-            ),
-            "enum",
-        ).rule
-        == "enum-null-as-nullable"
-    )
+    return resolve_null_facts(dump_null_sources(dump), "enum").rule == "enum-null-as-nullable"
 
 
-def _intersect_dumps(  # noqa: PLR0913
+def _intersect_dumps(
     parts: Sequence[Mapping[str, Any]],
     row: dict[str, Any],
     *,
@@ -135,12 +122,60 @@ def _intersect_dumps(  # noqa: PLR0913
         parts,
         row,
         extras_key=JsonSchemaObject.__extra_key__,
-        parts_admit_null=_dump_parts_admit_null if own_last else _dump_parts_without_own_admit_null,
+        parts_admit_null=_dump_parts_admit_null if own_last else partial(_dump_parts_admit_null, own_last=False),
         enum_entries_skip_null=_dump_enum_entries_skip_null,
         ref_siblings_are_parts=ref_siblings_are_parts,
         legacy_rows=legacy_rows,
         admits_value=_json_value_admitted if removes_enum_outside_type else None,
     )
+
+
+class _IntersectionReader(Protocol):
+    """What ``_intersect_parts`` reads of the parser."""
+
+    @property
+    def _legacy_intersection(self) -> frozenset[str]:
+        """The ``legacy-*`` rows of the schema intersection the run keeps."""
+
+    def _warn_intersection(self, where: str, intersection: KeywordIntersection, *parts: str) -> None:
+        """Warn about the keywords of an intersection whose parts have no value in common, and its untaken patterns."""
+
+
+def _intersect_parts(
+    parser: _IntersectionReader,
+    dumps: Sequence[Mapping[str, Any]],
+    row: dict[str, Any],
+    *,
+    where: str | None = None,
+    parts: tuple[str, ...] = (),
+    ref_siblings_are_parts: bool = True,
+    legacy_rows: Collection[str] = (),
+    own_last: bool = True,
+) -> KeywordIntersection:
+    """Return the intersection of dumped schemas (``_intersect_dumps``), warned about at ``where`` where given.
+
+    The ``enum`` values the merged ``type`` rejects go unless ``legacy-enum-outside-type-kept`` is kept; ``parts``
+    names the parts in the warning.
+    """
+    intersection = _intersect_dumps(
+        dumps,
+        row,
+        ref_siblings_are_parts=ref_siblings_are_parts,
+        legacy_rows=legacy_rows,
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,
+        own_last=own_last,
+    )
+    if where is not None:
+        parser._warn_intersection(where, intersection, *parts)
+    return intersection
+
+
+def _declares_key_keywords(obj: JsonSchemaObject) -> bool:
+    """Return whether a schema declares the keywords of a map's keys: patternProperties or any propertyNames.
+
+    A ``propertyNames: false`` counts too; ``_schema_object._has_map_key_keywords`` leaves it out.
+    """
+    return bool(obj.patternProperties) or obj.propertyNames is not None
 
 
 def _is_object_only_type(type_: str | list[str] | None) -> bool:
@@ -168,21 +203,18 @@ def _enum_without_positions(obj: JsonSchemaObject, excluded: Collection[int]) ->
     Each entry stays with its value, matched as ``parse_enum`` matches them.
     """
     skip_null = _enum_entries_skip_null(obj)
-    entry_positions = (position for position, value in enumerate(obj.enum) if value is not None or not skip_null)
-    dropped = {index for index, position in enumerate(entry_positions) if position in excluded}
     return obj.model_copy(
         update={
             "enum": [value for position, value in enumerate(obj.enum) if position not in excluded],
             **{
-                field: [entry for index, entry in enumerate(entries) if index not in dropped]
-                for field in _ENUM_ENTRY_FIELDS
+                field: kept_enum_entries(
+                    obj.enum, entries, lambda position: position not in excluded, skips_null=skip_null, keeps_extra=True
+                )
+                for _, field in ENUM_ENTRY_NAMES
                 if (entries := getattr(obj, field))
             },
         }
     )
-
-
-_ENUM_ENTRY_FIELDS = ("x_enum_varnames", "x_enum_names", "x_enum_descriptions")
 
 
 def _enum_entries_skip_null(obj: JsonSchemaObject) -> bool:
@@ -261,8 +293,10 @@ def _get_model_by_decoded_path(
     if not keys:
         if isinstance(schema, dict):
             return schema
-        msg = f"Does not support json pointer to array. schema={schema}, key={keys}"  # pragma: no cover
-        raise NotImplementedError(msg)  # pragma: no cover
+        msg = (  # pragma: no cover - not proven unreachable
+            f"Does not support json pointer to array. schema={schema}, key={keys}"
+        )
+        raise NotImplementedError(msg)  # pragma: no cover - not proven unreachable
     current: YamlValue = schema
     for index, key in enumerate(keys):
         try:
@@ -281,7 +315,7 @@ def _get_model_by_decoded_path(
                 raise NotImplementedError(msg)
             return _MISSING_JSON_POINTER if or_missing else {}
         current = value
-    raise AssertionError  # pragma: no cover
+    raise AssertionError
 
 
 def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> str | None:
@@ -298,22 +332,30 @@ def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> st
             return fragment_pointer((*tokens[:index], key))
         if (node := node.get(str(token), _MISSING_JSON_POINTER)) is _MISSING_JSON_POINTER:
             return None
-    raise AssertionError  # pragma: no cover - the tokens of a dangling reference name no node
+    raise AssertionError
 
 
 SlashNames = Literal["joined", "uri"]
 """How a JSON pointer reads a ``/`` it writes unescaped inside a name: row ``joined`` joins the parts from a part that
 names no member, the most first, into a key the object holds; row ``uri``, that of --read-escaped-ref-pointers, joins
 them only into a name that holds ``://``, as JSON Pointer reads every other unescaped ``/`` as a separator."""
+PointerReading = (
+    SlashNames | Literal["legacy-split-pointer-tokens", "legacy-drop-empty-tokens", "legacy-cycle-through-scalar"]
+)
+"""How a reader of a reference splits its fragment (``ref_fragment_tokens``): the parser's ``SlashNames``, or the legacy
+row of its call site; ``legacy-cycle-through-scalar`` also refuses a walk through a value that is no container."""
 
 
-def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False, names: SlashNames = "joined") -> Any:
-    """Return the value a JSON pointer fragment names in a loaded document, the document itself for no fragment."""
-    return (
-        _get_model_by_decoded_path(document, split_json_pointer(document, fragment, names=names), or_missing=or_missing)
-        if fragment
-        else document
-    )
+def ref_fragment_tokens(document: Any, fragment: str, reading: PointerReading) -> list[str]:
+    """Return the decoded tokens a reference fragment names in a loaded document, as ``reading`` splits it."""
+    match reading:
+        case "joined" | "uri":
+            return split_json_pointer(document, fragment, names=reading)
+        case "legacy-split-pointer-tokens":
+            tokens = fragment.split("/")[1:]
+        case _:
+            tokens = [token for token in fragment.split("/") if token]
+    return list(map(unescape_json_pointer_segment, tokens))
 
 
 def split_json_pointer(
@@ -353,7 +395,7 @@ def _split_json_pointer(
                     matched_key = key
                     matched_end = end
                     break
-            if matched_key is None:  # pragma: no cover
+            if matched_key is None:
                 matched_key = unescape_json_pointer_segment(raw_parts[index])
                 matched_end = index + 1
             parts.append(matched_key)
@@ -375,24 +417,38 @@ def _split_json_pointer(
     return parts, reference_parts
 
 
-_NON_SCHEMA_KEYWORDS = INSTANCE_DATA_KEYWORDS | {
-    "links",
-    "security",
-    "server",
-    "serverVariables",
-    "servers",
-}
-_NAMED_ENTRY_MAP_KEYWORDS = SCHEMA_MAP_KEYS | {
-    "callbacks",
-    "channels",
-    "content",
-    "encoding",
-    "messages",
-    "operations",
-    "parameters",
-    "responses",
-    "webhooks",
-}
+_DOCUMENT_KEYWORDS: Final[Mapping[str, Literal["data", "entries", "edge-entries", "holder"]]] = MappingProxyType({
+    **dict.fromkeys((name for members in OBJECT_MEMBERS.values() for name in members), "holder"),
+    **dict.fromkeys(
+        (*INSTANCE_DATA_KEYWORDS, "discriminator", "links", "security", "server", "serverVariables", "servers"), "data"
+    ),
+    **dict.fromkeys(
+        (
+            *("callbacks", "channels", "content", "encoding", "messages"),
+            *("operations", "parameters", "responses", "webhooks"),
+        ),
+        "entries",
+    ),
+    **dict.fromkeys(("bindings", "paths"), "edge-entries"),
+    **dict.fromkeys(
+        (
+            *("channel", "components", "message", "messageTraits", "operationTraits", "payload", "pathItems"),
+            *("publish", "reply", "requestBodies", "schemas", "subscribe", "traits", "x-propertyNames"),
+        ),
+        "holder",
+    ),
+})
+"""The keywords of a document object beside the subschema keywords (``SCHEMA_POSITIONS``), by what their value holds.
+
+``data``: instance data, discriminator objects, links, security requirements and servers, which hold no schemas.
+``entries``: a map of named entries, whose keys are names. ``edge-entries``: one that only `$ref` edges read as names.
+``holder``: schemas or the objects around them: every member of ``OBJECT_MEMBERS`` that a later group does not list as
+data or entries (later groups win), and the keywords listed last. An extension (``x-``) is data unless listed. Each walk
+reads it through its view.
+"""
+_NON_SCHEMA_KEYWORDS: Final = frozenset(key for key, role in _DOCUMENT_KEYWORDS.items() if role == "data")
+"""The keywords whose values hold no schemas (data); the read of a whole document reads every other key (row
+``legacy-read-document-every-key``), `$ref` edges below the root only those of ``_REF_EDGE_KEYWORDS``."""
 _DocumentEntries = Literal["object", "names", "maps"]
 
 
@@ -402,7 +458,7 @@ def _document_child_entries(
     """Return how the value under a key of a document object is read, or None when it holds no schemas."""
     if entries == "names":
         return "object"
-    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key != "x-propertyNames"):
+    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key not in _DOCUMENT_KEYWORDS):
         return None
     child: _DocumentEntries = "object"
     match entries, key:
@@ -416,35 +472,10 @@ def _document_child_entries(
 
 
 _RefEdgeEntries = Literal["root", "object", "names", "maps"]
-_REF_EDGE_NAME_MAPS = frozenset({"bindings", "paths"})
-_REF_EDGE_KEYWORDS = (
-    frozenset(SCHEMA_POSITIONS)
-    | _NAMED_ENTRY_MAP_KEYWORDS
-    | _REF_EDGE_NAME_MAPS
-    | {
-        *PATH_ITEM_METHODS,
-        "additionalOperations",
-        "channel",
-        "components",
-        "headers",
-        "message",
-        "messageTraits",
-        "operationTraits",
-        "payload",
-        "pathItems",
-        "publish",
-        "reply",
-        "requestBodies",
-        "requestBody",
-        "schema",
-        "schemas",
-        "itemSchema",
-        "subscribe",
-        "traits",
-        "x-propertyNames",
-    }
-)
-"""The keywords of a schema, path item, operation or message object under which another such object is read."""
+_REF_EDGE_NAME_MAPS: Final = frozenset(key for key, role in _DOCUMENT_KEYWORDS.items() if role == "edge-entries")
+_REF_EDGE_KEYWORDS: Final = frozenset(SCHEMA_POSITIONS).union(_DOCUMENT_KEYWORDS.keys() - _NON_SCHEMA_KEYWORDS)
+"""The view of `$ref` edges: the keywords of a schema, path item, operation or message object under which another such
+object is read, the subschema keywords and every keyword of the table that holds no data."""
 
 
 def _ref_edge_child_entries(

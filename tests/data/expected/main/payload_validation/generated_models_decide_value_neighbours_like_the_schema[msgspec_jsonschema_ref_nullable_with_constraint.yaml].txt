@@ -1,0 +1,3 @@
+[
+  "/constrained_string minLength \"aaaa\": valid, model rejects"
+]

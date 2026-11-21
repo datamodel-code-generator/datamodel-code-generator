@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from datamodel_code_generator import _option_names
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._option_names import configured_value
 from datamodel_code_generator._recommend._signals import (
@@ -174,20 +173,6 @@ class Decision:
     def avoids(self) -> bool:
         """Return whether the rule only turns options off."""
         return all(value is False for value in self.values.values())
-
-
-def option_arguments(field: str, value: OptionValue) -> list[str] | None:
-    """Return the CLI arguments that set a config field to a value, or None when no option can express it."""
-    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
-
-    return _option_names.option_arguments(field, value, negative=_negative_option)
-
-
-def values_arguments(values: Mapping[str, OptionValue]) -> list[str]:
-    """Return the CLI arguments that set config fields to values, leaving out the values no option can express."""
-    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
-
-    return _option_names.values_arguments(values.items(), negative=_negative_option)
 
 
 def _rule_values(rule: Rule) -> dict[str, OptionValue]:

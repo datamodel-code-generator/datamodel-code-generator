@@ -1,0 +1,13 @@
+# asyncapi-events pydantic_v2.BaseModel
+  > GET https://feed.example.com/v1/notices?token=secret
+    [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  notices
+    1 'message' id=None Notice{'text': 'hi'}
+    2 'message' id=None Alert{'level': 3}
+    ! DecodeError: DecodeError(status_code=200, reason='value', location='event.3') [location=('event', 3), body_bytes=b'{"other": true}', truncated=False, cause=2 validation errors for union[Notice,Alert]
+Alert.level
+  Field required [type=missing, input_value={'other': True}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing
+Notice.text
+  Field required [type=missing, input_value={'other': True}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] value

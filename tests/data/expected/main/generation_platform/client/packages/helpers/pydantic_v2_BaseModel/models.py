@@ -85,10 +85,14 @@ class JobsJobIdGetResponse200RetryAfterHeader(RootModel[int]):
     root: int
 
 
-JobsJobIdResultGetPathJobIdParameter = TypeAliasType("JobsJobIdResultGetPathJobIdParameter", str)
+JobsJobIdResultGetPathJobIdParameter = TypeAliasType(
+    "JobsJobIdResultGetPathJobIdParameter", str
+)
 
 
-EventsGetHeaderLastEventIDParameter = TypeAliasType("EventsGetHeaderLastEventIDParameter", str)
+EventsGetHeaderLastEventIDParameter = TypeAliasType(
+    "EventsGetHeaderLastEventIDParameter", str
+)
 
 
 class EventsGetResponse(RootModel[str]):

@@ -1,0 +1,3 @@
+[
+ "entry x: category internal names no cells"
+]

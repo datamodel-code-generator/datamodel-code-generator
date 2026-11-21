@@ -9,22 +9,23 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_documents import document_identity
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from datamodel_code_generator import GeneratedModules, _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_generation import TargetGenerator
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.target import ClientTarget
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._fastapi.target import FastAPITarget
+    from datamodel_code_generator._shared_types import GeneratedModules
+    from datamodel_code_generator._shared_types import GenerationInput as _GenerationInput
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.json_config import JsonConfigFieldName
@@ -36,7 +37,14 @@ _OPERATION_SETTINGS: Final = (
     "server_operation_names",
     "server_parameter_names",
 )
-_CLIENT_CHOICES: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
+_CLIENT_CHOICES: Final = (
+    "signature_style",
+    "body_arguments",
+    "default_base_url",
+    "server_base_url",
+    "deep_object_brackets",
+    "asyncapi_perspective",
+)
 _INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
 
 
@@ -176,7 +184,7 @@ def generate_selected_target(input_: _GenerationInput, config: GenerateConfig) -
         raise Error(problem)
     with PROCESS_STATE_LOCK:
         cwd = Path.cwd()
-    bases = config._target_document_bases or {}  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    bases = config._target_document_bases or {}  # noqa: SLF001
     try:
         if config.output is not None:
             _generate(input_, config, cwd, bases)

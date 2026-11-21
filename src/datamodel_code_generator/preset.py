@@ -6,6 +6,7 @@ from argparse import Namespace
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
+from itertools import pairwise as _pairwise
 from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 from pydantic import ConfigDict, PrivateAttr
@@ -17,6 +18,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
+from datamodel_code_generator._option_names import option_arguments as _option_arguments
 from datamodel_code_generator._option_names import option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
@@ -37,6 +39,7 @@ from datamodel_code_generator.enums import (
     InputFileType,
     NamingStrategy,
     OpenAPIAsDefinitions,
+    OpenEnums,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     TargetPydanticVersion,
@@ -51,7 +54,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Unpack
 
-    from datamodel_code_generator.__main__ import TomlValue
+    from datamodel_code_generator._option_names import TomlValue
     from datamodel_code_generator._types.generate_config_dict import BaseGenerateConfig as BaseGenerateConfigDict
 
 PresetFormat = Literal["json", "markdown"]
@@ -73,10 +76,11 @@ PresetEnumConfigValue: TypeAlias = (
     | DefaultValueType
     | ConstructorFieldOrder
     | OpenAPIAsDefinitions
+    | OpenEnums
     | Formatter
 )
 PresetEnumSequenceConfigValue: TypeAlias = tuple[PresetEnumConfigValue, ...]
-PresetConfigValue: TypeAlias = bool | PresetEnumConfigValue | PresetEnumSequenceConfigValue
+PresetConfigValue: TypeAlias = bool | str | PresetEnumConfigValue | PresetEnumSequenceConfigValue
 PresetRawConfigValue: TypeAlias = PresetConfigValue | Sequence[PresetEnumConfigValue] | str | None
 
 
@@ -212,6 +216,71 @@ class PresetName(str, Enum):
     PracticalPy31420261106 = "practical-py314-20261106"
     PracticalPy31520261106 = "practical-py315-20261106"
 
+    StandardPy31020261111 = "standard-py310-20261111"
+    StandardPy31120261111 = "standard-py311-20261111"
+    StandardPy31220261111 = "standard-py312-20261111"
+    StandardPy31320261111 = "standard-py313-20261111"
+    StandardPy31420261111 = "standard-py314-20261111"
+    StandardPy31520261111 = "standard-py315-20261111"
+    PracticalPy31020261111 = "practical-py310-20261111"
+    PracticalPy31120261111 = "practical-py311-20261111"
+    PracticalPy31220261111 = "practical-py312-20261111"
+    PracticalPy31320261111 = "practical-py313-20261111"
+    PracticalPy31420261111 = "practical-py314-20261111"
+    PracticalPy31520261111 = "practical-py315-20261111"
+
+    StandardPy31020261112 = "standard-py310-20261112"
+    StandardPy31120261112 = "standard-py311-20261112"
+    StandardPy31220261112 = "standard-py312-20261112"
+    StandardPy31320261112 = "standard-py313-20261112"
+    StandardPy31420261112 = "standard-py314-20261112"
+    StandardPy31520261112 = "standard-py315-20261112"
+    PracticalPy31020261112 = "practical-py310-20261112"
+    PracticalPy31120261112 = "practical-py311-20261112"
+    PracticalPy31220261112 = "practical-py312-20261112"
+    PracticalPy31320261112 = "practical-py313-20261112"
+    PracticalPy31420261112 = "practical-py314-20261112"
+    PracticalPy31520261112 = "practical-py315-20261112"
+
+    StandardPy31020261113 = "standard-py310-20261113"
+    StandardPy31120261113 = "standard-py311-20261113"
+    StandardPy31220261113 = "standard-py312-20261113"
+    StandardPy31320261113 = "standard-py313-20261113"
+    StandardPy31420261113 = "standard-py314-20261113"
+    StandardPy31520261113 = "standard-py315-20261113"
+    PracticalPy31020261113 = "practical-py310-20261113"
+    PracticalPy31120261113 = "practical-py311-20261113"
+    PracticalPy31220261113 = "practical-py312-20261113"
+    PracticalPy31320261113 = "practical-py313-20261113"
+    PracticalPy31420261113 = "practical-py314-20261113"
+    PracticalPy31520261113 = "practical-py315-20261113"
+
+    StandardPy31020261118 = "standard-py310-20261118"
+    StandardPy31120261118 = "standard-py311-20261118"
+    StandardPy31220261118 = "standard-py312-20261118"
+    StandardPy31320261118 = "standard-py313-20261118"
+    StandardPy31420261118 = "standard-py314-20261118"
+    StandardPy31520261118 = "standard-py315-20261118"
+    PracticalPy31020261118 = "practical-py310-20261118"
+    PracticalPy31120261118 = "practical-py311-20261118"
+    PracticalPy31220261118 = "practical-py312-20261118"
+    PracticalPy31320261118 = "practical-py313-20261118"
+    PracticalPy31420261118 = "practical-py314-20261118"
+    PracticalPy31520261118 = "practical-py315-20261118"
+
+    StandardPy31020261120 = "standard-py310-20261120"
+    StandardPy31120261120 = "standard-py311-20261120"
+    StandardPy31220261120 = "standard-py312-20261120"
+    StandardPy31320261120 = "standard-py313-20261120"
+    StandardPy31420261120 = "standard-py314-20261120"
+    StandardPy31520261120 = "standard-py315-20261120"
+    PracticalPy31020261120 = "practical-py310-20261120"
+    PracticalPy31120261120 = "practical-py311-20261120"
+    PracticalPy31220261120 = "practical-py312-20261120"
+    PracticalPy31320261120 = "practical-py313-20261120"
+    PracticalPy31420261120 = "practical-py314-20261120"
+    PracticalPy31520261120 = "practical-py315-20261120"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -261,12 +330,16 @@ class ResolvedPresetConfig:
     force_field_constraints: bool
 
     def updates(self) -> dict[str, PresetConfigValue | PythonVersion]:
-        """Return the config updates a preset makes, in the order they are applied."""
+        """Return the config updates a preset makes, in the order they are applied.
+
+        The updates include the options they imply (`IMPLIED_OPTIONS`), returned as on also where the caller set
+        the option off: the later stage resolves it the same way.
+        """
         updates: dict[str, PresetConfigValue | PythonVersion] = {}
         if self.target_python_version is not None:
             updates["target_python_version"] = self.target_python_version
         updates.update((item.field_name, item.applied_value) for item in self.items)
-        updates.update(implied_options({"use_annotated": self.force_field_constraints}))
+        updates.update(implied_options({**updates, "use_annotated": self.force_field_constraints}))
         return updates
 
 
@@ -285,7 +358,7 @@ class PresetConfig(BaseGenerateConfig):
     def __init__(self, **values: Unpack[BaseGenerateConfigDict]) -> None:
         """Build immutable preset updates from statically checked GenerateConfig fields."""
         for field_name in values:
-            if field_name not in type(self).model_fields:  # pragma: no cover
+            if field_name not in type(self).model_fields:
                 msg = f"Preset field {stable_repr(field_name)} is not a BaseGenerateConfig field"
                 raise PresetError(msg)
 
@@ -327,7 +400,7 @@ class PresetOptionGroup:
                 item.value is True
                 and _documented_option(item.field_name, negative=True) is None
                 and not CLI_OPTION_META[_config_item_to_cli_option(item)].deprecated
-            ):  # pragma: no cover
+            ):
                 msg = f"Preset option {_config_item_to_cli_option(item)} has no --no- form to turn it off"
                 raise PresetError(msg)
 
@@ -338,7 +411,7 @@ class PresetOptionGroup:
 
     def applies_to(self, context: PresetContext) -> bool:
         """Return whether this option group applies to a preset context."""
-        if self.input_file_types and context.input_file_type not in self.input_file_types:  # pragma: no cover
+        if self.input_file_types and context.input_file_type not in self.input_file_types:
             return False
         if self.output_model_types and context.output_model_type not in self.output_model_types:
             return False
@@ -352,7 +425,7 @@ class PresetOptionGroup:
 
 
 def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetConfigItem, ...]:
-    """Merge preset groups; output-model groups override shared groups, other conflicting updates are rejected."""
+    """Merge preset groups; output-model groups override shared groups, and the first of the others wins."""
     output_model_fields = {
         item.field_name for group in groups if group.output_model_types for item in group.config.items()
     }
@@ -361,16 +434,7 @@ def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetC
         for item in group.config.items():
             if not group.output_model_types and item.field_name in output_model_fields:
                 continue
-            existing = items.get(item.field_name)
-            if existing is None:
-                items[item.field_name] = item
-                continue
-            if existing.value != item.value:  # pragma: no cover
-                msg = (
-                    f"Preset field {stable_repr(item.field_name)} is configured with both "
-                    f"{stable_repr(existing.value)} and {stable_repr(item.value)}"
-                )
-                raise PresetError(msg)
+            items.setdefault(item.field_name, item)
     return tuple(items.values())
 
 
@@ -387,15 +451,18 @@ def _normalize_preset_config_value(
         if isinstance(value, str):  # pragma: no branch
             try:
                 return ExtraFields(value)
-            except ValueError as exc:  # pragma: no cover
+            except ValueError as exc:
                 msg = f"Unsupported extra_fields preset value: {stable_repr(value)}"
                 raise PresetError(msg) from exc
     return _ensure_preset_config_value(field_name, validated_value)
 
 
 def _ensure_preset_config_value(field_name: str, value: PresetRawConfigValue) -> PresetConfigValue:
+    """Return a preset value: a bool, the value of a text field such as a type path, an enum or a tuple of enums."""
     match value:
         case bool():
+            return value
+        case str() if not isinstance(value, Enum):
             return value
         case tuple() | list():
             return tuple(_ensure_preset_enum_config_value(field_name, item) for item in value)
@@ -409,8 +476,8 @@ def _ensure_preset_enum_config_value(
 ) -> PresetEnumConfigValue:
     if isinstance(value, PresetEnumConfigValue) and not isinstance(value, ExtraFields):
         return value
-    msg = f"Preset field {stable_repr(field_name)} cannot be rendered as a preset CLI option"  # pragma: no cover
-    raise PresetError(msg)  # pragma: no cover
+    msg = f"Preset field {stable_repr(field_name)} cannot be rendered as a preset CLI option"
+    raise PresetError(msg)
 
 
 def _documented_option(field_name: str, *, negative: bool = False) -> str | None:
@@ -421,20 +488,16 @@ def _documented_option(field_name: str, *, negative: bool = False) -> str | None
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     """Translate a typed config field name to the spelling of its CLI options that the CLI reference documents."""
     option = _documented_option(item.field_name)
-    if option is None:  # pragma: no cover
+    if option is None:
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
-    if item.value is True:
-        return option
-    if isinstance(item.value, Enum):
-        return f"{option} {item.value.value}"
-    if item.value:
-        return f"{option} {' '.join(str(value.value) for value in item.value)}"
-
-    if (negative_option := _documented_option(item.field_name, negative=True)) is None:  # pragma: no cover
+    arguments = _option_arguments(
+        item.field_name, item.value, negative=lambda field: _documented_option(field, negative=True), flag=option
+    )
+    if arguments is None:
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
-    return negative_option
+    return " ".join([arguments[0], *(str(toml_value(value)) for value in arguments[1:])])
 
 
 _STANDARD_20260619_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
@@ -580,9 +643,28 @@ _PRACTICAL_20261104_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_PRACTICAL_20260619_EXTRA_OPTION_GROUPS[1:],
 )
 """The practical extras of the 20261104 presets: the naming strategy comes from the standard groups."""
+_PRACTICAL_20261113_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Untyped values as JSON values",
+        config=PresetConfig(untyped_value_type="pydantic.JsonValue"),
+        description=(
+            "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the "
+            "object the practical groups prefer for unconstrained values: a JSON document parses to the same values, "
+            "and Python values that are no JSON values, such as a datetime or a set, are rejected."
+        ),
+        output_model_types=_PYDANTIC_MODEL_TYPES,
+    ),
+)
+"""The 20261104 practical extras and the opt-in options added after them."""
 _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261104": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261106": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    "20261111": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    "20261112": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    "20261113": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261118": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261120": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1056,11 +1138,13 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
-        title="x-python-type unions",
-        config=PresetConfig(use_x_python_type_unions=True),
+        title="x-python-type as written",
+        config=PresetConfig(use_x_python_type_as_written=True),
         description=(
-            "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one "
-            "spelled X | Y already is, instead of the schema's type."
+            "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as "
+            "one spelled X | Y already does, instead of the schema's type, and a container class compatible with the "
+            "schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, "
+            "Sequence, set, frozenset or Mapping."
         ),
     ),
     PresetOptionGroup(
@@ -1097,8 +1181,271 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "several bases declare takes the nearer base's constraints and description, as the class does."
         ),
     ),
+    PresetOptionGroup(
+        title="Field options on every field",
+        config=PresetConfig(apply_field_options_to_every_field=True),
+        description=(
+            "Give a GraphQL field, a property whose schema is true or false, a required name without a property and "
+            "the tag field a discriminator appends the field options the other fields take, such as "
+            "--use-default-kwarg, --use-annotated and --use-default-factory-for-optional-nested-models."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Strict base64 strings",
+        config=PresetConfig(use_strict_str_for_base64=True),
+        description=(
+            "Under --strict-types str, write a format: byte string as the StrictStr that EncodedStr decodes, so "
+            "Pydantic 2.10 or later refuses bytes for it as for any other strict string, instead of Base64Str."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Content media type strings as bytes",
+        config=PresetConfig(use_bytes_for_content_media_type=True),
+        description=(
+            "Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding, raw binary "
+            "content, as bytes, as a format: binary string is, instead of str."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Constrained string root models collapsed as Annotated",
+        config=PresetConfig(collapse_constrained_root_models_as_annotated=True),
+        description=(
+            "Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints "
+            "into a union, list, dict or other container of its holder as Annotated[str, ...], which keeps the "
+            "constraints on that member."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Unused models removed beside type overrides",
+        config=PresetConfig(remove_unused_models_beside_type_overrides=True),
+        description=(
+            "Remove the models nothing uses, such as an inlined root model, also from a module that a model-level "
+            "--type-overrides key takes a model out of."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Items of self-referencing arrays kept",
+        config=PresetConfig(keep_self_referencing_array_items=True),
+        description=(
+            "Keep the items of an array whose items name the array itself (list[Node | Leaf] instead of list), "
+            "except in msgspec output, which cannot decode such a type alias."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Shared members kept on collapsed root models",
+        config=PresetConfig(keep_shared_members_on_collapsed_root_models=True),
+        description=(
+            "Under --collapse-root-models, keep each member of a root type that collapse inlined at several sites at "
+            "every site when a root model that member names is collapsed later, as a recursive union reaches its "
+            "plain member."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Operation enums written as Literal like definitions",
+        config=PresetConfig(use_enum_field_as_literal_in_operations=True),
+        description=(
+            "Write the enum of an OpenAPI request body or response as a root model of a Literal where "
+            "x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal writes a definition's "
+            "enum so, instead of an Enum class."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Request and response variants of numbered models deduplicated",
+        config=PresetConfig(dedupe_numbered_request_response_variants=True),
+        description=(
+            "Under --read-only-write-only-model-type, merge a Request or Response variant of a numbered model, such "
+            "as Page1Request of an inline copy Page1 of Page, into PageRequest where it renders the same, as the "
+            "numbered model merges into Page."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Defaults of inherited required fields kept",
+        config=PresetConfig(keep_defaults_of_inherited_required_fields=True),
+        description=(
+            "With --use-default, keep the default a schema gives a property that only a schema it inherits from lists "
+            "as required, as --use-default keeps that of a property the schema lists as required itself."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Incomplete model defaults omitted",
+        config=PresetConfig(omit_incomplete_model_defaults=True),
+        description=(
+            "Write a property whose object default lacks required fields of its model, such as default: {}, without "
+            "that default, so input that leaves the property out is valid instead of failing on the default."
+        ),
+    ),
+    PresetOptionGroup(
+        title="AsyncAPI message trait headers merged",
+        config=PresetConfig(merge_message_trait_headers=True),
+        description=(
+            "Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline "
+            "and referenced traits alike, and then its own headers, which win."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
+
+_STANDARD_20261111_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261106_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Float consts fixed by bounds",
+        config=PresetConfig(use_bounds_for_float_const=True),
+        description=(
+            "Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, "
+            "written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of "
+            "accepting any float."
+        ),
+    ),
+)
+"""The 20261106 groups and the opt-in options of the release after 0.93.0."""
+
+_STANDARD_20261112_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261111_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Object keywords by type",
+        config=PresetConfig(read_object_keywords_by_type=True),
+        description=(
+            "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit "
+            "objects, so a string, const or enum branch beside patternProperties stays itself."
+        ),
+    ),
+)
+"""The 20261111 groups and the opt-in options added after them."""
+
+_STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261112_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="x-python-import for every reference",
+        config=PresetConfig(use_x_python_import_for_every_ref=True),
+        description=(
+            "Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in "
+            "another document, and split no request/response model for the readOnly or writeOnly properties of such "
+            "a schema."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Extensible enums accept new values",
+        config=PresetConfig(open_enums=OpenEnums.Extensible),
+        description=(
+            "Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum "
+            "modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | "
+            "str, instead of rejecting them."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Discriminators inferred from tags",
+        config=PresetConfig(infer_union_discriminators=True),
+        description=(
+            "Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not "
+            "null requires one property with one string or integer value, also in its allOf members; valid payloads "
+            "parse the same, an invalid one reports the errors of the branch its tag names."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Kubernetes extensions read",
+        config=PresetConfig(read_kubernetes_extensions=True),
+        description=(
+            "Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside "
+            "properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a "
+            "resource takes, so the models accept and keep what Kubernetes does."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Inherited property schemas read in MRO order",
+        config=PresetConfig(read_inherited_property_schemas_in_mro_order=True),
+        description=(
+            "Give a property that a model only makes required the schema its allOf parents declare, read in the order "
+            "of the class bases from the allOf members the model's fields are read from, so a model written before "
+            "its parents takes the field it takes when written after them."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Ids with an empty fragment read as their documents",
+        config=PresetConfig(read_ids_with_empty_fragment=True),
+        description=(
+            "Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as "
+            "the URI without it, so a $ref to it resolves inside the document that declares it instead of loading "
+            "the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file."
+        ),
+    ),
+    PresetOptionGroup(
+        title="YAML 1.1-only numbers read as text",
+        config=PresetConfig(read_yaml_1_1_numbers_as_text=True),
+        description=(
+            "Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its "
+            "text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the "
+            "values '16:9' and '4:3' instead of the integers 969 and 243."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Implied options read from the merged values",
+        config=PresetConfig(read_implied_options_from_merged_values=True),
+        description=(
+            "Read the options that another option turns on from the arguments and pyproject.toml together, so "
+            "--no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where "
+            "pyproject.toml gives it false, as use-annotated = false there does."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Single allOf references read in their documents",
+        config=PresetConfig(read_single_allof_refs_in_their_documents=True),
+        description=(
+            "Read the target of an allOf of one $ref in the document that holds the schema, a plain-name anchor such "
+            "as #code included, as every other $ref is read, so a schema of a referenced file is typed as a root "
+            "model over the referenced enum, as the same schemas in one file are, instead of a copy of the enum; a "
+            "valid referenced file is no longer refused where the input document holds false at that pointer, and a "
+            "true target there is a root model that accepts every value."
+        ),
+    ),
+)
+"""The 20261112 groups and the opt-in options added after them."""
+
+_STANDARD_20261118_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261113_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Validated defaults of root model type aliases",
+        config=PresetConfig(use_validate_default_for_root_model_type_aliases=True),
+        description=(
+            "Under --use-root-model-type-alias, validate the default of a field whose type names a root model written "
+            "as an alias into that root model, as for a root model class, instead of keeping the raw value."
+        ),
+        output_model_types=frozenset({DataModelType.PydanticV2BaseModel}),
+    ),
+    PresetOptionGroup(
+        title="$ref siblings read in closed allOf members",
+        config=PresetConfig(read_ref_siblings_in_closed_allof_members=True),
+        description=(
+            "Read every keyword beside a $ref that an unevaluatedProperties: false allOf member evaluates, as the "
+            "schema validators do, so a dependentSchemas beside it, which may evaluate more properties, keeps the "
+            "model open instead of forbidding the properties a valid payload holds."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Unmapped variant tag values",
+        config=PresetConfig(use_unmapped_variant_tag_values=True),
+        description=(
+            "Give a variant of a discriminated union that a mapping names also the values of its tag property that no "
+            "mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the "
+            "union decodes the documents of the variant that carry them; a value another variant also admits stays "
+            "refused, as a tag selects one variant. msgspec Structs keep one tag."
+        ),
+    ),
+)
+"""The 20261113 groups and the opt-in options added after them."""
+
+_STANDARD_20261120_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261118_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="UUID versions 6 to 8",
+        config=PresetConfig(read_uuid6_uuid7_uuid8_formats=True),
+        description=(
+            "Read the formats uuid6, uuid7 and uuid8 of a string, as the formats uuid1 to uuid5 are read: Pydantic "
+            "output types the field as that UUID version (a plain UUID before Pydantic 2.11), and the other output "
+            "types as uuid.UUID under --use-standard-primitive-types, else as str, instead of an unknown format."
+        ),
+    ),
+)
+"""The 20261118 groups and the opt-in options added after them."""
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
@@ -1109,6 +1456,11 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261027": _STANDARD_20261027_OPTION_GROUPS,
     "20261104": _STANDARD_20261104_OPTION_GROUPS,
     "20261106": _STANDARD_20261106_OPTION_GROUPS,
+    "20261111": _STANDARD_20261111_OPTION_GROUPS,
+    "20261112": _STANDARD_20261112_OPTION_GROUPS,
+    "20261113": _STANDARD_20261113_OPTION_GROUPS,
+    "20261118": _STANDARD_20261118_OPTION_GROUPS,
+    "20261120": _STANDARD_20261120_OPTION_GROUPS,
 }
 
 
@@ -1188,36 +1540,6 @@ _COPYABLE_INPUT_FILE_TYPE = InputFileType.JsonSchema
 _COPYABLE_OUTPUT_MODEL_TYPE = DataModelType.PydanticV2BaseModel
 
 
-def _validate_preset_infos(infos: tuple[PresetInfo, ...]) -> None:
-    """Validate preset metadata invariants at import time."""
-    preset_names: set[PresetName] = set()
-    for info in infos:
-        if info.name in preset_names:  # pragma: no cover
-            msg = f"Preset {stable_repr(info.name.value)} is defined more than once"
-            raise PresetError(msg)
-        preset_names.add(info.name)
-        if info.target_python_version.value.replace(".", "") not in info.name.value:  # pragma: no cover
-            msg = f"Preset {stable_repr(info.name.value)} does not include its Python target in the name"
-            raise PresetError(msg)
-
-        output_model_groups: dict[DataModelType, str] = {}
-        for group in info.option_groups:
-            if not group.config:  # pragma: no cover
-                msg = f"Preset option group {stable_repr(group.title)} does not define any config fields"
-                raise PresetError(msg)
-            for output_model_type in group.output_model_types:
-                if output_model_type in output_model_groups:  # pragma: no cover
-                    msg = (
-                        f"Preset {stable_repr(info.name.value)} maps {stable_repr(output_model_type.value)} to both "
-                        f"{stable_repr(output_model_groups[output_model_type])} and {stable_repr(group.title)}"
-                    )
-                    raise PresetError(msg)
-                output_model_groups[output_model_type] = group.title
-
-
-_validate_preset_infos(_PRESET_INFOS)
-
-
 def get_preset_names() -> tuple[str, ...]:
     """Return all public preset names."""
     return tuple(preset.value for preset in PresetName)
@@ -1240,10 +1562,8 @@ def get_preset_infos() -> tuple[PresetInfo, ...]:
 
 
 def _preset_name_sort_key(name: str) -> tuple[str, str]:
-    prefix, separator, version = name.rpartition("-")
-    if separator and version.isdecimal():
-        return prefix, version
-    return name, ""  # pragma: no cover
+    prefix, _, version = name.rpartition("-")
+    return prefix, version
 
 
 def preset_info_as_dict(info: PresetInfo) -> _PresetInfoDict:
@@ -1272,8 +1592,53 @@ def render_presets_json() -> str:
     return _render_registry_json(preset_info_as_dict(info) for info in _PRESET_INFOS)
 
 
+def _date_additions_markdown(since: str) -> list[str]:
+    """Return the lines that say, date by date after ``since``, what the presets of a date add to the date before."""
+    dates = list(_STANDARD_OPTION_GROUPS_BY_DATE)
+    dates = dates[dates.index(since) :]
+    lines: list[str] = []
+    for previous, date in _pairwise(dates):
+        added = _date_additions(previous, date)
+        heading = f"The {date} presets keep the {previous} options{' and add:' if added else '.'}"
+        lines.extend((heading, "", *added, *([""] if added else [])))
+    return lines
+
+
+def _date_additions(previous: str, date: str) -> list[str]:
+    """Return the list items of what the presets of ``date`` add to those of ``previous``.
+
+    A date adds its new Python targets and the option groups its standard or practical presets list that the date before
+    does not, each written as the reference tables write it: its title, its options and its description.
+    """
+    targets = [
+        target.value
+        for target in _PRESET_NAMES_BY_TARGET["standard", date]
+        if target not in _PRESET_NAMES_BY_TARGET["standard", previous]
+    ]
+    return [
+        *(f"- Python {target} targets" for target in targets),
+        *(
+            _group_item(group, family)
+            for family, groups_by_date in (
+                ("", _STANDARD_OPTION_GROUPS_BY_DATE),
+                (" (practical presets)", _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE),
+            )
+            for group in groups_by_date.get(date, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
+            if group not in groups_by_date.get(previous, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
+        ),
+    ]
+
+
+def _group_item(group: PresetOptionGroup, family: str) -> str:
+    """Return the list item of an option group a preset date adds: its title, options and description."""
+    options = ", ".join(f"`{option}`" for option in group.options)
+    return f"- {group.title}{family} ({options}): {group.description}"
+
+
 def render_presets_markdown() -> str:
     """Render the preset reference page."""
+    standard, practical = (latest_preset_name(family, PythonVersion.PY_312) for family in ("standard", "practical"))
+    builtin_date = "20260909"
     lines = [
         "# Presets",
         "",
@@ -1313,13 +1678,13 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --input-file-type jsonschema \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset standard-py312-20261106 \\",
+        f"  --preset {standard} \\",
         "  --output model.py",
         "```",
         "",
         (
-            "Use `standard-py312-20261106` for the project-recommended modern Python 3.12 baseline. "
-            "Use `practical-py312-20261106` when you also want schema-authored names, model reuse, and schema "
+            f"Use `{standard}` for the project-recommended modern Python 3.12 baseline. "
+            f"Use `{practical}` when you also want schema-authored names, model reuse, and schema "
             "descriptions embedded in the generated code."
         ),
         "",
@@ -1329,130 +1694,13 @@ def render_presets_markdown() -> str:
         ),
         "",
         (
-            "Presets dated 20260909 or later select builtin to avoid running external formatters. "
+            f"Presets dated {builtin_date} or later select builtin to avoid running external formatters. "
             "For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. "
             "Keep `--formatters black isort` to preserve existing Black/isort output. "
             "Earlier dated presets are unchanged. Black and isort remain required installation dependencies."
         ),
         "",
-        "The 20261015 presets keep the 20260909 options and add Python 3.15 targets.",
-        "",
-        (
-            "The 20261017 presets keep the 20261015 options and add `--enum-field-as-literal all` for stdlib "
-            "dataclass and TypedDict output. These models keep raw JSON values without conversion, so enums render "
-            "as Literal values instead of enum classes. Options of an output model scope take precedence over the "
-            "options for all output model types."
-        ),
-        "",
-        (
-            "The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of "
-            "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
-            "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add "
-            "`--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths "
-            "and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get "
-            "the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a "
-            "constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and "
-            "`--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type "
-            "to a referenced schema gets its own model of the values all parts admit instead of the referenced type."
-        ),
-        "",
-        (
-            "The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that "
-            "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
-            "every tag they give it, so each union decodes the documents it selects the variant by, "
-            "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
-            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic 2.10 or later checks "
-            "them on the base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` "
-            "and `maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
-            "bounding the length of the other kind, as JSON Schema reads them, and "
-            "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
-            "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
-            "admit, and `--read-schema-version-per-document`: each document is read by the schema version it "
-            "declares, or that of the document that references it, so the keywords beside a `$ref` and the version's "
-            "features apply as that version says in every document of a run, and "
-            "`--ignore-ref-siblings-by-schema-version`: a `$ref` in a version that ignores the keywords beside it, "
-            "such as draft 7 or OpenAPI 3.0, is read as its target alone, and `--intersect-combined-schema-keywords`: "
-            "the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its "
-            "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
-            "$ref aliases and null branches, an allOf that adds required names to the one model it names is a model "
-            "that requires them, and no enum value that the merged type rejects is kept, as JSON Schema validates "
-            "them, and `--distribute-allof-over-unions`: an allOf of several anyOf and oneOf is one union "
-            "variant per combination of their branches, also through a $ref member and for value branches at a field "
-            "and beside object branches, a $ref branch of an anyOf or oneOf "
-            "takes the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an "
-            "anyOf or oneOf is that union, and `--keep-reference-null-on-merged-models`: a reference whose schema "
-            "admits null keeps "
-            "its `| None` when its model is merged into an equal model that rejects null. They also add "
-            "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
-            "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and "
-            "`--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed "
-            "(`pkg/Warn_.py`), so importing it leaves the class in place, and "
-            "`--use-serialize-as-any-for-every-subclass`: under `--use-serialize-as-any` a field is wrapped in "
-            "`SerializeAsAny` when any subclass of its model in the output adds fields, and "
-            "`--read-dynamic-anchors-in-document-order`: a plain-name `$dynamicRef` its dynamic scope does not bind, "
-            "and a reference to a plain name several schemas declare, resolve to the first declaration in document "
-            "order, and "
-            "`--use-unique-items-as-set-by-value`: under `--use-unique-items-as-set` a set is decided on the final "
-            "item types and written only where every value of its items hashes by value, and models whose arrays "
-            "differ in `uniqueItems` are not merged, and `--keep-constrained-root-models-in-every-container`: under "
-            "`--collapse-root-models` with `--field-constraints` a constrained root model stays named inside a set, "
-            "`Sequence` or `Mapping` of its holder, so their items keep its constraints, and "
-            "`--keep-enum-literal-aliases`: under `--collapse-root-models` a named enum written as a `Literal` type "
-            "alias stays named at its uses, and "
-            "`--read-input-model-dataclass-fields-by-alias`: with `--input-model`, a field of a Pydantic dataclass "
-            "that has an alias keeps its Python type (`deque[int]`) like one without, and "
-            "`--use-plain-alias-for-recursive-models`: in Pydantic output a type "
-            "alias whose whole value is a model that names itself is written as `Alias: TypeAlias = Node`, which "
-            "Pydantic builds for every model that uses it, and "
-            "`--type-overrides-replace-whole-type`: a class path of `--type-overrides` replaces an object map itself "
-            "(`dict`, not `dict[str, dict]`), and the item or property counts of the array or map an override "
-            "replaces stay only where the new type counts the same."
-        ),
-        "",
-        (
-            "The 20261104 presets also name models from the schema: `--naming-strategy definitions-first` gives "
-            "every definition its own name before an inline model that asks for it first (the practical presets "
-            "take it instead of `primary-first`), `--name-allof-union-members-after-branches` names the union members "
-            "of an allOf after their branches (`EventCreated`, `EventBase`), "
-            "`--use-duplicate-name-suffix-for-every-collision` "
-            "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
-            "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
-            "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "
-            "`PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
-            "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and "
-            "`--singularize-last-word-of-item-names` singularizes only the last word of an item model's name "
-            "(`actions_caches` names `ActionsCache`), `--read-escaped-ref-pointers` reads the escapes of a `$ref` "
-            "pointer as the characters they encode, so `#/$defs/a~1b` names the model `AB` of `a/b` instead of a copy "
-            "`A1b`, and `--use-one-model-per-ref-site` gives an object `$ref` with sibling keywords one model per "
-            "place it is written instead of one per path that reaches it."
-        ),
-        "",
-        (
-            "The 20261106 presets keep the 20261104 options and add `--keep-false-dataclass-arguments`: a dataclass "
-            "decorator argument set to false, such as `eq=False` from `--dataclass-arguments`, is written instead of "
-            "left out, which gave it its default, and `--keep-content-parameter-refs`: an OpenAPI parameter whose "
-            "content media schema is a `$ref` is typed by the model the `$ref` names (`PageRequest` under "
-            "`--read-only-write-only-model-type request-response`) instead of a copy of the referenced schema, and "
-            "`--skip-path-extension-keys`: the paths scope skips an `x-` key of `paths`, a specification extension, as "
-            "the api scope does, and `--reuse-every-reached-input-model-type`: with `--input-model` and a reuse "
-            "strategy, the types reached through dataclass fields are reused too, and no unused copy of a type a "
-            "field's Python type imports is written, and `--use-x-python-type-unions`: an `x-python-type` union "
-            "spelled `Optional[...]` or `Union[...]`, such as `Optional[Literal['a', 'b']]`, types its field as one "
-            "spelled `X | Y` already does, instead of the schema's type, and `--use-typed-nullable-map-values`: the "
-            "values of a map whose type array lists object alone or with null, such as `[object, null]`, are typed as "
-            "its `additionalProperties` say (`dict[str, int] | None`) instead of `dict[str, Any] | None`, which also "
-            "makes `--use-typed-map-values-beside-other-types`, set by the 20261027 presets but acting only together "
-            "with it, type the map values of a type array that lists object beside other types (`dict[str, int] | "
-            "str`), and `--use-msgspec-forbid-unknown-fields`: a msgspec Struct whose schema admits no property but "
-            "its own (`additionalProperties: false` without `patternProperties`) is written with "
-            "`forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects, and "
-            "`--keep-reference-null-on-collapsed-root-models`: under `--collapse-root-models` a field, item or map "
-            "value that takes the type of a root model admitting null keeps that null (`list[str] | None`), and "
-            "`--read-allof-parents-in-mro-order`: a property that several bases of an allOf declare takes the "
-            "nearer base's constraints, as the class bases do, also where an allOf lists a base before its own "
-            "descendant (`max_length=3` of `B` instead of `max_length=5` of `A`)."
-        ),
-        "",
+        *_date_additions_markdown(builtin_date),
         "## Override Preset Options",
         "",
         "Preset options are defaults, not locks. Explicit options override preset-supplied values.",
@@ -1460,7 +1708,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261106 \\",
+        f"  --preset {standard} \\",
         "  --no-snake-case-field \\",
         "  --no-use-annotated \\",
         "  --enum-field-as-literal none",
@@ -1486,7 +1734,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261106 \\",
+        f"  --preset {standard} \\",
         "  --extra-fields forbid \\",
         "  --use-title-as-name \\",
         "  --output model.py",
@@ -1502,12 +1750,12 @@ def render_presets_markdown() -> str:
         '```toml title="pyproject.toml"',
         "[tool.datamodel-codegen]",
         'output-model-type = "pydantic_v2.BaseModel"',
-        'preset = "standard-py312-20261106"',
+        f'preset = "{standard}"',
         "",
         "[tool.datamodel-codegen.profiles.api]",
         'input = "schemas/api.json"',
         'output = "src/models/api.py"',
-        'preset = "practical-py312-20261106"',
+        f'preset = "{practical}"',
         'extra-fields = "forbid"',
         "",
         "[tool.datamodel-codegen.profiles.events]",
@@ -1536,7 +1784,7 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --output model.py \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset practical-py312-20261106 \\",
+        f"  --preset {practical} \\",
         "  --extra-fields forbid \\",
         "  --generate-pyproject-config",
         "```",
@@ -1611,7 +1859,7 @@ def render_presets_markdown() -> str:
 
 def _render_copyable_config(info: PresetInfo) -> _PresetCopyableConfigDict:
     """Render a copyable expanded config through the existing CLI/config exporters."""
-    from datamodel_code_generator.__main__ import generate_cli_command, generate_pyproject_config  # noqa: PLC0415
+    from datamodel_code_generator._config_export import generate_cli_command, generate_pyproject_config  # noqa: PLC0415
 
     config_data = _copyable_config_data(info)
     return _PresetCopyableConfigDict(
@@ -1670,7 +1918,7 @@ def render_presets(format_: PresetFormat) -> str:
             return render_presets_json() + "\n"
         case "markdown":
             return render_presets_markdown().rstrip() + "\n"
-        case _:  # pragma: no cover
+        case _:
             msg = f"Unsupported preset docs format: {stable_repr(format_)}"
             raise PresetError(msg)
 
@@ -1682,7 +1930,10 @@ def resolve_preset_config_updates(
     use_annotated: bool,
     explicit_fields: set[str],
 ) -> ResolvedPresetConfig:
-    """Resolve preset updates while preserving caller-explicit config fields."""
+    """Resolve preset updates, leaving out the items of caller-explicit config fields.
+
+    The updates still carry the options the items imply, as on also where the caller set the option off.
+    """
     preset_name = _coerce_preset_name(preset)
     info = _get_preset_info(preset_name)
     explicit_field_names = set(explicit_fields)
@@ -1751,7 +2002,7 @@ def _coerce_preset_name(preset: PresetName | str) -> PresetName:
     """Return a typed preset name or raise a user-facing preset error."""
     try:
         return PresetName(preset)
-    except ValueError as exc:  # pragma: no cover
+    except ValueError as exc:
         names = ", ".join(get_preset_names())
         msg = f"Unknown preset: {stable_repr(preset)}. Available presets: {names}"
         raise PresetError(msg) from exc
@@ -1759,21 +2010,9 @@ def _coerce_preset_name(preset: PresetName | str) -> PresetName:
 
 def _get_preset_info(preset_name: PresetName) -> PresetInfo:
     """Return preset metadata for a known preset name."""
-    for info in _PRESET_INFOS:
-        if info.name is preset_name:  # pragma: no branch
-            return info
-
-    msg = f"Unsupported preset: {preset_name.value}"  # pragma: no cover
-    raise PresetError(msg)  # pragma: no cover
+    return next(info for info in _PRESET_INFOS if info.name is preset_name)
 
 
 def _resolve_preset_info(info: PresetInfo, context: PresetContext) -> tuple[PresetConfigItem, ...]:
     """Resolve preset metadata into config updates for the given context."""
-    applicable_groups = tuple(group for group in info.option_groups if group.applies_to(context))
-    if not any(group.output_model_types for group in applicable_groups):
-        msg = (  # pragma: no cover
-            f"Unsupported output model type for preset {info.name.value}: {context.output_model_type.value}"
-        )
-        raise PresetError(msg)  # pragma: no cover
-
-    return _merge_preset_groups(applicable_groups)
+    return _merge_preset_groups(tuple(group for group in info.option_groups if group.applies_to(context)))

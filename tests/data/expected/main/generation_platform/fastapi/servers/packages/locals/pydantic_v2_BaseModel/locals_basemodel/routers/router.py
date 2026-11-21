@@ -61,9 +61,7 @@ def _add_wiring(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('wiring', _add_wiring),
-)
+LITERAL_ROUTES: Final = (('wiring', _add_wiring),)
 TEMPLATED_ROUTES: Final = ()
 
 

@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, SETS
 from datamodel_code_generator._python_syntax import subscript_text
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.pydantic_v2.base_model import (
@@ -219,7 +219,7 @@ class RootModel(BaseModel):
             self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
 
     @override
-    def _rendered_config_items(self) -> list[tuple[str, str]]:
+    def _config_items(self) -> list[tuple[str, str]]:
         """Return the root model's config items: its engine and freezing, literal values and a neutral ``extra``."""
         config = {**dict(_root_model_config_items(self.extra_template_data.get("config"))), **self._root_config()}
         return _safe_config_dict_items(config, self.target_python_version) if config else []
@@ -243,7 +243,7 @@ class RootModel(BaseModel):
         drops it when no item remains.
         """
         self._pop_internal_template_data(_CONFIG_TEMPLATE_DATA_KEY)
-        if not (config_items := self._rendered_config_items()):
+        if not (config_items := self._config_items()):
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
             return
         self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items)

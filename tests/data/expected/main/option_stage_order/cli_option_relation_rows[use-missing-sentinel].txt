@@ -1,0 +1,4 @@
+`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`
+exit: ERROR
+written:
+  header.txt

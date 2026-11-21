@@ -128,11 +128,11 @@ class Model(Struct):
     level2_items: list[Level] | UnsetType = UNSET
     level2_map: dict[str, Level] | UnsetType = UNSET
     number5: Number5 | UnsetType = UNSET
-    number5_prop: Number | UnsetType = UNSET
+    number5_prop: Annotated[Number, Meta(ge=5)] | UnsetType = UNSET
     number5_items: list[Number5Item] | UnsetType = UNSET
     number5_map: dict[str, Number5Map] | UnsetType = UNSET
     non_negative: NonNegative | UnsetType = UNSET
-    non_negative_prop: Real | UnsetType = UNSET
+    non_negative_prop: Annotated[Real, Meta(ge=0.0)] | UnsetType = UNSET
     non_negative_items: list[Real] | UnsetType = UNSET
     non_negative_map: dict[str, NonNegativeMap] | UnsetType = UNSET
     two_refs: TwoRefs | UnsetType = UNSET
@@ -140,16 +140,16 @@ class Model(Struct):
     two_refs_items: list[TwoRefsItem] | UnsetType = UNSET
     two_refs_map: dict[str, TwoRefsMap] | UnsetType = UNSET
     stamp_len: StampLen | UnsetType = UNSET
-    stamp_len_prop: Stamp | UnsetType = UNSET
+    stamp_len_prop: Annotated[Stamp, Meta(max_length=40)] | UnsetType = UNSET
     stamp_len_items: list[StampLenItem] | UnsetType = UNSET
     stamp_len_map: dict[str, StampLenMap] | UnsetType = UNSET
     quantity: Quantity | UnsetType = UNSET
     q_allof: AllOfRoot | UnsetType = UNSET
-    q_allof_prop: Quantity | UnsetType = UNSET
+    q_allof_prop: Annotated[Quantity, Meta(le=10)] | UnsetType = UNSET
     q_allof_items: list[QAllofItem] | UnsetType = UNSET
     q_allof_map: dict[str, QAllofMap] | UnsetType = UNSET
     q_allof2: AllOfRoot2 | UnsetType = UNSET
-    q_allof2_prop: Quantity | UnsetType = UNSET
+    q_allof2_prop: Annotated[Quantity, Meta(le=10)] | UnsetType = UNSET
     q_allof2_items: list[Quantity] | UnsetType = UNSET
     q_allof2_map: dict[str, QAllof2Map] | UnsetType = UNSET
     xpt_a: Q | UnsetType = UNSET

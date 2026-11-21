@@ -21,11 +21,11 @@ sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 DOCS = ROOT / "docs"
 TEST_DATA = ROOT / "tests" / "data"
 EXPECTED_MAIN = TEST_DATA / "expected" / "main"
-EXPECTED_INPUT_MODEL = EXPECTED_MAIN / "input_model"
+EXPECTED_INPUT_MODEL = TEST_DATA / "expected" / "input_model"
 EXPECTED_JSON_SCHEMA = EXPECTED_MAIN / "jsonschema"
 EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
-EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
+EXPECTED_CLIENT_GENERATION = TEST_DATA / "expected" / "api_generation" / "client_generation"
 CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
 FASTAPI_CLI_DATA = TEST_DATA / "generation_platform" / "fastapi" / "cli"
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
@@ -366,7 +366,7 @@ def directory_tree(path: Path, *, root_name: str) -> str:
 
 def render_reuse_scope_tree_example() -> str:
     """Render tested reuse-scope tree output with representative files."""
-    output_path = EXPECTED_MAIN / "jsonschema" / "reuse_scope_tree"
+    output_path = EXPECTED_MAIN / "jsonschema" / "main_jsonschema" / "reuse_scope_tree"
     lines = [
         "",
         "**Output with `--reuse-scope tree`:**",
@@ -647,7 +647,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "openapi.quick-start.output",
             "openapi.md",
             language="python",
-            path=EXPECTED_OPENAPI / "general.py",
+            path=EXPECTED_OPENAPI / "main_openapi/validation.py",
             strip_python_header=True,
         ),
         _file_example(
@@ -660,7 +660,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "openapi.read-only-write-only.output",
             "openapi.md",
             language="python",
-            path=EXPECTED_OPENAPI / "read_only_write_only_all.py",
+            path=EXPECTED_OPENAPI / "main_openapi/read_only_write_only_all.py",
             strip_python_header=True,
         ),
         _file_example(
@@ -669,11 +669,23 @@ def docs_examples() -> tuple[DocsExample, ...]:
             language="yaml",
             path=OPENAPI_DATA / "read_only_write_only_allof.yaml",
         ),
+        DocsExample(
+            example_id="kubernetes.crd.schema",
+            path=DOCS / "kubernetes.md",
+            render=lambda: details("widget.yaml", "yaml", read_text(JSON_SCHEMA_DATA / "kubernetes_crd_schema.yaml")),
+        ),
+        _file_example(
+            "kubernetes.crd.output",
+            "kubernetes.md",
+            language="python",
+            path=EXPECTED_MAIN / "kubernetes_extensions" / "kubernetes_crd_schema[pydantic_v2.BaseModel-on].py",
+            strip_python_header=True,
+        ),
         _file_example(
             "model-reuse.reuse-model.output",
             "model-reuse.md",
             language="python",
-            path=EXPECTED_JSON_SCHEMA / "json_reuse_enum.py",
+            path=EXPECTED_JSON_SCHEMA / "main_jsonschema" / "main_json_reuse_enum.py",
             strip_python_header=True,
         ),
         DocsExample(
@@ -709,7 +721,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "model-reuse.use-type-alias.output",
             "model-reuse.md",
             language="python",
-            path=EXPECTED_JSON_SCHEMA / "reduce_duplicate_field_types.py",
+            path=EXPECTED_JSON_SCHEMA / "main_jsonschema/reduce_duplicate_field_types.py",
             strip_python_header=True,
         ),
         DocsExample(
@@ -733,7 +745,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_INPUT_MODEL / "typeddict.py",
+                    path=EXPECTED_INPUT_MODEL / "typeddict.txt",
                     strip_python_header=True,
                 ),
             ),
@@ -777,7 +789,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_OPENAPI / "custom_template_dir.py",
+                    path=EXPECTED_OPENAPI / "main_openapi/custom_template_dir.stdout.py",
                     strip_python_header=True,
                 ),
             ),
@@ -802,8 +814,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "text",
                 error_findings(
                     *(
-                        EXPECTED_CLIENT / "protocols" / name
-                        for name in ("protocols-unsupported.txt", "protocols-references.txt")
+                        EXPECTED_CLIENT_GENERATION / f"client_protocols[{name}].txt"
+                        for name in ("protocols-unsupported", "protocols-references")
                     ),
                     keep=lambda finding: "reserves the argument" in finding,
                 ),
@@ -919,10 +931,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             render=lambda: (
                 "\n"
                 + blocks(
-                    EXPECTED_CLIENT
-                    / "packages"
-                    / "caching"
-                    / "pydantic_v2_BaseModel"
+                    EXPECTED_CLIENT_GENERATION
+                    / "client_documentation[caching]"
                     / "client"
                     / "_generated_docs"
                     / "runtime.md",
@@ -1091,7 +1101,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "text",
-                error_findings(EXPECTED_CLIENT / "fields-errors.txt"),
+                error_findings(EXPECTED_CLIENT_GENERATION / "client_render[fields-errors].txt"),
             ),
         ),
         DocsExample(
@@ -1130,7 +1140,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_JSON_SCHEMA / "typed_dict_closed.py",
+                    path=EXPECTED_JSON_SCHEMA / "main_jsonschema/main_typed_dict_closed.py",
                     strip_python_header=True,
                 ),
             ),

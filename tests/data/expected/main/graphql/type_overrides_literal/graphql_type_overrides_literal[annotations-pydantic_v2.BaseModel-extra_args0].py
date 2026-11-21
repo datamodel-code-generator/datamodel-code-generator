@@ -29,3 +29,7 @@ class Model(BaseModel):
     levels: list[Literal[1, 2]] | None = None
     mode: Optional[Literal['a', 'b']]
     typename__: Literal['Model'] | None = Field('Model', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Model'] | None:
+        return self.typename__

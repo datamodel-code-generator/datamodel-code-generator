@@ -1,0 +1,12 @@
+violation: tests/data/jsonschema/other.json | pydantic_v2.BaseModel | default
+    no record's [[change.cells]] covers the cell
+    [type] Model:a: str -> float
+violation: tests/data/jsonschema/other.json | msgspec.Struct | default
+records: 0 judged; differing cells accepted=0, violation=2
+uncovered differing cells; a starting [[change.cells]] block for their record:
+[[change.cells]]
+input = ["tests/data/jsonschema/other.json"]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+options = [[]]
+# a decision names: aspects = ["type"]
+# match = "^\\[type\\] Model:a: str -> float$"

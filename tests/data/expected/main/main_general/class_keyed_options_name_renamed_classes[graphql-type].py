@@ -33,7 +33,15 @@ class Pet_1(Base):
     def check_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return check(v, info)
 
+    @property
+    def __typename(self) -> Literal['Pet'] | None:
+        return self.typename__
+
 
 class Owner(BaseModel):
     Pet: Pet_1 | None = None
     typename__: Literal['Owner'] | None = Field('Owner', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Owner'] | None:
+        return self.typename__

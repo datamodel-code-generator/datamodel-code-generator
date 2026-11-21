@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
+from datamodel_code_generator._container_kinds import container_shape
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES, keyword_argument, subscript_text
 from datamodel_code_generator._target_unicode import is_python_name
@@ -63,12 +64,9 @@ escape_characters = SINGLE_QUOTED_ESCAPES
 
 
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:
-    if (name := _field_source_name(field)) is None:  # pragma: no cover
+    if (name := _field_source_name(field)) is None:  # pragma: no cover - not proven unreachable
         return False
     return is_python_name(name, field.data_type.python_version)
-
-
-_CONTAINERS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
 
 
 def _written_union(data_types: Iterable[DataType]) -> tuple[frozenset[tuple[object, ...]], bool]:
@@ -101,8 +99,7 @@ def _written(data_type: DataType) -> Iterator[tuple[object, ...]]:
         frozenset((type(value), value) for value in data_type.literals),
         None if enum is None else model_key_of(enum),
         frozenset(member for _, member in data_type.enum_member_literals),
-        tuple(getattr(data_type, container) for container in _CONTAINERS),
-        data_type.tuple_item_count,
+        container_shape(data_type),
         None if (key := data_type.dict_key) is None else _written_union((key,)),
         tuple(_written_union((member,)) for member in members) if data_type.is_tuple else _written_union(members),
     )
@@ -134,8 +131,10 @@ class TypedDict(DataModel):
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPED_DICT,)
     REQUIRES_ADDITIONAL_PROPERTIES_REFERENCE_CLASSES: ClassVar[bool] = True
     SUPPORTS_TYPED_DICT_TOTAL_FALSE: ClassVar[bool] = True
+    WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
+    _HOLDS_PROPERTIES: ClassVar[bool] = False
     _PYTHON_CHECKS_BASES: ClassVar[bool] = False
     _BASE_FIELDS: ClassVar[MemberRule] = "nearest"
     _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = True
@@ -208,7 +207,7 @@ class TypedDict(DataModel):
         if _holds(imports, IMPORT_TYPED_DICT_BACKPORT) and _holds(imports, IMPORT_TYPED_DICT):
             _remove_all(imports, IMPORT_TYPED_DICT)
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,
@@ -424,7 +423,13 @@ class TypedDict(DataModel):
     def all_fields(self) -> Iterator[DataModelFieldBase]:
         """Iterate over all fields, without docstrings the functional dict literal cannot hold."""
         for field in self._flattened_fields():
-            yield field.model_copy(update={"use_field_description": False, "use_inline_field_description": False})
+            yield field.model_copy(
+                update={
+                    "use_field_description": False,
+                    "use_field_description_example": False,
+                    "use_inline_field_description": False,
+                }
+            )
 
     @override
     def fields_evaluated_at_definition(self) -> list[DataModelFieldBase]:
@@ -537,15 +542,6 @@ class DataModelField(DataModelFieldBase):
     def fall_back_to_nullable(self) -> bool:
         """Check if field should fall back to nullable."""
         return not self._is_optional_typed_dict_key
-
-    @property
-    @override
-    def imports(self) -> tuple[Import, ...]:
-        """Get imports including key-requiredness and ReadOnly qualifiers."""
-        base_imports = super().imports
-        if not (symbol_imports := self._render_plan().symbol_imports):
-            return base_imports
-        return (*base_imports, *(import_ for import_, _ in symbol_imports))
 
 
 class DataModelFieldReadOnlyBackport(DataModelField):

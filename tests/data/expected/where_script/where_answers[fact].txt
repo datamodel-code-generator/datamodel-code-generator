@@ -1,0 +1,18 @@
+exit status 0
+fact Fact.BASES
+  freezes at B1 (facts-final)
+  final after its last declared writer: apply_generic_base_class (CROSS_MODULE)
+  read by 32 passes, first sort_data_models (SETTLE), last render_modules (RENDER)
+  attribute rows (2):
+    DataModel.base_classes fact, final after CROSS_MODULE, frozen at B1; store ops: reset_base_classes, set_base_classes
+    DataModel.custom_base_class fact, final after PARSE, frozen at B1; store ops: -
+  written by (pipeline order) (11):
+    ... 3 earlier (--all)
+    reuse_model_tree_scope (STRUCTURE)
+    flatten_conflicting_base_layouts (PLAN)
+    reuse_model (MODULES)
+    apply_base_class_type_overrides (MODULES)
+    apply_base_stand_in_imports (MODULES)
+    tag_fields_of_tagged_bases (CROSS_MODULE)
+    flatten_narrowed_inherited_fields (CROSS_MODULE)
+    apply_generic_base_class (CROSS_MODULE)

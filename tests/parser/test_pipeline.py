@@ -97,6 +97,21 @@ COVERAGE_RUNS = (
         "--input tests/data/openapi/ref_sibling_cycle_maps.yaml --input-file-type openapi "
         "--output-model-type typing.TypedDict"
     ),
+    "--input tests/data/openapi/discriminator_enum.yaml --input-file-type openapi --use-enum-values-in-discriminator",
+    (
+        "--input tests/data/openapi/incomplete_model_defaults.yaml --input-file-type openapi "
+        "--omit-incomplete-model-defaults"
+    ),
+    (
+        "--input tests/data/jsonschema/extra_fields.json --input-file-type jsonschema --extra-fields forbid "
+        "--use-generic-base-class --keep-model-order --use-one-literal-as-default --set-default-enum-member "
+        """--use-unique-items-as-set --type-overrides '{"Baz": "decimal.Decimal"}'"""
+    ),
+    "--input tests/data/jsonschema/enum_const_positions.json --input-file-type jsonschema --read-const-beside-enum",
+    (
+        "--input tests/data/openapi/discriminator_msgspec_tagged_base_redefined_field.yaml --input-file-type openapi "
+        "--output-model-type msgspec.Struct"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 
@@ -122,14 +137,14 @@ def test_every_declared_pass_runs() -> None:
     assert_output("".join(f"{name}\n" for name in check_pass_pipeline.unrun_passes(traces)) or "every pass runs\n")
 
 
+@pytest.mark.allow_direct_assert("a pipeline gate fails on its own, never through a stored output a fix run accepts")
 def test_pipeline_tables_follow_the_rules(capsys: pytest.CaptureFixture[str]) -> None:
     """The tables run the declarations in order, in their phases and scopes, ordered by the order rule.
 
     The provisional reads are the explicit edges that run a reader before a writer of what it reads.
     """
-    exit_status = check_pass_pipeline.main([])
+    assert check_pass_pipeline.main([]) == 0, capsys.readouterr().err
 
-    assert_output(f"exit status: {exit_status}\n{capsys.readouterr().err}", name="checks")
     assert_output("".join(f"{read}\n" for read in check_pass_pipeline.provisional_reads()), name="provisional_reads")
 
 
@@ -343,7 +358,11 @@ def test_decision_phase_runs_the_registry_after_the_generic_base_class(
         )
 
     parser = DecidingParser(
-        DATA / "openapi" / "modular.yaml", collapse_root_models=True, formatters=[Formatter.BUILTIN]
+        DATA / "openapi" / "modular.yaml",
+        collapse_root_models=True,
+        use_generic_base_class=True,
+        extra_fields="forbid",
+        formatters=[Formatter.BUILTIN],
     )
     trace = check_pass_pipeline.call_trace(parser.parse)
     start = trace.index("apply_generic_base_class")

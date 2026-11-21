@@ -1,0 +1,10 @@
+# Owner-approved rises of the escape-hatch keys that scripts/check_ratchets.py counts, each for one pull request.
+# The checker reads this table from the base revision, so a pull request cannot approve its own rise: the entry lands
+# first, then the pull request it names is judged on a base that holds it.
+# A run of that pull request (GitHub Actions `pull_request`, or the `push` of its squash commit to main) accepts the
+# key up to `head`; a larger count, another pull request and a local run fail as without the table.
+# Entry keys: key (the key as the checker prints it), head (the approved count), pr (the pull request number),
+# decision (the public PR or issue references of the owner decision, ["#1234"]), reason.
+# `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
+# accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
+# approvals.

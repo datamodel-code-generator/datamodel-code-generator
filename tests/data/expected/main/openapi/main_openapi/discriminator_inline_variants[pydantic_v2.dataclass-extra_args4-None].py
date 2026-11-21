@@ -50,9 +50,7 @@ class ServerEvent2(AudioDone):
 
 ServerEvent = TypeAliasType(
     "ServerEvent",
-    Annotated[
-        ServerEvent1 | ServerEvent2, Field(..., discriminator='type')
-    ],
+    Annotated[ServerEvent1 | ServerEvent2, Field(..., discriminator='type')],
 )
 
 
@@ -111,9 +109,7 @@ class ClashingEvent1(AudioDone):
 
 ClashingEvent = TypeAliasType(
     "ClashingEvent",
-    Annotated[
-        ClashingEvent1 | AudioDone, Field(..., discriminator='type')
-    ],
+    Annotated[ClashingEvent1 | AudioDone, Field(..., discriminator='type')],
 )
 
 
@@ -136,9 +132,7 @@ class SharedBEvent1(AudioDone):
 
 SharedBEvent = TypeAliasType(
     "SharedBEvent",
-    Annotated[
-        SharedBEvent1 | AudioDone, Field(..., discriminator='type')
-    ],
+    Annotated[SharedBEvent1 | AudioDone, Field(..., discriminator='type')],
 )
 
 

@@ -28,11 +28,19 @@ class EventOps:
     self: EventOps | None = None
     typename__: Literal['EventOps'] | None = Field('EventOps', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['EventOps'] | None:
+        return self.typename__
+
 
 @dataclass
 class Other:
     value: String
     typename__: Literal['Other'] | None = Field('Other', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
 
 
 @dataclass
@@ -41,12 +49,20 @@ class Query:
     self: Query | None = None
     typename__: Literal['Query'] | None = Field('Query', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Query'] | None:
+        return self.typename__
+
 
 @dataclass
 class WriteOps:
     value: String
     self: WriteOps | None = None
     typename__: Literal['WriteOps'] | None = Field('WriteOps', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['WriteOps'] | None:
+        return self.typename__
 
 
 Choice = TypeAliasType(
@@ -67,6 +83,10 @@ class RootOps:
     self: RootOps | None = None
     typename__: Literal['RootOps'] | None = Field('RootOps', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['RootOps'] | None:
+        return self.typename__
+
 
 @dataclass
 class Holder:
@@ -74,3 +94,7 @@ class Holder:
     query: RootOps | None = None
     subscription: EventOps | None = None
     typename__: Literal['Holder'] | None = Field('Holder', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__

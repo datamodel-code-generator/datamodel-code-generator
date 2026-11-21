@@ -1,0 +1,17 @@
+models shared True
+# binary_json in-process sync, in-process async, in-process msgspec_Struct sync, in-process msgspec_Struct async
+get_export
+  > GET /exports/json
+  get_export(name='json')
+  < 200 application/json
+  = b'{"kept": "as octets", "byte": "\xff"}'
+get_export png
+  > GET /exports/png
+  get_export(name='png')
+  < 200 image/png
+  = b'\x89PNG'
+put_export
+  > PUT /exports/json [application/json]
+  put_export(name='json', body=b'not json \xff\x00')
+  < 204 -
+  = None

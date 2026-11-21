@@ -1,0 +1,8 @@
+{"kind": "circle", "radius": 1.5}: schema accepts, model Shape1(radius=1.5)
+{"kind": "rect", "w": 1, "h": 2}: schema accepts, model Shape2(w=1.0, h=2.0)
+{"kind": "polygon", "sides": 5}: schema accepts, model Shape3(sides=5)
+{"kind": "empty"}: schema accepts, model Shape4()
+{"kind": "rect", "w": 1}: schema rejects, model rejects
+{"kind": "polygon"}: schema rejects, model rejects
+{"kind": "hexagon"}: schema rejects, model rejects
+{"radius": 1}: schema rejects, model rejects

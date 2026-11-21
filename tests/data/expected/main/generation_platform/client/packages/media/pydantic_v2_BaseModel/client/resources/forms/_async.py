@@ -73,14 +73,16 @@ class AsyncFormsResource:
         """
         Call POST /forms.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def submit_profile(
         self,
@@ -92,13 +94,15 @@ class AsyncFormsResource:
         """
         Call POST /profiles.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def read_profile(
         self,
@@ -109,12 +113,14 @@ class AsyncFormsResource:
         """
         Call GET /profiles.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def submit_anything(
         self,
@@ -126,13 +132,15 @@ class AsyncFormsResource:
         """
         Call POST /anything.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_parts(
         self,
@@ -144,13 +152,15 @@ class AsyncFormsResource:
         """
         Call POST /attachments.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     @overload
     async def read_parts(
@@ -176,18 +186,22 @@ class AsyncFormsResource:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> ReadPartsResponse:
         """
         Call GET /attachments.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def submit_pairs(
         self,
@@ -200,14 +214,16 @@ class AsyncFormsResource:
         """
         Call POST /pairs.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def submit_upload(
         self,
@@ -219,13 +235,15 @@ class AsyncFormsResource:
         """
         Call POST /uploads.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def read_upload(
         self,
@@ -236,12 +254,14 @@ class AsyncFormsResource:
         """
         Call GET /uploads.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_8,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_8,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     @overload
     async def submit_avatar(
@@ -277,13 +297,15 @@ class AsyncFormsResource:
         """
         Call POST /avatars.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_9,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_9,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_scans(
         self,
@@ -295,13 +317,15 @@ class AsyncFormsResource:
         """
         Call POST /scans.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_10,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_10,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_photos(
         self,
@@ -313,13 +337,15 @@ class AsyncFormsResource:
         """
         Call POST /photos.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_11,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_11,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_labels(
         self,
@@ -331,13 +357,15 @@ class AsyncFormsResource:
         """
         Call POST /labels.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_12,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_12,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_search(
         self,
@@ -349,13 +377,15 @@ class AsyncFormsResource:
         """
         Call POST /searches.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_15,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_15,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_cover(
         self,
@@ -367,13 +397,15 @@ class AsyncFormsResource:
         """
         Call POST /covers.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_16,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_16,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_card(
         self,
@@ -385,13 +417,15 @@ class AsyncFormsResource:
         """
         Call POST /cards.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_17,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_17,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_stickers(
         self,
@@ -403,13 +437,15 @@ class AsyncFormsResource:
         """
         Call POST /stickers.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_18,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_18,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def submit_album(
         self,
@@ -421,13 +457,15 @@ class AsyncFormsResource:
         """
         Call POST /albums.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_19,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_19,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncFormsWithResponse:
@@ -551,7 +589,9 @@ class AsyncFormsWithResponse:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadPartsResponse]:
         """
@@ -905,7 +945,9 @@ class AsyncFormsWithRawResponse:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """
@@ -1259,7 +1301,9 @@ class AsyncFormsWithStreamingResponse:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """

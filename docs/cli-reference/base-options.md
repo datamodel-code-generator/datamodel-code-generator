@@ -17,8 +17,12 @@
 | [`--preset`](#preset) | Apply an immutable built-in option preset. |
 | [`--read-dynamic-anchors-in-document-order`](#read-dynamic-anchors-in-document-order) | Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its... |
 | [`--read-escaped-ref-pointers`](#read-escaped-ref-pointers) | Read the escapes of a `$ref` JSON pointer as the characters ... |
+| [`--read-ids-with-empty-fragment`](#read-ids-with-empty-fragment) | Read an `$id` that ends with an empty fragment as the docume... |
 | [`--read-input-model-dataclass-fields-by-alias`](#read-input-model-dataclass-fields-by-alias) | Read the fields of a Pydantic dataclass by their aliases wit... |
+| [`--read-ref-siblings-in-closed-allof-members`](#read-ref-siblings-in-closed-allof-members) | Read every keyword beside a `$ref` that a closed allOf membe... |
 | [`--read-schema-version-per-document`](#read-schema-version-per-document) | Read each document by the schema version it declares. |
+| [`--read-single-allof-refs-in-their-documents`](#read-single-allof-refs-in-their-documents) | Read the target of an allOf of one `$ref` in the document th... |
+| [`--read-yaml-1-1-numbers-as-text`](#read-yaml-1-1-numbers-as-text) | Read the unquoted YAML values that only YAML 1.1 reads as nu... |
 | [`--reuse-every-reached-input-model-type`](#reuse-every-reached-input-model-type) | Reach the types to reuse through every model kind and write ... |
 | [`--schema-version`](#schema-version) | Schema version to use for parsing. |
 | [`--schema-version-mode`](#schema-version-mode) | Schema version validation mode. |
@@ -238,7 +242,9 @@ Default is UTF-8, which is the standard encoding for JSON and most modern text f
 Map external `$ref` files to Python packages.
 
 Use `--external-ref-mapping FILE_PATH=PYTHON_PACKAGE` to import referenced models from an existing package,
-instead of generating duplicate classes from external schema files.
+instead of generating duplicate classes from external schema files. An `allOf` of a mapped `$ref` and keywords that
+add no field, such as `maxLength` or `description`, is typed by the import too; its other keywords are not kept, as
+with a local `$ref`.
 
 !!! tip "Usage"
 
@@ -385,7 +391,9 @@ those keywords overlay the referenced schema: a sibling `format: binary` types t
 `--ignore-ref-siblings-by-schema-version` the field is typed by the referenced schema alone, and annotations beside
 the `$ref`, such as `description` or `default`, are left out too. Versions that apply the keywords beside a `$ref`
 (2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3) read them as before. The version is the one
-`--read-schema-version-per-document` reads, else that of the document being parsed.
+`--read-schema-version-per-document` reads, else that of the document being parsed. A schema converted from Avro,
+XML Schema or Protocol Buffers, also as an AsyncAPI payload, keeps the keywords its converter writes beside a `$ref`,
+such as the default of a field typed by a named type.
 
 !!! tip "Usage"
 
@@ -1136,6 +1144,76 @@ pointer warns as a dangling reference, unless the name holds `://`, which is sti
 
 ---
 
+## `--read-ids-with-empty-fragment` {#read-ids-with-empty-fragment}
+
+Read an `$id` that ends with an empty fragment as the document that declares it.
+
+JSON Schema draft 7 allows the root `$id` to be written with or without an empty fragment
+(`https://example.com/item.json#` or `https://example.com/item.json`); both name the same resource. Without this
+option the generator records the `$id` as written, so a `$ref` to it in the same document
+(`https://example.com/item.json#`, or a pointer after it) loads the document at that URL from the network: the run
+fails where the server returns a copy the generator refuses, where nothing can be fetched, and where the output is
+one file and the fetched copy is a second module; with an output directory the fetched copy is written as a second
+module, as in 0.96.0. Such a run warns before it loads the document and names this option. With
+`--read-ids-with-empty-fragment` the `$id` is read as the URI without the empty fragment, so the reference resolves
+inside the document and nothing is fetched.
+
+**Related:** [`--allow-remote-refs`](general-options.md#allow-remote-refs)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input ninjs_1_0.json --read-ids-with-empty-fragment # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-ids-with-empty-fragment` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json#",
+      "title": "NewsItem",
+      "type": "object",
+      "properties": {
+        "uri": {"type": "string"},
+        "associations": {
+          "type": "object",
+          "additionalProperties": {"$ref": "http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json#"}
+        }
+      },
+      "required": ["uri"]
+    }
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  ninjs_1_0.json
+
+    from __future__ import annotations
+
+    from pydantic import BaseModel
+
+
+    class NewsItem(BaseModel):
+        uri: str
+        associations: dict[str, NewsItem] | None = None
+
+
+    NewsItem.model_rebuild()
+    ```
+
+    <!-- fmt: on -->
+
+---
+
 ## `--read-input-model-dataclass-fields-by-alias` {#read-input-model-dataclass-fields-by-alias}
 
 Read the fields of a Pydantic dataclass by their aliases with --input-model.
@@ -1207,6 +1285,125 @@ aliases, as those of a model, so an aliased field keeps its Python type like one
 
         class Outer(BaseModel):
             inner: Inner
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-ref-siblings-in-closed-allof-members` {#read-ref-siblings-in-closed-allof-members}
+
+Read every keyword beside a `$ref` that a closed allOf member evaluates.
+
+An allOf member with `unevaluatedProperties: false` closes the model where the schemas it evaluates name every
+property they evaluate. Without this option the keywords beside an allOf `$ref` of those schemas are read only where
+that `$ref` member holds an applicator (`allOf`, `anyOf`, `oneOf`, `if`), `patternProperties`, `additionalProperties`
+or `unevaluatedProperties`, as in 0.97.0: a `dependentSchemas` beside the `$ref`, which evaluates `owner` once `status`
+is present, is not read, so the model forbids extra keys and rejects `{"status": "x", "owner": "y"}`, which the schema
+accepts. With it they are read as the schema validators read them, wherever the schema version applies the keywords
+beside a `$ref`, so the member does not close the model and the payload validates.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input allof_unevaluated_closed_member_ref_siblings.json --read-ref-siblings-in-closed-allof-members # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-ref-siblings-in-closed-allof-members` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Filters",
+      "type": "object",
+      "$defs": {
+        "Base": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "unevaluatedProperties": false,
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base",
+              "dependentSchemas": {
+                "status": {
+                  "properties": {
+                    "owner": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_unevaluated_closed_member_ref_siblings.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class Base(BaseModel):
+            status: str | None = None
+
+
+        class Filters(Base):
+            status: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_unevaluated_closed_member_ref_siblings.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, ConfigDict
+
+
+        class Base(BaseModel):
+            status: str | None = None
+
+
+        class Filters(Base):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            status: str | None = None
         ```
 
         <!-- fmt: on -->
@@ -1328,6 +1525,196 @@ that version, with or without the option, except that without it the schema vali
         class Root(BaseModel):
             legacy: Score | None = None
             score: Score | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-single-allof-refs-in-their-documents` {#read-single-allof-refs-in-their-documents}
+
+Read the target of an allOf of one `$ref` in the document that holds the schema.
+
+A schema whose `allOf` is one local `$ref` alone (`Status: {allOf: [{$ref: "#/definitions/Code"}]}`) is typed by
+its target: a root model over the referenced enum (`Status(RootModel[Code])`), a root model over a `true` target, or
+refused when the target is `false`. Without this option the target is read at the same pointer of the input
+document, not of the document that holds the schema, and a plain-name anchor such as `#code` is read as a pointer
+that names nothing. In a file the input refers to, such a schema is then written as a copy of the enum
+(`class Status(Enum)`), or as a root model when the input document happens to hold an enum at that pointer, and a
+`false` there refuses the valid file; an anchor reference gives a copy of the enum in one file too, as in 0.96.0.
+With `--read-single-allof-refs-in-their-documents` the target is read as every other `$ref` is read, so the schema
+takes the form the same schemas take in one file. The copy and the root model accept the same values; the option
+changes the classes written, and a referenced `true` target that was written as an empty model now accepts every
+value, as the schema does.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input main.json --read-single-allof-refs-in-their-documents # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-single-allof-refs-in-their-documents` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Main",
+      "type": "object",
+      "properties": {
+        "status": {"$ref": "other.json#/definitions/Status"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  main.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Code(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class Status(RootModel[Code]):
+            root: Code
+
+
+        class Main(BaseModel):
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  main.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel
+
+
+        class Code(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class Status(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class Main(BaseModel):
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-yaml-1-1-numbers-as-text` {#read-yaml-1-1-numbers-as-text}
+
+Read the unquoted YAML values that only YAML 1.1 reads as numbers as their text.
+
+PyYAML reads YAML 1.1, where an unquoted value of digits joined by `_` (`18_24`, `1_000`) or by `:` in base 60
+(`16:9` is 969, `00:00:00.00` is 0.0) is a number. OpenAPI names YAML 1.2, which reads such a value as a string, as the
+optional `ryaml` reader does. With this option they are their text everywhere: in `enum`, `default`, `const`,
+`examples`, extensions and YAML data input, so an enum of aspect ratios keeps the values `'16:9'` and `'4:3'`.
+
+Without it they are the numbers YAML 1.1 reads, as before, except in a document that these numbers make invalid: where
+a string is required (a `pattern`, `format`, `title` or `description`, a component, path or property name, an item of
+`required`) such a document is read again with these values as their text, and with the numbers elsewhere.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input ratio.yaml --read-yaml-1-1-numbers-as-text # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-yaml-1-1-numbers-as-text` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.0
+    info: {title: t, version: '1'}
+    paths: {}
+    components:
+      schemas:
+        VideoAspectRatio:
+          type: string
+          enum:
+            - 16:9
+            - 4:3
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  ratio.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+
+        class VideoAspectRatio(Enum):
+            field_16_9 = '16:9'
+            field_4_3 = '4:3'
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  ratio.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+
+        class VideoAspectRatio(Enum):
+            field_969 = 969
+            field_243 = 243
         ```
 
         <!-- fmt: on -->

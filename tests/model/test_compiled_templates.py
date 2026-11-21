@@ -70,6 +70,7 @@ from datamodel_code_generator.types import DataType
 from scripts._template_compiler import build_environment, compile_template, module_name_for_path
 from scripts._template_compiler import inventory as template_compiler_inventory
 from scripts.compile_builtin_templates import template_sets
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[2]
@@ -768,10 +769,10 @@ def _runtime_edge_output() -> str:
 
 
 @pytest.mark.parametrize(
-    ("template_set", "expected"),
-    [("model", "inventory.txt"), ("fastapi", "fastapi_inventory.txt"), ("client", "client_inventory.txt")],
+    "template_set",
+    ["model", "fastapi", "client"],
 )
-def test_template_inventory_is_derived_from_all_builtin_sources(template_set: str, expected: str) -> None:
+def test_template_inventory_is_derived_from_all_builtin_sources(template_set: str) -> None:
     """The checked-in inventory records every currently supported template feature."""
     template_dir = TEMPLATE_SETS[template_set][0]
     inventory = template_compiler_inventory.inventory_templates(template_dir)
@@ -787,7 +788,7 @@ def test_template_inventory_is_derived_from_all_builtin_sources(template_set: st
         f"template count: {len(template_compiler_inventory.iter_template_paths(template_dir))}\n"
         f"{template_paths}\n\n{features}\n"
     )
-    assert_output(output, EXPECTED_PATH / expected)
+    assert_output(output)
 
 
 def test_inventory_rejects_new_features_with_path_line_and_compiler_guidance(tmp_path: Path) -> None:
@@ -893,7 +894,7 @@ def test_inventory_rejects_include_capture_of_parent_macro(tmp_path: Path) -> No
         template_compiler_inventory.inventory_templates(tmp_path)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_inventory_rejects_template_source_symlink_outside_root(tmp_path: Path) -> None:
     """Template discovery must not read a source reached through an escaping symlink."""
     template_dir = tmp_path / "templates"
@@ -912,7 +913,7 @@ def test_inventory_rejects_template_source_symlink_outside_root(tmp_path: Path) 
         template_compiler_inventory.inventory_templates(template_dir)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_inventory_accepts_template_source_symlink_within_root(tmp_path: Path) -> None:
     """A source alias remains valid when its resolved target stays inside the template root."""
     source = tmp_path / "source.jinja2"
@@ -922,7 +923,7 @@ def test_inventory_accepts_template_source_symlink_within_root(tmp_path: Path) -
     template_compiler_inventory.inventory_templates(tmp_path)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_inventory_rejects_broken_template_source_symlink(tmp_path: Path) -> None:
     """Broken source aliases fail with an actionable compiler diagnostic."""
     tmp_path.joinpath("broken.jinja2").symlink_to(tmp_path / "missing.jinja2")
@@ -938,16 +939,14 @@ def test_inventory_rejects_broken_template_source_symlink(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize(
-    ("error", "expected_name"),
+    "error",
     [
         pytest.param(
             PermissionError(13, "permission denied"),
-            "template_source_permission_error.txt",
             id="os-error",
         ),
         pytest.param(
             RuntimeError("symlink loop"),
-            "template_source_runtime_error.txt",
             id="runtime-error",
         ),
     ],
@@ -956,7 +955,6 @@ def test_inventory_normalizes_template_source_resolution_errors(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     error: OSError | RuntimeError,
-    expected_name: str,
 ) -> None:
     """Resolution failures retain the source location and compiler guidance."""
     tmp_path.joinpath("template.jinja2").write_text("safe\n", encoding="utf-8")
@@ -971,7 +969,7 @@ def test_inventory_normalizes_template_source_resolution_errors(
             match=r"template\.jinja2: template source cannot be resolved",
         ) as exc_info:
             template_compiler_inventory.inventory_templates(tmp_path)
-    assert_output(f"{exc_info.value}\n", EXPECTED_PATH / expected_name)
+    assert_output(f"{exc_info.value}\n")
 
 
 def test_inventory_rejects_template_source_directory(tmp_path: Path) -> None:
@@ -988,7 +986,7 @@ def test_inventory_rejects_template_source_directory(tmp_path: Path) -> None:
         template_compiler_inventory.inventory_templates(tmp_path)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_template_source_read_keeps_the_verified_descriptor_after_symlink_swap(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1013,11 +1011,10 @@ def test_template_source_read_keeps_the_verified_descriptor_after_symlink_swap(
     content = template_compiler_inventory._read_template_source(tmp_path, template)
     assert_output(
         f"content: {content!r}\nswapped: {swapped}\n",
-        EXPECTED_PATH / "template_source_verified_descriptor.txt",
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_template_source_read_rejects_symlink_swapped_after_validation(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1042,7 +1039,7 @@ def test_template_source_read_rejects_symlink_swapped_after_validation(
 
     with pytest.raises(ValueError, match=r"template source changed during validation; retry"):
         template_compiler_inventory._read_template_source(tmp_path, template)
-    assert_output(f"swapped: {swapped}\n", EXPECTED_PATH / "template_source_swap_rejected.txt")
+    assert_output(f"swapped: {swapped}\n")
 
 
 def test_compile_template_rejects_static_include_outside_template_root(tmp_path: Path) -> None:
@@ -1115,7 +1112,7 @@ def test_compile_check_detects_missing_and_stale_generated_files(
 
     assert_output(
         f"status: {status}\n{stderr.getvalue()}",
-        EXPECTED_PATH / "compile_check_stale.txt",
+        name="compile_check_stale",
     )
 
     generation_status = compile_builtin_templates.main([])
@@ -1126,7 +1123,7 @@ def test_compile_check_detects_missing_and_stale_generated_files(
             f"check status: {check_status}\n",
             f"orphan exists: {orphan_path.exists()}\n",
         ]),
-        EXPECTED_PATH / "compile_generation_cleanup.txt",
+        name="compile_generation_cleanup",
     )
 
 
@@ -1138,7 +1135,7 @@ def test_compile_check_matches_checked_in_generated_artifacts() -> None:
     with contextlib.redirect_stderr(stderr):
         status = compile_builtin_templates.main(["--check"])
 
-    assert_output(f"status: {status}\n{stderr.getvalue()}", EXPECTED_PATH / "compile_check_current.txt")
+    assert_output(f"status: {status}\n{stderr.getvalue()}")
 
 
 def test_every_built_in_template_matches_its_jinja_oracle() -> None:
@@ -1190,7 +1187,7 @@ def test_runtime_subset_matches_jinja_for_missing_filters_loops_and_namespace() 
 
 def test_runtime_edge_and_error_paths_remain_explicit() -> None:
     """Unsupported runtime operations fail loudly and non-template helpers stay deterministic."""
-    assert_output(_runtime_edge_output(), EXPECTED_PATH / "runtime_edges.txt")
+    assert_output(_runtime_edge_output())
 
     with pytest.raises(TypeError, match="cannot assign attribute on a non-namespace object"):
         setattr_("not a namespace", "value", "new")
@@ -1355,7 +1352,7 @@ def test_template_base_extension_seams_and_unknown_templates_stay_on_jinja(tmp_p
         absolute.render(),
         positional._render(positional_context),
     ))
-    assert_output(output + "\n", EXPECTED_PATH / "extension_seams.txt")
+    assert_output(output + "\n")
 
 
 def test_external_base_model_module_helper_stays_on_jinja(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1485,7 +1482,6 @@ def test_module_property_count_runtime_validation_helper_uses_custom_jinja_rende
     property_count_custom = BaseModel.render_module_code([property_count_model])
     assert_output(
         property_count_custom,
-        EXPECTED_PATH / "module_helper_property_count_custom_template.txt",
     )
 
 
@@ -1510,7 +1506,6 @@ def test_module_unique_items_runtime_validation_requires_supported_custom_helper
     )
     assert_output(
         f"{BaseModel.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME in BaseModel.render_module_code([no_override_model])}\n",
-        EXPECTED_PATH / "module_helper_unique_items_no_custom_override.txt",
     )
 
     custom_dir = tmp_path / "pydantic_v2"
@@ -1558,4 +1553,4 @@ def test_module_runtime_validation_helper_gates() -> None:
         repr(BaseModel.render_module_code([disabled_model])),
         repr(BaseModel.render_module_code([enabled_without_runtime_model])),
     ))
-    assert_output(gates + "\n", EXPECTED_PATH / "module_helper_gates.txt")
+    assert_output(gates + "\n")

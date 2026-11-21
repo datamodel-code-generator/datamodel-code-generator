@@ -11,7 +11,8 @@ from functools import partial
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
-from datamodel_code_generator import SchemaParseError
+from pydantic import ValidationError
+
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORDS,
     NUMBER_BOUND_KEYWORDS,
@@ -22,8 +23,7 @@ from datamodel_code_generator._document_reader import (
     CHANNEL_OPERATIONS,
     as_mapping,
     descend,
-    is_multi_format_schema_object,
-    schema_format_media_type,
+    held_schema,
     string_key,
     string_keys,
 )
@@ -44,6 +44,8 @@ from datamodel_code_generator._openapi_paths import (
     path_key_row,
     path_selected,
 )
+from datamodel_code_generator._shared_types import SchemaParseError
+from datamodel_code_generator._source import is_swagger_2
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -105,6 +107,7 @@ SignalName: TypeAlias = Literal[
     "boolean_exclusive_bounds",
     "coercible_scalars",
     "formats",
+    "formats_needing_extras",
     "integer_range_formats",
     "decimal_formats",
     "ref_siblings_read_as_draft_07",
@@ -138,6 +141,8 @@ _CONSTRAINT_ONLY_KEYWORDS = frozenset({"type", "properties", "required", "descri
 _COERCIBLE_TYPES = frozenset({"integer", "number", "boolean"})
 _PROPERTY_COUNTS = frozenset({"minProperties", "maxProperties"})
 _INTEGER_RANGE_FORMATS = ("int32", "int64")
+_FORMATS_NEEDING_EXTRAS = ("email", "idn-email", "ulid", "password")
+"""The formats whose Pydantic types need a package Pydantic does not install to import, or dump a mask."""
 _NORMALIZE = re.compile(r"[^a-z0-9]")
 _EXAMPLE_LIMIT = 4
 _TAG_REFERENCE_DEPTH = 5
@@ -291,18 +296,16 @@ class _ConvertedDocument(dict[str, Any]):  # noqa: FURB189
 def _unwrap(node: object, schema_format: object = None) -> object:
     """Return the schema of an AsyncAPI value as generation reads it: in JSON Schema, from a multi-format object too.
 
-    The ``schemaFormat`` of a multi-format object, or else the one it inherits (a message's, for its payload), selects
-    the format; generation converts an Avro schema to a JSON Schema document of its own, and so does this.
+    The format ``held_schema`` reads a multi-format object in, or the inherited one, selects how; generation converts
+    an Avro schema to a JSON Schema document of its own, and so does this.
     """
-    if is_multi_format_schema_object(node):
-        wrapper = as_mapping(node)
-        schema_format = wrapper.get("schemaFormat") or schema_format
-        node = wrapper.get("schema")
+    if (held := held_schema(node, schema_format)) is not None:
+        node, schema_format = held
     if node is None or not isinstance(schema_format, str):
         return node
-    from datamodel_code_generator.parser.asyncapi import SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE  # noqa: PLC0415
+    from datamodel_code_generator.parser.asyncapi import schema_format_kind  # noqa: PLC0415
 
-    if SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE.get(schema_format_media_type(schema_format)) != "avro":
+    if schema_format_kind(schema_format) != "avro":
         return node
     from datamodel_code_generator.parser.avro import convert_avro_schema_data  # noqa: PLC0415
 
@@ -358,8 +361,8 @@ def _path_operations(
     *,
     row: PathKeyRow,
     openapi_32: bool,
-) -> Iterator[tuple[str, Any]]:
-    """Yield the name and the operation of each operation of the paths and webhooks of the sections.
+) -> Iterator[tuple[str, str, Any]]:
+    """Yield the section, the name and the operation of each operation of the paths and webhooks of the sections.
 
     The paths ``--openapi-include-paths`` keeps are read, and a path item that is a local reference is the item it
     names, as generation resolves it; remote ones are not read. A key that is no string is an error, as it is in
@@ -381,10 +384,10 @@ def _path_operations(
                 for tokens, operation in path_item_operations(
                     operations, openapi_32=openapi_32, invalid=_invalid_operations(section, path)
                 ):
-                    yield " ".join(map(str, (path, *tokens))), operation
+                    yield section, " ".join(map(str, (path, *tokens))), operation
             else:
                 yield from (
-                    (f"{path} {method}", operation)
+                    (section, f"{path} {method}", operation)
                     for method, operation in operations.items()
                     if method in OPERATION_METHODS
                 )
@@ -395,33 +398,38 @@ def _invalid_operations(section: str, path: str) -> Callable[[str, tuple[str, ..
     return lambda message, tokens: SchemaParseError(message, path=[f"#{join_pointer([section, path, *tokens])}"])
 
 
-def _scoped_schemas(
+def _scope_operations(
     document: Mapping[str, Any],
     scopes: AbstractSet[str],
     include_paths: Sequence[str],
     *,
     openapi_32: bool,
     skip_extension_keys: bool,
-) -> Iterator[tuple[str, object]]:
-    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes read, in each holder."""
+) -> list[tuple[str, str, Any]]:
+    """Return the section, the name and the operation of each operation the OpenAPI scopes read, in one walk.
+
+    The api scope reads the paths and webhooks as its walk does, the paths and webhooks scopes those they name.
+    """
     api = "api" in scopes
     sections = (section for section in ("paths", "webhooks") if api or section in scopes)
     row = "openapi" if api else path_key_row(skip_extension_keys=skip_extension_keys)
-    for name, operation in _path_operations(document, sections, include_paths, row=row, openapi_32=openapi_32):
+    return list(_path_operations(document, sections, include_paths, row=row, openapi_32=openapi_32))
+
+
+def _scoped_schemas(
+    document: Mapping[str, Any], scopes: AbstractSet[str], operations: Iterable[tuple[str, str, Any]]
+) -> Iterator[tuple[str, object]]:
+    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes read, in each holder."""
+    for _, name, operation in operations:
         yield from _operation_parts(document, name, operation)
     components = as_mapping(document.get("components"))
-    bodies = components.get("requestBodies") if api or "requestbodies" in scopes else None
+    bodies = components.get("requestBodies") if "api" in scopes or "requestbodies" in scopes else None
     for name, body in as_mapping(bodies).items():
         yield from _media_schemas(document, name, body)
 
 
 def _operation_schemas(
-    document: Mapping[str, Any],
-    scopes: AbstractSet[str],
-    include_paths: Sequence[str],
-    *,
-    openapi_32: bool,
-    skip_extension_keys: bool,
+    document: Mapping[str, Any], scopes: AbstractSet[str], operations: Iterable[tuple[str, str, Any]]
 ) -> Iterator[tuple[str, object]]:
     """Yield the request, response, parameter, and request body schemas the OpenAPI scopes generate, each node once.
 
@@ -429,9 +437,7 @@ def _operation_schemas(
     loaded node, and generation writes its inline models once.
     """
     walked: dict[int, object] = {}
-    for key, schema in _scoped_schemas(
-        document, scopes, include_paths, openapi_32=openapi_32, skip_extension_keys=skip_extension_keys
-    ):
+    for key, schema in _scoped_schemas(document, scopes, operations):
         if isinstance(schema, dict):
             if id(schema) in walked:
                 continue
@@ -439,20 +445,8 @@ def _operation_schemas(
         yield key, schema
 
 
-def _legacy_body_operations(
-    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str], *, skip_extension_keys: bool
-) -> Iterator[Mapping[str, Any]]:
-    """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions."""
-    sections = (section for section in ("paths", "webhooks") if "api" not in scopes and section in scopes)
-    row = path_key_row(skip_extension_keys=skip_extension_keys)
-    for _, operation in _path_operations(document, sections, include_paths, row=row, openapi_32=False):
-        yield as_mapping(operation)
-
-
 def _is_inline_object_body(schema: object) -> bool:
     """Return whether ``--openapi-as-definitions paths-bodies`` changes the model of a paths or webhooks body."""
-    from pydantic import ValidationError  # noqa: PLC0415
-
     from datamodel_code_generator.parser.jsonschema import JsonSchemaObject  # noqa: PLC0415
     from datamodel_code_generator.parser.openapi import is_inline_object_body, is_object_map_body  # noqa: PLC0415
 
@@ -466,14 +460,16 @@ def _is_inline_object_body(schema: object) -> bool:
 
 
 def _inline_object_bodies(
-    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str], *, skip_extension_keys: bool
+    document: Mapping[str, Any], scopes: AbstractSet[str], operations: Iterable[tuple[str, str, Any]]
 ) -> int:
-    """Count the request and response bodies whose model ``--openapi-as-definitions paths-bodies`` changes."""
+    """Count the request and response bodies whose model ``--openapi-as-definitions paths-bodies`` changes.
+
+    They are the bodies of the operations the paths and webhooks scopes parse; api reads them as definitions.
+    """
     return sum(
         _is_inline_object_body(schema)
-        for operation in _legacy_body_operations(
-            document, scopes, include_paths, skip_extension_keys=skip_extension_keys
-        )
+        for _, _, item in (() if "api" in scopes else operations)
+        for operation in (as_mapping(item),)
         for holder in (operation.get("requestBody"), *as_mapping(operation.get("responses")).values())
         for _, schema in _media_schemas(document, "", holder)
     )
@@ -530,20 +526,17 @@ def _count_operations(
     document: Mapping[str, Any],
     kind: SchemaKind,
     scopes: AbstractSet[str],
-    include_paths: Sequence[str],
-    *,
-    openapi_32: bool,
+    operations: Iterable[tuple[str, str, Any]],
 ) -> int:
     """Count OpenAPI path operations, or AsyncAPI channel and top-level operations.
 
-    The api scope counts the operations of its walk of the ``paths`` that ``--openapi-include-paths`` selects; the
-    other scopes count the methods of every key of ``paths``, a key that is no string included, for the size note.
+    The api scope counts the operations of its walk (``operations``) in the ``paths`` that ``--openapi-include-paths``
+    selects; the other scopes count the methods of every key of ``paths``, a key that is no string included, for the
+    size note.
     """
     if kind == "openapi":
         if "api" in scopes:
-            return sum(
-                1 for _ in _path_operations(document, ("paths",), include_paths, row="openapi", openapi_32=openapi_32)
-            )
+            return sum(section == "paths" for section, _, _ in operations)
         return sum(
             method in OPERATION_METHODS
             for item in as_mapping(document.get("paths")).values()
@@ -557,7 +550,7 @@ def _count_operations(
 
 
 def _schema_label(document: Mapping[str, Any], kind: SchemaKind) -> str:
-    if "swagger" in document:
+    if is_swagger_2(document):
         return f"Swagger {document['swagger']}"
     if kind == "jsonschema":
         schema_uri = document.get("$schema")
@@ -750,7 +743,7 @@ class _Walker:
             self.name_parents[name].add(parent)
             parents[name].add(parent)
 
-    def walk(  # noqa: PLR0913
+    def walk(
         self, node: object, *, parent: str, name: str, depth: int, component: str, at_property: bool = False
     ) -> None:
         """Walk one inline schema reached under a parent model through a property (``at_property``) or keyword."""
@@ -971,7 +964,7 @@ def measure_signals(
     document: Mapping[str, Any],
     kind: SchemaKind,
     *,
-    openapi_scopes: AbstractSet[str] = frozenset({"schemas"}),
+    openapi_scopes: AbstractSet[str],
     include_paths: Sequence[str] = (),
     skip_path_extension_keys: bool = False,
 ) -> Signals:
@@ -986,19 +979,17 @@ def measure_signals(
     walker = _Walker(document, _component_refs(kind, all_components), _dialect(document, kind))
     counts = walker.counts
     extra: list[tuple[str, object]] = []
+    operations: list[tuple[str, str, Any]] = []
     if kind == "openapi":
-        extra = list(
-            _operation_schemas(
-                document,
-                openapi_scopes,
-                include_paths,
-                openapi_32=walker.dialect.openapi_32,
-                skip_extension_keys=skip_path_extension_keys,
-            )
+        operations = _scope_operations(
+            document,
+            openapi_scopes,
+            include_paths,
+            openapi_32=walker.dialect.openapi_32,
+            skip_extension_keys=skip_path_extension_keys,
         )
-        counts["inline_object_bodies"] = _inline_object_bodies(
-            document, openapi_scopes, include_paths, skip_extension_keys=skip_path_extension_keys
-        )
+        extra = list(_operation_schemas(document, openapi_scopes, operations))
+        counts["inline_object_bodies"] = _inline_object_bodies(document, openapi_scopes, operations)
     elif kind == "asyncapi":
         extra = list(_message_schemas(document))
     for key, node in extra:
@@ -1021,9 +1012,7 @@ def measure_signals(
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
         root_title = _title(root)
         counts["root_title_words"] = len(root_title.split())
-    counts["operations"] = _count_operations(
-        document, kind, openapi_scopes, include_paths, openapi_32=walker.dialect.openapi_32
-    )
+    counts["operations"] = _count_operations(document, kind, openapi_scopes, operations)
     counts["components"] = len(components)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth
@@ -1040,11 +1029,11 @@ def measure_signals(
     counts["dotted_namespace_reference_cycles"] = _reference_cycles(walker.references) if dotted else 0
     counts["formats"] = walker.formats.total()
     counts["integer_range_formats"] = sum(walker.formats[name] for name in _INTEGER_RANGE_FORMATS)
+    counts["formats_needing_extras"] = sum(walker.formats[name] for name in _FORMATS_NEEDING_EXTRAS)
     counts["decimal_formats"] = walker.formats["decimal"]
     counts["estimated_models"] = (
         counts["components"] + counts["inline_objects"] + counts["inline_enums"] + counts["inline_union_variants"]
     )
-    styles = Counter(_key_style(key) for key, _ in components).most_common(1)
     return Signals(
         counts={name: int(counts[name]) for name in sorted(SIGNAL_NAMES)},
         facts={
@@ -1053,7 +1042,10 @@ def measure_signals(
             "shared_inline_name_examples": _example_text(shared_names),
             "inline_title_examples": _example_text(walker.inline_titles),
             "duplicate_title_examples": _example_text(shared_titles),
-            "key_style": "".join(f"{style} ({count} of {len(components)})" for style, count in styles),
+            "key_style": "".join(
+                f"{style} ({count} of {len(components)})"
+                for style, count in Counter(_key_style(key) for key, _ in components).most_common(1)
+            ),
             "root_title": root_title,
             "format_examples": _example_text(walker.formats),
         },

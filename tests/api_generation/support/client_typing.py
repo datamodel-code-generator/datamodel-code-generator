@@ -49,10 +49,14 @@ def client_typing_report(
             shutil.copy2(SOURCE / case["input"], root / "api.yaml"),
             config=GenerateConfig(
                 output=root / ("pets_models" if modular else "pets_models.py"),
-                input_file_type="openapi",
                 target_python_version="3.11",
-                openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-                **{**backend_settings(backend), "formatters": [Formatter.BUILTIN], **model},
+                **{
+                    "input_file_type": "openapi",
+                    "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+                    **backend_settings(backend),
+                    "formatters": [Formatter.BUILTIN],
+                    **model,
+                },
                 **client_options(case.get("config", {}), root, "pets"),
             ),
         )

@@ -1,0 +1,13 @@
+[
+  "seed: valid",
+  "/default minimum \"0\": invalid",
+  "/default minimum \"0.9\": invalid",
+  "/default minimum \"1\": valid",
+  "/default minimum \"1.1\": valid",
+  "/default minimum \"2\": valid",
+  "/enum maximum \"4\": valid",
+  "/enum maximum \"4.9\": invalid",
+  "/enum maximum \"5\": valid",
+  "/enum maximum \"5.1\": invalid",
+  "/enum maximum \"6\": invalid"
+]

@@ -1,0 +1,4 @@
+[
+  "/ints discriminator {\"k\": true}: invalid, model accepts",
+  "/ints/k const true: invalid, model accepts"
+]

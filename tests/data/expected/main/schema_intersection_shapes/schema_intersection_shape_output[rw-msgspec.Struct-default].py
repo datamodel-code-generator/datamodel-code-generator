@@ -14,7 +14,7 @@ Secret: TypeAlias = Annotated[str, Meta(min_length=1)]
 
 
 class Pet(Struct):
-    id: Id
+    id: Annotated[Id, Meta(max_length=5)]
     name: str
     secret: Annotated[str, Meta(max_length=9, min_length=1)]
-    s2: Secret
+    s2: Annotated[Secret, Meta(max_length=9)]

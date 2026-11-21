@@ -17,7 +17,7 @@ MODELS: Final[dict[type, Model]] = {
     models.B: Model((Field('b', 'b'),)),
     models.C: Model((Field('b', 'b'), Field('a', 'a'), Field('c', 'c'))),
     models.D: Model((Field('a', 'a'), Field('b', 'b'), Field('d', 'd'))),
-    models.E: Model(()),
+    models.E: Model((Field('b', 'b'), Field('a', 'a'), Field('d', 'd'), Field('c', 'c'), Field('e', 'e'))),
 }
 
 codec_0: Final[TypedDictCodec[models.A]] = TypedDictCodec(models.A, MODELS)

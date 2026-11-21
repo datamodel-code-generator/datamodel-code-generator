@@ -1,0 +1,6 @@
+Rows without a config field: none
+Rows marked config=False whose config field exists: none
+Config fields without a row: none
+CONFIG_ONLY_FIELDS entries with a row or without a field: none
+
+Every row of OPTIONS in src/datamodel_code_generator/_option_table.py sets the config field its dest names, unless it is the option of a command that no config carries (config=False), and every config field of the command line and of generate() has a row or an entry in CONFIG_ONLY_FIELDS with the reason. See Adding a New CLI Option in docs/development-contributing.md.

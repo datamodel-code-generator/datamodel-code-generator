@@ -16,9 +16,17 @@ class Count(RootModel[conint(ge=0)]):
     root: conint(ge=0)
 
 
+class Tally(RootModel[dict[str, int]]):
+    root: dict[str, int]
+
+
 class Entry(BaseModel):
     label: str | None = None
     totals: Counter | None = None
+
+
+class Ledger(RootModel[dict[str, float]]):
+    root: dict[str, float]
 
 
 class Root(BaseModel):

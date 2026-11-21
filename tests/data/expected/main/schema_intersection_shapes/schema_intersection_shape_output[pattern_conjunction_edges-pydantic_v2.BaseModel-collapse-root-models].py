@@ -56,7 +56,7 @@ class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    rust_escape: constr(pattern=r'\p{L}') | None = None
+    rust_escape: str | None = None
     braced_escape: constr(pattern=r'a') | None = None
     repeated_name: constr(pattern=r'(?P<n>a)') | None = None
     global_flags: constr(pattern=r'(?i)a') | None = None

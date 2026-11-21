@@ -104,9 +104,9 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     if scalar_items is not None:
                         for scalar_item in scalar_items:
                             scalar_candidate = scalar_item[1] if isinstance(scalar_item, tuple) else scalar_item
-                            if not isinstance(scalar_candidate, bool) and cls._json_schema_unique_items_equal_in_either_direction(
-                                item, scalar_candidate
-                            ):
+                            if not isinstance(
+                                scalar_candidate, bool
+                            ) and cls._json_schema_unique_items_equal_in_either_direction(item, scalar_candidate):
                                 raise ValueError('Array items must be unique')
                     fingerprint = cls._json_schema_unique_items_fingerprint(item)
             if fingerprint is None:
@@ -127,8 +127,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     opaque_items.append(item)
                 continue
             if opaque_items is not None and any(
-                cls._json_schema_unique_items_equal_in_either_direction(item, candidate)
-                for candidate in opaque_items
+                cls._json_schema_unique_items_equal_in_either_direction(item, candidate) for candidate in opaque_items
             ):
                 raise ValueError('Array items must be unique')
             if structural_items is None:
@@ -225,8 +224,6 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class UniqueItemsPrefixItems2020(_JsonSchemaRuntimeValidationBase, RootModel[list[str | list[int]]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('__json_schema_array_tail__', 1),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('__json_schema_array_tail__', 1),),)
 
     root: list[str | list[int]] = Field(..., title='UniqueItemsPrefixItems2020')

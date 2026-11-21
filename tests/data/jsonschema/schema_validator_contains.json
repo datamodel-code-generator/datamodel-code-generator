@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Probe",
+  "type": "object",
+  "properties": {
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": {
+        "pattern": "^k"
+      },
+      "maxContains": 1
+    },
+    "ints": {
+      "type": "array",
+      "contains": {
+        "type": "integer"
+      },
+      "maxContains": 1
+    },
+    "nums": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "contains": {
+        "minimum": 10,
+        "exclusiveMaximum": 20,
+        "multipleOf": 0.5
+      },
+      "minContains": 2,
+      "maxContains": 3
+    },
+    "counts": {
+      "type": "array",
+      "contains": {
+        "multipleOf": 3,
+        "exclusiveMinimum": 0,
+        "maximum": 30
+      },
+      "maxContains": 1
+    },
+    "flags": {
+      "type": "array",
+      "contains": {
+        "const": 1
+      }
+    },
+    "shapes": {
+      "type": "array",
+      "contains": {
+        "const": {
+          "a": [
+            1,
+            false
+          ]
+        }
+      },
+      "maxContains": 1
+    },
+    "letters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": {
+        "enum": [
+          "a",
+          "bb",
+          1
+        ],
+        "minLength": 1,
+        "maxLength": 1,
+        "description": "One letter",
+        "x-note": "kept"
+      },
+      "minContains": 0,
+      "maxContains": 1
+    },
+    "nullable": {
+      "type": "array",
+      "contains": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "enum": [
+          1,
+          "x",
+          null
+        ]
+      },
+      "minContains": 2
+    },
+    "containers": {
+      "type": "array",
+      "contains": {
+        "type": [
+          "object",
+          "array"
+        ]
+      },
+      "maxContains": 1
+    },
+    "grid": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "contains": {
+          "minimum": 5
+        }
+      }
+    },
+    "byName": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "contains": {
+          "const": 0
+        },
+        "maxContains": 1
+      }
+    },
+    "mixed": {
+      "allOf": [
+        {
+          "type": "array",
+          "contains": {
+            "type": "string"
+          },
+          "minContains": 2
+        },
+        {
+          "contains": {
+            "type": "integer"
+          },
+          "maxContains": 1
+        }
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "array",
+          "contains": {
+            "const": "p"
+          }
+        }
+      ],
+      "items": {
+        "type": "array",
+        "contains": {
+          "const": "t"
+        },
+        "maxContains": 1
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/Tags"
+    },
+    "tagLists": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Tags"
+      }
+    },
+    "either": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "contains": {
+            "const": "x"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "contains": {
+            "const": "x"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "contains": {
+        "type": "object",
+        "required": [
+          "kind"
+        ]
+      },
+      "maxContains": 1
+    },
+    "words": {
+      "type": "array",
+      "contains": {
+        "pattern": "^\\p{L}+$"
+      },
+      "maxContains": 1
+    },
+    "emails": {
+      "type": "array",
+      "contains": {
+        "type": "string",
+        "format": "email"
+      }
+    },
+    "anything": {
+      "type": "array",
+      "contains": true,
+      "maxContains": 1
+    },
+    "nothing": {
+      "type": "array",
+      "contains": false,
+      "minContains": 0,
+      "maxContains": 3
+    },
+    "optional": {
+      "type": "array",
+      "contains": {
+        "const": "z"
+      },
+      "minContains": 0
+    }
+  },
+  "$defs": {
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": {
+        "pattern": "^#"
+      },
+      "maxContains": 2
+    }
+  }
+}

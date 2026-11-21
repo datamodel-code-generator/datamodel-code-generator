@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "anything": true,
+        "loose": true,
+        "plain": true,
+        "untyped": {
+          "description": "no type"
+        },
+        "either": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "properties": {
+            "anything": {
+              "contains": {
+                "const": "a"
+              },
+              "x-note": "kept"
+            },
+            "loose": {
+              "minLength": 2,
+              "contains": {
+                "const": "a"
+              }
+            },
+            "plain": {
+              "contains": {
+                "const": "a"
+              }
+            },
+            "untyped": {
+              "contains": {
+                "const": "a"
+              },
+              "minContains": 1
+            },
+            "either": {
+              "minLength": 1,
+              "minimum": 0,
+              "contains": {
+                "const": "a"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "UntypedParent": {
+      "type": "object",
+      "properties": {
+        "untyped": {
+          "description": "no type"
+        }
+      }
+    },
+    "UntypedChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/UntypedParent"
+        },
+        {
+          "properties": {
+            "untyped": {
+              "minLength": 2,
+              "contains": {
+                "const": "a"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Code": {
+      "type": "string",
+      "contains": {
+        "const": "a"
+      },
+      "x-note": "kept"
+    },
+    "Tagged": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Code"
+        },
+        {
+          "minimum": 1,
+          "contains": {
+            "const": "a"
+          },
+          "x-note": "kept"
+        }
+      ],
+      "maxLength": 5
+    },
+    "MixedParent": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "count": {
+          "type": "integer"
+        },
+        "tags": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "code": {
+          "type": "integer"
+        }
+      }
+    },
+    "MixedChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MixedParent"
+        },
+        {
+          "properties": {
+            "value": {
+              "minLength": 1,
+              "minItems": 1,
+              "contains": {
+                "const": "a"
+              },
+              "x-meta": "keep"
+            },
+            "count": {
+              "minLength": 1
+            },
+            "tags": {
+              "contains": {
+                "const": "a"
+              },
+              "x-meta": "keep"
+            },
+            "code": {
+              "minLength": 1,
+              "maxLength": 2,
+              "contains": {
+                "const": "a"
+              },
+              "x-meta": "keep"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

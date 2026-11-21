@@ -1,0 +1,3 @@
+runtime: differs: Union[Annotated[int, ge=1], str] | Union[Annotated[int, le=1], str]
+string: differs: Union[Annotated[int, ge=1], str] | Union[Annotated[int, le=1], str]
+model-field: differs: Union[Annotated[int, ge=1], str] | Union[Annotated[int, le=1], str]

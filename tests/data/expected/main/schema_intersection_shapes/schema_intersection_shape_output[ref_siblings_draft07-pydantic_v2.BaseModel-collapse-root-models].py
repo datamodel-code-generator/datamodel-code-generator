@@ -168,8 +168,8 @@ class Model(BaseModel):
     wc_prop: AB | None = None
     wc_items: list[AB] | None = None
     wc_map: dict[str, AB] | None = None
-    wd: conint(ge=1) | None = Field(None, examples=[1, 2])
-    wd_prop: conint(ge=1) | None = Field(None, examples=[1, 2])
+    wd: conint(ge=1) | None = Field(None, examples=[1, 2], le=10)
+    wd_prop: conint(ge=1) | None = Field(None, examples=[1, 2], le=10)
     wd_items: list[conint(ge=1)] | None = None
     wd_map: dict[str, conint(ge=1)] | None = None
     we: conint(ge=1) | None = Field(None, examples=[1, 2])

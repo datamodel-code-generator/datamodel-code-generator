@@ -27,16 +27,28 @@ class EventOps(Struct):
         name='__typename', default='EventOps'
     )
 
+    @property
+    def __typename(self) -> Literal['EventOps'] | UnsetType:
+        return self.typename__
+
 
 class Other(Struct):
     value: String
     typename__: Literal['Other'] | UnsetType = field(name='__typename', default='Other')
+
+    @property
+    def __typename(self) -> Literal['Other'] | UnsetType:
+        return self.typename__
 
 
 class Query(Struct):
     value: String
     self: Query | None | UnsetType = UNSET
     typename__: Literal['Query'] | UnsetType = field(name='__typename', default='Query')
+
+    @property
+    def __typename(self) -> Literal['Query'] | UnsetType:
+        return self.typename__
 
 
 class WriteOps(Struct):
@@ -45,6 +57,10 @@ class WriteOps(Struct):
     typename__: Literal['WriteOps'] | UnsetType = field(
         name='__typename', default='WriteOps'
     )
+
+    @property
+    def __typename(self) -> Literal['WriteOps'] | UnsetType:
+        return self.typename__
 
 
 Choice: TypeAlias = Union[
@@ -63,6 +79,10 @@ class RootOps(Struct):
         name='__typename', default='RootOps'
     )
 
+    @property
+    def __typename(self) -> Literal['RootOps'] | UnsetType:
+        return self.typename__
+
 
 class Holder(Struct):
     mutation: WriteOps | None | UnsetType = UNSET
@@ -71,3 +91,7 @@ class Holder(Struct):
     typename__: Literal['Holder'] | UnsetType = field(
         name='__typename', default='Holder'
     )
+
+    @property
+    def __typename(self) -> Literal['Holder'] | UnsetType:
+        return self.typename__

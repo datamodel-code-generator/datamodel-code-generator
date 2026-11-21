@@ -1,0 +1,14 @@
+[
+  "/date_time_exclusive_minimum exclusiveMinimum 4: invalid, model accepts",
+  "/date_time_exclusive_minimum exclusiveMinimum 4.9: invalid, model accepts",
+  "/date_time_exclusive_minimum exclusiveMinimum 5: invalid, model accepts",
+  "/date_time_exclusive_minimum exclusiveMinimum 5.1: invalid, model accepts",
+  "/date_time_exclusive_minimum exclusiveMinimum 6: invalid, model accepts",
+  "/time_exclusive_maximum exclusiveMaximum 10: invalid, model accepts",
+  "/time_exclusive_maximum exclusiveMaximum 10.1: invalid, model accepts",
+  "/time_exclusive_maximum exclusiveMaximum 11: invalid, model accepts",
+  "/time_exclusive_maximum exclusiveMaximum 9: invalid, model accepts",
+  "/time_exclusive_maximum exclusiveMaximum 9.9: invalid, model accepts",
+  "/untyped_minimum minimum 4: invalid, model accepts",
+  "/untyped_minimum minimum 4.9: invalid, model accepts"
+]

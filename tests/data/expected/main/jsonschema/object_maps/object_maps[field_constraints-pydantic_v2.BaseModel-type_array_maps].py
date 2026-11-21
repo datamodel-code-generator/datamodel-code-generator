@@ -77,8 +77,8 @@ class Model(BaseModel):
     iStringOrNames: list[IStringOrNamesObject | str | None] | None = None
     mStringOrNames: dict[str, MStringOrNamesObject | str | None] | None = None
     iArrayOrNamesCount: list[IArrayOrNamesCountObject | list[Any] | None] | None = None
-    mArrayOrNamesCount: dict[str, MArrayOrNamesCountObject | list[Any] | None] | None = (
-        None
-    )
+    mArrayOrNamesCount: (
+        dict[str, MArrayOrNamesCountObject | list[Any] | None] | None
+    ) = None
     pArrayOrPatternCounts: dict[str, Any] | list[str] | None = None
     pArrayOrNamedCounts: dict[str, Any] | list[str] | None = None

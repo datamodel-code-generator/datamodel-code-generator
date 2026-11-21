@@ -1,0 +1,3 @@
+user: valid
+role session: valid
+group: string_pattern_mismatch

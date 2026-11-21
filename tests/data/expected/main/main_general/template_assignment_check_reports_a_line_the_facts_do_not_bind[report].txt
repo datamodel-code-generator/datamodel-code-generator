@@ -1,0 +1,20 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, List, Optional
+
+from pydantic import conint
+
+
+@dataclass
+class Person:
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    age: Optional[conint(ge=0)] = None
+    friends: Optional[List[Any]] = None
+    comment: None = None
+{"area": "TEMPLATE_ASSIGNMENTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: dataclass.jinja2 writes Person.firstName with = None, where classify_assignment decides binds_class_attribute=False (assigned=False, rule unassigned)", "template": "dataclass.jinja2", "model": "Person", "field": "firstName", "written": "= None"}
+{"area": "TEMPLATE_ASSIGNMENTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: dataclass.jinja2 writes Person.lastName with = None, where classify_assignment decides binds_class_attribute=False (assigned=False, rule unassigned)", "template": "dataclass.jinja2", "model": "Person", "field": "lastName", "written": "= None"}
+{"area": "TEMPLATE_ASSIGNMENTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: dataclass.jinja2 writes Person.age with = None, where classify_assignment decides binds_class_attribute=False (assigned=False, rule unassigned)", "template": "dataclass.jinja2", "model": "Person", "field": "age", "written": "= None"}
+{"area": "TEMPLATE_ASSIGNMENTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: dataclass.jinja2 writes Person.friends with = None, where classify_assignment decides binds_class_attribute=False (assigned=False, rule unassigned)", "template": "dataclass.jinja2", "model": "Person", "field": "friends", "written": "= None"}
+{"area": "TEMPLATE_ASSIGNMENTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: dataclass.jinja2 writes Person.comment with = None, where classify_assignment decides binds_class_attribute=False (assigned=False, rule unassigned)", "template": "dataclass.jinja2", "model": "Person", "field": "comment", "written": "= None"}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuditEvent",
+  "description": "One entry of an audit log, whose payload and context the producer leaves free.",
+  "type": "object",
+  "properties": {
+    "payload": {},
+    "previous": true,
+    "note": {"description": "Free-form value the producer attaches"},
+    "context": {"type": "object"},
+    "flags": {"type": "object", "additionalProperties": true},
+    "attributes": {"type": "object", "additionalProperties": {}},
+    "tags": {"type": "array"},
+    "samples": {"type": "array", "items": {}},
+    "extra": {"type": ["object", "null"]},
+    "labelOrObject": {"type": ["string", "object"]},
+    "choice": {"anyOf": [{"type": "string"}, {}]},
+    "notText": {"not": {"type": "string"}},
+    "headers": {"type": "object", "patternProperties": {"^x-": {}}},
+    "snapshot": {"$ref": "#/$defs/JsonValue"},
+    "baseline": {"$ref": "#/$defs/JsonValue"},
+    "actor": {
+      "type": "object",
+      "properties": {"id": {"type": "integer"}},
+      "additionalProperties": {}
+    },
+    "rawJson": {"type": "string", "x-python-type": "Any"}
+  },
+  "required": ["payload"],
+  "$defs": {"JsonValue": {}}
+}

@@ -9,7 +9,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Final
 
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, assert_never
 
 
 class DataclassArguments(TypedDict, total=False):
@@ -83,17 +83,16 @@ class _OutputModelFamily(str, Enum):
 
 def _get_output_model_family(data_model_type: DataModelType | None) -> _OutputModelFamily:
     """Resolve the reference-compatible family for an output model selection."""
-    if data_model_type is None or data_model_type in _PYDANTIC_MODEL_TYPES:
-        return _OutputModelFamily.PYDANTIC
     match data_model_type:
+        case None | DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass:
+            return _OutputModelFamily.PYDANTIC
         case DataModelType.DataclassesDataclass:
             return _OutputModelFamily.DATACLASS
         case DataModelType.TypingTypedDict:
             return _OutputModelFamily.TYPEDDICT
         case DataModelType.MsgspecStruct:
             return _OutputModelFamily.MSGSPEC
-    msg = f"{data_model_type} is unsupported data model type"  # pragma: no cover
-    raise ValueError(msg)  # pragma: no cover
+    assert_never(data_model_type)
 
 
 class ReuseScope(Enum):
@@ -117,6 +116,14 @@ class OpenAPIScope(Enum):
     Webhooks = "webhooks"
     RequestBodies = "requestbodies"
     Api = "api"
+
+
+_DEFAULT_OPENAPI_SCOPES: Final = (OpenAPIScope.Schemas,)
+
+
+def _openapi_scopes_or_default(scopes: list[OpenAPIScope] | None) -> list[OpenAPIScope]:
+    """Return the OpenAPI scopes a configuration gives, or a new list of the default ones where it gives none."""
+    return scopes or [*_DEFAULT_OPENAPI_SCOPES]
 
 
 class AllExportsScope(Enum):
@@ -258,6 +265,21 @@ class ReadOnlyWriteOnlyModelType(Enum):
     """
 
     RequestResponse = "request-response"
+    All = "all"
+
+
+class OpenEnums(Enum):
+    """Which enums accept values they do not list (``--open-enums``).
+
+    None_: no enum, as without the option.
+    Extensible: the enums whose schema marks them open (``x-extensible-enum: true``, or ``x-ms-enum`` with
+        ``modelAsString: true``).
+    All: every enum of two or more values, except one whose schema closes it (``x-extensible-enum: false``,
+        ``modelAsString: false``).
+    """
+
+    None_ = "none"
+    Extensible = "extensible"
     All = "all"
 
 
@@ -493,6 +515,13 @@ class ClientBodyArguments(Enum):
     Both = "both"
 
 
+class ClientAsyncAPIPerspective(Enum):
+    """Which side of its channels an AsyncAPI document describes, whose sends a generated client receives."""
+
+    Server = "server"
+    Client = "client"
+
+
 __all__ = [
     "DEFAULT_SHARED_MODULE_NAME",
     "MAX_VERSION",
@@ -504,6 +533,7 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientAsyncAPIPerspective",
     "ClientBodyArguments",
     "ClientSignatureStyle",
     "ClientType",
@@ -524,6 +554,7 @@ __all__ = [
     "OpenAPIAsDefinitions",
     "OpenAPIScope",
     "OpenAPIVersion",
+    "OpenEnums",
     "ProtobufVersion",
     "ReadOnlyWriteOnlyModelType",
     "ReuseScope",

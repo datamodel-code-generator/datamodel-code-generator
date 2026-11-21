@@ -16,6 +16,10 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 try:
     from scripts.release_benchmark_safety import (
@@ -215,7 +219,7 @@ def _runs_per_case(entries: list[dict[str, object]], fallback: str) -> str:
     return "mixed"
 
 
-def _selection_strategy(base_metadata: dict[str, object], incoming_metadata: dict[str, object]) -> str:
+def _selection_strategy(base_metadata: Mapping[str, object], incoming_metadata: Mapping[str, object]) -> str:
     base_strategy = _string(base_metadata.get("selection_strategy"))
     incoming_strategy = _string(incoming_metadata.get("selection_strategy"))
     if not base_strategy:
@@ -227,7 +231,7 @@ def _selection_strategy(base_metadata: dict[str, object], incoming_metadata: dic
     return f"{base_strategy}_with_{incoming_strategy}"
 
 
-def _runner_os(incoming_metadata: dict[str, object]) -> str:
+def _runner_os(incoming_metadata: Mapping[str, object]) -> str:
     return (
         _string(incoming_metadata.get("os"))
         or os.environ.get("OS")

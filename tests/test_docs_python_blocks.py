@@ -80,9 +80,9 @@ def findings(pages: tuple[Path, ...], directory: Path) -> str:
 
 def test_guide_python_blocks(tmp_path: Path) -> None:
     """Every hand-written Python block of the guides compiles as a module and names only what it defines."""
-    assert_output(findings(GUIDES, tmp_path), EXPECTED / "guides.txt")
+    assert_output(findings(GUIDES, tmp_path))
 
 
 def test_python_block_findings(tmp_path: Path) -> None:
     """Blocks in tabs are dedented, generated and other blocks are skipped, and each kind of finding is reported."""
-    assert_output(findings((DATA / "page.md",), tmp_path), EXPECTED / "page.txt")
+    assert_output(findings((DATA / "page.md",), tmp_path))

@@ -1,0 +1,17 @@
+verdict problems: none
+undeclared questions: none
+references/backend_strings_and_modules: backend_strings_and_modules.py:8:   tests/api_generation/support/backend_strings_and_modules.py:8 (<module>): datamodel_code_generator._source
+references/backend_strings_and_modules: backend_strings_and_modules.py:29:   tests/api_generation/support/backend_strings_and_modules.py:29 (load_private_facade_helper): datamodel_code_generator._source
+references/backend_strings_and_modules: backend_strings_and_modules.py:68:   tests/api_generation/support/backend_strings_and_modules.py:68 (neutral_output_capabilities): datamodel_code_generator.model.output._model_field_name_collisions
+references/backend_strings_and_modules: backend_strings_and_modules.py:84:   tests/api_generation/support/backend_strings_and_modules.py:84 (inspect_typed_dict_requirements): datamodel_code_generator._requirements
+references/check_main_calls: check_main_calls.py:9:   tests/api_generation/support/check_main_calls.py:9 (test_tree): assert check_tree.main(["--strict"]) == 0
+references/check_main_calls: check_main_calls.py:10:   tests/api_generation/support/check_main_calls.py:10 (test_tree): assert not scripts.check_spelled.main()
+references/check_main_calls: check_main_calls.py:11:   tests/api_generation/support/check_main_calls.py:11 (test_tree): assert aliased.main() == 0
+references/check_main_calls: check_main_calls.py:15:   tests/api_generation/support/check_main_calls.py:15 (test_fixture): assert check_tree.main([]) == 0
+references/check_main_calls: check_main_calls.py:19:   tests/api_generation/support/check_main_calls.py:19 (test_rooted): assert check_rooted.main(["--root", "elsewhere"]) == 0
+references/check_main_calls: check_main_calls.py:20:   tests/api_generation/support/check_main_calls.py:20 (test_rooted): assert check_rooted.main(keywords=1) == 0
+references/check_main_calls: check_main_calls.py:28:   tests/api_generation/support/check_main_calls.py:28 (helper): assert check_nested.main([]) == 0
+references/check_main_calls: check_main_calls.py:33:   tests/api_generation/support/check_main_calls.py:33 (test_nested.inner): assert check_nested.main([]) == 0
+references/output_policy_by_origin: output_policy_by_origin.py:22:   tests/api_generation/support/output_policy_by_origin.py:22 (rewrite_schema): datamodel_code_generator.parser.mcp._rewrite_schema_refs
+references/output_policy_by_origin: output_policy_by_origin.py:28:   tests/api_generation/support/output_policy_by_origin.py:28 (rewrite_shared_schema): datamodel_code_generator._json_schema
+references/skip_markers_by_origin: skip_markers_by_origin.py:24:   tests/api_generation/support/skip_markers_by_origin.py:24 (TestCase): class TestCase(ut.TestCase)

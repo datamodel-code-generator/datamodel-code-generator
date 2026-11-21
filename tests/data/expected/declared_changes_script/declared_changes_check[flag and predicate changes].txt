@@ -1,0 +1,9 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+2 stored outputs this change moves are not declared:
+  changed  models/pkg//*.py  tests/test_models.py::test_tree[py]
+  changed  models/w.txt  tests/test_models.py::test_warn
+Declare them:
+  python scripts/declared_changes.py declare fix-the-thing --category harness --title '<title>' --summary '<why the package writes the same output>' --refs '#42' --refs '#41' --rest --base base
+Categories: docs/development-contributing.md#declared-changes
+failed

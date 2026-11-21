@@ -1,0 +1,18 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+env-probe@src                                      0       8      +8
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+env-probe@src rose by 8 (0 -> 8). Output must not depend on the environment the generator runs in: key the decision on an option or a static rule, not on the interpreter, the platform, a variable or an installed package. A probe that belongs to the runtime itself (an optional dependency) is paid for by removing another one.
+  src/pkg/e.py: 0 -> 8 (lines 7, 11, 15, 16, 16, 17, 18, 19)
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

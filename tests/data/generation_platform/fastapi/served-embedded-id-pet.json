@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/pet.json",
+  "type": "object",
+  "$defs": {
+    "Owner": {
+      "$id": "owner.json",
+      "type": "object",
+      "properties": {
+        "name": {"$ref": "#/$defs/Name"},
+        "tag": {"$ref": "#tag"}
+      },
+      "$defs": {
+        "Name": {"type": "string", "maxLength": 10},
+        "Tag": {"$anchor": "tag", "type": "string", "maxLength": 3}
+      }
+    }
+  }
+}

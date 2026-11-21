@@ -15,14 +15,13 @@ from datamodel_code_generator import _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from tests.api_generation.support.target_generation import SOURCE, target_render_report
+from tests.capabilities import needs
 from tests.conftest import assert_directory_content, assert_output, freeze_time
 from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/targets"
 
 
 @pytest.mark.parametrize(
@@ -66,7 +65,7 @@ def test_target_render(
     case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Generate models once, plan target files, and write them like model output: overwrite, never delete."""
-    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / f"{case}.txt")
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys))
 
 
 @pytest.mark.parametrize(
@@ -85,8 +84,8 @@ def test_target_render_untyped_nullable_maps(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Write the 0.83.0 models of nullable maps beside the server without --use-typed-nullable-map-values."""
-    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / f"{case}.txt")
-    assert_directory_content(tmp_path / directory, EXPECTED / case / directory, pattern)
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys))
+    assert_directory_content(tmp_path / directory, pattern=pattern)
 
 
 def test_target_render_object_document_loaded_by_pointer(
@@ -100,23 +99,12 @@ def test_target_render_object_document_loaded_by_pointer(
     assert_output(target_render_report("roles-after-pointer", tmp_path, monkeypatch, capsys))
 
 
-@pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
-def test_target_render_python_runtime(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Refuse to render a target on a Python older than every target supports."""
-    monkeypatch.setattr("datamodel_code_generator._api_generation._PYTHON_MINIMUM", (99, 0))
-    assert_output(
-        target_render_report("python-runtime", tmp_path, monkeypatch, capsys), EXPECTED / "python-runtime.txt"
-    )
-
-
 def test_target_render_timestamp(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Head every Python file with the configured lines and one batch timestamp, then encode it."""
     with freeze_time("2026-09-25 12:00:00"):
-        assert_output(target_render_report("format", tmp_path, monkeypatch, capsys), EXPECTED / "format.txt")
+        assert_output(target_render_report("format", tmp_path, monkeypatch, capsys))
 
 
 def test_target_render_http(
@@ -131,9 +119,7 @@ def test_target_render_http(
     for route, path in routes.items():
         _SchemaHandler.routes[route] = (200, {"content-type": "application/json"}, path.read_bytes())
     try:
-        assert_output(
-            target_render_report("http", tmp_path, monkeypatch, capsys, local_http_server), EXPECTED / "http.txt"
-        )
+        assert_output(target_render_report("http", tmp_path, monkeypatch, capsys, local_http_server))
     finally:
         for route in routes:
             del _SchemaHandler.routes[route]
@@ -150,7 +136,7 @@ def test_target_render_lock_failure(
         raise OSError(msg)
 
     monkeypatch.setattr(RemoteReferenceLock, "stage", fail)
-    assert_output(target_render_report("lock-failure", tmp_path, monkeypatch, capsys), EXPECTED / "lock-failure.txt")
+    assert_output(target_render_report("lock-failure", tmp_path, monkeypatch, capsys))
 
 
 def _failing(original: Callable[..., None], failures: dict[int, OSError], destination: str) -> Callable[..., None]:
@@ -183,7 +169,7 @@ def test_target_generate_rollback(
         _failing(_failing(_publication._replace_source, {0: failure}, "remote.lock"), {2: failure}, "models.json"),
     )
     report = target_render_report("publish-failure", tmp_path, monkeypatch, capsys)
-    assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
+    assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n")
 
 
 @pytest.mark.parametrize(
@@ -209,7 +195,7 @@ def test_target_generate_mount_points(
         replace(file, *args)
 
     monkeypatch.setattr(_publication, "_replace_source", replaced)
-    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / f"{case}.txt")
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys))
 
 
 @pytest.mark.abnormal_path("publishing a batch fails only on an I/O error such as a full disk")
@@ -242,10 +228,10 @@ def test_target_jobs_rollback(
         Path(name).write_bytes(content)
     batch("the server job's services.py cannot be replaced", {0: failure})
     lines.extend(f"  {name} still edited {Path(name).read_bytes() == content}" for name, content in edited.items())
-    assert_output("\n".join(lines) + "\n", EXPECTED / "jobs-publish-failure.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
-@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_target_render_nested_models_symlink(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -255,31 +241,27 @@ def test_target_render_nested_models_symlink(
     """
     assert_output(
         target_render_report("nested-models-symlink", tmp_path, monkeypatch, capsys),
-        EXPECTED / "nested-models-symlink.txt",
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_target_render_local_references_symlink(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Refuse a reference through a symlink in the input directory to a file outside it, before reading the file."""
     assert_output(
         target_render_report("local-references-symlink", tmp_path, monkeypatch, capsys),
-        EXPECTED / "local-references-symlink.txt",
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
+@needs("posix")
 def test_target_generate_modes(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Create new files with the umask default, as model output does, while preserving replacement permissions."""
     mask = os.umask(0o027)
     try:
-        assert_output(
-            target_render_report("publication-modes", tmp_path, monkeypatch, capsys), EXPECTED / "publication-modes.txt"
-        )
+        assert_output(target_render_report("publication-modes", tmp_path, monkeypatch, capsys))
     finally:
         os.umask(mask)
 
@@ -309,5 +291,4 @@ def test_target_pyproject_output(
     )
     assert_output(
         capsys.readouterr().err + "\n".join(published) + "\n",
-        EXPECTED / "configs" / "pyproject-output-override.txt",
     )

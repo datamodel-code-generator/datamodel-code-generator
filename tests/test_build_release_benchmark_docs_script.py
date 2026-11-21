@@ -35,7 +35,6 @@ FIXTURE_DIR = ROOT / "tests" / "data" / "release_benchmarks"
 FIXTURE_NOTES = FIXTURE_DIR / "notes.json"
 CHART_RANGES_FIXTURE = FIXTURE_DIR / "chart_ranges.json"
 CHART_RANGE_EDGE_CASES_FIXTURE = FIXTURE_DIR / "chart_range_edge_cases.json"
-EXPECTED_RELEASE_BENCHMARK_DOCS_PATH = ROOT / "tests" / "data" / "expected" / "release_benchmark_docs"
 
 
 def _completed_process_output(result: subprocess.CompletedProcess[str]) -> str:
@@ -69,7 +68,6 @@ def test_build_release_benchmark_docs_check_is_up_to_date() -> None:
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output(result),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "build_release_benchmark_docs_check.txt",
     )
 
 
@@ -79,7 +77,6 @@ def test_release_benchmark_renderers_use_fixture_data() -> None:
 
     assert_output(
         "\n--- markdown ---\n" + build_release_benchmark_docs.render_release_benchmark_markdown(data),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_rendered.txt",
     )
 
 
@@ -158,7 +155,7 @@ console.log(JSON.stringify({
         "",
     ))
 
-    assert_output(output, EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_chart_range_contract.txt")
+    assert_output(output)
 
 
 def test_release_benchmark_workflow_keeps_one_safe_sync_branch() -> None:
@@ -192,7 +189,7 @@ def test_release_benchmark_workflow_keeps_one_safe_sync_branch() -> None:
         "",
     ))
 
-    assert_output(output, EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_workflow_sync_contract.txt")
+    assert_output(output)
 
 
 @pytest.mark.skipif(shutil.which("jq") is None, reason="release benchmark PR filtering requires jq")
@@ -212,7 +209,7 @@ def test_release_benchmark_pr_lookup_ignores_forks() -> None:
             check=True,
         )
         outputs.append(f"{case['name']}: {result.stdout.strip() or '(none)'}")
-    assert_output("\n".join(outputs) + "\n", EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_pr_lookup.txt")
+    assert_output("\n".join(outputs) + "\n")
 
 
 def test_release_benchmark_docs_cli_writes_expected_outputs(tmp_path: Path) -> None:
@@ -238,7 +235,6 @@ def test_release_benchmark_docs_cli_writes_expected_outputs(tmp_path: Path) -> N
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output(result) + "docs:\n" + docs_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_cli_outputs.txt",
     )
 
 
@@ -304,7 +300,6 @@ def test_release_benchmark_docs_escape_hostile_text(tmp_path: Path) -> None:
 
     assert_output(
         build_release_benchmark_docs.render_release_benchmark_markdown(data),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_escaped_hostile_text.txt",
     )
 
 
@@ -333,7 +328,6 @@ def test_collect_release_benchmark_cli_validation() -> None:
 
     assert_output(
         _completed_process_output(result),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "collect_release_benchmarks_invalid_args.txt",
     )
 
 
@@ -350,7 +344,7 @@ def test_collect_release_benchmark_failure_helpers() -> None:
         "",
     ))
 
-    assert_output(output, EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "collect_release_benchmarks_failures.txt")
+    assert_output(output)
 
 
 def test_collect_release_benchmark_install_specs() -> None:
@@ -362,7 +356,7 @@ def test_collect_release_benchmark_install_specs() -> None:
         "",
     ))
 
-    assert_output(output, EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "collect_release_benchmark_install_specs.txt")
+    assert_output(output)
 
 
 def test_collect_release_benchmark_main_snapshot_metadata_uses_pinned_ref() -> None:
@@ -395,7 +389,7 @@ def test_collect_release_benchmark_main_snapshot_metadata_uses_pinned_ref() -> N
         f"main snapshot run id matches collector: {snapshot_run_matches_collector}",
         "",
     ))
-    assert_output(output, EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "collect_release_benchmark_main_snapshot_metadata.txt")
+    assert_output(output)
 
 
 def test_release_benchmark_error_helpers_redact_public_output() -> None:
@@ -422,7 +416,7 @@ def test_release_benchmark_error_helpers_redact_public_output() -> None:
         "",
     ))
 
-    assert_output(output, EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "release_benchmark_error_helpers.txt")
+    assert_output(output)
 
 
 def test_select_release_benchmark_versions_cli_writes_usage_based_selection(tmp_path: Path) -> None:
@@ -458,7 +452,6 @@ def test_select_release_benchmark_versions_cli_writes_usage_based_selection(tmp_
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output(result) + "selection:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "select_release_benchmark_versions_cli_outputs.txt",
     )
 
 
@@ -496,7 +489,6 @@ def test_select_release_benchmark_versions_can_always_include_main(tmp_path: Pat
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output(result) + "selection:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "select_release_benchmark_versions_main_cli_outputs.txt",
     )
 
 
@@ -533,7 +525,6 @@ def test_select_release_benchmark_versions_main_only_skips_external_sources(tmp_
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output(result) + "selection:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "select_release_benchmark_versions_main_fast_path_cli_outputs.txt",
     )
 
 
@@ -569,7 +560,6 @@ def test_merge_release_benchmarks_carries_main_snapshot_metadata(tmp_path: Path)
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output_with_tmp(result, tmp_path) + "merged:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "merge_release_benchmarks_main_snapshot_cli_outputs.txt",
     )
 
 
@@ -612,7 +602,6 @@ def test_merge_release_benchmarks_does_not_pin_an_explicitly_unpinned_snapshot(t
     ))
     assert_output(
         output,
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "merge_release_benchmarks_unpinned_main_cli_outputs.txt",
     )
 
 
@@ -671,7 +660,6 @@ def test_merge_release_benchmarks_cli_writes_expected_payload(tmp_path: Path, mo
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output_with_tmp(result, tmp_path) + "merged:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "merge_release_benchmarks_cli_outputs.txt",
     )
 
 
@@ -709,7 +697,6 @@ def test_update_release_benchmark_history_writes_expected_payload(tmp_path: Path
     stderr_output = stderr.getvalue().replace(str(tmp_path), "<tmp>").replace("<tmp>\\", "<tmp>/")
     assert_output(
         f"returncode: {returncode}\nstderr:\n{stderr_output}merged:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "update_release_benchmark_history_outputs.txt",
     )
 
 
@@ -728,7 +715,6 @@ def test_update_release_benchmark_history_empty_base_uses_incoming_metadata(tmp_
 
     assert_output(
         output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "update_release_benchmark_history_empty_base.txt",
     )
 
 
@@ -758,7 +744,6 @@ def test_update_release_benchmark_history_replaces_the_complete_main_snapshot(tm
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output_with_tmp(result, tmp_path) + "merged:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "update_release_benchmark_history_main_snapshot_cli_outputs.txt",
     )
 
 
@@ -790,7 +775,6 @@ def test_update_release_benchmark_history_discards_stale_main_snapshots(tmp_path
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output_with_tmp(result, tmp_path) + "merged:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "update_release_benchmark_history_stale_main_cli_outputs.txt",
     )
 
 
@@ -822,7 +806,6 @@ def test_update_release_benchmark_history_keeps_the_current_main_snapshot(tmp_pa
     _raise_for_failed_process(result)
     assert_output(
         _completed_process_output_with_tmp(result, tmp_path) + "merged:\n" + output_path.read_text(encoding="utf-8"),
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "update_release_benchmark_history_current_main_cli_outputs.txt",
     )
 
 
@@ -1039,7 +1022,6 @@ def test_update_release_benchmark_history_helper_edges(tmp_path: Path) -> None:
     output = "\n".join(lines).replace(str(tmp_path), "<tmp>").replace("<tmp>\\", "<tmp>/")
     assert_output(
         output + "\n",
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "update_release_benchmark_history_edges.txt",
     )
 
 
@@ -1072,5 +1054,4 @@ def test_select_release_benchmark_versions_skips_unsafe_external_versions() -> N
 
     assert_output(
         output,
-        EXPECTED_RELEASE_BENCHMARK_DOCS_PATH / "select_release_benchmark_versions_invalid_external.txt",
     )

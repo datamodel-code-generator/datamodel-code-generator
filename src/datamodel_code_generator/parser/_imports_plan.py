@@ -6,8 +6,9 @@ once, so a pass reads what it read before, and keeps it as an entry together wit
 for it, and the model and field it was asked for. The live ``Imports`` is the materialization of its entries, which
 ``replay`` rebuilds. The imports a module writes can be fewer than the names it binds: ``ModuleImportLedger.rendered``
 subtracts from a copy of the live ``Imports`` what the entries wrote of their models' unrendered imports
-(``DataModel._unrendered_imports``), counted as the difference between the replay of the entries and their replay
-without those imports. The copy keeps the order of the module lines and the imports written outside the ledger, which a
+(``DataModel._unrendered_imports``) and of the imports that only keep their names in every module
+(``_NAME_KEEPING_PASSES``), counted as the difference between the replay of the entries and their replay without
+those imports. The copy keeps the order of the module lines and the imports written outside the ledger, which a
 replay of some entries only would reorder or lose.
 
 Code that the parser hands the live ``Imports`` (``DataModel.resolve_module_import_conflicts``) runs inside
@@ -24,7 +25,7 @@ Named legacy rows, imports decided where the ledger does not see them:
 
 * ``legacy.enum-member-import-bindings``: an Enum's ``imports`` keep the imports of its member declarations (pydantic's
   ``Field`` for described members), which the class never renders. The module binds their names, so class names
-  (``Parser.__replace_duplicate_name_in_module``, ``Parser._flatten_invalid_modules``) and reuse keys
+  (``Parser.__replace_duplicate_name_in_module``, ``_stdout_repair.flatten_invalid_modules``) and reuse keys
   (``DataModel._render_dedup_key``, ``Parser._stdout_model_fingerprint``) stay as in 0.86.0, and ``rendered`` leaves
   them out of the import block. It goes when an option lets the module bind only what it writes (G09's naming
   rules, #4802).
@@ -108,7 +109,8 @@ ImportPass: TypeAlias = Literal[
 * ``additional-imports``: ``_append_additional_imports``, ``--additional-imports`` into the shared imports.
 * ``external-ref-mapping``, ``x-python-import``: ``parser/jsonschema.py:JsonSchemaParser._check_external_ref_mapping``
   (``--external-ref-mapping``) and ``get_ref_data_type`` (``x-python-import``), the Python type a reference names,
-  into the shared imports (L1).
+  into the shared imports (L1), where its name is kept in every module; only a module whose model names the type
+  writes the import, from the imports of that model (``_NAME_KEEPING_PASSES``).
 * ``deferred-annotations``: ``from __future__ import annotations``, shared by ``_prepare_parse_config`` and per module
   by ``_get_module_future_imports`` (L7).
 * ``change-from-import``: ``change_from_import`` (L5 prepare), the imports of each model and the models of other
@@ -146,7 +148,8 @@ ImportPass: TypeAlias = Literal[
   imported from the submodule instead of the module imports they replace.
 * ``hidden-submodule-import-bindings``: ``import_models_of_hidden_submodules``, aliases of the imports of a package that
   a submodule the output loads hides, which every bare use in the package follows.
-* ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
+* ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides in the text of its
+  class: ``bind_module_field_names`` where a class takes a name its module imports, else ``render_module_models`` (L7).
 * ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.
 * ``shadowed-imports``: ``alias_shadowed_imports`` (L6), aliases of structured imports that a field name hides.
@@ -312,15 +315,23 @@ class _KeyState:
         )
 
 
-_storage_key = Imports._storage_key  # ruff: ignore[private-member-access]
+_storage_key = Imports._storage_key
+
+_NAME_KEEPING_PASSES: frozenset[ImportPass] = frozenset({"external-ref-mapping", "x-python-import"})
+"""The passes whose shared imports keep their names in every module and that no module writes from there (#6787)."""
 
 
 def _without_unrendered(entry: LedgerEntry) -> LedgerEntry:
-    """Return the entry without the unrendered imports of its model, or the entry itself when its model has none."""
+    """Return the entry without the unrendered imports of its model, or the entry itself when its model has none.
+
+    The entry of a pass that only keeps names in every module (``_NAME_KEEPING_PASSES``) renders none of its imports.
+    """
     operation, model = entry.operation, entry.producer.model
+    if entry.producer.pass_ in _NAME_KEEPING_PASSES and isinstance(operation, Added):
+        return LedgerEntry(Added(()), entry.producer)
     if model is None or not isinstance(operation, Added | Removed):
         return entry
-    if not (unrendered := model._unrendered_imports()):  # ruff: ignore[private-member-access]
+    if not (unrendered := model._unrendered_imports()):
         return entry
     left = Counter(map(_storage_key, unrendered))
     kept: list[Import] = []
@@ -427,7 +438,7 @@ class ModuleImportLedger:
             view.remove(repeat(_key_import(key), min(count, imports.counter.get(key, 0)) - kept.get(key, 0)))
         return view
 
-    def add_name(  # noqa: PLR0913, PLR6301
+    def add_name(  # noqa: PLR6301
         self,
         imports: Imports,  # noqa: ARG002
         resolver: ModelResolver,

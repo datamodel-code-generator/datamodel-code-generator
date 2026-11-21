@@ -399,7 +399,24 @@ class Many33(Many16, Many17):
     pass
 
 
-Many: TypeAlias = Many18 | Many19 | Many20 | Many21 | Many22 | Many23 | Many24 | Many25 | Many26 | Many27 | Many28 | Many29 | Many30 | Many31 | Many32 | Many33
+Many: TypeAlias = (
+    Many18
+    | Many19
+    | Many20
+    | Many21
+    | Many22
+    | Many23
+    | Many24
+    | Many25
+    | Many26
+    | Many27
+    | Many28
+    | Many29
+    | Many30
+    | Many31
+    | Many32
+    | Many33
+)
 
 
 @dataclass

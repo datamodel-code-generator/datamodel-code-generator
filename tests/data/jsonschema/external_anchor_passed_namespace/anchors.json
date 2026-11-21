@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Box": {
+      "$defs": {"Unused": {}},
+      "contentSchema": {"$anchor": "text", "type": "string"}
+    },
+    "Group": {
+      "$anchor": "group",
+      "$defs": {"Member": {"type": "integer"}}
+    },
+    "Outer": {
+      "$defs": {
+        "Inner": {
+          "$defs": {"Spare": {}},
+          "not": {"$defs": {"Deep": {"$anchor": "deep", "type": "boolean"}}}
+        }
+      }
+    },
+    "v1": {
+      "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+      "dependentSchemas": {"name": {"$anchor": "named", "type": "number"}}
+    },
+    "First": {"$anchor": "twice", "type": "integer"},
+    "Later": {
+      "definitions": {"Kept": {}},
+      "if": {"$anchor": "twice", "type": "string", "maxLength": 3}
+    }
+  }
+}

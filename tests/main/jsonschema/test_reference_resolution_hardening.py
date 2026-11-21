@@ -11,7 +11,6 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from tests.conftest import assert_output, validate_generated_code
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_generate_file_and_assert, run_main_and_assert
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -23,8 +22,6 @@ def test_main_jsonschema_nested_external_definitions_collapse_root_models(output
         input_path=JSON_SCHEMA_DATA_PATH / "nested_external_defs" / "root.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="nested_external_defs.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10", "--collapse-root-models"],
         force_exec_validation=True,
     )
@@ -41,7 +38,7 @@ def test_main_jsonschema_directory_external_ref_is_wrapped(
         input_file_type="jsonschema",
         expected_exit=Exit.ERROR,
     )
-    assert_output(capsys.readouterr().err, EXPECTED_JSON_SCHEMA_PATH / "directory_external_ref.txt")
+    assert_output(capsys.readouterr().err)
 
 
 def test_main_jsonschema_missing_external_ref_is_wrapped(
@@ -57,7 +54,7 @@ def test_main_jsonschema_missing_external_ref_is_wrapped(
     )
     missing_ref = JSON_SCHEMA_DATA_PATH / "external_ref_errors" / "missing.json"
     output = capsys.readouterr().err.replace(str(missing_ref), "<missing-ref>")
-    assert_output(output, EXPECTED_JSON_SCHEMA_PATH / "not_found_external_ref.txt")
+    assert_output(output)
 
 
 def test_generate_jsonschema_nested_external_ref_with_relative_base_path(output_file: Path) -> None:
@@ -66,8 +63,6 @@ def test_generate_jsonschema_nested_external_ref_with_relative_base_path(output_
         input_path=JSON_SCHEMA_DATA_PATH / "nested_external_defs" / "root.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="nested_external_defs.py",
         disable_timestamp=True,
         collapse_root_models=True,
     )
@@ -84,7 +79,7 @@ def test_jsonschema_file_uri_directory_external_ref_is_wrapped() -> None:
         parser._get_ref_body_from_url(file_uri)
 
     output = f"{str(exception_info.value).replace(file_uri, '{file_uri}')}\n"
-    assert_output(output, EXPECTED_JSON_SCHEMA_PATH / "file_uri_directory_external_ref.txt")
+    assert_output(output)
 
 
 def test_jsonschema_non_directory_permission_error_is_preserved(
@@ -106,7 +101,6 @@ def test_jsonschema_non_directory_permission_error_is_preserved(
 
     assert_output(
         f"same_exception={exception_info.value is permission_error}\nmessage={exception_info.value}\n",
-        EXPECTED_JSON_SCHEMA_PATH / "permission_external_ref.txt",
     )
 
 
@@ -122,7 +116,7 @@ def test_jsonschema_external_ref_mapping_returns_loaded_reference() -> None:
     reference = parser.resolve_ref(f"{source}#/$defs/AnchoredChild")
 
     output = "loaded\n" if reference.loaded else "not loaded\n"
-    assert_output(output, EXPECTED_JSON_SCHEMA_PATH / "mapped_external_ref.txt")
+    assert_output(output)
 
 
 def test_jsonschema_malformed_external_ref_is_rejected_before_external_mapping() -> None:
@@ -141,4 +135,4 @@ def test_jsonschema_malformed_external_ref_is_rejected_before_external_mapping()
             resolve(ref)
         output += f"{exception_info.value}\n"
 
-    assert_output(output, EXPECTED_JSON_SCHEMA_PATH / "malformed_mapped_external_ref.txt")
+    assert_output(output)

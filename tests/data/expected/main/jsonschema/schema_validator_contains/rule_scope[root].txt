@@ -1,0 +1,4 @@
+[] (invalid): rejected/rejected
+["other"] (invalid): rejected/rejected
+["target"] (valid): accepted/accepted
+["target", "target"] (valid): accepted/accepted

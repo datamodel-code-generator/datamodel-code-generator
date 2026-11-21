@@ -1,0 +1,3 @@
+The pattern '[^\\p{C}]{1,2048}' of the schema at pattern_size_negated_property.yaml#/components/schemas/Description is left out: no regex engine of the output compiles it, so the generated code does not check it.
+text: valid
+empty: valid

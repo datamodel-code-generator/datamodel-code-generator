@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: {title: pets, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+      x-python-import: {module: pets, name: Pet}
+    Cat:
+      type: object
+      properties:
+        meow: {type: boolean}

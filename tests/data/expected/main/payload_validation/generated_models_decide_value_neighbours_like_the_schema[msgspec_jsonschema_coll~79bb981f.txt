@@ -1,0 +1,12 @@
+[
+  "/overrides/0/rules/accessor-pairs enum 1.0: valid, model rejects",
+  "/overrides/0/rules/comma-dangle enum 1.0: valid, model rejects",
+  "/overrides/0/rules/curly enum 1.0: valid, model rejects",
+  "/overrides/0/rules/max-depth enum 1.0: valid, model rejects",
+  "/overrides/0/rules/no-debugger enum 1.0: valid, model rejects",
+  "/rules/accessor-pairs enum 1.0: valid, model rejects",
+  "/rules/comma-dangle enum 1.0: valid, model rejects",
+  "/rules/curly enum 1.0: valid, model rejects",
+  "/rules/max-depth enum 1.0: valid, model rejects",
+  "/rules/no-debugger enum 1.0: valid, model rejects"
+]

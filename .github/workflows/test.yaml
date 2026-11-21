@@ -67,7 +67,7 @@ jobs:
         fetch-depth: 1
         persist-credentials: false
     - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         enable-cache: true
         cache-local-path: .tox/uv-cache
@@ -106,7 +106,7 @@ jobs:
       env:
         COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Upload coverage data
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         include-hidden-files: true
         name: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
@@ -138,7 +138,7 @@ jobs:
         fetch-depth: 1
         persist-credentials: false
     - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         enable-cache: true
         cache-local-path: .tox/uv-cache
@@ -219,7 +219,7 @@ jobs:
       env:
         COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Upload coverage data
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         include-hidden-files: true
         name: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
@@ -283,7 +283,7 @@ jobs:
         fetch-depth: 1
         persist-credentials: false
     - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         enable-cache: true
         cache-local-path: .tox/uv-cache
@@ -320,7 +320,8 @@ jobs:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Upload test durations
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      continue-on-error: true
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         include-hidden-files: true
         name: junit.${{ env.RUN_NAME }}
@@ -344,7 +345,7 @@ jobs:
         COVERAGE_NAME: .coverage.${{ env.RUN_NAME }}
     - name: Upload coverage data
       if: matrix.coverage == true
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         include-hidden-files: true
         name: .coverage.${{ env.RUN_NAME }}
@@ -552,100 +553,100 @@ jobs:
             coverage: true
             shard: 8
             shard_total: 8
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 1
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 2
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 3
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 4
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 5
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 6
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 7
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 8
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 9
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 10
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 11
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 12
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 13
             shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 14
@@ -669,7 +670,7 @@ jobs:
         persist-credentials: false
     - name: Install uv (Windows)
       if: matrix.os == 'windows-latest'
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         version: ${{ env.WINDOWS_UV_VERSION }}
         enable-cache: true
@@ -683,7 +684,7 @@ jobs:
         save-cache: ${{ matrix.shard == 1 }}
     - name: Install the latest version of uv
       if: matrix.os != 'windows-latest'
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         enable-cache: true
         cache-local-path: .tox/uv-cache
@@ -762,7 +763,8 @@ jobs:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Upload test durations
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      continue-on-error: true
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         include-hidden-files: true
         name: junit.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
@@ -786,7 +788,7 @@ jobs:
         COVERAGE_NAME: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
     - name: Upload coverage data
       if: matrix.coverage == true
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         include-hidden-files: true
         name: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
@@ -794,7 +796,7 @@ jobs:
         retention-days: 3
 
   test-shard-main:
-    # Ubuntu Python 3.11 to 3.13 run after merging; pull requests cover every line on 3.10, 3.14 and 3.15.
+    # Ubuntu Python 3.12 and 3.13 run after merging; pull requests cover every line on 3.11, 3.14 and 3.15.
     name: >-
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
@@ -1014,132 +1016,6 @@ jobs:
             coverage: true
             shard: 17
             shard_total: 17
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 1
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 2
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 3
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 4
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 5
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 6
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 7
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 8
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 9
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 10
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 11
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 12
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 13
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 14
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 15
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 16
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 17
-            shard_total: 18
-          - tox_env: py311-parallel
-            name: "3.11"
-            profile: "3.11"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 18
-            shard_total: 18
     runs-on: ${{ matrix.os }}
     env: *test-shard-env
     steps: *test-shard-steps
@@ -1208,8 +1084,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
             shard_total: 6
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "windows"
             os: windows-latest
             coverage: false
@@ -1217,8 +1093,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 6
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "windows"
             os: windows-latest
             coverage: false
@@ -1226,8 +1102,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 6
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "windows"
             os: windows-latest
             coverage: false
@@ -1235,8 +1111,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 6
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "windows"
             os: windows-latest
             coverage: false
@@ -1244,8 +1120,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
             shard_total: 6
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "windows"
             os: windows-latest
             coverage: false
@@ -1253,8 +1129,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
             shard_total: 6
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "windows"
             os: windows-latest
             coverage: false
@@ -1307,8 +1183,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
             shard_total: 5
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "macos"
             os: macos-latest
             coverage: false
@@ -1316,8 +1192,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 4
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "macos"
             os: macos-latest
             coverage: false
@@ -1325,8 +1201,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 4
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "macos"
             os: macos-latest
             coverage: false
@@ -1334,8 +1210,8 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 4
-          - tox_env: py310-nocov-parallel
-            name: "3.10"
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
             profile: "macos"
             os: macos-latest
             coverage: false
@@ -1402,7 +1278,7 @@ jobs:
     steps: *test-shard-steps
 
   test-shard-nocov-main:
-    # Windows and macOS on Python 3.11 to 3.14 run after merging; pull requests test them on 3.10 and 3.15.
+    # Windows and macOS on Python 3.12 to 3.14 run after merging; pull requests test them on 3.11 and 3.15.
     name: >-
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
@@ -1574,69 +1450,6 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
             shard_total: 6
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 2
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 3
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 4
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 5
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 6
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 7
-            shard_total: 7
           - tox_env: py314-nocov-parallel
             name: "3.14"
             profile: "macos"
@@ -1747,42 +1560,6 @@ jobs:
             shard_total: 4
           - tox_env: py312-nocov-parallel
             name: "3.12"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 4
-            shard_total: 4
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 4
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 2
-            shard_total: 4
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 3
-            shard_total: 4
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
             profile: "macos"
             os: macos-latest
             coverage: false
@@ -1849,7 +1626,7 @@ jobs:
         fetch-depth: 1
         persist-credentials: false
     - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         enable-cache: true
         cache-local-path: .tox/uv-cache
@@ -1912,7 +1689,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
           cache-local-path: .tox/uv-cache
@@ -1928,7 +1705,7 @@ jobs:
         env:
           UV_PYTHON_PREFERENCE: only-managed
       - name: Download coverage data
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: .tox/coverage-input
           pattern: .coverage.*
@@ -1949,13 +1726,13 @@ jobs:
         run: COVERAGE_FILE=.tox/.coverage .tox/coverage/bin/coverage html --fail-under=0 -d .tox/htmlcov
       - name: Upload HTML report
         if: steps.coverage.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: html-report
           path: .tox/htmlcov
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
           flags: unittests
           files: .tox/coverage.xml
@@ -1976,7 +1753,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
           cache-local-path: .tox/uv-cache
@@ -2046,7 +1823,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
           cache-local-path: .tox/uv-cache
@@ -2250,6 +2027,70 @@ jobs:
 
           exit "$failed"
 
+  ratchets:
+    name: ratchets
+    # Every stack layer runs this job, so a rise is attributed to the layer that adds it.
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve the base revision
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT_NAME" in
+            pull_request) base="$PULL_REQUEST_BASE" ;;
+            push) base="$PUSH_BEFORE" ;;
+            *) base="" ;;
+          esac
+          case "$base" in
+            *[!0]*) ;;
+            *) base="" ;;
+          esac
+          echo "sha=${base}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.base.outputs.sha != ''
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install the latest version of uv
+        if: steps.base.outputs.sha != ''
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-local-path: .tox/uv-cache
+          cache-dependency-glob: |
+            pyproject.toml
+            tox.ini
+            uv.lock
+          cache-suffix: ratchets
+      - name: Count escape hatches against the base
+        if: steps.base.outputs.sha != ''
+        env:
+          BASE: ${{ steps.base.outputs.sha }}
+          UV_PYTHON_PREFERENCE: "only-managed"
+        run: |
+          set -euo pipefail
+          pin="$(uv run --no-project --python 3.13 python scripts/check_ratchets.py --ruff-pin)"
+          uv run --no-project --python 3.13 --with "ruff==${pin}" \
+            python scripts/check_ratchets.py --base "$BASE" --enforce
+      - name: Judge changed outputs by cell against the merge base
+        if: steps.base.outputs.sha != ''
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          UV_PYTHON_PREFERENCE: "only-managed"
+        run: |
+          set -euo pipefail
+          BASE=$(git merge-base "$BASE_SHA" HEAD)
+          # scripts/ as a whole: the gate's ORACLE_FILES (which make it run the base's gate too) live there and grow.
+          if git diff --quiet "$BASE" HEAD -- src docs/data/migration/unreleased scripts; then
+            echo "src/, change records and scripts/ unchanged since the merge base: every cell is equal"; exit 0
+          fi
+          uv sync --frozen --python 3.14.6 --extra all --group dev
+          .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --check -j 4
+
   test-gate:
     name: test-gate
     if: always()
@@ -2267,6 +2108,7 @@ jobs:
       - coverage
       - check
       - e2e
+      - ratchets
     steps:
       - name: Fail if any test workflow job failed
         env:
@@ -2276,6 +2118,7 @@ jobs:
             || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
             || github.event.pull_request.stack.position == github.event.pull_request.stack.size }}
           MAIN_ONLY_JOBS: ${{ github.event_name == 'pull_request' && 'test-shard-main test-shard-nocov-main' || '' }}
+          ALWAYS_ON_JOBS: ratchets
         run: |
           import json
           import os
@@ -2285,8 +2128,12 @@ jobs:
           print(json.dumps(results, sort_keys=True))
           expected = "success" if os.environ.get("FULL_TEST_RUN", "true") == "true" else "skipped"
           main_only = set(os.environ.get("MAIN_ONLY_JOBS", "").split())
-          sys.exit(
-              not results
-              or any(result != ("skipped" if name in main_only else expected) for name, result in results.items())
-          )
+          always_on = set(os.environ.get("ALWAYS_ON_JOBS", "").split())
+
+          def wanted(name):
+              if name in always_on:
+                  return "success"
+              return "skipped" if name in main_only else expected
+
+          sys.exit(not results or any(result != wanted(name) for name, result in results.items()))
         shell: python

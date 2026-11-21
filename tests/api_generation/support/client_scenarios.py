@@ -17,9 +17,25 @@ import httpx2
 
 from datamodel_code_generator import Error
 from tests.api_generation.scenarios.client_allowreserved import reserved_paths
+from tests.api_generation.scenarios.client_asyncapi_sockets import (
+    asyncapi_connections,
+    asyncapi_enum_tag_sends,
+    asyncapi_handshake,
+    asyncapi_handshake_models,
+    asyncapi_message_codecs,
+    asyncapi_messages,
+    asyncapi_optional_tags,
+    asyncapi_perspective,
+    asyncapi_schema_formats,
+    asyncapi_serverless,
+    asyncapi_sockets,
+    asyncapi_subclass_sends,
+    asyncapi_union_sends,
+)
+from tests.api_generation.scenarios.client_asyncapi_streams import asyncapi_event_unions, asyncapi_events
 from tests.api_generation.scenarios.client_auth_errors import auth_errors
 from tests.api_generation.scenarios.client_auth_flows import auth_flows
-from tests.api_generation.scenarios.client_auth_values import auth_values
+from tests.api_generation.scenarios.client_auth_values import auth_parameters, auth_shared_wire, auth_values
 from tests.api_generation.scenarios.client_bodies import bodies
 from tests.api_generation.scenarios.client_body_replay import body_replay, multipart_replay
 from tests.api_generation.scenarios.client_body_replay_faults import body_replay_faults
@@ -30,12 +46,20 @@ from tests.api_generation.scenarios.client_deadline_cleanup import deadline_clea
 from tests.api_generation.scenarios.client_deadline_options import deadline_options
 from tests.api_generation.scenarios.client_deadline_races import deadline_races
 from tests.api_generation.scenarios.client_deadline_streams import deadline_streams
-from tests.api_generation.scenarios.client_fields import fields, optional_models
+from tests.api_generation.scenarios.client_fields import fields, optional_models, stripped_fields, stripped_nullable
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
+from tests.api_generation.scenarios.client_held_extras import held_extras
 from tests.api_generation.scenarios.client_hooks import hooks
+from tests.api_generation.scenarios.client_item_streams import item_streams
 from tests.api_generation.scenarios.client_missing_sentinel import missing_members
 from tests.api_generation.scenarios.client_mock_transport import mock_transport
-from tests.api_generation.scenarios.client_multipart import kinded_parts, multipart, split_parts, text_files
+from tests.api_generation.scenarios.client_multipart import (
+    kinded_parts,
+    media_text_parts,
+    multipart,
+    split_parts,
+    text_files,
+)
 from tests.api_generation.scenarios.client_naming import (
     naming,
     naming_full_path,
@@ -69,7 +93,7 @@ from tests.api_generation.scenarios.client_polling import polling
 from tests.api_generation.scenarios.client_polling_resume import polling_resume
 from tests.api_generation.scenarios.client_protocol_contracts import protocol_contracts
 from tests.api_generation.scenarios.client_protocol_errors import protocol_errors
-from tests.api_generation.scenarios.client_query import query
+from tests.api_generation.scenarios.client_query import bracketed, free_objects, item_or_array, query
 from tests.api_generation.scenarios.client_raw import raw
 from tests.api_generation.scenarios.client_redirects import head_redirects, redirects
 from tests.api_generation.scenarios.client_regressions import (
@@ -96,7 +120,7 @@ from tests.api_generation.scenarios.client_streams import (
     streams,
 )
 from tests.api_generation.scenarios.client_streams import stream_lifetimes as event_stream_lifetimes
-from tests.api_generation.scenarios.client_unions import copied_unions, split_unions, unions
+from tests.api_generation.scenarios.client_unions import copied_unions, enum_tag_bodies, split_unions, unions
 from tests.api_generation.scenarios.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.api_generation.scenarios.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -871,6 +895,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "auth-errors": ("auth", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
+    "auth-shared-wire": ("auth-shared-wire", ("pydantic_v2.BaseModel",), auth_shared_wire),
+    "auth-parameters": ("auth-parameters", ("pydantic_v2.BaseModel",), auth_parameters),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
@@ -905,6 +931,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-split-all": ("multipart-split-all", STRUCTURAL, split_parts),
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "multipart-text-files": ("multipart-text-files", ("pydantic_v2.BaseModel", "msgspec.Struct"), text_files),
+    "multipart-media-text": ("multipart-media-text", ("pydantic_v2.BaseModel", "msgspec.Struct"), media_text_parts),
+    "held-extras": ("held-extras", BACKENDS[:2], held_extras),
+    "held-extras-forbid": ("held-extras-forbid", BACKENDS[:2], held_extras),
+    "held-extras-allow": ("held-extras-allow", BACKENDS[:2], held_extras),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
     "call-layers": ("call-layers", ("pydantic_v2.BaseModel",), call_layers),
@@ -917,6 +947,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
     "parameter-kinds-strict": ("parameter-kinds-strict", BACKENDS, parameter_kinds),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
+    "item-or-array": ("parameter-item-or-array", ("pydantic_v2.BaseModel", "msgspec.Struct"), item_or_array),
+    "query-free-objects": ("query-free-objects", ("pydantic_v2.BaseModel", "msgspec.Struct"), free_objects),
+    "deep-object-brackets": ("deep-object-brackets", ("pydantic_v2.BaseModel", "msgspec.Struct"), bracketed),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
@@ -959,7 +992,39 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
+    "item-streams": ("item-streams", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), item_streams),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
+    "asyncapi-sockets": ("asyncapi-market-v3", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), asyncapi_sockets),
+    "asyncapi-perspective": ("asyncapi-perspective", ("pydantic_v2.BaseModel",), asyncapi_perspective),
+    "asyncapi-serverless": ("asyncapi-serverless", ("pydantic_v2.BaseModel",), asyncapi_serverless),
+    "asyncapi-schema-formats": ("asyncapi-schema-formats", ("pydantic_v2.BaseModel",), asyncapi_schema_formats),
+    "asyncapi-message-codecs": ("asyncapi-message-codecs", ("pydantic_v2.BaseModel",), asyncapi_message_codecs),
+    "asyncapi-handshake-models": ("asyncapi-handshake-models", ("pydantic_v2.BaseModel",), asyncapi_handshake_models),
+    "asyncapi-messages": (
+        "asyncapi-messages",
+        ("pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"),
+        asyncapi_messages,
+    ),
+    "asyncapi-optional-tags": (
+        "asyncapi-optional-tags",
+        ("pydantic_v2.BaseModel", "dataclasses.dataclass"),
+        asyncapi_optional_tags,
+    ),
+    "asyncapi-union-sends": ("asyncapi-messages-aliases", ("pydantic_v2.BaseModel",), asyncapi_union_sends),
+    "asyncapi-subclass-sends": (
+        "asyncapi-messages",
+        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"),
+        asyncapi_subclass_sends,
+    ),
+    "asyncapi-enum-tag-sends": ("asyncapi-messages-enums", ("typing.TypedDict",), asyncapi_enum_tag_sends),
+    "asyncapi-handshake": ("asyncapi-handshake", ("pydantic_v2.BaseModel", "msgspec.Struct"), asyncapi_handshake),
+    "asyncapi-connections": (
+        "asyncapi-connections",
+        ("pydantic_v2.BaseModel", "typing.TypedDict"),
+        asyncapi_connections,
+    ),
+    "asyncapi-events": ("asyncapi-events", ("pydantic_v2.BaseModel", "msgspec.Struct"), asyncapi_events),
+    "asyncapi-event-unions": ("asyncapi-events", ("pydantic_v2.BaseModel",), asyncapi_event_unions),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),
@@ -970,6 +1035,12 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "fields": ("fields", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), fields),
     "fields-structural": ("fields-structural", ("dataclasses.dataclass", "typing.TypedDict"), fields),
     "fields-unpack": ("fields-unpack", ("pydantic_v2.BaseModel",), fields),
+    "fields-strip": ("fields-strip", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), stripped_fields),
+    "fields-strip-nullable": (
+        "fields-strip-nullable",
+        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"),
+        stripped_nullable,
+    ),
     "fields-optional-models": (
         "fields-optional-models",
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"),
@@ -994,6 +1065,21 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     ),
     "discriminator-variants": ("discriminator-variants", ("typing.TypedDict",), copied_unions),
     "discriminator-reuse": ("discriminator-reuse", ("typing.TypedDict", "dataclasses.dataclass"), copied_unions),
+    "discriminator-values": (
+        "discriminator-values",
+        ("typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.BaseModel"),
+        unions,
+    ),
+    "discriminator-values-unmapped": (
+        "discriminator-values-unmapped",
+        ("typing.TypedDict", "dataclasses.dataclass"),
+        unions,
+    ),
+    "discriminator-enum-bodies": (
+        "discriminator-values",
+        ("typing.TypedDict", "dataclasses.dataclass"),
+        enum_tag_bodies,
+    ),
 }
 
 

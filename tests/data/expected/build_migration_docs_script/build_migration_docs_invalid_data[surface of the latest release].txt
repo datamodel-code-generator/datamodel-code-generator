@@ -1,0 +1,8 @@
+exit 1
+Invalid migration data:
+- entry cells-unreleased-flag: cells 1 name --new-flag, which the latest release lacks; unreleased surface is judged by the stored outputs only
+- entry cells-unreleased-flag: cells 1 name --output-model-type c, which the latest release lacks; unreleased surface is judged by the stored outputs only
+- entry other-flag: a fragment needs a category (new-surface, experimental, crash-fix, output-text, default-fix, decided-change, notice, api, docs-text, internal, harness)
+- surface: --old-flag of the latest release is gone; an unreleased entry names it in affects.options, or the deprecation registry schedules its removal
+- surface: Old.jinja2 of the latest release is gone; an unreleased entry names it in affects.templates, or the deprecation registry schedules its removal
+written: []

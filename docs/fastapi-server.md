@@ -164,7 +164,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261106"
+    preset = "standard-py312-20261120"
     output = "app/models.py"
     generate-server = "fastapi"
     server-output = "app/server"
@@ -187,7 +187,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261106 \
+      --preset standard-py312-20261120 \
       --output app/models.py \
       --generate-server fastapi \
       --server-output app/server \
@@ -850,9 +850,10 @@ See app/server/README.md.
 <!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.howto.notice -->
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model types its whole value as one
-binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
-does. The model type decides: the schema is such a string, or reaches one through a `$ref`, a single `allOf`, `anyOf` or
+`text/csv`, or a file part of a multipart form can carry; a `text/*` or JSON body whose model types its whole value as
+one binary string travels as its raw bytes, without a charset decoding, JSON or base64, as an `application/octet-stream`
+one does, since a whole body written as a binary string is the raw octets of its media type (OpenAPI 3.1 writes it as
+`contentMediaType` set to that type). The model type decides: the schema is such a string, or reaches one through a `$ref`, a single `allOf`, `anyOf` or
 `oneOf` branch, or `allOf` branches that merge into one, such as `allOf: [{type: string}, {format: binary}]`, also
 beside a `null`, a length limit or other binary strings. The method takes and returns such a body as `bytes`, which its
 model validates when it constrains them, such as `maxLength: 16` as `conbytes(max_length=16)`: a request body the model
@@ -862,8 +863,8 @@ out `type: string`, is text in the models, so a body of one, also an `applicatio
 as text by its model, such as an `Enum`.
 Generation stops with an error that names the operation, the media or parameter, and where the schema declares the
 string, when a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be
-read or sent as text: inside a JSON or URL-encoded body or response, also one whose model types its whole value as
-bytes, a `text/*` body whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary
+read or sent as text: inside a JSON or URL-encoded body or response, a URL-encoded body whose model types its whole
+value as bytes, a `text/*` body whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary
 string, a binary body, such as `application/octet-stream`, whose model types its whole value as bytes only in part,
 such as `type: [string, integer]` or an `anyOf` of a binary string and an integer (`bytes | int`), a multipart part
 that is not a file, an item of a streamed response, or a parameter or header. Pydantic writes `bytes` in JSON as
@@ -1022,7 +1023,7 @@ named by its path from the working directory. `--watch` shows them once, after i
 
 - Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version: an unset
   `--target-python-version` is `3.11`. An older one, set yourself or by a preset for Python 3.10, is refused; the
-  message names the preset, so that you pick one for Python 3.11 or later. Running on Python 3.10 is refused too.
+  message names the preset, so that you pick one for Python 3.11 or later.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: unset, it is `schemas api`. Scopes you give without `api` stop the run with
   `Error: --generate-server requires --openapi-scopes to include api`.
@@ -1178,7 +1179,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261106",
+    preset="standard-py312-20261120",
     output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("app/server"),
@@ -1215,7 +1216,7 @@ models only.
 input-file-type = "openapi"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
-preset = "standard-py312-20261106"
+preset = "standard-py312-20261120"
 disable-timestamp = true
 
 [tool.datamodel-codegen.profiles.server]
@@ -1303,7 +1304,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --output app/server/models.py \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261106 \
+  --preset standard-py312-20261120 \
   --openapi-scopes schemas api \
   --generate-server fastapi \
   --server-output app/server \
@@ -1430,8 +1431,14 @@ mode reads it.
 A form body whose schema is a union of one schema and `null` alone, such as
 `anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]`, is read as the form of that schema, its members and
 other properties by the rules above, and the model that holds it receives the object. A multipart body whose schema
-is a union of several schemas declares no members its parts could be read by: generation stops with
-`needs body_mode='request'`, as the generated client stops with `needs an object schema to be sent as parts`.
+is a union of several objects, such as `oneOf` two schemas with properties, also through a nested union, is read by
+the properties of its objects merged by name, since its value is one of them and their properties are its parts: a
+property that several objects declare reads the union of their types, as long as they agree on its parts (each holds
+files, repeats and has structured values alike, and its text has one kind), and the union model receives the object.
+Other parts are refused only when every object allows no other properties. A multipart body whose schema is a union
+that is not such, such as one of a string and an object, or of objects that disagree on a property, declares no
+members its parts could be read by: generation stops with `needs body_mode='request'`, as the generated client stops
+with `needs an object schema, or objects that agree on the parts of each property, to be sent as parts`.
 
 An adapter reads a form member whose `encoding` names a `style`, `explode`, or `allowReserved` as the generated
 client writes it: as the query parameter that encoding describes, the way a query reads one. OpenAPI 3.0 applies these
@@ -1626,10 +1633,10 @@ what it references, a server generation reads a local file only inside the input
 and symbolic links resolve, and none for a document read from a URL: it fails on any other local file reference
 before reading the file, with or without `--allow-remote-refs`. References are rewritten
 relative to the document, so a schema's `$id` is left out; a reference resolves as the models resolve it,
-through `$id`, `$anchor`, and `$dynamicAnchor`. A reference that names nothing the generation loaded stays as it
-is, with a warning. A link whose `operationRef` names a path that is left out is left out, and so is a value without
-a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias that contains itself. Each of them is reported
-as a `DocumentationAnnotationWarning`.
+through the `$id`, `$anchor`, and `$dynamicAnchor` names the models read. A reference that names nothing the
+generation loaded stays as it is, with a warning. A link whose `operationRef` names a path that is left out is left
+out, and so is a value without a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias that contains
+itself. Each of them is reported as a `DocumentationAnnotationWarning`.
 
 FastAPI's `/docs` and `/redoc` show the document, and behind a root path FastAPI adds that path as the first
 server, as it does for its own document. `create_app`'s `prefix` leads every path, and the references and link
@@ -1738,7 +1745,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261106 \
+  --preset standard-py312-20261120 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \

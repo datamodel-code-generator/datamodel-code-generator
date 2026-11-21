@@ -1,0 +1,10 @@
+_option_table.py _dataclass_arguments: the keys of the DataclassArguments TypedDict
+_python_type_annotation.py render_python_type_expr: the text of generated code
+_records.py _build: a record class's namespace
+_records.py _plain: a record class's namespace
+_runtime/server/application.py _signature: the signatures of a generated server's handlers
+_target_binding.py <module>: the keys of the DataclassArguments TypedDict
+input_model.py _get_type_hints_safe: the type hints of a user's model class (--input-model)
+input_model.py _model_field_annotations: the annotations of a user's model class (--input-model)
+model/base.py <module>: the keys of the DataclassArguments TypedDict
+model/field_name.py <module>: the names a pydantic BaseModel reserves

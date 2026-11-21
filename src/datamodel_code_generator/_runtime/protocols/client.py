@@ -441,7 +441,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             accept=operation.responses.accept,
         )
         if operation.security is not None:
-            self._bind_auth(call)
+            self._bind_auth(call, request)
         headers, queries = self._secret_positions()
         return CacheRequest(settings, request, call, headers, queries)
 

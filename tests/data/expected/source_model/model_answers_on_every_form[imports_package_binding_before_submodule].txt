@@ -1,0 +1,18 @@
+=== module package_binding_before_submodule
+== imports
+definition package_binding_before_submodule:tool -> def package_binding_before_submodule:tool@7 via package_binding_before_submodule [always]
+=== module package_binding_before_submodule.helper
+== imports
+definition package_binding_before_submodule.helper:VALUE -> assign package_binding_before_submodule.helper:VALUE@3 via package_binding_before_submodule.helper [always]
+=== module package_binding_before_submodule.reader
+== imports
+from@3 package_binding_before_submodule.helper as helper from package_binding_before_submodule in <module> [always]; unconditional
+from@3 package_binding_before_submodule.tool as tool from package_binding_before_submodule in <module> [always]; unconditional
+definition package_binding_before_submodule.reader:PAIR -> assign package_binding_before_submodule.reader:PAIR@5 via package_binding_before_submodule.reader [always]
+definition package_binding_before_submodule.reader:helper -> module package_binding_before_submodule.helper@3 via package_binding_before_submodule.reader [always]
+definition package_binding_before_submodule.reader:tool -> def package_binding_before_submodule:tool@7 via package_binding_before_submodule.reader [always] > package_binding_before_submodule [always]
+=== module package_binding_before_submodule.tool
+== imports
+definition package_binding_before_submodule.tool:VALUE -> assign package_binding_before_submodule.tool:VALUE@3 via package_binding_before_submodule.tool [always]
+edge package_binding_before_submodule.reader -> package_binding_before_submodule.helper @3 via submodule (module) [always]
+edge package_binding_before_submodule.reader -> package_binding_before_submodule.tool @3 via submodule (module) [always]

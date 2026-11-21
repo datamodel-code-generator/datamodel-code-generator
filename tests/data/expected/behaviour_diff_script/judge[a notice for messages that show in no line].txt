@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "notice (notice): the messages difference shows in no change line"
+ ],
+ "accepted_by": []
+}

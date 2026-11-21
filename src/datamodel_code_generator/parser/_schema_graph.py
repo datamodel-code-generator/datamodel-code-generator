@@ -7,10 +7,12 @@ makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, t
 its ``RefEdge`` (``SchemaGraphBuilder.with_ref_edges`` does it alone for a schema a reference names that the walk read
 as data). ``walk_schema_resources`` finds which absolute URI names which schema of the document (its root, every schema
 with an `$id` or draft-04 `id`, the implicit resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
-``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
+``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record, which the
+document's ``DocumentRecord`` keeps with every declaration in walk order.
 ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge resolves to in its own document, and
 ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document validates to, which every reader of that
-object shares. ``SchemaGraphBuilder.node`` names a JSON object of a loaded document as the node walks visit once
+object shares, and ``SchemaGraphBuilder.pointer_value`` the value each pointer names in a prepared tree, in the record
+of its document. ``SchemaGraphBuilder.node`` names a JSON object of a loaded document as the node walks visit once
 (``SchemaNodeId``), and a ``ReservedTarget`` the node a reference a document reserves names in it.
 ``SchemaGraphBuilder.mount_root`` gives a document a root of the graph's own, under which
 ``SchemaGraphBuilder.mount_in`` mounts the schemas the parser converts from values of the document, so the document
@@ -21,7 +23,7 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import field
 from operator import is_not
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias, TypeVar, cast
@@ -29,8 +31,15 @@ from urllib.parse import urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
-from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer, pointer_opening, pointer_tokens
-from datamodel_code_generator._records import record
+from datamodel_code_generator._json_pointer import (
+    document_part,
+    is_pointer_fragment,
+    join_pointer,
+    pointer_opening,
+    pointer_tokens,
+    uri_entry,
+)
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
@@ -40,6 +49,7 @@ if TYPE_CHECKING:
 __all__ = [
     "SCHEMA_GRAPH",
     "ConvertedRefs",
+    "Declaration",
     "DocumentId",
     "DocumentResources",
     "RefEdge",
@@ -54,6 +64,7 @@ __all__ = [
     "canonical_ref_spelling",
     "keep_resolved_ref",
     "pointer_ref_spelling",
+    "stack_position",
     "validate_resolved_ref",
     "walk_schema_resources",
 ]
@@ -85,6 +96,7 @@ REF_KEYWORDS: Final = ("$ref", "$dynamicRef")
 """The keywords whose values become ``ResolvedRef``s."""
 
 SchemaT = TypeVar("SchemaT")
+_T = TypeVar("_T")
 
 
 @final
@@ -227,8 +239,14 @@ def validate_resolved_ref(value: object, handler: Callable[[object], Any]) -> An
 class ResourceChildren(Protocol):
     """The schema-valued keywords of a schema, by their path from it; examples, defaults and extensions are not."""
 
-    def __call__(self, schema: dict[str, Any], /) -> Iterable[tuple[SchemaPath, dict[str, Any]]]:
-        """Yield each schema-valued keyword below the schema with its path."""
+    def __call__(
+        self, schema: dict[str, Any], /, *, passed: Callable[[SchemaPath, str], None]
+    ) -> Iterable[tuple[SchemaPath, dict[str, Any]]]:
+        """Yield each schema-valued keyword below the schema with its path.
+
+        Each `$anchor` on a schema it passes over (a namespace of definitions, read for its entries alone, and each
+        subschema the namespace holds outside its definitions) goes to ``passed`` with its path, as written.
+        """
 
 
 class ResourceIdentifier(Protocol):
@@ -236,6 +254,21 @@ class ResourceIdentifier(Protocol):
 
     def __call__(self, schema: dict[str, Any], id_field: str | None, /, *, is_root: bool) -> tuple[str | None, object]:
         """Return the identifier keyword in force and the identifier the schema declares."""
+
+
+@final
+@record
+class Declaration:
+    """One URI a schema of a loaded document declares: by its identifier, its `$anchor` or its `$dynamicAnchor`."""
+
+    keyword: str
+    """``identifier`` (the keyword in force, `$id` or draft-04 `id`), ``$anchor`` or ``$dynamicAnchor``."""
+    written: str
+    """The value as the schema writes it."""
+    uri: str
+    """The absolute URI it declares, against the base URI of the resource around the schema."""
+    pointer: str
+    """Where the schema is in the document."""
 
 
 @final
@@ -276,9 +309,16 @@ class DocumentResources:
     """Whether the document evaluates schemas as resources without an identifier, as OpenAPI component schemas."""
     embeds_resources: bool
     """Whether a schema below the root, or an implicit resource, declares an identifier other than a fragment."""
+    declarations: tuple[Declaration, ...]
+    """Every declaration of the document in walk order (the root's schemas, then the implicit resources), the
+    identifiers whose fragment is empty included."""
+    passed_anchors: tuple[tuple[str, str], ...]
+    """The `$anchor` of each schema the walk passes over, as written, with its pointer: a namespace of definitions,
+    which it reads for its entries alone, and each subschema the namespace holds outside its definitions. They declare
+    nothing the registry reads; row ``legacy-external-anchor-search`` reads them."""
 
 
-def walk_schema_resources(  # noqa: PLR0913
+def walk_schema_resources(
     raw: dict[str, Any],
     implicit: Sequence[tuple[SchemaPath, dict[str, Any]]],
     *,
@@ -296,6 +336,8 @@ def walk_schema_resources(  # noqa: PLR0913
     the root, declares a resource whose base URI applies below it. The walk meets the schemas of the root in document
     order and the implicit resources after them, so the declarations that ``duplicate_names`` and
     ``first_dynamic_anchors`` order are put in document order by where they are written (``_document_position``).
+    The `$anchor` declarations ``children`` reads on the schemas it passes over, a namespace of definitions and the
+    subschemas it holds outside its definitions, are listed (``passed_anchors``) and register nothing.
     """
     names: dict[str, str] = {}
     declared: set[str] = set()
@@ -306,8 +348,11 @@ def walk_schema_resources(  # noqa: PLR0913
     dynamic_anchors: dict[str, dict[str, str]] = {}
     dynamic_declarations: dict[str, dict[str, str]] = {}
     root_base = base
+    listed: list[Declaration] = []
+    passed_anchors: list[tuple[str, str]] = []
 
-    def name(uri: str, location: str, pointer: str) -> None:
+    def name(uri: str, location: str, pointer: str, keyword: str, written: str) -> None:
+        listed.append(Declaration(keyword, written, uri, pointer))
         names[uri] = location
         declared.add(uri)
         if not is_pointer_fragment(uri.partition("#")[2]):
@@ -324,8 +369,8 @@ def walk_schema_resources(  # noqa: PLR0913
         location = f"{document}#{pointer}"
         embeds = False
         if isinstance(identifier_value, str):
-            name(absolute := urljoin(base, identifier_value), location, pointer)
-            base = absolute.split("#", 1)[0]
+            name(absolute := urljoin(base, identifier_value), location, pointer, "identifier", identifier_value)
+            base = document_part(absolute)
             if embeds := bool(pointer) and not identifier_value.startswith("#"):
                 embedded.setdefault(resource, {}).setdefault(identifier_value, pointer)
         if not pointer:
@@ -336,11 +381,15 @@ def walk_schema_resources(  # noqa: PLR0913
             bases[pointer] = base
         for keyword in ("$anchor", "$dynamicAnchor"):
             if isinstance(anchor := schema.get(keyword), str):
-                name(urljoin(base, f"#{anchor}"), location, pointer)
+                name(urljoin(base, f"#{anchor}"), location, pointer, keyword, anchor)
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
                     dynamic_declarations.setdefault(anchor, {}).setdefault(location, pointer)
-        for path, child in children(schema):
+
+        def passed(path: SchemaPath, written: str) -> None:
+            passed_anchors.append((written, pointer + join_pointer(path)))
+
+        for path, child in children(schema, passed=passed):
             embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
         return embeds
 
@@ -366,7 +415,18 @@ def walk_schema_resources(  # noqa: PLR0913
         }),
         implicit_resources=bool(implicit),
         embeds_resources=embeds_resources,
+        declarations=tuple(listed),
+        passed_anchors=tuple(passed_anchors),
     )
+
+
+def stack_position(raw: object, pointer: str) -> tuple[int, ...]:
+    """Return where a search on a stack meets the schema at a pointer of a loaded document: the least first.
+
+    An ancestor comes before what it holds, else the member written later first: ``_document_position`` with every
+    index negated.
+    """
+    return tuple(-index for index in _document_position(raw, pointer))
 
 
 def _document_position(raw: Any, pointer: str) -> tuple[int, ...]:
@@ -385,9 +445,13 @@ def _document_position(raw: Any, pointer: str) -> tuple[int, ...]:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class ResourceRegistry:
-    """The registry dicts L1 resolves references through, keyed by document; filled from the schema graph."""
+    """The registry dicts L1 resolves references through, keyed by document; filled from the schema graph.
+
+    ``embeds`` is whether a registered document embeds a schema resource an identifier declares; a later registration
+    of the document keeps it.
+    """
 
     locations: dict[str, str] = field(default_factory=dict)
     """Absolute URI to the location it names, over every registered document."""
@@ -405,11 +469,12 @@ class ResourceRegistry:
     (``DocumentResources.duplicate_names``)."""
     keys: dict[str, set[str]] = field(default_factory=dict)
     """The URIs each document registered, which a later registration of the document drops while they name it."""
+    embeds: bool = False
 
     def forget(self, document: str) -> None:
         """Drop what an earlier registration of a document left, before it is registered again."""
         for key in self.keys.get(document, ()):
-            if self.locations.get(key, "").split("#", 1)[0] == document:
+            if document_part(self.locations.get(key, "")) == document:
                 self.locations.pop(key, None)
         for resource in self.resources.pop(document, ()):
             self.bases.pop((document, resource), None)
@@ -437,14 +502,19 @@ class ResourceRegistry:
         for resource, identifiers in resources.embedded.items():
             self.embedded[document, resource] = dict(identifiers)
         self.keys[document] = set(resources.names)
+        self.embeds |= resources.embeds_resources
 
-    def enclosing_resource(self, document: str, pointer: str) -> str | None:
-        """Return the root pointer of the schema resource enclosing a location in a registered document."""
+    def resource_entries(self, entries: Mapping[tuple[str, str], _T], document: str, pointer: str, default: _T) -> _T:
+        """Return what a map of the registry holds for the schema resource enclosing a location, else ``default``.
+
+        The enclosing resource is rooted at the location or its nearest ancestor that roots one; a document that is not
+        registered has none, and no map holds an entry for it.
+        """
         if (resources := self.resources.get(document)) is None:
-            return None
+            return default
         while pointer and pointer not in resources:
             pointer = pointer.rpartition("/")[0]
-        return pointer
+        return entries.get((document, pointer), default)
 
     def plain_name_uri(self, document: str, pointer: str, ref: str) -> str:
         """Return the URI a plain-name fragment at a location in a document names.
@@ -452,16 +522,11 @@ class ResourceRegistry:
         A plain name resolves against the base URI of the schema resource enclosing the location; in a document that
         is not registered it stays as written.
         """
-        return urljoin(self.bases.get((document, self.enclosing_resource(document, pointer)), ""), ref)
+        return urljoin(self.resource_entries(self.bases, document, pointer, ""), ref)
 
     def location(self, absolute: str) -> str | None:
         """Return the location an absolute reference names in a registered schema resource, if any."""
-        if (location := self.locations.get(absolute)) is not None:
-            return location
-        resource, _, fragment = absolute.partition("#")
-        if is_pointer_fragment(fragment) and (root := self.locations.get(resource)):
-            return f"{root}{fragment}" if fragment else root
-        return None
+        return None if (found := uri_entry(self.locations, absolute)) is None else f"{found[0]}{found[1]}"
 
 
 class SchemaGraphView(Protocol):
@@ -470,6 +535,40 @@ class SchemaGraphView(Protocol):
     @property
     def locations(self) -> Mapping[int, SchemaLocation]:
         """The location of every JSON object of the loaded documents, by identity."""
+
+
+@final
+@mutable_record(slots=True)
+class DocumentRecord:
+    """What the parse knows of a loaded document (L0), which ``SchemaGraphBuilder.documents`` holds by registry name.
+
+    ``path_parts`` are the root parts the document was first prepared at (``JsonSchemaParser._parse_file`` sets them
+    again); ``dialect`` is the ``DocumentDialect`` it is read by (``_schema_documents.record_document_dialect``);
+    ``loaded`` and ``tree`` are the document as the loader read it and its prepared tree, and ``resources`` the
+    record of its schema resources and declarations (``walk_schema_resources``), all from the end of its last
+    preparation (None: no preparation ended); ``implicit`` is whether it evaluates schemas as resources without an
+    identifier, as OpenAPI component schemas, and ``lenient`` the loaded document when it also embeds resources, as it
+    then resolves references against itself; ``converted`` holds the locations of its schemas converted from another
+    format, each with those below, under the reference-path name they were converted at; ``values`` the value each
+    fragment names in ``tree``, by fragment and reading (``SchemaGraphBuilder.pointer_value``), which a new tree starts
+    anew. The record ``SchemaGraphBuilder.known`` reads for a document the parse never met is ``_NO_RECORD``, which
+    nothing writes.
+    """
+
+    path_parts: list[str] | None = None
+    dialect: Any = None
+    loaded: dict[str, Any] | None = None
+    tree: dict[str, Any] | None = None
+    implicit: bool = False
+    lenient: dict[str, Any] | None = None
+    resources: DocumentResources | None = None
+    converted: set[SchemaLocation] = field(default_factory=set)
+    values: dict[tuple[str, str], object] = field(default_factory=dict)
+
+
+_NO_RECORD: Final = DocumentRecord()
+_UNREAD: Final = object()
+"""The value ``SchemaGraphBuilder.pointer_value`` has not read for a fragment yet."""
 
 
 SCHEMA_GRAPH: Final[ContextVar[SchemaGraphView | None]] = ContextVar("schema_graph", default=None)
@@ -481,19 +580,26 @@ class SchemaGraphBuilder:
     """The schema graph of one parse, built as its documents load (L0); the parser that owns it is its only writer.
 
     The graph keeps the documents alive, so an identity in the location table stays valid for the whole parse.
+    ``documents`` holds the record of each document the parse met, by registry name, in the order it first met them;
+    ``names`` the registry name of each reference-path name (``_schema_documents.schema_resource_document``);
+    ``holds_false_all_of`` whether a document indexed so far holds a JSON object whose ``allOf`` lists ``false``: only
+    such a document gives a schema object an ``allOf`` member that is ``false``, the parser writes none.
     """
 
     __slots__ = (
+        "_base_directory",
         "_directories",
         "_documents",
         "_edge_keys",
-        "_false_all_of_documents",
         "_mount_containers",
         "_mount_roots",
         "_mounted",
         "_schema_reads",
         "_schemas",
+        "documents",
+        "holds_false_all_of",
         "locations",
+        "names",
         "registry",
     )
 
@@ -501,23 +607,36 @@ class SchemaGraphBuilder:
         """Start an empty graph."""
         self.locations: dict[int, SchemaLocation] = {}
         self.registry = ResourceRegistry()
+        self.documents: dict[str, DocumentRecord] = {}
+        self.names: dict[str, str] = {}
+        self.holds_false_all_of = False
         self._documents: list[object] = []
-        self._false_all_of_documents: set[str] = set()
         self._mounted: set[int] = set()
         self._mount_roots: set[int] = set()
         self._mount_containers: dict[int, Any] = {}
         self._edge_keys: dict[RefEdge, RefKey] = {}
         self._directories: dict[str, Path] = {}
+        self._base_directory: Path | None = None
         self._schema_reads: dict[int, Any] = {}
         self._schemas: dict[tuple[int, type[Any]], Any] = {}
 
-    @property
-    def holds_false_all_of(self) -> bool:
-        """Return whether a document indexed so far holds a JSON object whose ``allOf`` lists ``false``.
+    def record(self, document: str) -> DocumentRecord:
+        """Return the record of a document by its registry name, which starts empty the first time it is asked for."""
+        return self.documents.setdefault(document, DocumentRecord())
 
-        Only such a document gives a schema object an ``allOf`` member that is ``false``; the parser writes none.
+    def known(self, document: str) -> DocumentRecord:
+        """Return what the parse knows of a document by its registry name: an empty record for one it never met."""
+        return self.documents.get(document, _NO_RECORD)
+
+    def is_converted(self, location: SchemaLocation) -> bool:
+        """Return whether the schema at a location is part of a schema converted from another format.
+
+        A root is read under the reference-path name it was converted at, also where the document has several.
         """
-        return bool(self._false_all_of_documents)
+        return any(
+            root.document == location.document and location.tokens[: len(root.tokens)] == root.tokens
+            for root in self.known(self.names.get(location.document, "")).converted
+        )
 
     def edge_key(self, edge: RefEdge, compute: Callable[[RefEdge], RefKey]) -> RefKey:
         """Return the key of an edge, which ``compute`` resolves in the edge's document once, at its first call.
@@ -537,6 +656,12 @@ class SchemaGraphBuilder:
             directory = self._directories[document] = resolve()
         return directory
 
+    def base_directory(self, resolve: Callable[[], Path]) -> Path:
+        """Return the directory entering the resolver's base path sets, which ``resolve`` reads at the first call."""
+        if (directory := self._base_directory) is None:
+            directory = self._base_directory = resolve()
+        return directory
+
     def schema(self, raw: object, kind: type[SchemaT], validate: Callable[[], SchemaT]) -> SchemaT:
         """Return the ``kind`` object a JSON object of a loaded document validates to, which ``validate`` makes once.
 
@@ -548,6 +673,25 @@ class SchemaGraphBuilder:
         if (schema := self._schemas.get(key := (id(raw), kind))) is None:
             schema = self._schemas[key] = validate()
         return schema
+
+    def pointer_value(self, tree: object, fragment: str, reading: str, read: Callable[[], object]) -> object:
+        """Return the value a fragment names in a prepared tree by a reading, which ``read`` walks at the first ask.
+
+        The record of the document whose tree it is keeps it (``DocumentRecord.values``), a missing target too. Any
+        other tree, and a root ``mount_in`` may mount into (``mount_root``), which a mount writes, keeps nothing. A
+        ``read`` that raises keeps nothing, so the next ask raises again.
+        """
+        if (
+            (location := self.locations.get(id(tree))) is None
+            or (document := self.names.get(location.document)) is None
+            or (owner := self.documents.get(document)) is None
+            or owner.tree is not tree
+            or self._mounts_into(tree)
+        ):
+            return read()
+        if (value := (values := owner.values).get(entry := (fragment, reading), _UNREAD)) is _UNREAD:
+            value = values[entry] = read()
+        return value
 
     def node(self, raw: object) -> SchemaNodeId | None:
         """Return the node a JSON object of a loaded document is, or None for a value the graph does not locate."""
@@ -646,7 +790,6 @@ class SchemaGraphBuilder:
         ``ResolvedRef``s of ``document``, as ``with_ref_edges`` reads them, and copies their objects on write.
         """
         locations = self.locations
-        false_all_of = self._false_all_of_documents
         ancestors: dict[int, Any] = {}
         reads_refs = set() if reading is None else {reading.objects, reading.root}
 
@@ -667,7 +810,7 @@ class SchemaGraphBuilder:
                 seen = locations.get(value_id)
                 ancestors[value_id] = copy(value) if seen is not None and seen != location else value
                 if isinstance(all_of := value.get("allOf"), (list, tuple)) and any(item is False for item in all_of):
-                    false_all_of.add(root.document)
+                    self.holds_false_all_of = True
                 children = value.items()
             else:
                 ancestors[value_id] = value
@@ -720,13 +863,17 @@ class SchemaGraphBuilder:
         It is a copy of the document's root, located as that root, which the graph owns; a converted schema and a root
         the graph already owns are their own.
         """
-        if id(document) in self._mounted or id(document) in self._mount_roots:
+        if self._mounts_into(document):
             return document
         root = copy(document)
         self.locations[id(root)] = self.locations[id(document)]
         self._documents.append(root)
         self._mount_roots.add(id(root))
         return root
+
+    def _mounts_into(self, root: object) -> bool:
+        """Return whether a root is one the graph owns, which ``mount_root`` gives itself and ``mount_in`` writes."""
+        return id(root) in self._mounted or id(root) in self._mount_roots
 
     def mount_in(self, root: dict[str, Any], container: str, key: str, converted: dict[str, Any]) -> None:
         """Mount a converted schema at ``key`` of ``container`` under a root from ``mount_root``.

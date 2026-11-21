@@ -1,0 +1,30 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatchling" ]
+
+[project]
+name = "datamodel-codegen"
+# The Publish workflow sets the version to the release tag and pins the dependency to it (==<tag>) before it builds.
+version = "0.0.0"
+description = "Alias of datamodel-code-generator, so that the datamodel-codegen command installs by its name"
+readme.content-type = "text/markdown"
+readme.file = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
+]
+dependencies = [ "datamodel-code-generator" ]
+urls.Homepage = "https://github.com/datamodel-code-generator/datamodel-code-generator"
+urls.Source = "https://github.com/datamodel-code-generator/datamodel-code-generator"
+scripts.datamodel-codegen = "datamodel_code_generator.__main__:main"
+
+[tool.hatch]
+build.targets.wheel.bypass-selection = true

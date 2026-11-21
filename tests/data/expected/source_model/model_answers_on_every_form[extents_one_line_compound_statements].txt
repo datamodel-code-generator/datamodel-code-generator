@@ -1,0 +1,34 @@
+== extents
+Expr@1 lines 1
+FunctionDef@4 lines 4: function 4/4
+Return@4 lines 4
+ClassDef@5 lines 5: class 5/5
+Pass@5 lines 5
+If@6 lines 6: if 6/6
+Assign@6 lines 6
+For@7 lines 7: for 7/7
+Assign@7 lines 7
+While@8 lines 8: while 8/8
+Break@8 lines 8
+With@9 lines 9: with 9/9
+Pass@9 lines 9
+code lines: 1,4-9
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: -; owner <module>#0; tokens -
+line 4: Return@4; owner f#0; tokens f#0:body, f#0:header
+line 5: Pass@5; owner C#0; tokens C#0:body, C#0:header
+line 6: Assign@6; owner <module>#0; tokens <module>#0:body
+line 7: Assign@7; owner <module>#0; tokens <module>#0:body
+line 8: Break@8; owner <module>#0; tokens <module>#0:body
+line 9: Pass@9; owner <module>#0; tokens <module>#0:body
+header f: 4
+header C: 5
+source @1: """C3 P1: one-line def, class, if, for and try statements share a line between header and suite."""
+source @4: return 1
+source @5: pass
+source @6: x = 1
+source @7: x = i
+source @8: break
+source @9: pass
+== code objects: one per scope that compiles on this Python

@@ -21,18 +21,22 @@ class Deeper(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=compile('(?=\\A(?:(?=\\A(?:(?=\\A)(?:[A-Z]+|[0-9]+)\\Z)\\Z)(?:(?=\\A)(?:[A-M]+|[3-7]+)\\Z)\\Z)\\Z)(?:(?=\\A)(?:[A-C]+|[4-5]+)\\Z)\\Z')) = Field(
-        ..., title='Deeper'
-    )
+    root: constr(
+        pattern=compile(
+            '(?=\\A(?:(?=\\A(?:(?=\\A)(?:[A-Z]+|[0-9]+)\\Z)\\Z)(?:(?=\\A)(?:[A-M]+|[3-7]+)\\Z)\\Z)\\Z)(?:(?=\\A)(?:[A-C]+|[4-5]+)\\Z)\\Z'
+        )
+    ) = Field(..., title='Deeper')
 
 
 class Derived(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=compile('(?=\\A(?:(?=\\A)(?:[A-Z]+|[0-9]+)\\Z)\\Z)(?:(?=\\A)(?:[A-M]+|[3-7]+)\\Z)\\Z')) = Field(
-        ..., title='Derived'
-    )
+    root: constr(
+        pattern=compile(
+            '(?=\\A(?:(?=\\A)(?:[A-Z]+|[0-9]+)\\Z)\\Z)(?:(?=\\A)(?:[A-M]+|[3-7]+)\\Z)\\Z'
+        )
+    ) = Field(..., title='Derived')
 
 
 class Empty(RootModel[str]):
@@ -75,8 +79,8 @@ class SingleDerived(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=compile('(?=\\A(?:[A-Z]{2}|[0-9]{3})\\Z)(?:[A-Z]+)\\Z')) = Field(
-        ..., title='SingleDerived'
+    root: constr(pattern=compile('(?=\\A(?:[A-Z]{2}|[0-9]{3})\\Z)(?:[A-Z]+)\\Z')) = (
+        Field(..., title='SingleDerived')
     )
 
 

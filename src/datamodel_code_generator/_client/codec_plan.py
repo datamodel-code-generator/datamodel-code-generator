@@ -5,16 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
-from datamodel_code_generator._client.model_facts import _FALSE, _name
-from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, MAPPINGS
+from datamodel_code_generator._client.model_facts import _name
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._message_text import english_list
-from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._openapi_codec_plan import codec_file, extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._runtime.model_codecs.media import JSONKind
 from datamodel_code_generator._target_contract import (
-    WRAPPER_KINDS,
     BoundType,
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -22,10 +20,10 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralType,
     UnionType,
-    literal_text,
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
-from datamodel_code_generator._target_types import container_slot, is_none
+from datamodel_code_generator._target_types import container_slot, is_none, is_wrapper, present
+from datamodel_code_generator.model._decisions.tag_value import tag_key
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
@@ -75,17 +73,6 @@ _PLAIN: Final = frozenset({
     "dict",
 })
 _ALL_KINDS: Final[tuple[JSONKind, ...]] = get_args(JSONKind)
-_JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
-    **{
-        dotted_name(*key): ("object",) if slot in MAPPINGS.slots else ("array",)
-        for key, slot in CONTAINER_CLASSES.items()
-    },
-    **dict.fromkeys(("typing.List", "tuple"), ("array",)),
-    "bool": ("boolean",),
-    "int": ("number",),
-    "float": ("number",),
-    "decimal.Decimal": ("string", "number"),
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,7 +137,7 @@ class Choice:
 
     kinds: tuple[tuple[JSONKind, Shape], ...]
     tag: str | None = None
-    tags: tuple[tuple[str, SymbolId], ...] = ()
+    tags: tuple[tuple[str | int | bool, SymbolId], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,11 +196,6 @@ class ClientCodecs:
         return any(item.extras for item in self.uses)
 
 
-def _literal_kind(value: LiteralType) -> str | None:
-    kinds = {item.kind if isinstance(item, LiteralScalar) else "enum" for item in value.values}
-    return next(iter(kinds)) if len(kinds) == 1 and kinds <= {"str", "int", "none"} else None
-
-
 class _Planner:
     """Plan the conversions of the emitted models' types, reporting where a use's field has no conversion.
 
@@ -254,15 +236,14 @@ class _Planner:
             return self.union(value, schema, declared or value.discriminator)
         if isinstance(value, GeneratedSymbolType):
             symbol = self.symbols[value.symbol]
-            if symbol.kind in WRAPPER_KINDS:
-                if value.symbol in self.aliases:
-                    return None
-                root = self.root(symbol.id)
+            if (facts := self.facts.tables.wrapped(value, self.aliases)) is not None:
                 self.aliases.add(value.symbol)
                 try:
-                    return self.shape(root, schema, declared or symbol.discriminator)
+                    return self.shape(facts.type, schema, declared or symbol.discriminator)
                 finally:
                     self.aliases.remove(value.symbol)
+            if is_wrapper(symbol):
+                return None
             if symbol.kind == "enum":
                 return Class(value)
             if symbol.id not in self.models and symbol.id not in self.building:
@@ -276,8 +257,7 @@ class _Planner:
                         == LiteralScalar(kind="none", value=None),
                     )
                     for field in self.facts.fields(symbol.id)
-                    if field.member.model_facts is not None
-                    and field.member.model_facts.backend.constructor_init != _FALSE
+                    if field.member.model_facts is not None and field.member.model_facts.in_init
                 )
                 self.models[symbol.id] = Model(symbol.id, fields)
                 self.building.remove(symbol.id)
@@ -292,7 +272,9 @@ class _Planner:
                     self.report(f"The {self.label(key)} key type has no {self.backend} conversion", schema)
                 nested = self.shape(item, schema)
                 return None if nested is None else Values(nested)
-            if (kind := _ITEM_KINDS.get(slot)) is not None and len(value.arguments) == 1:
+            if (kind := "tuple" if value.tuple_form == "variadic" else _ITEM_KINDS.get(slot)) is not None and len(
+                value.arguments
+            ) == 1:
                 item = self.shape(value.arguments[0], schema)
                 return None if item is None and kind == "list" else Items(item, kind)
             return None
@@ -306,41 +288,15 @@ class _Planner:
         self.unsupported(value, schema)
         return None
 
-    def root(self, symbol: SymbolId) -> TypeView:
-        """Return the type an alias or root model stands for, which the binder binds for each one a codec reaches."""
-        root = self.facts.root(symbol)
-        assert root is not None
-        return root
-
     def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
         for member in members:
             if (
                 isinstance(member, GeneratedSymbolType)
-                and member.symbol not in seen
-                and self.symbols[member.symbol].kind == "alias"
+                and (facts := self.facts.tables.wrapped(member, seen)) is not None
             ):
-                root = self.root(member.symbol)
-                yield from self.flattened(
-                    root.members if isinstance(root, UnionType) else (root,), seen | {member.symbol}
-                )
+                yield from self.flattened(present(facts.type), seen | {member.symbol})
             elif not is_none(member):
                 yield member
-
-    def kinds(self, value: TypeView) -> tuple[JSONKind, ...]:
-        if isinstance(value, GeneratedSymbolType):
-            if (symbol := self.symbols[value.symbol]).kind == "enum":
-                kinds = {item.kind for item in symbol.values if item is not None}
-                return tuple(kind for kind, native in (("string", "str"), ("number", "int")) if native in kinds)
-            return ("object",)
-        if isinstance(value, GenericType):
-            return ("object",) if container_slot(value) in MAPPINGS.slots else ("array",)
-        if isinstance(value, LiteralType):
-            native = _literal_kind(value)
-            return ("string",) if native == "str" else ("number",) if native == "int" else ()
-        name = _name(value)
-        if name in {"object", "typing.Any"}:
-            return _ALL_KINDS
-        return _JSON_KINDS.get(name, ("string",))
 
     def union(self, value: UnionType, schema: SourceLocation | None, declared: UnionDiscriminator | None) -> Shape:
         members = tuple(dict.fromkeys(self.flattened(value.members)))
@@ -357,7 +313,8 @@ class _Planner:
         model_shapes = [Class(GeneratedSymbolType(symbol)) for symbol in models]
         kinds: dict[JSONKind, Shape] = {}
         for member, shape in shapes:
-            for kind in self.kinds(member):
+            found = self.facts.tables.json_kinds(member, "codec")
+            for kind in (kind for kind in _ALL_KINDS if found is None or kind in found):
                 if (
                     kind in kinds
                     and (shape is not None or kinds[kind] is not None)
@@ -377,12 +334,8 @@ class _Planner:
 
     def discriminator(
         self, models: list[SymbolId], declared: UnionDiscriminator | None
-    ) -> tuple[str | None, tuple[tuple[str, SymbolId], ...]]:
-        """Return a union's discriminator property and the model of each of its values.
-
-        A model takes the values of its literal field of that property, else the values mapped to it, else the last
-        segment of the path of the schema it is generated from.
-        """
+    ) -> tuple[str | None, tuple[tuple[str | int | bool, SymbolId], ...]]:
+        """Return a union's discriminator property and the model of each of its values: the tags the model reads."""
         if declared is None:
             self.report(
                 f"The union of {english_list((self.symbols[item].name for item in models), 'and', 'each')} "
@@ -390,28 +343,18 @@ class _Planner:
             )
             return None, ()
         tag = declared.property_name
-        mapped: dict[str, list[str]] = {}
-        for name, target in declared.mapping:
-            mapped.setdefault(target, []).append(name)
-        tags: dict[str, SymbolId] = {}
+        variants = dict(declared.variants)
+        tags: dict[object, tuple[str | int | bool, SymbolId]] = {}
         for symbol in models:
-            field = next((field for field in self.facts.fields(symbol) if field.wire_name == tag), None)
-            type_ = None if field is None else field.type
-            values = (
-                [text for item in type_.values if (text := literal_text(item)) is not None]
-                if isinstance(type_, LiteralType)
-                else []
-            )
-            source = self.symbols[symbol].source
-            values = values or mapped.get(source, []) or [source.rsplit("/", 1)[-1]]
-            for name in values:
-                if name in tags and tags[name] != symbol:
+            for name in variants.get(self.symbols[symbol].source, ()):
+                key = tag_key(name, "type-and-value")
+                if key in tags and tags[key][1] != symbol:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
-                tags[name] = symbol
-        return tag, tuple(tags.items())
+                tags[key] = name, symbol
+        return tag, tuple(tags.values())
 
 
-def plan_client_codecs(  # ruff: ignore[too-many-arguments]
+def plan_client_codecs(
     batch: GeneratedTypeContractBatch,
     wire: WirePlan,
     backend: CodecBackend,

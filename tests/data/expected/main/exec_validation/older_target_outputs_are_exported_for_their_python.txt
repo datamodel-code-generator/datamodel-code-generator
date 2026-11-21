@@ -1,0 +1,37 @@
+{
+  "cases": [
+    {
+      "node": "tests/main/test_exec_validation.py::test_older_target_outputs_are_exported_for_their_python",
+      "target": [
+        3,
+        10
+      ],
+      "imports": false,
+      "pydantic": "2.12",
+      "output": "output.py",
+      "files": [
+        "case.json",
+        "helper.py",
+        "output.py"
+      ]
+    },
+    {
+      "node": "tests/main/test_exec_validation.py::test_older_target_outputs_are_exported_for_their_python",
+      "target": [
+        3,
+        10
+      ],
+      "imports": true,
+      "pydantic": "2",
+      "output": "output.py",
+      "files": [
+        "case.json",
+        "helper.py",
+        "output.py"
+      ]
+    }
+  ],
+  "files": [
+    "import_code.py"
+  ]
+}

@@ -1,4 +1,4 @@
-<!-- related-cli-options: --type-mappings, --strict-types, --output-datetime-class, --use-pendulum, --use-decimal-for-multiple-of -->
+<!-- related-cli-options: --type-mappings, --read-format-as-annotation, --untyped-value-type, --strict-types, --output-datetime-class, --use-pendulum, --use-decimal-for-multiple-of -->
 
 # Type Mappings and Custom Types
 
@@ -9,6 +9,8 @@ datamodel-code-generator allows you to customize how schema types are mapped to 
 | Option | Description |
 |--------|-------------|
 | `--type-mappings` | Map schema types to custom Python types |
+| `--read-format-as-annotation` | Type each value by its `type` keyword, reading `format` as an annotation |
+| `--untyped-value-type` | Write the values a schema leaves untyped as one type, such as `pydantic.JsonValue` |
 | `--strict-types` | Use Pydantic strict types for validation |
 | `--output-datetime-class` | Choose datetime output type |
 | `--use-pendulum` | Use Pendulum library for datetime types |
@@ -95,6 +97,128 @@ specifies for unencoded binary data, so `maxLength: 3` rejects `"ééé"`, three
 msgspec decodes a JSON string into `bytes` as base64, so in `msgspec.Struct` output a `format: binary` field rejects
 `"abc"` and decodes `"aGk="` into `b"hi"`; `--type-mappings binary=string` writes the field as `str`, which keeps the
 text as written.
+
+---
+
+## `--read-format-as-annotation`
+
+JSON Schema reads `format` as an annotation: a validator does not reject a string whose format does not match, and
+the value stays the JSON string. By default each known format selects a type instead, as in 0.96.0, so the models
+reject or change data the schema accepts: `email` is `EmailStr`, which needs `email-validator` to import and leaves
+out `maxLength`; `date-time` is `AwareDatetime`, which rejects a date-time without an offset; `password` is
+`SecretStr`, which dumps `**********`; and `uri` is `AnyUrl`, which dumps `https://example.com/` for
+`https://example.com`.
+
+With `--read-format-as-annotation` (`read-format-as-annotation = true`, `read_format_as_annotation=True`) a string,
+integer or number schema takes the type its `type` keyword gives, `str`, `int` or `float`, with its own `minLength`,
+`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump a string or an
+integer as written. A number is the `float` it parses to, as without a format, which rounds a value a double cannot
+hold (`9007199254740993` dumps as `9007199254740992.0`). An unknown format gives no warning.
+
+```json
+{
+  "title": "CreateContact",
+  "type": "object",
+  "properties": {
+    "email": {"type": "string", "format": "email", "maxLength": 64},
+    "website": {"type": "string", "format": "uri"},
+    "remindAt": {"type": "string", "format": "date-time"},
+    "apiKey": {"type": "string", "format": "password"}
+  },
+  "required": ["email", "remindAt"]
+}
+```
+
+```python
+class CreateContact(BaseModel):
+    email: constr(max_length=64)
+    website: str | None = None
+    remindAt: str
+    apiKey: str | None = None
+```
+
+Two formats still select a type:
+
+- `format: binary` stays `bytes`: raw octets are not a JSON string. `--type-mappings binary=string` writes `str`.
+- A format that a `--type-mappings` entry names for a type the schema declares keeps that mapping:
+  `--type-mappings date-time=date-time` keeps the `date-time` strings typed, and `--output-datetime-class` then
+  applies to them. A schema that declares no `type`, such as an allOf part, has no such entry.
+
+The other options apply as to plain values: `--strict-types str` writes `StrictStr`, `--field-constraints` and
+`--use-annotated` write the schema's own keywords into `Field(...)` (the hostname pattern a `hostname` format adds is
+not written), `--use-subclass-enum` subclasses `str` for an enum of formatted strings, and the default of a
+`format: decimal` number under `--deserialize-default-values decimal` is a float, not a `Decimal(...)`. `--output-datetime-class`, `--output-date-class`, `--use-pendulum`,
+`--use-standard-primitive-types`, `--use-encoded-str-for-constrained-base64` and `--use-strict-str-for-base64` have no
+effect on the formats read as annotations. `contentMediaType` and `--use-bytes-for-content-media-type` are not
+`format` and work as without the option. The format itself is not written into the models.
+
+The option reads JSON Schema, OpenAPI, the JSON Schema payloads of AsyncAPI and MCP tool schemas, with every document
+they reference. Avro, Protocol Buffers and XML Schema inputs, and AsyncAPI payloads converted from them, keep the
+types of their formats: there the format carries the type of the source, such as an Avro `timestamp-millis`.
+
+---
+
+## `--untyped-value-type`
+
+A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema whose keywords give it no type (such as
+`{"description": "..."}`; an `enum` or a `const` gives one), the values of an object without properties and the items
+of an array without items. By default it is written as `Any`, and under `--use-object-type` the values and items of
+such containers as `object`, as in 0.96.0.
+
+`--untyped-value-type <type>` (`untyped-value-type = "pydantic.JsonValue"`, `untyped_value_type="pydantic.JsonValue"`)
+writes each of them as the given type, with the structure as without the option:
+
+- `pydantic.JsonValue` (Pydantic 2.5 or later), which type checkers read as
+  `list[JsonValue] | dict[str, JsonValue] | str | bool | int | float | None`;
+- `object`;
+- `Any`, which writes `Any` also where `--use-object-type` writes `object`;
+- the dotted import path of a type of your own, such as a recursive alias for `typing.TypedDict` output, which the
+  models import (`mypkg._json.JsonValue` is written `from mypkg._json import JsonValue`).
+
+Any other value is refused.
+
+```json
+{
+  "title": "Event",
+  "type": "object",
+  "properties": {
+    "payload": {},
+    "context": {"type": "object"},
+    "tags": {"type": "array"},
+    "attributes": {"type": "object", "additionalProperties": {}}
+  },
+  "required": ["payload"]
+}
+```
+
+```python
+from pydantic import BaseModel, JsonValue
+
+
+class Event(BaseModel):
+    payload: JsonValue
+    context: dict[str, JsonValue] | None = None
+    tags: list[JsonValue] | None = None
+    attributes: dict[str, JsonValue] | None = None
+```
+
+Every untyped `Any` is written so: a field, a union member (`str | JsonValue`), a dict value, a list item, the root of
+a root model, the value of a type alias and `__pydantic_extra__`. The models parse a JSON document to the same values
+as with `Any`; Python values that are no JSON values, such as a tuple, a set or a `datetime`, are rejected, and
+`model_json_schema()` writes `{"$ref": "#/$defs/JsonValue"}` with `"JsonValue": {}` where it wrote `{}`.
+
+- It takes precedence over `--use-object-type`, except in `msgspec.Struct` output.
+- `--type-overrides`, `x-python-type` and `x-python-import` keep their types, `typing.Any` included.
+- `msgspec.Struct` output keeps `Any`: msgspec decodes neither `pydantic.JsonValue` nor a recursive alias, and decodes
+  `Any` into JSON values already.
+- A definition named like the imported type is renamed by the rule for names an import takes: `$defs/JsonValue: {}`
+  becomes `class JsonValueModel(RootModel[JsonValue])`, its references follow. With `--collapse-root-models` the root
+  collapses into `JsonValue` at its references, and `--type-overrides '{"JsonValue": "pydantic.JsonValue"}'` leaves
+  no class.
+- With `--target-pydantic-version 2`, a run that writes `pydantic.JsonValue` warns that the models need Pydantic 2.5.
+- The type is imported only by the modules that write an untyped value.
+
+The practical presets dated 20261113 set `untyped-value-type = "pydantic.JsonValue"` for Pydantic output.
 
 ---
 

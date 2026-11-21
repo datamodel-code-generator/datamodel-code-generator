@@ -22,8 +22,7 @@ class Root2(BaseModel):
 
 class Root(
     RootModel[
-        dict[constr(pattern=r'^x.*'), Root1]
-        | dict[constr(pattern=r'.*x$'), Root2]
+        dict[constr(pattern=r'^x.*'), Root1] | dict[constr(pattern=r'.*x$'), Root2]
     ]
 ):
     root: (

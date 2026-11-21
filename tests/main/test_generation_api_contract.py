@@ -9,11 +9,10 @@ import pytest
 
 import datamodel_code_generator as dcg
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-from tests.conftest import assert_output, stored_expected
+from tests.conftest import assert_output
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
-EXPECTED = DATA / "expected/main/generation_platform/api_scope"
 
 
 @pytest.mark.parametrize(
@@ -40,7 +39,6 @@ def test_api_cli_backends(backend: str, tmp_path: Path) -> None:
             "black",
             "isort",
         ],
-        expected_output=stored_expected(EXPECTED / f"{backend.replace('.', '_')}.py").read_text() + "\n",
     )
 
 
@@ -67,5 +65,4 @@ def test_api_public_surface_annotations() -> None:
             indent=2,
         )
         + "\n",
-        EXPECTED / "public-surface.txt",
     )

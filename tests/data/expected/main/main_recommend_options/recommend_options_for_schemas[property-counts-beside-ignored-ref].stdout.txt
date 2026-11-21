@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-19)
+Option recommendations (experimental; quick mode; rules 2026-11-19)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       1, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   integer/number/boolean schemas   0
   root schema                      object model 0, title words 1
 
-Start from  --preset standard-py314-20261106
+Start from  --preset standard-py314-20261120
   already sets --read-schema-version-per-document   [versions.read-per-document]
 
 Add  nothing on top of the preset
@@ -25,10 +25,10 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input property_counts_draft07.json --preset standard-py314-20261106 --target-python-version 3.14
+  datamodel-codegen --input property_counts_draft07.json --preset standard-py314-20261120 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "property_counts_draft07.json"
-  preset = "standard-py314-20261106"
+  preset = "standard-py314-20261120"
   target-python-version = "3.14"

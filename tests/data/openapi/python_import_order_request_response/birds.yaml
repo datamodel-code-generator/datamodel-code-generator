@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: {title: birds, version: "1"}
+paths: {}
+components:
+  schemas:
+    Parrot:
+      type: object
+      properties:
+        id: {type: integer, readOnly: true}
+        words: {type: string}
+      x-python-import: {module: birds, name: Parrot}
+    Bird:
+      type: object
+      properties:
+        wings: {type: integer}

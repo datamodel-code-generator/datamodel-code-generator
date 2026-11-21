@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: incomplete model defaults without None defaults, version: "1"}
+paths: {}
+components:
+  schemas:
+    Spec:
+      type: object
+      required: [x]
+      properties:
+        x:
+          type: integer
+    Workload:
+      type: object
+      properties:
+        priority:
+          type: integer
+          default: 0
+        spec:
+          $ref: '#/components/schemas/Spec'
+          default: {}

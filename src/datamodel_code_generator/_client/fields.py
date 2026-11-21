@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
@@ -11,7 +10,7 @@ from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_naming import NameScope, explicit_name
-from datamodel_code_generator._target_operations import CLIENT, declared_by
+from datamodel_code_generator._target_operations import CLIENT, claim, declared_by
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _rw_variant_flag
 
@@ -91,6 +90,10 @@ class _Fields:
             is not None
         }
         shared = {wire_name: given for (_, wire_name), given in reversed(explicit.items())}
+
+        def named(media_type: str, wire_name: str) -> str | None:
+            return explicit.get((media_type, wire_name)) or shared.get(wire_name)
+
         self.problems.extend(
             CLIENT.problem(
                 "E_CONFIG_VALUE",
@@ -102,15 +105,10 @@ class _Fields:
             for media_type, name in names
         )
         helpers = HELPER_ARGUMENTS if spec.contract.id in self.helpers else ()
-        scope = NameScope((*RESERVED_ARGUMENTS, *helpers, *(parameter.python_name for parameter in spec.parameters)))
+        held = (*RESERVED_ARGUMENTS, *helpers, *(parameter.python_name for parameter in spec.parameters))
         for media_type, fields in declared:
-            given = [
-                name
-                for item in fields
-                if (name := explicit.get((media_type, item.wire_name)) or shared.get(item.wire_name)) is not None
-            ]
-            counts = Counter(given)
-            if taken := sorted({name for name in given if name in scope or counts[name] > 1}):
+            given = [name for item in fields if (name := named(media_type, item.wire_name)) is not None]
+            if taken := claim(self.names, NameScope(held), given)[1]:
                 self.problems.append(
                     CLIENT.problem(
                         "E_NAME_COLLISION",
@@ -119,8 +117,7 @@ class _Fields:
                         spec.contract.id.use_site,
                     )
                 )
-        for name in explicit.values():
-            scope.take(name)
+        scope = NameScope((*held, *explicit.values()))
         pending: dict[str, str] = {}
         for _, fields in declared:
             for item in fields:
@@ -138,9 +135,7 @@ class _Fields:
                 media_type=media_type,
                 fields=tuple(
                     FieldArgument(
-                        python_name=explicit.get((media_type, item.wire_name))
-                        or shared.get(item.wire_name)
-                        or derived[item.wire_name],
+                        python_name=named(media_type, item.wire_name) or derived[item.wire_name],
                         wire_name=item.wire_name,
                         required=item.required,
                         type=item.type,

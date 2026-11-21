@@ -43,6 +43,10 @@ class Cross(Base):
     value: Int
     typename__: Literal['Cross'] | None = Field('Cross', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Cross'] | None:
+        return self.typename__
+
 
 class Item(ZNode):
     camelValue: Int
@@ -50,10 +54,18 @@ class Item(ZNode):
     spare: Int
     typename__: Literal['Item'] | None = Field('Item', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Item'] | None:
+        return self.typename__
+
 
 class Ordinary(Base):
     value: Int
     typename__: Literal['Ordinary'] | None = Field('Ordinary', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | None:
+        return self.typename__
 
 
 class Second(ZNode):
@@ -62,10 +74,18 @@ class Second(ZNode):
     spare: Int
     typename__: Literal['Second'] | None = Field('Second', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Second'] | None:
+        return self.typename__
+
 
 class Solo(BaseModel):
     label: String
     typename__: Literal['Solo'] | None = Field('Solo', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Solo'] | None:
+        return self.typename__
 
 
 class ItemInput(BaseModel):

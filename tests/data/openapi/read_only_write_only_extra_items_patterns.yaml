@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Accounts
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Account:
+      type: object
+      properties:
+        passwords:
+          $ref: '#/components/schemas/Passwords'
+        owner:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+    Passwords:
+      type: object
+      additionalProperties:
+        allOf:
+          - type: string
+            pattern: '^(?=.*[A-Z])(?=.*[0-9]).{8,}$'
+          - type: string
+            pattern: '^[A-Za-z0-9]+$'

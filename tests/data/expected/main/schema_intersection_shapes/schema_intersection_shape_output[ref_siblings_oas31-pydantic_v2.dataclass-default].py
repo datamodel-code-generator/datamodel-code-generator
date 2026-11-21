@@ -21,7 +21,7 @@ Q = TypeAliasType(
 )
 
 
-Wd = TypeAliasType("Wd", Q)
+Wd = TypeAliasType("Wd", Annotated[Q, Field(..., le=10)])
 
 
 We = TypeAliasType("We", Q)
@@ -175,7 +175,7 @@ class Model:
     wc_items: list[AB] | None = None
     wc_map: dict[str, AB] | None = None
     wd: Wd | None = None
-    wd_prop: Q | None = None
+    wd_prop: Annotated[Q | None, Field(le=10)] = None
     wd_items: list[Q] | None = None
     wd_map: dict[str, Q] | None = None
     we: We | None = None

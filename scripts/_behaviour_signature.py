@@ -39,6 +39,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from _typeshed import DataclassInstance
+
 PYDANTIC_CONFIG_KEYS = (
     "extra",
     "frozen",
@@ -91,24 +93,49 @@ class Context:
         return module == self.root or module.startswith(f"{self.root}.")
 
 
-def meta_text(meta: object) -> str | None:
-    """Return constraint metadata independent of how it was spelled; None for doc-only metadata."""
+CONSTRAINT_METADATA = {
+    "annotated_types": frozenset({"Gt", "Ge", "Lt", "Le", "Interval", "MultipleOf", "MinLen", "MaxLen", "Len"}),
+    "pydantic": frozenset({"StringConstraints", "_PydanticGeneralMetadata", "Strict", "AllowInfNan"}),
+}
+"""The metadata classes whose fields are single constraints: `conint(ge=1)`, `Field(ge=1)` and `Ge(1)` spell one."""
+
+
+def _constraint_values(meta: object) -> dict[str, object] | None:
     kind = type(meta)
+    if kind.__name__ not in CONSTRAINT_METADATA.get(kind.__module__.split(".")[0], ()):
+        return None
+    if dataclasses.is_dataclass(meta):
+        return {field.name: getattr(meta, field.name) for field in dataclasses.fields(meta)}
+    return dict(vars(meta))
+
+
+def meta_items(meta: object) -> list[str]:
+    """Return the constraints of one metadata object independent of how they were spelled; none for doc-only metadata.
+
+    Constraint classes (`CONSTRAINT_METADATA`) give one `key=value` item per set constraint, the `None` placeholders
+    of con*() give none, and any other metadata is one item of its own text.
+    """
+    kind = type(meta)
+    if meta is None:
+        return []
     if kind.__name__ == "FieldInfo":
-        parts = [text for text in map(meta_text, getattr(meta, "metadata", ())) if text]
+        items = [item for inner in getattr(meta, "metadata", ()) for item in meta_items(inner)]
         if discriminator := getattr(meta, "discriminator", None):
-            parts.append(f"discriminator={discriminator!r}")
-        return ",".join(parts) or None
+            items.append(f"discriminator={discriminator!r}")
+        return items
+    if (constraints := _constraint_values(meta)) is not None:
+        return [f"{key}={value!r}" for key, value in constraints.items() if value is not None]
     if kind.__name__ == "Meta" and kind.__module__.startswith("msgspec"):
         values = {key: getattr(meta, key) for key in dir(meta) if not key.startswith("_") and key not in DOC_ONLY_KEYS}
         values = {key: value for key, value in values.items() if value is not None and not callable(value)}
-        return "Meta(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
+        return ["Meta(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")"] if values else []
     if dataclasses.is_dataclass(meta) and not isinstance(meta, type):
         values = {field.name: getattr(meta, field.name) for field in dataclasses.fields(meta)}
         values = {key: value for key, value in values.items() if value is not None and key not in DOC_ONLY_KEYS}
-        return f"{kind.__name__}(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
-    text = repr(meta)
-    return None if " at 0x" in text else text
+        text = f"{kind.__name__}(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
+    else:
+        text = repr(meta)
+    return [] if text is None or " at 0x" in text else [text]
 
 
 def split_top_level(text: str) -> list[str]:
@@ -148,8 +175,9 @@ def union_text(parts: list[str]) -> str:
     return next(iter(flat)) if len(flat) == 1 else "Union[" + ", ".join(sorted(flat)) + "]"
 
 
-def _annotated(inner: str, metas: list[str | None], *, meta: bool) -> str:
-    texts = [text for text in metas if text]
+def _annotated(inner: str, metas: list[list[str]], *, meta: bool) -> str:
+    """Return the text of an annotated type: its constraints sorted, as their order does not change behaviour."""
+    texts = sorted(item for items in metas for item in items)
     return f"Annotated[{inner}, {', '.join(texts)}]" if meta and texts else inner
 
 
@@ -179,7 +207,7 @@ def canonical(tp: object, ctx: Context, *, meta: bool, depth: int = 0, seen: fro
         return canonical(arg, ctx, meta=meta, depth=depth + 1, seen=seen)
 
     if origin is typing.Annotated:
-        return _annotated(sub(args[0]), [meta_text(arg) for arg in args[1:]], meta=meta)
+        return _annotated(sub(args[0]), [meta_items(arg) for arg in args[1:]], meta=meta)
     if origin is not None and getattr(origin, "_name", None) in WRAPPERS:
         return sub(args[0])
     if origin is typing.Union or isinstance(tp, types.UnionType):
@@ -214,18 +242,33 @@ def _evaluate(node: ast.expr, ctx: Context) -> object:
     return eval(compile(ast.Expression(node), "<annotation>", "eval"), dict(ctx.namespace))
 
 
+_UNRESOLVED = object()
+
+
+def _evaluated(node: ast.expr, ctx: Context) -> object:
+    """Return the value of an annotation's expression in the module namespace; `_UNRESOLVED` where it raises."""
+    try:
+        return _evaluate(node, ctx)
+    except Exception:  # ruff: ignore[blind-except] - an unresolvable expression keeps its source text
+        return _UNRESOLVED
+
+
 def _value_text(node: ast.expr, ctx: Context) -> str:
-    try:
-        return repr(_evaluate(node, ctx))
-    except Exception:  # ruff: ignore[blind-except] - an unresolvable value keeps its source text
-        return ast.unparse(node)
+    value = _evaluated(node, ctx)
+    return ast.unparse(node) if value is _UNRESOLVED else repr(value)
 
 
-def _meta_node_text(node: ast.expr, ctx: Context) -> str | None:
-    try:
-        return meta_text(_evaluate(node, ctx))
-    except Exception:  # ruff: ignore[blind-except] - unresolvable metadata keeps its source text
+def _meta_node_items(node: ast.expr, ctx: Context) -> list[str]:
+    value = _evaluated(node, ctx)
+    return [ast.unparse(node)] if value is _UNRESOLVED else meta_items(value)
+
+
+def _annotated_call_text(node: ast.Call, ctx: Context, *, meta: bool, depth: int, seen: frozenset[int]) -> str:
+    """Return the text of a call that builds an Annotated type (pydantic's con*()), else the call's source text."""
+    value = _evaluated(node, ctx)
+    if typing.get_origin(value) is not typing.Annotated:
         return ast.unparse(node)
+    return canonical(value, ctx, meta=meta, depth=depth + 1, seen=seen)
 
 
 def canonical_node(node: ast.expr, ctx: Context, *, meta: bool, depth: int, seen: frozenset[int]) -> str:  # ruff: ignore[too-many-return-statements]
@@ -242,6 +285,8 @@ def canonical_node(node: ast.expr, ctx: Context, *, meta: bool, depth: int, seen
         return union_text([sub(node.left), sub(node.right)])
     if isinstance(node, ast.List):
         return "[" + ", ".join(map(sub, node.elts)) + "]"
+    if isinstance(node, ast.Call):
+        return _annotated_call_text(node, ctx, meta=meta, depth=depth, seen=seen)
     if not isinstance(node, (ast.Name, ast.Attribute, ast.Subscript)):
         return ast.unparse(node)
     try:
@@ -255,7 +300,7 @@ def canonical_node(node: ast.expr, ctx: Context, *, meta: bool, depth: int, seen
     if name in WRAPPERS:
         return sub(elements[0])
     if name == "Annotated":
-        return _annotated(sub(elements[0]), [_meta_node_text(e, ctx) for e in elements[1:]], meta=meta)
+        return _annotated(sub(elements[0]), [_meta_node_items(e, ctx) for e in elements[1:]], meta=meta)
     if name in {"Union", "Optional"}:
         return union_text([*map(sub, elements), *(["None"] if name == "Optional" else [])])
     if name == "Literal":
@@ -271,7 +316,7 @@ def _default_text(value: object, factory: object = None) -> str:
     return "<obj>" if " at 0x" in text else text
 
 
-def _field(  # ruff: ignore[too-many-arguments]
+def _field(
     ctx: Context,
     annotation: object,
     *,
@@ -283,8 +328,8 @@ def _field(  # ruff: ignore[too-many-arguments]
     metadata: tuple[object, ...] = (),
 ) -> dict[str, Any]:
     constrained = canonical(annotation, ctx, meta=True)
-    if extra := [text for text in map(meta_text, metadata) if text]:
-        constrained = f"Annotated[{constrained}, {', '.join(extra)}]"
+    if extra := [item for meta in metadata for item in meta_items(meta)]:
+        constrained = _annotated(constrained, [extra], meta=True)
     return {
         "type": canonical(annotation, ctx, meta=False),
         "ctype": constrained,
@@ -493,7 +538,7 @@ def _struct_item(cls: type, ctx: Context) -> dict[str, Any]:
     }
 
 
-def _dataclass_item(cls: type, ctx: Context) -> dict[str, Any]:
+def _dataclass_item(cls: type[DataclassInstance], ctx: Context) -> dict[str, Any]:
     annotations = _annotations(cls)
     fields = {}
     for field in dataclasses.fields(cls):
@@ -803,7 +848,7 @@ def fingerprint(value: object) -> object:  # ruff: ignore[too-many-return-statem
     return [type(value).__name__, repr(value)]
 
 
-def _payload_type(module: types.ModuleType) -> object:
+def _payload_type(module: types.ModuleType) -> type:
     if PAYLOAD_CLASS_NAME in module.__dict__:
         return module.__dict__[PAYLOAD_CLASS_NAME]
     generated = [v for v in module.__dict__.values() if isinstance(v, type) and v.__module__ == module.__name__]
@@ -832,9 +877,7 @@ def payload_verdicts(
     return {"verdicts": verdicts, "values": values}
 
 
-def _validator(
-    target: object, output_model_type: str
-) -> tuple[Callable[[object], object], tuple[type[Exception], ...]]:
+def _validator(target: type, output_model_type: str) -> tuple[Callable[[object], object], tuple[type[Exception], ...]]:
     if output_model_type == "msgspec.Struct":
         import msgspec  # ruff: ignore[import-outside-top-level]
 
@@ -867,6 +910,49 @@ def _import_file(path: Path) -> types.ModuleType:
     sys.modules["model"] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _import_module(name: str) -> types.ModuleType:
+    """Import one module of a generated package by its dotted name."""
+    return importlib.import_module(name)
+
+
+def model_types(path: Path) -> dict[str, type]:
+    """Return the public classes a stored module file or package directory defines, by `<module>:<name>`.
+
+    The modules of a package are imported as the signature imports them, with the package's parent on the path.
+    """
+    path = path.resolve()
+    sys.path.insert(0, str(path.parent))
+    if path.is_dir():
+        files = [file for file in sorted(path.rglob("*.py")) if "__pycache__" not in file.parts]
+        names = [
+            ".".join([
+                path.name,
+                *(part for part in file.relative_to(path).with_suffix("").parts if part != "__init__"),
+            ])
+            for file in files
+        ]
+        modules = [_import_module(name) for name in names]
+    else:
+        modules = [_import_file(path)]
+    return {
+        f"{module.__name__}:{name}": value
+        for module in modules
+        for name, value in vars(module).items()
+        if isinstance(value, type) and value.__module__ == module.__name__ and not name.startswith("_")
+    }
+
+
+def model_verdicts(target: type, output_model_type: str, values: list[object]) -> list[list[str | None]]:
+    """Return the verdict of each value against one model and the fingerprint digest of each accepted one."""
+    validate, rejection = _validator(target, output_model_type)
+    found: list[list[str | None]] = []
+    for value in values:
+        verdict, parsed = _verdict(validate, rejection, value)
+        digest = hashlib.sha256(json.dumps(fingerprint(parsed), sort_keys=True).encode()).hexdigest()[:16]
+        found.append([verdict, digest if verdict == "accept" else None])
+    return found
 
 
 PRELOADED = ("pydantic", "msgspec", "typing_extensions")
@@ -940,7 +1026,7 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
             package[key] = {"import_error": f"imported first: {first[name]}"}
             continue
         try:
-            module = importlib.import_module(name)
+            module = _import_module(name)
         except Exception as exc:  # ruff: ignore[blind-except] - a failed import is the result
             package[key] = {"import_error": _short_error(exc, 200)}
             continue

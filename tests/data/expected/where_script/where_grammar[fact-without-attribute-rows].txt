@@ -1,0 +1,10 @@
+exit status 0
+fact Fact.MODEL_KIND
+  freezes at B1 (facts-final)
+  final after its last declared writer: write_plain_aliases_for_recursive_models (MODULES)
+  read by 27 passes, first delete_duplicate_models (STRUCTURE), last render_modules (RENDER)
+  written by (pipeline order) (4):
+    parse_raw (PARSE)
+    extract_inherited_enum (MODULES)
+    write_rule_aliases_as_classes (MODULES)
+    write_plain_aliases_for_recursive_models (MODULES)

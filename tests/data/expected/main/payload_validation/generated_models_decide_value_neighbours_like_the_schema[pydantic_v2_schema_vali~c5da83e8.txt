@@ -1,0 +1,5 @@
+[
+  "const \"1\": invalid, model accepts",
+  "const \"2\": invalid, model accepts",
+  "const null: invalid, model accepts"
+]

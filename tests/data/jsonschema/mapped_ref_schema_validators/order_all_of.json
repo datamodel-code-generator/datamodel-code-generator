@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "customer": {
+      "allOf": [{"$ref": "absent_shared.json#/$defs/Customer"}],
+      "minProperties": 1,
+      "patternProperties": {"^x-": {"type": "string"}}
+    }
+  },
+  "patternProperties": {"^y-": {"type": "string"}},
+  "required": ["customer"],
+  "minProperties": 1
+}

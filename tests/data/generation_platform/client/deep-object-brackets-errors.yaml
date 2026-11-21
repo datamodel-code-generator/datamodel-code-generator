@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: Values the bracket form refuses
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /v1/balance:
+    get:
+      operationId: GetBalance
+      responses:
+        '204':
+          description: The balance, which takes no value in brackets.
+  /v1/search:
+    get:
+      operationId: GetSearch
+      parameters:
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema: {$ref: '#/components/schemas/Filter'}
+      responses:
+        '204':
+          description: Filters nest in themselves.
+  /v1/matrix:
+    get:
+      operationId: GetMatrix
+      parameters:
+        - name: rows
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: array
+            items:
+              type: array
+              items: {type: integer}
+      responses:
+        '204':
+          description: Arrays of arrays.
+  /v1/labels:
+    get:
+      operationId: GetLabels
+      parameters:
+        - name: label
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            patternProperties:
+              '^x-': {type: string}
+      responses:
+        '204':
+          description: Pattern properties.
+  /v1/owners:
+    get:
+      operationId: GetOwners
+      parameters:
+        - name: owner
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            anyOf:
+              - type: object
+                properties:
+                  user: {type: string}
+              - type: array
+                items:
+                  type: object
+                  properties:
+                    team: {type: string}
+      responses:
+        '204':
+          description: An object or an array of other objects.
+  /v1/amounts:
+    get:
+      operationId: GetAmounts
+      parameters:
+        - name: amount
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            anyOf:
+              - {type: integer}
+              - {type: string, format: date}
+              - type: object
+                properties:
+                  gt: {type: integer}
+      responses:
+        '204':
+          description: Scalars of two kinds.
+components:
+  schemas:
+    Filter:
+      type: object
+      properties:
+        name: {type: string}
+        or:
+          type: array
+          items: {$ref: '#/components/schemas/Filter'}

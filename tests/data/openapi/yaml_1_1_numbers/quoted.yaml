@@ -1,0 +1,21 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    PickThumbnail:
+      type: object
+      properties:
+        timecode:
+          type: string
+          pattern: '00:00:00.00'
+    '18_24':
+      type: object
+      properties:
+        value:
+          type: integer
+    VideoAspectRatio:
+      type: string
+      enum:
+        - '16:9'
+        - '4:3'

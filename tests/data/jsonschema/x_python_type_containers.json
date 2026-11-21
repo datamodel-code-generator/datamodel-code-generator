@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inventory",
+  "type": "object",
+  "properties": {
+    "tags": {"type": "array", "items": {"type": "string", "maxLength": 3}, "minItems": 1, "x-python-type": "tuple[str, ...]"},
+    "flags": {"type": "array", "items": {"type": "boolean"}, "x-python-type": "Tuple"},
+    "names": {"type": "array", "items": {"type": "string", "maxLength": 3}, "x-python-type": "MutableSequence[str]"},
+    "pets": {"type": "array", "items": {"$ref": "#/$defs/Pet"}, "x-python-type": "MutableSequence[Pet]"},
+    "ids": {"type": "array", "items": {"type": "integer"}, "x-python-type": "MutableSet[int]"},
+    "frozen_ids": {"type": "array", "items": {"type": "integer"}, "x-python-type": "AbstractSet[int]"},
+    "counts": {"type": "object", "additionalProperties": {"type": "integer"}, "x-python-type": "MutableMapping[str, int]"},
+    "settings": {"type": "object", "additionalProperties": {"type": "string"}, "x-python-type": "TypedDict"},
+    "aliases": {"type": ["array", "null"], "items": {"type": "string"}, "x-python-type": "MutableSequence[str]"},
+    "grid": {
+      "type": "array",
+      "items": {"type": "array", "items": {"type": "integer"}, "x-python-type": "tuple[int, ...]"},
+      "x-python-type": "list[tuple[int, ...]]"
+    },
+    "groups": {
+      "type": "object",
+      "additionalProperties": {"type": "array", "items": {"type": "string"}, "x-python-type": "MutableSequence[str]"}
+    },
+    "codes": {"$ref": "#/$defs/Codes"},
+    "unique_ids": {"type": "array", "items": {"type": "integer"}, "uniqueItems": true, "x-python-type": "list[int]"},
+    "levels": {"type": "array", "items": {"type": "integer"}, "x-python-type": "set[int]"},
+    "routes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "array", "items": {"type": "integer"}, "x-python-type": "tuple[int, ...]"}
+    },
+    "batches": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "array", "items": {"type": "integer"}, "x-python-type": "MutableSequence[int]"}
+    },
+    "ratio": {"type": "number", "x-python-type": "int"},
+    "point": {"type": "array", "items": {"type": "integer"}, "x-python-type": "tuple[int, int]"},
+    "pair": {"type": "array", "prefixItems": [{"type": "integer"}, {"type": "integer"}], "minItems": 2, "maxItems": 2, "x-python-type": "list[int]"}
+  },
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+    "Codes": {"type": "array", "items": {"type": "string"}, "x-python-type": "MutableSequence[str]"},
+    "Tagged": {
+      "allOf": [
+        {"$ref": "#"},
+        {"properties": {"names": {"type": "array", "items": {"type": "string"}, "maxItems": 2}}}
+      ]
+    }
+  }
+}

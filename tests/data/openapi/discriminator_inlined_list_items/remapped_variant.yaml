@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info: {title: payments, version: "2"}
+paths: {}
+components:
+  schemas:
+    Card:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        number: {type: string}
+    CardV2:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        token: {type: string}
+    Cash:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        amount: {type: integer}
+    LegacyOrder:
+      type: object
+      properties:
+        payment:
+          oneOf:
+            - $ref: '#/components/schemas/Card'
+            - $ref: '#/components/schemas/Cash'
+          discriminator:
+            propertyName: kind
+            mapping:
+              card: '#/components/schemas/Card'
+              cash: '#/components/schemas/Cash'
+    Method:
+      oneOf:
+        - $ref: '#/components/schemas/Card'
+        - $ref: '#/components/schemas/CardV2'
+      discriminator:
+        propertyName: kind
+        mapping:
+          card_v1: '#/components/schemas/Card'
+          card: '#/components/schemas/CardV2'
+    Wallet:
+      type: object
+      properties:
+        methods:
+          type: array
+          items: {$ref: '#/components/schemas/Method'}

@@ -1,0 +1,9 @@
+# held-bases
+serve pydantic_v2.BaseModel
+service DefaultService: post_closed_parts, post_plain_parts
+service DefaultService without its methods: TypeError
+> POST /parts/plain
+  post_plain_parts(Child(size=2, name='a', foo=1))
+< 204 - b''
+> POST /parts/closed
+< 422 application/json [{"type": "extra_forbidden", "loc": ["body", "foo"]}]

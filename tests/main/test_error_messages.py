@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import inspect
 import json
+import os
 import py_compile
 import re
 import shutil
+import subprocess
 import sys
 import warnings
 from pathlib import Path
@@ -17,6 +20,7 @@ from graphql import GraphQLSyntaxError
 from graphql import Source as GraphQLSource
 
 from datamodel_code_generator import (
+    ClassNameAffixScope,
     DanglingRefWarning,
     DataModelType,
     Error,
@@ -24,17 +28,24 @@ from datamodel_code_generator import (
     InvalidFileFormatError,
     SchemaResourceRefWarning,
     YamlValue,
+    enable_debug_message,
     generate,
     snooper_to_methods,
 )
-from datamodel_code_generator.__main__ import Exit
+from datamodel_code_generator.__main__ import Config, Exit
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.base import Source, dump_templates
 from datamodel_code_generator.parser.graphql import GraphQLParser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content, stored_expected
+from tests.capabilities import needs
+from tests.conftest import (
+    assert_output,
+    assert_warnings_contain,
+    assert_warnings_do_not_contain,
+    stored_expected,
+)
 from tests.main.conftest import (
     DATA_PATH,
     OPEN_API_DATA_PATH,
@@ -47,13 +58,12 @@ from tests.main.conftest import (
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
+    from types import ModuleType
     from typing import Literal
 
 
 MALFORMED_DATA_PATH = DATA_PATH / "malformed"
-EXPECTED_MALFORMED_PATH = DATA_PATH / "expected" / "main" / "malformed"
-assert_file_content = create_assert_file_content(EXPECTED_MALFORMED_PATH)
 TRACEBACK_HEADER = "Traceback (most recent call last)"
 ISSUE_SCHEMA = '{"type": "object", "title": "Pet", "properties": {"name": {"type": "string"}}}\n'
 UNENCODABLE_HEADER = "# Café 漢"
@@ -126,7 +136,6 @@ def test_output_path_does_not_overwrite_input(
     )
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -152,11 +161,10 @@ def test_model_metadata_path_does_not_overwrite_input(
     )
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_symlinked_output_path_does_not_overwrite_input(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -179,11 +187,10 @@ def test_symlinked_output_path_does_not_overwrite_input(
     )
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_symlinked_output_path_does_not_overwrite_input(tmp_path: Path) -> None:
     """Protect public API inputs when an output keeps its symlink spelling."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -197,11 +204,10 @@ def test_generate_symlinked_output_path_does_not_overwrite_input(tmp_path: Path)
 
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="hardlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_hardlinked_output_path_does_not_overwrite_input(tmp_path: Path) -> None:
     """Protect public API inputs when an output is a hardlink."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -215,7 +221,6 @@ def test_generate_hardlinked_output_path_does_not_overwrite_input(tmp_path: Path
 
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -230,7 +235,33 @@ def test_generate_list_input_does_not_overwrite_input(tmp_path: Path) -> None:
 
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "input_",
+    [pytest.param([], id="empty"), pytest.param(["person.json"], id="strings")],
+)
+def test_generate_list_input_that_is_no_path_list_is_refused(input_: list[str]) -> None:
+    """Refuse a list input that is empty or holds anything but paths."""
+    with pytest.raises(Error, match="List input is only supported for file path lists"):
+        generate(input_, input_file_type=InputFileType.JsonSchema)
+
+
+def test_json_input_directory_is_a_clean_cli_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A directory given with ``--input-file-type json`` is refused: the sample has to be a file."""
+    source_path = tmp_path / "samples"
+    source_path.mkdir()
+    (source_path / "sample.json").write_text('{"name": "dcg"}\n', encoding="utf-8")
+
+    run_main_and_assert(
+        input_path=source_path,
+        output_path=tmp_path / "output.py",
+        input_file_type="json",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="Input must be a file for InputFileType.Json",
+        output_should_not_exist=True,
     )
 
 
@@ -256,7 +287,6 @@ def test_output_path_can_write_inside_input_directory(
     metadata = None
     if metadata_location is not None:
         metadata = (input_path if metadata_location == "inside" else tmp_path) / "model_map.json"
-    expected_directory = EXPECTED_MALFORMED_PATH / "directory_input"
     for run in range(2):
         match entrypoint:
             case "api":
@@ -269,7 +299,7 @@ def test_output_path_can_write_inside_input_directory(
                     emit_model_metadata=metadata,
                     update_lock=update_lock,
                     lockfile=tmp_path / "refs.lock",
-                    expected_directory=expected_directory,
+                    name="tree",
                 )
             case _:
                 extra_args = ["--disable-timestamp", "--formatters", "builtin"]
@@ -282,7 +312,7 @@ def test_output_path_can_write_inside_input_directory(
                     output_path=output_path,
                     input_file_type="jsonschema" if input_file_type == InputFileType.JsonSchema else None,
                     extra_args=extra_args,
-                    expected_directory=expected_directory,
+                    name="tree",
                     capsys=capsys,
                     assert_no_stderr=input_file_type == InputFileType.JsonSchema,
                 )
@@ -299,7 +329,6 @@ def test_output_path_can_write_inside_input_directory(
             )
     assert_output(
         f"{(input_path / source.name).read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -341,6 +370,48 @@ def test_pyproject_http_pairs_that_are_no_list_are_a_clean_cli_error(
     monkeypatch.chdir(tmp_path)
 
     run_main_with_args([], expected_exit=Exit.ERROR, capsys=capsys, expected_stderr_contains=message)
+
+
+def test_http_header_without_a_colon_is_a_clean_cli_error(capsys: pytest.CaptureFixture[str]) -> None:
+    """A ``--http-headers`` value without the separator is refused, naming the value."""
+    run_main_with_args(
+        ["--http-headers", "NoColon"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="Invalid http header: 'NoColon'",
+    )
+
+
+def test_pyproject_http_pairs_may_be_written_as_arrays(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A header of pyproject.toml written as a ``[name, value]`` array is taken as the pair it is."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\nhttp-headers = [["X-Token", "secret"]]\nhttp-query-parameters = [["page", "1"]]\n',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    input_path = tmp_path / "pet.json"
+    input_path.write_text(
+        '{"title": "Pet", "type": "object", "properties": {"name": {"type": "string"}}}\n', encoding="utf-8"
+    )
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=tmp_path / "o.py",
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.allow_direct_assert("states the facts of the public Config class, which writes no output")
+def test_config_takes_unset_values_and_item_access() -> None:
+    """The public ``Config`` keeps ``None`` for its optional settings and reads settings by item or ``get``."""
+    config = Config(http_headers=None, url=None, class_name_affix_scope=None)
+
+    assert config.http_headers is None
+    assert config["url"] is None
+    assert config.get("class_name_affix_scope") is ClassNameAffixScope.All
+    assert Config(class_name_affix_scope=ClassNameAffixScope.Enums).class_name_affix_scope is ClassNameAffixScope.Enums
 
 
 @pytest.mark.parametrize(
@@ -401,8 +472,9 @@ def test_directory_input_preserves_nonstandard_schema_files(
             generated = generated.replace(
                 f"#   filename:  {source_path.relative_to(input_path).as_posix()}", "#   filename:  person.json"
             )
-        assert_output(generated, DATA_PATH / "expected" / "main" / "person.py")
-    assert_output(source_path.read_text(encoding="utf-8"), original_source)
+        assert_output(generated, name="model", suffix=".py")
+    assert_output(original_source.read_text(encoding="utf-8"), name="source")
+    assert_output(source_path.read_text(encoding="utf-8"), name="source")
 
 
 @pytest.mark.parametrize(("mode", "trailing"), [("prepend", "\n\n"), ("prepend", "\r\n\r\n"), ("replace", "\n\n")])
@@ -437,10 +509,10 @@ def test_directory_input_custom_header_trailing_newlines(
         else:
             generated = generated.removeprefix(header + "\n\n")
             generated = f"# generated by datamodel-codegen:\n#   filename:  person.json\n\n{generated}"
-        assert_output(generated, DATA_PATH / "expected" / "main" / "person.py")
+        assert_output(generated, name="model", suffix=".py")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.parametrize("target_inside", [False, True])
 def test_directory_input_excludes_metadata_symlink_spellings(tmp_path: Path, target_inside: bool) -> None:
     """Exclude both a configured metadata symlink and its in-directory target."""
@@ -450,14 +522,13 @@ def test_directory_input_excludes_metadata_symlink_spellings(tmp_path: Path, tar
     output_path = tmp_path / "generated"
     metadata = input_path / "model_map.json"
     metadata.symlink_to((input_path if target_inside else tmp_path) / "metadata.json")
-    expected_directory = EXPECTED_MALFORMED_PATH / "directory_input"
     for _ in range(2):
         run_main_and_assert(
             input_path=input_path,
             output_path=output_path,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp", "--formatters", "builtin", "--emit-model-metadata", str(metadata)],
-            expected_directory=expected_directory,
+            name="tree",
         )
 
 
@@ -499,8 +570,7 @@ def test_directory_input_retains_type_aliases_without_future_imports(tmp_path: P
                 "3.12",
                 "--disable-future-imports",
             ],
-            assert_func=assert_file_content,
-            output_to_expected=[("child.py", "directory_input_alias.py")],
+            name="tree",
             skip_code_validation=sys.version_info < (3, 12),
         )
         if run == 0:
@@ -585,7 +655,7 @@ def test_modular_output_file_is_a_clean_cli_error(tmp_path: Path, capsys: pytest
         expected_stderr="Modular references require an output directory, not a file\n",
         copy_files=[(stored_expected(existing_file), output_path)],
     )
-    assert_output(output_path.read_text(encoding="utf-8"), existing_file)
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_modular_output_below_a_file_names_the_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -1067,7 +1137,7 @@ def test_cli_rejects_default_project_lock_inside_root_directory_input(
     assert not (project / "datamodel-codegen.lock").exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_cli_rejects_resolved_lockfile_alias_inside_directory_input(
     tmp_path: Path,
@@ -1121,7 +1191,7 @@ def test_public_api_rejects_lockfile_inside_any_listed_directory_input(
     assert not lockfile.exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_public_api_rejects_lockfile_inside_resolved_directory_input_alias(tmp_path: Path) -> None:
     """A symlink-spelled directory input protects its resolved contents too."""
@@ -1162,7 +1232,7 @@ def test_public_api_rejects_default_lock_inside_root_directory_input(
     assert not (tmp_path / "datamodel-codegen.lock").exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_output_and_model_metadata_symlinks_must_differ(tmp_path: Path) -> None:
     """Reject public API artifact paths that alias the same existing file."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -1181,11 +1251,10 @@ def test_generate_output_and_model_metadata_symlinks_must_differ(tmp_path: Path)
 
     assert_output(
         f"{output_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="hardlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_output_and_model_metadata_hardlinks_must_differ(tmp_path: Path) -> None:
     """Reject public API artifact paths that are hardlinks to the same file."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -1204,7 +1273,6 @@ def test_generate_output_and_model_metadata_hardlinks_must_differ(tmp_path: Path
 
     assert_output(
         f"{output_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -1772,7 +1840,6 @@ def test_request_response_dedupe_generates_legacy_stops(
         input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
-        assert_func=assert_file_content,
         extra_args=[
             "--read-only-write-only-model-type",
             "request-response",
@@ -1939,6 +2006,29 @@ def test_schema_validation_error_details_name_the_model(output_file: Path, capsy
     )
 
 
+NESTED_STRICT_FIXTURES = (
+    pytest.param("schema_location_strict_nested_draft2020.json", "jsonschema", [], id="nested-draft2020"),
+    pytest.param("schema_location_strict_nested_openapi31.yaml", "openapi", [], id="nested-openapi31"),
+    pytest.param(
+        "schema_location_strict_nested_openapi31.yaml",
+        "openapi",
+        ["--openapi-scopes", "schemas", "paths"],
+        id="nested-openapi31-paths",
+    ),
+    pytest.param("schema_location_strict_nested_asyncapi3.yaml", "asyncapi", [], id="nested-asyncapi3"),
+    pytest.param("schema_location_strict_nested_asyncapi2.yaml", "asyncapi", [], id="nested-asyncapi2"),
+    *(
+        pytest.param(
+            "schema_location_strict_nested_boolean.json",
+            "jsonschema",
+            ["--schema-version", version],
+            id=f"nested-boolean-{version}",
+        )
+        for version in ("draft-04", "draft-07", "2020-12")
+    ),
+)
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "input_file_type", "extra_args"),
     [
@@ -1947,6 +2037,7 @@ def test_schema_validation_error_details_name_the_model(output_file: Path, capsy
         pytest.param("schema_location_strict_openapi.yaml", "openapi", [], id="openapi"),
         pytest.param("schema_location_strict_openapi.yaml", "openapi", ["--openapi-scopes", "api"], id="openapi-api"),
         pytest.param("schema_location_strict_asyncapi.yaml", "asyncapi", [], id="asyncapi"),
+        *NESTED_STRICT_FIXTURES,
     ],
 )
 def test_schema_version_warnings_name_location(
@@ -1955,7 +2046,12 @@ def test_schema_version_warnings_name_location(
     extra_args: list[str],
     output_file: Path,
 ) -> None:
-    """Strict-mode warnings name the document and the JSON Pointer of the schema that uses the feature."""
+    """Strict-mode warnings name the document and the JSON Pointer of the schema that uses the feature.
+
+    A subschema inside a parsed schema is checked too, once where two ``$ref`` reach it, and an AsyncAPI 2 document
+    reads the exclusive bounds as OpenAPI 3.0 does (#4980). A boolean subschema warns where its version has no boolean
+    schemas, except where Draft 4 accepts a boolean (``additionalProperties``, ``additionalItems``).
+    """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(
@@ -1971,8 +2067,27 @@ def test_schema_version_warnings_name_location(
                 *extra_args,
             ],
         )
-    messages = dict.fromkeys(str(record.message) for record in recorded if "Schema path:" in str(record.message))
+    messages = [str(record.message) for record in recorded if "Schema path:" in str(record.message)]
     assert_output("".join(f"{message}\n" for message in messages), name="warnings")
+
+
+@pytest.mark.parametrize(("fixture_name", "input_file_type", "extra_args"), NESTED_STRICT_FIXTURES)
+def test_schema_version_lenient_mode_names_no_nested_location(
+    fixture_name: str,
+    input_file_type: InputFileTypeLiteral,
+    extra_args: list[str],
+    output_file: Path,
+) -> None:
+    """Lenient mode warns about no version-specific feature of a subschema (#4980)."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=MALFORMED_DATA_PATH / fixture_name,
+            output_path=output_file,
+            input_file_type=input_file_type,
+            extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+        )
+    assert_warnings_do_not_contain(recorded, "Schema path:")
 
 
 @pytest.mark.parametrize(
@@ -2056,8 +2171,6 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "dangling_local_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
             importable_module_name="generated_dangling_local_ref",
@@ -2068,7 +2181,36 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
         "".join(
             f"{filename}\n" for filename in dict.fromkeys(Path(warning.filename).name for warning in dangling_warnings)
         ),
-        EXPECTED_MALFORMED_PATH / "dangling_ref_warning_location.txt",
+    )
+
+
+def test_dangling_local_ref_warning_is_filtered_as_the_package(tmp_path: Path) -> None:
+    """`PYTHONWARNINGS=error:::datamodel_code_generator` makes the dangling `$ref` warning an error, as before."""
+    package = Path(inspect.getfile(generate)).parent
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "datamodel_code_generator",
+            "--input",
+            str(MALFORMED_DATA_PATH / "dangling_local_ref.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ],
+        capture_output=True,
+        check=False,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(package.parent), "PYTHONWARNINGS": "error:::datamodel_code_generator"},
+        text=True,
+        timeout=120,
+    )
+    assert_output(
+        f"exit status: {result.returncode}\n"
+        + "".join(
+            line[:60] + "\n" for line in result.stderr.splitlines() if line.startswith("datamodel_code_generator.")
+        )
     )
 
 
@@ -2093,10 +2235,31 @@ def test_dangling_component_ref_warning_names_the_parse_caller(output_file: Path
     )
 
 
-def test_dangling_ref_warning_names_the_caller_of_a_traced_parse(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Under the tracing wrappers that ``--debug`` installs, the diagnostics warnings name the caller of ``parse()``."""
+@pytest.fixture
+def debug_tracing(monkeypatch: pytest.MonkeyPatch) -> Iterator[ModuleType]:
+    """Turn on the tracing of ``--debug`` and leave the process as it was found when the test ends.
+
+    The tracing state, and the namespaces of the package, of its tracing module and of the parser's modules, whose
+    functions the decoration of ``snooper_to_methods`` wraps, come back afterwards, so no wrapper changes a frame a
+    later test's warnings name.
+    """
     pysnooper = pytest.importorskip("pysnooper")
-    monkeypatch.setattr(pysnooper.tracer, "DISABLED", False)
+    monkeypatch.setattr(pysnooper.tracer, "DISABLED", pysnooper.tracer.DISABLED)
+    namespaces = [
+        (vars(module), dict(vars(module)))
+        for module_name, module in [*sys.modules.items()]
+        if module_name in {"datamodel_code_generator", "datamodel_code_generator._debug"}
+        or module_name.startswith("datamodel_code_generator.parser._")
+    ]
+    enable_debug_message()
+    yield pysnooper
+    for namespace, found in namespaces:
+        namespace.update(found)
+
+
+@pytest.mark.usefixtures("debug_tracing")
+def test_dangling_ref_warning_names_the_caller_of_a_traced_parse() -> None:
+    """Under the tracing wrappers that ``--debug`` installs, the diagnostics warnings name the caller of ``parse()``."""
 
     @snooper_to_methods()
     class TracedParser(JsonSchemaParser):
@@ -2128,21 +2291,23 @@ def test_dangling_ref_warning_names_the_caller_of_a_traced_parse(monkeypatch: py
     ids=["finish-pass", "module-pass"],
 )
 def test_pass_warnings_name_the_package_once_traced(
-    monkeypatch: pytest.MonkeyPatch, source: Path, input_file_type: InputFileType, options: dict[str, object]
+    monkeypatch: pytest.MonkeyPatch,
+    debug_tracing: ModuleType,
+    source: Path,
+    input_file_type: InputFileType,
+    options: dict[str, object],
 ) -> None:
     """Once the tracing that ``--debug`` installs has wrapped the pass functions, their warnings still name the caller.
 
     The frame they name is the package's frame that called the pass, and a filter on module ``parser.base`` matches
     them, as without the wrappers.
     """
-    pysnooper = pytest.importorskip("pysnooper")
-    monkeypatch.setattr(pysnooper.tracer, "DISABLED", False)
 
     @snooper_to_methods()
     class TracedParser(JsonSchemaParser):
         """A parser whose decoration wraps the functions of the pass modules, which stay wrapped."""
 
-    monkeypatch.setattr(pysnooper.tracer, "DISABLED", True)
+    monkeypatch.setattr(debug_tracing.tracer, "DISABLED", True)
 
     def warned(*filters: str) -> list[warnings.WarningMessage]:
         with warnings.catch_warnings(record=True) as records:
@@ -2176,8 +2341,6 @@ def test_auto_detected_dangling_ref_keeps_source_context_and_generated_output(
             output_path=output_file,
             input_file_type=None,
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "auto_dangling_local_ref.py",
             capsys=capsys,
         )
 
@@ -2210,8 +2373,6 @@ def test_out_of_range_array_ref_warns_and_generates_importable_fallback(
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "out_of_range_array_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
             importable_module_name="generated_out_of_range_array_ref",
@@ -2305,8 +2466,6 @@ def test_openapi_dangling_component_ref_warns(
             output_path=output_file,
             input_file_type="openapi",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "dangling_component_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
         )
@@ -2321,7 +2480,7 @@ fallback `Any` model. Enable this option in validation-sensitive workflows to st
 generation instead. Existing empty schemas remain valid references.""",
     input_schema="malformed/empty_local_ref.json",
     cli_args=["--strict-refs"],
-    golden_output="main/malformed/empty_local_ref.py",
+    golden_output="main/error_messages/empty_local_ref_is_valid_in_strict_mode.py",
 )
 def test_empty_local_ref_is_valid_in_strict_mode(
     output_file: Path,
@@ -2338,8 +2497,6 @@ def test_empty_local_ref_is_valid_in_strict_mode(
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--strict-refs", "--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MALFORMED_PATH / "empty_local_ref.py",
         capsys=capsys,
         assert_no_stderr=True,
         importable_module_name="generated_empty_local_ref",
@@ -2357,25 +2514,23 @@ def test_cross_file_empty_ref_is_valid_in_strict_mode(
         output_path=output_dir,
         input_file_type="jsonschema",
         extra_args=["--strict-refs", "--disable-timestamp"],
-        expected_directory=EXPECTED_MALFORMED_PATH / "cross_file_empty_ref",
         capsys=capsys,
         assert_no_stderr=True,
     )
 
 
 @pytest.mark.parametrize(
-    ("raw", "ref", "expected_file", "expected_warning"),
+    ("raw", "ref", "expected_warning"),
     [
-        ({"$defs": {"Empty": {}}}, "#/$defs/Empty", "parsed_empty_pointer.py", None),
-        ({"$defs": {}}, "#/$defs/Missing", "parsed_missing_pointer.py", r"Unresolved local \$ref"),
-        ({"items": [{}]}, "#/items/0", "parsed_array_pointer.py", None),
+        ({"$defs": {"Empty": {}}}, "#/$defs/Empty", None),
+        ({"$defs": {}}, "#/$defs/Missing", r"Unresolved local \$ref"),
+        ({"items": [{}]}, "#/items/0", None),
     ],
     ids=("empty", "missing", "array"),
 )
 def test_parse_deferred_json_pointer(
     raw: dict[str, YamlValue],
     ref: str,
-    expected_file: str,
     expected_warning: str | None,
 ) -> None:
     """Resolve deferred JSON pointers without conflating missing and empty schemas."""
@@ -2386,7 +2541,7 @@ def test_parse_deferred_json_pointer(
     else:
         with pytest.warns(DanglingRefWarning, match=expected_warning):
             parser._report_parse_diagnostics()
-    assert_output(f"{dump_templates(list(parser.results))}\n", EXPECTED_MALFORMED_PATH / expected_file)
+    assert_output(f"{dump_templates(list(parser.results))}\n", suffix=".py")
 
 
 def test_parse_file_object_path_without_resolved_ref() -> None:
@@ -2395,7 +2550,7 @@ def test_parse_file_object_path_without_resolved_ref() -> None:
     parser._parse_file({"$defs": {"Empty": {}}}, "Empty", [], ["$defs", "Empty"])
     assert_output(
         f"{dump_templates(list(parser.results))}\n",
-        EXPECTED_MALFORMED_PATH / "parsed_empty_pointer.py",
+        suffix=".py",
     )
 
 
@@ -2427,8 +2582,6 @@ def test_external_dangling_pointer_warns_and_preserves_output(
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "external_dangling_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
         )
@@ -2444,8 +2597,6 @@ def test_boolean_openapi_schema_remains_valid(
         output_path=output_file,
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MALFORMED_PATH / "boolean_schema_openapi.py",
         capsys=capsys,
         assert_no_stderr=True,
     )

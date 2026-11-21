@@ -13,25 +13,25 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.parser import _all_of_values, _lightweight_types
+from datamodel_code_generator.parser._all_of_values import AllOfValuesHost
 from datamodel_code_generator.parser._naming import Composed, composed_name
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
-from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
+from datamodel_code_generator.parser._schema_reading import _object_map_other_types, _with_ref_siblings
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.reference import unique_items_of
 from datamodel_code_generator.types import ANY, Types, build_union
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Iterator, Sequence
 
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
-    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
-    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._naming import Claim, NamingScope
-    from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
-    from datamodel_code_generator.reference import ModelResolver, Reference
-    from datamodel_code_generator.types import DataType, DataTypeManager
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
 __all__ = [
     "ObjectMapsHost",
@@ -39,6 +39,7 @@ __all__ = [
     "get_typed_additional_properties_field",
     "is_direct_key_schema",
     "legacy_object_maps",
+    "map_value_schema",
     "object_map_admits_null",
     "other_keys_schema",
     "parse_additional_properties_map",
@@ -56,7 +57,7 @@ __all__ = [
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 
 
-class ObjectMapsHost(Protocol):
+class ObjectMapsHost(AllOfValuesHost, Protocol):
     """The options, run state and hooks of the parser that the object maps read and write."""
 
     typed_nullable_maps: bool
@@ -71,32 +72,8 @@ class ObjectMapsHost(Protocol):
         """Whether the maps the patternProperties validator checks key and count by their patterns."""
 
     @property
-    def data_model_field_type(self) -> type[DataModelFieldBase]:
-        """The field type of the output."""
-
-    @property
     def data_model_type(self) -> type[DataModel]:
         """The model type of the output."""
-
-    @property
-    def data_type(self) -> type[DataType]:
-        """The data type class of the type manager."""
-
-    @property
-    def data_type_manager(self) -> DataTypeManager:
-        """The type manager of the output."""
-
-    @property
-    def field_constraints(self) -> bool:
-        """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
-
-    @property
-    def target_pydantic_version(self) -> TargetPydanticVersion | None:
-        """The Pydantic version the output targets, if configured."""
 
     @property
     def use_annotated(self) -> bool:
@@ -110,29 +87,14 @@ class ObjectMapsHost(Protocol):
     def use_typed_map_values_beside_other_types(self) -> bool:
         """Whether a map beside other types of its type array types its values."""
 
-    @property
-    def _legacy_object_maps(self) -> frozenset[str]:
-        """The rows of 0.86.0 object maps kept."""
-
     def _claiming(self, claim: Claim | None) -> NamingScope:
         """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records them."""
-
-    @property
-    def _output_model_context(self) -> OutputModelContext:
-        """The capabilities of the output model types."""
 
     @property
     def _types_nullable_map_values(self) -> bool:
         """Whether this run types the values of nullable maps."""
 
-    @staticmethod
-    def _property_names_forbids_all_keys(property_names: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
-        """Return whether a propertyNames schema admits no key."""
-
-    def get_ref_data_type(self, ref: str) -> DataType:
-        """Return the data type a reference names."""
-
-    def get_object_field(  # noqa: PLR0913
+    def get_object_field(
         self,
         *,
         field_name: str | None,
@@ -165,48 +127,16 @@ class ObjectMapsHost(Protocol):
     def _const_narrowed_enum(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         """Return the schema without the enum entries its const excludes."""
 
-    def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
-        """Return the conjoined pattern, warning about the patterns it leaves out."""
-
-    def _contains_false_schema(self, items: Iterable[JsonSchemaObject | bool]) -> bool:
-        """Return whether one of ``items`` is a false schema."""
-
-    def _get_python_type_flags(self, obj: JsonSchemaObject) -> dict[str, bool]:
-        """Return the container flags the x-python-type of a schema gives its data type."""
+    def _container_flags(self, obj: JsonSchemaObject, slot: ContainerSlot) -> dict[str, Any]:
+        """Return the container flags and class the x-python-type of a schema gives a data type in ``slot``."""
 
     def _get_x_python_type(self, obj: JsonSchemaObject) -> PythonTypeExpr | None:
         """Return the type expression of the x-python-type of a schema, if any."""
-
-    def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
-        """Return whether schema runtime validation owns patternProperties dispatch."""
 
     def _iter_non_object_union_types(
         self, name: str, obj: JsonSchemaObject, type_list: list[str], path: list[str], *, keep_constraints: bool = False
     ) -> Iterator[DataType]:
         """Yield the types of a type array other than object, keeping their constraints with ``keep_constraints``."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Return the schema object a reference names."""
-
-    def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
-        """Return the one primitive schema the parts of an allOf merge into, if they merge."""
-
-    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
-        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
-
-    def _null_facts(self, obj: JsonSchemaObject, site: NullSite) -> NullFacts:
-        """Return the null facts of a schema at a site."""
-
-    def _object_map_key_type(
-        self,
-        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-        row: Literal["pattern-map", "property-names-map", "extra-field"],
-        *,
-        pattern: str | None = None,
-        name: str = "",
-        path: Sequence[str] = (),
-    ) -> DataType | None:
-        """Return the key type of the dict of an object map, ``None`` for ``str`` keys."""
 
     def _parse_additional_properties_value(
         self,
@@ -226,23 +156,8 @@ class ObjectMapsHost(Protocol):
 
     def _pattern_value_alias(
         self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
-    ) -> DataType | None:
-        """Return the type alias that writes a patternProperties value with the constraints its type leaves out."""
-
-    def _schema_has_own_value_keywords(self, schema: JsonSchemaObject) -> bool:
-        """Return whether a schema has value keywords of its own."""
-
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw schema into a schema object."""
-
-    def _schema_requires_model_type(self, item: JsonSchemaObject) -> bool:
-        """Return whether a schema needs a model type."""
-
-    def _typed_extra_field_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Return the additionalProperties schema the typed extra field of the model built from ``obj`` types."""
-
-    def _without_allof_keywords(self, schema: JsonSchemaObject) -> JsonSchemaObject:
-        """Return a schema without its allOf."""
+    ) -> DataType:
+        """Return the type alias that writes a patternProperties value with its constraints, else ``value_type``."""
 
 
 def _with_null(data_type: DataType) -> DataType:
@@ -334,13 +249,13 @@ def get_typed_additional_properties_field(
     of the values is named after ``class_name``, the model's name, which L1 records as its claim (``Composed``) while
     it records naming frames.
     """
-    if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
+    if (additional_props := typed_extra_field_schema(parser, obj)) is None:
         return None
-    additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
+    additional_props = parser._add_nullable_combined_schema_branches(additional_props)
     additional_property_name = composed_name(class_name, "additional-property")
-    with parser._claiming(Composed(reference, "additional-property")) as claimed:  # noqa: SLF001
+    with parser._claiming(Composed(reference, "additional-property")) as claimed:
         extra_value_type = claimed.built(
-            parser._parse_additional_properties_value(  # noqa: SLF001
+            parser._parse_additional_properties_value(
                 additional_property_name,
                 [*path, "additionalProperties"],
                 obj,
@@ -348,7 +263,7 @@ def get_typed_additional_properties_field(
                 constrained_name=additional_property_name,
             )
         )
-    dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
+    dict_key = object_map_key_type(parser, obj.propertyNames, "extra-field")
 
     location = additional_props.schema_location
     field = parser.data_model_type.create_typed_extra_field(
@@ -363,22 +278,26 @@ def get_typed_additional_properties_field(
 def flatten_additional_properties_all_of(
     parser: ObjectMapsHost, obj: JsonSchemaObject
 ) -> list[JsonSchemaObject] | None:
-    """Resolve and flatten an additionalProperties allOf schema."""
+    """Resolve and flatten an additionalProperties allOf schema.
+
+    None where a member is not one primitive value, such as a reference to a schema with a cycle, which the merge
+    leaves a reference.
+    """
     schemas: list[JsonSchemaObject] = []
     pending = [obj]
     while pending:
         schema = pending.pop()
         if schema.ref:
-            if parser._load_ref_schema_object(schema.ref).is_boolean_schema_false:  # noqa: SLF001
+            if parser._load_ref_schema_object(schema.ref).is_boolean_schema_false:
                 return None
-            schema = parser._merge_ref_with_schema(schema)  # noqa: SLF001
-            if schema.ref:  # pragma: no cover
-                return None  # pragma: no cover
+            schema = parser._merge_ref_with_schema(schema)
+            if schema.ref:
+                return None
         if schema.title:
-            schema = parser._schema_object(schema.model_dump(exclude={"title"}, exclude_unset=True, by_alias=True))  # noqa: SLF001
+            schema = parser._schema_object(schema.model_dump(exclude={"title"}, exclude_unset=True, by_alias=True))
         if schema.allOf:
-            own_schema = parser._without_allof_keywords(schema)  # noqa: SLF001
-            if parser._schema_has_own_value_keywords(own_schema):  # noqa: SLF001
+            own_schema = _all_of_values.without_allof_keywords(parser, schema)
+            if _all_of_values.schema_has_own_value_keywords(parser, own_schema):
                 pending.append(own_schema)
             for item in reversed(schema.allOf):
                 match item:
@@ -390,12 +309,12 @@ def flatten_additional_properties_all_of(
                         pending.append(item)
             continue
         if (
-            parser._schema_requires_model_type(schema)  # noqa: SLF001
+            _all_of_values.schema_requires_model_type(parser, schema)
             or any((schema.anyOf, schema.oneOf, schema.enum))
             or "const" in schema.extras
             or isinstance(schema.type, list)
         ):
-            return None  # pragma: no cover
+            return None
         schemas.append(schema)
     return schemas
 
@@ -406,12 +325,13 @@ def _merge_additional_properties_all_of(parser: ObjectMapsHost, obj: JsonSchemaO
         return None
 
     schema_types = {schema.type for schema in schemas if schema.type}
-    if not schema_types or not schema_types <= {"integer", "number", "string"}:  # pragma: no cover
-        return None  # pragma: no cover
-    if len(schema_types) > 1 and schema_types != {"integer", "number"}:  # pragma: no cover
-        return None  # pragma: no cover
-    if (merged_schema := parser._merge_primitive_schemas_for_allof(schemas)) is None:  # pragma: no cover  # noqa: SLF001
-        return None  # pragma: no cover
+    if not schema_types or not schema_types <= {"integer", "number", "string"}:
+        return None
+    if len(schema_types) > 1 and schema_types != {"integer", "number"}:
+        return None
+    merged_schema = parser._merge_primitive_schemas_for_allof(schemas)
+    if merged_schema is None:  # pragma: no cover - not proven unreachable: members the merge refuses
+        return None  # pragma: no cover - not proven unreachable: members the merge refuses
 
     metadata = {field: getattr(obj, field) for field in _ALL_OF_METADATA_FIELDS if field in obj.model_fields_set}
     if obj.extras:
@@ -425,14 +345,14 @@ def parse_additional_properties_map(
     """Parse a map whose values follow the additionalProperties schema."""
     return parser.data_type(
         data_types=[
-            parser._parse_additional_properties_value(  # noqa: SLF001
+            parser._parse_additional_properties_value(
                 name,
                 get_special_path("additionalProperties", path),
                 obj,
                 additional_properties=additional_properties,
             )
         ],
-        **(parser._get_python_type_flags(obj) or {"is_dict": True}),  # noqa: SLF001
+        **parser._container_flags(obj, "dict"),
     )
 
 
@@ -459,7 +379,7 @@ def typed_nullable_map_value_schema(parser: ObjectMapsHost, obj: JsonSchemaObjec
     """Return the value schema of a nullable map when this run types the values of nullable maps."""
     return (
         _nullable_map_value_schema(obj, beside_other_types=parser.use_typed_map_values_beside_other_types)
-        if parser._types_nullable_map_values  # noqa: SLF001
+        if parser._types_nullable_map_values
         else None
     )
 
@@ -500,11 +420,11 @@ def parse_pattern_properties(
         parser, name, values, keys_checked=lambda: _pattern_keys_checked(parser, property_names)
     )
     if (
-        "legacy-map-union-of-dicts" in parser._legacy_object_maps  # noqa: SLF001
+        "legacy-map-union-of-dicts" in parser._legacy_object_maps
         and value_types
         and (
             len(groups := _pattern_value_groups(patterns, value_types, [value.data_type for value in values])) == 1
-            or parser._output_model_context.decodes_value_unions  # noqa: SLF001
+            or parser._output_model_context.decodes_value_unions
         )
     ):
         return build_union(
@@ -564,14 +484,13 @@ def _constrained_pattern_values(
     """
     value_types = [value.data_type for value in values]
     if (
-        not (parser._output_model_context.decodes_value_unions or len(value_types) + len(beside) == 1)  # noqa: SLF001
+        not (parser._output_model_context.decodes_value_unions or len(value_types) + len(beside) == 1)
         or any(_is_plain_any(value_type) for value_type in (*value_types, *beside))
         or not keys_checked()
     ):
         return value_types
     return [
-        parser._pattern_value_alias(name, cast("JsonSchemaObject", value.schema), value.data_type, value.path)  # noqa: SLF001
-        or value.data_type
+        parser._pattern_value_alias(name, cast("JsonSchemaObject", value.schema), value.data_type, value.path)
         for value in values
     ]
 
@@ -590,11 +509,11 @@ def _pattern_keys_checked(
         return False
     if not isinstance(property_names, JsonSchemaObject):
         return True
-    schema = parser._merge_ref_with_schema(property_names) if property_names.ref else property_names  # noqa: SLF001
+    schema = parser._merge_ref_with_schema(property_names) if property_names.ref else property_names
     return _property_name_key_row(parser, schema) == "string"
 
 
-def parse_pattern_map(  # noqa: PLR0913, PLR0917
+def parse_pattern_map(  # noqa: PLR0917
     parser: ObjectMapsHost,
     name: str,
     pattern_properties: dict[str, JsonSchemaObject | bool],
@@ -607,7 +526,7 @@ def parse_pattern_map(  # noqa: PLR0913, PLR0917
     The dict's keys are those of ``property_names`` and its value joins the value of ``other_keys`` last.
     """
     values = parse_pattern_values(parser, name, pattern_properties, path)
-    other_keys_type = parser._parse_additional_properties_value(  # noqa: SLF001
+    other_keys_type = parser._parse_additional_properties_value(
         name,
         get_special_path("additionalProperties", path),
         other_keys,
@@ -646,8 +565,8 @@ def pattern_map_type(
     return parser.data_type(
         data_types=value_types,
         is_dict=True,
-        dict_key=parser._object_map_key_type(  # noqa: SLF001
-            property_names, "pattern-map", pattern="|".join(patterns) if joins_patterns else None
+        dict_key=object_map_key_type(
+            parser, property_names, "pattern-map", pattern="|".join(patterns) if joins_patterns else None
         ),
     )
 
@@ -660,13 +579,24 @@ def other_keys_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSche
     ``legacy-map-pattern-keys-only`` is kept; otherwise the map admits the keys of its patterns only.
     """
     if (
-        "legacy-map-pattern-keys-only" not in parser._legacy_object_maps  # noqa: SLF001
+        "legacy-map-pattern-keys-only" not in parser._legacy_object_maps
         and isinstance(additional_properties := obj.additionalProperties, JsonSchemaObject)
-        and parser._output_model_context.decodes_value_unions  # noqa: SLF001
+        and parser._output_model_context.decodes_value_unions
         and _schema_assertions(additional_properties)
     ):
         return additional_properties
     return None
+
+
+def map_value_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+    """Return the schema that types the values of the object map built from ``obj``, or None.
+
+    Beside patternProperties it types the keys no pattern matches (``_other_keys_schema``); without them it is a
+    schema-valued additionalProperties. The map builder (``_parse_object_map``) and the request/response walk read it.
+    """
+    if obj.patternProperties:
+        return other_keys_schema(parser, obj)
+    return obj.additionalProperties if isinstance(obj.additionalProperties, JsonSchemaObject) else None
 
 
 def is_direct_key_schema(
@@ -675,19 +605,18 @@ def is_direct_key_schema(
 ) -> bool:
     """Return whether propertyNames is a schema that constrains keys without a ``$ref`` or a combined schema."""
     match property_names:
-        case JsonSchemaObject(ref=None, anyOf=[], oneOf=[], allOf=[]) as property_names if (
-            not type(parser)._property_names_forbids_all_keys(property_names)  # noqa: SLF001
-            and (
-                (
-                    bool(x_python_type := property_names.extras.get("x-python-type"))
-                    and (isinstance(x_python_type, str) or parser._get_x_python_type(property_names) is not None)  # noqa: SLF001
-                )
-                or property_names.pattern is not None
-                or property_names.minLength is not None
-                or property_names.maxLength is not None
-                or any(isinstance(value, str) for value in property_names.enum)
-                or isinstance(property_names.extras.get("const"), str)
+        case JsonSchemaObject(ref=None, anyOf=[], oneOf=[], allOf=[]) as property_names if not type(
+            parser
+        )._property_names_forbids_all_keys(property_names) and (
+            (
+                bool(x_python_type := property_names.extras.get("x-python-type"))
+                and (isinstance(x_python_type, str) or parser._get_x_python_type(property_names) is not None)
             )
+            or property_names.pattern is not None
+            or property_names.minLength is not None
+            or property_names.maxLength is not None
+            or any(isinstance(value, str) for value in property_names.enum)
+            or isinstance(property_names.extras.get("const"), str)
         ):
             return True
     return False
@@ -699,7 +628,7 @@ def object_map_admits_null(parser: ObjectMapsHost, obj: JsonSchemaObject) -> boo
     ``nullable: true`` counts under ``--strict-nullable``, the rule ``_get_data_type`` applies to other types,
     unless a combined schema copied it into its branch: the union of the branches admits that null.
     """
-    return bool(parser._null_facts(obj, "object-map").admits_null)  # noqa: SLF001
+    return bool(parser._null_facts(obj, "object-map").admits_null)
 
 
 def parse_property_name_key_schema(  # noqa: PLR0911
@@ -726,12 +655,10 @@ def parse_property_name_key_schema(  # noqa: PLR0911
             return parser.get_ref_data_type(cast("str", property_names.ref))
         case "enum":
             string_enums = [
-                value
-                for value in parser._const_narrowed_enum(property_names).enum  # noqa: SLF001
-                if isinstance(value, str)
+                value for value in parser._const_narrowed_enum(property_names).enum if isinstance(value, str)
             ]
             if string_enums:
-                return parser.data_type(literals=string_enums)
+                return parser._with_open_enum_type(property_names, parser.data_type(literals=string_enums))
             return parser.data_type_manager.get_data_type(Types.string)
         case "const":
             return parser.data_type(literals=[property_names.extras["const"]])
@@ -744,10 +671,19 @@ def parse_property_name_key_schema(  # noqa: PLR0911
         kwargs.update(
             (key, value) for key in ("minLength", "maxLength") if (value := getattr(property_names, key)) is not None
         )
-        kwargs.update(use_annotated=parser.use_annotated, target_pydantic_version=parser.target_pydantic_version)
-        manager = parser.data_type_manager
-        return manager.get_data_type(Types.string, **kwargs) if member else manager.get_map_key_str_type(**kwargs)
+        return _map_key_str_type(parser, member=member, **kwargs)
     return parser.data_type_manager.get_data_type(Types.string)
+
+
+def _map_key_str_type(parser: ObjectMapsHost, *, member: bool = False, **keywords: Any) -> DataType:
+    """Return the string type of map keys that ``keywords`` (pattern, lengths) constrain, as the output writes it.
+
+    A ``member`` of a union of key types is a constrained string; the keys themselves take the map key type of the
+    data type manager. Both read ``--use-annotated`` and the target Pydantic version.
+    """
+    keywords.update(use_annotated=parser.use_annotated, target_pydantic_version=parser.target_pydantic_version)
+    manager = parser.data_type_manager
+    return manager.get_data_type(Types.string, **keywords) if member else manager.get_map_key_str_type(**keywords)
 
 
 def _property_name_key_row(
@@ -758,7 +694,7 @@ def _property_name_key_row(
     The first that applies: its x-python-type of ``int``, ``bool`` or ``str``, its $ref, its enum, its string const,
     else a string that its pattern and lengths constrain (``string``).
     """
-    if (python_type := parser._get_x_python_type(property_names)) is not None:  # noqa: SLF001
+    if (python_type := parser._get_x_python_type(property_names)) is not None:
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             python_type_expr_base_name,
         )
@@ -784,7 +720,7 @@ def parse_string_property_name_union(
     """
     if (
         schema.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
-        or type(parser)._property_names_forbids_all_keys(schema)  # noqa: SLF001
+        or type(parser)._property_names_forbids_all_keys(schema)
         or (
             # Newly enforced patterns must work without changing the regex engine.
             # Keep complex patterns on their existing path, including Pydantic 2.0.
@@ -805,7 +741,7 @@ def parse_string_property_name_union(
                 discard_nonstring
                 and isinstance(branch, JsonSchemaObject)
                 and not branch.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
-                and type(parser)._property_names_forbids_all_keys(branch)  # noqa: SLF001
+                and type(parser)._property_names_forbids_all_keys(branch)
             )
         )
     ]
@@ -829,7 +765,7 @@ def parse_string_property_name_union(
     return build_union(parser.data_type, data_types), False
 
 
-def parse_property_names(  # noqa: PLR0913, PLR0917
+def parse_property_names(  # noqa: PLR0917
     parser: ObjectMapsHost,
     name: str,
     property_names: JsonSchemaObject | bool,  # noqa: FBT001
@@ -843,7 +779,7 @@ def parse_property_names(  # noqa: PLR0913, PLR0917
     """
     # Determine value type from additionalProperties
     if isinstance(additional_properties, JsonSchemaObject):
-        value_type = parser._parse_additional_properties_value(  # noqa: SLF001
+        value_type = parser._parse_additional_properties_value(
             name,
             get_special_path("propertyNames/value", path),
             parent_obj or additional_properties,
@@ -852,13 +788,9 @@ def parse_property_names(  # noqa: PLR0913, PLR0917
     else:
         value_type = parser.data_type_manager.get_data_type(Types.any)
 
-    key_type = parser._object_map_key_type(property_names, "property-names-map", name=name, path=path)  # noqa: SLF001
+    key_type = object_map_key_type(parser, property_names, "property-names-map", name=name, path=path)
 
-    dict_flags: dict[str, bool] = {"is_dict": True}
-    if parent_obj:  # pragma: no branch
-        python_type_flags = parser._get_python_type_flags(parent_obj)  # noqa: SLF001
-        if python_type_flags:  # pragma: no cover
-            dict_flags = python_type_flags
+    dict_flags = parser._container_flags(parent_obj, "dict") if parent_obj else {"is_dict": True}
 
     return parser.data_type(
         data_types=[value_type],
@@ -871,18 +803,17 @@ def typed_extra_field_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> J
     """Return the additionalProperties schema the typed extra field of the model built from ``obj`` types.
 
     None where the output model has no typed extra field, additionalProperties is no schema, the patternProperties
-    rules of --generate-schema-validators type it (``_pattern_rule_additional_properties``) or it is an allOf with a
-    false schema. A $ref with sibling keywords is read merged with them.
+    rules of --generate-schema-validators type it (``_schema_validators.pattern_rule_additional_properties``) or it is
+    an allOf with a false schema. A $ref with sibling keywords is read merged with them.
     """
     if (
         parser.data_model_type.TYPED_EXTRA_FIELD_NAME is None
         or not isinstance(additional_props := obj.additionalProperties, JsonSchemaObject)
-        or parser._has_pattern_properties_validator(obj)  # noqa: SLF001
+        or parser._has_pattern_properties_validator(obj)
     ):
         return None
-    if _merges_ref_siblings(additional_props):
-        additional_props = parser._merge_ref_with_schema(additional_props)  # noqa: SLF001
-    if additional_props.allOf and parser._contains_false_schema(additional_props.allOf):  # noqa: SLF001
+    additional_props = _with_ref_siblings(parser, additional_props)
+    if additional_props.allOf and _lightweight_types.contains_false_schema(parser, additional_props.allOf):
         return None
     return additional_props
 
@@ -911,14 +842,14 @@ def get_additional_properties_root_field(
         "propertyNames": obj.propertyNames,
         "additionalProperties": obj.additionalProperties,
     }
-    if parser._has_pattern_properties_validator(obj):  # noqa: SLF001
-        if "legacy-validated-pattern-maps" not in parser._legacy_object_maps:  # noqa: SLF001
-            key_type = parser._object_map_key_type(obj.propertyNames, "pattern-map")  # noqa: SLF001
+    if parser._has_pattern_properties_validator(obj):
+        if "legacy-validated-pattern-maps" not in parser._legacy_object_maps:
+            key_type = object_map_key_type(parser, obj.propertyNames, "pattern-map")
             counts["patternProperties"] = obj.patternProperties
     else:
         match obj.additionalProperties:
             case JsonSchemaObject() as additional_properties:
-                value_type = parser._parse_additional_properties_value(  # noqa: SLF001
+                value_type = parser._parse_additional_properties_value(
                     name,
                     [*path, "additionalProperties"],
                     obj,
@@ -928,12 +859,12 @@ def get_additional_properties_root_field(
     map_type = with_type_origin(parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type), location)
     field = parser.get_object_field(
         field_name=None,
-        field=parser._schema_object(counts),  # noqa: SLF001
+        field=parser._schema_object(counts),
         required=True,
         original_field_name=None,
         field_type=(
             _with_null(map_type)
-            if "legacy-map-null-left-to-field" not in parser._legacy_object_maps and object_map_admits_null(parser, obj)  # noqa: SLF001
+            if "legacy-map-null-left-to-field" not in parser._legacy_object_maps and object_map_admits_null(parser, obj)
             else map_type
         ),
         alias=None,
@@ -942,7 +873,7 @@ def get_additional_properties_root_field(
     return field
 
 
-def object_map_key_type(  # noqa: PLR0913
+def object_map_key_type(
     parser: ObjectMapsHost,
     property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
     row: Literal["pattern-map", "property-names-map", "extra-field"],
@@ -972,30 +903,22 @@ def object_map_key_type(  # noqa: PLR0913
             schema.pattern = (
                 pattern
                 if schema.pattern is None
-                else parser._conjoined_pattern(  # noqa: SLF001
+                else parser._conjoined_pattern(
                     (schema.pattern, pattern),
                     named_location(property_names.schema_location, "propertyNames"),
                 )
             )
         if schema.ref:
-            schema = parser._merge_ref_with_schema(schema)  # noqa: SLF001
+            schema = parser._merge_ref_with_schema(schema)
     elif row == "pattern-map":
-        return (
-            None
-            if pattern is None
-            else parser.data_type_manager.get_map_key_str_type(
-                pattern=pattern,
-                use_annotated=parser.use_annotated,
-                target_pydantic_version=parser.target_pydantic_version,
-            )
-        )
+        return None if pattern is None else _map_key_str_type(parser, pattern=pattern)
     elif row == "property-names-map":
         schema = cast("JsonSchemaObject | bool", property_names)
-        if isinstance(schema, JsonSchemaObject) and _merges_ref_siblings(schema):
-            schema = parser._merge_ref_with_schema(schema)  # noqa: SLF001
+        if isinstance(schema, JsonSchemaObject):
+            schema = _with_ref_siblings(parser, schema)
         if isinstance(schema, JsonSchemaObject) and (schema.anyOf or schema.oneOf or schema.allOf):
             return with_type_origin(
-                parser._parse_combined_property_names_key_type(name, schema, [*path]),  # noqa: SLF001
+                parser._parse_combined_property_names_key_type(name, schema, [*path]),
                 schema.schema_location,
             )
     elif is_direct_key_schema(parser, property_names):
@@ -1016,6 +939,6 @@ def object_map_type_union(
         return None
     return build_union(
         parser.data_type,
-        [map_type, *parser._iter_non_object_union_types(name, obj, type_list, path, keep_constraints=True)],  # noqa: SLF001
+        [map_type, *parser._iter_non_object_union_types(name, obj, type_list, path, keep_constraints=True)],
         nullable=object_map_admits_null(parser, obj),
     )

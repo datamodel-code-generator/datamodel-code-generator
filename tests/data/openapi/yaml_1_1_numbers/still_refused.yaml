@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Clip:
+      type: object
+      properties:
+        timecode:
+          type: string
+          pattern: 00:00:00.00
+    Code:
+      type: string
+      format: guidish
+    Name:
+      type: string
+      maxLength: ten

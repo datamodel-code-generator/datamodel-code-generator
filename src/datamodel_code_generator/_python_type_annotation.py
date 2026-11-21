@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias, TypeGuard
 
 from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._module_paths import dotted_name
@@ -13,7 +13,7 @@ from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_python_na
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Hashable, Iterator
 
 
 class PythonTypeExpr:
@@ -359,9 +359,19 @@ def is_union_python_type_expr(expression: PythonTypeExpr) -> bool:
     )
 
 
-def is_literal_python_type_expr(expression: PythonTypeExpr) -> bool:
-    """Return whether an expression subscripts ``Literal``, by its base's last name."""
-    return isinstance(expression, PythonTypeSubscript) and python_type_expr_base_name(expression) == "Literal"
+def _is_literal_base(base: PythonTypeExpr) -> bool:
+    """Return whether a subscript of ``base`` is a ``Literal``: ``base``, not a subscript, names it by its last name.
+
+    The codec admits string constants only in such a subscript; the walks of ``Literal`` values read the same ones.
+    This is a security gate: elsewhere a string constant would be written as a quoted forward reference, which
+    Pydantic evaluates with ``eval()`` in ``model_rebuild()``, a code-execution sink. It must never accept more.
+    """
+    return not isinstance(base, PythonTypeSubscript) and python_type_expr_base_name(base) == "Literal"
+
+
+def is_literal_python_type_expr(expression: PythonTypeExpr) -> TypeGuard[PythonTypeSubscript]:
+    """Return whether an expression subscripts ``Literal`` (``_is_literal_base``)."""
+    return isinstance(expression, PythonTypeSubscript) and _is_literal_base(expression.base)
 
 
 _NameForm: TypeAlias = Literal["terminal", "qualified", "head"]
@@ -485,11 +495,31 @@ def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
             yield from iter_literal_members(child)
 
 
-def _flat_literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
+def iter_union_choices(expression: PythonTypeExpr) -> Iterator[Hashable]:
+    """Yield the types other than None that an annotation joins in its unions, the unions it nests spread.
+
+    An ``Annotated`` type that annotates a union joins the choices of that union; one that annotates another type is
+    a choice of its own. A ``Literal`` yields the set of its values, so equal ``Literal`` types, as Python compares
+    them (in any order), are one choice.
+    """
+    if is_union_python_type_expr(expression):
+        for argument in python_type_expr_arguments(expression):
+            yield from iter_union_choices(argument)
+    elif _annotation_metadata(expression) and is_union_python_type_expr(
+        annotated := python_type_expr_arguments(expression)[0]
+    ):
+        yield from iter_union_choices(annotated)
+    elif is_literal_python_type_expr(expression):
+        yield frozenset(literal_values(expression.arguments))
+    elif expression != python_type_name("None"):
+        yield expression
+
+
+def literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
     """Yield the values of a ``Literal``, those of a ``Literal`` it nests included."""
     for argument in arguments:
-        if isinstance(argument, PythonTypeSubscript) and is_literal_python_type_expr(argument):
-            yield from _flat_literal_values(argument.arguments)
+        if is_literal_python_type_expr(argument):
+            yield from literal_values(argument.arguments)
         else:
             yield argument
 
@@ -509,8 +539,8 @@ def _literal_values_held(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
 
     An ``Annotated`` type holds the values of the type it annotates.
     """
-    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
-        yield from _flat_literal_values(expression.arguments)
+    if is_literal_python_type_expr(expression):
+        yield from literal_values(expression.arguments)
     elif _annotation_metadata(expression):
         yield from _literal_values_held(python_type_expr_arguments(expression)[0])
     elif is_union_python_type_expr(expression):
@@ -526,6 +556,12 @@ def _holds_bytes_and_str(expression: PythonTypeExpr) -> bool:
     return bytes in types and str in types
 
 
+def _held_children(expression: PythonTypeExpr) -> tuple[tuple[PythonTypeExpr, ...] | None, int]:
+    """Return the children of an expression and how many hold its values: all but the metadata of ``Annotated``."""
+    children = _children(expression, "all")
+    return children, 0 if children is None else len(children) - len(_annotation_metadata(expression))
+
+
 def bytes_and_str_literal(expression: PythonTypeExpr) -> PythonTypeExpr | None:
     """Return the first ``Literal`` of a type, or union of ``Literal`` members, that holds both bytes and str values.
 
@@ -533,8 +569,8 @@ def bytes_and_str_literal(expression: PythonTypeExpr) -> PythonTypeExpr | None:
     is a member of. None means that no part of the type holds both; the metadata of an ``Annotated`` type are not
     searched, as msgspec reads no value from them.
     """
-    children = _children(expression, "all") or ()
-    for child in children[: len(children) - len(_annotation_metadata(expression))]:
+    children, held = _held_children(expression)
+    for child in (children or ())[:held]:
         if (found := bytes_and_str_literal(child)) is not None:
             return found
     return expression if _holds_bytes_and_str(expression) else None
@@ -547,7 +583,7 @@ def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
     ``Literal`` are flattened, and a value equal to an earlier one of its ``Literal`` is dropped. The metadata of an
     ``Annotated`` type stay as written.
     """
-    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+    if is_literal_python_type_expr(expression):
         return PythonTypeSubscript(
             expression.base,
             tuple(
@@ -555,13 +591,13 @@ def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
                     PythonTypeLiteralValue(member.value.decode("utf-8", "backslashreplace"))
                     if isinstance(member, PythonTypeLiteralValue) and isinstance(member.value, bytes)
                     else member
-                    for member in _flat_literal_values(expression.arguments)
+                    for member in literal_values(expression.arguments)
                 )
             ),
         )
-    if (children := _children(expression, "all")) is None:
+    children, held = _held_children(expression)
+    if children is None:
         return expression
-    held = len(children) - len(_annotation_metadata(expression))
     return _with_children(
         expression, "all", children, (*map(literal_values_as_text, children[:held]), *children[held:])
     )
@@ -585,8 +621,8 @@ def write_refused_literal_values(
     def write(node: PythonTypeExpr, *, held: bool = True) -> PythonTypeExpr:
         if held and bytes in refused and _holds_bytes_and_str(node):
             return node
-        if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
-            members = tuple(_flat_literal_values(node.arguments))
+        if is_literal_python_type_expr(node):
+            members = tuple(literal_values(node.arguments))
             written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
             if not written:
                 return node
@@ -597,9 +633,10 @@ def write_refused_literal_values(
                 *dict.fromkeys(python_type_name(type(m.value).__name__) for m in written),
             )
             return items[0] if len(items) == 1 else PythonTypeUnion(items)
-        if (children := _children(node, "all")) is None:
+        children, values_held = _held_children(node)
+        if children is None:
             return node
-        values_held = len(children) - len(_annotation_metadata(node)) if held else 0
+        values_held = values_held if held else 0
         return _with_children(
             node,
             "all",
@@ -633,6 +670,8 @@ __all__ = [
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
+    "iter_union_choices",
+    "literal_values",
     "literal_values_as_text",
     "parse_python_type_annotation",
     "python_type_expr_arguments",

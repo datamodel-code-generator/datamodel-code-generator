@@ -367,7 +367,10 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
         warnings.simplefilter("always", UserWarning)
         _generate(case, backend, root, package)
     sys.path.insert(0, str(root))
-    lines = [f"# {case.get('expected', case_name)} {backend}", *(f"  {line}" for line in generator_warnings(caught))]
+    lines = [
+        f"# {case.get('expected', case_name)} {backend}",
+        *(f"  {line.replace(str(root), '<root>')}" for line in generator_warnings(caught)),
+    ]
     try:
         scenario(import_generated_client(package), lines)
     finally:

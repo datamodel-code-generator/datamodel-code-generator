@@ -1,0 +1,4 @@
+[
+  "seed: valid",
+  "minItems [0]: invalid"
+]

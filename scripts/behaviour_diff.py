@@ -1,16 +1,34 @@
-"""Classify every output change between a release and a checkout by its behaviour.
+"""Classify every output change between a release or a git revision and a checkout by its behaviour.
 
 Usage:
   python scripts/behaviour_diff.py gate [BASE] [CANDIDATE] [--tier pr|nightly|release] [--types T1,T2]
-      [--shard I/N] [-j N] [--check] [--json OUT]
+      [--shard I/N] [-j N] [--check] [--json OUT] [--verdicts OUT] [--identity]
 
-BASE is a released version (default: the latest tag). CANDIDATE is a checkout path (default: this checkout; its
-`.venv` is used when it has one) or a git revision of this repository, which is extracted with `git archive` and run
-from this interpreter through PYTHONPATH. The release is installed into a cached environment pinned to the
-candidate's dependency versions, as scripts/compare_release.py does.
+BASE is a released version (default: the latest tag) or a git revision of the candidate's repository (this
+repository for a candidate revision). CANDIDATE is a checkout path (default: this checkout; its `.venv` is used when
+it has one) or a git revision of this repository. scripts/compare_release.py resolves both (`resolve_base`,
+`source_tree`): a revision is extracted with `git archive` and run from the candidate's interpreter through
+PYTHONPATH; a release is installed into a cached environment pinned to the candidate's dependency versions. The
+`[[base_skip]]` entries of the allowlist file apply to a release base given as a version only (not `refs/tags/<tag>`).
+
+`--identity` compares without the allowlist and implies `--check`: any difference in a cell's output bytes, warnings
+(category, message, module), handled exceptions, messages (errors by class and message, without traceback frames),
+exit status or refused single-file attempt is a violation, and so is every option or option value one side has and
+the other lacks and every cell that uses one the candidate has and the base lacks. A cell the same on both sides is
+`same`, or `both-fail` where both sides failed alike; such a cell is not compared where the timeout or the memory cap
+stopped both sides or where every cell of its input fails on both sides. Identity also fails where its evidence
+compared too little (`compare_release.Evidence`): no input group, an input group (the inputs' directory, files or
+directories, output model type and option set; a cli-doc example, payload case or project job by its kind) none of
+whose cells compared (generated on both sides with all output in the run's directory), and, against a git revision, a
+changed code object (`scripts/_change_units.py`: what the candidate adds on its side, what it removes on the base's)
+that no compared cell ran on its side (on lines a test ran, by `--test-coverage`, or not run), that is
+unmeasurable, or that the Python (before 3.12) cannot measure. A sharded identity run is refused: a shard cannot judge
+the whole run. Every gate prints these input groups and the cells the candidate refuses and the base generated (the
+single output file included). Refactoring steps use it against their base commit.
 
 A cell is one input x output model type x option set. Tiers:
-  pr       inputs changed since BASE, inputs named by the allowlist and a fixed sample of 300 fixtures,
+  pr       inputs changed since BASE (with `--allowlist`, also the inputs its `[[accepted]]` entries name) and a
+           fixed sample of 300 fixtures,
            x {pydantic_v2.BaseModel, msgspec.Struct}, default options
   nightly  every fixture and payload case x 5 types (default options), every fixture x the released presets,
            every fixture x 5 types x each option set of OPTION_SETS, every `@pytest.mark.cli_doc` example, and the
@@ -23,21 +41,32 @@ tree; each module of a package is also imported first in a process of its own) w
 and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts each cell into one class. A cell
 that uses an option, value or input type BASE does not have is `opt-in` and is not generated.
 
-Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
-`input` (a glob, or a list of globs), optional `backends`, `aspects` and `match` (regex on the change line), `reason`,
-`decision` (the public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`.
-A `[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
-`reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
-`base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails
-on a `[[base_skip]]` entry without those keys, and, in a run of the whole tier, on one that covers no cell.
-With `--check` the run fails on a violation, on an entry without such a decision and on a table whose base is
-neither BASE nor an older release (an older table accepts nothing: BASE contains its changes); in the nightly and
-release tiers also on a stale entry: one that accepted no change in a run that has a cell it covers, or, in a run of
-the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
-`--shard I/N` runs the cells of shard I by input hash; the cells an `[[accepted]]` or `[[base_skip]]` entry covers
-all run in one shard with those of each entry that shares a cell with them, the shard of their first input. So the N
-shards report the stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also
-the entries that cover no cell. `--select` narrows the inputs, so a selection may leave an entry's changes out.
+Without `--identity` the change records judge every cell whose facts (`compare_release.cell_facts`) differ. A PR run
+(BASE a revision) compares the merge base of BASE and the candidate and judges by the records whose `id` that base
+lacks; a PR that changes nothing under src/ passes without generating (a record with `[[change.cells]]` fails then),
+and one that changes the gate's own files also runs the base's gate. A release run (BASE a release version or
+`refs/tags/<tag>`) judges by the fragments the tag lacks. Presets come from the latest tag. The run adds the cells the
+records' selectors name and, in a PR run, the nightly cells of the inputs it changes; a differing cell's head runs
+twice, and the records that cover it must admit every kind of its difference with their categories' evidence
+(`_behaviour_classify.judge`: payload cells, rule (b), companion cells). Every selector must match a differing cell
+(in a release run, staleness in a run of the whole nightly or release tier); the stored modules an `output-text`
+record covers, and the changed labels a `harness` record covers in a src PR, are proved by signatures, rule (b) and
+values drawn from their models' schemas (`_stored-module`); `--verdicts OUT` (shard 1) writes the verdicts on those
+`harness` labels by their base and head contents, which `declared_changes.py check --verdicts OUT` reads. The
+report lists the uncovered cells with a starting `[[change.cells]]` block.
+
+scripts/behaviour_diff_allowlist.toml holds `base` and `[[base_skip]]` entries (a test keeps it free of `[[accepted]]`
+entries: the records judge changes, see docs/development-contributing.md "Declared changes"). A `[[base_skip]]` entry
+(`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`, `reason`, `issue`) names an
+input a release is known to hang on: the release does not run for those cells, which are `base-skipped` once the
+candidate generated and imported (a candidate failure is a violation). `--check` also fails on a `[[base_skip]]` entry
+without those keys, and, in a run of the whole tier, on one that names BASE (`bases`) and covers no cell (an entry for
+another release is not judged), and, where the table has `[[accepted]]` entries, on a table whose base is neither BASE
+nor an older release. The PR tier is a sample, so it never judges staleness.
+`--shard I/N` runs the cells of shard I by input hash; the cells a `[[base_skip]]` entry covers all run in one shard
+with those of each entry that shares a cell with them, the shard of their first input. So the N shards report the
+stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also the entries that
+cover no cell. `--select` narrows the inputs, so a selection may leave an entry's cells out.
 
 `record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
 `merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
@@ -48,10 +77,12 @@ from __future__ import annotations
 import argparse
 import ast
 import contextlib
+import datetime as dt
 import fnmatch
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -60,32 +91,58 @@ import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass, field, replace
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING, Any, TypedDict
+
+import tomllib
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
+
+    from scripts._change_records import CellSelector, Record
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts import compare_release  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts import compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
     CLASSES,
+    LINE_ASPECT,
     SIGNATURE_FAILED,
     Allowlist,
+    CellEvidence,
     Side,
+    SourceModule,
     Verdict,
+    change_lines,
     classify_base_skipped,
     classify_cell,
+    covers,
     diff,
+    judge,
+    kinds,
+    payload_changes,
+    probe_changes,
+    rule_b,
+    selector_paths,
 )
-from scripts._behaviour_report import compare_records, redact, summarize_gate, version_key  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_report import compare_records, redact, summarize_gate  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-of-file]
+    PRESET_OPTION,
+    Category,
+    owner_of,
+    parse_entry,
+    read_records,
+    rule_problems,
+    split_options,
+    version_key,
+)
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
 DEFAULT_ALLOWLIST = Path(__file__).with_name("behaviour_diff_allowlist.toml")
+MIGRATION_DATA = ROOT / "docs" / "data" / "migration"
 FIXTURE_DIRS = (
     ("jsonschema", (".json", ".yaml", ".yml"), True),
     ("openapi", (".json", ".yaml", ".yml"), True),
@@ -97,6 +154,8 @@ FIXTURE_DIRS = (
 )
 PR_TYPES = ("pydantic_v2.BaseModel", "msgspec.Struct")
 PR_SAMPLE = 300
+SELECTOR_CELL_LIMIT = 1500
+"""The most cells one `[[change.cells]]` selector may name; a whole PR run of the gate's own tier is about this size."""
 MODEL_OUTPUT_TYPES = {
     "pydantic_v2": "pydantic_v2.BaseModel",
     "pydantic_v2_dataclass": "pydantic_v2.dataclass",
@@ -109,7 +168,9 @@ PRESET_PYTHON_OLDER = "py312"
 PAYLOAD_VALID = 10
 PAYLOAD_INVALID = 12
 PAYLOAD_DRAW_TIMEOUT = 90
-EXCLUDED_OPTIONS = frozenset({"--watch"})
+EXCLUDED_OPTIONS = frozenset({"--watch", "--debug"})
+"""Options no cell runs: `--watch` never returns, and the trace `--debug` prints holds object addresses and times, so
+its messages differ on every run."""
 OPTION_SETS = (
     ("--strip-default-none",),
     ("--strip-default-none", "--keyword-only"),
@@ -122,8 +183,55 @@ FETCH_TRIES = 3
 DEFAULT_RECORDS = compare_release._default_cache_dir().parent / "behaviour-records"  # ruff: ignore[private-member-access]
 ERA_PYTHONS = ("3.14", "3.13", "3.12", "3.11")
 ERA_EXTRAS = "graphql,http,protobuf"
+# Installed beside every release: the formatters it may call and what the signature step and output imports need.
+ERA_PACKAGES = ("black", "isort", "msgspec", "email-validator")
 SNIPPET_LINES = 40
 OPT_IN_TRIES = 5
+FRAGMENTS = "docs/data/migration/unreleased"
+RELEASES = "docs/data/migration/releases.toml"
+PRESET_NAMES = "src/datamodel_code_generator/preset_names.py"
+PRESET_ALIAS = "PresetName"
+EXPECTED = "tests/data/expected/"
+ORACLE_FILES = (
+    "scripts/_behaviour_classify.py",
+    "scripts/_behaviour_report.py",
+    "scripts/_behaviour_signature.py",
+    "scripts/_change_records.py",
+    "scripts/_change_units.py",
+    "scripts/_source_model.py",
+    "scripts/_stored_module.py",
+    "scripts/_template_compiler/__init__.py",
+    "scripts/_template_compiler/compiler.py",
+    "scripts/_template_compiler/inventory.py",
+    "scripts/behaviour_diff.py",
+    "scripts/build_behaviour_docs.py",
+    "scripts/check_generation_store_usage.py",
+    "scripts/compare_release.py",
+    "scripts/compile_builtin_templates.py",
+    "scripts/declared_changes.py",
+    "scripts/fact_tables.py",
+    "scripts/select_ci_test_shard.py",
+)
+"""The gate's own files: a change to one also runs the base's gate (`base_gate`).
+
+Every `scripts` module the gate imports, directly or through another, or runs in a subprocess; a test keeps the list
+equal to them (`tests/test_pre_commit_hooks.py`)."""
+BASE_GATE_FILES = ("scripts", "tests/__init__.py", "tests/units.py")
+BASE_GATE_ENV = "BEHAVIOUR_DIFF_BASE_GATE"
+REPOSITORY_ENV = "BEHAVIOUR_DIFF_REPOSITORY"
+"""The checkout a base's gate runs for (`base_gate`): its default candidate and the repository of its revisions; the
+gate's own checkout without it."""
+HEAD_STOPPED = (
+    "the head stopped at the timeout or the memory cap where the base finished: no record covers an unfinished output"
+)
+"""Set in the environment of the base's gate, so that it does not run its own base's gate again."""
+UNCOVERED = "no record's [[change.cells]] covers the cell"
+VERDICTS_OPTION = "--verdicts"
+REGEX_SPECIAL = re.compile(r"[\\.^$*+?{}\[\]|()]")
+MSGSPEC_IMPORT = re.compile(r"^\s*(?:import msgspec|from msgspec\b)", re.MULTILINE)
+COMPANION_LINE = re.compile(r"^(?:valid: |invalid .*: rejected \()", re.MULTILINE)
+NOT_COMPARED_STOPPED = "not compared: the timeout or the memory cap stopped both sides"
+NOT_COMPARED_INPUT = "not compared: every cell of the input fails on both sides"
 RESTORE_GROUPS = (
     "Typing customization",
     "Field customization",
@@ -148,10 +256,31 @@ print(json.dumps(found))
 """
 OPTION_INVENTORY = """
 import json
-from datamodel_code_generator.arguments import arg_parser
+try:
+    from datamodel_code_generator.arguments import arg_parser
+except ImportError:  # releases before 0.21 define the parser in __main__
+    from datamodel_code_generator.__main__ import arg_parser
 options = {o: sorted(map(str, a.choices)) if a.choices else None for a in arg_parser._actions for o in a.option_strings}
 print(json.dumps(options))
 """
+
+
+class PayloadCase(TypedDict):
+    """One payload-validation case of the candidate's harness, as `_payload-cases` indexes it."""
+
+    key: str
+    case_id: str
+    input: str
+    file_type: str
+    args: dict[str, list[str]]
+
+
+class StoredSide(TypedDict, total=False):
+    """What `scripts/_stored_module.py` writes for one side: its models and their draws, or the verdicts."""
+
+    models: list[str]
+    values: dict[str, list[object]]
+    verdicts: dict[str, object]
 
 
 @dataclass(frozen=True)
@@ -195,14 +324,30 @@ class Candidate:
     env: dict[str, str]
     revision: str | None
 
+    @property
+    def repo(self) -> Path:
+        """The repository the candidate's revisions and a revision base resolve in."""
+        return repository() if self.revision else self.root
+
 
 @dataclass
 class Result:
-    """The classification of one cell."""
+    """The classification of one cell and, where its facts differ, the verdict of the change records on it.
+
+    `judged` is None for a cell whose sides' facts are equal, or that the timeout or the memory cap stopped on both
+    sides; `lines` are the change lines of a differing cell.
+    """
 
     cell: Cell
     verdict: Verdict
     base_skip: int | None = None
+    judged: Verdict | None = None
+    lines: tuple[str, ...] = ()
+
+    @property
+    def final(self) -> Verdict:
+        """The verdict the run fails on: the records' where the facts differ, else the classification."""
+        return self.judged or self.verdict
 
 
 @dataclass
@@ -231,7 +376,7 @@ class Project:
                     ["sparse-checkout", "set", "--no-cone", *self.paths],
                     ["-c", "advice.detachedHead=false", "checkout", "-q", "FETCH_HEAD"],
                 ]
-                if all(_isolated_git(step, self.root) for step in steps):
+                if all(compare_release.git(self.root, *step).returncode == 0 for step in steps):
                     (self.root / ".complete").touch()
                     return
             msg = f"cannot fetch {self.url} at {self.sha}"
@@ -294,64 +439,44 @@ class Gate:
     projects: dict[str, Project] = field(default_factory=dict)
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
+    identity: bool = False
+    evidence: compare_release.Evidence = field(default_factory=lambda: compare_release.Evidence(None))
+    plan: Plan | None = None
+    rerun: compare_release.Runner | None = None
+    payload_index: list[PayloadCase] | None = None
+    head_inventory: dict[str, list[str] | None] | None = None
+    signature_only: set[str] = field(default_factory=set)
+    refused_alike: set[str] = field(default_factory=set)
+    no_payloads: set[str] = field(default_factory=set)
+    verdicts: list[dict[str, str | None]] = field(default_factory=list)
 
 
-def _git(*args: str, cwd: Path = ROOT) -> str | None:
-    result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=False)
-    return result.stdout if result.returncode == 0 else None
-
-
-def _isolated_git(args: list[str], cwd: Path) -> bool:
-    """Run git in `cwd` without the caller's repository settings (a hook's GIT_DIR) or an interactive prompt."""
-    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")} | {"GIT_TERMINAL_PROMPT": "0"}
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, env=env, check=False).returncode == 0
+def repository() -> Path:
+    """Return the checkout the gate runs for: the one a base's gate is started for (`REPOSITORY_ENV`), else this one."""
+    return Path(os.environ.get(REPOSITORY_ENV) or ROOT)
 
 
 def latest_tag() -> str:
     """Return the latest release tag reachable from HEAD."""
-    return (_git("describe", "--tags", "--abbrev=0") or "").strip()
-
-
-def archive_version(revision: str) -> str:
-    """Return the version the build hook writes for a revision (`git archive` leaves the version file out)."""
-    described = (_git("describe", "--tags", "--long", "--match", "[0-9]*", "--exclude", "*+*", revision) or "").strip()
-    if described.count("-") < 2:  # ruff: ignore[magic-value-comparison]
-        return f"0.0.0+g{revision[:9]}"
-    tag, distance, commit = described.rsplit("-", 2)
-    if distance == "0":
-        return tag
-    major_minor, _, patch = tag.rpartition(".")
-    return f"{major_minor}.{int(patch) + 1}.dev{distance}+{commit}"
+    return compare_release.git(repository(), "describe", "--tags", "--abbrev=0").stdout.strip()
 
 
 def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) -> Candidate:
-    """Resolve a checkout path or a revision to a root, an interpreter and the environment to run it with."""
-    env = {**os.environ, "PYTHONWARNINGS": "ignore", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    """Resolve a checkout path or a revision to a root, an interpreter and the environment to run it with.
+
+    Either way the candidate imports the root's `src` (`compare_release.run_environment`).
+    """
     if spec is None or Path(spec).is_dir():
-        root = Path(spec or ROOT).resolve()
+        root = Path(spec or repository()).resolve()
         venv = root / ".venv" / "bin" / "python"
         chosen = python or (venv if venv.exists() else Path(sys.executable))
-        if not (venv.exists() and chosen.absolute() == venv.absolute()):
-            env["PYTHONPATH"] = str(root / "src")
-        return Candidate(root, chosen.absolute(), env, None)
-    revision = (_git("rev-parse", "--verify", f"{spec}^{{commit}}") or "").strip()
-    if not revision:
-        msg = f"{spec} is neither a directory nor a revision of {ROOT}"
+        return Candidate(root, chosen.absolute(), compare_release.run_environment(root / "src"), None)
+    if not (revision := compare_release.commit_of(spec, repository())):
+        msg = f"{spec} is neither a directory nor a revision of {repository()}"
         raise SystemExit(msg)
-    root = cache_dir / "trees" / revision
-    if not (root / ".complete").exists():
-        shutil.rmtree(root, ignore_errors=True)
-        root.mkdir(parents=True)
-        archive = subprocess.run(
-            ["git", "archive", revision, "src", "tests"], cwd=ROOT, capture_output=True, check=True
-        )
-        subprocess.run(["tar", "-x", "-C", str(root)], input=archive.stdout, check=True)
-        version_file = root / "src" / "datamodel_code_generator" / "_version.py"
-        if not version_file.exists():
-            version_file.write_text(f"__version__ = {archive_version(revision)!r}\n", encoding="utf-8")
-        (root / ".complete").touch()
-    env["PYTHONPATH"] = str(root / "src")
-    return Candidate(root, (python or Path(sys.executable)).absolute(), env, revision)
+    root = compare_release.source_tree(revision, cache_dir, repository(), paths=("src", "tests"))
+    python = (python or Path(sys.executable)).absolute()
+    return Candidate(root, python, compare_release.run_environment(root / "src"), revision)
 
 
 def option_inventory(python: Path, env: dict[str, str] | None = None) -> dict[str, list[str] | None]:
@@ -379,18 +504,14 @@ def opt_in_reason(args: list[str], inventory: dict[str, list[str] | None]) -> st
 
 def changed_files(candidate: Candidate, base: str) -> list[str]:
     """Return the files under tests/data that changed between the release and the candidate."""
-    revision = [candidate.revision] if candidate.revision else []
-    cwd = ROOT if candidate.revision else candidate.root
-    output = _git("diff", "--name-only", "--no-renames", base, *revision, "--", "tests/data", cwd=cwd)
-    return sorted(output.split()) if output else []
+    return changed_paths(candidate, base, ("tests/data",))
 
 
 def added_files(candidate: Candidate, base: str, directory: str) -> list[str]:
     """Return the files added below tests/data/<directory> since the release."""
     revision = [candidate.revision] if candidate.revision else []
-    cwd = ROOT if candidate.revision else candidate.root
-    output = _git("diff", "--name-only", "--diff-filter=A", base, *revision, "--", f"tests/data/{directory}", cwd=cwd)
-    return sorted(output.split()) if output else []
+    args = ("diff", "--name-only", "--diff-filter=A", base, *revision, "--", f"tests/data/{directory}")
+    return sorted(compare_release.git(candidate.repo, *args).stdout.split())
 
 
 def fixture_inputs(candidate: Candidate, base: str) -> list[tuple[str, str]]:
@@ -505,7 +626,7 @@ def _without(args: list[str], option: str) -> tuple[list[str], str | None]:
 
 
 def anchor_cells(root: Path, types: list[str]) -> list[Cell]:
-    """Return one cell per cli_doc example and output model type it documents; `--watch` examples never finish."""
+    """Return one cell per cli_doc example and output model type it documents, but none of `EXCLUDED_OPTIONS`."""
     cells: dict[tuple[str, str, tuple[str, ...]], Cell] = {}
     for example in cli_doc_examples(root):
         schema = root / "tests" / "data" / example["input_schema"]
@@ -528,16 +649,24 @@ def anchor_cells(root: Path, types: list[str]) -> list[Cell]:
     return list(cells.values())
 
 
+def payload_index(gate: Gate) -> list[PayloadCase]:
+    """Write the payload-validation cases of the candidate once and return their index."""
+    with gate.lock:
+        if gate.payload_index is None:
+            candidate = gate.candidate_info
+            subprocess.run(
+                [str(gate.candidate_python), __file__, "_payload-cases", str(candidate.root), str(gate.payload_root)],
+                cwd=candidate.root,
+                env=candidate.env,
+                check=True,
+            )
+            gate.payload_index = json.loads((gate.payload_root / "index.json").read_text(encoding="utf-8"))
+        return gate.payload_index
+
+
 def payload_cells(gate: Gate, types: list[str]) -> list[Cell]:
     """Write the payload-validation cases of the candidate and return their cells."""
-    candidate = gate.candidate_info
-    subprocess.run(
-        [str(gate.candidate_python), __file__, "_payload-cases", str(candidate.root), str(gate.payload_root)],
-        cwd=candidate.root,
-        env=candidate.env,
-        check=True,
-    )
-    index = json.loads((gate.payload_root / "index.json").read_text(encoding="utf-8"))
+    index = payload_index(gate)
     return [
         Cell(
             gate.payload_root / case["input"],
@@ -561,27 +690,36 @@ class Placement:
     anchors: dict[tuple[str, str], str] = field(default_factory=dict)
     entries: frozenset[int] = frozenset()
     skips: frozenset[int] = frozenset()
+    groups: frozenset[int] = frozenset()
 
     def shard(self, cell: Cell, total: int) -> int:
         """Return the 1-based shard of a cell by the hash of its input, or of the first input of its entries."""
         return int(_stable(self.anchors.get((cell.label, cell.backend), cell.label)), 16) % total + 1
 
 
-def place(pairs: Iterable[tuple[str, str]], allowlist: Allowlist, version: str) -> Placement:
+def place(
+    pairs: Iterable[tuple[str, str]],
+    allowlist: Allowlist,
+    version: str,
+    groups: Sequence[frozenset[tuple[str, str]]] = (),
+) -> Placement:
     """Place the cells of these (input, output model type) pairs, so the cells of an allowlist entry share a shard.
 
-    Entries that cover a common pair form a group (`[[base_skip]]` entries that skip the release `version` too); the
-    pairs of a group are placed by its first input, and every other pair by its own input.
+    Entries that cover a common pair form a group (`[[base_skip]]` entries that skip the release `version` too, and
+    `groups`: the pairs each selector of the change records covers); the pairs of a group are placed by its first
+    input, and every other pair by its own input.
     """
     count = len(allowlist.entries)
+    skips = count + len(allowlist.base_skips)
     covering: dict[tuple[str, str], list[int]] = {}
     for label, backend in set(pairs):
         nodes = [index for index in range(count) if allowlist.covers(index, label, backend)]
         if (skip := allowlist.skip_for(label, version)) is not None:
             nodes.append(count + skip)
+        nodes += [skips + index for index, group in enumerate(groups) if (label, backend) in group]
         if nodes:
             covering[label, backend] = nodes
-    parent = list(range(count + len(allowlist.base_skips)))
+    parent = list(range(skips + len(groups)))
 
     def root(node: int) -> int:
         while parent[node] != node:
@@ -599,7 +737,8 @@ def place(pairs: Iterable[tuple[str, str]], allowlist: Allowlist, version: str) 
     return Placement(
         {pair: first[root(nodes[0])] for pair, nodes in covering.items()},
         frozenset(node for node in used if node < count),
-        frozenset(node - count for node in used if node >= count),
+        frozenset(node - count for node in used if count <= node < skips),
+        frozenset(node - skips for node in used if node >= skips),
     )
 
 
@@ -613,21 +752,26 @@ def _write_tree(tree: dict[str, str], directory: Path) -> Path:
 
 def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
     """Compute a behaviour signature in a fresh process of the candidate's interpreter."""
+    return signature_of(gate.signature_python or gate.candidate_python, gate.timeout, target, backend, payloads)
+
+
+def signature_of(python: Path, timeout: int, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
+    """Compute the behaviour signature of a generated module or package in a fresh process of `python`."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("DATAMODEL_CODE_GENERATOR")}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    command = [str(gate.signature_python or gate.candidate_python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
+    command = [str(python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
     try:
         result = subprocess.run(
             [*command, *([str(payloads)] if payloads else [])],
             capture_output=True,
             text=True,
-            timeout=gate.timeout,
+            timeout=timeout,
             cwd=target.parent,
             env=env,
             check=False,
         )
     except subprocess.TimeoutExpired:
-        return {"import_error": f"signature timed out after {gate.timeout}s", SIGNATURE_FAILED: True}
+        return {"import_error": f"signature timed out after {timeout}s", SIGNATURE_FAILED: True}
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
@@ -702,6 +846,9 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             base = gate.base.generate(args, tmp)
             gate.cache.put(cell.input, args, base, import_check=False)
         candidate = gate.candidate.generate(args, tmp)
+        gate.evidence.add(input_group(cell), f"{cell.label} | {cell.backend} | {cell.option_label}", base, candidate)
+        if gate.identity:
+            return Result(cell, identity_verdict(base, candidate))
         same = base.ok and candidate.ok and base.tree == candidate.tree
         sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
         valid: frozenset[str] = frozenset()
@@ -730,7 +877,756 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         same_bytes=same,
         valid_payloads=valid,
     )
-    return Result(cell, verdict)
+    if gate.plan is None:
+        return Result(cell, verdict)
+    plain = classify_cell(
+        sides[0],
+        sides[1],
+        input_path=cell.label,
+        backend=cell.backend,
+        allowlist=Allowlist(),
+        same_bytes=same,
+        valid_payloads=valid,
+    )
+    judged, lines = judge_cell(gate, cell, (base, candidate), sides, plain.cls)
+    return Result(cell, verdict, judged=judged, lines=lines)
+
+
+def identity_verdict(base: compare_release.Outcome, candidate: compare_release.Outcome) -> Verdict:
+    """Return the identity verdict of a cell: any difference is a violation; a run a cap stopped is not compared."""
+    if changes := compare_release.identity_changes(base, candidate):
+        return Verdict("violation", tuple(detail for _, detail in changes))
+    if base.ok:
+        return Verdict("same")
+    return Verdict("both-fail", (NOT_COMPARED_STOPPED,) if base.stopped() else ())
+
+
+def not_compared(results: list[Result]) -> list[Result]:
+    """Mark the cells of an input that fails on both sides in every cell as not compared."""
+    cells = Counter(result.cell.label for result in results)
+    failed = Counter(result.cell.label for result in results if result.verdict.cls == "both-fail")
+    return [
+        replace(result, verdict=Verdict("both-fail", (*result.verdict.notes, NOT_COMPARED_INPUT)))
+        if failed[result.cell.label] == cells[result.cell.label]
+        else result
+        for result in results
+    ]
+
+
+def input_group(cell: Cell) -> str:
+    """Return the input group of a cell (`compare_release.Evidence`).
+
+    A cli-doc example, payload case or project job brings its own options, so its group is named by its kind.
+    """
+    directory = cell.kind if cell.kind == "payload" else Path(cell.label).parent.as_posix()
+    options = cell.kind if cell.kind in {"cli-doc", "payload", "project"} else cell.option_label
+    return compare_release.Evidence.group(cell.input, directory, cell.backend, options)
+
+
+def option_changes(base: dict[str, list[str] | None], candidate: dict[str, list[str] | None]) -> list[str]:
+    """Return each option and option value one side's datamodel-codegen has and the other's lacks."""
+
+    def surface(inventory: dict[str, list[str] | None]) -> set[str]:
+        return {
+            " ".join(filter(None, (name, value)))
+            for name, values in inventory.items()
+            for value in (None, *(values or ()))
+        }
+
+    old, new = surface(base), surface(candidate)
+    return [f"option added: {name}" for name in sorted(new - old)] + [
+        f"option removed: {name}" for name in sorted(old - new)
+    ]
+
+
+@dataclass
+class Plan:
+    """What a gate run judges its differing cells by: the base of its changes, its records and the released presets.
+
+    A PR run (BASE a revision) compares `base`, the merge base of BASE and the candidate, and judges by the records
+    whose `id` that base lacks. A release run (BASE a release version or `refs/tags/<tag>`) compares the tag and
+    judges by the records of the fragments the tag lacks; its `base` is the tag's commit, None where the repository
+    has no such tag. `judged` are those records, an extending record as its target with its own id, covers and cells;
+    `head` and `before` the candidate's and the base's records by id. `presets` are the latest tag's (None: the
+    base's own, for a release the repository has no tag of). `changed` are the files below tests/data a PR changes;
+    `src` and `oracle` say whether it changes src/ and the gate's own files (a release run always runs); `groups`
+    the (input, output model type) pairs of the run each selector covers, which share a shard (`place`).
+    """
+
+    base: str | None
+    release: bool
+    tag: str
+    tag_commit: str | None
+    judged: list[Record] = field(default_factory=list)
+    problems: list[str] = field(default_factory=list)
+    presets: list[str] | None = None
+    changed: list[str] = field(default_factory=list)
+    src: bool = True
+    oracle: bool = False
+    head: dict[str, Record] = field(default_factory=dict)
+    before: dict[str, Record] = field(default_factory=dict)
+    groups: list[frozenset[tuple[str, str]]] = field(default_factory=list)
+
+    def selectors(self) -> list[tuple[Record, int, CellSelector]]:
+        """Return each selector of the judged records with its record and its 1-based index there."""
+        return [(record, index, selector) for record in self.judged for index, selector in enumerate(record.cells, 1)]
+
+
+def _git_names(repo: Path, *args: str) -> list[str]:
+    """Return the NUL-separated names a git command lists (`-z`); none where it fails."""
+    return [name for name in compare_release.git(repo, *args).stdout.split("\0") if name]
+
+
+def changed_paths(candidate: Candidate, base: str, paths: Sequence[str]) -> list[str]:
+    """Return the files below `paths` that differ between a revision and the candidate.
+
+    A checkout counts its uncommitted and untracked files too, so a local run sees what CI will see after a commit.
+    """
+    revision = [candidate.revision] if candidate.revision else []
+    names = _git_names(candidate.repo, "diff", "--name-only", "--no-renames", "-z", base, *revision, "--", *paths)
+    if not candidate.revision:
+        names += _git_names(candidate.repo, "ls-files", "-z", "--others", "--exclude-standard", "--", *paths)
+    return sorted(set(names))
+
+
+def fragment_texts(repo: Path, revision: str | None, root: Path) -> dict[str, str]:
+    """Return the text of each unreleased fragment by file name: a revision's, or the checkout's at `root` (None)."""
+    if revision is None:
+        return {path.name: path.read_text(encoding="utf-8") for path in sorted((root / FRAGMENTS).glob("*.toml"))}
+    names = _git_names(repo, "ls-tree", "-z", "--name-only", revision, "--", f"{FRAGMENTS}/")
+    return {
+        PurePosixPath(name).name: compare_release.git(repo, "show", f"{revision}:{name}").stdout
+        for name in names
+        if name.endswith(".toml")
+    }
+
+
+def read_fragments(texts: dict[str, str], *, strict: bool) -> tuple[dict[str, Record], dict[str, list[str]]]:
+    """Return the records of fragments by id and the problems of each id's table.
+
+    A fragment that does not parse stops a `strict` read (the candidate's): the gate generates nothing then. A base's
+    fragments are read for their ids and cells only, so one that does not parse there is left out.
+    """
+    records: dict[str, Record] = {}
+    problems: dict[str, list[str]] = {}
+    for name, text in sorted(texts.items()):
+        try:
+            entries = tomllib.loads(text).get("change", [])
+        except tomllib.TOMLDecodeError as error:
+            if strict:
+                msg = f"{FRAGMENTS}/{name} does not parse: {error}"
+                raise SystemExit(msg) from error
+            continue
+        for entry in entries if isinstance(entries, list) else []:
+            record, found = parse_entry(entry, f"unreleased/{name}")
+            if record is not None:
+                records[record.id] = record
+            elif found:
+                problems.setdefault(str(entry.get("id")), []).extend(found)
+    return records, problems
+
+
+def _fragment_ids(texts: dict[str, str]) -> set[str]:
+    """Return the ids the fragments of a revision name, whether or not their tables hold a record."""
+    ids: set[str] = set()
+    for text in texts.values():
+        with contextlib.suppress(tomllib.TOMLDecodeError):
+            ids |= {str(entry.get("id")) for entry in tomllib.loads(text).get("change", []) if isinstance(entry, dict)}
+    return ids
+
+
+def tag_presets(repo: Path, commit: str) -> list[str]:
+    """Return the preset names a tag ships: its `preset_names.py`, read through the source model (none: no file)."""
+    text = compare_release.git(repo, "show", f"{commit}:{PRESET_NAMES}").stdout
+    if not text:
+        return []
+    module = SourceModule(text, PRESET_NAMES)
+    names: list[str] = []
+    for binding in module.scopes[0].bindings.get(PRESET_ALIAS, []):
+        if isinstance(value := binding.value, ast.Subscript):
+            literal = _literal(value.slice)
+            names += [name for name in (literal if isinstance(literal, tuple) else (literal,)) if isinstance(name, str)]
+    return names
+
+
+def _released_ids(candidate: Candidate, tag: str, commit: str | None) -> set[str] | None:
+    """Return the ids of the fragments a release shipped: those of its tag's tree.
+
+    Without the tag (a shallow checkout), a release `releases.toml` lists, or one older than a listed release, was
+    stamped: its fragments moved to `changes/`, so the fragments left are unreleased. Else None: they cannot be told.
+    """
+    if commit:
+        return _fragment_ids(fragment_texts(candidate.repo, commit, candidate.root))
+    with contextlib.suppress(FileNotFoundError, tomllib.TOMLDecodeError, ValueError):
+        rows = tomllib.loads((candidate.root / RELEASES).read_text(encoding="utf-8")).get("release", [])
+        if any(version_key(str(row["version"])) >= version_key(tag) for row in rows):
+            return set()
+    return None
+
+
+def _resolved(record: Record, records: dict[str, Record], *, added: bool) -> tuple[Record | None, list[str]]:
+    """Return the record a judge reads for one record: an extending record as its target with its own id and cells.
+
+    The cells of an extending record follow its target's rule (`added` as `rule_problems` reads it).
+    """
+    if record.extends is None:
+        return record, []
+    target = records.get(record.extends)
+    if target is None or target.extends is not None or target.category is None:
+        return None, [f"entry {record.id}: extends {record.extends}, which is not an unreleased record of its own"]
+    resolved = replace(target, id=record.id, covers=record.covers, cells=record.cells)
+    return resolved, rule_problems(resolved, fragment=True, added=added)
+
+
+def plan_records(ns: argparse.Namespace, candidate: Candidate) -> Plan:
+    """Resolve the base of a gate run's changes and the records it judges by (`Plan`).
+
+    An unresolvable base, merge base or latest tag of a PR run stops the gate, as does a candidate fragment that
+    does not parse: nothing is generated then.
+    """
+    repo, spec = candidate.repo, ns.base
+    head, head_problems = read_fragments(fragment_texts(repo, candidate.revision, candidate.root), strict=True)
+    if compare_release.RELEASE.fullmatch(spec) or spec.startswith("refs/tags/"):
+        tag = spec.removeprefix("refs/tags/")
+        tag_commit = compare_release.commit_of(f"refs/tags/{tag}", repo) or None
+        released = _released_ids(candidate, tag, tag_commit)
+        if released is None:
+            if any(record.cells for record in head.values()):
+                msg = f"the fragments {tag} shipped cannot be told: {repo} has no tag {tag} and {RELEASES} lacks it"
+                raise SystemExit(msg)
+            released = set(head)
+        plan = Plan(tag_commit, release=True, tag=tag, tag_commit=tag_commit, head=head)
+        added = [record for record_id, record in head.items() if record_id not in released]
+        problems = [
+            problem for record_id, found in head_problems.items() if record_id not in released for problem in found
+        ]
+    else:
+        if not (commit := compare_release.commit_of(spec, repo)):
+            msg = f"{spec} is neither a released version nor a revision of {repo}"
+            raise SystemExit(msg)
+        head_commit = candidate.revision or compare_release.commit_of("HEAD", repo)
+        if not (base := compare_release.git(repo, "merge-base", commit, head_commit).stdout.strip()):
+            msg = f"{spec} and the candidate have no merge base in {repo}: fetch the history (fetch-depth 0)"
+            raise SystemExit(msg)
+        if not (tag := compare_release.git(repo, "describe", "--tags", "--abbrev=0", head_commit).stdout.strip()):
+            msg = f"the candidate has no release tag in its history in {repo}: its presets and options come from it"
+            raise SystemExit(msg)
+        before, _ = read_fragments(fragment_texts(repo, base, candidate.root), strict=False)
+        tag_commit = compare_release.commit_of(f"refs/tags/{tag}", repo) or None
+        plan = Plan(base, release=False, tag=tag, tag_commit=tag_commit, head=head, before=before)
+        plan.changed = changed_paths(candidate, base, ("tests/data",))
+        plan.src = bool(changed_paths(candidate, base, ("src",)))
+        plan.oracle = bool(changed_paths(candidate, base, ORACLE_FILES))
+        added = [record for record_id, record in head.items() if record_id not in before]
+        problems = [
+            problem for record_id, found in head_problems.items() if record_id not in before for problem in found
+        ]
+        problems += [
+            f"entry {record_id}: a record of the base gains [[change.cells]]; add a record with extends instead"
+            for record_id, record in head.items()
+            if record_id in before and set(record.cells) - set(before[record_id].cells)
+        ]
+    for record in added:
+        problems += rule_problems(record, fragment=True, added=not plan.release)
+        resolved, found = _resolved(record, head, added=not plan.release)
+        problems += found
+        plan.judged += [resolved] if resolved is not None else []
+    if tag_commit:
+        plan.presets = tag_presets(repo, tag_commit)
+    plan.problems = list(dict.fromkeys(problems))
+    return plan
+
+
+def surface_problems(plan: Plan, inventory: dict[str, list[str] | None]) -> list[str]:
+    """Return the selectors that name an option, option value, preset or input type the latest tag lacks (M3)."""
+    found = []
+    for record, index, selector in plan.selectors():
+        sets = [list(option_set) for option_set in selector.options or ()]
+        sets += [["--input-file-type", selector.input_file_type]] if selector.input_file_type else []
+        found += [
+            f"entry {record.id}: cells {index} name {reason}, which {plan.tag} lacks; unreleased surface is judged by "
+            "the stored outputs only"
+            for option_set in sets
+            if (reason := opt_in_reason(option_set, inventory))
+        ]
+    return list(dict.fromkeys(found))
+
+
+def tag_inventory(gate: Gate, cache_dir: Path) -> dict[str, list[str] | None]:
+    """Return the options of the latest tag's datamodel-codegen, run from its tree with the candidate's interpreter."""
+    plan, candidate = gate.plan, gate.candidate_info
+    if plan is None or plan.tag_commit is None:
+        msg = "the latest tag's options cannot be read: the repository has no tag in the candidate's history"
+        raise SystemExit(msg)
+    tree = compare_release.source_tree(plan.tag_commit, cache_dir, candidate.repo)
+    return option_inventory(candidate.python, compare_release.run_environment(tree / "src"))
+
+
+def nightly_sets(presets: list[str], backends: Sequence[str]) -> list[tuple[str, tuple[str, ...]]]:
+    """Return the (output model type, options) pairs the nightly runs for one input, restricted to `backends`.
+
+    Default options, the presets as `preset_option_sets` picks them and each option set of `OPTION_SETS`.
+    """
+    return [
+        *((backend, ()) for backend in backends),
+        *preset_option_sets(presets, list(backends)),
+        *((backend, options) for options in OPTION_SETS for backend in backends),
+    ]
+
+
+def selector_cells(selector: CellSelector, root: Path, presets: list[str]) -> list[Cell]:
+    """Return the cells a selector names: its input globs over the candidate's tree x its backends x its option sets.
+
+    `options = "*"` names the nightly option sets of each input (`nightly_sets`); a cell's input type is the
+    selector's, or the input's folder below tests/data.
+    """
+    backends = selector.backends or compare_release.DEFAULT_TYPES
+    labels = sorted({label for glob in selector.input for label in selector_paths(glob, root)})
+    cells = []
+    for label in labels:
+        parts = label.split("/")
+        below = parts[2:] if parts[:2] == ["tests", "data"] else []
+        if (file_type := selector.input_file_type or (below[0] if below else None)) is None:
+            continue
+        pairs = (
+            nightly_sets(presets, backends)
+            if selector.options is None
+            else [(backend, options) for options in selector.options for backend in backends]
+        )
+        cells += [Cell(root / label, label, file_type, backend, options, "selector") for backend, options in pairs]
+    return cells
+
+
+def _other_text(outcome: compare_release.Outcome) -> str:
+    """Return a side's other facts as lines (`compare_release.cell_facts`): messages, handled exceptions, refusal."""
+    lines = [*outcome.messages.splitlines(), *(f"handled: {name}" for name in outcome.handled)]
+    lines += [f"first attempt: {json.dumps(outcome.first, sort_keys=True)}"] * bool(outcome.first)
+    lines += [f"import error: {outcome.import_error}"] * bool(outcome.import_error)
+    return "\n".join(lines)
+
+
+def _model_module(name: str) -> bool:
+    """Return whether an output file is a model module: `model.py`, or a module of the package `pkg`."""
+    return name == "model.py" or (name.startswith("pkg/") and name.endswith(".py"))
+
+
+def _differing(old: compare_release.Facts, new: compare_release.Facts) -> list[str]:
+    """Return the files whose hash differs between two sides' facts, or that one side lacks."""
+    before, after = dict(old[1]), dict(new[1])
+    return sorted(name for name in before.keys() | after.keys() if before.get(name) != after.get(name))
+
+
+def _under(path: str, label: str) -> bool:
+    return path == label or path.startswith(f"{label}/")
+
+
+def payload_case_equal(gate: Gate, cell: Cell, case: PayloadCase) -> bool:
+    """Return whether one payload case under a cell's input gives equal verdicts and parsed values on both sides.
+
+    The case runs with the cell's options after its own; with `--preset` the case's `--target-python-version` is
+    dropped, as the preset sets the target. Sides that both refuse the case alike give no payload evidence.
+    """
+    args = list(case["args"].get(cell.backend, []))
+    if PRESET_OPTION in split_options(cell.options):
+        args, _ = _without(args, "--target-python-version")
+    probe = Cell(
+        gate.payload_root / case["input"],
+        f"payload:{case['case_id']}",
+        case["file_type"],
+        cell.backend,
+        (*args, *cell.options),
+        "payload",
+        case["key"],
+    )
+    with tempfile.TemporaryDirectory() as name:
+        tmp = Path(name)
+        base = gate.cache.get(probe.input, probe.args(), import_check=False)
+        if base is None:
+            base = gate.base.generate(probe.args(), tmp)
+            gate.cache.put(probe.input, probe.args(), base, import_check=False)
+        head = gate.candidate.generate(probe.args(), tmp)
+        if not (base.ok and head.ok):
+            if equal := compare_release.cell_facts(base) == compare_release.cell_facts(head):
+                with gate.lock:
+                    gate.refused_alike.add(case["case_id"])
+            return equal
+        if (payloads := payloads_for(gate, probe)) is None:
+            return False
+        old, new = (
+            signature(gate, _write_tree(outcome.tree, tmp / f"sig-{side}"), cell.backend, payloads)
+            for side, outcome in (("base", base), ("cand", head))
+        )
+    return not (old.get(SIGNATURE_FAILED) or new.get(SIGNATURE_FAILED)) and old.get("payloads") == new.get("payloads")
+
+
+def payloads_equal(gate: Gate, cell: Cell) -> bool:
+    """Return whether every payload case under a cell's input gives equal verdicts and parsed values (6.1)."""
+    cases = [case for case in payload_index(gate) if _under(f"tests/data/{case['case_id']}", cell.label)]
+    if not cases:
+        with gate.lock:
+            gate.signature_only.add(cell.label)
+    return all(payload_case_equal(gate, cell, case) for case in cases)
+
+
+def without_features(options: tuple[str, ...], features: Iterable[str]) -> tuple[str, ...]:
+    """Return a cell's options without those of experimental `cli-option.<name>` features, and their values."""
+    names = {f"--{name}" for kind, _, name in (feature.partition(".") for feature in features) if kind == "cli-option"}
+    rest: list[str] = []
+    skip = False
+    for option in options:
+        if skip and not option.startswith("--"):
+            skip = False
+            continue
+        skip = option in names
+        if not skip and option.partition("=")[0] not in names:
+            rest.append(option)
+    return tuple(rest)
+
+
+def companion_equal(gate: Gate, cell: Cell, records: Sequence[Record]) -> bool:
+    """Return whether an experimental cell's companion is equal or covered: the cell without the features' options.
+
+    A feature that is an input format has no options to remove; its cells have no companion.
+    """
+    features = [
+        feature for record in records if record.category == Category.EXPERIMENTAL for feature in record.features
+    ]
+    if (rest := without_features(cell.options, features)) == cell.options:
+        return True
+    companion = run_cell(gate, replace(cell, options=rest, kind="companion"))
+    return companion.judged is None or companion.judged.cls == "accepted"
+
+
+def removed_options(gate: Gate, cell: Cell) -> frozenset[str]:
+    """Return the options of a cell the candidate's datamodel-codegen no longer has."""
+    with gate.lock:
+        if gate.head_inventory is None:
+            gate.head_inventory = option_inventory(gate.candidate.side.python, gate.candidate.env)
+        inventory = gate.head_inventory
+    return frozenset(
+        name
+        for option in cell.options
+        if option.startswith("--") and (name := option.partition("=")[0]) not in inventory
+    )
+
+
+def judge_cell(
+    gate: Gate,
+    cell: Cell,
+    outcomes: tuple[compare_release.Outcome, compare_release.Outcome],
+    sides: list[Side],
+    cls: str,
+) -> tuple[Verdict | None, tuple[str, ...]]:
+    """Judge a cell by the change records where its sides' facts differ, and return the verdict and change lines.
+
+    Equal facts, and sides the timeout or the memory cap stopped both, need nothing (None). A head stopped where the
+    base finished is a violation no record covers: its output is unfinished. Otherwise the head runs a second time,
+    which must give the same facts; then the records that cover the cell must admit every kind of its difference
+    with the evidence of their categories (`judge`), computed only for the categories that cover it.
+    """
+    base, candidate = outcomes
+    old, new = compare_release.cell_facts(base), compare_release.cell_facts(candidate)
+    if gate.plan is None or (base.stopped() and candidate.stopped()) or old == new:
+        return None, ()
+    if candidate.stopped():
+        return Verdict("violation", (HEAD_STOPPED,)), ()
+    if gate.rerun is not None:
+        with tempfile.TemporaryDirectory() as name:
+            repeated = compare_release.cell_facts(gate.rerun.generate(cell.args(), Path(name)))
+        if repeated != new:
+            rows = (f"head: {json.dumps(new)[:300]}", f"rerun: {json.dumps(repeated)[:300]}")
+            return Verdict("violation", ("nondeterministic: the head's second run gives other facts", *rows)), ()
+    old_sig, new_sig = sides[0].signature, sides[1].signature
+    changes = (
+        [*diff(old_sig, new_sig), *probe_changes(old_sig, new_sig), *payload_changes(old_sig, new_sig)]
+        if old_sig is not None and new_sig is not None
+        else []
+    )
+    lines = change_lines(
+        changes,
+        exits=(base.code, candidate.code),
+        warnings=(base.warnings, candidate.warnings),
+        messages=(_other_text(base), _other_text(candidate)),
+    )
+    records = gate.plan.judged
+    covering = [record for record in records if any(covers(selector, cell) for selector in record.cells)]
+    categories = {record.category for record in covering}
+    files = _differing(old, new)
+    signature_equal = (
+        old_sig is not None and new_sig is not None and not [c for c in diff(old_sig, new_sig) if c.behaviour]
+    )
+    text = Category.OUTPUT_TEXT in categories
+    model_files = all(map(_model_module, files))
+    held = (
+        text
+        and model_files
+        and cls == "no-behaviour"
+        and all(
+            name in base.tree
+            and name in candidate.tree
+            and rule_b(base.tree[name], candidate.tree[name], signature_equal=signature_equal)
+            for name in files
+        )
+    )
+    evidence = CellEvidence(
+        cls,
+        lines,
+        (base.code, candidate.code),
+        model_files=model_files,
+        rule_b=held,
+        payloads=held and payloads_equal(gate, cell),
+        signature_failed=any((side.signature or {}).get(SIGNATURE_FAILED) for side in sides),
+        companion_equal=Category.EXPERIMENTAL in categories and companion_equal(gate, cell, covering),
+        removed=removed_options(gate, cell) if Category.API in categories else frozenset(),
+    )
+    return judge(cell, kinds(old, new), records, evidence), lines
+
+
+def _stored_files(side: declared_changes.Side, label: str) -> dict[str, str]:
+    """Return the Python modules a stored label holds on one side, laid out as a run writes them.
+
+    A file label is `model.py`; a tree label is the package `pkg` with its `.py` members. They are read from the
+    storage the label's references compare (the label's own when it is one of them), so a shared output has its text.
+    """
+    storages = side.storages(label)
+    storage = label if label in storages else storages[0]
+    path, pattern = declared_changes.split_label(storage)
+    if pattern is None:
+        text = side.text(f"{EXPECTED}{path}")
+        return {"model.py": text} if text is not None else {}
+    return {
+        f"pkg/{relative}": text
+        for relative, file in side.members(storage)
+        if relative.endswith(".py") and (text := side.text(file)) is not None
+    }
+
+
+def _module_label(label: str) -> bool:
+    """Return whether a stored label holds Python modules: a `.py` file, or a tree (a package)."""
+    path, pattern = declared_changes.split_label(label)
+    return path.endswith(".py") if pattern is None else True
+
+
+def stored_side(gate: Gate, target: Path, backend: str, values: Path | None) -> StoredSide:
+    """Run `scripts/_stored_module.py` on one side's stored module in a fresh process: draw values, or judge them."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("DATAMODEL_CODE_GENERATOR")}
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    out = target.parent / f"{target.name}.{'verdicts' if values else 'values'}.json"
+    command = [str(gate.candidate_python), "-E", "-m", "scripts._stored_module", str(target), backend, str(out)]
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        subprocess.run(
+            [*command, *([str(values)] if values else [])],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            check=False,
+            timeout=PAYLOAD_DRAW_TIMEOUT * 3,
+        )
+    return json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}
+
+
+def stored_payload_problem(gate: Gate, label: str, targets: list[Path], backend: str) -> str | None:
+    """Return why the values drawn from each side's model schemas get other verdicts or parsed values, or None.
+
+    Each side draws `STORED_DRAWS` values per public model from its own JSON Schema; both sides judge the union, so a
+    value one side newly accepts or newly refuses shows. A model neither side can draw from has no payloads.
+    """
+    drawn = [stored_side(gate, target, backend, None) for target in targets]
+    if not all(drawn):
+        return f"{label}: a side wrote no draws (the timeout or a crash stopped it), so no payload could be compared"
+    models = set(drawn[0].get("models", [])) & set(drawn[1].get("models", []))
+    union: dict[str, list[object]] = {}
+    for key in sorted(models):
+        values = {
+            json.dumps(value, sort_keys=True): value for side in drawn for value in side.get("values", {}).get(key, [])
+        }
+        if values:
+            union[key] = list(values.values())
+    if not union:
+        with gate.lock:
+            gate.no_payloads.add(label)
+        return None
+    given = targets[0].parent.parent / "values.json"
+    given.write_text(json.dumps(union), encoding="utf-8")
+    verdicts = [stored_side(gate, target, backend, given).get("verdicts", {}) for target in targets]
+    changed = [key for key in union if verdicts[0].get(key) is None or verdicts[0].get(key) != verdicts[1].get(key)]
+    return f"{label}: {changed[0]}: a value drawn from the models' schemas gets another verdict" if changed else None
+
+
+def stored_module_problem(
+    gate: Gate, label: str, sides: tuple[declared_changes.Side, declared_changes.Side]
+) -> str | None:
+    """Return why a stored module changed its behaviour between the base and the head, or None (6.2).
+
+    Its signatures (`msgspec` imports read as `msgspec.Struct`, else the pydantic adapter path) show no behaviour
+    change, rule (b) holds on each changed module, and values drawn from both sides' schemas get the same verdicts and
+    parsed values.
+    """
+    if any(len(side.storages(label)) > 1 for side in sides):
+        return f"{label}: its references compare several stored units, which the proof cannot read as one module"
+    old, new = (_stored_files(side, label) for side in sides)
+    if set(old) != set(new):
+        return f"{label}: a module was added or removed, which the proof cannot pair"
+    backend = (
+        "msgspec.Struct"
+        if any(MSGSPEC_IMPORT.search(text) for text in (*old.values(), *new.values()))
+        else "pydantic_v2.BaseModel"
+    )
+    with tempfile.TemporaryDirectory() as name:
+        tmp = Path(name)
+        targets = [_write_tree(files, tmp / side) for files, side in ((old, "base"), (new, "head"))]
+        before, after = (signature(gate, target, backend, None) for target in targets)
+        if before.get(SIGNATURE_FAILED) or after.get(SIGNATURE_FAILED):
+            return f"{label}: a signature could not be taken"
+        if changes := [change for change in diff(before, after) if change.behaviour] + probe_changes(before, after):
+            return f"{label}: {changes[0].line()}"
+        if not all(rule_b(old[file], new[file], signature_equal=True) for file in old if old[file] != new[file]):
+            return f"{label}: rule (b) does not hold"
+        return stored_payload_problem(gate, label, targets, backend)
+
+
+def stored_label_problem(
+    gate: Gate, label: str, category: Category, sides: tuple[declared_changes.Side, declared_changes.Side]
+) -> str | None:
+    """Return why a stored label an `output-text` or `harness` record of a PR covers fails its proof, or None.
+
+    A label that exists on one side only follows R2's rule for added and removed outputs, and an unchanged one needs
+    nothing. A changed one is proved as a module (`stored_module_problem`); a payload listing (`payloads/*`) is
+    judged per reference, which fails where an existing reference's content changed; any other changed label fails:
+    a payload companion holds verdicts, and the content of another kind of output changed with no step to tell a
+    changed call from a changed package. A `harness` label `declared_changes.needs_proof` does not name is admitted
+    (6.4): internal output, and a label that is unchanged or that one side lacks.
+    """
+    base, head = sides
+    owners = {owner_of(reference.nodeid, label) for side in sides for reference in side.by_label.get(label, [])}
+    if category == Category.HARNESS and not declared_changes.needs_proof(label, base, head):
+        return None
+    if label.startswith("payloads/"):
+        changed = [
+            reference.nodeid
+            for reference in head.by_label.get(label, [])
+            if reference in base.references
+            and [base.digest(stored) for *_, stored in base.references[reference]]
+            != [head.digest(stored) for *_, stored in head.references[reference]]
+        ]
+        return f"{label}: the stored payloads of {changed[0]} changed" if changed else None
+    old, new = base.content(label), head.content(label)
+    if old is None or new is None or old == new:
+        return None
+    if _module_label(label):
+        return stored_module_problem(gate, label, sides)
+    if category == Category.HARNESS:
+        return (
+            f"{label}: a harness record covers a changed {', '.join(sorted(owners)) or 'models'} output in a src PR; "
+            "move the test change to its own PR, or declare the change with its category"
+        )
+    companion = label.endswith(".payloads.txt") or any(
+        COMPANION_LINE.search(side.text(f"{EXPECTED}{label}") or "") for side in sides
+    )
+    kind = "a payload companion: its verdict lines" if companion else "neither a module nor a payload companion: it"
+    return f"{label}: {kind} changed"
+
+
+def stored_problems(gate: Gate) -> list[str]:
+    """Return the stored labels of a src PR whose proof fails: an `output-text` record's covers, a `harness` record's.
+
+    The labels are those of the PR's `output-text` records, and those a `harness` record adds to its covers; the
+    verdict on each `harness` label that needs the proof goes to `Gate.verdicts` by its base and head contents.
+    """
+    plan, candidate = gate.plan, gate.candidate_info
+    if plan is None or plan.release or not plan.src or plan.base is None:
+        return []
+    labels: list[tuple[str, Category]] = [
+        (label, Category.OUTPUT_TEXT)
+        for record in plan.judged
+        if record.category == Category.OUTPUT_TEXT
+        for label in record.covers
+    ]
+    for record_id, record in plan.head.items():
+        target = record if record.extends is None else plan.head.get(record.extends)
+        if target is not None and target.category == Category.HARNESS:
+            known = set(plan.before[record_id].covers) if record_id in plan.before else set()
+            labels += [(label, Category.HARNESS) for label in record.covers if label not in known]
+    if not labels:
+        return []
+    sides = (
+        declared_changes.Side(candidate.repo, plan.base),
+        declared_changes.Side(candidate.repo, candidate.revision),
+    )
+    problems = []
+    for label, category in dict.fromkeys(labels):
+        problem = stored_label_problem(gate, label, category, sides)
+        if category == Category.HARNESS and declared_changes.needs_proof(label, *sides):
+            digests = {"base": sides[0].content(label), "head": sides[1].content(label)}
+            gate.verdicts.append({"label": label, **digests, "problem": problem})
+        problems += [problem] if problem else []
+    return problems
+
+
+def write_verdicts(gate: Gate, ns: argparse.Namespace) -> None:
+    """Write the verdicts on the `harness` labels of a src PR to `--verdicts`, read by `declared_changes.py check`.
+
+    Shard 1 judges the stored labels (`stored_problems`) and writes the file; the other shards leave it alone, so
+    the shards of one run may share it.
+    """
+    if ns.verdicts and ns.shard_index == 1:
+        ns.verdicts.parent.mkdir(parents=True, exist_ok=True)
+        ns.verdicts.write_text(json.dumps({"verdicts": gate.verdicts}, indent=1) + "\n", encoding="utf-8")
+
+
+def base_arguments(argv: list[str]) -> list[str]:
+    """Return the arguments of the head's gate without `--verdicts` (argparse also takes a unique prefix of it).
+
+    The base's verdicts judge nothing, and a base before the option refuses it.
+    """
+    dropped: set[int] = set()
+    for index, arg in enumerate(argv):
+        name, given, _ = arg.partition("=")
+        if len(name) > len("--") and VERDICTS_OPTION.startswith(name):
+            dropped |= {index, index + (not given)}
+    return [arg for index, arg in enumerate(argv) if index not in dropped]
+
+
+def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
+    """Run the base's gate on the same arguments where a PR changes the gate's own files, and return its status.
+
+    The base's `scripts/` (and the test units it reads) are extracted with `git archive`, once under a lock as another
+    run may share the cache; a base without the gate, and the base's own gate (`BASE_GATE_ENV`), run none. The base's
+    gate runs for the same checkout (`REPOSITORY_ENV`), and writes its `--json` and `--evidence` files beside its
+    scripts, not over the head's; it gets no `--verdicts` (`base_arguments`). The step fails if either gate fails (S7).
+    """
+    if plan.release or not plan.oracle or plan.base is None or os.environ.get(BASE_GATE_ENV):
+        return None
+    if compare_release.git(repo, "cat-file", "-e", f"{plan.base}:scripts/behaviour_diff.py").returncode:
+        print(f"base gate: {plan.base[:12]} has no scripts/behaviour_diff.py")
+        return None
+    root = ns.cache_dir.absolute() / "base-gates" / plan.base
+    compare_release.built(root, lambda: _extract_gate(plan.base or "", repo, root))
+    reports = (("--json", ns.json), ("--evidence", ns.evidence))
+    own = [arg for name, path in reports if path is not None for arg in (name, str(root / f"base-{name[2:]}.out"))]
+    env = {**os.environ, BASE_GATE_ENV: "1", REPOSITORY_ENV: str(repo)}
+    result = subprocess.run(
+        [sys.executable, str(root / "scripts" / "behaviour_diff.py"), *base_arguments(ns.argv), *own],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    print("".join(f"base gate: {line}\n" for line in (result.stdout + result.stderr).splitlines()[-40:]), end="")
+    print(f"base gate ({plan.base[:12]}): exit {result.returncode}")
+    return result.returncode
+
+
+def _extract_gate(base: str, repo: Path, root: Path) -> None:
+    """Extract the gate's files of a base revision (`BASE_GATE_FILES`, those it has) into `root`."""
+    root.mkdir(parents=True)
+    paths = [
+        path for path in BASE_GATE_FILES if not compare_release.git(repo, "cat-file", "-e", f"{base}:{path}").returncode
+    ]
+    archive = root / "gate.tar"
+    compare_release.git(repo, "archive", "--output", str(archive), base, *paths).check_returncode()
+    subprocess.run(["tar", "-x", "-f", str(archive), "-C", str(root)], check=True)
+    archive.unlink()
 
 
 def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[str] | None]) -> list[Cell]:
@@ -742,13 +1638,33 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
         if ns.types
         else (list(PR_TYPES) if ns.tier == "pr" else list(compare_release.DEFAULT_TYPES))
     )
+    plan = gate.plan
+    presets = (inventory.get("--preset") or []) if plan is None or plan.presets is None else plan.presets
+    changed = plan.changed if plan is not None and not plan.release else changed_files(candidate, ns.base)
+    every = inputs
     if ns.select:
         inputs = [(name, file_type) for name, file_type in inputs if _selected(name, ns.select)]
     elif ns.tier == "pr":
-        inputs = pr_inputs(inputs, changed_files(candidate, ns.base), gate.allowlist)
+        inputs = pr_inputs(inputs, changed, gate.allowlist)
     cells = [Cell(candidate.root / name, name, file_type, backend) for name, file_type in inputs for backend in types]
+    if plan is not None:
+        if not plan.release:
+            cells += [
+                Cell(candidate.root / name, name, file_type, backend, options, "changed")
+                for name, file_type in every
+                if _selected(name, ns.select) and any(_under(path, name) for path in changed)
+                for backend, options in nightly_sets(presets, compare_release.DEFAULT_TYPES)
+            ]
+        for record, index, selector in plan.selectors():
+            named = selector_cells(selector, candidate.root, presets)
+            if len(named) > SELECTOR_CELL_LIMIT:
+                msg = (
+                    f"entry {record.id}: cells {index} names {len(named)} cells, more than the {SELECTOR_CELL_LIMIT} "
+                    "a run may take from one selector: narrow its input, backends or options"
+                )
+                raise SystemExit(msg)
+            cells += [cell for cell in named if _selected(cell.label, ns.select)]
     if ns.tier != "pr":
-        presets = inventory.get("--preset") or []
         cells += [
             Cell(candidate.root / name, name, file_type, backend, options, "preset")
             for backend, options in preset_option_sets(presets, types)
@@ -765,7 +1681,10 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
         cells += [cell for cell in projects if cell.backend in types and _selected(cell.label, ns.select)]
         if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
             cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
-    return cells
+    unique: dict[tuple[str, str, str, tuple[str, ...]], Cell] = {}
+    for cell in cells:
+        unique.setdefault((cell.label, cell.file_type, cell.backend, cell.options), cell)
+    return list(unique.values())
 
 
 def _selected(label: str, patterns: list[str]) -> bool:
@@ -787,7 +1706,7 @@ def _environment_args(parser: argparse.ArgumentParser) -> None:
         "--memory-mb",
         type=_memory_mb,
         default=8192,
-        help="data memory of one generation process before it fails, a safety net far above any real cell (0: no cap)",
+        help="data memory of a worker while it generates a cell, a safety net far above any real cell (0: no cap)",
     )
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
 
@@ -817,17 +1736,30 @@ def _gate_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--base-python", type=Path, help="interpreter with the release already installed")
     parser.add_argument("--candidate-python", type=Path, help="interpreter for the candidate")
+    compare_release.add_evidence_args(parser)
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    gate = commands.add_parser("gate", help="classify every output change of the candidate against the release")
-    gate.add_argument("base", nargs="?", help="released version (default: the latest tag)")
+    gate = commands.add_parser("gate", help="classify every output change of the candidate against the base")
+    gate.add_argument("base", nargs="?", help="released version (default: the latest tag) or git revision")
     gate.add_argument("candidate", nargs="?", help="checkout path or git revision (default: this checkout)")
     _gate_args(gate)
     gate.add_argument("--check", action="store_true", help="exit 1 on a violation or an invalid or stale allowlist")
     gate.add_argument("--json", type=Path, help="write every cell as one JSON line to this file (read by `guide`)")
+    gate.add_argument(
+        VERDICTS_OPTION,
+        type=Path,
+        help="write the verdicts on the harness labels of a src PR to this file (read by `declared_changes.py check`); "
+        "shard 1 writes it",
+    )
+    gate.add_argument(
+        "--identity",
+        action="store_true",
+        help="no allowlist: any difference in output, warnings, handled exceptions, messages, exit status or "
+        "options is a violation, and so is evidence that compared too little; implies --check",
+    )
     record = commands.add_parser("record", help="write the behaviour record of one release")
     record.add_argument("version", help="release version, or the version a checkout is recorded as")
     record.add_argument("checkout", nargs="?", help="checkout path or git revision to record instead of the release")
@@ -852,7 +1784,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     guide.add_argument("version", help="the release the page describes")
     guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
     _gate_args(guide)
-    guide.set_defaults(tier="release")
+    guide.set_defaults(tier="release", identity=False, verdicts=None)
     guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
     guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
     guide.add_argument("--notes", type=Path, help="release-note fragment to write")
@@ -867,6 +1799,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
             parser.error(f"--shard {ns.shard}: I and N must be integers, e.g. 2/8")
         if not 1 <= ns.shard_index <= ns.shard_total:
             parser.error(f"--shard {ns.shard}: I must be between 1 and N")
+        if ns.command == "gate" and ns.identity and ns.shard_total > 1:
+            parser.error(
+                f"--identity --shard {ns.shard}: identity judges the evidence of the whole run, run it unsharded"
+            )
     return ns
 
 
@@ -885,24 +1821,86 @@ def cell_row(result: Result) -> dict[str, Any]:
     }
 
 
+def selector_problems(
+    plan: Plan, results: list[Result], ns: argparse.Namespace, shards: tuple[Placement, Placement]
+) -> list[str]:
+    """Return the selectors that match no differing cell of the run (9.3): no cell, or only equal ones.
+
+    A PR run judges every selector of its records; a release run judges staleness in a run of the whole nightly or
+    release tier only, as the PR tier is a sample. A selection may leave a selector's cells out, so it judges none.
+    A selector is judged in the shard that runs its cells (`place`), or in shard 1 where it covers no cell at all.
+    """
+    here, run = shards
+    if ns.select or (plan.release and ns.tier == "pr"):
+        return []
+    lead = ns.shard_index == 1
+    stale = " (stale: edit the record)" if plan.release else ""
+    found = []
+    for position, (record, index, selector) in enumerate(plan.selectors()):
+        if position not in here.groups and not (lead and position not in run.groups):
+            continue
+        matched = [result for result in results if covers(selector, result.cell)]
+        if not any(result.judged is not None for result in matched):
+            what = "only equal cells" if matched else "no cell of the run"
+            found.append(f"entry {record.id}: cells {index} matches {what}{stale}")
+    return found
+
+
+def cells_block(results: list[Result]) -> list[str]:
+    """Return a starting `[[change.cells]]` block for the differing cells no record covers, one selector per input.
+
+    `options = "*"` where an input's uncovered cells span more than one option set; the change lines' aspects and a
+    first line as a `match` for a decision category, as comments.
+    """
+    groups: dict[tuple[str, str], list[Result]] = {}
+    for result in results:
+        if result.judged is not None and UNCOVERED in result.judged.notes:
+            groups.setdefault((result.cell.label, result.cell.file_type), []).append(result)
+    lines: list[str] = []
+    for (label, file_type), group in sorted(groups.items()):
+        sets = sorted({result.cell.options for result in group})
+        parts = label.split("/")
+        lines += [
+            "[[change.cells]]",
+            f"input = {json.dumps([label])}",
+            f"backends = {json.dumps(sorted({result.cell.backend for result in group}))}",
+            'options = "*"' if len(sets) > 1 else f"options = {json.dumps([list(sets[0])])}",
+        ]
+        if parts[:2] != ["tests", "data"] or parts[2:3] != [file_type]:
+            lines.append(f"input_file_type = {json.dumps(file_type)}")
+        if changed := sorted({line for result in group for line in result.lines}):
+            aspects = sorted({found[1] for line in changed if (found := LINE_ASPECT.match(line))})
+            match = "^" + REGEX_SPECIAL.sub(lambda special: "\\" + special[0], changed[0]) + "$"
+            lines += [f"# a decision names: aspects = {json.dumps(aspects)}", f"# match = {json.dumps(match)}"]
+        lines.append("")
+    return lines
+
+
 def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Placement | None = None) -> int:
-    """Print the results of a shard and return the exit code; `run` places the cells of every shard (default: these)."""
+    """Print the results of a shard and return the exit code; `run` places the cells of every shard (default: these).
+
+    With change records (`Gate.plan`) a cell fails on the records' verdict where its facts differ (`Result.final`),
+    and the run on the records' problems (`Plan.problems`) and on a selector that matches no differing cell.
+    """
     counts = dict.fromkeys(CLASSES, 0)
     used: set[int] = set()
     skipped = Counter(r.base_skip for r in results if r.base_skip is not None)
+    plan = gate.plan
     for result in results:
         counts[result.verdict.cls] += 1
         used |= result.verdict.accepted_by
-        if result.verdict.cls in {"violation", "accepted"}:
+        shown = result.final if plan is not None else result.verdict
+        if shown.cls == "violation" or (shown.cls == "accepted" and plan is None):
             cell = result.cell
-            print(f"{result.verdict.cls}: {cell.label} | {cell.backend} | {cell.option_label}")
-            for note in result.verdict.notes[:6]:
+            print(f"{shown.cls}: {cell.label} | {cell.backend} | {cell.option_label}")
+            for note in [*shown.notes, *(result.verdict.notes if shown is not result.verdict else ())][:6]:
                 print(f"    {note[:240]}")
     for index, cells in sorted(skipped.items()):
         entry = gate.allowlist.base_skips[index]
         print(f"base-skipped: {entry.get('input')} | {entry.get('reason')} ({entry.get('issue')}) | {cells} cells")
     problems = gate.loaded_allowlist.problems(ns.base)
-    here = place([(r.cell.label, r.cell.backend) for r in results], gate.allowlist, ns.base)
+    groups = plan.groups if plan is not None else ()
+    here = place([(r.cell.label, r.cell.backend) for r in results], gate.allowlist, ns.base, groups)
     run = here if run is None else run
     judged = ns.tier != "pr"
     whole = judged and not ns.select
@@ -928,40 +1926,84 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Plac
         f"cells: {len(results)} (tier {ns.tier}, shard {ns.shard_index}/{ns.shard_total}), "
         f"cached base outputs: {gate.cache.hits}"
     )
+    failed = counts["violation"]
+    if plan is not None:
+        records = [*plan.problems, *selector_problems(plan, results, ns, (here, run))]
+        problems += records
+        verdicts = Counter(result.judged.cls for result in results if result.judged is not None)
+        failed = sum(result.final.cls == "violation" for result in results)
+        accepted, violations = verdicts["accepted"], verdicts["violation"]
+        if verdicts or records:
+            print(f"records: {len(plan.judged)} judged; differing cells accepted={accepted}, violation={violations}")
+        print("".join(f"records: {problem}\n" for problem in records), end="")
+        applied = Counter(
+            index for result in results if result.judged is not None for index in result.judged.accepted_by
+        )
+        for index, count in sorted(applied.items()):
+            record = plan.judged[index]
+            decided = f"; decision {', '.join(record.decision)}" if record.decision else ""
+            print(f"covered: {record.id} ({record.category}): {count} differing cells{decided}")
+        if gate.signature_only:
+            print(f"signature only (no payload case under the input): {', '.join(sorted(gate.signature_only))}")
+        if gate.refused_alike:
+            print(
+                f"payload cases both sides refused alike (no payload evidence): {', '.join(sorted(gate.refused_alike))}"
+            )
+        if gate.no_payloads:
+            print(
+                f"stored modules with no payloads (signatures and rule (b) only): {', '.join(sorted(gate.no_payloads))}"
+            )
+        if block := cells_block(results):
+            print("uncovered differing cells; a starting [[change.cells]] block for their record:")
+            print("\n".join(block), end="")
     if ns.json:
         ns.json.write_text("".join(json.dumps(cell_row(result)) + "\n" for result in results), encoding="utf-8")
-    return 1 if ns.check and (counts["violation"] or problems) else 0
+    return 1 if ns.check and (failed or problems) else 0
 
 
-def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
-    """Return the gate of a release and a candidate, and the release's interpreter."""
+def build_gate(ns: argparse.Namespace) -> Gate:
+    """Return the gate of a base and a candidate."""
     cache_dir = ns.cache_dir.absolute()
     candidate = resolve_candidate(ns.candidate, ns.candidate_python, cache_dir)
-    if ns.base_python is not None:
-        base_python = ns.base_python.absolute()
-        identity = json.dumps([str(base_python), *compare_release._probe(base_python)])  # ruff: ignore[private-member-access]
-        cache_name = f"python-{_stable(identity)[:12]}"
-    else:
-        base_python = compare_release._base_python(ns.base, candidate.python, cache_dir)  # ruff: ignore[private-member-access]
-        cache_name = base_python.parents[1].name
-    base_env = {k: v for k, v in candidate.env.items() if k != "PYTHONPATH"}
-    allowlist = Allowlist.load(ns.allowlist) if ns.allowlist.exists() else Allowlist()
+    if ns.base_python is not None and not (
+        compare_release.RELEASE.fullmatch(ns.base) or ns.base.startswith("refs/tags/")
+    ):
+        msg = f"--base-python runs an installed release, but {ns.base} is a revision: its own tree is its base"
+        raise SystemExit(msg)
+    plan = None if ns.identity else plan_records(ns, candidate)
+    spec = plan.base if plan is not None and not plan.release and plan.base is not None else ns.base
+    base = (
+        compare_release.installed_base(ns.base_python.absolute())
+        if ns.base_python is not None
+        else compare_release.resolve_base(spec, candidate.python, cache_dir, candidate.repo)
+    )
+    listed = not ns.identity and base.revision is None and ns.allowlist.exists()
+    allowlist = Allowlist.load(ns.allowlist) if listed else Allowlist()
+    units = (
+        compare_release.changed_units(
+            candidate.python, candidate.repo, base, candidate.revision, candidate.root / "src"
+        )
+        if ns.identity
+        else None
+    )
     gate = Gate(
         base=compare_release.Runner(
-            compare_release.Side("base", base_python),
-            base_env,
+            compare_release.Side("base", base.python, base.package),
+            base.env(),
             import_check=False,
             timeout=ns.timeout,
             memory_mb=ns.memory_mb,
         ),
         candidate=compare_release.Runner(
-            compare_release.Side("cand", candidate.python),
+            compare_release.Side("cand", candidate.python, candidate.root / "src"),
             candidate.env,
             import_check=False,
             timeout=ns.timeout,
             memory_mb=ns.memory_mb,
         ),
-        cache=compare_release.OutputCache(cache_dir / "outputs" / cache_name),
+        cache=compare_release.OutputCache(
+            cache_dir / "outputs" / base.cache_name, compare_release.measured_key(units, base.python)
+        ),
         candidate_python=candidate.python,
         allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base, [], allowlist.base_skips),
         loaded_allowlist=allowlist,
@@ -970,17 +2012,68 @@ def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
         payload_root=cache_dir / "payload-inputs" / _stable(str(candidate.root))[:12],
         candidate_info=candidate,
         base_version=ns.base,
+        identity=ns.identity,
+        evidence=compare_release.Evidence(units),
+        plan=plan,
     )
-    return gate, base_python
+    if plan is not None:
+        gate.rerun = compare_release.Runner(
+            compare_release.Side("cand", candidate.python, candidate.root / "src"),
+            candidate.env,
+            import_check=False,
+            timeout=ns.timeout,
+            memory_mb=ns.memory_mb,
+        )
+    if units is not None:
+        gate.base.probes, gate.candidate.probes = units.probes["base"], units.probes["head"]
+    return gate
+
+
+def shortcut(gate: Gate, plan: Plan, ns: argparse.Namespace) -> int:
+    """Pass a PR that changes nothing under src/ without generating: every cell is equal by construction.
+
+    A PR record that names cells fails then, as no cell can differ; the base's gate still runs on a change of the
+    gate's own files (`base_gate`).
+    """
+    base = (plan.base or "")[:12]
+    problems = [
+        *plan.problems,
+        *(
+            f"entry {record.id}: src/ is unchanged since {base}, so its cells cannot differ"
+            for record in plan.judged
+            if record.cells
+        ),
+    ]
+    print(f"src/ unchanged since the merge base {base}: every cell is equal")
+    print("".join(f"records: {problem}\n" for problem in problems), end="")
+    status = base_gate(plan, ns, gate.candidate_info.repo)
+    return 1 if ns.check and (problems or status) else 0
 
 
 def gate_main(ns: argparse.Namespace) -> int:
-    """Run the gate."""
+    """Run the gate; `--identity` fails on any difference, as `--check` does.
+
+    Without `--identity` the change records judge every cell whose facts differ (`Plan`, `judge_cell`).
+    """
     started = time.monotonic()
-    gate, base_python = build_gate(ns)
-    inventory = option_inventory(base_python)
+    ns.check = ns.check or ns.identity
+    gate = build_gate(ns)
+    plan = gate.plan
+    if plan is not None and not plan.release and not plan.src:
+        write_verdicts(gate, ns)
+        return shortcut(gate, plan, ns)
+    inventory = option_inventory(gate.base.side.python, gate.base.env)
+    offered = option_inventory(gate.candidate.side.python, gate.candidate.env) if gate.identity else inventory
+    if plan is not None and any(selector.options or selector.input_file_type for *_, selector in plan.selectors()):
+        released = inventory if plan.release else tag_inventory(gate, ns.cache_dir.absolute())
+        plan.problems += surface_problems(plan, released)
     cells = build_cells(ns, gate, inventory)
-    run = place([(cell.label, cell.backend) for cell in cells], gate.allowlist, ns.base)
+    if plan is not None:
+        plan.groups = [
+            frozenset((cell.label, cell.backend) for cell in cells if covers(selector, cell))
+            for *_, selector in plan.selectors()
+        ]
+    run = place([(cell.label, cell.backend) for cell in cells], gate.allowlist, ns.base, plan.groups if plan else ())
     cells = [cell for cell in cells if run.shard(cell, ns.shard_total) == ns.shard_index]
     reasons = {cell: reason for cell in cells if (reason := opt_in_reason(cell.args(), inventory))}
     runnable = [cell for cell in cells if cell not in reasons]
@@ -995,8 +2088,35 @@ def gate_main(ns: argparse.Namespace) -> int:
     finally:
         gate.base.close()
         gate.candidate.close()
-    results += [Result(cell, Verdict("opt-in", (f"the release has no {reason}",))) for cell, reason in reasons.items()]
+        if gate.rerun is not None:
+            gate.rerun.close()
+    if plan is not None and ns.shard_index == 1:
+        plan.problems += stored_problems(gate)
+    write_verdicts(gate, ns)
+    if gate.identity:
+        results = not_compared(results)
+        if ns.shard_index == 1 and (surface := option_changes(inventory, offered)):
+            results.append(
+                Result(Cell(Path(), "option surface", "", "", (), "options"), Verdict("violation", tuple(surface)))
+            )
+    results += [
+        Result(cell, Verdict("opt-in", (f"the release has no {reason}",)))
+        if opt_in_reason(cell.args(), offered)
+        else Result(cell, Verdict("violation", (f"the base has no {reason}, the candidate has it",)))
+        for cell, reason in reasons.items()
+    ]
     code = _report(results, gate, ns, run)
+    if plan is not None and base_gate(plan, ns, gate.candidate_info.repo) and ns.check:
+        code = 1
+    if gate.identity:
+        unseen = sum(any(note.startswith("not compared") for note in result.verdict.notes) for result in results)
+        failed = sum(result.verdict.cls == "both-fail" for result in results)
+        print(f"not compared: {unseen} of the {failed} cells that fail on both sides")
+    tests = compare_release.tested_lines(ns.test_coverage) if ns.test_coverage else None
+    if gate.evidence.report(tests) and gate.identity:
+        code = 1
+    if ns.evidence:
+        gate.evidence.write(ns.evidence)
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
     return code
 
@@ -1024,12 +2144,12 @@ def _pypi_upload_date(version: str) -> str:
 def era_python(version: str, cache_dir: Path) -> Path:
     """Install a release with the packages of its release day (`uv --exclude-newer`) and return its interpreter.
 
-    The newest Python of ERA_PYTHONS the release imports on is used.
+    The newest Python of ERA_PYTHONS the release imports on is used. The signature step imports msgspec, which no
+    release requires, so it is installed like black and isort, as is email-validator (`format: email` output).
     """
-    import datetime as dt  # ruff: ignore[import-outside-top-level]
     import fcntl  # ruff: ignore[import-outside-top-level] - POSIX only, like compare_release
 
-    root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}"
+    root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}-{'-'.join(ERA_PACKAGES)}"
     root.parent.mkdir(parents=True, exist_ok=True)
     with (root.parent / f"{root.name}.lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -1051,8 +2171,7 @@ def era_python(version: str, cache_dir: Path) -> Path:
                     "--exclude-newer",
                     newer,
                     f"datamodel-code-generator[{ERA_EXTRAS}]=={version}",
-                    "black",
-                    "isort",
+                    *ERA_PACKAGES,
                 ],
                 [str(root / "bin" / "python"), "-c", "import datamodel_code_generator.__main__"],
             ]
@@ -1109,9 +2228,11 @@ def record_main(ns: argparse.Namespace) -> int:
     started = time.monotonic()
     cache_dir, out = ns.cache_dir.absolute(), ns.out.absolute()
     recorder = resolve_candidate(None, None, cache_dir)
+    package = None
     if ns.checkout:
         source = resolve_candidate(ns.checkout, ns.python, cache_dir)
         python, env, cache = source.python, source.env, compare_release.OutputCache(None)
+        package = source.root / "src"
         environment = release_environment(python)
     else:
         python = (ns.python or era_python(ns.version, cache_dir)).absolute()
@@ -1120,7 +2241,11 @@ def record_main(ns: argparse.Namespace) -> int:
         name = python.parent.parent.name if ns.python is None else f"python-{_stable(environment)[:12]}"
         cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{ns.version}-{name}")
     runner = compare_release.Runner(
-        compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb
+        compare_release.Side("rec", python, package),
+        env,
+        import_check=False,
+        timeout=ns.timeout,
+        memory_mb=ns.memory_mb,
     )
     gate = Gate(
         base=runner,
@@ -1399,9 +2524,16 @@ def render_notes(data: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def name_accepted_changes(data: dict[str, Any], records: Iterable[Record]) -> None:
+    """Give each accepted change of a release page the title of the change record it names, or else its reason."""
+    titles = {record.id: record.title for record in records if record.title}
+    for group in data["accepted"]:
+        group["release_note"] = titles.get(group["migration"], group["reason"])
+
+
 def guide_main(ns: argparse.Namespace) -> int:
     """Write a release page's data (and release notes) from a gate run of the release against the previous one."""
-    gate, _ = build_gate(ns)
+    gate = build_gate(ns)
     try:
         if not ns.cells:
             ns.check, ns.json = False, ns.cache_dir.absolute() / f"guide-{ns.base}-{ns.version}.jsonl"
@@ -1410,6 +2542,7 @@ def guide_main(ns: argparse.Namespace) -> int:
         rows = [json.loads(line) for path in ns.cells for line in path.read_text(encoding="utf-8").splitlines()]
         data = summarize_gate(rows, gate.loaded_allowlist.entries)
         data = {"version": ns.version, "previous": ns.base, "tier": ns.tier, **data}
+        name_accepted_changes(data, read_records(MIGRATION_DATA))
         enrich_accepted(gate, rows, data, ns)
         enrich_opt_in(gate, rows, data)
     finally:
@@ -1422,13 +2555,20 @@ def guide_main(ns: argparse.Namespace) -> int:
     return 0
 
 
+def _candidate_tests(root: Path) -> None:
+    """Make `tests` import from the candidate at `root`: this checkout's test units the gate loaded are dropped."""
+    sys.path.insert(0, str(root))
+    for name in [name for name in sys.modules if name.partition(".")[0] == "tests"]:
+        del sys.modules[name]
+
+
 def _payload_cases(root: Path, out: Path) -> None:
     """Write every payload-validation case of the checkout at `root` and an index of their arguments.
 
     The harness has no TypedDict backend (a TypedDict validates nothing by itself); TypedDict cells use the
     dataclass arguments, and their payload verdicts come from the TypedDict's pydantic TypeAdapter.
     """
-    sys.path.insert(0, str(root))
+    _candidate_tests(root)
     from tests.main.payload_validation import SCHEMA_CASES  # ruff: ignore[import-outside-top-level]
     from tests.main.payload_validation.codegen import (  # ruff: ignore[import-outside-top-level]
         _payload_codegen_args,  # ruff: ignore[import-private-name]
@@ -1465,7 +2605,7 @@ def _draw_payloads(root: Path, case_id: str, out: Path) -> None:
     """Draw a fixed vector of valid and near-miss invalid payloads for one case (derandomised)."""
     import signal  # ruff: ignore[import-outside-top-level]
 
-    sys.path.insert(0, str(root))
+    _candidate_tests(root)
     from hypothesis import HealthCheck, Phase, given, settings  # ruff: ignore[import-outside-top-level]
     from hypothesis import strategies as st  # ruff: ignore[import-outside-top-level]
 
@@ -1537,6 +2677,7 @@ def main(argv: list[str] | None = None) -> int:
             _draw_payloads(Path(argv[1]), argv[2], Path(argv[3]))
         return 0
     ns = _parse_args(argv)
+    ns.argv = argv
     commands = {
         "gate": gate_main,
         "record": record_main,

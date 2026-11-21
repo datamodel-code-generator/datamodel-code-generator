@@ -1,0 +1,96 @@
+asyncapi: 3.0.0
+info:
+  title: Order events
+  version: 1.0.0
+servers:
+  feed:
+    host: orders.example.com
+    protocol: sse
+channels:
+  orders:
+    address: /v1/orders
+    messages:
+      order:
+        contentType: text/event-stream
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+          required: [id]
+  exports:
+    address: /v1/exports
+    messages:
+      progress:
+        contentType: text/event-stream
+        payload:
+          type: object
+          properties:
+            done:
+              type: integer
+  mixed:
+    address: /v1/mixed
+    messages:
+      update:
+        contentType: text/event-stream
+        payload:
+          type: object
+          properties:
+            version:
+              type: integer
+      plain:
+        contentType: text/plain
+        payload:
+          type: string
+  depths:
+    address: /v1/depths
+    messages:
+      level:
+        contentType: text/event-stream
+        payload:
+          type: object
+          properties:
+            depth:
+              type: integer
+operations:
+  placeOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+  runExports:
+    action: send
+    channel:
+      $ref: '#/channels/exports'
+    bindings:
+      http:
+        method: POST
+  streamMixed:
+    action: send
+    channel:
+      $ref: '#/channels/mixed'
+  streamDepths:
+    action: receive
+    channel:
+      $ref: '#/channels/depths'
+    bindings:
+      http:
+        query:
+          type: object
+          properties:
+            depth:
+              type: integer
+          required: [depth]
+  sampleDepths:
+    action: receive
+    channel:
+      $ref: '#/channels/depths'
+    bindings:
+      http:
+        query:
+          type: object
+          properties:
+            depth:
+              type: integer
+              description: The depth to sample.
+            since:
+              type: string

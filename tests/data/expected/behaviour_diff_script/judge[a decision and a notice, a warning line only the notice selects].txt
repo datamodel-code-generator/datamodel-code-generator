@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "decided-change (decided-change): a change line is outside its aspects and match: ['[warning] added DeprecationWarning: mind the gap']"
+ ],
+ "accepted_by": []
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "amount": {"allOf": [{"$ref": "shared.json#/$defs/Amount"}, {"maxLength": 5}]},
+    "plain": {"$ref": "shared.json#/$defs/Amount"},
+    "rates": {"type": "array", "items": {"allOf": [{"$ref": "shared.json#/$defs/Rate"}, {"minimum": 0}]}},
+    "options": {"allOf": [{"$ref": "shared.json#/$defs/Options"}, {"description": "Ordered options."}]},
+    "tally": {"allOf": [{"$ref": "tally.json"}, {"description": "Counts by label."}]},
+    "entry": {"$ref": "ledger.json#/$defs/Entry"},
+    "code": {"allOf": [{"$ref": "#/other/Code"}, {"maxLength": 36}]}
+  },
+  "other": {
+    "Code": {"type": "string", "x-python-import": {"module": "uuid", "name": "UUID"}}
+  }
+}

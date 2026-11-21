@@ -10,8 +10,8 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [Model Naming](#model-naming) | 12 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
-| [Model Shape](#model-shape) | 6 | Output model family and compatibility targets. |
-| [Root Model](#root-model) | 8 | Root model creation, collapse, and alias behavior. |
+| [Model Shape](#model-shape) | 7 | Output model family and compatibility targets. |
+| [Root Model](#root-model) | 12 | Root model creation, collapse, and alias behavior. |
 
 ## Model Naming {#model-naming}
 
@@ -51,6 +51,7 @@ Output model family and compatibility targets.
 |--------|-------------|
 | [`--base-class`](../model-customization.md#base-class) | Specify a custom base class for generated models. |
 | [`--base-class-map`](../model-customization.md#base-class-map) | Specify different base classes for specific models via JSON mapping. |
+| [`--merge-message-trait-headers`](../model-customization.md#merge-message-trait-headers) | Give an AsyncAPI message the headers of all its traits, merged in order, and the... |
 | [`--output-model-type`](../model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--target-pydantic-version`](../model-customization.md#target-pydantic-version) | Target Pydantic version for generated code compatibility. |
 | [`--target-python-version`](../model-customization.md#target-python-version) | Target Python version for generated code syntax and imports. |
@@ -62,11 +63,15 @@ Root model creation, collapse, and alias behavior.
 
 | Option | Description |
 |--------|-------------|
+| [`--collapse-constrained-root-models-as-annotated`](../model-customization.md#collapse-constrained-root-models-as-annotated) | Inline a constrained string root model into a union or a container as `Annotated... |
 | [`--collapse-root-models`](../model-customization.md#collapse-root-models) | Inline root model definitions instead of creating separate wrapper classes. |
 | [`--collapse-root-models-name-strategy`](../model-customization.md#collapse-root-models-name-strategy) | Select which name to keep when collapsing root models with object references. |
 | [`--collapse-shared-parent-wrappers`](../model-customization.md#collapse-shared-parent-wrappers) | Collapse a parent-strategy wrapper in every model that references it. |
 | [`--keep-constrained-root-models-in-every-container`](../model-customization.md#keep-constrained-root-models-in-every-container) | Keep constrained root models named in every container of a holder. |
 | [`--keep-enum-literal-aliases`](../model-customization.md#keep-enum-literal-aliases) | Keep a named enum written as a Literal type alias named under collapse. |
 | [`--keep-reference-null-on-collapsed-root-models`](../model-customization.md#keep-reference-null-on-collapsed-root-models) | Keep the null of a root model that admits null where `--collapse-root-models` in... |
+| [`--keep-self-referencing-array-items`](../model-customization.md#keep-self-referencing-array-items) | Keep the items of an array whose items name the array itself. |
+| [`--keep-shared-members-on-collapsed-root-models`](../model-customization.md#keep-shared-members-on-collapsed-root-models) | Keep each member of a root type that collapse inlined at several sites at every ... |
+| [`--remove-unused-models-beside-type-overrides`](../model-customization.md#remove-unused-models-beside-type-overrides) | Remove the unused models from a module that a model-level `--type-overrides` key... |
 | [`--skip-root-model`](../model-customization.md#skip-root-model) | Skip generation of root model when schema contains nested definitions. |
 | [`--use-root-model-sequence-interface`](../model-customization.md#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes implement collections.... |

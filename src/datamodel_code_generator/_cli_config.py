@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
-from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._config_fields import (
     CLI_RESOLVED_PATH_FIELDS,
     DEFAULT_WATCH_DELAY,
@@ -17,12 +16,12 @@ from datamodel_code_generator._config_fields import (
     option_path,
 )
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
+from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
-    AllExportsScope,
     ClassNameAffixScope,
     DataModelType,
     InputFileType,
@@ -30,21 +29,22 @@ from datamodel_code_generator.enums import (
     NamingStrategy,
     OpenAPIScope,
     StrictTypes,
+    _openapi_scopes_or_default,
 )
 
 if TYPE_CHECKING:
     from argparse import Namespace
     from collections import defaultdict
 
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.json_config import JsonConfigFieldName, JsonConfigSource
     from datamodel_code_generator.validators import ModelValidators
 
     ValidatorsConfigValue: TypeAlias = Mapping[str, ModelValidators]
+    Config: TypeAlias = Any
 else:
     ValidatorsConfigValue: TypeAlias = Mapping[str, Any]
 
-Config = cast("Any", object)
+Config: TypeAlias = Any
 
 _HttpKeyValuePair: TypeAlias = tuple[str, str]
 _HttpKeyValueInput: TypeAlias = str | _HttpKeyValuePair
@@ -110,11 +110,11 @@ def _validate_http_key_value_options(
     item_error_name: _HttpItemErrorName,
     value_error_name: _HttpValueErrorName,
 ) -> list[_HttpKeyValuePair] | None:
-    if value is None:  # pragma: no cover
+    if value is None:
         return None
 
     def validate_each_item(each_item: _HttpKeyValueInput) -> _HttpKeyValuePair:
-        if isinstance(each_item, str):  # pragma: no cover
+        if isinstance(each_item, str):
             try:
                 field_name, field_value = each_item.split(separator, maxsplit=1)
                 return field_name, field_value.lstrip()
@@ -123,7 +123,7 @@ def _validate_http_key_value_options(
 
                 msg = f"Invalid {item_error_name}: {stable_repr(each_item)}"
                 raise Error(msg) from exc
-        return each_item  # pragma: no cover
+        return each_item
 
     if isinstance(value, list):
         return [validate_each_item(cast("_HttpKeyValueInput", each_item)) for each_item in value]
@@ -145,6 +145,7 @@ def _get_config_class() -> type[Config]:
     )
     from typing_extensions import Self  # noqa: PLC0415
 
+    from datamodel_code_generator._run_record import RunOptions  # noqa: PLC0415
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
 
     class Config(BaseGenerateConfig):  # noqa: PLR0904
@@ -157,14 +158,14 @@ def _get_config_class() -> type[Config]:
             defer_build=True,
         )
 
-        _json_sources: dict[str, Any] = PrivateAttr(default_factory=dict)
-        _naming_chosen: bool = PrivateAttr(default=False)
+        # Where the values of the run came from and what its option stages gave: the copies of a config share it.
+        _run_options: RunOptions = PrivateAttr(default_factory=RunOptions)
 
-        def get(self, item: str) -> Any:  # pragma: no cover
+        def get(self, item: str) -> Any:
             """Get attribute value by name."""
             return getattr(self, item)
 
-        def __getitem__(self, item: str) -> Any:  # pragma: no cover
+        def __getitem__(self, item: str) -> Any:
             """Get item by key."""
             return self.get(item)
 
@@ -196,7 +197,7 @@ def _get_config_class() -> type[Config]:
             A path the parser already built only expands ``~``.
             """
             if value is None:
-                return value  # pragma: no cover
+                return value
             field = cast("str", info.field_name)
             path = option_path(field, value)
             if field not in CLI_RESOLVED_PATH_FIELDS:
@@ -207,7 +208,7 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_url(cls, value: Any) -> ParseResult | None:
             """Validate and parse URL."""
-            if value is None:  # pragma: no cover
+            if value is None:
                 return None
             if not isinstance(value, str) or not is_url(value):
                 msg = f"Unsupported URL scheme. Supported: http, https, file. --input={redact_url(str(value))}"
@@ -266,7 +267,7 @@ def _get_config_class() -> type[Config]:
             """Migrate deprecated --parent-scoped-naming to --naming-strategy."""
             if values.get("parent_scoped_naming") and not values.get("naming_strategy"):
                 values["naming_strategy"] = NamingStrategy.ParentPrefixed
-                warn_deprecated("cli.parent-scoped-naming", stacklevel=2)
+                warn_deprecated("cli.parent-scoped-naming")
             return values
 
         @model_validator(mode="before")
@@ -275,7 +276,7 @@ def _get_config_class() -> type[Config]:
             """Migrate deprecated --allow-extra-fields to --extra-fields."""
             if values.get("allow_extra_fields") and not values.get("extra_fields"):
                 values["extra_fields"] = "allow"
-                warn_deprecated("cli.allow-extra-fields", stacklevel=2)
+                warn_deprecated("cli.allow-extra-fields")
             return values
 
         @model_validator(mode="before")
@@ -309,46 +310,25 @@ def _get_config_class() -> type[Config]:
         @model_validator(mode="after")
         def validate_output_datetime_class(self: Self) -> Self:
             """Validate output datetime class compatibility."""
+            from datamodel_code_generator._option_rules import _validate_output_datetime_class  # noqa: PLC0415
+
             _validate_output_datetime_class(self.output_model_type, self.output_datetime_class)
             return self
 
         @model_validator(mode="after")
         def validate_alias_generator(self: Self) -> Self:
             """Validate alias generator compatibility."""
+            from datamodel_code_generator._option_rules import _validate_alias_generator  # noqa: PLC0415
+
             _validate_alias_generator(self.output_model_type, self.alias_generator)
             return self
 
-        def validate_original_field_name_delimiter(self) -> None:
-            """Validate original field name delimiter requires snake case after preset merging."""
-            if self.original_field_name_delimiter is not None and not self.snake_case_field:
-                msg = "`--original-field-name-delimiter` can not be used without `--snake-case-field`."
-                raise Error(msg)
-
         @model_validator(mode="after")
-        def validate_custom_file_header(self: Self) -> Self:
-            """Validate custom file header options are mutually exclusive."""
-            if self.custom_file_header is not None and self.custom_file_header_path is not None:
-                msg = "`--custom-file-header-path` can not be used with `--custom-file-header`."
-                raise Error(msg)
-            return self
+        def validate_cli_option_relations(self: Self) -> Self:
+            """Refuse the options that the relation rows of stage `cli-validator` refuse together."""
+            from datamodel_code_generator._option_rules import check_option_relations  # noqa: PLC0415
 
-        @model_validator(mode="after")
-        def validate_keyword_only(self: Self) -> Self:
-            """Validate keyword-only compatibility with target Python version."""
-            from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
-
-            output_model_type: DataModelType = self.output_model_type
-            python_target: PythonVersion = self.target_python_version
-            if (
-                self.keyword_only
-                and output_model_type == DataModelType.DataclassesDataclass
-                and not python_target_meets("python.kw_only_dataclass", python_target.version_key)
-            ):
-                msg = (  # pragma: no cover
-                    f"`--keyword-only` requires `--target-python-version` "
-                    f"{REQUIREMENTS['python.kw_only_dataclass'].minimum} or higher."
-                )
-                raise Error(msg)  # pragma: no cover
+            check_option_relations("cli-validator", self)
             return self
 
         @model_validator(mode="after")
@@ -357,14 +337,6 @@ def _get_config_class() -> type[Config]:
             from datamodel_code_generator._option_rules import enable_implied_options  # noqa: PLC0415
 
             enable_implied_options(self, "use_annotated")
-            return self
-
-        @model_validator(mode="after")
-        def validate_all_exports_collision_strategy(self: Self) -> Self:
-            """Validate all_exports_collision_strategy requires recursive scope."""
-            if self.all_exports_collision_strategy is not None and self.all_exports_scope != AllExportsScope.Recursive:
-                msg = "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`."
-                raise Error(msg)
             return self
 
         @field_validator("input_model", mode="before")
@@ -379,11 +351,11 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_class_name_affix_scope(cls, v: str | ClassNameAffixScope | None) -> ClassNameAffixScope:
             """Convert string to ClassNameAffixScope enum."""
-            if v is None:  # pragma: no cover
+            if v is None:
                 return ClassNameAffixScope.All
             if isinstance(v, str):
                 return ClassNameAffixScope(v)
-            return v  # pragma: no cover
+            return v
 
         @field_validator("schema_validator_base_class_name")
         @classmethod
@@ -396,33 +368,33 @@ def _get_config_class() -> type[Config]:
                 raise Error(msg)
             return v
 
-        input: Optional[Union[Path, str]] = None  # noqa: UP007, UP045
-        input_model: Optional[list[str]] = None  # noqa: UP045
-        input_model_ref_strategy: Optional[InputModelRefStrategy] = None  # noqa: UP045
+        input: Optional[Union[Path, str]] = None
+        input_model: Optional[list[str]] = None
+        input_model_ref_strategy: Optional[InputModelRefStrategy] = None
         input_file_type: InputFileType = InputFileType.Auto
         output_model_type: DataModelType = DataModelType.PydanticV2BaseModel
-        output: Optional[Path] = None  # noqa: UP045
+        output: Optional[Path] = None
         check: bool = False
-        diff_against: Optional[Path] = None  # noqa: UP045
+        diff_against: Optional[Path] = None
         repair_invalid_dotted_stdout: bool = Field(default=False, exclude=True)
         forced_invalid_dotted_stdout_repair_modules: tuple[tuple[str, ...], ...] = Field(default=(), exclude=True)
         debug: bool = False
         disable_warnings: bool = False
         extra_template_data: Mapping[str, dict[str, Any]] | None = None
-        validators: Optional[ValidatorsConfigValue] = None  # noqa: UP045
-        aliases: Optional[Mapping[str, str | list[str]]] = None  # noqa: UP045
-        serialization_aliases: Optional[Mapping[str, str]] = None  # noqa: UP045
-        default_values: Optional[Mapping[str, Any]] = None  # noqa: UP045
+        validators: Optional[ValidatorsConfigValue] = None
+        aliases: Optional[Mapping[str, str | list[str]]] = None
+        serialization_aliases: Optional[Mapping[str, str]] = None
+        default_values: Optional[Mapping[str, Any]] = None
         use_default: bool = False
         force_optional: bool = False
-        url: Optional[ParseResult] = None  # noqa: UP045
+        url: Optional[ParseResult] = None
         strict_types: list[StrictTypes] = Field(default_factory=list)
-        openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: [OpenAPIScope.Schemas])  # noqa: UP045
-        custom_formatters_kwargs: Optional[dict[str, str]] = None  # noqa: UP045
+        openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: _openapi_scopes_or_default(None))
+        custom_formatters_kwargs: Optional[dict[str, str]] = None
         watch: bool = False
         watch_delay: float = DEFAULT_WATCH_DELAY
-        list_deprecations: Optional[str] = None  # noqa: UP045
-        list_experimental: Optional[str] = None  # noqa: UP045
+        list_deprecations: Optional[str] = None
+        list_experimental: Optional[str] = None
 
         def merge_args(self, args: Namespace) -> None:
             """Merge command-line arguments into config."""
@@ -448,7 +420,7 @@ def _get_config_class() -> type[Config]:
                 self.generate_client = None
             elif "generate_client" in set_args:
                 self.generate_server = None
-            for field_name in set_args:
+            for field_name in parsed_args.model_fields_set:
                 setattr(self, field_name, getattr(parsed_args, field_name))
 
     Config.__qualname__ = "Config"
@@ -468,19 +440,6 @@ def _prepare_cli_config_args(set_args: Mapping[str, _RawConfigValue]) -> dict[st
     from datamodel_code_generator._option_rules import implied_options  # noqa: PLC0415
 
     return {**set_args, **implied_options(set_args)}
-
-
-def _apply_implicit_cli_config_values(
-    config: Config,
-    pyproject_config: Mapping[str, _RawConfigValue],
-    cli_config_args: Mapping[str, _RawConfigValue],
-) -> None:
-    """Apply CLI defaults after pyproject, command-line, and preset values have merged."""
-    from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
-
-    explicit_fields = {field_name(field) for field in pyproject_config} | set(cli_config_args)
-    for name, value in implied_model_settings(config, explicit_fields).items():
-        setattr(config, name, value)
 
 
 def _template_data(config: Config) -> defaultdict[str, dict[str, Any]] | None:

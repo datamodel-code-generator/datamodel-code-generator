@@ -1,0 +1,2 @@
+Pydantic does not take max_length on Stamp; StampLen is generated without this constraint.
+Pydantic does not take max_length on Stamp; Model.stamp_len_prop is generated without this constraint.

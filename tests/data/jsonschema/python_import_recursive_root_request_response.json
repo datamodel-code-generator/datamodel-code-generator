@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tree",
+  "type": "object",
+  "properties": {
+    "id": {"type": "integer", "readOnly": true},
+    "child": {"allOf": [{"$ref": "#"}, {"description": "Child."}]},
+    "kids": {"type": "array", "items": {"$ref": "#"}}
+  },
+  "x-python-import": {"module": "trees", "name": "Tree"}
+}

@@ -1,0 +1,6 @@
+[
+  "/listOrWord const [\"y\"]: invalid, model accepts",
+  "/listOrWord enum \"z\": invalid, model accepts",
+  "/listOrWord enum [\"y\"]: invalid, model accepts",
+  "/listOrWord enum [\"z\"]: invalid, model accepts"
+]

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Final, Literal, TypeAlias, cast
 from urllib.parse import quote
 
@@ -31,6 +31,7 @@ __all__ = (
     "PLACEHOLDER",
     "ParameterLocation",
     "ParameterPlan",
+    "ParameterShapeError",
     "ValueShape",
     "builtin_content",
     "cookie_octets",
@@ -68,9 +69,19 @@ OWS: Final = " \t"
 _UNENCODABLE: Final = "A parameter value is text that UTF-8 cannot encode, such as a lone surrogate"
 
 
+class ParameterShapeError(ValueError):
+    """Report a parameter plan whose style or content has no reversible builtin form for the shape of its values."""
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterPlan:
-    """Describe one effective parameter: location, style or content media, and lexical kinds."""
+    """Describe one effective parameter: location, style or content media, and lexical kinds.
+
+    An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar. A
+    deepObject plan in the bracket form (`brackets`) writes each value by what it is (`_bracketed`). A `credential`
+    plan writes its value where an apiKey credential of its operation goes; a call whose request carries a value
+    there sends no credential at that position.
+    """
 
     location: ParameterLocation
     name: str
@@ -84,17 +95,25 @@ class ParameterPlan:
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
     reserved_names: tuple[str, ...] = ()
+    single: bool = False
+    brackets: bool = False
+    credential: bool = False
 
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form.
 
-        A header needs a name that is a token, and so does a cookie sent as it is, a single value or one of the cookie
-        style.
+        A single plan needs a form for its items alone as well as for its arrays, and one that tells an item holding
+        the delimiter of an array from that array, which a header, whose values are not percent-encoded, has not; these
+        refusals raise ParameterShapeError. A header needs a name that is a token, and so does a cookie sent as it is,
+        a single value or one of the cookie style.
         """
-        if not _reversible(self):
+        if not _reversible(self) or (
+            self.single and (self.shape != "array" or self.location == "header" or not _reversible(self, "scalar"))
+        ):
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
-            msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
-            raise ValueError(msg)
+            shape = "one item or an array of" if self.single else self.shape
+            msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {shape} values"
+            raise ParameterShapeError(msg)
         if self.location == "header" and not is_token(self.name):
             msg = f"header name {self.name!r} is not a token, which every header field name must be"
             raise ValueError(msg)
@@ -123,20 +142,32 @@ def builtin_content(location: ParameterLocation, media_type: str) -> bool:
             return False
 
 
-def _reversible(plan: ParameterPlan) -> bool:
+def _reversible(plan: ParameterPlan, shape: ValueShape | None = None) -> bool:
+    """Return whether a plan has a builtin form for its values, or for values of `shape` when given."""
     if plan.content_media_type is not None:
         return plan.style is None and builtin_content(plan.location, plan.content_media_type)
     if plan.style is None or plan.style not in _STYLES.get(plan.location, ()):
         return False
-    match plan.style, plan.shape, plan.explode:
-        case "spaceDelimited" | "pipeDelimited", shape, explode:
-            return shape != "scalar" and not explode
-        case "deepObject", shape, explode:
-            return shape == "object" and explode
+    values = plan.shape if shape is None else shape
+    match plan.style, values, plan.explode:
+        case "spaceDelimited" | "pipeDelimited", _, _:
+            return values != "scalar" and not plan.explode
+        case "deepObject", _, _:
+            return (values == "object" or plan.brackets) and plan.explode
         case _, "array" | "object", False:
             return plan.location != "cookie"
         case _:
             return True
+
+
+def _item(plan: ParameterPlan) -> ParameterPlan:
+    """Return the plan that writes one item of a single plan alone: the plan of a scalar of its kind."""
+    return replace(plan, shape="scalar", single=False)
+
+
+def _written(plan: ParameterPlan, value: JSONValue) -> ParameterPlan:
+    """Return the plan that writes a value: a single plan's item plan for a value that is no array."""
+    return _item(plan) if plan.single and not isinstance(value, tuple | list) else plan
 
 
 _Entry: TypeAlias = tuple[str | None, str]
@@ -157,6 +188,36 @@ def _entries(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
             pass
     msg = "The value does not have the parameter's declared shape"
     raise ParameterEncodingError(msg)
+
+
+def _bracketed(name: str, value: JSONValue, plan: ParameterPlan | FieldPlan) -> list[_Entry]:
+    """Return the names and texts of a value in the bracket form, by what the value is, under its name.
+
+    An object writes each member as `name[key]`, by the plan of the member, and an array each object as
+    `name[index]` and each scalar as `name[]`; a scalar is written as `name`, in the plan's kind. A member of None is
+    left out, as an unset one is.
+    """
+    match value:
+        case Mapping():
+            plans = {field.name: field for field in plan.fields}
+            return [
+                entry
+                for key, item in value.items()
+                if item is not None
+                for entry in _bracketed(f"{name}[{key}]", item, plans.get(key, plan.additional) or FieldPlan(key))
+            ]
+        case list():
+            return [
+                entry
+                for index, item in enumerate(value)
+                for entry in (
+                    _bracketed(f"{name}[{index}]", item, plan)
+                    if isinstance(item, Mapping)
+                    else [(f"{name}[]", lexical(item, plan.kind))]
+                )
+            ]
+        case _:
+            return [(name, lexical(value, plan.kind))]
 
 
 def percent_encoded(text: str, safe: str) -> str:
@@ -221,6 +282,8 @@ def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = Fal
     encoded = entries if raw else _encoded(entries, encode)
     name = encode(plan.name)
     match plan.style, plan.shape, plan.explode:
+        case _ if plan.brackets:
+            return encoded
         case "form", "scalar", _:
             return [(name, encoded[0][1])]
         case "form", _, True:
@@ -328,7 +391,7 @@ def _style_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
     A style cannot write null, so an object member of None is left out as an unset one is. A path segment cannot be
     omitted, so a path parameter refuses an empty array or object.
     """
-    if not (entries := _entries(plan, value)):
+    if not (entries := _bracketed(plan.name, value, plan) if plan.brackets else _entries(plan, value)):
         if plan.location == "path":
             msg = "An empty array or object cannot fill a path segment"
             raise ParameterEncodingError(msg)
@@ -363,8 +426,9 @@ def pairs(plan: ParameterPlan, value: object) -> list[tuple[str | None, str]]:
     Text that UTF-8 cannot encode, such as a lone surrogate, raises ParameterEncodingError, as any value its style or
     content cannot write does.
     """
+    wire = cast("JSONValue", value)
     try:
-        return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, cast("JSONValue", value))
+        return (_style_pairs if plan.content_media_type is None else _content_pairs)(_written(plan, wire), wire)
     except UnicodeEncodeError:
         raise ParameterEncodingError(_UNENCODABLE) from None
 
@@ -381,6 +445,7 @@ def query_pairs(plan: ParameterPlan, value: object) -> tuple[str, ...]:
 
 def part_pairs(plan: ParameterPlan, value: object) -> tuple[tuple[str, str], ...]:
     """Return a query parameter's ordered names and values as form-data parts carry them, without percent-encoding."""
-    if not (entries := _entries(plan, cast("JSONValue", value))):
+    plan = _written(plan, wire := cast("JSONValue", value))
+    if not (entries := _entries(plan, wire)):
         return ()
     return tuple((plan.name if key is None else key, text) for key, text in _encode_query(plan, entries, raw=True))

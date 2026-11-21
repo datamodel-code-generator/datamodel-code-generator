@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: Name repeats
+  version: 1.0.0
+servers:
+  - url: https://names.example.com
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - {name: p1, in: query, schema: {type: string}}
+        - {name: p2, in: query, schema: {type: string}}
+        - {name: p3, in: query, schema: {type: string}}
+        - {name: p4, in: query, schema: {type: string}}
+        - {name: p5, in: query, schema: {type: string}}
+        - {name: p6, in: query, schema: {type: string}}
+      responses:
+        '204':
+          description: Three arguments take one name; two others take another.
+  /a:
+    get:
+      operationId: a
+      responses:
+        '204':
+          description: A.
+  /b:
+    get:
+      operationId: b
+      responses:
+        '204':
+          description: B.
+  /c:
+    get:
+      operationId: c
+      responses:
+        '204':
+          description: C.

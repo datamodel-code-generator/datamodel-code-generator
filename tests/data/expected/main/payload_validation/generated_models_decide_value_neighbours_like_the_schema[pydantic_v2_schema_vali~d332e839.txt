@@ -1,0 +1,6 @@
+[
+  "/always enum null: invalid, model accepts",
+  "/amount enum null: invalid, model accepts",
+  "/enabled enum null: invalid, model accepts",
+  "/never enum null: invalid, model accepts"
+]

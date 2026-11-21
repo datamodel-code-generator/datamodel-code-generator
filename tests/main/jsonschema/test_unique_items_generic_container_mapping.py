@@ -14,7 +14,6 @@ from tests.main.conftest import (
     run_generate_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -35,7 +34,6 @@ def test_main_jsonschema_unique_items_generic_container_mapping(output_file: Pat
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / f"{schema_name}.py",
         output=output_file,
         **generate_kwargs,
     )
@@ -55,7 +53,6 @@ def test_main_jsonschema_generic_container_mapping_module_split(output_dir: Path
         input_path=JSON_SCHEMA_DATA_PATH / "mapping_alias_module_split.json",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "mapping_alias_module_split",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",

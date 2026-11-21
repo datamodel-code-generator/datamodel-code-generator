@@ -6,6 +6,7 @@ This page lists features that are available but still experimental.
 
 | ID | Kind | Target | Since | Tracking |
 |----|------|--------|-------|----------|
+| `behavior.asyncapi-client` | behavior | `--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective` | 0.92.0 | - |
 | `behavior.naming-hint` | behavior | `NamingHintWarning` | 0.86.0 | - |
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
@@ -15,18 +16,29 @@ This page lists features that are available but still experimental.
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation` | 0.86.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
+| `cli-option.untrusted-input` | cli-option | `--untrusted-input` | 0.92.0 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
-| `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.71.1 | - |
-| `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.71.1 | - |
-| `formatter.builtin` | formatter | `--formatters builtin` | 0.59.0 | - |
+| `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.72.1 | - |
+| `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.72.0 | - |
 | `input-format.asyncapi` | input-format | `--input-file-type asyncapi` | 0.59.0 | - |
 | `input-format.avro` | input-format | `--input-file-type avro` | 0.59.0 | - |
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
+| `python-api.generate-dynamic-module` | python-api | `generate_dynamic_module(), DynamicModule, and register_module=True` | 0.92.0 | - |
 
 ## Details
+
+### `behavior.asyncapi-client`
+
+- **Kind:** behavior
+- **Target:** `--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective`
+- **Since:** 0.92.0
+
+HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated package may change.
+
+Each channel of an AsyncAPI 2 or 3 document that a `ws` or `wss` server serves becomes an attribute of the client, `client.<channel>.connect(...)`, which opens the channel's WebSocket and sends and receives its messages through the generated models, and each server-sent event channel of an `http`, `https` or `sse` server, `client.<channel>.open(...)`, which receives its events. `--client-asyncapi-perspective` says whether the document describes the server (the default), whose sends the client receives on a WebSocket, or the client. A channel that uses a feature the client does not support is left out with a warning.
 
 ### `behavior.naming-hint`
 
@@ -118,6 +130,16 @@ Schema-derived runtime validator backend selection is experimental and may chang
 
 The only currently implemented backend is 'pydantic-v2', which preserves the existing generated Pydantic v2 validator behavior.
 
+### `cli-option.untrusted-input`
+
+- **Kind:** cli-option
+- **Target:** `--untrusted-input`
+- **Since:** 0.92.0
+
+The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.
+
+With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input, --validation and a schema nested more than 100 levels deep or holding more than 2,000,000 objects and arrays, and implies --no-allow-remote-refs. It does not sandbox the generated code.
+
 ### `cli-option.use-missing-sentinel`
 
 - **Kind:** cli-option
@@ -142,7 +164,7 @@ The option replaces root model classes with type aliases where possible. Pydanti
 
 - **Kind:** cli-option
 - **Target:** `--use-type-alias-type`
-- **Since:** 0.71.1
+- **Since:** 0.72.1
 
 Runtime TypeAliasType output is experimental and may change as Python typing support evolves.
 
@@ -152,21 +174,11 @@ The option implies --use-type-alias and selects TypeAliasType for Python 3.10 an
 
 - **Kind:** extra
 - **Target:** `datamodel-code-generator[httpx2]`
-- **Since:** 0.71.1
+- **Since:** 0.72.0
 
 The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.
 
 `datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; `datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable httpx is selected when its client module is installed, including when both pairs are installed, and experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or `HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency errors do not fall back.
-
-### `formatter.builtin`
-
-- **Kind:** formatter
-- **Target:** `--formatters builtin`
-- **Since:** 0.59.0
-
-The internal formatter is experimental and may change as generated-output coverage is expanded.
-
-The formatter is designed for generated model modules and is not a general-purpose Python formatter.
 
 ### `input-format.asyncapi`
 
@@ -217,3 +229,13 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
+
+### `python-api.generate-dynamic-module`
+
+- **Kind:** python-api
+- **Target:** `generate_dynamic_module(), DynamicModule, and register_module=True`
+- **Since:** 0.92.0
+
+Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema locations it keys classes by, and the module registration rules may change.
+
+generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and the class of each schema location that becomes a class (a location written as a type alias or merged into another class has no entry). With register_module=True, it keeps the module of the classes registered in sys.modules, so that the classes and their instances pickle. generate_dynamic_models() is not experimental.

@@ -57,7 +57,14 @@ class Model(Struct):
     )
     holder: Holder | UnsetType = field(
         default_factory=lambda: convert(
-            {'row': SimpleNamespace(**{'b-c': 4}), 'name': 'h', 'tags': ['t'], 'nullableTags': None, 'rowsByKey': {'k': SimpleNamespace(**{'a': 'm'})}, 'labels': {'x': 'y'}},
+            {
+                'row': SimpleNamespace(**{'b-c': 4}),
+                'name': 'h',
+                'tags': ['t'],
+                'nullableTags': None,
+                'rowsByKey': {'k': SimpleNamespace(**{'a': 'm'})},
+                'labels': {'x': 'y'},
+            },
             type=Holder,
             from_attributes=True,
         )

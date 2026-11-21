@@ -8,8 +8,7 @@ caller names its rule (``C3Rule``):
   the first one, and a walk that meets an item it is still linearizing takes it there without its parents, so every
   input has an order.
 * ``python``: Python's method resolution order, or None where Python refuses a class: an inheritance cycle or parents
-  whose orders conflict (`parser/_inheritance_check.py:check_model_inheritance`, the target bindings of
-  `_target_binding.py`).
+  whose orders conflict (`parser/_inheritance_check.py:check_model_inheritance`, `model/base.py:python_base_classes`).
 
 ``resolve_members`` reads the members of a class and its bases through such an order, the nearest declaration of each:
 the struct options msgspec takes. ``collect_members`` reads the fields a model has with its bases
@@ -53,7 +52,7 @@ def resolve_members(
     return resolved
 
 
-def collect_members(  # noqa: PLR0913
+def collect_members(
     order: Sequence[_T],
     members_of: Callable[[_T], Iterable[_M]],
     key: Callable[[_M], _K | None],

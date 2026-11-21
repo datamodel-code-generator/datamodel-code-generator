@@ -82,14 +82,16 @@ class AsyncDefaultResource:
         """
         Call POST /shared.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (),
-            body=body,
-            fields=(a, c, b, d),
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (),
+                body=body,
+                fields=(a, c, b, d),
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:

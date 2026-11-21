@@ -1,0 +1,13 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "tree": {"$ref": "#/$defs/Node"},
+    "chain": {"$ref": "#/$defs/Chain"}
+  },
+  "$defs": {
+    "Node": {"type": "array", "items": {"anyOf": [{"$ref": "#/$defs/Node"}, {"$ref": "#/$defs/Leaf"}]}},
+    "Leaf": {"type": "string"},
+    "Chain": {"type": "array", "items": {"$ref": "#/$defs/Chain"}}
+  }
+}

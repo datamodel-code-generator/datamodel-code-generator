@@ -1,0 +1,3 @@
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; Base.ratio is generated without this constraint.
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; Child.ratio is generated without this constraint.
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; Override.ratio is generated without this constraint.

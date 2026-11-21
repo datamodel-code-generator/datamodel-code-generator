@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "no covering record admits the cell's exit difference"
+ ],
+ "accepted_by": []
+}

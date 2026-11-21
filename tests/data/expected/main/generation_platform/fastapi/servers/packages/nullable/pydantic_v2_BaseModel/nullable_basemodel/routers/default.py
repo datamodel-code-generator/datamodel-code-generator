@@ -30,7 +30,9 @@ def _add_post_text(
 
     def post_text(
         *,
-        body: Annotated[nullable_basemodel_models.TextsPostRequest, Depends(contract.PostText.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.TextsPostRequest, Depends(contract.PostText.BODY)
+        ],
     ) -> object:
         return dispatch(
             post_text_handler(
@@ -66,7 +68,9 @@ def _add_post_list(
 
     async def post_list(
         *,
-        body: Annotated[nullable_basemodel_models.ListsPostRequest, Depends(contract.PostList.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.ListsPostRequest, Depends(contract.PostList.BODY)
+        ],
     ) -> object:
         return dispatch(
             await post_list_handler(
@@ -101,7 +105,10 @@ def _add_post_choice(
 
     def post_choice(
         *,
-        body: Annotated[nullable_basemodel_models.ChoicesPostRequest, Depends(contract.PostChoice.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.ChoicesPostRequest,
+            Depends(contract.PostChoice.BODY),
+        ],
     ) -> object:
         return dispatch(
             post_choice_handler(
@@ -136,7 +143,9 @@ def _add_post_color(
 
     def post_color(
         *,
-        body: Annotated[nullable_basemodel_models.Color, Depends(contract.PostColor.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.Color, Depends(contract.PostColor.BODY)
+        ],
     ) -> object:
         return dispatch(
             post_color_handler(
@@ -171,7 +180,9 @@ def _add_post_name(
 
     def post_name(
         *,
-        body: Annotated[nullable_basemodel_models.Name | None, Depends(contract.PostName.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.Name | None, Depends(contract.PostName.BODY)
+        ],
     ) -> object:
         return dispatch(
             post_name_handler(
@@ -206,7 +217,9 @@ def _add_post_pet(
 
     def post_pet(
         *,
-        body: Annotated[nullable_basemodel_models.Pet | None, Depends(contract.PostPet.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.Pet | None, Depends(contract.PostPet.BODY)
+        ],
     ) -> object:
         return dispatch(
             post_pet_handler(
@@ -241,7 +254,9 @@ def _add_post_code(
 
     def post_code(
         *,
-        body: Annotated[nullable_basemodel_models.CodesPostRequest, Depends(contract.PostCode.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.CodesPostRequest, Depends(contract.PostCode.BODY)
+        ],
     ) -> object:
         return dispatch(
             post_code_handler(
@@ -276,7 +291,10 @@ def _add_post_value(
 
     def post_value(
         *,
-        body: Annotated[nullable_basemodel_models.ValuesPostRequest, Depends(contract.PostValue.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.ValuesPostRequest,
+            Depends(contract.PostValue.BODY),
+        ],
     ) -> object:
         return dispatch(
             post_value_handler(
@@ -346,7 +364,9 @@ def _add_post_item(
 
     def post_item(
         *,
-        body: Annotated[nullable_basemodel_models.Item, Body(media_type='application/json')],
+        body: Annotated[
+            nullable_basemodel_models.Item, Body(media_type='application/json')
+        ],
     ) -> object:
         return dispatch(
             post_item_handler(
@@ -381,7 +401,10 @@ def _add_post_id(
 
     def post_id(
         *,
-        body: Annotated[nullable_basemodel_models.IdsPostRequest, Body(media_type='application/json')],
+        body: Annotated[
+            nullable_basemodel_models.IdsPostRequest,
+            Body(media_type='application/json'),
+        ],
     ) -> object:
         return dispatch(
             post_id_handler(
@@ -416,7 +439,10 @@ def _add_post_draft(
 
     def post_draft(
         *,
-        body: Annotated[nullable_basemodel_models.DraftsPostRequest | None, Body(media_type='application/json')] = None,
+        body: Annotated[
+            nullable_basemodel_models.DraftsPostRequest | None,
+            Body(media_type='application/json'),
+        ] = None,
     ) -> object:
         return dispatch(
             post_draft_handler(
@@ -451,7 +477,10 @@ def _add_post_note(
 
     def post_note(
         *,
-        body: Annotated[nullable_basemodel_models.NotesPostRequest | None, Depends(contract.PostNote.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.NotesPostRequest | None,
+            Depends(contract.PostNote.BODY),
+        ],
     ) -> object:
         return dispatch(
             post_note_handler(
@@ -486,7 +515,10 @@ def _add_post_form(
 
     def post_form(
         *,
-        body: Annotated[nullable_basemodel_models.FormsPostRequest, Form(media_type='application/x-www-form-urlencoded')],
+        body: Annotated[
+            nullable_basemodel_models.FormsPostRequest,
+            Form(media_type='application/x-www-form-urlencoded'),
+        ],
     ) -> object:
         return dispatch(
             post_form_handler(
@@ -521,7 +553,9 @@ def _add_upload(
 
     def upload(
         *,
-        body: Annotated[nullable_basemodel_models.UploadsPostRequest, Depends(contract.Upload.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.UploadsPostRequest, Depends(contract.Upload.BODY)
+        ],
     ) -> object:
         return dispatch(
             upload_handler(
@@ -556,7 +590,10 @@ def _add_post_extended(
 
     def post_extended(
         *,
-        body: Annotated[nullable_basemodel_models.ExtendedPostRequest | None, Depends(contract.PostExtended.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.ExtendedPostRequest | None,
+            Depends(contract.PostExtended.BODY),
+        ],
     ) -> object:
         return dispatch(
             post_extended_handler(
@@ -591,7 +628,14 @@ def _add_post_multi(
 
     def post_multi(
         *,
-        body: Annotated[tuple[str | None, nullable_basemodel_models.Item | nullable_basemodel_models.MultiPostRequest], Depends(contract.PostMulti.BODY.receive)],
+        body: Annotated[
+            tuple[
+                str | None,
+                nullable_basemodel_models.Item
+                | nullable_basemodel_models.MultiPostRequest,
+            ],
+            Depends(contract.PostMulti.BODY.receive),
+        ],
     ) -> object:
         return dispatch(
             post_multi_handler(
@@ -627,7 +671,15 @@ def _add_post_multi_optional(
 
     def post_multi_optional(
         *,
-        body: Annotated[tuple[str | None, nullable_basemodel_models.Item | nullable_basemodel_models.MultiOptionalPostRequest | None], Depends(contract.PostMultiOptional.BODY.receive)],
+        body: Annotated[
+            tuple[
+                str | None,
+                nullable_basemodel_models.Item
+                | nullable_basemodel_models.MultiOptionalPostRequest
+                | None,
+            ],
+            Depends(contract.PostMultiOptional.BODY.receive),
+        ],
     ) -> object:
         return dispatch(
             post_multi_optional_handler(
@@ -698,7 +750,9 @@ def _add_post_any_alias(
 
     def post_any_alias(
         *,
-        body: Annotated[nullable_basemodel_models.AnyAlias, Depends(contract.PostAnyAlias.BODY)],
+        body: Annotated[
+            nullable_basemodel_models.AnyAlias, Depends(contract.PostAnyAlias.BODY)
+        ],
     ) -> object:
         return dispatch(
             post_any_alias_handler(

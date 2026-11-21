@@ -1,0 +1,3 @@
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.items is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.values is generated without this constraint.
+a Literal of the output model cannot hold the value 4.5, so it is written as its type, which admits other values; Model.either is generated without this constraint.

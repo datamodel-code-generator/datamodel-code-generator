@@ -1,0 +1,29 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+25 stored outputs this change moves are not declared:
+  added    many/00.py  tests/test_many.py::test_many[0] (src/ changed: a record until a replay tells)
+  added    many/01.py  tests/test_many.py::test_many[1] (src/ changed: a record until a replay tells)
+  added    many/10.py  tests/test_many.py::test_many[10] (src/ changed: a record until a replay tells)
+  added    many/11.py  tests/test_many.py::test_many[11] (src/ changed: a record until a replay tells)
+  added    many/12.py  tests/test_many.py::test_many[12] (src/ changed: a record until a replay tells)
+  added    many/13.py  tests/test_many.py::test_many[13] (src/ changed: a record until a replay tells)
+  added    many/14.py  tests/test_many.py::test_many[14] (src/ changed: a record until a replay tells)
+  added    many/15.py  tests/test_many.py::test_many[15] (src/ changed: a record until a replay tells)
+  added    many/16.py  tests/test_many.py::test_many[16] (src/ changed: a record until a replay tells)
+  added    many/17.py  tests/test_many.py::test_many[17] (src/ changed: a record until a replay tells)
+  added    many/18.py  tests/test_many.py::test_many[18] (src/ changed: a record until a replay tells)
+  added    many/19.py  tests/test_many.py::test_many[19] (src/ changed: a record until a replay tells)
+  added    many/02.py  tests/test_many.py::test_many[2] (src/ changed: a record until a replay tells)
+  added    many/20.py  tests/test_many.py::test_many[20] (src/ changed: a record until a replay tells)
+  added    many/21.py  tests/test_many.py::test_many[21] (src/ changed: a record until a replay tells)
+  added    many/22.py  tests/test_many.py::test_many[22] (src/ changed: a record until a replay tells)
+  added    many/23.py  tests/test_many.py::test_many[23] (src/ changed: a record until a replay tells)
+  added    many/24.py  tests/test_many.py::test_many[24] (src/ changed: a record until a replay tells)
+  added    many/03.py  tests/test_many.py::test_many[3] (src/ changed: a record until a replay tells)
+  added    many/04.py  tests/test_many.py::test_many[4] (src/ changed: a record until a replay tells)
+  ... 5 more
+Declare them:
+  python scripts/declared_changes.py declare fix-the-thing --category '<category>' --refs '#42' --refs '#41' --rest --base base
+    <category>: one of new-surface, experimental, crash-fix, output-text, default-fix, decided-change
+Categories: docs/development-contributing.md#declared-changes
+failed

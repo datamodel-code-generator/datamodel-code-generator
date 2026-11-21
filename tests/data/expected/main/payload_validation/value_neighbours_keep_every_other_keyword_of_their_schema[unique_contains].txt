@@ -1,0 +1,8 @@
+[
+  "seed: valid",
+  "/0 minimum -0.1: invalid",
+  "/0 minimum -1: invalid",
+  "/0 minimum 0.1: invalid",
+  "/0 minimum 1: invalid",
+  "minContains [0]: invalid"
+]

@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import sys
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._message_text import install_command
+from datamodel_code_generator._shared_types import Exit
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
 
-    from datamodel_code_generator.__main__ import Config, Exit
+    from datamodel_code_generator._cli_config import Config
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
 _PENDING_CHANGE_SAMPLE_LIMIT = 32
@@ -45,7 +46,6 @@ def _force_polling() -> bool:
 
 
 def _regenerate(regenerate: Callable[[], Exit]) -> None:
-    from datamodel_code_generator.__main__ import Exit  # noqa: PLC0415
     from datamodel_code_generator.model.base import _clear_custom_template_caches  # noqa: PLC0415
 
     _clear_custom_template_caches()
@@ -71,26 +71,30 @@ class _WatchContext:
 
 @dataclass(slots=True)
 class _WatcherState:
-    """Small bounded hand-off from the watch thread to the regeneration loop."""
+    """Small hand-off from the watch thread to the regeneration loop, bounded by the dependency graph."""
 
     pending_change_sample: set[tuple[Any, str]]
     has_pending_changes: bool = False
+    pending_paths: set[str] = field(default_factory=set)
     error: BaseException | None = None
     exhausted: bool = False
 
     def add_changes(self, changes: set[tuple[Any, str]]) -> None:
-        """Keep a diagnostic sample without retaining an unbounded event stream."""
+        """Keep a diagnostic sample and the distinct changed paths without retaining an unbounded event stream."""
         self.has_pending_changes = True
+        self.pending_paths.update(path for _change, path in changes)
         remaining = _PENDING_CHANGE_SAMPLE_LIMIT - len(self.pending_change_sample)
         if remaining > 0:
             self.pending_change_sample.update(islice(changes, remaining))
 
-    def take_changes(self) -> set[tuple[Any, str]]:
-        """Drain the diagnostic sample while retaining the change notification."""
+    def take_changes(self) -> tuple[set[tuple[Any, str]], set[str]]:
+        """Drain the diagnostic sample and the changed paths."""
         changes = self.pending_change_sample.copy()
+        paths = self.pending_paths.copy()
         self.pending_change_sample.clear()
+        self.pending_paths.clear()
         self.has_pending_changes = False
-        return changes
+        return changes, paths
 
     @property
     def is_ready(self) -> bool:
@@ -100,15 +104,27 @@ class _WatcherState:
 
 def _regenerate_after_change(changes: set[tuple[Any, str]] | None, regenerate: Callable[[], Exit]) -> None:
     if changes is None:
-        print("\nDetected changes while restarting the watcher.")  # noqa: T201
+        print("\nDetected changes while restarting the watcher.")
     else:
-        print(f"\nDetected changes: {changes}")  # noqa: T201
-    print("Regenerating...")  # noqa: T201
+        print(f"\nDetected changes: {changes}")
+    print("Regenerating...")
     try:
         _regenerate(regenerate)
-        print("Done.")  # noqa: T201
+        print("Done.")
     except Exception as e:  # noqa: BLE001
-        print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {e}", file=sys.stderr)
+
+
+def _watch_stream(watchfiles: Any, watch_roots: tuple[Path, ...], **options: Any) -> Iterator[set[tuple[Any, str]]]:
+    """Yield the change batches of a watcher on ``watch_roots``.
+
+    A watcher that cannot start because a directory below a root is unreadable starts again skipping such directories.
+    Only then: skipping also silences the ``FileNotFoundError`` of a root that vanished before the watcher started.
+    """
+    try:
+        yield from watchfiles.watch(*watch_roots, **options)
+    except PermissionError:
+        yield from watchfiles.watch(*watch_roots, ignore_permission_denied=True, **options)
 
 
 def _watch_changes(
@@ -118,16 +134,24 @@ def _watch_changes(
     condition: threading.Condition,
     state: _WatcherState,
 ) -> None:
-    """Publish filesystem changes from the persistent background watch stream."""
+    """Publish filesystem changes from the persistent background watch stream.
+
+    The stream yields every batch unfiltered: a batch with no event in the dependency graph counts as a poll without
+    changes, as a timeout does. A polling watcher reports a vanished root again on every poll and so never times out
+    while one outside the graph is missing; filtered out inside the stream, its batches would starve the fingerprint
+    check that notices a missing dependency appearing. A batch whose changes the last generation already saw, such as
+    the late events of a change a fingerprint fallback regenerated, starts no generation; the regeneration loop judges
+    the changes again once a generation that started meanwhile has published what it saw.
+    """
     force_polling = _force_polling()
+    includes_dependency = _watch_filter(context.dependencies, accept_directory_events=True)
     debounce_ms = max(1, int(context.effective_watch_delay * 1000))
     poll_delay_ms = min(300, debounce_ms)
-    if force_polling:
-        context.dependencies.enable_polling_fingerprints()
     pending_polling_fallback = False
     try:
-        for changes in context.watchfiles.watch(
-            *watch_roots,
+        for raw_changes in _watch_stream(
+            context.watchfiles,
+            watch_roots,
             debounce=debounce_ms,
             step=debounce_ms,
             force_polling=force_polling,
@@ -135,9 +159,10 @@ def _watch_changes(
             recursive=True,
             rust_timeout=poll_delay_ms if force_polling else 5000,
             stop_event=stop_event,
-            watch_filter=_watch_filter(context.dependencies, accept_directory_events=True),
+            watch_filter=None,
             yield_on_timeout=force_polling,
         ):
+            changes = {(change, path) for change, path in raw_changes if includes_dependency(change, path)}
             if not changes:
                 if not context.dependencies._polling_dependencies_changed():  # noqa: SLF001
                     pending_polling_fallback = False
@@ -145,16 +170,10 @@ def _watch_changes(
                 if not pending_polling_fallback:
                     pending_polling_fallback = True
                     continue
+            elif context.dependencies._saw_changes({path for _change, path in changes}):  # noqa: SLF001
                 pending_polling_fallback = False
-            else:
-                pending_polling_fallback = False
-            if (
-                changes
-                and force_polling
-                and all(Path(path).is_dir() for _change, path in changes)
-                and not context.dependencies._polling_dependencies_changed()  # noqa: SLF001
-            ):
                 continue
+            pending_polling_fallback = False
             with condition:
                 state.add_changes(changes)
                 condition.notify()
@@ -168,8 +187,10 @@ def _watch_changes(
             condition.notify()
 
 
-def _wait_for_changes(condition: threading.Condition, state: _WatcherState) -> set[tuple[Any, str]] | None:
-    """Block for a watched change, raising a background watcher failure when present."""
+def _wait_for_changes(
+    condition: threading.Condition, state: _WatcherState
+) -> tuple[set[tuple[Any, str]], set[str]] | None:
+    """Block for watched changes and their paths, raising a background watcher failure when present."""
     with condition:
         while not state.is_ready:
             condition.wait()
@@ -180,12 +201,29 @@ def _wait_for_changes(condition: threading.Condition, state: _WatcherState) -> s
         return state.take_changes()
 
 
+def _misses_a_root(dependencies: WatchDependencies, watch_roots: tuple[Path, ...]) -> bool:
+    """Return whether the watcher running on ``watch_roots`` misses a root of the current dependency graph.
+
+    A polling watcher keeps rescanning a root that vanished, so only a new root restarts it; native events stop at a
+    vanished root, so any change does.
+    """
+    current_roots = dependencies.watch_roots()
+    if not _force_polling():
+        return current_roots != watch_roots
+    return any(not any(root.is_relative_to(running) for running in watch_roots) for root in current_roots)
+
+
 def _watch_once(
     context: _WatchContext,
     watch_roots: tuple[Path, ...],
     *,
     catch_up: bool,
 ) -> bool:
+    """Run one watcher on ``watch_roots`` and return whether to restart it on the current roots.
+
+    watchfiles raises ``FileNotFoundError`` only while it creates the watcher, for a root that vanished after the
+    dependency graph was published: the roots are computed again and the watcher restarts.
+    """
     stop_event = threading.Event()
     condition = threading.Condition()
     state = _WatcherState(set())
@@ -199,15 +237,19 @@ def _watch_once(
     try:
         if catch_up:
             _regenerate_after_change(None, context.regenerate)
-            if context.dependencies.watch_roots() != watch_roots:
+            if _misses_a_root(context.dependencies, watch_roots):
                 return True
 
-        while (changes := _wait_for_changes(condition, state)) is not None:
-            if not changes and not context.dependencies._polling_dependencies_changed():  # noqa: SLF001
+        while (pending := _wait_for_changes(condition, state)) is not None:
+            changes, paths = pending
+            if context.dependencies._saw_changes(paths):  # noqa: SLF001
                 continue
             _regenerate_after_change(changes, context.regenerate)
-            if context.dependencies.watch_roots() != watch_roots:
+            if _misses_a_root(context.dependencies, watch_roots):
                 return True
+    except FileNotFoundError:
+        context.dependencies.refresh_watch_roots()
+        return True
     finally:
         stop_event.set()
         watcher.join()
@@ -223,21 +265,22 @@ def watch_and_regenerate(
     watch_delay: float | None = None,
 ) -> Exit:
     """Watch every local generation dependency and fully regenerate on changes."""
-    from datamodel_code_generator.__main__ import Exit  # noqa: PLC0415
     from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
 
     watchfiles = _get_watchfiles()
 
     watch_path = watch_path or (Path(config.input) if isinstance(config.input, (str, Path)) else None)
     if watch_path is None:
-        print("Watch mode requires --input file path", file=sys.stderr)  # noqa: T201
+        print("Watch mode requires --input file path", file=sys.stderr)
         return Exit.ERROR
 
     if dependencies is None:
         dependencies = WatchDependencies()
         dependencies.configure(config, config_values={})
+    if force_polling := _force_polling():
+        dependencies.enable_polling_fingerprints()
 
-    print(f"Watching {watch_path} for changes... (Ctrl+C to stop)")  # noqa: T201
+    print(f"Watching {watch_path} for changes... (Ctrl+C to stop)")
 
     watch_context = _WatchContext(
         watchfiles,
@@ -248,7 +291,9 @@ def watch_and_regenerate(
     )
     catch_up = False
     try:
-        while watch_roots := dependencies.watch_roots():
+        while (watch_roots := dependencies.watch_roots()) or (
+            force_polling and (dependencies.files or dependencies.directories)
+        ):
             restart = _watch_once(
                 watch_context,
                 watch_roots,
@@ -258,6 +303,6 @@ def watch_and_regenerate(
                 return Exit.OK
             catch_up = True
     except KeyboardInterrupt:
-        print("\nWatch mode stopped.")  # noqa: T201
+        print("\nWatch mode stopped.")
 
     return Exit.OK

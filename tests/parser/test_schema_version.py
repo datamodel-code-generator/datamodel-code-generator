@@ -193,6 +193,7 @@ def test_jsonschema_features_2019_09() -> None:
             prefix_items=False,
             boolean_schemas=True,
             id_field="$id",
+            contains_counts=True,
             definitions_key="$defs",
             exclusive_as_number=True,
             read_only_write_only=True,
@@ -214,6 +215,7 @@ def test_jsonschema_features_2020_12() -> None:
             boolean_schemas=True,
             id_field="$id",
             definitions_key="$defs",
+            contains_counts=True,
             exclusive_as_number=True,
             read_only_write_only=True,
             anchor=True,
@@ -234,6 +236,7 @@ def test_jsonschema_features_auto() -> None:
             boolean_schemas=True,
             id_field="$id",
             definitions_key="$defs",
+            contains_counts=True,
             exclusive_as_number=True,
             read_only_write_only=True,
             anchor=True,
@@ -281,6 +284,7 @@ def test_openapi_features_v31() -> None:
             boolean_schemas=True,
             id_field="$id",
             definitions_key="$defs",
+            contains_counts=True,
             webhooks=True,
             ref_sibling_keywords=True,
             exclusive_as_number=True,
@@ -290,6 +294,7 @@ def test_openapi_features_v31() -> None:
             dynamic_ref=True,
             nullable_keyword=False,
             discriminator_support=True,
+            mutual_tls=True,
         )
     )
 
@@ -304,6 +309,7 @@ def test_openapi_features_auto() -> None:
             boolean_schemas=True,
             id_field="$id",
             definitions_key="$defs",
+            contains_counts=True,
             webhooks=True,
             ref_sibling_keywords=True,
             exclusive_as_number=True,
@@ -313,6 +319,7 @@ def test_openapi_features_auto() -> None:
             dynamic_ref=True,
             nullable_keyword=False,
             discriminator_support=True,
+            mutual_tls=True,
         )
     )
 
@@ -1395,3 +1402,70 @@ def test_read_schema_version_per_document_keeps_a_subclass_schema_features() -> 
     with pytest.warns(UserWarning, match=r"--read-schema-version-per-document has no effect with Draft7Parser"):
         generated = Draft7Parser(source, read_schema_version_per_document=True, formatters=["builtin"]).parse()
     assert_output(generated)
+
+
+_JSON_SCHEMA_POSITIONAL_FIELDS = (
+    "null_in_type_array",
+    "defs_not_definitions",
+    "prefix_items",
+    "boolean_schemas",
+    "id_field",
+    "definitions_key",
+    "exclusive_as_number",
+    "read_only_write_only",
+    "const_support",
+    "property_names",
+    "contains",
+    "deprecated_keyword",
+    "if_then_else",
+    "content_encoding",
+    "content_schema",
+    "anchor",
+    "vocabulary",
+    "unevaluated_properties",
+    "unevaluated_items",
+    "dependent_required",
+    "dependent_schemas",
+    "recursive_ref",
+    "dynamic_ref",
+    "ref_sibling_keywords",
+)
+_OPENAPI_POSITIONAL_FIELDS = (
+    *_JSON_SCHEMA_POSITIONAL_FIELDS,
+    "nullable_keyword",
+    "discriminator_support",
+    "webhooks",
+    "media_item_schema",
+    "openapi_self",
+    "querystring_parameter",
+    "xml_support",
+    "external_docs",
+    "links",
+    "callbacks",
+    "security_schemes",
+    "http_auth_schemes",
+    "mutual_tls",
+    "cookie_style",
+    "deep_object_style",
+    "structured_parameter_values",
+    "binary_in_text_media",
+    "multipart_media",
+    "part_content_type",
+)
+
+
+@pytest.mark.parametrize(
+    ("features_class", "fields"),
+    [
+        (JsonSchemaFeatures, _JSON_SCHEMA_POSITIONAL_FIELDS),
+        (OpenAPISchemaFeatures, _OPENAPI_POSITIONAL_FIELDS),
+    ],
+)
+def test_schema_features_keep_the_positional_parameters_of_0_97_0(
+    features_class: type[JsonSchemaFeatures], fields: tuple[str, ...]
+) -> None:
+    """Pass the fields by position in 0.97.0's order: each lands on its field; ``contains_counts`` is by keyword."""
+    features = features_class(*(f"value {name}" for name in fields))
+    assert {name: getattr(features, name) for name in fields} == {name: f"value {name}" for name in fields}
+    assert features.contains_counts is False
+    assert features_class(contains_counts=True).contains_counts is True

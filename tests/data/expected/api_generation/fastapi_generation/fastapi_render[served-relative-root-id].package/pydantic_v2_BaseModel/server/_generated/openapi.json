@@ -1,0 +1,59 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "A schema document whose root id is relative with a directory",
+  "version": "1"
+ },
+ "paths": {
+  "/pets": {
+   "get": {
+    "operationId": "getPet",
+    "responses": {
+     "200": {
+      "description": "The pet.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/served-relative-root-id-pet"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "served-relative-root-id-pet": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "friend": {
+      "$ref": "#/components/schemas/Friend"
+     }
+    },
+    "$defs": {
+     "Friend": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string",
+        "maxLength": 12
+       }
+      }
+     }
+    }
+   },
+   "Friend": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 12
+     }
+    }
+   }
+  }
+ }
+}

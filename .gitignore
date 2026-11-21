@@ -4,8 +4,13 @@ __pycache__
 src/datamodel_code_generator/_version.py
 coverage.xml
 .coverage
+.coverage.*
 .idea/
 .vscode/
 site/
 tests/cli_doc/.cli_doc_collection.json
 docs/assets/playground/generated/
+docs/migration/from-*.md
+docs/llms-full.txt
+docs/migration/changes.md
+docs/data/migration.json

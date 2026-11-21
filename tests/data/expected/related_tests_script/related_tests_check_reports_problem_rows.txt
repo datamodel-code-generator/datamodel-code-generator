@@ -1,0 +1,5 @@
+exit status 1
+gone-file: missing target tests/test_gone.py
+gone-function: missing target tests/test_guide.py::test_three
+gone-function: the id is used twice
+gone-function: no incident

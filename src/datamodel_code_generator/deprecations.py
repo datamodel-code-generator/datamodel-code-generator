@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import os
+import sys
 import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from datamodel_code_generator._context_scope import context_values
@@ -21,6 +24,7 @@ from datamodel_code_generator._registry_render import (
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from types import FrameType
 
 DeprecationKind = Literal["cli-option", "python-api", "config", "behavior", "schema", "dependency"]
 DeprecationStatus = Literal["active", "scheduled"]
@@ -36,6 +40,9 @@ DeprecationId = Literal[
     "config.yaml-non-lowercase-bool",
     "config.json-config-strict-validation",
     "dependency.external-formatters-optional",
+    "dependency.jinja2-optional",
+    "dependency.genson-optional",
+    "dependency.argcomplete-optional",
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",
@@ -139,7 +146,8 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         kind="behavior",
         target="Default formatters",
         message=(
-            "Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. "
+            "Default formatters will change to builtin no earlier than three months after 0.92.0. "
+            'Set --formatters or --preset explicitly; see "Dependency migration notices" in the documentation. '
             "Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it "
             "(experimental)."
         ),
@@ -147,6 +155,7 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         removal_version=None,
         replacement="Set formatters explicitly, for example black and isort or builtin.",
         warning_category="FutureWarning",
+        note="Black and isort stay the default in 0.92.0; the default changes no earlier than three months later.",
     ),
     "dependency.external-formatters-optional": Deprecation(
         id="dependency.external-formatters-optional",
@@ -158,6 +167,49 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         replacement="Declare the black/isort extras for the external formatters you select.",
         warning_category="FutureWarning",
         note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    ),
+    "dependency.jinja2-optional": Deprecation(
+        id="dependency.jinja2-optional",
+        kind="dependency",
+        target="Jinja2 installation",
+        message="Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.",
+        warning_since="0.95.0",
+        removal_version=None,
+        replacement="Declare the jinja2 extra if you use custom templates.",
+        warning_category="FutureWarning",
+        note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    ),
+    "dependency.genson-optional": Deprecation(
+        id="dependency.genson-optional",
+        kind="dependency",
+        target="Genson installation",
+        message=(
+            "Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help."
+        ),
+        warning_since="0.95.0",
+        removal_version=None,
+        replacement="Declare the genson extra if you generate from JSON, YAML, CSV or dict data.",
+        warning_category="FutureWarning",
+        note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    ),
+    "dependency.argcomplete-optional": Deprecation(
+        id="dependency.argcomplete-optional",
+        kind="dependency",
+        target="argcomplete installation",
+        message=(
+            "argcomplete will become optional. Declare the argcomplete extra for shell completion; "
+            'see "Dependency migration notices" in the documentation.'
+        ),
+        warning_since="0.95.0",
+        removal_version=None,
+        replacement="Declare the argcomplete extra if you use shell completion.",
+        status="scheduled",
+        warning_category="FutureWarning",
+        note=(
+            "This is advance notice only, registered without a runtime warning: a shell discards the error output of "
+            "completion, and a warning turned into an error would break it. "
+            "Current dependency ranges and compatibility remain unchanged."
+        ),
     ),
     "dependency.black-minimum": Deprecation(
         id="dependency.black-minimum",
@@ -197,11 +249,12 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         kind="dependency",
         target="Running datamodel-code-generator on Python 3.10",
         message=(
-            "Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; "
-            "run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected."
+            "Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, "
+            "for example with `uvx datamodel-code-generator` (uv fetches a supported Python). "
+            "--target-python-version 3.10 is unaffected."
         ),
         warning_since="0.84.0",
-        removal_version="0.85.0",
+        removal_version="0.93.0",
         replacement="Run datamodel-code-generator on Python 3.11 or newer.",
         warning_category="FutureWarning",
         note="Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.",
@@ -223,7 +276,7 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
             "JSON configuration values that do not match the documented schema are deprecated and will become "
             "validation errors in a future release."
         ),
-        warning_since="0.64.2",
+        warning_since="0.65.0",
         removal_version=None,
         replacement="Update the JSON configuration to match --output-format-json-schema config.",
         warning_category="FutureWarning",
@@ -259,6 +312,7 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
     ),
 }
 
+_PACKAGE_DIR = f"{Path(__file__).parent}{os.sep}"
 _WARNING_CATEGORIES: dict[str, type[Warning]] = {
     "DeprecationWarning": DeprecationWarning,
     "FutureWarning": FutureWarning,
@@ -269,17 +323,18 @@ _WARNING_CATEGORIES: dict[str, type[Warning]] = {
 _MIGRATION_WARNINGS = frozenset({
     "format.default-formatters",
     "dependency.external-formatters-optional",
+    "dependency.jinja2-optional",
+    "dependency.genson-optional",
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",
-    "dependency.python-310-runtime",
 })
 _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli_migration_warnings", default=None)
 
 
 @contextmanager
 def cli_migration_warning_scope() -> Generator[None]:
-    """Deduplicate migration notices within one CLI invocation, including batch/watch."""
+    """Deduplicate migration notices within one CLI invocation, including batch/watch, and keep them at the package."""
     with context_values({_CLI_MIGRATION_WARNINGS: set()}):
         yield
 
@@ -299,7 +354,35 @@ def _dependency_version_is_legacy(version: str, minimum: tuple[int, int, int]) -
 def warn_legacy_dependency(deprecation_id: DeprecationId, version: str, minimum: tuple[int, int, int]) -> None:
     """Warn only when the dependency actually used is below its future runtime floor."""
     if _dependency_version_is_legacy(version, minimum):
-        warn_deprecated(deprecation_id, stacklevel=2)
+        warn_deprecated(deprecation_id)
+
+
+@lru_cache(maxsize=1)
+def _declared_extras(path: tuple[str, ...]) -> frozenset[str]:
+    """Return the dcg extras that packages on ``path`` require without an environment marker.
+
+    Evaluating a marker needs ``packaging``, so a requirement with one, including one limited to the package's own
+    extra, never hides a notice. A package whose metadata can't be read or decoded is skipped.
+    """
+    import re  # ruff: ignore[import-outside-top-level]
+    from importlib.metadata import distributions  # ruff: ignore[import-outside-top-level]
+
+    requirement = re.compile(r"datamodel[-_.]+code[-_.]+generator\s*\[([^\]]*)\][^;]*$", re.IGNORECASE)
+    extras: set[str] = set()
+    for distribution in distributions(path=list(path)):
+        try:
+            requires = distribution.requires or ()
+        except (OSError, ValueError):
+            continue
+        for match in filter(None, map(requirement.match, requires)):
+            extras.update(re.sub(r"[-_.]+", "-", extra.strip()).lower() for extra in match[1].split(","))
+    return frozenset(extras)
+
+
+def warn_undeclared_extra(deprecation_id: DeprecationId, extra: str) -> None:
+    """Warn unless an installed package already requires the ``extra`` (or ``all``) extra the notice asks for."""
+    if _declared_extras(tuple(sys.path)).isdisjoint({extra, "all"}):
+        warn_deprecated(deprecation_id)
 
 
 def iter_deprecations() -> tuple[Deprecation, ...]:
@@ -312,21 +395,54 @@ def get_deprecation(deprecation_id: DeprecationId) -> Deprecation:
     return DEPRECATIONS[deprecation_id]
 
 
-def warn_deprecated(deprecation_id: DeprecationId, *, stacklevel: int = 2, details: str | None = None) -> None:
-    """Emit a warning from the central registry."""
+def warn_deprecated(
+    deprecation_id: DeprecationId, *, stacklevel: int | None = None, details: str | None = None
+) -> None:
+    """Emit a warning from the central registry.
+
+    The warning names the code that called the package (``_stacklevel_at_caller``), or the frame ``stacklevel`` gives
+    as ``warnings.warn`` counts it when a caller passes one. In a CLI invocation (``cli_migration_warning_scope``) it
+    names this function in the package: the console script and the ``__main__.py`` of ``python -m`` both run as
+    ``__main__``, and Python's default filters show a ``DeprecationWarning`` raised from ``__main__`` that they hide
+    when it is raised from the package.
+    """
     if (deprecation := get_deprecation(deprecation_id)).status == "scheduled":
         return
-    seen = _CLI_MIGRATION_WARNINGS.get() if deprecation_id in _MIGRATION_WARNINGS else None
+    cli_seen = _CLI_MIGRATION_WARNINGS.get()
+    seen = cli_seen if deprecation_id in _MIGRATION_WARNINGS else None
     if seen is not None and deprecation_id in seen:
         return
     message = deprecation.message if details is None else f"{deprecation.message} {details}"
-    warnings.warn(
-        message,
-        _WARNING_CATEGORIES[deprecation.warning_category],
-        stacklevel=stacklevel,
-    )
+    if stacklevel is None:
+        stacklevel = 1 if cli_seen is not None else _stacklevel_at_caller()
+    warnings.warn(message, _WARNING_CATEGORIES[deprecation.warning_category], stacklevel=stacklevel)
     if seen is not None:
         seen.add(deprecation_id)
+
+
+def _stacklevel_at_caller() -> int:
+    """Return the ``stacklevel`` that makes a ``warn()`` in the calling function name the caller of the package.
+
+    That caller is the frame that called the outermost frame of a file of the package: the code that called the
+    library however deep in it, past the third-party code the package calls back through (a Pydantic validator, a YAML
+    constructor), so a ``module=`` filter matches the caller's module. A CLI invocation does not use it (see
+    ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own.
+    """
+    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
+    level = outermost = 1
+    while frame is not None:
+        if frame.f_code.co_filename.startswith(_PACKAGE_DIR):
+            outermost = level
+        frame = frame.f_back
+        while frame is not None and _is_import_machinery(frame):
+            frame = frame.f_back
+        level += 1
+    return outermost + 1
+
+
+def _is_import_machinery(frame: FrameType) -> bool:
+    """Return whether ``frame`` runs in the import machinery, which ``warn()`` skips as it counts a stacklevel."""
+    return "importlib" in (filename := frame.f_code.co_filename) and "_bootstrap" in filename
 
 
 def deprecation_message(deprecation_id: DeprecationId) -> str:
@@ -405,6 +521,21 @@ def render_deprecations(format_: DeprecationFormat) -> str:
     return _render_registry(iter_deprecations(), _PAGE, format_)
 
 
+def _release_note_line(item: Deprecation) -> str:
+    """Return the release-note line of a deprecation in the release where its warning or scheduled change starts."""
+    started = (
+        "is registered without a runtime warning"
+        if item.status == "scheduled"
+        else f"now emits `{item.warning_category}`"
+    )
+    return f"`{item.target}` {started}. Planned removal: {_format_removal_version(item)}. {item.message}"
+
+
+def _removal_release_note_line(item: Deprecation) -> str:
+    """Return the release-note line of a deprecation in the release that removes it."""
+    return f"`{item.target}` was scheduled for removal in {item.removal_version}. {item.message}"
+
+
 def render_release_note_deprecations(version: str) -> str:
     """Render release-note text for deprecations that start or end in a version."""
     warning_started: list[Deprecation] = []
@@ -421,24 +552,7 @@ def render_release_note_deprecations(version: str) -> str:
             removals.append(item)
 
     return _render_release_notes((
-        (
-            "Deprecations",
-            (
-                f"`{item.target}` now emits `{item.warning_category}`. "
-                f"Planned removal: {_format_removal_version(item)}. {item.message}"
-                for item in warning_started
-            ),
-        ),
-        (
-            "Scheduled Breaking Changes",
-            (
-                f"`{item.target}` is registered without a runtime warning. "
-                f"Planned removal: {_format_removal_version(item)}. {item.message}"
-                for item in scheduled_changes
-            ),
-        ),
-        (
-            "Removed Deprecated Features",
-            (f"`{item.target}` was scheduled for removal in {version}. {item.message}" for item in removals),
-        ),
+        ("Deprecations", map(_release_note_line, warning_started)),
+        ("Scheduled Breaking Changes", map(_release_note_line, scheduled_changes)),
+        ("Removed Deprecated Features", map(_removal_release_note_line, removals)),
     ))

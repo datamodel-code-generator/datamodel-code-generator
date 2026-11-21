@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "extra": {
+          "type": "object"
+        },
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "secret": {
+          "type": "string"
+        },
+        "loose": true
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "properties": {
+            "name": true,
+            "label": {
+              "allOf": [
+                {},
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "kind": {
+              "oneOf": [
+                {}
+              ]
+            },
+            "note": {
+              "allOf": [
+                {},
+                true
+              ]
+            },
+            "extra": {
+              "additionalProperties": true
+            },
+            "list": {
+              "items": true
+            },
+            "secret": false,
+            "loose": {
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "ItemsParent": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {}
+            ]
+          }
+        },
+        "bag": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {},
+              true
+            ]
+          }
+        },
+        "mix": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "ItemsChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ItemsParent"
+        },
+        {
+          "properties": {
+            "list": {
+              "items": {
+                "type": "string"
+              }
+            },
+            "bag": {
+              "items": {
+                "type": "string"
+              }
+            },
+            "mix": {
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "NestedParent": {
+      "type": "object",
+      "properties": {
+        "pair": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "info": {
+          "type": "object",
+          "properties": {
+            "neutral": {
+              "type": "string"
+            },
+            "constrained": {
+              "type": "string"
+            }
+          }
+        },
+        "choice": true,
+        "loose": true,
+        "plain": {
+          "type": "string"
+        }
+      }
+    },
+    "NestedChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/NestedParent"
+        },
+        {
+          "properties": {
+            "pair": {
+              "prefixItems": [
+                true,
+                {
+                  "allOf": [
+                    {
+                      "minLength": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            "info": {
+              "properties": {
+                "neutral": true,
+                "constrained": {
+                  "allOf": [
+                    {
+                      "maxLength": 4
+                    }
+                  ]
+                }
+              }
+            },
+            "choice": {
+              "anyOf": [
+                {
+                  "type": "string"
+                }
+              ],
+              "minLength": 1
+            },
+            "loose": {
+              "description": "metadata only"
+            },
+            "plain": {
+              "title": "Plain",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FlagParent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "flag": true
+      }
+    },
+    "FlagChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/FlagParent"
+        },
+        {
+          "properties": {
+            "name": true,
+            "flag": {
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1 @@
+pkg/refused.py:3: nonlocal x has no enclosing binding (form: Assign); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request

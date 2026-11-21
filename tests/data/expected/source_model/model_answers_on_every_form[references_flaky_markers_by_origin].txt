@@ -1,0 +1,24 @@
+== references
+16:0 pytestmark store in <module> -> local <module> @16
+16:13 pytest load in <module> -> local <module> @12; origin pytest
+19:1 retry load in <module> -> local <module> @13; origin flaky.flaky
+21:4 marks load in test_marked -> global <module> @14; origin pytest.mark
+22:4 nap load in test_marked -> global <module> @9; origin time.sleep
+23:4 clock load in test_marked -> global <module> @8; origin time
+28:4 flaky load in test_parameter -> local test_parameter @27
+29:4 nap load in test_parameter -> local test_parameter @27
+30:11 flaky load in test_parameter -> local test_parameter @27
+34:4 sleep store in test_local -> local test_local @34
+34:28 seconds load in test_local.<locals>.<lambda> -> local test_local.<locals>.<lambda> @34
+35:4 sleep load in test_local -> local test_local @34
+36:4 marks load in test_local -> global <module> @14; origin pytest.mark
+uses of <module>:clock@8: call:sleep@23
+uses of <module>:nap@9: call@22
+uses of <module>:pytest@12: read@16
+uses of <module>:retry@13: call@19
+uses of <module>:marks@14: read@21, read@36
+uses of test_parameter:flaky@27: call@28, read@30
+uses of test_parameter:nap@27: call@29
+uses of test_local:sleep@34: call@35
+uses of test_local.<locals>.<lambda>:seconds@34: read@34
+== code objects: one per scope that compiles on this Python

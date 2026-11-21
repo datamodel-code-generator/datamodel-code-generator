@@ -1,0 +1,39 @@
+== references
+10:11 str load in builtin -> builtin; origin builtins.str
+10:21 ref load in builtin -> local builtin @9
+10:32 text load in builtin -> global <module> @6; origin builtins.str
+10:48 ref load in builtin -> local builtin @9
+10:59 text load in builtin -> global <module> @6; origin builtins.str
+10:70 ref load in builtin -> local builtin @9
+10:85 ref load in builtin -> local builtin @9
+14:11 str load in parameter -> local parameter @13
+14:21 ref load in parameter -> local parameter @13
+18:4 str store in local -> local local @18
+18:10 type load in local -> builtin; origin builtins.type
+18:15 ref load in local -> local local @17
+19:11 str load in local -> local local @18
+19:25 ref load in local -> local local @17
+23:11 other load in others -> local others @22
+23:23 ref load in others -> local others @22
+23:34 str load in others -> builtin; origin builtins.str
+23:44 ref load in others -> local others @22
+23:55 ref load in others -> local others @22
+uses of <module>:text@6: call:rpartition@10, call:split@10
+uses of builtin:ref@9: argument@10, argument@10, argument@10, call:split@10
+uses of parameter:str@13: call:split@14
+uses of parameter:ref@13: argument@14
+uses of local:ref@17: argument@18, argument@19
+uses of local:str@18: call:partition@19
+uses of others:ref@22: argument@23, argument@23, call:index@23
+uses of others:other@22: call:split@23
+call @14 str.split: 0=ref 1="#" 2=None sep=None
+call @18 builtins.type: 0=ref 1=None 2=None sep=None
+call @19 str.partition: 0=ref 1="#" 2=None sep=None
+call @10 builtins.str.split: 0=ref 1="#" 2=None sep=None
+call @10 builtins.str.rpartition: 0=ref 1="#" 2=None sep=None
+call @10 builtins.str.split: 0=ref 1=None 2=None sep="#"
+call @10 ref.split: 0="#" 1=None 2=None sep=None
+call @23 other.split: 0=ref 1="#" 2=None sep=None
+call @23 builtins.str.split: 0=ref 1="/" 2=None sep=None
+call @23 ref.index: 0="/" 1=None 2=None sep=None
+== code objects: one per scope that compiles on this Python

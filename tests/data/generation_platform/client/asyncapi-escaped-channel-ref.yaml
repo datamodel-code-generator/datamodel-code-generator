@@ -1,0 +1,22 @@
+asyncapi: 2.6.0
+info:
+  title: Guests
+  version: 1.0.0
+servers:
+  local:
+    url: ws://guests.example.com/ws
+    protocol: ws
+channels:
+  guest/commands/register:
+    publish:
+      message:
+        payload:
+          type: object
+          properties:
+            email:
+              type: string
+  guest/events/registered:
+    subscribe:
+      message:
+        payload:
+          $ref: '#/channels/guest~1commands~1register'

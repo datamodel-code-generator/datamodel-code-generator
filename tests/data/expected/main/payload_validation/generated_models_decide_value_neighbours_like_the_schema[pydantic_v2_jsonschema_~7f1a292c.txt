@@ -1,0 +1,9 @@
+[
+  "/even contains []: invalid, model accepts",
+  "/even maxContains [0, 0]: invalid, model accepts",
+  "/even/0 multipleOf 6.1: invalid, model accepts",
+  "/even/0 multipleOf 7: invalid, model accepts",
+  "/steps contains []: invalid, model accepts",
+  "/steps maxContains [0, 0]: invalid, model accepts",
+  "/steps/0 multipleOf 0.31: invalid, model accepts"
+]

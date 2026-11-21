@@ -14,10 +14,10 @@ Contributor guide:
   references, fields, base classes, model paths, or model names. Do not assign
   ``data_type.reference``, ``model.fields``, ``model.base_classes``, or
   ``model.reference.name`` directly in parser code.
-* A refresh records again only the models that changed since the last one.
-  Code that changes a tracked model's fields, base classes, or data types
-  without the store, such as a model method that rewrites its own types, must
-  report the model with ``GraphBuilder.note_changed_models()``.
+* A refresh records again only the field types and base lists that changed
+  since the last one. Code that changes a tracked model's fields, base classes,
+  or data types without the store, such as a model method that rewrites its own
+  types, must report the model with ``GraphBuilder.note_changed_models()``.
 * Read dependency facts through ``GenerationIndex``. Parser post-processing
   should not treat ``Reference.children`` as the source of truth.
 * Treat output template metadata as opaque. Read model-owned dependency
@@ -40,11 +40,11 @@ with the public parser-facing surface, and give ``GraphBuilder`` its delegating 
 
 from __future__ import annotations
 
-from bisect import insort
+from bisect import bisect_left, insort
 from collections import defaultdict
 from contextlib import contextmanager
-from dataclasses import dataclass, field, replace
-from itertools import chain
+from dataclasses import field, replace
+from itertools import chain, groupby, pairwise
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, SupportsIndex, TypeAlias, TypeVar, final, overload
 
@@ -65,13 +65,20 @@ from datamodel_code_generator._graph_links import (
     data_type_children,
     drop_child_and_detached,
     nearest_field,
+    type_children,
 )
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
+from datamodel_code_generator.model.base import (
+    NULLABLE_WITHOUT_DEFAULT_KEY,
+    _apply_literal_default,
+    _path_identity_keys,
+)
 from datamodel_code_generator.parser._facts import Phase
+from datamodel_code_generator.parser._passes._keys import _SITE_CONSTRAINTS_KEY
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
     PARSED,
@@ -82,9 +89,11 @@ from datamodel_code_generator.parser._sites import (
     position_step,
     site_of,
 )
+from datamodel_code_generator.reference import SCHEMA_PATH_KEY
+from datamodel_code_generator.types import _hint_null
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
     from pathlib import Path
 
@@ -101,6 +110,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._phases import DecisionOptions
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
+    from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
     OwnerModels: TypeAlias = DataModel | tuple[DataModel, ...] | None
@@ -112,10 +122,10 @@ else:
     DataModelFieldBase: TypeAlias = Any
     DataType: TypeAlias = Any
     Member: TypeAlias = Any
+    Reference: TypeAlias = Any
     OwnerModels: TypeAlias = Any
     CacheOwners: TypeAlias = Any
 
-Reference: TypeAlias = Any
 ModelId: TypeAlias = int
 DataTypeId: TypeAlias = int
 DataTypeRole = Literal["field", "base", "nested", "dict_key"]
@@ -139,6 +149,7 @@ _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
 _REPLACEMENT_LAST = UnionPolicy("legacy-replacement-last")
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
+_SitesByTarget: TypeAlias = defaultdict[ModelKey, OrderedSet[SiteKey]]
 
 SITE_EFFECTS: Mapping[str, ProvenanceHow] = MappingProxyType({
     "append_field": "copied",
@@ -188,7 +199,10 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "name_enum_member",
     "name_enum_member_literal_class",
     "name_reference",
+    "omit_field_default",
     "record_dropped_multiple_of",
+    "record_nullable_without_default",
+    "record_site_constraints",
     "record_values_as_written",
     "record_widened_values",
     "rename_field",
@@ -203,11 +217,13 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_extra",
     "set_field_extras",
     "set_field_identity",
+    "set_module_models",
     "set_type_discriminator",
     "set_type_expressions",
     "update_model_reference",
     "use_assignment_for_forward_references",
     "use_typing_generics",
+    "write_field_call_in_annotated",
     "write_rendered_null",
 })
 """The store mutations that make no reference site: they only remove sites, or change what sites do not record, such
@@ -266,9 +282,7 @@ def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
     stack = list(roots)
     while stack:
         node = stack.pop()
-        stack.extend(node.data_types)
-        if dict_key := node.dict_key:
-            stack.append(dict_key)
+        stack.extend(type_children(node))
         yield node
 
 
@@ -341,13 +355,15 @@ class DataTypeFact:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class GenerationFacts:
     """A complete snapshot of derived generation facts.
 
     A model's data type ids increase in traversal order, so ``(owner parse order, id)`` orders occurrences
-    as a full rebuild traverses them. The reference sites of the type trees (`RefSite`) take the id of their
-    occurrence as their key, and ``sites_by_target`` lists them per target in that order.
+    as a full rebuild traverses them: an id is its slot, the index of its field or `_BASE_SLOT` for the base list,
+    above a sequence number (`_SLOT_BITS`), so a refresh that records one slot again keeps the ids of the others.
+    The reference sites of the type trees (`RefSite`) take the id of their occurrence as their key, and
+    ``sites_by_target`` lists them per target in that order, ``base_sites_by_target`` the sites of bases among them.
     """
 
     model_facts: dict[ModelId, ModelFact] = field(default_factory=dict)
@@ -357,7 +373,8 @@ class GenerationFacts:
     model_by_path: dict[str, ModelId] = field(default_factory=dict)
     model_by_ref_id: dict[ModelKey, ModelId] = field(default_factory=dict)
     data_types_by_model: dict[ModelId, tuple[DataTypeId, ...]] = field(default_factory=dict)
-    sites_by_target: defaultdict[ModelKey, OrderedSet[SiteKey]] = field(default_factory=lambda: defaultdict(dict))
+    sites_by_target: _SitesByTarget = field(default_factory=lambda: defaultdict(dict))
+    base_sites_by_target: _SitesByTarget = field(default_factory=lambda: defaultdict(dict))
     shared_data_type_fact_ids: dict[int, list[DataTypeId]] = field(default_factory=dict)
     sites: dict[SiteKey, RefSite] = field(default_factory=dict)
 
@@ -424,11 +441,11 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate()
 
     @overload
-    def __setitem__(self, index: SupportsIndex, item: Any) -> None:  # pragma: no cover
+    def __setitem__(self, index: SupportsIndex, item: Any) -> None:  # pragma: no cover - overload stub
         pass
 
     @overload
-    def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # pragma: no cover
+    def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # pragma: no cover - overload stub
         pass
 
     @override
@@ -441,11 +458,11 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate()
 
     @overload
-    def __delitem__(self, index: SupportsIndex) -> None:  # pragma: no cover
+    def __delitem__(self, index: SupportsIndex) -> None:  # pragma: no cover - overload stub
         pass
 
     @overload
-    def __delitem__(self, index: slice) -> None:  # pragma: no cover
+    def __delitem__(self, index: slice) -> None:  # pragma: no cover - overload stub
         pass
 
     @override
@@ -602,10 +619,19 @@ class _SiteHistory:
 
 
 _NO_HISTORY: Final = _SiteHistory((), _SiteEffects(), PARSED)
+_SLOT_BITS: Final = 40
+"""The bits of a data type id below its slot."""
+_BASE_SLOT: Final = 1 << 20
+"""The slot of a model's base list, after the slot of every field."""
+_NO_IDS: Final = iter(())
+"""The ids of a slot that had none."""
 
 
 class GenerationIndexBuilder:
     """Record generation facts from live parser objects, in full or for changed models."""
+
+    _slots: Mapping[ModelId, Collection[int]] = MappingProxyType({})
+    """The slots `update` records again of the changed models it names; every slot of the others."""
 
     def __init__(
         self, model_key: Callable[[Reference], ModelKey] = model_key_of, history: _SiteHistory | None = None
@@ -638,9 +664,7 @@ class GenerationIndexBuilder:
         self._record_models()
         previous_sites = self._history.previous_sites()
         for model_id, model_fact in self._facts.model_facts.items():
-            occurrences, sites = self._occurrences(model_fact.model)
-            self._record_data_types(model_id, occurrences)
-            self._record_sites(model_id, sites, previous_sites)
+            self._record_slots(model_id, None, self._walk(model_fact.model, None), previous_sites)
 
         return GenerationBuildResult(
             facts=self._facts,
@@ -649,7 +673,7 @@ class GenerationIndexBuilder:
             next_data_type_id=self._next_data_type_id,
         )
 
-    def update(  # noqa: PLR0913
+    def update(
         self,
         facts: GenerationFacts,
         models: Sequence[DataModel],
@@ -663,14 +687,15 @@ class GenerationIndexBuilder:
     ) -> GenerationBuildResult:
         """Record the models appended to ``models`` and the changed and renamed ones in ``facts``.
 
-        Every model is read before ``facts`` changes, so a traversal that raises leaves the facts as they were.
+        A changed model is recorded again in the slots `_slots` names for it, in every slot without. Every model is read
+        before ``facts`` changes, so a traversal that raises leaves the facts as they were.
         """
         self._facts = facts
         self._next_data_type_id = next_data_type_id
         model_facts = facts.model_facts
         first_appended = len(models) - appended_count
         appended = [
-            (parse_order, model, *self._occurrences(model))
+            (parse_order, model, self._walk(model, None))
             for parse_order, model in enumerate(models[first_appended:], first_appended)
         ]
         renamed_facts = [
@@ -678,21 +703,21 @@ class GenerationIndexBuilder:
             for model_id in renamed_model_ids
         ]
         changes = [
-            (model_id, *self._occurrences(model_facts[model_id].model))
+            (model_id, slots := self._slots.get(model_id), self._walk(model_facts[model_id].model, slots))
             for model_id in sorted(changed_model_ids, key=facts.parse_order)
         ]
-        for model_id, (parse_order, model, occurrences, sites) in enumerate(appended, next_model_id):
+        for model_id, (parse_order, model, walk) in enumerate(appended, next_model_id):
             model_ids_by_object[id(model)] = model_id
             self._record_model(model_id, parse_order, model)
-            self._record_data_types_again(model_id, occurrences, sites)
+            self._record_slots(model_id, None, walk)
         if renamed_facts:
             model_facts.update((model_fact.id, model_fact) for model_fact in renamed_facts)
             facts.model_by_path = {model_fact.path: model_id for model_id, model_fact in model_facts.items()}
             facts.model_by_ref_id = {
                 self._model_key(model_fact.reference): model_id for model_id, model_fact in model_facts.items()
             }
-        for model_id, occurrences, sites in changes:
-            self._record_data_types_again(model_id, occurrences, sites)
+        for model_id, slots, walk in changes:
+            self._record_slots(model_id, slots, walk)
         return GenerationBuildResult(
             facts=facts,
             model_ids_by_object=model_ids_by_object,
@@ -715,27 +740,60 @@ class GenerationIndexBuilder:
         facts.model_by_path[model.path] = model_id
         facts.model_by_ref_id[self._model_key(model.reference)] = model_id
 
-    def _occurrences(self, model: DataModel) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
-        """Return the data type occurrences of ``model`` and its reference sites, from one walk of its type trees.
+    def _walk(self, model: DataModel, slots: Collection[int] | None) -> _Walk:
+        """Return the occurrences of ``slots`` of ``model``, of every slot for None, and the sites among them."""
+        owner = self._model_key(model.reference)
+        if slots is None:
+            return model_occurrences(model, owner, self._model_key)
+        return _walk_slots(model, sorted(slots), owner, self._model_key)
 
-        Each site comes with the position of its node among the occurrences.
+    def _record_slots(
+        self, model_id: ModelId, slots: Collection[int] | None, walk: _Walk, old_sites: _OldSites | None = None
+    ) -> None:
+        """Record the occurrences ``walk`` holds for ``slots`` of a model (every slot for None) in the ids they had.
+
+        The sites of ``walk`` replace those of the slots; one whose occurrence ``old_sites`` (by default the old sites
+        of the slots) holds keeps its provenance, a new one takes what the history gives it.
         """
-        return model_occurrences(model, self._model_key(model.reference), self._model_key)
+        facts = self._facts
+        recorded = facts.data_types_by_model.get(model_id, ())
+        bounds = [(0, len(recorded))] if slots is None else [_slot_bounds(recorded, slot) for slot in sorted(slots)]
+        old_ids = [key for start, end in bounds for key in recorded[start:end]]
+        if old_sites is None:
+            old_sites = _OldSites(site for key in old_ids if (site := facts.sites.pop(SiteKey(key), None)) is not None)
+        occurrences, sites = walk
+        data_type_ids = self._record_data_types(model_id, old_ids, occurrences)
+        kept = (recorded[end:start] for (_, end), (start, _) in pairwise(((0, 0), *bounds, (len(recorded), 0))))
+        facts.data_types_by_model[model_id] = tuple(sorted(chain(*kept, data_type_ids)))
+        for index, occurrence in sites:
+            key = SiteKey(data_type_ids[index])
+            if (old := old_sites.by_occurrence.get(occurrence)) is None:
+                provenance = self._history.provenance(facts, model_id, occurrence, old_sites)
+                facts.sites[key] = site_of(key, occurrence, provenance)
+            elif old.key == key:
+                facts.sites[key] = old
+            else:
+                facts.sites[key] = site_of(key, occurrence, old.provenance)
 
-    def _record_data_types(self, model_id: ModelId, occurrences: list[DataTypeOccurrence]) -> None:
-        """Record the data type occurrences of a model in the ids it had, replacing only the occurrences that differ.
+    def _record_data_types(
+        self, model_id: ModelId, old_ids: Sequence[DataTypeId], occurrences: list[DataTypeOccurrence]
+    ) -> list[DataTypeId]:
+        """Record ``occurrences`` in the ``old_ids`` of their slots, replacing only those that differ; return the ids.
 
-        Keeping the ids keeps the dictionaries from growing with every change; occurrences beyond the old
-        count get new ids, which still follow every id the model keeps. A full build records each model this way,
-        with no old ids.
+        Keeping the ids keeps the dictionaries from growing with every change: the n-th occurrence of a slot keeps the
+        n-th id of the slot, the occurrences beyond the old count get new ids, which follow every id the slot keeps.
         """
         data_type_facts = self._facts.data_type_facts
-        old_ids = self._facts.data_types_by_model.get(model_id, ())
-        data_type_ids = list(old_ids[: len(occurrences)])
-        for _ in range(len(occurrences) - len(old_ids)):
-            data_type_ids.append(self._next_data_type_id)
-            self._next_data_type_id += 1
-        stale_facts = [data_type_facts[data_type_id] for data_type_id in old_ids[len(occurrences) :]]
+        unused = {slot: iter([*slot_ids]) for slot, slot_ids in groupby(old_ids, key=_slot_of)}
+        data_type_ids: list[DataTypeId] = []
+        for _, owner_field_index, _ in occurrences:
+            slot = _BASE_SLOT if owner_field_index is None else owner_field_index
+            if (data_type_id := next(unused.get(slot, _NO_IDS), None)) is None:
+                data_type_id = slot << _SLOT_BITS | self._next_data_type_id
+                self._next_data_type_id += 1
+            data_type_ids.append(data_type_id)
+        dropped_ids = [*chain.from_iterable(unused.values())]
+        stale_facts = [data_type_facts[data_type_id] for data_type_id in dropped_ids]
         fresh_facts: list[DataTypeFact] = []
         for data_type_id, occurrence in zip(data_type_ids, occurrences, strict=True):
             data_type, owner_field_index, role = occurrence
@@ -753,66 +811,39 @@ class GenerationIndexBuilder:
             self._update_base_owners(model_id, old_ids, occurrences)
         for fact in stale_facts:
             self._forget_fact(fact)
-        for data_type_id in old_ids[len(occurrences) :]:
+        for data_type_id in dropped_ids:
             del data_type_facts[data_type_id]
         for fact in fresh_facts:
             self._record_fact(fact)
-        self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
-
-    def _record_data_types_again(
-        self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
-    ) -> None:
-        """Record a changed or appended model in the ids it had; its ``sites`` replace its old ones."""
-        all_sites = self._facts.sites
-        old_sites = _OldSites(
-            site
-            for data_type_id in self._facts.data_types_by_model.get(model_id, ())
-            if (site := all_sites.pop(SiteKey(data_type_id), None)) is not None
-        )
-        self._record_data_types(model_id, occurrences)
-        self._record_sites(model_id, sites, old_sites)
-
-    def _record_sites(
-        self,
-        model_id: ModelId,
-        sites: list[tuple[int, SiteOccurrence]],
-        old_sites: _OldSites,
-    ) -> None:
-        """Record the sites of a model under the ids of their occurrences.
-
-        A site whose occurrence ``old_sites`` holds keeps its provenance; a new one takes what the history gives it.
-        """
-        facts = self._facts
-        data_type_ids = facts.data_types_by_model[model_id]
-        for index, occurrence in sites:
-            key = SiteKey(data_type_ids[index])
-            if (old := old_sites.by_occurrence.get(occurrence)) is None:
-                provenance = self._history.provenance(facts, model_id, occurrence, old_sites)
-                facts.sites[key] = site_of(key, occurrence, provenance)
-            elif old.key == key:
-                facts.sites[key] = old
-            else:
-                facts.sites[key] = site_of(key, occurrence, old.provenance)
+        return data_type_ids
 
     def _record_fact(self, fact: DataTypeFact) -> None:
         self._facts.data_type_facts[fact.id] = fact
         self._index_data_type_object(fact)
         if fact.reference:
-            self._add_target_site(self._model_key(fact.reference), SiteKey(fact.id))
+            key = self._model_key(fact.reference)
+            for sites_by_target in self._target_site_lists(fact):
+                self._add_target_site(sites_by_target, key, SiteKey(fact.id))
 
     def _forget_fact(self, fact: DataTypeFact) -> None:
         self._forget_data_type_object(fact)
         if fact.reference:
             key = self._model_key(fact.reference)
-            site_keys = self._facts.sites_by_target[key]
-            del site_keys[SiteKey(fact.id)]
-            if not site_keys:
-                del self._facts.sites_by_target[key]
+            for sites_by_target in self._target_site_lists(fact):
+                site_keys = sites_by_target[key]
+                del site_keys[SiteKey(fact.id)]
+                if not site_keys:
+                    del sites_by_target[key]
+
+    def _target_site_lists(self, fact: DataTypeFact) -> tuple[_SitesByTarget, ...]:
+        """Return the per-target site lists that list the site of ``fact``: every site, and the sites of bases."""
+        facts = self._facts
+        return (facts.sites_by_target, facts.base_sites_by_target) if fact.role == "base" else (facts.sites_by_target,)
 
     def _update_base_owners(
         self,
         model_id: ModelId,
-        old_ids: tuple[DataTypeId, ...],
+        old_ids: Sequence[DataTypeId],
         occurrences: list[DataTypeOccurrence],
     ) -> None:
         data_type_facts = self._facts.data_type_facts
@@ -847,13 +878,14 @@ class GenerationIndexBuilder:
         if facts.data_type_fact_by_object[object_id] is fact:
             facts.data_type_fact_by_object[object_id] = facts.data_type_facts[max(data_type_ids, key=facts.order_key)]
 
-    def _add_target_site(self, key: ModelKey, site_key: SiteKey) -> None:
+    def _add_target_site(self, sites_by_target: _SitesByTarget, key: ModelKey, site_key: SiteKey) -> None:
         facts = self._facts
-        site_keys = facts.sites_by_target[key]
+        site_keys = sites_by_target[key]
         if not site_keys or facts.order_key(next(reversed(site_keys))) < facts.order_key(site_key):
             site_keys[site_key] = None
             return
-        ordered_keys = sorted((*site_keys, site_key), key=facts.order_key)
+        ordered_keys = list(site_keys)
+        insort(ordered_keys, site_key, key=facts.order_key)
         site_keys.clear()
         site_keys.update(dict.fromkeys(ordered_keys))
 
@@ -876,6 +908,21 @@ class GenerationIndexBuilder:
             owners[base_class_id] = model_ids[0]
 
 
+@final
+class _SlotIndexBuilder(GenerationIndexBuilder):
+    """A builder whose `update` records again only the slots the store noted of a model it noted no more of."""
+
+    def __init__(
+        self,
+        model_key: Callable[[Reference], ModelKey],
+        history: _SiteHistory,
+        slots: Mapping[ModelId, Collection[int]],
+    ) -> None:
+        """Create a builder as `GenerationIndexBuilder` does, recording again only ``slots`` of the models they name."""
+        super().__init__(model_key, history)
+        self._slots = slots
+
+
 def model_occurrences(
     model: DataModel, owner: ModelKey, target_of: Callable[[Reference], ModelKey]
 ) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
@@ -884,18 +931,45 @@ def model_occurrences(
     The nodes are walked once, in the store's order: each field's tree, then each base class's, every tree in preorder
     with the items of a node before its dict key. A site comes with the position of its node among the occurrences.
     """
+    return _walk_slots(model, (*range(len(model.fields)), _BASE_SLOT), owner, target_of)
+
+
+_Walk: TypeAlias = tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]
+
+
+def _slot_of(data_type_id: DataTypeId) -> int:
+    """Return the slot of a data type id."""
+    return data_type_id >> _SLOT_BITS
+
+
+def _slot_bounds(data_type_ids: Sequence[DataTypeId], slot: int) -> tuple[int, int]:
+    """Return where the ids of ``slot`` start and end among the ascending ids of a model."""
+    return bisect_left(data_type_ids, slot << _SLOT_BITS), bisect_left(data_type_ids, (slot + 1) << _SLOT_BITS)
+
+
+def _walk_slots(
+    model: DataModel, slots: Iterable[int], owner: ModelKey, target_of: Callable[[Reference], ModelKey]
+) -> _Walk:
+    """Return the occurrences of ``slots`` (ascending) of ``model`` and the sites among them.
+
+    A slot is a field's tree, or the trees of the base classes; each is walked as `model_occurrences` walks it.
+    """
     occurrences: list[DataTypeOccurrence] = []
     sites: list[tuple[int, SiteOccurrence]] = []
     kind: RefKind = "alias_body" if model.IS_ALIAS else "type"
-    for field_index, field_ in enumerate(model.fields):
-        field_key = FieldKey(id(field_))
-        _walk_tree(field_.data_type, field_index, "field", field_key, kind, owner, target_of, occurrences, sites)
-    for base_class in model.base_classes:
-        _walk_tree(base_class, None, "base", None, "base", owner, target_of, occurrences, sites)
+    for slot in slots:
+        if slot == _BASE_SLOT:
+            for base_class in model.base_classes:
+                _walk_tree(base_class, None, "base", None, "base", owner, target_of, occurrences, sites)
+        else:
+            field_ = model.fields[slot]
+            _walk_tree(
+                field_.data_type, slot, "field", FieldKey(id(field_)), kind, owner, target_of, occurrences, sites
+            )
     return occurrences, sites
 
 
-def _walk_tree(  # noqa: PLR0913, PLR0917
+def _walk_tree(  # noqa: PLR0917
     root: DataType,
     field_index: int | None,
     root_role: DataTypeRole,
@@ -1028,9 +1102,8 @@ class GenerationIndex:
         """Return the models whose bases name ``reference``, once each, in the order of those bases."""
         facts = self._view().facts
         owners = (
-            facts.model_facts[fact.owner_model].model
-            for fact in self.data_type_facts_for_reference(reference)
-            if fact.role == "base"
+            facts.model_facts[facts.data_type_facts[site_key].owner_model].model
+            for site_key in facts.base_sites_by_target.get(self._store.model_key(reference), ())
         )
         return list({id(owner): owner for owner in owners}.values())
 
@@ -1136,8 +1209,7 @@ class GenerationIndex:
         return tuple(
             owner
             for owner in owners
-            if owner is not parent
-            and (owner.dict_key is data_type or any(member is data_type for member in owner.data_types))
+            if owner is not parent and any(child is data_type for child in type_children(owner))
         )
 
     def root_collapse_reference_usage(
@@ -1169,32 +1241,6 @@ class GenerationIndex:
         return wrappers, direct_refs
 
 
-@dataclass(slots=True)
-class _RootCollapseReferenceScope:
-    """Lazy reference counts for one root-collapse mutation scope."""
-
-    reference_counts: dict[ModelKey, int] = field(default_factory=dict)
-    enabled: bool = True
-    initialized: bool = False
-    mutated: bool = False
-
-    def invalidate(self) -> None:
-        """Disable incremental updates after an unsupported mutation."""
-        self.enabled = False
-        self.reference_counts.clear()
-
-    def initialize(self, facts: GenerationFacts) -> None:
-        """Start counting over ``facts``; the counts stay disabled when a node occurs in them more than once."""
-        self.initialized = True
-        self.enabled = len(facts.data_type_fact_by_object) == len(facts.data_type_facts)
-
-    def count(self, key: ModelKey, facts: GenerationFacts) -> int:
-        """Return the counted references to ``key``, or the sites of ``facts`` that name it when none are counted."""
-        if (count := self.reference_counts.get(key)) is None:
-            count = len(facts.sites_by_target.get(key, ()))
-        return count
-
-
 class GenerationStore:  # noqa: PLR0904
     """Parse-to-output generation facts for a Parser instance."""
 
@@ -1213,11 +1259,10 @@ class GenerationStore:  # noqa: PLR0904
         self._rebuild_required = True
         self._appended_model_ids: set[int] = set()
         self._changed_model_ids: set[ModelId] = set()
+        self._changed_slots: dict[ModelId, set[int]] = {}
         self._renamed_model_ids: set[ModelId] = set()
         self._renames: list[ModelRename] = []
         self._defer_refresh_depth = 0
-        self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
-        self._root_collapse_internal_mutation_depth = 0
         self._built_models: list[DataModel] = []
         self._retired_models: dict[int, DataModel] = {}
         self._site_effects = _SiteEffects()
@@ -1277,145 +1322,6 @@ class GenerationStore:  # noqa: PLR0904
         self.refresh()
         return self._facts
 
-    @contextmanager
-    def _collapse_root_reference_scope(self) -> Generator[None, None, None]:
-        """Track root-reference counts while one collapse pass mutates the store."""
-        if self._active_root_collapse_reference_scope is not None:
-            msg = "Root-collapse reference scopes cannot be nested."
-            raise RuntimeError(msg)
-
-        scope = _RootCollapseReferenceScope()
-        self._active_root_collapse_reference_scope = scope
-        completed = False
-        try:
-            yield
-            completed = True
-        finally:
-            try:
-                if completed and scope.mutated:
-                    self.refresh_now()
-            finally:
-                scope.invalidate()
-                self._active_root_collapse_reference_scope = None
-
-    def _root_collapse_scope_if_ready(self) -> _RootCollapseReferenceScope | None:
-        """Return an initialized tracker, or disable it when facts cannot be trusted."""
-        scope = self._active_root_collapse_reference_scope
-        if scope is None or not scope.enabled:
-            return None
-        if scope.initialized:
-            return scope
-
-        self.current_facts()
-        scope = self._active_root_collapse_reference_scope
-        if scope is None or not scope.enabled:
-            return None
-        if not scope.initialized:
-            if self._dirty:
-                scope.invalidate()
-                return None
-            scope.initialize(self._facts)
-        return scope if scope.enabled else None
-
-    def _root_collapse_has_data_type_references(
-        self,
-        reference: Reference,
-        *,
-        excluded_data_type: DataType | None = None,
-    ) -> bool | None:
-        """Return a scoped reference count, or ``None`` when incremental facts are unavailable."""
-        scope = self._root_collapse_scope_if_ready()
-        if scope is None:
-            return None
-
-        key = self.model_key(reference)
-        count = scope.reference_counts[key] = scope.count(key, self._facts)
-        if excluded_data_type is not None:
-            if (excluded_fact := self._root_collapse_recorded_fact(scope, excluded_data_type)) is None:
-                return None
-            count -= excluded_fact.reference is reference
-        return count > 0
-
-    def _root_collapse_recorded_fact(
-        self, scope: _RootCollapseReferenceScope, data_type: DataType
-    ) -> DataTypeFact | None:
-        """Return the fact the facts record for ``data_type``, or invalidate ``scope`` when they record none for it."""
-        if (fact := self._facts.data_type_fact_by_object.get(id(data_type))) is None or fact.data_type is not data_type:
-            scope.invalidate()
-            return None
-        return fact
-
-    def _root_collapse_prepare_data_type_replacement(
-        self,
-        data_type: DataType,
-        new_data_type: DataType,
-    ) -> dict[ModelKey, int] | None:
-        """Prepare one replacement's reference deltas, or return ``None`` for fallback."""
-        scope = self._root_collapse_scope_if_ready()
-        if scope is None:
-            return None
-
-        if self._root_collapse_recorded_fact(scope, data_type) is None:
-            return None
-
-        deltas: dict[ModelKey, int] = {}
-        seen_data_type_ids: set[int] = set()
-        for nested_data_type in new_data_type.all_data_types:
-            nested_data_type_id = id(nested_data_type)
-            if nested_data_type_id in seen_data_type_ids or nested_data_type_id in self._facts.data_type_fact_by_object:
-                scope.invalidate()
-                return None
-            seen_data_type_ids.add(nested_data_type_id)
-            if nested_data_type.reference:
-                key = self.model_key(nested_data_type.reference)
-                deltas[key] = deltas.get(key, 0) + 1
-        for nested_data_type in data_type.all_data_types:
-            if nested_data_type.reference:
-                key = self.model_key(nested_data_type.reference)
-                deltas[key] = deltas.get(key, 0) - 1
-        return deltas
-
-    def _root_collapse_apply_reference_deltas(self, deltas: dict[ModelKey, int]) -> bool:
-        """Apply reference-count deltas when every affected reference is tracked."""
-        scope = self._active_root_collapse_reference_scope
-        if scope is None or not scope.enabled:
-            return False
-
-        for key, delta in deltas.items():
-            if delta and (key not in self._facts.model_by_ref_id and key not in self._facts.sites_by_target):
-                scope.invalidate()
-                return False
-
-        for key, delta in deltas.items():
-            count = scope.count(key, self._facts) + delta
-            if count < 0:
-                scope.invalidate()
-                return False
-            scope.reference_counts[key] = count
-        return True
-
-    def _root_collapse_record_reference_change(
-        self,
-        data_type: DataType,
-        old_reference: Reference | None,
-        new_reference: Reference | None,
-    ) -> bool:
-        """Update counts for one in-place reference replacement."""
-        if old_reference is new_reference:
-            return True
-        scope = self._root_collapse_scope_if_ready()
-        if scope is None:
-            return False
-        deltas: dict[ModelKey, int] = {}
-        if old_reference is not None:
-            deltas[self.model_key(old_reference)] = -1
-        if new_reference is not None:
-            new_key = self.model_key(new_reference)
-            deltas[new_key] = deltas.get(new_key, 0) + 1
-        if self._root_collapse_recorded_fact(scope, data_type) is None:
-            return False
-        return self._root_collapse_apply_reference_deltas(deltas)
-
     def builder(self) -> GraphBuilder:
         """Return the capability to change the graph of this store, through which every mutation goes."""
         return self._builder
@@ -1434,17 +1340,20 @@ class GenerationStore:  # noqa: PLR0904
         modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
         member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
         options: DecisionOptions,
+        constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None],
     ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
         A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
-        ``member_keywords``. This is the only construction of ``FinalFacts``.
+        ``member_keywords``, and the type that holds keywords in place of a member through ``constrained_member``. This
+        is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(
             module_facts,
             tuple(model for facts in module_facts for model in facts.live_models),
             member_keywords,
+            constrained_member,
             options,
         )
 
@@ -1473,6 +1382,16 @@ class GenerationStore:  # noqa: PLR0904
         self._builder.retire_model(model)
         self._builder.register_model(replacement)
 
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().set_module_models() instead.", category=None)
+    def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None:
+        """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place.
+
+        Every holder of the list sees the change. Nothing the store derives reads a module's list: the emitted models
+        are what ``register_model``, ``retire_model`` and ``replace_model`` record.
+        """
+        models[:] = members
+
     def _universe_facts(self) -> _UniverseFacts:
         """Return the current facts of the parsed models with the ids they record each model under."""
         return _UniverseFacts(self.current_facts(), self._model_ids_by_object)
@@ -1484,10 +1403,6 @@ class GenerationStore:  # noqa: PLR0904
     def _invalidate(self) -> None:
         """Invalidate derived facts after a store-managed mutation."""
         self._dirty = True
-        if scope := self._active_root_collapse_reference_scope:
-            scope.mutated = True
-            if not self._root_collapse_internal_mutation_depth:
-                scope.invalidate()
 
     def _invalidate_models(self) -> None:
         """Invalidate every fact after the model list changes."""
@@ -1531,6 +1446,27 @@ class GenerationStore:  # noqa: PLR0904
         """
         data_type.__dict__[DROPPED_MULTIPLE_OF_KEY] = value
         bump_node(data_type)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().record_site_constraints() instead.", category=None)
+    def record_site_constraints(data_type: DataType, constraints: Mapping[str, Any]) -> None:
+        """Keep on the type of an allOf site the constraint keywords the site adds to the target the type names.
+
+        ``constrain_fields_by_their_reference_sites`` writes them on the field whose whole type it is.
+        """
+        data_type.__dict__[_SITE_CONSTRAINTS_KEY] = dict(constraints)
+        bump_node(data_type)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().write_field_call_in_annotated() instead.", category=None)
+    def write_field_call_in_annotated(field_: DataModelFieldBase) -> None:
+        """Make a field write its ``Field()`` call in ``Annotated`` metadata, as ``--use-annotated`` writes it.
+
+        ``constrain_fields_by_their_reference_sites`` writes the constraints of a site there on a field that writes no
+        call, where a call would give the field a constructor default.
+        """
+        field_.use_annotated = True
+        bump_field(field_)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().record_widened_values() instead.", category=None)
@@ -1610,7 +1546,7 @@ class GenerationStore:  # noqa: PLR0904
         Render preparation writes rendered nullability once for every node of every model. A None that is not the
         type's own comes from its nullable model (also marked as not the type's own) or from its union's members.
         """
-        if (null := data_type._hint_null_source()) in {None, "own"}:  # noqa: SLF001
+        if (null := _hint_null(data_type)) in {None, "own"}:
             return
         data_type.is_optional = True
         data_type._update_type_null(  # noqa: SLF001
@@ -1639,21 +1575,25 @@ class GenerationStore:  # noqa: PLR0904
         The facts stay as they are until that refresh, as they did when every refresh rebuilt them all. The new sites of
         ``models`` are overridden, and their revisions move.
         """
-        for model in models:
-            bump_model(model)
-        self._state_model_sites("note_changed_models", *models)
+        self._note_model_revision(*models)
         if self._rebuild_required:
             return
         for model in models:
             if (model_id := self._tracked_model_id(model)) is not None:
                 self._changed_model_ids.add(model_id)
 
-    def _note_changed_data_types(self, data_types: Iterable[object]) -> None:
-        """Record again, at the next refresh, the models whose recorded facts contain ``data_types``.
+    def _note_model_revision(self, *models: object) -> None:
+        """Move the revisions of ``models`` and state that their new sites are overridden (`note_changed_models`)."""
+        for model in models:
+            bump_model(model)
+        self._state_model_sites("note_changed_models", *models)
 
-        A data type that joined a model's tree after the last refresh did so through a mutation that
-        already noted that model, so the recorded owners are the only ones left to note. What reads the data types
-        is bumped (`bump_node`).
+    def _note_changed_data_types(self, data_types: Iterable[object]) -> None:
+        """Record again, at the next refresh, the slots whose recorded facts contain ``data_types``.
+
+        A data type that joined a slot after the last refresh did so through a mutation that already noted that slot
+        or its model, so the recorded occurrences are the only ones left to note. What reads the data types is bumped
+        (`bump_node`).
         """
         data_types = tuple(data_types)
         for data_type in data_types:
@@ -1663,17 +1603,19 @@ class GenerationStore:  # noqa: PLR0904
         facts = self._facts
         for data_type in data_types:
             object_id = id(data_type)
-            if (data_type_ids := facts.shared_data_type_fact_ids.get(object_id)) is not None:
-                self._changed_model_ids.update(
-                    facts.data_type_facts[data_type_id].owner_model for data_type_id in data_type_ids
-                )
-            elif (fact := facts.data_type_fact_by_object.get(object_id)) is not None and fact.data_type is data_type:
-                self._changed_model_ids.add(fact.owner_model)
+            if (data_type_ids := facts.shared_data_type_fact_ids.get(object_id)) is None:
+                if (fact := facts.data_type_fact_by_object.get(object_id)) is None or fact.data_type is not data_type:
+                    continue
+                data_type_ids = (fact.id,)
+            for data_type_id in data_type_ids:
+                owner_model = facts.data_type_facts[data_type_id].owner_model
+                self._changed_slots.setdefault(owner_model, set()).add(_slot_of(data_type_id))
 
     def _clear_pending(self) -> None:
         """Forget the models appended, changed and renamed since the last refresh."""
         self._appended_model_ids.clear()
         self._changed_model_ids.clear()
+        self._changed_slots.clear()
         self._renamed_model_ids.clear()
 
     def refresh(self) -> None:
@@ -1686,8 +1628,8 @@ class GenerationStore:  # noqa: PLR0904
     def refresh_now(self) -> None:
         """Bring facts up to date immediately, even inside a deferred mutation block.
 
-        Appended models and the models that mutations noted are recorded on their own; any other change of the
-        model list rebuilds every fact.
+        Appended models and the slots or models that mutations noted are recorded on their own; any other change of
+        the model list rebuilds every fact.
         """
         if not self._dirty:
             return
@@ -1701,11 +1643,13 @@ class GenerationStore:  # noqa: PLR0904
             )
         else:
             try:
-                result = GenerationIndexBuilder(self.model_key, history).update(
+                changed_model_ids = self._changed_model_ids
+                slots = {key: slots for key, slots in self._changed_slots.items() if key not in changed_model_ids}
+                result = _SlotIndexBuilder(self.model_key, history, slots).update(
                     self._facts,
                     self.models,
                     appended_count=len(self._appended_model_ids),
-                    changed_model_ids=self._changed_model_ids,
+                    changed_model_ids=changed_model_ids.union(slots),
                     renamed_model_ids=self._renamed_model_ids,
                     model_ids_by_object=self._model_ids_by_object,
                     next_model_id=self._next_model_id,
@@ -1726,11 +1670,6 @@ class GenerationStore:  # noqa: PLR0904
         self._carried_sites = ()
         self._facts_version += 1
         self._dirty = False
-        if scope := self._active_root_collapse_reference_scope:
-            if scope.initialized:
-                scope.invalidate()
-            elif scope.enabled:
-                scope.initialize(self._facts)
 
     @deprecated("Use GenerationStore.builder().discard_derived_facts() instead.", category=None)
     def discard_derived_facts(self) -> None:
@@ -1743,9 +1682,6 @@ class GenerationStore:  # noqa: PLR0904
         self._clear_pending()
         self._rebuild_required = True
         self._dirty = True
-        if scope := self._active_root_collapse_reference_scope:
-            scope.mutated = True
-            scope.invalidate()
 
     @deprecated("Use GenerationStore.builder().replace_data_type_ref() instead.", category=None)
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:
@@ -1753,12 +1689,6 @@ class GenerationStore:  # noqa: PLR0904
         if new_reference is not None:
             self._state_sites_at("replace_data_type_ref", (data_type,), via=data_type.reference)
         cache_owners = self._cache_owners_for_data_type(data_type)
-        scope = self._active_root_collapse_reference_scope
-        if self._root_collapse_internal_mutation_depth:
-            if scope is not None and scope.enabled:
-                self._root_collapse_record_reference_change(data_type, data_type.reference, new_reference)
-        elif scope is not None:
-            scope.invalidate()
         self._replace_data_type_reference(data_type, new_reference)
         self._data_types_changed((data_type,), (cache_owners,))
 
@@ -1802,7 +1732,7 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate()
 
     @deprecated("Use GenerationStore.builder().rename_model() instead.", category=None)
-    def rename_model(  # noqa: PLR0913
+    def rename_model(
         self,
         model: DataModel,
         *,
@@ -1828,9 +1758,6 @@ class GenerationStore:  # noqa: PLR0904
         (``SCHEMA_PATH_KEY``). Every rename is recorded with the names before and after it (``renames``), under the
         keys the model has then.
         """
-        from datamodel_code_generator.model.base import _path_identity_keys  # noqa: PLC0415
-        from datamodel_code_generator.reference import SCHEMA_PATH_KEY  # noqa: PLC0415
-
         class_name_before, path_before, name_before = model.class_name, model.reference.path, model.reference.name
         self._update_model_reference(
             model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
@@ -1863,7 +1790,7 @@ class GenerationStore:  # noqa: PLR0904
         old_data_type = field_.data_type
         field_.replace_data_type(new_data_type)
         self._note_changed_data_types((old_data_type,))
-        self._builder.note_changed_models(field_.parent)
+        self._note_model_revision(field_.parent)
         self._refresh_after_write(refresh)
 
     @deprecated("Use GenerationStore.builder().swap_data_type() instead.", category=None)
@@ -1886,17 +1813,22 @@ class GenerationStore:  # noqa: PLR0904
         """
         self._state_model_sites("apply_const", field_.parent)
         _bump_field_tree(field_)
+        old_data_type = field_.data_type
         field_.process_const()
-        self._builder.note_changed_models(field_.parent)
+        self._note_changed_data_types((old_data_type,))
+        self._note_model_revision(field_.parent)
         self._refresh_after_write(refresh)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().apply_literal_default() instead.", category=None)
     def apply_literal_default(field_: DataModelFieldBase, decision: LiteralDefault) -> None:
-        """Write the default, requiredness and nullability ``decide_literal_default`` decides for a field."""
-        from datamodel_code_generator.model.base import _apply_literal_default  # noqa: PLC0415
+        """Write the default, requiredness and nullability ``decide_literal_default`` decides for a field.
 
+        A field made not null keeps no ``nullable`` without its default (``record_nullable_without_default``).
+        """
         _apply_literal_default(field_, decision)
+        if decision.not_null:
+            field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
         bump_field(field_)
 
     @deprecated("Use GenerationStore.builder().drop_union_member_constraints() instead.", category=None)
@@ -1970,6 +1902,25 @@ class GenerationStore:  # noqa: PLR0904
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
         field_.default = default
+        bump_field(field_)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().record_nullable_without_default() instead.", category=None)
+    def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
+        """Record the ``nullable`` a field has as one without its default; none where it equals its ``nullable``."""
+        if nullable is field_.nullable:
+            field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
+        else:
+            field_.__dict__[NULLABLE_WITHOUT_DEFAULT_KEY] = nullable
+        bump_field(field_)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().omit_field_default() instead.", category=None)
+    def omit_field_default(field_: DataModelFieldBase) -> None:
+        """Write a field without its default: the default None, and the ``nullable`` it has without the default."""
+        field_.default = None
+        if (nullable := field_.nullable_without_default) is not field_.nullable:
+            field_.nullable = nullable
         bump_field(field_)
 
     @staticmethod
@@ -2051,7 +2002,7 @@ class GenerationStore:  # noqa: PLR0904
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_type_expressions() instead.", category=None)
-    def set_type_expressions(  # noqa: PLR0913
+    def set_type_expressions(
         data_type: DataType,
         *,
         type_: str | None = None,
@@ -2164,30 +2115,6 @@ class GenerationStore:  # noqa: PLR0904
         )
         self._builder.set_nested_data_types(parent_data_type, (members[index] for index in plan.members))
 
-    @staticmethod
-    def _root_collapse_supports_incremental_replacement(
-        data_type: DataType,
-        new_data_type: DataType,
-        *,
-        owner: Any,
-        replacement_kind: Literal["field", "nested"],
-    ) -> bool:
-        """Return whether a replacement uses only built-in mutation/traversal hooks."""
-        if replacement_kind == "field":
-            from datamodel_code_generator.model.base import (  # noqa: PLC0415
-                DataModelFieldBase as RuntimeDataModelFieldBase,
-            )
-
-            if type(owner).replace_data_type is not RuntimeDataModelFieldBase.replace_data_type:
-                return False
-
-        from datamodel_code_generator.types import DataType as RuntimeDataType  # noqa: PLC0415
-
-        return (
-            type(data_type).all_data_types.fget is RuntimeDataType.all_data_types.fget
-            and type(new_data_type).all_data_types.fget is RuntimeDataType.all_data_types.fget
-        )
-
     @contextmanager
     def _replace_data_type_and_detach_data_type_ref(
         self,
@@ -2196,63 +2123,35 @@ class GenerationStore:  # noqa: PLR0904
         *,
         owner: Any,
         replacement_kind: Literal["field", "nested"],
+        holders: tuple[tuple[DataType, ...], tuple[DataType, ...]] = ((), ()),
     ) -> Generator[None, None, None]:
         """Replace a data type, then detach its old reference after surrounding work.
 
-        The sites of ``new_data_type`` are collapsed from the root model ``data_type`` names.
+        The sites of ``new_data_type`` are collapsed from the root model ``data_type`` names. ``holders`` are the
+        inlined copies that hold ``data_type`` beside ``owner``: the first take the same ``new_data_type`` before
+        ``owner``, so ``owner`` stays its parent; the others keep ``data_type``, which then keeps its reference and
+        takes the first of them as its parent.
         """
+        shared_holders, kept_holders = holders
         self._state_tree_sites("collapse_root_data_type", (new_data_type,), via=data_type.reference)
-        scope = self._active_root_collapse_reference_scope
-        if (
-            scope is not None
-            and scope.enabled
-            and not self._root_collapse_supports_incremental_replacement(
-                data_type,
-                new_data_type,
-                owner=owner,
-                replacement_kind=replacement_kind,
-            )
-        ):
-            scope.invalidate()
-        replacement_deltas = self._root_collapse_prepare_data_type_replacement(data_type, new_data_type)
-        if scope is not None and scope.enabled:
-            has_base_owner_alias = False
-        else:
-            facts = self._facts if not self._dirty else self.current_facts()
-            has_base_owner_alias = id(data_type) in facts.base_owner_model_ids_by_object
-        with self._root_collapse_internal_mutation():
-            match replacement_kind:
-                case "field":
-                    self._builder.replace_field_type(owner, new_data_type)
-                case "nested":  # pragma: no branch
-                    self._builder.replace_nested_data_type(owner, data_type, new_data_type)
-        try:
-            yield
-        except BaseException:
-            if scope is not None:
-                scope.invalidate()
-            raise
-        if data_type.parent is not None or has_base_owner_alias:
-            if scope is not None:
-                scope.invalidate()
-            with self._root_collapse_internal_mutation():
-                self._builder.detach_data_type_ref(data_type)
+        has_base_owner_alias = id(data_type) in self.current_facts().base_owner_model_ids_by_object
+        for holder in shared_holders:
+            self._builder.replace_nested_data_type(holder, data_type, new_data_type)
+        match replacement_kind:
+            case "field":
+                self._builder.replace_field_type(owner, new_data_type)
+            case "nested":  # pragma: no branch
+                self._builder.replace_nested_data_type(owner, data_type, new_data_type)
+        yield
+        if kept_holders:
+            data_type.parent = kept_holders[0]
             return
-        if replacement_deltas is not None:
-            self._root_collapse_apply_reference_deltas(replacement_deltas)
-        with self._root_collapse_internal_mutation():
-            self._replace_data_type_reference(data_type, None)
-            self._note_changed_data_types((data_type,))
-            self._invalidate()
-
-    @contextmanager
-    def _root_collapse_internal_mutation(self) -> Generator[None, None, None]:
-        """Run a mutation of root collapse itself, which keeps the scope's reference counts (`_invalidate`)."""
-        self._root_collapse_internal_mutation_depth += 1
-        try:
-            yield
-        finally:
-            self._root_collapse_internal_mutation_depth -= 1
+        if data_type.parent is not None or has_base_owner_alias:
+            self._builder.detach_data_type_ref(data_type)
+            return
+        self._replace_data_type_reference(data_type, None)
+        self._note_changed_data_types((data_type,))
+        self._invalidate()
 
     @deprecated("Use GenerationStore.builder().inline_shared() instead.", category=None)
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
@@ -2399,7 +2298,7 @@ class GenerationStore:  # noqa: PLR0904
     def collapse_root_data_type(self, data_type: DataType, inner_reference: Reference) -> None:
         """Replace a root-model data type with its inner reference; its site is collapsed from the root model."""
         self._state_sites_at("collapse_root_data_type", (data_type,), via=data_type.reference)
-        with self._root_collapse_internal_mutation(), self._builder.defer_refresh():
+        with self._builder.defer_refresh():
             if data_type.reference:
                 drop_child_and_detached(data_type.reference, data_type)
             self._builder.replace_data_type_ref(data_type, inner_reference)
@@ -2423,11 +2322,7 @@ class GenerationStore:  # noqa: PLR0904
             completed = True
         finally:
             try:
-                if (
-                    completed
-                    and self._defer_refresh_depth == 1
-                    and not ((scope := self._active_root_collapse_reference_scope) is not None and scope.enabled)
-                ):
+                if completed and self._defer_refresh_depth == 1:
                     self.refresh_now()
             finally:
                 self._defer_refresh_depth -= 1
@@ -2566,7 +2461,7 @@ class GraphBuilder:
         """Write the bare builtins of a model through ``GenerationStore.bind_builtin_names``."""
         self._store.bind_builtin_names(model, bindings)  # ty: ignore[deprecated]
 
-    def set_type_expressions(  # noqa: PLR0913
+    def set_type_expressions(
         self,
         data_type: DataType,
         *,
@@ -2700,6 +2595,14 @@ class GraphBuilder:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of."""
         self._store.record_values_as_written(owner, values)  # ty: ignore[deprecated]
 
+    def record_site_constraints(self, data_type: DataType, constraints: Mapping[str, Any]) -> None:
+        """Keep on the type of an allOf site the constraint keywords the site adds to the target the type names."""
+        self._store.record_site_constraints(data_type, constraints)  # ty: ignore[deprecated]
+
+    def write_field_call_in_annotated(self, field_: DataModelFieldBase) -> None:
+        """Make a field write its ``Field()`` call in ``Annotated`` metadata through the store."""
+        self._store.write_field_call_in_annotated(field_)  # ty: ignore[deprecated]
+
     def record_widened_values(self, data_type: DataType, values: Sequence[object]) -> None:
         """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds."""
         self._store.record_widened_values(data_type, values)  # ty: ignore[deprecated]
@@ -2737,7 +2640,7 @@ class GraphBuilder:
         """Rename a field through ``GenerationStore.rename_field``."""
         self._store.rename_field(field_, name, alias=alias)  # ty: ignore[deprecated]
 
-    def rename_model(  # noqa: PLR0913
+    def rename_model(
         self,
         model: DataModel,
         *,
@@ -2826,6 +2729,14 @@ class GraphBuilder:
         """Write a field's default, which the facts do not record, so they stay current."""
         self._store.set_field_default(field_, default)  # ty: ignore[deprecated]
 
+    def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
+        """Record the ``nullable`` a field has as one without its default, through the store."""
+        self._store.record_nullable_without_default(field_, nullable)  # ty: ignore[deprecated]
+
+    def omit_field_default(self, field_: DataModelFieldBase) -> None:
+        """Write a field without its default, through the store."""
+        self._store.omit_field_default(field_)  # ty: ignore[deprecated]
+
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None:
         """Write one entry into a field's extras dict, which every holder of the dict sees."""
         self._store.set_field_extra(field_, key, value)  # ty: ignore[deprecated]
@@ -2843,6 +2754,10 @@ class GraphBuilder:
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._store.set_fields(model, fields)  # ty: ignore[deprecated]
+
+    def set_module_models(self, models: list[DataModel], members: Iterable[DataModel]) -> None:
+        """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place."""
+        self._store.set_module_models(models, members)  # ty: ignore[deprecated]
 
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
         """Replace nested data types and invalidate derived facts; the new sites under ``data_type`` are overridden."""

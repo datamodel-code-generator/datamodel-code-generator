@@ -465,7 +465,7 @@ msgspec.Struct --collapse-root-models looser_map {"k": 0} rejected
 msgspec.Struct --collapse-root-models member_items [2] accepted
 msgspec.Struct --collapse-root-models member_items [9] accepted
 msgspec.Struct --collapse-root-models member_items [1] rejected
-msgspec.Struct --collapse-root-models member_items [10] accepted
+msgspec.Struct --collapse-root-models member_items [10] rejected
 msgspec.Struct --collapse-root-models member_map {"k": 2} accepted
 msgspec.Struct --collapse-root-models member_map {"k": 9} accepted
 msgspec.Struct --collapse-root-models member_map {"k": 1} rejected
@@ -903,11 +903,11 @@ pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_map {"k"
 pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [2] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [9] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [1] rejected
-pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [10] rejected
 pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 2} accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 9} accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 1} rejected
-pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 10} rejected
 pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [4] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [5] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [3] rejected
@@ -976,11 +976,11 @@ pydantic_v2.dataclass --field-constraints looser_map {"k": 0} accepted
 pydantic_v2.dataclass --field-constraints member_items [2] accepted
 pydantic_v2.dataclass --field-constraints member_items [9] accepted
 pydantic_v2.dataclass --field-constraints member_items [1] rejected
-pydantic_v2.dataclass --field-constraints member_items [10] accepted
+pydantic_v2.dataclass --field-constraints member_items [10] rejected
 pydantic_v2.dataclass --field-constraints member_map {"k": 2} accepted
 pydantic_v2.dataclass --field-constraints member_map {"k": 9} accepted
 pydantic_v2.dataclass --field-constraints member_map {"k": 1} rejected
-pydantic_v2.dataclass --field-constraints member_map {"k": 10} accepted
+pydantic_v2.dataclass --field-constraints member_map {"k": 10} rejected
 pydantic_v2.dataclass --field-constraints two_items [4] accepted
 pydantic_v2.dataclass --field-constraints two_items [5] accepted
 pydantic_v2.dataclass --field-constraints two_items [3] rejected

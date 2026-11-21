@@ -121,8 +121,7 @@ class Owner(_JsonSchemaRuntimeValidationBase):
         {
             'declared_properties': ('b',),
             'rejected_patterns': ('^x',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': None,
             'allow_unmatched': True,
         },

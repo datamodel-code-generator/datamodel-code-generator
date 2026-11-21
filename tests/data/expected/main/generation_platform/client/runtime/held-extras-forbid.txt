@@ -1,0 +1,180 @@
+# held-extras-forbid pydantic_v2.BaseModel
+  plain object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Plain
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  plain object {'size': 2} = Plain(size=2)
+  > GET https://example.com/plain?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  plain query = None
+  closed object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Closed
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  closed object {'size': 2} = Closed(size=2)
+  > GET https://example.com/closed?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  closed query = None
+  open object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Open
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  open object {'size': 2} = Open(size=2)
+  > GET https://example.com/open?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  open query = None
+  > GET https://example.com/cookie
+    [host: example.com, accept-encoding: gzip, deflate, cookie: session=s; size=3] b''
+  cookie = None
+  > GET https://example.com/two?size=1&page=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  two objects = None
+  post_plain_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Plain
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_plain_parts {'size': 2} = Plain(size=2)
+  > POST https://example.com/parts/plain
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_plain_parts = None
+  post_closed_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Closed
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_closed_parts {'size': 2} = Closed(size=2)
+  > POST https://example.com/parts/closed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_closed_parts = None
+  post_open_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Open
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_open_parts {'size': 2} = Open(size=2)
+  > POST https://example.com/parts/open
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_open_parts = None
+  post_typed {'size': 1, 'x': 5} ! ValidationError: 1 validation error for Typed
+x
+  Extra inputs are not permitted [type=extra_forbidden, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_typed {'size': 1} = Typed(size=1)
+  > POST https://example.com/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 6] b'size=1'
+  post_typed = None
+  post_typed_parts {'size': 1, 'x': 5} ! ValidationError: 1 validation error for Typed
+x
+  Extra inputs are not permitted [type=extra_forbidden, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_typed_parts {'size': 1} = Typed(size=1)
+  > POST https://example.com/parts/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>--\r\n'
+  post_typed_parts = None
+  post_located_parts {'size': 1, 'x': {'lat': 5}} ! ValidationError: 1 validation error for Located
+x
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'lat': 5}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_located_parts {'size': 1} = Located(size=1)
+  > POST https://example.com/parts/located
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>--\r\n'
+  post_located_parts = None
+  > POST https://example.com/uploads
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 257] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nkept\r\n--<boundary>--\r\n'
+  upload = None
+  > GET https://example.com/downloads
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_download = MultipartData(<2 parts>)
+  read_download parts [('photo', b'\x89PNG'), ('x', b'1')]
+  > GET https://example.com/downloads/typed
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_typed_download = MultipartData(<2 parts>)
+  read_typed_download parts [('photo', b'\x89PNG'), ('x', 1)]
+# held-extras-forbid pydantic_v2.dataclass
+  plain object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Plain
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  plain object {'size': 2} = Plain(size=2)
+  > GET https://example.com/plain?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  plain query = None
+  closed object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Closed
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  closed object {'size': 2} = Closed(size=2)
+  > GET https://example.com/closed?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  closed query = None
+  open object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Open
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  open object {'size': 2} = Open(size=2)
+  > GET https://example.com/open?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  open query = None
+  > GET https://example.com/cookie
+    [host: example.com, accept-encoding: gzip, deflate, cookie: session=s; size=3] b''
+  cookie = None
+  > GET https://example.com/two?size=1&page=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  two objects = None
+  post_plain_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Plain
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_plain_parts {'size': 2} = Plain(size=2)
+  > POST https://example.com/parts/plain
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_plain_parts = None
+  post_closed_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Closed
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_closed_parts {'size': 2} = Closed(size=2)
+  > POST https://example.com/parts/closed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_closed_parts = None
+  post_open_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Open
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_open_parts {'size': 2} = Open(size=2)
+  > POST https://example.com/parts/open
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_open_parts = None
+  post_typed {'size': 1, 'x': 5} ! ValidationError: 1 validation error for Typed
+x
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_typed {'size': 1} = Typed(size=1)
+  > POST https://example.com/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 6] b'size=1'
+  post_typed = None
+  post_typed_parts {'size': 1, 'x': 5} ! ValidationError: 1 validation error for Typed
+x
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_typed_parts {'size': 1} = Typed(size=1)
+  > POST https://example.com/parts/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>--\r\n'
+  post_typed_parts = None
+  post_located_parts {'size': 1, 'x': {'lat': 5}} ! ValidationError: 1 validation error for Located
+x
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value={'lat': 5}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_located_parts {'size': 1} = Located(size=1)
+  > POST https://example.com/parts/located
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>--\r\n'
+  post_located_parts = None
+  > POST https://example.com/uploads
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 257] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nkept\r\n--<boundary>--\r\n'
+  upload = None
+  > GET https://example.com/downloads
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_download = MultipartData(<2 parts>)
+  read_download parts [('photo', b'\x89PNG'), ('x', b'1')]
+  > GET https://example.com/downloads/typed
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_typed_download = MultipartData(<2 parts>)
+  read_typed_download parts [('photo', b'\x89PNG'), ('x', 1)]

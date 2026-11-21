@@ -20,16 +20,23 @@
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
 | [`--no-use-standard-collections`](#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for conta... |
 | [`--no-use-union-operator`](#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operato... |
+| [`--open-enums`](#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
 | [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-format-as-annotation`](#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema... |
+| [`--read-inherited-property-schemas-in-mro-order`](#read-inherited-property-schemas-in-mro-order) | Give a required inherited property the schema its allOf pare... |
+| [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
+| [`--read-uuid6-uuid7-uuid8-formats`](#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID v... |
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](#type-overrides) | Replace schema model types with custom Python types via JSON... |
 | [`--type-overrides-replace-whole-type`](#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the f... |
+| [`--untyped-value-type`](#untyped-value-type) | Write each value the schema leaves untyped as one type inste... |
 | [`--use-annotated`](#use-annotated) | Use typing.Annotated for Field() with constraints. |
+| [`--use-bytes-for-content-media-type`](#use-bytes-for-content-media-type) | Type an OpenAPI string with a `contentMediaType` and no `con... |
 | [`--use-closed-typed-dict`](#use-closed-typed-dict) | Generate TypedDict with PEP 728 closed/extra_items (default:... |
 | [`--use-decimal-for-multiple-of`](#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint... |
 | [`--use-decimal-in-field-forms`](#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field ... |
@@ -45,6 +52,7 @@
 | [`--use-specialized-enum`](#use-specialized-enum) | Generate StrEnum/IntEnum for string/integer enums (Python 3.... |
 | [`--use-standard-collections`](#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](#use-standard-primitive-types) | Use Python standard library types for string formats instead... |
+| [`--use-strict-str-for-base64`](#use-strict-str-for-base64) | Make a `format: byte` string strict under `--strict-types st... |
 | [`--use-total-false-for-typed-dict`](#use-total-false-for-typed-dict) | Generate TypedDict declarations with `total=False`. |
 | [`--use-tuple-for-closed-arrays`](#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other ite... |
 | [`--use-tuple-for-fixed-items`](#use-tuple-for-fixed-items) | Generate tuple types for arrays with items array syntax. |
@@ -56,7 +64,9 @@
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by v... |
-| [`--use-x-python-type-unions`](#use-x-python-type-unions) | Type a field by an `x-python-type` union spelled `Optional[.... |
+| [`--use-validate-default-for-root-model-type-aliases`](#use-validate-default-for-root-model-type-aliases) | Validate the default of a field that names a root model writ... |
+| [`--use-x-python-import-for-every-ref`](#use-x-python-import-for-every-ref) | Type every reference to a schema with `x-python-import` by t... |
+| [`--use-x-python-type-as-written`](#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every sp... |
 
 ---
 
@@ -425,6 +435,8 @@ The `--allof-merge-mode constraints` merges only constraint properties
 (minLength, maximum, etc.) from parent schemas referenced in allOf.
 This ensures child schemas inherit validation constraints while keeping
 other properties separate.
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -1074,7 +1086,7 @@ The --disable-future-imports option stops the generator from adding
 you need compatibility with tools or environments that don't support
 postponed evaluation of annotations (PEP 563).
 
-**See also:** [Python Version Compatibility](../python-version-compatibility.md)
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Python Version Compatibility](../python-version-compatibility.md)
 
 !!! tip "Usage"
 
@@ -1162,6 +1174,8 @@ read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).
 read at a field (`RootModel[constr(min_length=2) | int]` where 0.89.0 writes `Any`), beside a `$ref` member that is
 the type of a field or an item, and beside object branches (`R3m3 | constr(min_length=2)`), as an `allOf` of value
 unions that would be a model without fields is read without the option.
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -3870,6 +3884,426 @@ for older Python versions or when explicit typing imports are preferred.
 
 ---
 
+## `--open-enums` {#open-enums}
+
+Accept the values an enum does not list.
+
+APIs add enum values over time, and a closed Enum class rejects a response that carries one the client does not know
+yet. `extensible` opens the enums whose schema marks them open: `x-extensible-enum: true`, or `x-ms-enum` with
+`modelAsString: true`. `all` opens every enum of two or more values, except one whose schema closes it
+(`x-extensible-enum: false`, `modelAsString: false`); a one-value enum is a tag, so it stays closed unless it is marked.
+`none` opens no enum, as without the option, which turns the option of a preset off. A const beside an enum narrows it
+to that const, so it stays closed. The list form of `x-extensible-enum`, which lists the values in place of `enum`, is
+not read: such a schema has no `enum`, so its field is already a plain `str`.
+
+An open enum is written as `Literal[...]` joined with the type of its schema, `Literal['queued', 'done'] | str`, where
+`--enum-field-as-literal all` writes a `Literal`: a listed value parses as itself, as from that `Literal`, and any other
+value of the type is accepted. This form wins over an option that asks for an Enum class (`--enum-field-as-literal
+none`, an `enum` entry of `--enum-field-as-literal-map`, `x-enum-field-as-literal: false`). Code that read a member's
+`.value` or compared with `is JobStatus.queued` compares with the string instead. With `--open-enum-base-class-map`,
+an open enum written as an Enum class keeps its class on the base the map names for it.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input open_enums.yaml --formatters builtin --target-python-version 3.11 --open-enums extensible # (1)!
+    ```
+
+    1. :material-arrow-left: `--open-enums` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Jobs with open enums
+      version: "1"
+    paths: {}
+    components:
+      schemas:
+        Job:
+          type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/JobStatus"
+            provisioningState:
+              $ref: "#/components/schemas/ProvisioningState"
+            type:
+              $ref: "#/components/schemas/JobType"
+            priority:
+              $ref: "#/components/schemas/Priority"
+            phase:
+              $ref: "#/components/schemas/Phase"
+            region:
+              $ref: "#/components/schemas/Region"
+            tier:
+              $ref: "#/components/schemas/Tier"
+            tags:
+              type: array
+              items:
+                $ref: "#/components/schemas/Tag"
+            mode:
+              type: string
+              enum: [auto, manual]
+              default: auto
+              x-extensible-enum: true
+            kind:
+              type: string
+              enum: [job]
+            pinned:
+              type: string
+              enum: [fast, slow]
+              const: fast
+              x-extensible-enum: true
+            quota:
+              type: object
+              propertyNames:
+                type: string
+                enum: [cpu, memory]
+                x-extensible-enum: true
+              additionalProperties:
+                type: integer
+            lifecycle:
+              $ref: "#/components/schemas/Lifecycle"
+            stage:
+              $ref: "#/components/schemas/Stage"
+            color:
+              $ref: "#/components/schemas/Color"
+            pet:
+              $ref: "#/components/schemas/Pet"
+        JobStatus:
+          type: string
+          enum: [queued, running, done]
+          x-extensible-enum: true
+        ProvisioningState:
+          type: string
+          enum: [Succeeded, Failed]
+          x-ms-enum:
+            name: ProvisioningState
+            modelAsString: true
+        JobType:
+          type: string
+          enum: [scrape, crawl]
+        Priority:
+          type: integer
+          enum: [1, 2, 3]
+          x-extensible-enum: true
+        Phase:
+          type: [string, "null"]
+          enum: [pending, active, null]
+          x-extensible-enum: true
+        Region:
+          type: string
+          enum: [eu, us]
+          x-ms-enum:
+            name: Region
+            modelAsString: false
+        Tier:
+          type: string
+          enum: [free, paid]
+          x-extensible-enum: false
+        Tag:
+          type: string
+          enum: [red, blue]
+          x-extensible-enum: true
+        Lifecycle:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/ProvisioningState"
+        Stage:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/JobType"
+        Color:
+          type: string
+          enum: [red, blue]
+        PetType:
+          type: string
+          enum: [cat, dog]
+          x-extensible-enum: true
+        Cat:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            meows:
+              type: boolean
+        Dog:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            barks:
+              type: boolean
+        Pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  open_enums.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import StrEnum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Kind(StrEnum):
+            job = 'job'
+
+
+        class Pinned(StrEnum):
+            fast = 'fast'
+            slow = 'slow'
+
+
+        class JobStatus(RootModel[Literal['queued', 'running', 'done'] | str]):
+            root: Literal['queued', 'running', 'done'] | str
+
+
+        class ProvisioningState(RootModel[Literal['Succeeded', 'Failed'] | str]):
+            root: Literal['Succeeded', 'Failed'] | str
+
+
+        class JobType(StrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Priority(RootModel[Literal[1, 2, 3] | int]):
+            root: Literal[1, 2, 3] | int
+
+
+        class Phase(RootModel[Literal['pending', 'active'] | str | None]):
+            root: Literal['pending', 'active'] | str | None
+
+
+        class Region(StrEnum):
+            eu = 'eu'
+            us = 'us'
+
+
+        class Tier(StrEnum):
+            free = 'free'
+            paid = 'paid'
+
+
+        class Tag(RootModel[Literal['red', 'blue'] | str]):
+            root: Literal['red', 'blue'] | str
+
+
+        class Lifecycle(BaseModel):
+            pass
+
+
+        class Stage(StrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Color(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class PetType(RootModel[Literal['cat', 'dog'] | str]):
+            root: Literal['cat', 'dog'] | str
+
+
+        class Cat(BaseModel):
+            petType: Literal['cat']
+            meows: bool | None = None
+
+
+        class Dog(BaseModel):
+            petType: Literal['dog']
+            barks: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='petType')
+
+
+        class Job(BaseModel):
+            status: JobStatus
+            provisioningState: ProvisioningState | None = None
+            type: JobType | None = None
+            priority: Priority | None = None
+            phase: Phase | None = None
+            region: Region | None = None
+            tier: Tier | None = None
+            tags: list[Tag] | None = None
+            mode: Literal['auto', 'manual'] | str | None = 'auto'
+            kind: Kind | None = None
+            pinned: Literal['fast'] | None = None
+            quota: dict[Literal['cpu', 'memory'] | str, int] | None = None
+            lifecycle: Lifecycle | None = None
+            stage: Stage | None = None
+            color: Color | None = None
+            pet: Pet | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  open_enums.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum, IntEnum, StrEnum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Mode(StrEnum):
+            auto = 'auto'
+            manual = 'manual'
+
+
+        class Kind(StrEnum):
+            job = 'job'
+
+
+        class Pinned(StrEnum):
+            fast = 'fast'
+            slow = 'slow'
+
+
+        class JobStatus(StrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+
+
+        class ProvisioningState(StrEnum):
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class JobType(StrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Priority(IntEnum):
+            integer_1 = 1
+            integer_2 = 2
+            integer_3 = 3
+
+
+        class Phase(Enum):
+            pending = 'pending'
+            active = 'active'
+            NoneType_None = None
+
+
+        class Region(StrEnum):
+            eu = 'eu'
+            us = 'us'
+
+
+        class Tier(StrEnum):
+            free = 'free'
+            paid = 'paid'
+
+
+        class Tag(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Lifecycle(StrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class Stage(StrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Color(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class PetType(StrEnum):
+            cat = 'cat'
+            dog = 'dog'
+
+
+        class Cat(BaseModel):
+            petType: Literal['cat']
+            meows: bool | None = None
+
+
+        class Dog(BaseModel):
+            petType: Literal['dog']
+            barks: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='petType')
+
+
+        class Job(BaseModel):
+            status: JobStatus
+            provisioningState: ProvisioningState | None = None
+            type: JobType | None = None
+            priority: Priority | None = None
+            phase: Phase | None = None
+            region: Region | None = None
+            tier: Tier | None = None
+            tags: list[Tag] | None = None
+            mode: Mode | None = 'auto'
+            kind: Kind | None = None
+            pinned: Literal['fast'] | None = None
+            quota: dict[Literal['cpu', 'memory'], int] | None = None
+            lifecycle: Lifecycle | None = None
+            stage: Stage | None = None
+            color: Color | None = None
+            pet: Pet | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--output-date-class` {#output-date-class}
 
 Specify date class type for date schema fields.
@@ -3935,7 +4369,7 @@ The `--output-datetime-class` flag controls which datetime type to use for field
 with date-time format. Options include 'AwareDatetime' for timezone-aware datetimes
 or 'datetime' for standard Python datetime objects.
 
-**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"
 
@@ -4318,6 +4752,706 @@ ignored.
 
 ---
 
+## `--read-format-as-annotation` {#read-format-as-annotation}
+
+Read the format of a schema as an annotation, as JSON Schema does.
+
+JSON Schema reads `format` as an annotation: a validator does not reject a string whose format does not match, and
+the value stays the string. Without this option each known format selects a type, as in 0.96.0: `email` is
+`EmailStr` (which needs `email-validator` to import, and drops `maxLength`), `date-time` is `AwareDatetime` (which
+rejects a date-time without an offset), `password` is `SecretStr` (which dumps `**********`), `uri` is `AnyUrl`
+(which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
+into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
+or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
+accepts and dump a string or an integer as written (a number as the `float` it parses to, as without a format), and an
+unknown format gives no warning. Two formats still select a type:
+`format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
+names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
+`--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
+the JSON Schema payloads of AsyncAPI and MCP tool schemas, with every document they reference; inputs converted from
+Avro, Protocol Buffers or XML Schema keep the types of their formats.
+
+**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input tool_input_formats.json --read-format-as-annotation # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-format-as-annotation` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "ScheduleCall",
+      "description": "Input of a tool that schedules a call with a contact.",
+      "type": "object",
+      "properties": {
+        "contactEmail": {"type": "string", "format": "email", "maxLength": 64},
+        "profileUrl": {"type": "string", "format": "uri"},
+        "startsAt": {"type": "string", "format": "date-time"},
+        "callDate": {"type": "string", "format": "date"},
+        "dialPin": {"type": "string", "format": "password"},
+        "attachment": {"type": "string", "format": "byte"},
+        "recording": {"type": "string", "format": "binary"},
+        "callId": {"type": "string", "format": "uuid"},
+        "bridgeHost": {"type": "string", "format": "hostname", "minLength": 3},
+        "clientIp": {"type": "string", "format": "ipv4"},
+        "fee": {"type": "number", "format": "decimal", "minimum": 0},
+        "feeText": {"type": "string", "format": "decimal"},
+        "createdEpoch": {"type": "integer", "format": "date-time"},
+        "attempts": {"type": "integer", "format": "int32", "minimum": 1},
+        "phone": {"type": "string", "format": "x-phone", "pattern": "^\\+[0-9]+$"},
+        "volume": {"type": "integer", "format": "uint8"},
+        "slot": {"type": "string", "format": "date", "enum": ["2026-11-20", "2026-11-21"]},
+        "backupEmail": {"allOf": [{"$ref": "#/$defs/Mailbox"}, {"format": "email", "maxLength": 40}]},
+        "notes": {"type": ["string", "null"], "format": "uri-reference"},
+        "rescheduledAt": {"type": ["string", "null"], "format": "date-time"},
+        "dialIn": {"type": "string", "format": "uri", "enum": ["https://voice.example.com/join"]},
+        "format": {"type": "string", "format": "date-time"},
+        "settings": {
+          "type": "object",
+          "properties": {"timezone": {"type": "string"}},
+          "examples": [{"format": "24h", "timezone": "UTC"}]
+        }
+      },
+      "required": ["contactEmail", "startsAt", "callId"],
+      "$defs": {
+        "Mailbox": {"type": "string", "format": "email"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  tool_input_formats.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, Field, RootModel, confloat, conint, constr
+
+
+        class Slot(Enum):
+            field_2026_11_20 = '2026-11-20'
+            field_2026_11_21 = '2026-11-21'
+
+
+        class DialIn(Enum):
+            https___voice_example_com_join = 'https://voice.example.com/join'
+
+
+        class Settings(BaseModel):
+            timezone: str | None = None
+
+
+        class Mailbox(RootModel[str]):
+            root: str
+
+
+        class ScheduleCall(BaseModel):
+            contactEmail: constr(max_length=64)
+            profileUrl: str | None = None
+            startsAt: str
+            callDate: str | None = None
+            dialPin: str | None = None
+            attachment: str | None = None
+            recording: bytes | None = None
+            callId: str
+            bridgeHost: constr(min_length=3) | None = None
+            clientIp: str | None = None
+            fee: confloat(ge=0.0) | None = None
+            feeText: str | None = None
+            createdEpoch: int | None = None
+            attempts: conint(ge=1) | None = None
+            phone: constr(pattern=r'^\+[0-9]+$') | None = None
+            volume: int | None = None
+            slot: Slot | None = None
+            backupEmail: Mailbox | None = None
+            notes: str | None = None
+            rescheduledAt: str | None = None
+            dialIn: DialIn | None = None
+            format: str | None = None
+            settings: Settings | None = Field(
+                None, examples=[{'format': '24h', 'timezone': 'UTC'}]
+            )
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  tool_input_formats.json
+
+        from __future__ import annotations
+
+        from datetime import date
+        from decimal import Decimal
+        from enum import Enum
+        from ipaddress import IPv4Address
+        from uuid import UUID
+
+        from pydantic import (
+            AnyUrl,
+            AwareDatetime,
+            Base64Str,
+            BaseModel,
+            EmailStr,
+            Field,
+            RootModel,
+            SecretStr,
+            condecimal,
+            conint,
+            constr,
+        )
+
+
+        class Slot(Enum):
+            field_2026_11_20 = '2026-11-20'
+            field_2026_11_21 = '2026-11-21'
+
+
+        class DialIn(Enum):
+            https___voice_example_com_join = 'https://voice.example.com/join'
+
+
+        class Settings(BaseModel):
+            timezone: str | None = None
+
+
+        class Mailbox(RootModel[EmailStr]):
+            root: EmailStr
+
+
+        class ScheduleCall(BaseModel):
+            contactEmail: EmailStr
+            profileUrl: AnyUrl | None = None
+            startsAt: AwareDatetime
+            callDate: date | None = None
+            dialPin: SecretStr | None = None
+            attachment: Base64Str | None = None
+            recording: bytes | None = None
+            callId: UUID
+            bridgeHost: (
+                constr(
+                    pattern=r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$'
+                )
+                | None
+            ) = None
+            clientIp: IPv4Address | None = None
+            fee: condecimal(ge=Decimal('0')) | None = None
+            feeText: Decimal | None = None
+            createdEpoch: AwareDatetime | None = None
+            attempts: conint(ge=1) | None = None
+            phone: constr(pattern=r'^\+[0-9]+$') | None = None
+            volume: int | None = None
+            slot: Slot | None = None
+            backupEmail: Mailbox | None = None
+            notes: str | None = None
+            rescheduledAt: AwareDatetime | None = None
+            dialIn: DialIn | None = None
+            format: AwareDatetime | None = None
+            settings: Settings | None = Field(
+                None, examples=[{'format': '24h', 'timezone': 'UTC'}]
+            )
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-inherited-property-schemas-in-mro-order` {#read-inherited-property-schemas-in-mro-order}
+
+Give a required inherited property the schema its allOf parents declare.
+
+A model that makes an inherited property required (`required: [count]` beside `allOf: [{$ref: Mid}]`) writes a field
+for it. When the model is written before its parents in the document, the field is built from the parents' schemas.
+Without this option the declaration of the property is looked up in the members of each `allOf` as written. Under
+`--intersect-combined-schema-keywords`, which reads an alias member as the schema it names and the keywords beside a
+`$ref` member together with it, a declaration behind such a member is then not found: the field is written `Any`,
+or keeps a type without its description or constraints, although the same model written after its parents takes the
+parents' field, as in 0.96.0. With `--read-inherited-property-schemas-in-mro-order` the declaration is read from
+the members the model's own fields are read from, in the order of the class bases, so a declaration the parents'
+`allOf` members hold gives the same field wherever the model is written. Without `--distribute-allof-over-unions`, a
+parent that names an `allOf` holding an `anyOf` or `oneOf` is no base class, and such a field is then not written. A
+payload that is valid for the schema parses as before in the cases above; where the parents' field is a model of its
+own (a named array or a constrained item), the field takes that model, as it does when the model is written after its
+parents. The option changes nothing where every `allOf` member is read as written.
+
+**Related:** [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords), [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input sibling.json --intersect-combined-schema-keywords --read-inherited-property-schemas-in-mro-order # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-inherited-property-schemas-in-mro-order` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "Child": {"allOf": [{"$ref": "#/$defs/Mid"}, {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["count", "name"]}]},
+        "Mid": {"allOf": [{"$ref": "#/$defs/Base", "properties": {"count": {"type": "integer", "minimum": 1, "description": "how many"}}}]},
+        "Base": {"type": "object", "properties": {"id": {"type": "string"}}}
+      },
+      "type": "object",
+      "properties": {"child": {"$ref": "#/$defs/Child"}}
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  sibling.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, conint
+
+
+        class Base(BaseModel):
+            id: str | None = None
+
+
+        class Mid(Base):
+            count: conint(ge=1) | None = Field(None, description='how many')
+
+
+        class Child(Mid):
+            name: str
+            count: conint(ge=1) = Field(..., description='how many')
+
+
+        class Model(BaseModel):
+            child: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  sibling.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, Field, conint
+
+
+        class Base(BaseModel):
+            id: str | None = None
+
+
+        class Mid(Base):
+            count: conint(ge=1) | None = Field(None, description='how many')
+
+
+        class Child(Mid):
+            name: str
+            count: Any
+
+
+        class Model(BaseModel):
+            child: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-kubernetes-extensions` {#read-kubernetes-extensions}
+
+Read the Kubernetes schema extensions as the keywords they stand for.
+
+Kubernetes schemas, the `openAPIV3Schema` of a CustomResourceDefinition and the `/openapi/v3` documents a cluster
+serves, carry extensions that change what a value may be. Without this option they are ignored. With it, wherever a
+schema object writes them:
+
+- `x-kubernetes-int-or-string: true`, or the format `int-or-string`, is read as `type: [integer, string]` in place of an
+  `anyOf` or `oneOf` of exactly those two types, so a bare one is `int | str` instead of `Any`, and a quantity (that
+  `anyOf` beside a `pattern`) is one `int | constr(pattern=...)` instead of two root models;
+- `x-kubernetes-preserve-unknown-fields: true` beside `properties` and no `additionalProperties` is read as
+  `additionalProperties: true`, so a Pydantic model keeps the keys it does not declare (`extra='allow'`);
+- `x-kubernetes-group-version-kind` gives the `apiVersion` and the `kind` property, each where all its entries name one
+  value and the property is a plain string, that value as `const` and `default`, so they are `Literal['apps/v1'] =
+  'apps/v1'` and `Literal['Deployment'] = 'Deployment'`. Where `const` is no keyword (draft-04) it is not read.
+
+The other extensions (`x-kubernetes-list-type`, `x-kubernetes-list-map-keys`, `x-kubernetes-map-type`,
+`x-kubernetes-validations`, `x-kubernetes-embedded-resource`) stay as they are; `--field-extra-keys` carries them into
+the field.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input kubernetes_crd_schema.yaml --read-kubernetes-extensions # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-kubernetes-extensions` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    $schema: http://json-schema.org/draft-07/schema#
+    title: Widget
+    description: Widget is the Schema for the widgets API.
+    type: object
+    x-kubernetes-group-version-kind:
+    - group: example.com
+      kind: Widget
+      version: v1
+    required:
+    - spec
+    properties:
+      apiVersion:
+        description: APIVersion defines the versioned schema of this representation of an object.
+        type: string
+      kind:
+        description: Kind is a string value representing the REST resource this object represents.
+        type: string
+      metadata:
+        type: object
+      spec:
+        description: WidgetSpec defines the desired state of Widget.
+        type: object
+        required:
+        - replicas
+        properties:
+          replicas:
+            type: integer
+            format: int32
+          maxSurge:
+            anyOf:
+            - type: integer
+            - type: string
+            x-kubernetes-int-or-string: true
+          port:
+            x-kubernetes-int-or-string: true
+          targetPort:
+            type:
+            - integer
+            - string
+            x-kubernetes-int-or-string: true
+          resources:
+            type: object
+            properties:
+              limits:
+                type: object
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+          selector:
+            type: object
+            properties:
+              app:
+                type: string
+            x-kubernetes-preserve-unknown-fields: true
+          config:
+            x-kubernetes-preserve-unknown-fields: true
+          template:
+            type: object
+            x-kubernetes-embedded-resource: true
+            x-kubernetes-preserve-unknown-fields: true
+          ports:
+            type: array
+            items:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                port:
+                  type: integer
+            x-kubernetes-list-map-keys:
+            - name
+            x-kubernetes-list-type: map
+          finalizers:
+            type: array
+            items:
+              type: string
+            x-kubernetes-list-type: set
+          labels:
+            type: object
+            additionalProperties:
+              type: string
+            x-kubernetes-map-type: atomic
+          paused:
+            type: boolean
+            nullable: true
+          updatePolicy:
+            type: string
+            enum:
+            - Recreate
+        x-kubernetes-validations:
+        - message: replicas must not be negative
+          rule: self.replicas >= 0
+      status:
+        type: object
+        properties:
+          readyReplicas:
+            type: integer
+          conditions:
+            type: array
+            items:
+              type: object
+              required:
+              - type
+              - status
+              properties:
+                type:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - "True"
+                  - "False"
+                  - Unknown
+            x-kubernetes-list-map-keys:
+            - type
+            x-kubernetes-list-type: map
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  kubernetes_crd_schema.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any, Literal
+
+        from pydantic import BaseModel, ConfigDict, Field, constr
+
+
+        class Resources(BaseModel):
+            limits: (
+                dict[
+                    str,
+                    int
+                    | constr(
+                        pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                    ),
+                ]
+                | None
+            ) = None
+
+
+        class Selector(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            app: str | None = None
+
+
+        class Port(BaseModel):
+            name: str
+            port: int | None = None
+
+
+        class UpdatePolicy(Enum):
+            Recreate = 'Recreate'
+
+
+        class Spec(BaseModel):
+            replicas: int
+            maxSurge: int | str | None = None
+            port: int | str | None = None
+            targetPort: int | str | None = None
+            resources: Resources | None = None
+            selector: Selector | None = None
+            config: Any | None = None
+            template: dict[str, Any] | None = None
+            ports: list[Port] | None = None
+            finalizers: list[str] | None = None
+            labels: dict[str, str] | None = None
+            paused: bool | None = None
+            updatePolicy: UpdatePolicy | None = None
+
+
+        class Status1(Enum):
+            True_ = 'True'
+            False_ = 'False'
+            Unknown = 'Unknown'
+
+
+        class Condition(BaseModel):
+            type: str
+            status: Status1
+
+
+        class Status(BaseModel):
+            readyReplicas: int | None = None
+            conditions: list[Condition] | None = None
+
+
+        class Widget(BaseModel):
+            apiVersion: Literal['example.com/v1'] = Field(
+                'example.com/v1',
+                description='APIVersion defines the versioned schema of this representation of an object.',
+            )
+            kind: Literal['Widget'] = Field(
+                'Widget',
+                description='Kind is a string value representing the REST resource this object represents.',
+            )
+            metadata: dict[str, Any] | None = None
+            spec: Spec = Field(
+                ..., description='WidgetSpec defines the desired state of Widget.'
+            )
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  kubernetes_crd_schema.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel, constr
+
+
+        class Limits(RootModel[int]):
+            root: int
+
+
+        class Limits1(
+            RootModel[
+                constr(
+                    pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                )
+            ]
+        ):
+            root: constr(
+                pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+            )
+
+
+        class Resources(BaseModel):
+            limits: dict[str, Limits | Limits1] | None = None
+
+
+        class Selector(BaseModel):
+            app: str | None = None
+
+
+        class Port(BaseModel):
+            name: str
+            port: int | None = None
+
+
+        class UpdatePolicy(Enum):
+            Recreate = 'Recreate'
+
+
+        class Spec(BaseModel):
+            replicas: int
+            maxSurge: int | str | None = None
+            port: Any | None = None
+            targetPort: int | str | None = None
+            resources: Resources | None = None
+            selector: Selector | None = None
+            config: Any | None = None
+            template: dict[str, Any] | None = None
+            ports: list[Port] | None = None
+            finalizers: list[str] | None = None
+            labels: dict[str, str] | None = None
+            paused: bool | None = None
+            updatePolicy: UpdatePolicy | None = None
+
+
+        class Status1(Enum):
+            True_ = 'True'
+            False_ = 'False'
+            Unknown = 'Unknown'
+
+
+        class Condition(BaseModel):
+            type: str
+            status: Status1
+
+
+        class Status(BaseModel):
+            readyReplicas: int | None = None
+            conditions: list[Condition] | None = None
+
+
+        class Widget(BaseModel):
+            apiVersion: str | None = Field(
+                None,
+                description='APIVersion defines the versioned schema of this representation of an object.',
+            )
+            kind: str | None = Field(
+                None,
+                description='Kind is a string value representing the REST resource this object represents.',
+            )
+            metadata: dict[str, Any] | None = None
+            spec: Spec = Field(
+                ..., description='WidgetSpec defines the desired state of Widget.'
+            )
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--read-unevaluated-properties` {#read-unevaluated-properties}
 
 Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
@@ -4405,6 +5539,115 @@ the option the extra keys are allowed untyped, as in 0.86.0.
                 extra='allow',
             )
             name: str
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-uuid6-uuid7-uuid8-formats` {#read-uuid6-uuid7-uuid8-formats}
+
+Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they name.
+
+RFC 9562 adds the UUID versions 6, 7 and 8, and Pydantic 2.11 their types `UUID6`, `UUID7` and `UUID8`. Without this
+option `format: uuid6`, `uuid7` and `uuid8` are unknown formats, as in 0.99.0: each gives a warning and the field is
+`str`. With it they are read as `format: uuid4` is: Pydantic output types them as `UUID6`, `UUID7` and `UUID8`, which
+parse the value into a `uuid.UUID` and check its version, also in arrays, unions and map values; a
+`--target-pydantic-version` before 2.11 gets `uuid.UUID`, as format `uuid2` does. The other outputs type them as
+`uuid.UUID` under `--use-standard-primitive-types` and as `str` otherwise, as they type `uuid4`. A `--type-mappings`
+entry may name them as a source or a target, and `--read-format-as-annotation` keeps them `str`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input uuid_version_formats.json --read-uuid6-uuid7-uuid8-formats # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-uuid6-uuid7-uuid8-formats` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Event",
+      "type": "object",
+      "properties": {
+        "id4": {"type": "string", "format": "uuid4"},
+        "legacy": {"type": "string", "format": "uuid"},
+        "id6": {"type": "string", "format": "uuid6"},
+        "id7": {"type": "string", "format": "uuid7"},
+        "id8": {"type": "string", "format": "uuid8"},
+        "limited": {"type": "string", "format": "uuid7", "maxLength": 36},
+        "history": {"type": "array", "items": {"type": "string", "format": "uuid7"}},
+        "ref": {"anyOf": [{"type": "string", "format": "uuid6"}, {"type": "integer"}]},
+        "byKey": {"type": "object", "additionalProperties": {"type": "string", "format": "uuid8"}},
+        "parent": {"type": ["string", "null"], "format": "uuid7", "default": "01890a5d-ac96-774b-bcce-b302099a8057"}
+      },
+      "required": ["id4", "id6", "id7", "id8"]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  uuid_version_formats.json
+
+        from __future__ import annotations
+
+        from uuid import UUID
+
+        from pydantic import UUID4, UUID6, UUID7, UUID8, BaseModel
+
+
+        class Event(BaseModel):
+            id4: UUID4
+            legacy: UUID | None = None
+            id6: UUID6
+            id7: UUID7
+            id8: UUID8
+            limited: UUID7 | None = None
+            history: list[UUID7] | None = None
+            ref: UUID6 | int | None = None
+            byKey: dict[str, UUID8] | None = None
+            parent: UUID7 | None = '01890a5d-ac96-774b-bcce-b302099a8057'
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  uuid_version_formats.json
+
+        from __future__ import annotations
+
+        from uuid import UUID
+
+        from pydantic import UUID4, BaseModel, constr
+
+
+        class Event(BaseModel):
+            id4: UUID4
+            legacy: UUID | None = None
+            id6: str
+            id7: str
+            id8: str
+            limited: constr(max_length=36) | None = None
+            history: list[str] | None = None
+            ref: str | int | None = None
+            byKey: dict[str, str] | None = None
+            parent: str | None = '01890a5d-ac96-774b-bcce-b302099a8057'
         ```
 
         <!-- fmt: on -->
@@ -4537,7 +5780,7 @@ Override default type mappings for schema formats.
 
 The `--type-mappings` flag configures the code generation behavior.
 
-**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+**See also:** [Kubernetes Schemas](../kubernetes.md), [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"
 
@@ -4616,6 +5859,9 @@ instead of generating them.
 | `{"ModelName": "package.Type"}` | Model-level: Skip generation; replace field and inheritance refs |
 | `{"Model.field": "package.Type"}` | Scoped: Override only specific field in specific model |
 
+A key that matches no generated model or field is reported in a warning, with the key that would match where there
+is a close one, such as `ItemModel.price` for `Item.price` when the schema's `Item` is written as `ItemModel`.
+
 **Common Use Cases:**
 
 | Use Case | Example Override |
@@ -4624,6 +5870,8 @@ instead of generating them.
 | Custom datetime | `{"Timestamp": "pendulum.DateTime"}` |
 | MongoDB ObjectId | `{"ObjectId": "bson.ObjectId"}` |
 | Custom validators | `{"Email": "my_app.types.ValidatedEmail"}` |
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
 
 !!! tip "Usage"
 
@@ -4705,6 +5953,8 @@ counts the same: a sequence class its items (`builtins.tuple`), a mapping class 
 is: a `str` in place of an array with `maxItems` limits the length of the string (`notes`), and `typing.Any` in place of
 an array with `minItems` checks the length of every value and raises `TypeError` for one without a length. A count the
 new type does not count is left out with a warning.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
 
 !!! tip "Usage"
 
@@ -4794,6 +6044,179 @@ new type does not count is left out with a warning.
             tags: tuple | None = Field(None, min_length=1)
             notes: str | None = Field(None, max_length=3)
             code: bytes | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--untyped-value-type` {#untyped-value-type}
+
+Write each value the schema leaves untyped as one type instead of `Any`.
+
+A value the schema leaves untyped, `{}`, `true`, a schema whose keywords give it no type (`{"description": "..."}`, not
+an `enum`), the values of an object without properties and the items of an array without items, is written as `Any`, and
+under `--use-object-type` the values and items of containers as `object`, as in 0.96.0. With `--untyped-value-type
+pydantic.JsonValue` each of them is written as Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a
+field, a union member, a dict value or key's value, a list item, the root of a root model, the value of a type alias and
+`__pydantic_extra__`. The structure is as without the option, and the models parse a JSON document to the same values;
+Python values that are no JSON values, such as a tuple, a set or a `datetime`, are rejected. The value may also be
+`object`, `Any`, or the dotted import path of a type of your own, which the models import (for example a recursive alias
+for `typing.TypedDict` output). The option takes precedence over `--use-object-type`; `--type-overrides`,
+`x-python-type` and `x-python-import` keep their types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes
+into JSON values. A definition named like the imported type is renamed by the rule for names an import takes
+(`JsonValue` becomes `JsonValueModel`), unless `--collapse-root-models` writes the type at its references.
+
+**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input event_log_untyped.json --untyped-value-type pydantic.JsonValue # (1)!
+    ```
+
+    1. :material-arrow-left: `--untyped-value-type` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "AuditEvent",
+      "description": "One entry of an audit log, whose payload and context the producer leaves free.",
+      "type": "object",
+      "properties": {
+        "payload": {},
+        "previous": true,
+        "note": {"description": "Free-form value the producer attaches"},
+        "context": {"type": "object"},
+        "flags": {"type": "object", "additionalProperties": true},
+        "attributes": {"type": "object", "additionalProperties": {}},
+        "tags": {"type": "array"},
+        "samples": {"type": "array", "items": {}},
+        "extra": {"type": ["object", "null"]},
+        "labelOrObject": {"type": ["string", "object"]},
+        "choice": {"anyOf": [{"type": "string"}, {}]},
+        "notText": {"not": {"type": "string"}},
+        "headers": {"type": "object", "patternProperties": {"^x-": {}}},
+        "snapshot": {"$ref": "#/$defs/JsonValue"},
+        "baseline": {"$ref": "#/$defs/JsonValue"},
+        "actor": {
+          "type": "object",
+          "properties": {"id": {"type": "integer"}},
+          "additionalProperties": {}
+        },
+        "rawJson": {"type": "string", "x-python-type": "Any"}
+      },
+      "required": ["payload"],
+      "$defs": {"JsonValue": {}}
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  event_log_untyped.json
+
+        from __future__ import annotations
+
+        from typing import Any, Dict
+
+        from pydantic import BaseModel, ConfigDict, Field, JsonValue, RootModel, constr
+
+
+        class Actor(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            __annotations__ = {
+                '__pydantic_extra__': Dict[str, JsonValue],
+            }
+            id: int | None = None
+
+
+        class JsonValueModel(RootModel[JsonValue]):
+            root: JsonValue
+
+
+        class AuditEvent(BaseModel):
+            payload: JsonValue
+            previous: JsonValue | None = None
+            note: JsonValue | None = Field(
+                None, description='Free-form value the producer attaches'
+            )
+            context: dict[str, JsonValue] | None = None
+            flags: dict[str, JsonValue] | None = None
+            attributes: dict[str, JsonValue] | None = None
+            tags: list[JsonValue] | None = None
+            samples: list[JsonValue] | None = None
+            extra: dict[str, JsonValue] | None = None
+            labelOrObject: str | dict[str, JsonValue] | None = None
+            choice: str | JsonValue | None = None
+            notText: JsonValue | None = None
+            headers: dict[constr(pattern=r'^x-'), JsonValue] | None = None
+            snapshot: JsonValueModel | None = None
+            baseline: JsonValueModel | None = None
+            actor: Actor | None = None
+            rawJson: Any | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  event_log_untyped.json
+
+        from __future__ import annotations
+
+        from typing import Any, Dict
+
+        from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+
+
+        class Actor(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            __annotations__ = {
+                '__pydantic_extra__': Dict[str, Any],
+            }
+            id: int | None = None
+
+
+        class JsonValue(RootModel[Any]):
+            root: Any
+
+
+        class AuditEvent(BaseModel):
+            payload: Any
+            previous: Any | None = None
+            note: Any | None = Field(None, description='Free-form value the producer attaches')
+            context: dict[str, Any] | None = None
+            flags: dict[str, Any] | None = None
+            attributes: dict[str, Any] | None = None
+            tags: list[Any] | None = None
+            samples: list[Any] | None = None
+            extra: dict[str, Any] | None = None
+            labelOrObject: str | dict[str, Any] | None = None
+            choice: str | Any | None = None
+            notText: Any | None = None
+            headers: dict[constr(pattern=r'^x-'), Any] | None = None
+            snapshot: JsonValue | None = None
+            baseline: JsonValue | None = None
+            actor: Actor | None = None
+            rawJson: Any | None = None
         ```
 
         <!-- fmt: on -->
@@ -5215,6 +6638,145 @@ generated type to enforce uniqueness for array schemas.
             optionalListField: list[String] | None = None
             optionalListOptionalField: list[String | None] | None = None
             typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+
+            @property
+            def __typename(self) -> Literal['A'] | None:
+                return self.typename__
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-bytes-for-content-media-type` {#use-bytes-for-content-media-type}
+
+Type an OpenAPI string with a `contentMediaType` and no `contentEncoding` as `bytes`.
+
+OpenAPI 3.1 writes raw binary content, such as an uploaded image, as a string with a `contentMediaType` and no
+`contentEncoding`, in place of 3.0's `format: binary`, and the generated clients and servers send and receive such a
+string as a file. Without this option the models type it `str`, so a generated server refuses every upload that is
+not UTF-8. With it the string is `bytes`, as a `format: binary` string is, at a property, an item, a nullable property
+and a root, with its length constraints; a string with a `contentEncoding` or a format of its own keeps its type.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input content_media_type_bytes.yaml --use-bytes-for-content-media-type # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-bytes-for-content-media-type` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Raw binary content named by content media types
+      version: "1"
+    paths: {}
+    components:
+      schemas:
+        Upload:
+          type: object
+          required: [image]
+          properties:
+            image: {type: string, contentMediaType: image/png}
+            limited: {type: string, contentMediaType: text/plain, maxLength: 8}
+            images: {type: array, items: {type: string, contentMediaType: image/png}}
+            nullable: {type: [string, "null"], contentMediaType: application/pdf}
+            picture: {$ref: "#/components/schemas/Picture"}
+            encoded: {type: string, contentMediaType: image/png, contentEncoding: base64}
+            email: {type: string, format: email, contentMediaType: text/plain}
+            text: {type: string}
+        Picture:
+          type: string
+          contentMediaType: image/jpeg
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  content_media_type_bytes.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, EmailStr, Field, RootModel, conbytes
+
+
+        class Picture(RootModel[bytes]):
+            root: bytes = Field(..., json_schema_extra={'contentMediaType': 'image/jpeg'})
+
+
+        class Upload(BaseModel):
+            image: bytes = Field(..., json_schema_extra={'contentMediaType': 'image/png'})
+            limited: conbytes(max_length=8) | None = Field(
+                None, json_schema_extra={'contentMediaType': 'text/plain'}
+            )
+            images: list[bytes] | None = None
+            nullable: bytes | None = Field(
+                None, json_schema_extra={'contentMediaType': 'application/pdf'}
+            )
+            picture: Picture | None = None
+            encoded: str | None = Field(
+                None,
+                json_schema_extra={
+                    'contentMediaType': 'image/png',
+                    'contentEncoding': 'base64',
+                },
+            )
+            email: EmailStr | None = Field(
+                None, json_schema_extra={'contentMediaType': 'text/plain'}
+            )
+            text: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  content_media_type_bytes.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, EmailStr, Field, RootModel, constr
+
+
+        class Picture(RootModel[str]):
+            root: str = Field(..., json_schema_extra={'contentMediaType': 'image/jpeg'})
+
+
+        class Upload(BaseModel):
+            image: str = Field(..., json_schema_extra={'contentMediaType': 'image/png'})
+            limited: constr(max_length=8) | None = Field(
+                None, json_schema_extra={'contentMediaType': 'text/plain'}
+            )
+            images: list[str] | None = None
+            nullable: str | None = Field(
+                None, json_schema_extra={'contentMediaType': 'application/pdf'}
+            )
+            picture: Picture | None = None
+            encoded: str | None = Field(
+                None,
+                json_schema_extra={
+                    'contentMediaType': 'image/png',
+                    'contentEncoding': 'base64',
+                },
+            )
+            email: EmailStr | None = Field(
+                None, json_schema_extra={'contentMediaType': 'text/plain'}
+            )
+            text: str | None = None
         ```
 
         <!-- fmt: on -->
@@ -6558,6 +8120,8 @@ key, such as one referenced as `headers.yaml#/x-rate`, is read as written too. A
 with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol Buffers, XML
 Schema and GraphQL inputs are not changed.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -6813,6 +8377,8 @@ The `--use-specialized-enum` flag generates specialized enum types:
 This is the default behavior for Python 3.11+ targets.
 
 **Related:** [`--no-use-specialized-enum`](#no-use-specialized-enum), [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 **Option relationships:**
 
@@ -7228,6 +8794,107 @@ output types. Pydantic already uses these types by default.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-strict-str-for-base64` {#use-strict-str-for-base64}
+
+Make a `format: byte` string strict under `--strict-types str`.
+
+`--strict-types str` writes a string as `StrictStr`, which refuses bytes, but leaves a `format: byte` string
+`Base64Str`, or the `str` that `--use-encoded-str-for-constrained-base64` writes, which accept bytes:
+`Model(b=b"aGk=")` gives `'hi'`. With this option the string is the `StrictStr` that `EncodedStr` decodes,
+`Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]`, with the constraints the field form writes in front of the
+decoding, at a property, an item, a map value, a root, a union member and a collapsed root, so Pydantic 2.10 or later
+refuses bytes for it as for any other strict string, while JSON input validates as before. Pydantic before 2.10
+accepts bytes for it, and a target Pydantic older than 2.10 warns so. Without `--strict-types str` the option
+changes nothing.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input encoded_str_for_constrained_base64.json --strict-types str --use-strict-str-for-base64 # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-strict-str-for-base64` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "EncodedStrForConstrainedBase64",
+      "type": "object",
+      "required": ["required"],
+      "properties": {
+        "pattern": {"type": "string", "format": "byte", "pattern": "^Y"},
+        "lengths": {"type": "string", "format": "byte", "minLength": 4, "maxLength": 8},
+        "required": {"type": "string", "format": "byte", "minLength": 4},
+        "nullable": {"type": ["string", "null"], "format": "byte", "maxLength": 8},
+        "plain": {"type": "string", "format": "byte"},
+        "items": {"type": "array", "items": {"type": "string", "format": "byte", "maxLength": 8}},
+        "values": {"type": "object", "additionalProperties": {"type": "string", "format": "byte", "pattern": "^Y"}},
+        "ref": {"$ref": "#/$defs/Short"},
+        "member": {"anyOf": [{"type": "string", "format": "byte", "maxLength": 8}, {"type": "integer"}]},
+        "branch": {"type": ["array", "string"], "format": "byte", "maxLength": 8, "items": {"type": "integer"}}
+      },
+      "$defs": {
+        "Short": {"type": "string", "format": "byte", "maxLength": 8}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  encoded_str_for_constrained_base64.json
+
+        from __future__ import annotations
+
+        from typing import Annotated
+
+        from pydantic import Base64Encoder, BaseModel, EncodedStr, Field, RootModel, StrictStr
+        from typing_extensions import TypeAliasType
+
+        BranchString = TypeAliasType(
+            "BranchString",
+            Annotated[
+                Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)], Field(max_length=8)
+            ],
+        )
+
+
+        class Short(RootModel[Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]]):
+            root: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]
+
+
+        class EncodedStrForConstrainedBase64(BaseModel):
+            pattern: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)] | None = None
+            lengths: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)] | None = None
+            required: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]
+            nullable: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)] | None = None
+            plain: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)] | None = None
+            items: list[Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]] | None = None
+            values: (
+                dict[str, Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]] | None
+            ) = None
+            ref: Short | None = None
+            member: Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)] | int | None = None
+            branch: BranchString | list[int] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        > **Error:** File not found: main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[strict_released].py
 
 ---
 
@@ -8269,11 +9936,19 @@ syntax. This feature is experimental.
             name: String
             typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+            @property
+            def __typename(self) -> Literal['Person'] | None:
+                return self.typename__
+
 
         class Pet(BaseModel):
             name: String
             type: String
             typename__: Literal['Pet'] | None = Field('Pet', alias='__typename')
+
+            @property
+            def __typename(self) -> Literal['Pet'] | None:
+                return self.typename__
 
 
         UnionType = TypeAliasType(
@@ -8292,6 +9967,10 @@ syntax. This feature is experimental.
             typename__: Literal['ModelWithTypeAliasField'] | None = Field(
                 'ModelWithTypeAliasField', alias='__typename'
             )
+
+            @property
+            def __typename(self) -> Literal['ModelWithTypeAliasField'] | None:
+                return self.typename__
         ```
 
         <!-- fmt: on -->
@@ -8917,6 +10596,10 @@ This is the default behavior.
         optionalListField: list[String] | None = None
         optionalListOptionalField: list[String | None] | None = None
         typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+
+        @property
+        def __typename(self) -> Literal['A'] | None:
+            return self.typename__
     ```
 
     <!-- fmt: on -->
@@ -9706,9 +11389,285 @@ stays a list, and models whose arrays differ in `uniqueItems` are kept apart.
 
 ---
 
-## `--use-x-python-type-unions` {#use-x-python-type-unions}
+## `--use-validate-default-for-root-model-type-aliases` {#use-validate-default-for-root-model-type-aliases}
 
-Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
+Validate the default of a field that names a root model written as an alias.
+
+`--use-root-model-type-alias` writes a root model as `Tags = RootModel[list[str]]`. Without this option a field whose
+type names such a root model, also inside a list, a dict or a union, writes its default as the raw value, as in 0.97.0:
+`Settings().tags` is the list `['a', 'b']`, not the `Tags` that `Settings(tags=['a', 'b']).tags` is, the two instances
+compare unequal and `model_dump()` warns. With it the field writes `validate_default=True`, as the field of a root
+model class does, so Pydantic validates the default into the root model (Pydantic v2 only).
+
+**Option relationships:**
+
+- **Requires:** [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled - `--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input root_model_type_alias_defaults.json --use-root-model-type-alias --use-validate-default-for-root-model-type-aliases # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-validate-default-for-root-model-type-aliases` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Settings",
+      "type": "object",
+      "properties": {
+        "tags": {"$ref": "#/$defs/Tags", "default": ["a", "b"]},
+        "count": {"$ref": "#/$defs/Count", "default": 10},
+        "pets": {"$ref": "#/$defs/Pets", "default": [{"name": "rex"}]},
+        "tagLists": {"type": "array", "items": {"$ref": "#/$defs/Tags"}, "default": [["x"]]},
+        "tagMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Tags"}, "default": {"k": ["v"]}},
+        "tagsOrText": {"anyOf": [{"$ref": "#/$defs/Tags"}, {"type": "string"}], "default": ["a"]},
+        "plain": {"type": "array", "items": {"type": "string"}, "default": ["p"]},
+        "pet": {"$ref": "#/$defs/Pet", "default": {"name": "rex"}}
+      },
+      "$defs": {
+        "Tags": {"type": "array", "items": {"type": "string"}},
+        "Count": {"type": "integer"},
+        "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+        "Pets": {"type": "array", "items": {"$ref": "#/$defs/Pet"}}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  root_model_type_alias_defaults.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel
+
+        Tags = RootModel[list[str]]
+
+
+        Count = RootModel[int]
+
+
+        class Pet(BaseModel):
+            name: str | None = None
+
+
+        Pets = RootModel[list[Pet]]
+
+
+        class Settings(BaseModel):
+            tags: Tags | None = Field(['a', 'b'], validate_default=True)
+            count: Count | None = Field(10, validate_default=True)
+            pets: Pets | None = Field([{'name': 'rex'}], validate_default=True)
+            tagLists: list[Tags] | None = Field([['x']], validate_default=True)
+            tagMap: dict[str, Tags] | None = Field({'k': ['v']}, validate_default=True)
+            tagsOrText: Tags | str | None = Field(['a'], validate_default=True)
+            plain: list[str] | None = ['p']
+            pet: Pet | None = Field({'name': 'rex'}, validate_default=True)
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  root_model_type_alias_defaults.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel
+
+        Tags = RootModel[list[str]]
+
+
+        Count = RootModel[int]
+
+
+        class Pet(BaseModel):
+            name: str | None = None
+
+
+        Pets = RootModel[list[Pet]]
+
+
+        class Settings(BaseModel):
+            tags: Tags | None = ['a', 'b']
+            count: Count | None = 10
+            pets: Pets | None = [{'name': 'rex'}]
+            tagLists: list[Tags] | None = [['x']]
+            tagMap: dict[str, Tags] | None = {'k': ['v']}
+            tagsOrText: Tags | str | None = ['a']
+            plain: list[str] | None = ['p']
+            pet: Pet | None = Field({'name': 'rex'}, validate_default=True)
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-x-python-import-for-every-ref` {#use-x-python-import-for-every-ref}
+
+Type every reference to a schema with `x-python-import` by the class it imports.
+
+A `$ref` to a schema with `x-python-import` at a field is typed by the class it imports. Without this option an allOf
+of such a schema and keywords that add no field, such as a `description`, is typed by the model of the schema where a
+JSON pointer into another document (`shared.json#/$defs/Amount`), a pointer into the input outside its definitions
+(`#/other/Code`) or a whole-document `$ref` (`tally.json`) names it, as in 0.96.0; with it the import types that
+allOf as it types the `$ref`, and the model stays written only where it has fields or a root type. Under
+`--read-only-write-only-model-type request-response` the option also leaves the readOnly and writeOnly properties of
+such a schema out of the request/response split: a model whose field the import types does not split for them, nor
+does a model whose allOf bases reach them through such a field.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input order.json --use-x-python-import-for-every-ref # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-x-python-import-for-every-ref` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Order",
+      "type": "object",
+      "properties": {
+        "amount": {"allOf": [{"$ref": "shared.json#/$defs/Amount"}, {"maxLength": 5}]},
+        "plain": {"$ref": "shared.json#/$defs/Amount"},
+        "rates": {"type": "array", "items": {"allOf": [{"$ref": "shared.json#/$defs/Rate"}, {"minimum": 0}]}},
+        "options": {"allOf": [{"$ref": "shared.json#/$defs/Options"}, {"description": "Ordered options."}]},
+        "tally": {"allOf": [{"$ref": "tally.json"}, {"description": "Counts by label."}]},
+        "entry": {"$ref": "ledger.json#/$defs/Entry"},
+        "code": {"allOf": [{"$ref": "#/other/Code"}, {"maxLength": 36}]}
+      },
+      "other": {
+        "Code": {"type": "string", "x-python-import": {"module": "uuid", "name": "UUID"}}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  order.json
+
+        from __future__ import annotations
+
+        from collections import Counter, OrderedDict
+        from decimal import Decimal
+        from fractions import Fraction
+        from uuid import UUID
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Amount(RootModel[str]):
+            root: str
+
+
+        class Tally(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class Entry(BaseModel):
+            label: str | None = None
+            totals: OrderedDict | None = None
+
+
+        class Code(RootModel[str]):
+            root: str
+
+
+        class Order(BaseModel):
+            amount: Decimal | None = None
+            plain: Decimal | None = None
+            rates: list[Fraction] | None = None
+            options: OrderedDict | None = None
+            tally: Counter | None = None
+            entry: Entry | None = None
+            code: UUID | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  order.json
+
+        from __future__ import annotations
+
+        from collections import OrderedDict
+        from decimal import Decimal
+        from fractions import Fraction
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Amount(RootModel[str]):
+            root: str
+
+
+        class Tally(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class Ledger(BaseModel):
+            pass
+
+
+        class Code(RootModel[str]):
+            root: str
+
+
+        class Entry(BaseModel):
+            label: str | None = None
+            totals: Ledger | None = None
+
+
+        class Order(BaseModel):
+            amount: Amount | None = None
+            plain: Decimal | None = None
+            rates: list[Fraction] | None = None
+            options: OrderedDict | None = None
+            tally: Tally | None = None
+            entry: Entry | None = None
+            code: Code | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-x-python-type-as-written` {#use-x-python-type-as-written}
+
+Write a field's `x-python-type` as given: unions of every spelling and container classes.
 
 An `x-python-type` types its field where it is not compatible with the schema's type, and a union spelled `X | Y`, such
 as `Literal['a', 'b'] | None`, never is. Without this option the same union spelled `Optional[Literal['a', 'b']]` or
@@ -9716,13 +11675,19 @@ as `Literal['a', 'b'] | None`, never is. Without this option the same union spel
 and the field takes the schema's `str`. With it every spelling of a union types the field, at a property, an item, a
 map value and a root.
 
+A container class compatible with the schema's type, such as `tuple[str, ...]`, `MutableSequence[str]`, `MutableSet`,
+`AbstractSet` or `MutableMapping`, is written as that class around the schema's item, key and value types, which keep
+their constraints (`tuple[constr(max_length=3), ...]`), where without the option it is written as `list`, `Sequence`,
+`set`, `frozenset` or `Mapping`; --use-generic-container-types and --use-unique-items-as-set no longer rewrite it. A
+`prefixItems` tuple stays a tuple.
+
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input x_python_type_unions.json --use-x-python-type-unions # (1)!
+    datamodel-codegen --input x_python_type_unions.json --use-x-python-type-as-written # (1)!
     ```
 
-    1. :material-arrow-left: `--use-x-python-type-unions` - the option documented here
+    1. :material-arrow-left: `--use-x-python-type-as-written` - the option documented here
 
 ??? example "Examples"
 

@@ -1,0 +1,11 @@
+exit status 0
+symbol scripts/provider.py:answer
+  defined (1):
+    scripts/provider.py:4 function answer
+  users (3):
+    scripts/aliased.py: <module>, use
+    scripts/busy.py: user_a, user_b, user_c (+1)
+    scripts/consumer.py: use
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (1):
+    mirror: none

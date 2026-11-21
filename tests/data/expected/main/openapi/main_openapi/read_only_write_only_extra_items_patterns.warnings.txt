@@ -1,0 +1,1 @@
+read_only_write_only_extra_items_patterns.yaml#/components/schemas/Passwords/additionalProperties: no single regular expression checks `^(?=.*[A-Z])(?=.*[0-9]).{8,}$` together with `^[A-Za-z0-9]+$` (lookarounds, backreferences, repeated group names, inline flags or syntax Python reads differently); the generated code checks only `^(?=.*[A-Z])(?=.*[0-9]).{8,}$`.

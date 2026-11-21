@@ -1,0 +1,51 @@
+# __init__.py
+from __future__ import annotations
+
+from enum import Enum
+
+
+class PetKind(Enum):
+    dog = 'dog'
+    cat = 'cat'
+    rabbit = 'rabbit'
+
+# pets.py
+from __future__ import annotations
+
+from typing import Literal, Optional, Union
+
+from pydantic import BaseModel, Field, RootModel
+
+from . import PetKind
+
+
+class PetBase(BaseModel):
+    kind: PetKind
+
+
+class Dog(BaseModel):
+    kind: Literal[PetKind.dog, 'dog']
+    bark: Optional[str] = None
+
+
+class Cat(PetBase):
+    purr: Optional[str] = None
+    kind: Literal[PetKind.cat, 'cat']
+
+
+class Rabbit(BaseModel):
+    kind: Literal[PetKind.rabbit, 'rabbit']
+    hop: Optional[str] = None
+
+
+class Pet(RootModel[Union[Dog, Cat, Rabbit]]):
+    root: Union[Dog, Cat, Rabbit] = Field(..., discriminator='kind')
+
+
+class Beagle(Dog):
+    kind: PetKind
+
+
+class Hound(Dog):
+    kind: PetKind
+

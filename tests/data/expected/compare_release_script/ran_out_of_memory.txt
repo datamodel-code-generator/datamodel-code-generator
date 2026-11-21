@@ -1,0 +1,5 @@
+True	MemoryError
+True	MemoryError: cannot allocate memory
+True	SystemError: error return without exception set
+False	SystemError: another failure
+False	Error: the schema is invalid

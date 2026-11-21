@@ -1,0 +1,21 @@
+"""Must M4: generic functions and classes open type-parameter scopes; bounds and defaults are lazy scopes of their own.
+
+min-python: 3.13
+questions: references
+"""
+
+
+class Base:
+    Alias = int
+
+    def method[T: Alias, *Ts, **P](self, value: T, default=Alias) -> Alias:
+        return value
+
+
+class Box[T: (int, str), U = list[int]](list[T]):
+    def get(self) -> T:
+        return self[0]
+
+
+def first[X](items: list[X]) -> X:
+    return items[0]

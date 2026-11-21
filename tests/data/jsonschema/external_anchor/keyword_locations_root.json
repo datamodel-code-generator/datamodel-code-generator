@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KeywordLocations",
+  "type": "object",
+  "properties": {
+    "mapped": {"$ref": "keyword_locations.json#mapped"},
+    "sequence": {"$ref": "keyword_locations.json#sequence"},
+    "single": {"$ref": "keyword_locations.json#single"},
+    "mixed_object": {"$ref": "keyword_locations.json#mixed-object"},
+    "mixed_list": {"$ref": "keyword_locations.json#mixed-list"},
+    "instance_only": {"$ref": "keyword_locations.json#instance-only"}
+  }
+}

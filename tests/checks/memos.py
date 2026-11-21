@@ -9,8 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields, is_dataclass
 from functools import wraps
+from itertools import starmap
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, final
+
+from pydantic import BaseModel
 
 from datamodel_code_generator._parse_memo import MemoTable
 from tests.checks.areas import Area, Mode, mode
@@ -188,17 +191,21 @@ def _same(kept: object, fresh: object) -> bool:
 
 
 def _equal(kept: object, fresh: object) -> bool:
-    """Compare two values item by item inside tuples, lists and dataclasses.
+    """Compare two values item by item inside tuples, lists, dataclasses and pydantic models.
 
     Other values of one type are the same when they write the same text, such as ``nan`` or a runtime expression
-    built again, which equal nothing but themselves.
+    built again, which equal nothing but themselves. Pydantic models are compared field by field, not by their text,
+    which a model of a cycle has no finite form of (#6490).
     """
     if kept is fresh or kept == fresh:
         return True
     if isinstance(kept, (tuple, list)) and isinstance(fresh, (tuple, list)) and type(kept) is type(fresh):
-        return len(kept) == len(fresh) and all(map(_equal, kept, fresh))
+        pairs = zip(kept, fresh, strict=False)
+        return len(kept) == len(fresh) and all(starmap(_equal, pairs))
     if is_dataclass(kept) and type(kept) is type(fresh):
-        return all(_equal(getattr(kept, field.name), getattr(fresh, field.name)) for field in fields(kept))
+        return all(_equal(getattr(kept, f.name), getattr(fresh, f.name)) for f in fields(kept))
+    if isinstance(kept, BaseModel) and type(kept) is type(fresh):
+        return all(_equal(getattr(kept, name), getattr(fresh, name)) for name in type(kept).model_fields)
     return type(kept) is type(fresh) and repr(kept) == repr(fresh)
 
 
@@ -221,6 +228,5 @@ def _check_hit(memo_mode: Mode, table: MemoTable, owner: object, kept: object, r
 
 
 def _stale(memo_mode: Mode, subject: str, why: str, **details: object) -> None:
-    from datamodel_code_generator import Error
 
-    memo_mode.violation(Error, f"{subject} that the memo returns {why}", **details)
+    memo_mode.violation(f"{subject} that the memo returns {why}", **details)

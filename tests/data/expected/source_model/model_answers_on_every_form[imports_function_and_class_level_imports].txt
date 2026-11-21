@@ -1,0 +1,6 @@
+== imports
+import@3 json as json from json in <module> [always]; unconditional
+import@7 pickle as pickle from pickle in Codec [always]
+import@10 json as json from json in Codec.dump [function:body@9]
+from@17 os.path as path from os in outer.<locals>.inner [function:body@15|function:body@16]
+== code objects: one per scope that compiles on this Python

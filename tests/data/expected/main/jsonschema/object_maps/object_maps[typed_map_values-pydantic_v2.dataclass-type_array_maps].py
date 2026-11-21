@@ -40,9 +40,9 @@ class Model:
     mStringOrNames: dict[str, dict[constr(pattern=r'^a'), int] | str | None] | None = (
         None
     )
-    iArrayOrNamesCount: list[dict[constr(pattern=r'^a'), Any] | list[Any] | None] | None = (
-        None
-    )
+    iArrayOrNamesCount: (
+        list[dict[constr(pattern=r'^a'), Any] | list[Any] | None] | None
+    ) = None
     mArrayOrNamesCount: (
         dict[str, dict[constr(pattern=r'^a'), Any] | list[Any] | None] | None
     ) = None

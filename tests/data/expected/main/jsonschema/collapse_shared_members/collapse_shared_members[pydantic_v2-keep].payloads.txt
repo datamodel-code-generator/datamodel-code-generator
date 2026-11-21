@@ -1,0 +1,5 @@
+valid {"values": {"k": "str"}}: accepted
+valid {"values": {"k": {"t@a": "x"}}}: accepted
+valid {"values": {"k": {"t@a": {"t@b": "y"}}}}: accepted
+invalid {"values": {"k": {"t@a": 5}}}: rejected
+invalid {"values": {"k": 5}}: rejected

@@ -1,0 +1,8 @@
+{
+ "build": 0,
+ "check without the deploy files": 0,
+ "check of a stale hub": 1
+}
+written ['data/migration.json', 'migration/changes.md', 'migration/index.md']
+Migration pages are out of date: index.md
+Run 'python scripts/build_migration_docs.py' to update.

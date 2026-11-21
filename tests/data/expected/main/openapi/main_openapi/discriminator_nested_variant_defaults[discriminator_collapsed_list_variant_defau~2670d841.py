@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -22,7 +22,7 @@ class Bird(BaseModel):
 
 
 class DogDefault(RootModel[Dog]):
-    root: Annotated[Dog, Field(validate_default=True)] = {'type': 'dog'}
+    root: Annotated[Dog, Field(validate_default=True)] = cast('Dog', {'type': 'dog'})
 
 
 class ChainedDog(RootModel[DogDefault]):

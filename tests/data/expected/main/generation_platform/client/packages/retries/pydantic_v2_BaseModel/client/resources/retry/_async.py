@@ -58,12 +58,14 @@ class AsyncRetryResource:
         """
         Call GET /safe.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def post_unsafe(
         self,
@@ -76,14 +78,16 @@ class AsyncRetryResource:
         """
         Call POST /unsafe.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def post_idempotent(
         self,
@@ -96,14 +100,16 @@ class AsyncRetryResource:
         """
         Call POST /idempotent.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def post_keyed(
         self,
@@ -116,14 +122,16 @@ class AsyncRetryResource:
         """
         Call POST /keyed.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def post_key_only(
         self,
@@ -136,14 +144,16 @@ class AsyncRetryResource:
         """
         Call POST /key-only.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def get_never(
         self,
@@ -154,12 +164,14 @@ class AsyncRetryResource:
         """
         Call GET /never.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def post_never(
         self,
@@ -172,14 +184,16 @@ class AsyncRetryResource:
         """
         Call POST /never.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def get_vendor(
         self,
@@ -190,12 +204,14 @@ class AsyncRetryResource:
         """
         Call GET /vendor.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def get_keyed_safe(
         self,
@@ -206,12 +222,14 @@ class AsyncRetryResource:
         """
         Call GET /keyed-safe.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_8,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_8,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncRetryWithResponse:

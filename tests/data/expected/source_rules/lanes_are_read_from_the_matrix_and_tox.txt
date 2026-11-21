@@ -1,0 +1,7 @@
+py312-parallel on ubuntu-24.04: {'python': '3.12', 'formatter': 'builtin', 'black': '26.10.1', 'isort': '7.0.0', 'platform': 'linux', 'pydantic': '2.14.1'}
+py311-nocov-parallel on windows-latest: {'python': '3.11', 'formatter': 'external', 'black': '26.10.1', 'isort': '7.0.0', 'platform': 'win32', 'pydantic': '2.14.1'}
+pydantic20 on ubuntu-24.04: {'python': '3.11', 'formatter': 'external', 'black': '26.10.1', 'isort': '7.0.0', 'platform': 'linux', 'pydantic': '2.0.3'}
+py312-black22-parallel on ubuntu-24.04: {'python': '3.12', 'formatter': 'external', 'black': '22.1', 'isort': '7.0.0', 'platform': 'linux', 'pydantic': '2.14.1'}
+py312-isort6-parallel on ubuntu-24.04: {'python': '3.12', 'formatter': 'external', 'black': '26.10.1', 'isort': '6.1.0', 'platform': 'linux', 'pydantic': '2.14.1'}
+lint on self-hosted: {'python': '', 'formatter': 'external', 'black': '26.10.1', 'isort': '7.0.0', 'platform': '', 'pydantic': '2.14.1'}
+problems: ['lint on self-hosted: no platform can be read', 'lint on self-hosted: no python can be read']

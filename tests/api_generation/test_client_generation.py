@@ -27,7 +27,13 @@ from tests.conftest import (
     write_generated_modules,
 )
 
-EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
+BACKENDS = (
+    "dataclasses_dataclass",
+    "msgspec_Struct",
+    "pydantic_v2_BaseModel",
+    "pydantic_v2_dataclass",
+    "typing_TypedDict",
+)
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "client"
 
@@ -37,7 +43,7 @@ SOURCE = DATA / "generation_platform" / "client"
 )
 def test_client_input(case: str, tmp_path: Path) -> None:
     """Accept cyclic input the loader keeps, which nothing traverses, and shared aliases."""
-    assert_output(client_input_report(case, tmp_path), EXPECTED / f"{case}.txt")
+    assert_output(client_input_report(case, tmp_path))
 
 
 @pytest.mark.parametrize(
@@ -57,6 +63,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "version-per-document-root",
         "auth-context",
         "auth-wire-conflicts",
+        "auth-parameters",
+        "auth-shared-wire",
         "credential-name-errors",
         "pets-unpack",
         "retries",
@@ -81,7 +89,15 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "name-errors",
         "method-collisions",
         "method-collisions-suffix",
+        "method-collisions-parent-prefixed",
+        "method-collisions-parent-scoped",
+        "method-collisions-parent-scoped-full-path",
         "child-collision",
+        "name-repeats",
+        "applied-config",
+        "held-extras",
+        "held-extras-forbid",
+        "held-extras-allow",
         "media-errors",
         "response-keys",
         "form-name-errors",
@@ -99,6 +115,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "server-errors",
         "codec-errors",
         "binary-text",
+        "item-streams",
+        "item-streams-declared",
+        "item-streams-collision",
         "binary-allowed",
         "binary-mapped",
         "cookie-names",
@@ -114,9 +133,14 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "pointer-references",
         "evolution",
         "validation-ambiguous",
+        "union-value-kinds",
+        "union-value-kinds-literals",
         "discriminator-copies",
         "discriminator-variants",
         "discriminator-reuse",
+        "discriminator-values",
+        "discriminator-values-unmapped",
+        "discriminator-shared-tags",
         "discriminator-forms",
         "fields",
         "fields-structural",
@@ -133,8 +157,12 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "merged-nullable-reference",
         "merged-nullable-forms",
         "merged-nullable-kept",
+        "nullable-required-parameters",
+        "nullable-required-parameters-31",
+        "nullable-required-parameters-unpack",
         "type-spellings-cycle",
         "type-spellings-bound",
+        "type-spellings-containers",
         "helpers",
         "pagination",
         "pagination-counts",
@@ -188,20 +216,83 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parts-bound-responses",
         "parts-bound-responses-reuse",
         "multipart-text-files",
+        "skip-operations",
+        "skip-operations-resources",
+        "skip-operations-document-errors",
+        "skip-operations-every",
+        "skip-operations-features",
+        "skip-operations-helper",
+        "skip-operations-helper-disabled",
+        "skip-operations-helper-later",
+        "multipart-media-text",
+        "parameter-item-or-array",
+        "parameter-item-or-array-errors",
+        "binary-json-bodies",
+        "multipart-union-parts",
+        "multipart-union-parts-errors",
+        "query-free-objects",
+        "deep-object-brackets",
+        "deep-object-brackets-errors",
+        "asyncapi-market-v3",
+        "asyncapi-market-v2",
+        "asyncapi-perspective",
+        "asyncapi-handshake",
+        "asyncapi-handshake-v2",
+        "asyncapi-skips",
+        "asyncapi-skips-v2",
+        "asyncapi-unloaded-references",
+        "asyncapi-unloaded-references-v2",
+        "asyncapi-reference-cycles",
+        "asyncapi-reference-cycles-operations",
+        "asyncapi-imported-entries",
+        "asyncapi-schema-formats",
+        "asyncapi-message-codecs",
+        "asyncapi-handshake-models",
+        "asyncapi-handshake-siblings-v2",
+        "asyncapi-handshake-siblings-v2-ignored",
+        "asyncapi-relative-v2",
+        "asyncapi-serverless",
+        "asyncapi-unopened",
+        "asyncapi-setting-errors",
+        "asyncapi-class-clash",
+        "asyncapi-foreign-operations",
+        "asyncapi-mapped-payloads",
+        "asyncapi-escaped-channel-ref",
+        "asyncapi-messages",
+        "asyncapi-messages-aliases",
+        "asyncapi-connections",
+        "asyncapi-events",
+        "asyncapi-events-v2",
+        "asyncapi-events-skips",
+        "asyncapi-events-client",
+        "asyncapi-server-schemes",
+        "asyncapi-server-schemes-v2",
+        "fields-strip",
+        "fields-strip-nullable",
+        "asyncapi-optional-tags",
+        "asyncapi-events-both-v2",
+        "asyncapi-schema-version-v2",
+        "asyncapi-payload-siblings",
+        "asyncapi-nested-messages-v2",
+        "asyncapi-missing-messages",
+        "asyncapi-missing-messages-v2",
+        "asyncapi-missing-messages-external",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's names, arguments, media, responses, and servers, and render the package they need."""
     report, rendered = client_render(case, tmp_path)
-    assert_output(report, EXPECTED / f"{case}.txt")
-    for backend, modules in rendered.items():
-        assert_generated_modules_output(
-            {parts: content for parts, content in modules.items() if parts[0] != "client"}
-            if case in {"auth-no-root", "default-server", "implicit-server", "servers"}
-            or (case == "pets" and backend != "pydantic_v2_BaseModel")
-            else modules,
-            EXPECTED / "packages" / case / backend,
-        )
+    assert_output(report)
+    for backend in BACKENDS:
+        if backend in rendered:
+            modules = rendered[backend]
+            assert_generated_modules_output(
+                {parts: content for parts, content in modules.items() if parts[0] != "client"}
+                if case in {"auth-no-root", "default-server", "implicit-server", "servers"}
+                or (case == "pets" and backend != "pydantic_v2_BaseModel")
+                else modules,
+                name=backend,
+            )
     if case in {
         "auth",
         "auth-context",
@@ -282,12 +373,12 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
     Cases that give the same settings another way report under the name of the case they equal.
     """
     report, rendered = client_render(case, tmp_path)
-    assert_output(report, EXPECTED / "protocols" / f"{report.splitlines()[0].removeprefix('# ')}.txt")
-    for backend, modules in rendered.items():
-        assert_generated_modules_output(
-            {parts: content for parts, content in modules.items() if parts[0] != "client"},
-            EXPECTED / "packages" / "helpers" / backend,
-        )
+    assert_output(report)
+    for backend in BACKENDS:
+        if backend in rendered:
+            assert_generated_modules_output(
+                {parts: content for parts, content in rendered[backend].items() if parts[0] != "client"}, name=backend
+            )
 
 
 @pytest.mark.parametrize(
@@ -322,15 +413,13 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
     falls back to the builtin roles. Each case reports under the name of the case it equals.
     """
     report, rendered = client_render(case, tmp_path / "render", builtin_sources=builtin_sources)
-    expected = report.splitlines()[0].removeprefix("# ")
-    assert_output(report, EXPECTED / f"{expected}.txt")
-    for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
+    assert_output(report)
+    for backend in BACKENDS:
+        if backend in rendered:
+            assert_generated_modules_output(rendered[backend], name=backend)
     documents = client_documents(case, tmp_path / "documentation", builtin_sources=builtin_sources)
     write_generated_modules(tmp_path / "documents", {tuple(path.split("/")): text for path, text in documents.items()})
-    assert_exact_directory_content(
-        tmp_path / "documents", EXPECTED / "packages" / expected / "pydantic_v2_BaseModel", "*.md"
-    )
+    assert_exact_directory_content(tmp_path / "documents", pattern="*.md", name="documents")
 
 
 @pytest.mark.parametrize(
@@ -377,15 +466,15 @@ def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> Non
         "pets-unpack",
         "media",
         "templates",
+        "asyncapi-market-v3",
+        "asyncapi-events",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, and documentation ownership visible."""
     documents = client_documents(case, tmp_path / "render")
     write_generated_modules(tmp_path / "documents", {tuple(path.split("/")): text for path, text in documents.items()})
-    assert_exact_directory_content(
-        tmp_path / "documents", EXPECTED / "packages" / case / "pydantic_v2_BaseModel", "*.md"
-    )
+    assert_exact_directory_content(tmp_path / "documents", pattern="*.md")
 
 
 @pytest.mark.parametrize(
@@ -414,38 +503,35 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
 )
 def test_client_config(case: str, tmp_path: Path) -> None:
     """Generate a client with client option values, or refuse them."""
-    assert_output(client_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+    assert_output(client_config_report(case, tmp_path))
 
 
 @pytest.mark.parametrize(
-    ("case", "options"),
+    "options",
     [
-        (
-            "body-field-keys",
-            {
-                "operations": {
-                    "/paths/~1pets/post": {
-                        "body_arguments": "both",
-                        "body_field_names": {"application/json": {1: "first", None: "second"}},
-                    }
+        {
+            "operations": {
+                "/paths/~1pets/post": {
+                    "body_arguments": "both",
+                    "body_field_names": {"application/json": {1: "first", None: "second"}},
                 }
-            },
-        ),
-        ("parameter-name-keys", {"operations": {"/paths/~1pets/get": {"parameter_names": {1: "first"}}}}),
-        ("parameter-name-none-key", {"operations": {"/paths/~1pets/get": {"parameter_names": {None: "first"}}}}),
-        ("runtime-keys", {"operations": {"/paths/~1pets/get": {"runtime": {1: "first", "unknown": "second"}}}}),
+            }
+        },
+        {"operations": {"/paths/~1pets/get": {"parameter_names": {1: "first"}}}},
+        {"operations": {"/paths/~1pets/get": {"parameter_names": {None: "first"}}}},
+        {"operations": {"/paths/~1pets/get": {"runtime": {1: "first", "unknown": "second"}}}},
     ],
+    ids=["body-field-keys", "parameter-name-keys", "parameter-name-none-key", "runtime-keys"],
 )
-def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path: Path) -> None:
+def test_client_config_python_keys(options: dict[str, Any], tmp_path: Path) -> None:
     """Refuse an operation setting key that only a Python mapping holds, as the malformed key of its JSON form."""
-    assert_output(client_options_report(options, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+    assert_output(client_options_report(options, tmp_path))
 
 
 @pytest.mark.parametrize(
-    ("case", "options", "module"),
+    ("options", "module"),
     [
         (
-            "header-quotes",
             {
                 "custom_file_header_path": DATA / "custom_file_header_with_docstring.txt",
                 "custom_file_header_mode": "prepend",
@@ -455,34 +541,28 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
             ("resources", "pets", "__init__.py"),
         ),
         (
-            "encoding",
             {"encoding": "latin-1", "custom_file_header": "# -*- coding: latin-1 -*-\n# Café"},
             ("resources", "pets", "__init__.py"),
         ),
-        ("formatters", {"formatters": ["ruff-format"]}, ("resources", "pets", "__init__.py")),
-        ("builtin-line-length", {"builtin_format_line_length": 100}, ("_operations.py",)),
+        ({"formatters": ["ruff-format"]}, ("resources", "pets", "__init__.py")),
+        ({"builtin_format_line_length": 100}, ("_operations.py",)),
         (
-            "black-isort",
             {"formatters": ["black", "isort"], "use_double_quotes": True, "wrap_string_literal": True},
             ("_operations.py",),
         ),
         (
-            "ruff-line-length",
             {"formatters": ["ruff-check", "ruff-format"], "settings_path": SOURCE / "line-length"},
             ("_operations.py",),
         ),
         (
-            "custom-formatter",
             {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
             ("_operations.py",),
         ),
         (
-            "ruff-utf-16",
             {"encoding": "utf-16", "formatters": ["ruff-check", "ruff-format"]},
             ("resources", "pets", "__init__.py"),
         ),
         (
-            "ruff-latin-1",
             {
                 "encoding": "latin-1",
                 "formatters": ["ruff-check", "ruff-format"],
@@ -491,8 +571,19 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
             ("resources", "pets", "__init__.py"),
         ),
     ],
+    ids=[
+        "header-quotes",
+        "encoding",
+        "formatters",
+        "builtin-line-length",
+        "black-isort",
+        "ruff-line-length",
+        "custom-formatter",
+        "ruff-utf-16",
+        "ruff-latin-1",
+    ],
 )
-def test_client_output_options(case: str, options: dict[str, object], module: tuple[str, ...], tmp_path: Path) -> None:
+def test_client_output_options(options: dict[str, object], module: tuple[str, ...], tmp_path: Path) -> None:
     """Head, format, and encode the client files with the model output options, exactly like the models.
 
     The formatters and their settings lay out the plan values the templates leave on one line. Ruff reads only UTF-8,
@@ -502,10 +593,7 @@ def test_client_output_options(case: str, options: dict[str, object], module: tu
     (source := tmp_path / "pets.yaml").write_bytes((SOURCE / "pets.yaml").read_text(encoding="utf-8").encode(encoding))
     generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     text = (tmp_path / "client").joinpath(*module).read_bytes().decode(encoding)
-    assert_output(
-        text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
-        EXPECTED / "output-options" / f"{case}.py",
-    )
+    assert_output(text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"), suffix=".py")
 
 
 @pytest.mark.parametrize("formatters", [None, ["ruff-check", "ruff-format"]], ids=["default", "ruff-isort-rules"])
@@ -524,9 +612,9 @@ def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Pat
         for path in copy.rglob("*.py")
         if path.read_bytes() != (generated / path.relative_to(copy)).read_bytes()
     )
-    assert_output(f"changed {changed}\n", EXPECTED / "regenerated-unchanged.txt")
+    assert_output(f"changed {changed}\n")
 
 
 def test_client_api(tmp_path: Path) -> None:
     """Return the files without an output, generate twice, then rewrite an edited owned file."""
-    assert_output(client_api_report(tmp_path), EXPECTED / "api.txt")
+    assert_output(client_api_report(tmp_path))

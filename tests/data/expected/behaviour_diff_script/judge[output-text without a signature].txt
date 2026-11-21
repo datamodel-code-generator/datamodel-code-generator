@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "output-text (output-text): a signature could not be taken"
+ ],
+ "accepted_by": []
+}

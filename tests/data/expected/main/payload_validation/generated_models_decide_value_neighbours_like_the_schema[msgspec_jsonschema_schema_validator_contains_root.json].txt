@@ -1,0 +1,3 @@
+[
+  "contains [\"a\"]: invalid, model accepts"
+]

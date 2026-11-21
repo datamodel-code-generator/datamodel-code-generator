@@ -8,83 +8,48 @@ symbols and field bindings alone, never from a codec.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from functools import cached_property
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
-from datamodel_code_generator._all_or_none import all_or_none
-from datamodel_code_generator._container_kinds import MAPPINGS
-from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
-    WRAPPER_KINDS,
     BuiltinType,
-    ConstructorType,
-    GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
     ImportedType,
-    KnownBackendValue,
-    LiteralScalar,
-    LiteralType,
-    NoneType,
     UnionType,
-    members_by_consumer,
-    symbols_by_id,
+    schema_uses,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, sole_present, without_none
+from datamodel_code_generator._target_types import (
+    NULL_KINDS,
+    JSONKinds,
+    TypeTables,
+    is_alias,
+    is_wrapper,
+    sole_present,
+    without_none,
+)
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator, Sequence
 
     from datamodel_code_generator._target_contract import (
+        Direction,
         FieldUseBinding,
         FinalModelSymbol,
-        GeneratedTypeContractBatch,
         ModelFieldFacts,
+        SourceDocumentId,
         SymbolId,
+        TypeUseBinding,
         TypeView,
     )
 
-__all__ = ("ALIASES", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
+__all__ = ("ItemStep", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
-JSONTypes: TypeAlias = frozenset[str] | None
-_NULL: Final = frozenset({"null"})
-_SCALARS: Final = MappingProxyType({
-    "none": "null",
-    "bool": "boolean",
-    "int": "integer",
-    "float": "number",
-    "decimal": "number",
-    "str": "string",
-    "bytes": "string",
-})
-_NAMED: Final = MappingProxyType({
-    "str": "string",
-    "bytes": "string",
-    "int": "integer",
-    "float": "number",
-    "bool": "boolean",
-    "dict": "object",
-    "list": "array",
-    "tuple": "array",
-    "set": "array",
-    "frozenset": "array",
-    "types.NoneType": "null",
-    "datetime.datetime": "string",
-    "datetime.date": "string",
-    "datetime.time": "string",
-    "datetime.timedelta": "string",
-    "uuid.UUID": "string",
-    "decimal.Decimal": "number",
-    **{dotted_name(*key): kind for key, kind in CONSTRAINED_SCALARS.items()},
-})
 _EXTRAS: Final = "__pydantic_extra__"
-_WRAPPER: Final = "pydantic.SerializeAsAny"
-_FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
-ALIASES: Final = frozenset({"alias"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,8 +71,9 @@ class ItemStep:
 class ModelField:
     """A field of a generated model by its wire name: its attribute, or key, its type, and what its model gives it.
 
-    `required` says the model's constructor needs the field, and `missing` that it defaults to Pydantic's MISSING;
-    `explicit` that an `--aliases` entry of its class gave its name; `member` is the field's binding in its consumer.
+    `required` says the model's constructor needs the field, `missing` that it defaults to Pydantic's MISSING and
+    `annotation_null` that its annotation accepts None; `explicit` that an `--aliases` entry of its class gave its
+    name; `member` is the field's binding in its consumer.
     """
 
     wire_name: str
@@ -119,40 +85,32 @@ class ModelField:
     member: FieldUseBinding
     missing: bool = False
     explicit: bool = False
+    annotation_null: bool = False
 
 
-def _partial(symbol: FinalModelSymbol) -> bool:
-    """Return whether a TypedDict class declares `total=False`."""
-    parameters = () if symbol.facts is None else symbol.facts.parameters
-    return next((item.value for item in parameters if item.name == "total" and item.present), None) == _FALSE
-
-
-def _required(consumer: FinalModelSymbol, owner: FinalModelSymbol, facts: ModelFieldFacts) -> bool:
-    """Return whether a model's constructor requires a field, by the rules of the consumer's backend.
-
-    Pydantic requires a required field without a default, a dataclass or Struct an initialized field without an emitted
-    default, and a TypedDict a key its qualifiers or its declaring class's totality require.
-    """
-    backend = facts.backend
-    match consumer.backend:
-        case "pydantic" | "pydantic_dataclass":
-            required = facts.required and backend.emitted.emitted_default_kind == "absent"
-        case "typeddict":
-            qualifiers = backend.emitted.qualifiers
-            required = "Required" in qualifiers or (not _partial(owner) and "NotRequired" not in qualifiers)
-        case _:
-            required = backend.constructor_init != _FALSE and backend.emitted.emitted_default_kind == "absent"
-    return required
+def _declared_root(symbol: FinalModelSymbol) -> bool:
+    """Return whether a symbol is a root model its backend declares."""
+    return symbol.kind == "root" and symbol.facts is not None
 
 
 class ModelFacts:
-    """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for."""
+    """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for.
 
-    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
-        """Index the batch's symbols by identity and its field bindings by consuming symbol."""
-        self.symbols = symbols_by_id(batch)
-        self.members = members_by_consumer(batch)
+    `schemas` holds the value use of each schema occurrence among the batch's type uses (``schema_uses``).
+    """
+
+    def __init__(self, tables: TypeTables, uses: Sequence[TypeUseBinding]) -> None:
+        """Read the batch's symbols by identity and its field bindings by consuming symbol from its tables."""
+        self.tables = tables
+        self.symbols = tables.symbols
+        self.members = tables.members
+        self._uses = uses
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
+
+    @cached_property
+    def schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+        """Return the value use of each schema occurrence by its location and direction, indexed when first read."""
+        return schema_uses(self._uses)
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the model or root model a type names when its backend declares it, or None for any other type."""
@@ -185,12 +143,13 @@ class ModelFacts:
                 wire_name=wire_name,
                 name=wire_name if functional else slot.name,
                 type=facts.type,
-                required=_required(consumer, owner, facts),
+                required=facts.constructor_required,
                 read_only=facts.read_only,
                 write_only=facts.write_only,
                 member=member,
                 missing=facts.backend.emitted.emitted_default_kind == "pydantic_missing",
                 explicit=facts.explicit_name,
+                annotation_null=facts.annotation_null,
             )
 
     def root(self, symbol: SymbolId) -> TypeView | None:
@@ -198,53 +157,48 @@ class ModelFacts:
         return wrapped_type(self.members, symbol)
 
     def argument(
-        self, value: TypeView, kinds: frozenset[str] = WRAPPER_KINDS, seen: frozenset[SymbolId] = frozenset()
+        self,
+        value: TypeView,
+        through: Callable[[FinalModelSymbol], bool] = is_wrapper,
+        seen: frozenset[SymbolId] = frozenset(),
     ) -> TypeView:
-        """Return the type an argument of a model type takes: each symbol of the kinds by the type it stands for."""
+        """Return the type an argument of a model type takes: each symbol `through` names by the type it stands for."""
         match value:
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind in kinds
-                and (root := self.root(value.symbol)) is not None
-            ):
-                return self.argument(root, kinds, seen | {value.symbol})
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen, through)) is not None:
+                return self.argument(facts.type, through, seen | {value.symbol})
             case GenericType():
                 return replace(
-                    value, arguments=tuple(self.argument(item, kinds, seen) for item in value.arguments), hint=None
+                    value, arguments=tuple(self.argument(item, through, seen) for item in value.arguments), hint=None
                 )
             case UnionType():
                 return replace(
-                    value, members=tuple(self.argument(item, kinds, seen) for item in value.members), hint=None
+                    value, members=tuple(self.argument(item, through, seen) for item in value.members), hint=None
                 )
             case _:
                 pass
         return value
 
+    def _aliased(self, symbol: FinalModelSymbol) -> bool:
+        """Return whether a symbol is an alias the batch binds a type to."""
+        return is_alias(symbol) and self.root(symbol.id) is not None
+
+    def _stepped(self, symbol: FinalModelSymbol) -> bool:
+        """Return whether a symbol is such an alias, or a root model its backend declares and the batch binds."""
+        return (is_alias(symbol) or _declared_root(symbol)) and self.root(symbol.id) is not None
+
     def plain(self, value: TypeView) -> TypeView:
         """Return the type an alias stands for, through aliases of aliases, or any other type itself."""
-        while (
-            isinstance(value, GeneratedSymbolType)
-            and self.symbols[value.symbol].kind == "alias"
-            and (aliased := self.root(value.symbol)) is not None
-        ):
-            value = aliased
-        return value
+        return cast("TypeView", self.tables.wrapper_chain(value, through=self._aliased, nullable=False)[0])
 
     def unwrapped(self, value: TypeView, steps: list[ItemStep]) -> TypeView:
         """Return the type a root model or a union of one type and None stands for, adding each root step taken."""
-        while True:
-            value = self.plain(value)
-            if (member := sole_present(value)) is not None:
-                value = member
-            elif (
-                (symbol := self.symbol(value)) is not None
-                and symbol.kind == "root"
-                and (root := self.root(symbol.id)) is not None
-            ):
-                steps.append(ItemStep("root", "root"))
-                value = root
-            else:
-                return value
+        found, named = self.tables.wrapper_chain(value, through=self._stepped)
+        steps.extend(
+            ItemStep("root", "root")
+            for symbol in map(self.symbols.__getitem__, named)
+            if symbol.kind == "root" and self._stepped(symbol)
+        )
+        return cast("TypeView", found)
 
     def model(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the object model a body stands for, alone or with null, or None when it is anything else.
@@ -252,72 +206,23 @@ class ModelFacts:
         A root model whose root is such a model, as a Pydantic body of an object or null is, stands for that model.
         """
         value = self.plain(value)
-        if (
-            (symbol := self.symbol(value)) is not None
-            and symbol.kind == "root"
-            and (root := self.root(symbol.id)) is not None
-        ):
-            value = self.plain(root)
-        if (member := sole_present(value)) is not None:
-            value = self.plain(member)
-        return symbol if (symbol := self.symbol(value)) is not None and symbol.kind == "model" else None
+        if (facts := self.tables.wrapped(value, through=_declared_root)) is not None:
+            value = facts.type
+        return symbol if (symbol := self.symbol(self.present(value))) is not None and symbol.kind == "model" else None
 
-    def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
-        """Return the JSON types the values of a type are, or None when they can be any value.
+    def present(self, value: TypeView) -> TypeView:
+        """Return a type without None, through its aliases (``plain``)."""
+        value = self.plain(value)
+        return value if (member := sole_present(value)) is None else self.plain(member)
 
-        An enum's values give its types, an alias or root model those of the type it stands for, and an object model
-        is an object.
-        """
-        leaf = (value.callable if value.base is None else value.base) if isinstance(value, ConstructorType) else value
-        name = _name(leaf)
-        named = _NAMED.get(name or "")
-        if named is None and isinstance(value, ImportedType | ConstructorType) and name != "typing.Any":
-            named = "string"
-        types: JSONTypes = None if named is None else frozenset({named})
-        match value:
-            case UnionType():
-                found = all_or_none([self.json_types(member, seen) for member in value.members])
-                types = None if found is None else frozenset().union(*found)
-            case LiteralType():
-                types = frozenset().union(
-                    *(
-                        self.json_types(GeneratedSymbolType(item.symbol), seen) or ()
-                        if isinstance(item, GeneratedEnumMember)
-                        else {_SCALARS[item.kind]}
-                        for item in value.values
-                    )
-                )
-            case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
-                types = frozenset(symbol.value_types)
-            case GeneratedSymbolType() if (
-                self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and value.symbol not in seen
-                and (root := self.root(value.symbol)) is not None
-            ):
-                types = self.json_types(root, seen | {value.symbol})
-            case GeneratedSymbolType() if self.symbols[value.symbol].kind == "model":
-                types = frozenset({"object"})
-            case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:
-                types = self.json_types(value.arguments[0], seen)
-            case GenericType():
-                types = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
-            case NoneType():
-                types = _NULL
-            case _:
-                pass
-        return types
-
-    def field_types(self, field: ModelFieldFacts) -> JSONTypes:
+    def field_types(self, field: ModelFieldFacts) -> JSONKinds:
         """Return the JSON types of a field's wire values: those of its type, null only when its schema admits it.
 
         A schema admits null by its own nullability, or by a type it refers to that does, such as a nullable model; an
-        annotation that only makes an omitted field optional does not.
+        annotation that only makes an omitted field optional does not (``ModelFieldFacts.wire_null``).
         """
-        kinds = self.json_types(without_none(field.type))
-        accepts_null = field.nullable or field.type_has_null
-        if field.nullable is None:
-            accepts_null = accepts_null or field.schema_null
-        return kinds if kinds is None or not accepts_null else kinds | _NULL
+        kinds = self.tables.json_kinds(without_none(field.type), "schema")
+        return kinds if kinds is None or not field.wire_null else kinds | NULL_KINDS
 
 
 def _name(value: TypeView) -> str | None:

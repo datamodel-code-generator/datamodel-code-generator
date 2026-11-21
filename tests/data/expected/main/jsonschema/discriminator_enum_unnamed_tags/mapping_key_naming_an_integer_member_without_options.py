@@ -15,7 +15,7 @@ class K(Enum):
 
 
 class A(BaseModel):
-    k: Literal['A']
+    k: Literal['x', 'y']
 
 
 class K1(Enum):
@@ -89,7 +89,7 @@ class Base(BaseModel):
 
 class I(Base):
     i: int | None = None
-    k: Literal['I']
+    k: Literal['p', 'q']
 
 
 class K7(Enum):

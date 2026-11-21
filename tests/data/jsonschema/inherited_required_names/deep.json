@@ -1,0 +1,8 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$defs":{
+  "C":{"allOf":[{"$ref":"#/$defs/P"}],"required":["x"],"properties":{"y":{"type":"integer"}}},
+  "P":{"allOf":[{"$ref":"#/$defs/A"}]},
+  "A":{"$ref":"#/$defs/B"},
+  "B":{"allOf":[{"$ref":"#/$defs/D"}],"type":"object","properties":{"x":{}}},
+  "D":{"type":"object","properties":{"x":{"type":"boolean"}}}
+ }}

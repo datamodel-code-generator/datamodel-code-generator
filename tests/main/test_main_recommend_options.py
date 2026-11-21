@@ -26,7 +26,8 @@ from datamodel_code_generator.__main__ import Config, Exit
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.experimental import EXPERIMENTAL_FEATURES
-from tests.conftest import MockHttpxResponse, assert_httpx_get_kwargs, assert_output
+from datamodel_code_generator.preset import get_preset_infos
+from tests.conftest import MockHttpxResponse, assert_httpx_get_kwargs, assert_output, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
     EXPECTED_MAIN_PATH,
@@ -40,13 +41,13 @@ if TYPE_CHECKING:
 
     from tests.conftest import HttpxGetMockFactory
 
-EXPECTED_PATH = EXPECTED_MAIN_PATH / "recommend_options"
 INPUT_PATH = DATA_PATH / "recommend_options"
 CHANGELOG = Path(__file__).parents[2] / "CHANGELOG.md"
 RECOMMEND_DOCS = Path(__file__).parents[2] / "docs" / "recommend-options.md"
 GRAPHQL_INPUT = DATA_PATH / "graphql" / "simple-star-wars.graphql"
 RULES_FILE = "src/datamodel_code_generator/resources/recommender_rules.json"
 RECOMMENDER = "datamodel_code_generator._recommend"
+ISSUE_NUMBER = re.compile(r"#\d+|\b(?:issues?|PRs?|pull requests?)\s+\d+|/(?:issues|pull|pulls)/\d+\b", re.IGNORECASE)
 REGISTRY_GUIDE = (
     f'Every option needs an entry in "options" of {RULES_FILE}: {{"rules": ["<rule id>"]}} when a rule sets it, '
     'or {"not_recommended": "<category>", "reason": "<why the schema does not decide it>"} with category io, '
@@ -210,6 +211,10 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="unions-shared-variant-tags-msgspec",
         ),
         pytest.param("ref_siblings_oas31.yaml", ["--output-format", "json"], id="ref-siblings-read-as-draft-07"),
+        pytest.param("tool_formats.json", [], id="formats-needing-extras"),
+        pytest.param(
+            "tool_formats.json", ["--output-model-type", "msgspec.Struct"], id="formats-needing-extras-msgspec"
+        ),
         pytest.param("property_counts_draft07.json", [], id="property-counts-beside-ignored-ref"),
         pytest.param(
             "redundant_constraints.json",
@@ -300,7 +305,8 @@ def test_recommend_options_for_schemas(
     and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds
     an object. The api scope counts only the operations of the paths ``--openapi-include-paths`` selects, so an excluded
     path whose operations generation never reads is no error. A discriminator mapping value that names a schema of
-    another document tags no variant, and the values after it still tag theirs.
+    another document tags no variant, and the values after it still tag theirs. Formats whose Pydantic types need an
+    extra package or dump a mask suggest reading formats as annotations for Pydantic output only.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))
@@ -698,13 +704,25 @@ def _option_fields() -> set[str]:
     return cli_fields | set(GenerateConfig.model_fields) | destinations
 
 
+def _set_by_the_presets() -> set[str]:
+    """Return the configuration fields a dated standard preset sets in every context; they need no registry entry."""
+    return {
+        item.field_name
+        for info in get_preset_infos()
+        if info.name.value.startswith("standard-")
+        for group in info.option_groups
+        if not (group.input_file_types or group.output_model_types or group.requires_python_strenum)
+        for item in group.config.items()
+    }
+
+
 def _listing(title: str, items: Iterable[str]) -> str:
     return f"{title}: {', '.join(sorted(items)) or 'none'}"
 
 
 def test_every_option_is_registered_with_the_recommender() -> None:
     """Every option must be registered with the option recommender, by rule ids or a not-recommended category."""
-    registered = set(_rules_data()["options"])
+    registered = set(_rules_data()["options"]) | _set_by_the_presets()
     fields = _option_fields()
     assert_output(
         "\n".join((
@@ -722,8 +740,19 @@ def _newest_release() -> str:
     return re.findall(r"^## \[([^\]]+)\]", CHANGELOG.read_text(encoding="utf-8"), re.MULTILINE)[0]
 
 
-def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release: str) -> list[str]:
-    """Return the inconsistencies between the rules, the option registry, and the CLI options."""
+def _stored_report_texts() -> str:
+    """Return the stored reports of the schema fixtures, read through the stored-output index."""
+    marks = [mark for mark in test_recommend_options_for_schemas.pytestmark if mark.name == "parametrize"]
+    return "\n".join(
+        stored_expected(
+            EXPECTED_MAIN_PATH / "main_recommend_options" / f"recommend_options_for_schemas[{param.id}].stdout.txt"
+        ).read_text(encoding="utf-8")
+        for param in marks[0].args[1]
+    )
+
+
+def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release: str, stored_reports: str) -> list[str]:
+    """Return the inconsistencies between the rules, the option registry, the CLI options, and the stored reports."""
     options = data["options"]
     rules = data["rules"]
     rule_fields = {rule["id"]: sorted({*rule.get("set", {}), *rule.get("value_from", {})}) for rule in rules}
@@ -735,6 +764,18 @@ def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release:
     option_strings = {action.dest: action.option_strings for action in arg_parser._actions}
     pending = {field: entry for field, entry in sorted(options.items()) if entry.get("not_recommended") == "pending"}
     return [
+        *(
+            f"rule {rule['id']} cites an issue or pull request number in {key}; users read the text, so remove it"
+            for rule in rules
+            for key in ("reason", "caveats", "evidence")
+            if ISSUE_NUMBER.search(json.dumps(rule.get(key, ())))
+        ),
+        *(
+            f"rule {rule['id']} has no fixture: no stored report names [{rule['id']}]; add a "
+            "test_recommend_options_for_schemas case that fires it"
+            for rule in rules
+            if f"[{rule['id']}]" not in stored_reports
+        ),
         *(
             f"rule {rule['id']} sets {field}; list the rule in options.{field}.rules"
             for rule in rules
@@ -806,7 +847,7 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
     payload = json.loads(capsys.readouterr().out)
     data = _rules_data()
     problems = [
-        *_rule_problems(data, {*payload["signals"], *payload["facts"]}, _newest_release()),
+        *_rule_problems(data, {*payload["signals"], *payload["facts"]}, _newest_release(), _stored_report_texts()),
         *_mirror_problems(data["full_trial_max_models"]),
     ]
     assert_output(
@@ -857,7 +898,7 @@ def test_recommend_options_small_schema_default(tmp_path: Path, capsys: pytest.C
         run_main_with_args(
             ["--input", "titled_variants.yaml", "--target-python-version", "3.14", "--recommend-options"],
             capsys=capsys,
-            expected_stdout_path=EXPECTED_PATH / "titled_variants.txt",
+            derived_stdout=True,
             assert_no_stderr=True,
             use_builtin_default_formatter=False,
         )
@@ -1213,30 +1254,27 @@ def _naming_hints(recorded: Iterable[warnings.WarningMessage]) -> str:
 
 
 @pytest.mark.parametrize(
-    ("input_name", "options", "pyproject", "expected_exit", "expected"),
+    ("input_name", "options", "pyproject", "expected_exit"),
     [
-        pytest.param("naming_hint.yaml", [], "", Exit.OK, "naming_hint.txt", id="numbered"),
-        pytest.param("naming_hint_few.yaml", [], "", Exit.OK, None, id="below-count"),
-        pytest.param("naming_hint_minority.yaml", [], "", Exit.OK, None, id="below-share"),
-        pytest.param("naming_hint_collapsed.yaml", ["--collapse-root-models"], "", Exit.OK, None, id="collapsed-root"),
-        pytest.param("naming_hint.yaml", ["--naming-strategy", "numbered"], "", Exit.OK, None, id="naming-strategy"),
-        pytest.param("naming_hint.yaml", [], 'naming-strategy = "numbered"', Exit.OK, None, id="pyproject-naming"),
+        pytest.param("naming_hint.yaml", [], "", Exit.OK, id="numbered"),
+        pytest.param("naming_hint_few.yaml", [], "", Exit.OK, id="below-count"),
+        pytest.param("naming_hint_minority.yaml", [], "", Exit.OK, id="below-share"),
+        pytest.param("naming_hint_collapsed.yaml", ["--collapse-root-models"], "", Exit.OK, id="collapsed-root"),
+        pytest.param("naming_hint.yaml", ["--naming-strategy", "numbered"], "", Exit.OK, id="naming-strategy"),
+        pytest.param("naming_hint.yaml", [], 'naming-strategy = "numbered"', Exit.OK, id="pyproject-naming"),
         pytest.param(
             "naming_hint.yaml",
             ["--model-name-map", '{"Order": "Purchase"}'],
             "",
             Exit.OK,
-            None,
             id="model-name-map",
         ),
-        pytest.param(
-            "naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', Exit.OK, None, id="pyproject-map"
-        ),
-        pytest.param("naming_hint.yaml", ["--check"], "", Exit.DIFF, None, id="check"),
-        pytest.param("naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", Exit.DIFF, None, id="diff"),
-        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", Exit.OK, None, id="json"),
-        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", Exit.OK, None, id="disable-warnings"),
-        pytest.param("naming_hint.yaml", ["--recommend-options"], "", Exit.OK, None, id="recommend-options"),
+        pytest.param("naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', Exit.OK, id="pyproject-map"),
+        pytest.param("naming_hint.yaml", ["--check"], "", Exit.DIFF, id="check"),
+        pytest.param("naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", Exit.DIFF, id="diff"),
+        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", Exit.OK, id="json"),
+        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", Exit.OK, id="disable-warnings"),
+        pytest.param("naming_hint.yaml", ["--recommend-options"], "", Exit.OK, id="recommend-options"),
     ],
 )
 def test_naming_hint(
@@ -1244,7 +1282,6 @@ def test_naming_hint(
     options: list[str],
     pyproject: str,
     expected_exit: Exit,
-    expected: str | None,
     tmp_path: Path,
 ) -> None:
     """Point to --recommend-options after a generation whose class names are mostly numbered collisions.
@@ -1264,18 +1301,18 @@ def test_naming_hint(
             ["--input", input_name, "--input-file-type", "openapi", "--output", "models.py", *options],
             expected_exit=expected_exit,
         )
-    assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+    assert_output(_naming_hints(recorded))
 
 
 @pytest.mark.parametrize(
-    ("selection", "expected"),
+    "selection",
     [
-        pytest.param(["--job", "big shop"], "naming_hint.txt", id="one-job"),
-        pytest.param(["--job", "plain", "--job", "big shop"], None, id="jobs"),
-        pytest.param(["--all-jobs"], None, id="all-jobs"),
+        pytest.param(["--job", "big shop"], id="one-job"),
+        pytest.param(["--job", "plain", "--job", "big shop"], id="jobs"),
+        pytest.param(["--all-jobs"], id="all-jobs"),
     ],
 )
-def test_naming_hint_batch_jobs(selection: list[str], expected: str | None, tmp_path: Path) -> None:
+def test_naming_hint_batch_jobs(selection: list[str], tmp_path: Path) -> None:
     """Show the hint for a single job, which --recommend-options takes, and not for several jobs, which it refuses."""
     for name in NAMING_HINT_INPUTS:
         shutil.copy(INPUT_PATH / name, tmp_path / name)
@@ -1290,7 +1327,7 @@ def test_naming_hint_batch_jobs(selection: list[str], expected: str | None, tmp_
     with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", NamingHintWarning)
         run_main_with_args(selection)
-    assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+    assert_output(_naming_hints(recorded))
 
 
 @pytest.mark.parametrize(

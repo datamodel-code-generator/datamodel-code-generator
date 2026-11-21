@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info: {title: Required nullable parameters, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - {name: ids, in: query, required: true, schema: {$ref: "#/components/schemas/Ids"}}
+        - {name: labels, in: query, required: true, schema: {$ref: "#/components/schemas/Labels"}}
+        - {name: weights, in: query, required: true, schema: {$ref: "#/components/schemas/Weights"}}
+        - {name: tags, in: query, required: true, schema: {type: [array, "null"], items: {type: integer}}}
+        - {name: q, in: query, required: true, schema: {type: [string, "null"]}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Label:
+      type: [string, "null"]
+    Ids:
+      type: [array, "null"]
+      items: {type: integer}
+    Labels:
+      type: [array, "null"]
+      items: {$ref: "#/components/schemas/Label"}
+    Weights:
+      type: [object, "null"]
+      additionalProperties: {type: integer}

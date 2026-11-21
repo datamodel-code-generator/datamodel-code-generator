@@ -25,7 +25,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/hero-dark.svg">
-    <img alt="Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types" src="docs/assets/diagrams/hero-light.svg" width="760">
+    <img alt="Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types and experimental HTTPX2 client and FastAPI server packages" src="docs/assets/diagrams/hero-light.svg" width="760">
   </picture>
 </p>
 
@@ -36,6 +36,7 @@ in another Python file to a different output type.
 - 📄 Converts **OpenAPI 3**, **AsyncAPI**, **JSON Schema**, **Apache Avro**, **XML Schema**, **Protocol Buffers/gRPC**, **GraphQL**, **MCP tool schemas**, and raw data (JSON/YAML/CSV) into Python models
 - 🐍 Generates from **existing Python types** (Pydantic, dataclass, TypedDict) via `--input-model`
 - 🎯 Generates **Pydantic v2**, **Pydantic v2 dataclass**, **dataclasses**, **TypedDict**, or **msgspec** output
+- 🌐 Generates a typed **HTTPX2 client** (`--generate-client httpx2`, from OpenAPI and AsyncAPI) or a **FastAPI server** (`--generate-server fastapi`, from OpenAPI) together with the models (experimental)
 - 🔗 Handles complex schemas: `$ref`, `allOf`, `oneOf`, `anyOf`, enums, and nested types
 - ✅ Produces type-safe, validated code ready for your IDE and type checker
 
@@ -127,11 +128,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261106 \
+  --preset standard-py312-20261120 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261106` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261120` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/) for all options. See [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/),
@@ -139,7 +140,7 @@ See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/
 [`--output-model-type`](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261106`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261106).
+documentation, use [`practical-py312-20261120`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261120).
 
 **Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
 analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
@@ -230,7 +231,9 @@ The current default remains Black/isort, which are still required dependencies. 
 normal generation. The future builtin default is intended to reduce required installation dependencies and version
 constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
 based on installed packages or Ruff configuration. The new `[black]` and `[isort]` extras prepare for later
-optional installation; their ranges and environment markers match the current required dependencies.
+optional installation; their ranges and environment markers match the current required dependencies. The
+`[jinja2]` (custom templates), `[genson]` (JSON, YAML, CSV and dict data input) and `[argcomplete]` (shell
+completion) extras do the same for those dependencies.
 Selecting only a formatter preserves your other generation settings; a preset also supplies model-generation options.
 Explicit formatter selection does not pin formatter versions or guarantee byte-for-byte output stability.
 
@@ -365,7 +368,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261106 \
+  --preset standard-py312-20261120 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -378,7 +381,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261106 \
+  --preset standard-py312-20261120 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \

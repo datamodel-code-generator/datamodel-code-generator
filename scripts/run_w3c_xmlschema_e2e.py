@@ -8,7 +8,7 @@ import importlib
 import sys
 import tempfile
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Generator, Iterable, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from importlib.util import module_from_spec, spec_from_file_location
@@ -63,7 +63,7 @@ def iter_generated_modules(generated: object) -> Iterable[tuple[tuple[str, ...] 
 
 
 @contextmanager
-def sys_path_entry(path: str) -> Iterable[None]:
+def sys_path_entry(path: str) -> Generator[None]:
     """Temporarily prepend an import path."""
     sys.path.insert(0, path)
     try:

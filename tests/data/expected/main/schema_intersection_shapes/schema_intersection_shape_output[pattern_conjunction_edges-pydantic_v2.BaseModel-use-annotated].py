@@ -78,7 +78,9 @@ class NonAsciiClass(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: Annotated[str, Field(pattern='\\A(?=[\\s\\S]*?(?:猫x))(?=[\\s\\S]*?(?:[猫犬]))')]
+    root: Annotated[
+        str, Field(pattern='\\A(?=[\\s\\S]*?(?:猫x))(?=[\\s\\S]*?(?:[猫犬]))')
+    ]
 
 
 class ThreeAnchored(RootModel[str]):

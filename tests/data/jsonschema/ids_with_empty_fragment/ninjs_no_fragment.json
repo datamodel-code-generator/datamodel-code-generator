@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json",
+  "title": "NewsItem",
+  "type": "object",
+  "properties": {
+    "uri": {"type": "string"},
+    "associations": {
+      "type": "object",
+      "additionalProperties": {"$ref": "http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json#"}
+    }
+  },
+  "required": ["uri"]
+}

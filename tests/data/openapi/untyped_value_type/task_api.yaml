@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Task instances
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    JsonValue: {}
+    TaskInstance:
+      type: object
+      properties:
+        task_id:
+          type: string
+        xcom:
+          $ref: '#/components/schemas/JsonValue'
+        task_states:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+        rendered_fields:
+          type: object
+          additionalProperties: true
+      required: [task_id]

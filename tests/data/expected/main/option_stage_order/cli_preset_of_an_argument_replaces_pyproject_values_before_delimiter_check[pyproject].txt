@@ -1,0 +1,4 @@
+`--original-field-name-delimiter` can not be used without `--snake-case-field`.
+exit: ERROR
+written:
+  pyproject.toml

@@ -6,24 +6,30 @@ import os
 import subprocess
 import sys
 from itertools import count
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import Any
 
 import pytest
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import InputFileType, generate
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.checks.__main__ import main
+from tests.checks.areas import Area, CheckFailure, Mode
 from tests.checks.seams import report
-from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_NAMING_ENV, CHECK_RENDER_MEMOS_ENV, assert_output
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from tests.conftest import (
+    CHECK_FACT_FINALITY_ENV,
+    CHECK_NAMING_ENV,
+    CHECK_PASS_TRIGGERS_ENV,
+    CHECK_RENDER_MEMOS_ENV,
+    assert_output,
+)
 
 _EXTENSION_MAKES_A_MEMO_STALE = """
-from datamodel_code_generator import Error
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.checks.areas import CheckFailure
 
 
 class LateUnionAlias(JsonSchemaParser):
@@ -39,7 +45,7 @@ SCHEMA = (
 )
 try:
     LateUnionAlias(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
-except Error as error:
+except CheckFailure as error:
     print(error)
 """
 
@@ -113,7 +119,7 @@ def test_naming_check_reports_a_name_no_naming_call_gives() -> None:
     The naming check is on (`1`, as the test suite sets it); the replay of the calls names the definition ``Pet``.
     """
     with pytest.raises(
-        Error,
+        CheckFailure,
         match=(
             rf"^{CHECK_NAMING_ENV}: names the resolver's naming calls do not explain: "
             r"#/definitions/Pet: 'Animal' \(asked None\) where its calls give 'Pet' \(asked None\)$"
@@ -140,3 +146,103 @@ def test_naming_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
     """With the naming check set to 0, the parse writes the name the extension gave and records no naming call."""
     monkeypatch.setenv(CHECK_NAMING_ENV, "0")
     assert_output(str(_RenamingParser(_RENAMED_DEFINITION, formatters=[Formatter.BUILTIN]).parse()))
+
+
+class _EnumLiteralTags(OpenAPIParser):
+    """A parser extension that tags discriminated variants by enum member literals without the option that does."""
+
+    def _create_discriminator_data_type(
+        self, enum_source: Any, discriminator_values: Any, discriminator_model: Any, imports: Any
+    ) -> Any:
+        self.use_enum_values_in_discriminator = True
+        try:
+            return super()._create_discriminator_data_type(
+                enum_source, discriminator_values, discriminator_model, imports
+            )
+        finally:
+            self.use_enum_values_in_discriminator = False
+
+
+_ENUM_TAGGED_VARIANTS = Path(__file__).parents[1] / "data/openapi/discriminator_enum_modules.yaml"
+"""Variants in the module ``pets`` whose tag field is typed by an enum of the root module."""
+
+
+def test_trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A pass that rewrites what its trigger does not name fails the parse when the trigger check runs it anyway.
+
+    The trigger of ``import_enum_member_literal_classes`` names the option and the consts that make enum member
+    literals; the extension makes them without either, so the pass, run while its trigger is false, imports their
+    enum into the module of the variants.
+    """
+    monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "1")
+    with pytest.raises(CheckFailure) as raised:
+        _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
+    assert_output(f"{raised.value}\n")
+
+
+def test_trigger_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """With the trigger check set to 0, the pass whose trigger is false is skipped, as outside the tests.
+
+    The variants import the enum for the field of their base already, so the output is the one the pass would leave.
+    """
+    monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "0")
+    modules = _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
+    assert_output("".join(f"# {'/'.join(name)}\n{result.body}\n" for name, result in modules.items()))
+
+
+@pytest.mark.parametrize(
+    "rendered",
+    [
+        pytest.param(
+            "class Model:\n    x: int\n\n    def method(self) -> None:\n        class Inner:\n            x = 1\n",
+            id="class-in-a-method",
+        ),
+        pytest.param("class Model:\n    x: int\n\n    class Config:\n        x = 1\n", id="class-in-a-class-body"),
+    ],
+)
+def test_field_lines_read_only_module_level_class_bodies(rendered: str) -> None:
+    """A class nested in a method or a class body binds its own names, never the fields of the model around it."""
+    from tests.checks.template_assignments import field_lines
+
+    lines = [
+        f"{line.name}: {'no value' if line.value is None else 'with a value'}" for line in field_lines(rendered) or ()
+    ]
+    assert_output("\n".join(lines) + "\n")
+
+
+_REFUSED_WHERE_YAML_NUMBERS_ARE_TEXT = """
+openapi: 3.0.3
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        at: {type: string, pattern: 00:00:00.00}
+"""
+
+
+def test_a_failing_check_is_no_error_that_a_generation_catches() -> None:
+    """A violation of every area fails the generation with its message, however the generation retries.
+
+    The schema is refused with its YAML 1.1-only number read as a number, so the generation parses again with it read
+    as text, and a package ``Error`` of that second parse is swallowed: the refusal of the first parse then stands. The
+    class name generator makes each area's violation in the second parse, where it names the first class.
+    """
+    lines = []
+    for area in Area:
+
+        def violates(_name: str, area: Area = area) -> str:
+            Mode(area, None).violation("seeded failure")
+            raise NotImplementedError
+
+        with pytest.raises(CheckFailure) as raised:
+            generate(
+                _REFUSED_WHERE_YAML_NUMBERS_ARE_TEXT,
+                input_file_type=InputFileType.OpenAPI,
+                custom_class_name_generator=violates,
+                formatters=[Formatter.BUILTIN],
+            )
+        lines.append(str(raised.value))
+    assert_output("\n".join(lines) + "\n")

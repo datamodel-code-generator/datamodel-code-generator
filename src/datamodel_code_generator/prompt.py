@@ -15,37 +15,40 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from datamodel_code_generator._json_output import JSON_SCHEMA_DRAFT_2020_12 as JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator._json_output import (
-    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established prompt export.
     JSON_SCHEMA_NAMES,
     OUTPUT_HEAD,
     dump_json,
     schema_document,
 )
 from datamodel_code_generator._message_text import english_list
-from datamodel_code_generator._option_names import mapping_argument, option_arguments
-from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest, _negative_option
+from datamodel_code_generator._option_names import (
+    mapping_argument,
+)
+from datamodel_code_generator._option_names import option_arguments as option_arguments
+from datamodel_code_generator._option_table import COMMAND_DESTS
+from datamodel_code_generator.cli_options import (
+    CLI_OPTION_META,
+    OptionCategory,
+    _actions_by_dest,
+    _canonical_option_key,
+    _option_arguments,
+)
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterator
 
-# Options to exclude from prompt output
-PROMPT_EXCLUDED_OPTIONS: frozenset[str] = frozenset({
-    "generate_prompt",
-    "generate_pyproject_config",
-    "generate_cli_command",
-    "recommend_options",
-    "install_skill",
-    "skill_scope",
-    "overwrite_skill",
-    "version",
-    "help",
-    "no_color",
-    "output_format",
-    "output_format_json_schema",
-})
+PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {
+    "profile",
+    "job",
+    "all_jobs",
+    "ignore_pyproject",
+    "fail_on_multi_module_stdout",
+}
+"""The options the prompt leaves out of the current options: those of a command, except those that shape the run."""
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
@@ -246,8 +249,8 @@ def _canonical_option(action: Action) -> str:
     """Return the canonical option name for an argparse action."""
     if long_options := [option for option in action.option_strings if option.startswith("--")]:
         positive_options = [option for option in long_options if not option.startswith("--no-")]
-        return max(positive_options or long_options, key=lambda option: (len(option), option))
-    return max(action.option_strings, key=lambda option: (len(option), option))
+        return max(positive_options or long_options, key=_canonical_option_key)
+    return max(action.option_strings, key=_canonical_option_key)
 
 
 def _format_current_option(key: str, value: Any) -> str | None:
@@ -255,7 +258,7 @@ def _format_current_option(key: str, value: Any) -> str | None:
 
     A mapping is the JSON its option reads.
     """
-    if (arguments := option_arguments(key, value, negative=_negative_option)) is None:
+    if (arguments := _option_arguments(key, value)) is None:
         return None
     return " ".join(
         mapping_argument(key, argument) if isinstance(argument, Mapping) else str(argument) for argument in arguments
@@ -379,7 +382,7 @@ def _format_options_by_category() -> str:
         for opt, desc in sorted(options):
             if desc:
                 lines.append(f"- `{opt}`: {desc}")
-            else:  # pragma: no cover
+            else:
                 lines.append(f"- `{opt}`")
         lines.append("")
 

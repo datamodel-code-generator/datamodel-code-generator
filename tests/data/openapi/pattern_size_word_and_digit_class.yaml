@@ -1,0 +1,8 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    ResourceName:
+      type: string
+      pattern: '^[\w\d_-]{1,255}$'

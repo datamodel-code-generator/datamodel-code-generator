@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Generic, Protocol, TypeVar, final
 from typing_extensions import NamedTuple, Self
 
 from datamodel_code_generator._all_or_none import all_or_none
-from datamodel_code_generator._graph import reach, stable_toposort
+from datamodel_code_generator._graph import post_order, reach, stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._records import record
-from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
+from datamodel_code_generator._scc import find_circular_sccs, is_circular, strongly_connected_components
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
@@ -86,37 +86,17 @@ class GraphSnapshot(Enum):
     """L5, per module: the aliases on a cycle of container items."""
     NESTED_MODEL_DEFAULT_FACTORIES = "nested model default factories"
     """L6: the models on a reference cycle, whose default factories recurse."""
-    TAGGED_BASES = "tagged bases"
-    """L6: the msgspec structs below tagged bases, each after the bases among the processed models it inherits from."""
     ALIAS_LOOPS = "alias loops"
     """IMPORTS: the type aliases of a ``$ref`` chain that loops back without reaching a schema."""
     MSGSPEC_ALIAS_RECURSION = "msgspec alias recursion"
     """IMPORTS: the msgspec type aliases on a cycle that no Struct breaks."""
-    INHERITED_FIELDS = "inherited fields"
-    """On demand: the models whose fields a model inherits, each once, bases first."""
-    ANCESTORS = "ancestors"
-    """On demand: the generated ancestors of a model, which order its bases descendants first."""
-    CYCLIC_ANCESTRY = "cyclic ancestry"
-    """On demand: whether the ancestors of a model inherit from one another in a cycle."""
-    BASE_CLASS_ORDER = "base class order"
-    """On demand: the C3 order of the generated models that models inherit from."""
-    STRUCT_TAGS = "struct tags"
-    """On demand: the tag and tag field a msgspec struct takes from itself and its generated bases."""
-    PROTECTED_NAMESPACES = "protected namespaces"
-    """On demand: the model whose configuration gives the protected namespaces of a pydantic model."""
+    BASES = "bases"
+    """On demand: models and the generated models they inherit from, however distant (``model/base.py:_base_walk``),
+    which give the fields, ancestors, C3 order, struct options and tags, configuration and hash of a model."""
     ROOT_CONSTRAINTS = "root constraints"
     """On demand: whether a root model or a root model its root type names constrains its root field."""
     MAPPING_DEFAULTS = "mapping defaults"
     """On demand: whether the mapping defaults of a dataclass materialize a model of one path twice."""
-    SET_ITEM_HASH = "set item hash"
-    """L6: the set item models and the generated models they inherit from, whose classes decide which set item models
-    keep their builtin hash."""
-    SET_ITEM_CLASSES = "set item classes"
-    """On demand: a msgspec struct that the items of a uniqueItems array name and the generated structs it inherits
-    from, whose options decide whether its instances can hash at all."""
-    DICT_KEY_ROOT_TYPES = "dict key root types"
-    """On demand: a root model that a dict key names and the generated models it inherits from, whose configuration
-    decides whether its instances can be dict keys."""
 
 
 _NO_KEYS: frozenset[ModelKey] = frozenset()
@@ -146,39 +126,41 @@ class ReferenceGraph:
 
     def acyclic_order(self, kinds: Collection[EdgeKind]) -> list[ModelKey] | None:
         """Return the models with the targets of each first, or ``None`` when edges of ``kinds`` close a cycle."""
-        order = all_or_none(self._acyclic(component, kinds) for component in self.components(kinds))
+        graph = self._adjacency(kinds)
+        order = all_or_none(
+            None if is_circular(component, graph.edges) else next(iter(component)) for component in graph.components()
+        )
         return None if order is None else list(order)
 
-    def _acyclic(self, component: set[ModelKey], kinds: Collection[EdgeKind]) -> ModelKey | None:
-        """Return the model of a strongly connected component, or ``None`` when edges of ``kinds`` make it a cycle."""
-        key = next(iter(component))
-        return None if len(component) > 1 or key in self.targets(key, kinds) else key
-
-    def preorder(self, key: ModelKey, kind: EdgeKind) -> list[ModelKey]:
+    def preorder(self, key: ModelKey, kind: EdgeKind, *, first_target_first: bool = False) -> list[ModelKey]:
         """Return ``key`` and the models it reaches through edges of ``kind``, each once, as a stack walk takes them.
 
-        A model comes before its targets, and its last target first.
+        A model comes before its targets, and its last target first, or with ``first_target_first`` its first.
         """
+        if first_target_first:
+            return reach((key,), lambda current: self.ordered_targets(current, kind)[::-1])
         return reach((key,), lambda current: self.ordered_targets(current, kind))
+
+    def level_order(self, key: ModelKey, kind: EdgeKind) -> list[ModelKey]:
+        """Return ``key`` and the models it reaches through edges of ``kind``, each once, nearest first.
+
+        The models one edge further come after those before them, in the order the models before them list them.
+        """
+        order = [key]
+        met = {key}
+        for current in iter(order):
+            for target in self.ordered_targets(current, kind):
+                if target not in met:
+                    met.add(target)
+                    order.append(target)
+        return order
 
     def postorder(self, key: ModelKey, kind: EdgeKind, met: set[ModelKey]) -> list[ModelKey]:
         """Return ``key`` and the models it reaches through edges of ``kind``, each after its targets in their order.
 
         A model of ``met`` is left out with the models reached only through it; every model returned is added to it.
         """
-        order: list[ModelKey] = []
-        entered: list[ModelKey] = []
-        stack = [iter((key,))]
-        while stack:
-            if (target := next(stack[-1], None)) is None:
-                stack.pop()
-                if entered:
-                    order.append(entered.pop())
-            elif target not in met:
-                met.add(target)
-                entered.append(target)
-                stack.append(iter(self.ordered_targets(target, kind)))
-        return order
+        return [*post_order((key,), lambda current: self.ordered_targets(current, kind), entered=met)]
 
     def meets_a_group_twice(
         self, keys: Iterable[ModelKey], group_of: Callable[[ModelKey], Hashable], kinds: Collection[EdgeKind]

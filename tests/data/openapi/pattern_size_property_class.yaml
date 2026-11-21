@@ -1,0 +1,9 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    TranslatedTextString:
+      type: string
+      pattern: '[\P{M}\p{M}]{0,20000}'
+      maxLength: 20000

@@ -1,0 +1,14 @@
+[
+  "seed: valid",
+  "/a minimum \"4\": invalid",
+  "/a minimum \"4.9\": invalid",
+  "/a minimum \"5\": invalid",
+  "/a minimum \"5.1\": invalid",
+  "/a minimum \"6\": invalid",
+  "/b enum 1: invalid",
+  "/b enum 1.0: invalid",
+  "/b enum [\"bad\"]: invalid",
+  "/b enum null: invalid",
+  "/b enum true: invalid",
+  "/b enum {\"a\": \"bad\"}: invalid"
+]

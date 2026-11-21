@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Probe",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": ["a", "b"]
+    },
+    "value": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "level": {
+      "enum": [1, 2, 10]
+    },
+    "ints": {
+      "type": "array",
+      "items": {
+        "enum": [3, 4]
+      },
+      "contains": {
+        "type": "integer",
+        "minimum": 4
+      }
+    },
+    "words": {
+      "type": "array",
+      "items": {
+        "enum": ["ab", "cd"]
+      },
+      "contains": {
+        "type": "string",
+        "pattern": "^c",
+        "minLength": 2
+      }
+    },
+    "marks": {
+      "type": "array",
+      "items": {
+        "enum": ["p", "q"]
+      },
+      "contains": {
+        "const": "p"
+      },
+      "maxContains": 1
+    }
+  },
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "a"
+      }
+    },
+    "required": ["kind"]
+  },
+  "then": {
+    "required": ["name"],
+    "properties": {
+      "value": {
+        "minimum": 5
+      },
+      "level": {
+        "minimum": 5
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "value": {
+        "maximum": 3
+      },
+      "level": {
+        "maximum": 3
+      }
+    }
+  }
+}

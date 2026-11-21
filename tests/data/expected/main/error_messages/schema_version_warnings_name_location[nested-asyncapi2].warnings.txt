@@ -1,0 +1,1 @@
+exclusiveMaximum as number is Draft 6+ style, but schema version is Draft 4. Schema path: schema_location_strict_nested_asyncapi2.yaml#/channels/user~1signup/subscribe/message/payload/properties/numeric_bound

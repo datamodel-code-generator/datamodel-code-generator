@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 import pytest
 from hypothesis import HealthCheck, assume, given, settings
@@ -18,17 +18,17 @@ from jsonschema import Draft7Validator
 from jsonschema import ValidationError as JsonSchemaValidationError
 from packaging.version import Version
 from pydantic import VERSION as PYDANTIC_VERSION
-from pydantic import ValidationError
+from pydantic import AfterValidator, TypeAdapter, ValidationError
 
 from datamodel_code_generator.format import PythonVersion
+from scripts.check_ratchets import NO_SEED_LINE
 from tests.conftest import assert_inputs_not_mutated, assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_MAIN_PATH,
     EXPERIMENTAL_MISSING_IMPORT_WARNING,
     JSON_SCHEMA_DATA_PATH,
 )
-from tests.main.payload_validation.codegen import PayloadAdapterError, generate_payload_runtime
+from tests.main.payload_validation.codegen import PayloadAdapterError, PayloadRuntime, generate_payload_runtime
 from tests.main.payload_validation.schema import _referenced_openapi_components, _schema_exclusion_reason
 
 from .payload_validation import (
@@ -38,8 +38,6 @@ from .payload_validation import (
     BACKEND_UNASSERTED_MUTATION_CONSTRAINTS,
     PAYLOAD_MUTATION_CONSTRAINTS,
     PAYLOAD_VALIDATION_BACKENDS,
-    PYDANTIC_V2_0_RUNTIME_MAX_VERSION,
-    PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES,
@@ -75,6 +73,10 @@ from .payload_validation.constants import (
     PAYLOAD_TARGET_PYTHON_VERSION,
     PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION,
@@ -85,17 +87,25 @@ from .payload_validation.constants import (
 from .payload_validation.native_numeric import (
     NATIVE_NUMERIC_SAMPLING_ADAPTERS,
     native_float_multiple_errors,
+    pydantic_payload_dump,
     pydantic_payload_result,
+)
+from .payload_validation.neighbours import (
+    SEED_KEYWORD,
+    differing_line,
+    has_value_neighbour_keywords,
+    has_value_neighbour_seed,
+    model_verdict,
+    neighbour_is_asserted,
+    schema_validator_case,
+    schema_verdict,
+    value_neighbours,
 )
 from .payload_validation.schema import _schema_for_payload_generation
 from .payload_validation.strategy import (
     _bound_float_multiples,
     _regex_agreement_validator,
     _valid_where_regex_engines_agree,
-)
-
-NATIVE_NUMERIC_EMPTY_ERRORS = (
-    Path(__file__).parents[1] / "data" / "expected" / "payloads" / "native_numeric_empty_errors.txt"
 )
 
 NUMERIC_SAMPLING_PATH = Path(__file__).parents[1] / "data" / "payloads" / "numeric_sampling.json"
@@ -141,10 +151,10 @@ MAX_EXAMPLES = _max_examples_from_env()
 BACKEND_CASE_MODE = _backend_case_mode_from_env()
 PYDANTIC_RUNTIME_VERSION = Version(PYDANTIC_VERSION)
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN = Version(PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION)
-PYDANTIC_V2_0_RUNTIME_MAX = Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION)
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN = Version(PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN = Version(PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN_VERSION)
 NUMERIC_SAMPLING_FLOAT_MULTIPLE_OF_NAMES = frozenset({"unbounded_number_integer_multiple"})
 PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN = Version(PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION)
@@ -157,15 +167,18 @@ PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGro
     (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN, PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN, PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_EXCLUDED_CASES),
+    *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES),
 )
 PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGroups = (
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
-    (PYDANTIC_V2_0_RUNTIME_MAX, PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
+    *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES),
+    *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
 )
 REJECTION_ORACLE_CASES = [case for case in SCHEMA_CASES if has_rejection_oracle_constraints(case)]
 SCHEMA_CASE_BY_ID = {case.id: case for case in SCHEMA_CASES}
@@ -338,7 +351,6 @@ def test_numeric_payload_sampling_preserves_source_schemas() -> None:
             normalized[name] = schema
         assert_output(
             json.dumps(normalized, indent=2) + "\n",
-            NUMERIC_SAMPLING_PATH.parents[1] / "expected" / "payloads" / "numeric_sampling.txt",
         )
 
 
@@ -391,8 +403,12 @@ def test_numeric_payload_sampling_validates_generated_models(
         )
         validated, errors = pydantic_payload_result(adapter, payload)
         assert_output(
-            json.dumps([] if errors == expected_errors else {"expected": expected_errors, "actual": errors}, indent=2),
-            NATIVE_NUMERIC_EMPTY_ERRORS,
+            json.dumps(
+                [] if errors == expected_errors else {"expected": expected_errors, "actual": errors},
+                indent=2,
+                default=str,
+            ),
+            name="errors",
         )
         if errors:
             return
@@ -757,7 +773,6 @@ def test_pydantic_v2_legacy_runtime_exclusions_are_version_gated() -> None:
         case, PayloadBackend.PYDANTIC_V2, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN
     )
     for round_trip_case_id, max_version in (
-        ("jsonschema/msgspec_payload_runtime_compatibility.json", PYDANTIC_V2_0_RUNTIME_MAX),
         ("jsonschema/property_names_ref_enum.json", PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
     ):
         round_trip_case = SCHEMA_CASE_BY_ID[round_trip_case_id]
@@ -977,12 +992,11 @@ def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
         validated, errors = pydantic_payload_result(adapter, payload)
         expected = expected_errors or []
         assert_output(
-            json.dumps([] if errors == expected else {"expected": expected, "actual": errors}, indent=2),
-            NATIVE_NUMERIC_EMPTY_ERRORS,
+            json.dumps([] if errors == expected else {"expected": expected, "actual": errors}, indent=2, default=str),
+            name="errors",
         )
         if expected_errors is not None and not errors:
-            dumped = adapter.dump_python(validated, mode="json", by_alias=True, exclude_unset=True)
-            validate_with_source_schema(case, dumped)
+            validate_with_source_schema(case, pydantic_payload_dump(adapter, validated))
 
     check_acceptance()
 
@@ -1015,13 +1029,16 @@ def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
         expected_errors = native_float_multiple_errors(case, payload) or []
         validated_payload, errors = pydantic_payload_result(adapter, payload)
         assert_output(
-            json.dumps([] if errors == expected_errors else {"expected": expected_errors, "actual": errors}, indent=2),
-            NATIVE_NUMERIC_EMPTY_ERRORS,
+            json.dumps(
+                [] if errors == expected_errors else {"expected": expected_errors, "actual": errors},
+                indent=2,
+                default=str,
+            ),
+            name="errors",
         )
         if errors:
             return
-        dumped_payload = adapter.dump_python(validated_payload, mode="json", by_alias=True, exclude_unset=True)
-        validate_with_source_schema(case, dumped_payload)
+        validate_with_source_schema(case, pydantic_payload_dump(adapter, validated_payload))
 
     check_round_trip()
 
@@ -1121,6 +1138,180 @@ def test_generated_payload_backend_rejects_representative_schema_invalid_payload
 
     runtime = load_generated_payload_runtime(case, generated_model_cache, backend)
     runtime.assert_rejects_python(mutation.payload)
+
+
+VALUE_NEIGHBOUR_CASES = [case for case in SCHEMA_CASES if has_value_neighbour_keywords(case)]
+
+
+def _value_neighbour_param(
+    backend: PayloadBackend, case: SchemaCase, *, schema_validators: bool = False
+) -> pytest.ParameterSet:
+    variant = f"{backend.value}_schema_validators" if schema_validators else backend.value
+    return pytest.param(
+        backend,
+        case,
+        schema_validators,
+        id=f"{variant}:{case.id}",
+        marks=_pydantic_v2_legacy_runtime_skip_marks(case, backend),
+    )
+
+
+VALUE_NEIGHBOUR_PARAMS = [
+    *(
+        _value_neighbour_param(PayloadBackend.PYDANTIC_V2, case, schema_validators=schema_validators)
+        for schema_validators in (False, True)
+        for case in VALUE_NEIGHBOUR_CASES
+    ),
+    *(
+        _value_neighbour_param(backend, case)
+        for backend in (PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC)
+        for case in VALUE_NEIGHBOUR_CASES
+        if case.id in BACKEND_ACCEPTANCE_CASE_IDS[backend] or backend_acceptance_exclusion_reason(case, backend) is None
+    ),
+]
+
+
+@pytest.mark.parametrize(("backend", "case", "schema_validators"), VALUE_NEIGHBOUR_PARAMS)
+@pytest.mark.allow_direct_assert(
+    "an asserted value neighbour fails outright: a stored list would let a fix run accept the regression"
+)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
+def test_generated_models_decide_value_neighbours_like_the_schema(
+    backend: PayloadBackend,
+    case: SchemaCase,
+    schema_validators: bool,
+    generated_model_cache: dict[str, object],
+) -> None:
+    """Value neighbours get the validator's verdict where asserted; the backend's other differing ones are stored.
+
+    A model that decides the seed otherwise than the validator stores that line alone. The stored lists only shrink:
+    ``scripts/check_ratchets.py`` fails a line that an item of the base did not store, and a blind line (no seed, or a
+    seed the model rejects: the item checked nothing) anywhere, so the fix command cannot store a regression.
+    """
+    runtime = load_generated_payload_runtime(
+        schema_validator_case(case) if schema_validators else case, generated_model_cache, backend
+    )
+    defaults = load_generated_payload_runtime(case, generated_model_cache, backend) if schema_validators else None
+    asserted: list[str] = []
+    unasserted: list[str] = [] if has_value_neighbour_seed(case) else [NO_SEED_LINE]
+    for neighbour in value_neighbours(case):
+        if (expected := schema_verdict(neighbour, backend)) is None or (
+            (verdict := model_verdict(runtime, neighbour.payload)) == expected
+        ):
+            continue
+        default_agrees = defaults is not None and model_verdict(defaults, neighbour.payload) == expected
+        asserted_here = neighbour_is_asserted(
+            neighbour,
+            backend,
+            verdict,
+            schema_validators=schema_validators,
+            default_agrees=default_agrees,
+            full_runtime=PYDANTIC_RUNTIME_VERSION >= PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN,
+        )
+        (asserted if asserted_here else unasserted).append(differing_line(neighbour, verdict))
+        if neighbour.keyword == SEED_KEYWORD:
+            break
+    assert not asserted, f"{case.id}: the models decide asserted value neighbours otherwise:\n" + "\n".join(asserted)
+    assert_output(json.dumps(unasserted, indent=2))
+
+
+def _raise_type_error(value: int) -> int:
+    msg = f"no location for {value}"
+    raise TypeError(msg)
+
+
+def test_value_neighbour_verdict_names_an_error_that_is_no_rejection() -> None:
+    """A model that raises an error other than a validation error gets a verdict naming it, not a test error."""
+    runtime = PayloadRuntime(
+        PayloadBackend.PYDANTIC_V2, int, TypeAdapter(Annotated[int, AfterValidator(_raise_type_error)])
+    )
+    assert_output(json.dumps([model_verdict(runtime, 1), model_verdict(runtime, "a")]))
+
+
+VALUE_NEIGHBOUR_SHAPES: dict[str, dict[str, object]] = {
+    "root_and_empty_property_name": {"enum": [{"": 1}, 1], "properties": {"": {"enum": [1]}}},
+    "required_pattern_property": {
+        "type": "object",
+        "required": ["x"],
+        "patternProperties": {"^x$": {"type": "integer", "minimum": 1}},
+        "additionalProperties": False,
+    },
+    "pattern_property_count": {"type": "object", "patternProperties": {"": {"type": "integer"}}, "maxProperties": 2},
+    "closed_object_count": {
+        "type": "object",
+        "properties": {"a": {"type": "integer"}},
+        "required": ["a"],
+        "additionalProperties": False,
+        "maxProperties": 1,
+    },
+    "unique_contains": {
+        "type": "array",
+        "uniqueItems": True,
+        "contains": {"type": "integer", "minimum": 0},
+        "minContains": 2,
+    },
+    "unique_item_count": {
+        "type": "array",
+        "uniqueItems": True,
+        "items": {"type": "integer"},
+        "minItems": 2,
+        "maxItems": 3,
+    },
+    "contains_min_items": {"type": "array", "minItems": 2, "contains": {"const": 1}},
+    "split_numeric_text_bounds": {
+        "type": "object",
+        "properties": {"p": {"allOf": [{"type": "string", "format": "decimal", "minimum": 10}, {"maximum": 10.05}]}},
+        "required": ["p"],
+    },
+    "numeric_text_properties_named_like_keywords": {
+        "type": "object",
+        "properties": {
+            "default": {"type": "string", "format": "decimal", "minimum": 1},
+            "allOf": True,
+            "enum": {"type": "string", "format": "integer", "maximum": 5},
+        },
+        "required": ["default", "enum"],
+    },
+    "numeric_text_that_writes_no_number": {
+        "type": "object",
+        "properties": {
+            "a": {"type": "string", "format": "decimal", "minimum": 5},
+            "b": {"type": "string", "format": "decimal", "enum": ["bad"]},
+        },
+        "required": ["a", "b"],
+    },
+    "numeric_text_enum_members": {
+        "type": "object",
+        "properties": {
+            "p": {"type": "string", "format": "decimal", "enum": ["1", "2", "two"], "minimum": 1},
+            "q": {"type": "string", "format": "integer", "const": "3", "maximum": 5},
+        },
+        "required": ["p", "q"],
+    },
+    "integer_exclusive_bound": {"type": "integer", "exclusiveMinimum": 1.9999, "maximum": 2},
+    "integer_exclusive_bound_draft4": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "type": "integer",
+        "minimum": 1.9999,
+        "exclusiveMinimum": True,
+        "maximum": 2,
+    },
+}
+"""Schemas whose neighbours each vary one keyword while every other keyword of their schema holds."""
+
+
+@pytest.mark.parametrize("name", VALUE_NEIGHBOUR_SHAPES)
+def test_value_neighbours_keep_every_other_keyword_of_their_schema(name: str) -> None:
+    """The seed follows the schema's rules; each neighbour breaks at most the keyword it varies, at its own label.
+
+    Required properties take their ``patternProperties`` schemas, items of unique arrays differ, an integer next to an
+    exclusive bound is kept; a size or ``contains`` neighbour keeps the other sizes, items and uniqueness of its
+    schema or is left out, and the root's label starts with the keyword while ``/`` names a property named ``""``.
+    """
+    schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **VALUE_NEIGHBOUR_SHAPES[name]}
+    case = SchemaCase(f"value_neighbour_shape:{name}", "jsonschema", Path(f"{name}.json"), schema, schema, ".json")
+    lines = [f"{neighbour.label}: {'valid' if neighbour.valid else 'invalid'}" for neighbour in value_neighbours(case)]
+    assert_output(json.dumps(lines if has_value_neighbour_seed(case) else [NO_SEED_LINE], indent=2))
 
 
 LITERAL_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "literal_witnesses_schemas.json"
@@ -1234,7 +1425,6 @@ def test_union_rejection_capabilities() -> None:
         capabilities = {name: sorted(rejection_constraint_ids(case)) for name, case in PAYLOAD_UNION_CASES.items()}
         assert_output(
             json.dumps(capabilities, indent=2) + "\n",
-            PAYLOAD_UNION_DATA_PATH.parents[1] / "expected" / "payloads" / "union_capabilities.txt",
         )
 
 
@@ -1272,9 +1462,7 @@ def test_allof_payload_strategy_classification() -> None:
                 "classification": _schema_exclusion_reason(schema),
                 "source_acceptance": [validator.is_valid(payload) for payload in payloads],
             }
-    assert_output(
-        json.dumps(results, indent=2) + "\n", EXPECTED_MAIN_PATH / "allof_payload_strategy_classification.txt"
-    )
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 def test_payload_generation_reports_real_schema_failure(tmp_path: Path) -> None:
@@ -1293,11 +1481,10 @@ def test_payload_generation_reports_real_schema_failure(tmp_path: Path) -> None:
         generate_payload_runtime(
             case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2
         )
-    assert_output(str(caught.value) + "\n", EXPECTED_MAIN_PATH / "payload_generation_missing_reference.txt")
+    assert_output(str(caught.value) + "\n")
 
 
 RUNTIME_COMPATIBILITY_PATH = DATA_PATH / "payloads/runtime_compatibility"
-RUNTIME_COMPATIBILITY_EXPECTED = EXPECTED_MAIN_PATH / "runtime_compatibility"
 
 
 @pytest.mark.parametrize(
@@ -1324,7 +1511,7 @@ def test_payload_runtime_null_aliases(tmp_path: Path, case_id: str, payloads: di
             with pytest.raises(JsonSchemaValidationError):
                 validate_with_source_schema(case, payload)
             runtime.assert_rejects_python(payload)
-        assert_output(json.dumps(result, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "null_aliases.txt")
+        assert_output(json.dumps(result, indent=2) + "\n")
 
 
 @pytest.mark.parametrize("backend", [PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS])
@@ -1343,7 +1530,6 @@ def test_payload_runtime_union_options(
         runtime.validate_python(payload)
         assert_output(
             json.dumps({"options": case.backend_extra_args[backend], "validated": payload}, indent=2) + "\n",
-            RUNTIME_COMPATIBILITY_EXPECTED / f"union_{'field' if case_id.endswith('field.json') else 'root'}.txt",
         )
 
 
@@ -1370,7 +1556,7 @@ def test_payload_runtime_msgspec_gaps(generated_model_cache: dict[str, Any]) -> 
                 "rejection": backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC),
                 "error": type(caught.value).__name__,
             }
-    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "msgspec_gaps.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 def test_payload_runtime_legacy_alias_policy(tmp_path: Path) -> None:
@@ -1389,7 +1575,7 @@ def test_payload_runtime_legacy_alias_policy(tmp_path: Path) -> None:
     else:
         with pytest.raises(TypeError, match="ForwardRef"):
             runtime.validate_python(payload)
-    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "legacy_alias.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 def test_payload_runtime_version_policies(tmp_path: Path) -> None:
@@ -1429,7 +1615,7 @@ def test_payload_runtime_version_policies(tmp_path: Path) -> None:
             },
         }
         results[case_id]["dataclass"] = backend_acceptance_exclusion_reason(case, PayloadBackend.PYDANTIC_V2_DATACLASS)
-    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "versions.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 @pytest.mark.parametrize(
@@ -1543,4 +1729,4 @@ def test_payload_runtime_alias_fallback(tmp_path: Path, name: str, fixture: dict
         with pytest.raises(PayloadAdapterError) as caught:
             generate_payload_runtime(case, cache, backend)
         result = str(caught.value)
-    assert_output(result + "\n", RUNTIME_COMPATIBILITY_EXPECTED / f"fallback_{name}.txt")
+    assert_output(result + "\n")

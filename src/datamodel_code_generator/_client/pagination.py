@@ -8,17 +8,17 @@ checked against the operation it calls and the request target it writes.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
+from datamodel_code_generator._container_kinds import SETS
 from datamodel_code_generator._json_pointer import pointer_tokens
-from datamodel_code_generator._json_schema import admitted_types
+from datamodel_code_generator._json_schema import admitted_types, json_type
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
@@ -26,13 +26,12 @@ from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
-from datamodel_code_generator._runtime.protocols.records import canonical_json
-from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
-from datamodel_code_generator._target_types import admits_none, sole_present
+from datamodel_code_generator._target_contract import GenericType, UnionType, label
+from datamodel_code_generator._target_types import admits_none, container_slot
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterator
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping
 
     from typing_extensions import TypeIs
 
@@ -46,14 +45,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         Direction,
         FieldUseBinding,
+        ModelFieldFacts,
         TypeUseBinding,
         TypeUseId,
         TypeView,
     )
     from datamodel_code_generator._target_documents import JSONObject
 
-_INTEGER: Final = re.compile(r"-?[0-9]+")
-_SETS: Final = frozenset({"set", "frozenset"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
@@ -61,6 +59,7 @@ _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[
 _WRITES: Final = MappingProxyType({"cursor": "cursor", "offset": "offset", "page": "page number"})
 _EVIDENCE: Final = MappingProxyType({"has_more": "boolean", "total": "integer"})
 _Types: TypeAlias = frozenset[str] | None
+_HitT = TypeVar("_HitT")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -102,6 +101,11 @@ class _Reached:
     steps: tuple[ItemStep, ...]
     member: FieldUseBinding | None
     value: TypeView
+
+
+def _field_facts(reached: _Reached) -> ModelFieldFacts | None:
+    """Return the model facts of the property a pointer ends at, or None when it ends at no property with them."""
+    return None if reached.member is None else reached.member.model_facts
 
 
 def _label(spec: OperationSpec) -> str:
@@ -159,27 +163,35 @@ def _relation(first: tuple[str, ...], second: tuple[str, ...]) -> str:
     return "the same target as" if first == second else "a target overlapping that of"
 
 
+def _either(kinds: Iterable[str]) -> str:
+    return english_list(kinds, "or", "serial")
+
+
+def _value_types_problem(  # noqa: PLR0917
+    helper: Helper,
+    spec: OperationSpec,
+    what: str,
+    others: Iterable[str],
+    fit: str,
+    at: str,
+    *,
+    joined: Callable[[Iterable[str]], str] = _either,
+) -> Diagnostic:
+    """Refuse a helper's `what` that reads values of the JSON types `others`, where only `fit`."""
+    message = f"The {what} of {stable_repr(helper.name)} reads {joined(others)} values, where only {fit}"
+    return _problem("E_CONFIG_VALUE", "config", at, message, spec)
+
+
 def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: OperationSpec) -> Diagnostic:
     return _error(code, stage, at, message, OperationRef(pointer=spec.contract.id.use_site.pointer))
 
 
-def _json_type(value: object) -> str:
-    """Return the JSON type of a JSON value, a number being an integer exactly when its canonical JSON is one.
-
-    Runtime end values compare by canonical JSON, where `2.0` stays a number, so it never ends an integer cursor.
-    """
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "boolean"
-    if isinstance(value, int | float):
-        return "integer" if _INTEGER.fullmatch(canonical_json(value).decode()) else "number"
-    if isinstance(value, str):
-        return "string"
-    return "object" if isinstance(value, Mapping) else "array"
-
-
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
+    """Return whether the JSON types `accepted` admit a value of the JSON type `kind` (`json_type` of a literal).
+
+    A float is a number and no integer, also `2.0`: runtime end values compare by canonical JSON, where `2.0` stays a
+    number, so it never ends an integer cursor.
+    """
     return accepted is None or kind in admitted_types(accepted)
 
 
@@ -196,7 +208,7 @@ def _sequence(value: TypeView) -> TypeIs[GenericType]:
         isinstance(value, GenericType)
         and value.tuple_form != "fixed"
         and len(value.arguments) == 1
-        and not (isinstance(value.base, BuiltinType) and value.base.name in _SETS)
+        and container_slot(value) not in SETS.slots
     )
 
 
@@ -215,12 +227,11 @@ class _Pages(HelperPlanner):
 
         The positions of the package's security schemes, with the credential headers, are where no helper writes.
         """
-        super().__init__(protocols, plan, request)
+        super().__init__(protocols, plan, request, facts)
         self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
-        self.facts = facts
         self.codecs = codecs
 
-    def walk(self, value: TypeView, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
+    def _walk(self, value: TypeView, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
         """Follow a pointer through the fields of a page's models, or say why it names no field.
 
         A root model and a nullable single model are stepped through; a union of several members or a map is not.
@@ -242,7 +253,8 @@ class _Pages(HelperPlanner):
                     kind,
                     field.name,
                     none=admits_none(facts.plain(field.type))
-                    or (not field.required and not struct and not field.missing),
+                    or (not field.required and not struct and not field.missing)
+                    or field.annotation_null,
                     unset=struct and not field.required,
                     missing=field.missing,
                 )
@@ -256,33 +268,51 @@ class _Pages(HelperPlanner):
 
         An empty pointer names the value itself; a pointer through no field of a model is absent.
         """
-        if value is None or isinstance(reached := self.walk(value, pointer), str):
+        if value is None or isinstance(reached := self._walk(value, pointer), str):
             return "absent" if pointer else None
-        member = reached.member
         return (
-            self.facts.json_types(value)
-            if member is None or member.model_facts is None
-            else self.facts.field_types(member.model_facts)
+            self.facts.tables.json_kinds(value, "schema")
+            if (facts := _field_facts(reached)) is None
+            else self.facts.field_types(facts)
         )
+
+    def reached(  # noqa: PLR0917
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        body: TypeView,
+        pointer: str,
+        at: str,
+        what: str,
+        hit: Callable[[_Reached], _HitT | None],
+    ) -> _HitT | Diagnostic:
+        """Return what `hit` reads where a helper's body pointer ends in the page's models, or why it is refused.
+
+        A pointer through a union or a map is not supported yet; one through no property, or to an end `hit` reads
+        nothing from, names no property of the response.
+        """
+        if (reached := self._walk(body, pointer)) == "unsupported":
+            message = (
+                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(helper.name)} reads through a union or "
+                "map, which is not supported yet"
+            )
+            return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
+        if isinstance(reached, str) or (found := hit(reached)) is None:
+            message = (
+                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(helper.name)} names no property of the "
+                f"{_label(spec)} response"
+            )
+            return _problem("E_CONFIG_VALUE", "config", at, message, spec)
+        return found
 
     def read_as(self, expected: TypeView) -> tuple[TypeView, ...]:
         """Return the types an item schema's type is read as, without None and through aliases.
 
         A root model also reads as its root, as the model of a schema that only refers to another one does.
         """
-        read = self.present(expected)
-        if (
-            isinstance(read, GeneratedSymbolType)
-            and self.facts.symbols[read.symbol].kind == "root"
-            and (root := self.facts.root(read.symbol)) is not None
-        ):
-            return read, self.present(root)
-        return (read,)
-
-    def present(self, value: TypeView) -> TypeView:
-        """Return a type without None, through its aliases."""
-        value = self.facts.plain(value)
-        return value if (member := sole_present(value)) is None else self.facts.plain(member)
+        read = self.facts.present(expected)
+        facts = self.facts.tables.wrapped(read)
+        return (read,) if facts is None else (read, self.facts.present(facts.type))
 
     def single(
         self, spec: OperationSpec, at: str, what: str
@@ -297,7 +327,7 @@ class _Pages(HelperPlanner):
             return _problem("E_CONFIG_VALUE", "config", at, message, spec)
         return successes[0], use, use.type
 
-    def schema(  # noqa: PLR0913, PLR0917
+    def schema(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -314,7 +344,7 @@ class _Pages(HelperPlanner):
         """
         if (expected := self.schema_type(reference, direction)) == "missing":
             message = missing_schema(helper, noun, reference)
-        elif value is None or expected is None or self.present(value) not in self.read_as(expected):
+        elif value is None or expected is None or self.facts.present(value) not in self.read_as(expected):
             message = f"The {noun} {stable_repr(reference.pointer)} of {stable_repr(helper.name)} is not {mismatch}"
         else:
             return None
@@ -373,27 +403,16 @@ class _Pages(HelperPlanner):
         problems: list[Diagnostic],
     ) -> tuple[tuple[ItemStep, ...], TypeView] | None:
         """Check that the items pointer selects an array of the page whose items the item schema describes."""
-        at, name, label = helper.at, helper.name, _label(spec)
+        at, name = helper.at, helper.name
         pointer = helper.tree["items"]["pointer"]
-        reached = self.walk(body, pointer)
-        if reached == "unsupported":
-            message = (
-                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or map, which "
-                "is not supported yet"
-            )
-            problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.items", message, spec))
-            return None
-        if reached == "absent":
-            message = (
-                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the {label} "
-                "response"
-            )
-            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
+        reached = self.reached(helper, spec, body, pointer, f"{at}.items", "items", lambda found: found)
+        if isinstance(reached, Diagnostic):
+            problems.append(reached)
             return None
         if not _sequence(reached.value):
             message = (
-                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} selects no JSON array of the {label} "
-                "response"
+                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} selects no JSON array of the "
+                f"{_label(spec)} response"
             )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
@@ -405,7 +424,7 @@ class _Pages(HelperPlanner):
             return None
         return reached.steps, item
 
-    def read(  # noqa: PLR0913, PLR0917
+    def read(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -424,20 +443,10 @@ class _Pages(HelperPlanner):
         types: _Types = frozenset({"integer"})
         match read["from"]:
             case "body":
-                reached = self.walk(body, pointer := read["pointer"])
-                if reached == "unsupported":
-                    message = (
-                        f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or "
-                        "map, which is not supported yet"
-                    )
-                    return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
-                if isinstance(reached, str) or (member := reached.member) is None or member.model_facts is None:
-                    message = (
-                        f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the "
-                        f"{label} response"
-                    )
-                    return _problem("E_CONFIG_VALUE", "config", at, message, spec)
-                types = self.facts.field_types(member.model_facts)
+                facts = self.reached(helper, spec, body, read["pointer"], at, what, _field_facts)
+                if isinstance(facts, Diagnostic):
+                    return facts
+                types = self.facts.field_types(facts)
             case "header":
                 uses = {header.name.lower(): header.use for header in headers}
                 if (key := read["name"].lower()) not in uses:
@@ -448,7 +457,11 @@ class _Pages(HelperPlanner):
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = frozenset({"array" if read["occurrence"] == "all" else "string"})
                 if what in _EVIDENCE:
-                    types = None if (use := uses[key]) is None or use.type is None else self.facts.json_types(use.type)
+                    types = (
+                        None
+                        if (use := uses[key]) is None or use.type is None
+                        else self.facts.tables.json_kinds(use.type, "schema")
+                    )
         return types
 
     def accepted(
@@ -515,7 +528,7 @@ class _Pages(HelperPlanner):
             message = f"The {what} of {stable_repr(name)} can read null, which no end condition covers"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.end", message, spec)
         for index, end in enumerate(ends):
-            if end["kind"] == "value" and types is not None and not _fits(kind := _json_type(end["value"]), types):
+            if end["kind"] == "value" and types is not None and not _fits(kind := json_type(end["value"]), types):
                 message = (
                     f"The end value {stable_repr(end['value'])} of {stable_repr(name)} is {kind}, which its {what} "
                     "never reads"
@@ -550,11 +563,7 @@ class _Pages(HelperPlanner):
             yield types
             return
         if types is not None and (others := sorted(types - _URL_TYPES)):
-            message = (
-                f"The next URL of {stable_repr(name)} reads {english_list(others, 'or', 'serial')} values, where only "
-                "string values fit"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
+            yield _value_types_problem(helper, spec, "next URL", others, "string values fit", f"{at}.read")
         yield from self.ends(helper, spec, types, "next URL")
 
     @staticmethod
@@ -607,13 +616,9 @@ class _Pages(HelperPlanner):
         if isinstance(types, Diagnostic):
             yield types
         elif types is not None and (others := sorted(types - {expected})):
-            message = (
-                f"The {chosen} of {stable_repr(name)} reads {english_list(others, 'or', 'serial')} values, where only "
-                f"{expected} values fit"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
+            yield _value_types_problem(helper, spec, chosen, others, f"{expected} values fit", where)
 
-    def fits(  # noqa: PLR0913, PLR0917
+    def fits(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -665,7 +670,7 @@ class _Pages(HelperPlanner):
             screened=True,
         )
 
-    def bindings(  # noqa: PLR0913
+    def bindings(
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -721,7 +726,7 @@ class _Pages(HelperPlanner):
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
                     continue
-                types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
+                types: _Types | Diagnostic = frozenset({json_type(value["literal"])})
             else:
                 types = read(value, f"{where}.value.selector", owner)
             if isinstance(types, Diagnostic):
@@ -814,18 +819,11 @@ def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     return None if len(successes) != 1 or successes[0].bodyless else successes[0].json_use
 
 
-def plan_pagination(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_pagination(pages: _Pages | None) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
 
-    Helpers of other kinds have planners of their own.
+    Helpers of other kinds have planners of their own, which share the checks of `pages`.
     """
-    if protocols is None:
+    if pages is None:
         return (), {}
-    pages = _Pages(protocols, plan, facts, codecs, request)
     return pages.each(("pagination",), pages.helper)

@@ -30,7 +30,11 @@ class PetsService(Protocol):
         self,
         *,
         invalid: bool | None,
-    ) -> spellings_basemodel_models.PetsGetResponse | HTTPResult[spellings_basemodel_models.PetsGetResponse] | Response:
+    ) -> (
+        spellings_basemodel_models.PetsGetResponse
+        | HTTPResult[spellings_basemodel_models.PetsGetResponse]
+        | Response
+    ):
         """
         Handle GET /pets.
         """
@@ -40,7 +44,11 @@ class PetsService(Protocol):
         self,
         *,
         invalid: bool | None,
-    ) -> spellings_basemodel_models.CountsGetResponse | HTTPResult[spellings_basemodel_models.CountsGetResponse] | Response:
+    ) -> (
+        spellings_basemodel_models.CountsGetResponse
+        | HTTPResult[spellings_basemodel_models.CountsGetResponse]
+        | Response
+    ):
         """
         Handle GET /counts.
         """
@@ -50,7 +58,11 @@ class PetsService(Protocol):
         self,
         *,
         invalid: bool | None,
-    ) -> spellings_basemodel_models.Code | HTTPResult[spellings_basemodel_models.Code] | Response:
+    ) -> (
+        spellings_basemodel_models.Code
+        | HTTPResult[spellings_basemodel_models.Code]
+        | Response
+    ):
         """
         Handle GET /code.
         """
@@ -93,7 +105,11 @@ class PetsService(Protocol):
         label: str | None,
         pet: spellings_basemodel_models.Pet | None,
         tag: spellings_basemodel_models.Tag | None,
-    ) -> spellings_basemodel_models.Pet | HTTPResult[spellings_basemodel_models.Pet] | Response:
+    ) -> (
+        spellings_basemodel_models.Pet
+        | HTTPResult[spellings_basemodel_models.Pet]
+        | Response
+    ):
         """
         Handle GET /pets/{petId}.
         """
@@ -106,8 +122,20 @@ class FieldsService(Protocol):
     def post_thing(
         self,
         *,
-        body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
-    ) -> tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0] | HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]] | Response:
+        body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+            'items'
+        ].annotation.__args__[0],
+    ) -> (
+        tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+            'items'
+        ].annotation.__args__[0]
+        | HTTPResult[
+            tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+                'items'
+            ].annotation.__args__[0]
+        ]
+        | Response
+    ):
         """
         Handle POST /things.
         """
@@ -117,7 +145,11 @@ class FieldsService(Protocol):
         self,
         *,
         body: spellings_basemodel_models.FieldModel,
-    ) -> spellings_basemodel_models.Response | HTTPResult[spellings_basemodel_models.Response] | Response:
+    ) -> (
+        spellings_basemodel_models.Response
+        | HTTPResult[spellings_basemodel_models.Response]
+        | Response
+    ):
         """
         Handle POST /fields.
         """
@@ -132,7 +164,11 @@ class DaysService(Protocol[PrincipalT_contra]):
         *,
         principal: PrincipalT_contra | None,
         body: spellings_basemodel_models.Day,
-    ) -> spellings_basemodel_models.Day | HTTPResult[spellings_basemodel_models.Day] | Response:
+    ) -> (
+        spellings_basemodel_models.Day
+        | HTTPResult[spellings_basemodel_models.Day]
+        | Response
+    ):
         """
         Handle POST /days.
         """

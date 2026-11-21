@@ -1,0 +1,62 @@
+== references
+7:0 CONCRETE_BACKEND store in <module> -> local <module> @7
+8:0 registry store in <module> -> local <module> @8
+11:34 type load (evaluated annotation) in <module> -> builtin; origin builtins.type
+11:39 object load (evaluated annotation) in <module> -> builtin; origin builtins.object
+11:51 dict load (evaluated annotation) in <module> -> builtin; origin builtins.dict
+11:56 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+11:61 object load (evaluated annotation) in <module> -> builtin; origin builtins.object
+12:11 vars load in rebuild_namespace -> builtin; origin builtins.vars
+12:16 sys load in rebuild_namespace -> global <module> @5; origin sys
+12:28 model_type load in rebuild_namespace -> local rebuild_namespace @11
+15:31 object load (evaluated annotation) in <module> -> builtin; origin builtins.object
+15:57 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+16:4 registry load in parameter_shadow -> local parameter_shadow @15
+16:13 concrete_backend load in parameter_shadow -> local parameter_shadow @15
+19:41 bool load (evaluated annotation) in <module> -> builtin; origin builtins.bool
+20:4 local_registry store in conditional_neutral_backend -> local conditional_neutral_backend @20
+20:21 sys load in conditional_neutral_backend -> global <module> @5; origin sys
+21:4 local_backend store in conditional_neutral_backend -> local conditional_neutral_backend @21,23
+22:7 enabled load in conditional_neutral_backend -> local conditional_neutral_backend @19
+23:8 local_backend store in conditional_neutral_backend -> local conditional_neutral_backend @21,23
+24:4 local_registry load in conditional_neutral_backend -> local conditional_neutral_backend @20; origin sys.modules
+24:19 local_backend load in conditional_neutral_backend -> local conditional_neutral_backend @21,23
+30:4 sys load in shadowed_import_aliases -> local shadowed_import_aliases @28; origin other
+30:16 CONCRETE_BACKEND load in shadowed_import_aliases -> global <module> @7; origin forms.references.sys_modules_registry_neutral.CONCRETE_BACKEND
+33:4 loaded_modules load in shadowed_import_aliases -> local shadowed_import_aliases @31; origin other.modules
+33:19 CONCRETE_BACKEND load in shadowed_import_aliases -> global <module> @7; origin forms.references.sys_modules_registry_neutral.CONCRETE_BACKEND
+37:4 local_registry store in first_sibling -> local first_sibling @37
+37:21 sys load in first_sibling -> global <module> @5; origin sys
+41:4 local_registry load in second_sibling -> unbound
+41:19 CONCRETE_BACKEND load in second_sibling -> global <module> @7; origin forms.references.sys_modules_registry_neutral.CONCRETE_BACKEND
+45:4 registry store in ClassScope -> local ClassScope @45, else global <module> @8
+45:15 sys load in ClassScope -> global <module> @5; origin sys
+48:8 registry load in ClassScope.method -> global <module> @8; origin forms.references.sys_modules_registry_neutral.registry
+48:21 CONCRETE_BACKEND load in ClassScope.method -> global <module> @7; origin forms.references.sys_modules_registry_neutral.CONCRETE_BACKEND
+uses of <module>:sys@5: read@12, read@20, read@37, read@45
+uses of <module>:CONCRETE_BACKEND@7: read@30, read@33, read@41, argument@48
+uses of <module>:registry@8: call:get@48
+uses of rebuild_namespace:model_type@11: read@12
+uses of parameter_shadow:registry@15: read@16
+uses of parameter_shadow:concrete_backend@15: read@16
+uses of conditional_neutral_backend:enabled@19: read@22
+uses of conditional_neutral_backend:local_registry@20: read@24
+uses of conditional_neutral_backend:local_backend@21: read@24
+uses of conditional_neutral_backend:local_backend@23: read@24
+uses of shadowed_import_aliases:sys@28: read@30
+uses of shadowed_import_aliases:loaded_modules@31: read@33
+type positions @7: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @11: dict, str, object
+type positions @15: -
+type positions @19: -
+type positions @27: -
+type positions @36: -
+type positions @40: -
+type positions @21: neutral; chains neutral.module = None
+type positions @47: -
+type positions @11: type, object
+type positions @15: object
+type positions @15: str
+type positions @19: bool
+type positions @23: another; chains another.neutral.module = None
+== code objects: one per scope that compiles on this Python

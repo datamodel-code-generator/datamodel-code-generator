@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "definitions": {
+    "Obj": {"type": "object", "patternProperties": {"^t@.+$": {"$ref": "#/definitions/Either"}}},
+    "Entry": {"anyOf": [{"$ref": "#/definitions/Obj"}]},
+    "Fallback": {"type": "string"},
+    "Either": {"anyOf": [{"$ref": "#/definitions/Entry"}, {"$ref": "#/definitions/Fallback"}]}
+  },
+  "properties": {
+    "values": {"type": "object", "additionalProperties": {"$ref": "#/definitions/Either"}}
+  }
+}

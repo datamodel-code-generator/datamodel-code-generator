@@ -1,0 +1,94 @@
+exit status 0
+Review checklist against base up to main: 12 of 12 items.
+
+1. Item 0 [item-0]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 0?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+2. Item 1 [item-1]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 1?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+3. Item 2 [item-2]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 2?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+4. Item 3 [item-3]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 3?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+5. Item 4 [item-4]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 4?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+6. Item 5 [item-5]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 5?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+7. Item 6 [item-6]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 6?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+8. Item 7 [item-7]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 7?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+9. Item 8 [item-8]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 8?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+10. Item 9 [item-9]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: Question 9?
+   Triggered by (and 2 more lines):
+     notes/a.txt:1 adds `line 0`
+     notes/a.txt:2 adds `line 1`
+     notes/a.txt:3 adds `line 2`
+   Pull requests: #1, #2
+
+2 more items triggered: item-10, item-11

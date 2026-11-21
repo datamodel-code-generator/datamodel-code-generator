@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Uploads of raw binary content named by a content media type
+  version: "1"
+servers:
+  - url: https://uploads.example.com
+paths:
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: {type: string, contentMediaType: image/png}
+                encoded: {type: string, contentMediaType: image/png, contentEncoding: base64}
+      responses:
+        "204":
+          description: Stored.

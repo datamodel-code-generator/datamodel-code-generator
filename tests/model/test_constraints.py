@@ -23,7 +23,6 @@ from tests.conftest import assert_output
 
 SOURCE_PATH = Path(__file__).parents[2] / "src" / "datamodel_code_generator"
 BOUNDARY_FIXTURE_PATH = Path(__file__).parents[1] / "data" / "model" / "constraints_boundary"
-EXPECTED_MODEL_PATH = Path(__file__).parents[1] / "data" / "expected" / "model"
 
 
 def _find_neutral_pydantic_base_imports(source_path: Path) -> list[str]:
@@ -91,7 +90,7 @@ def test_constraint_public_surface_compatibility() -> None:
             f"  pickle_dump: {restored.model_dump(mode='json', by_alias=True, exclude_unset=True)!r}",
         ))
 
-    assert_output("\n".join(lines) + "\n", EXPECTED_MODEL_PATH / "constraints_compatibility.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 def test_neutral_model_imports_do_not_load_pydantic_backend() -> None:
@@ -125,7 +124,7 @@ print(f"legacy pattern identity: {LegacyPatternConstraints is PatternConstraints
         text=True,
     )
 
-    assert_output(result.stdout, EXPECTED_MODEL_PATH / "constraints_imports.txt")
+    assert_output(result.stdout)
 
 
 def test_only_pydantic_backend_imports_pydantic_base() -> None:
@@ -133,7 +132,6 @@ def test_only_pydantic_backend_imports_pydantic_base() -> None:
     violations = _find_neutral_pydantic_base_imports(SOURCE_PATH)
     assert_output(
         "".join(f"{violation}\n" for violation in violations) or "No neutral-layer pydantic_base imports.\n",
-        EXPECTED_MODEL_PATH / "constraints_boundary.txt",
     )
 
 
@@ -142,5 +140,4 @@ def test_pydantic_base_boundary_detector_reports_forbidden_imports() -> None:
     violations = _find_neutral_pydantic_base_imports(BOUNDARY_FIXTURE_PATH)
     assert_output(
         "".join(f"{violation}\n" for violation in violations),
-        EXPECTED_MODEL_PATH / "constraints_boundary_violations.txt",
     )

@@ -1,31 +1,32 @@
 """llms.txt generator for datamodel-code-generator documentation.
 
 Generates llms.txt and llms-full.txt from zensical.toml nav structure.
-See https://llmstxt.org/ for the llms.txt specification.
+See https://llmstxt.org/ for the llms.txt specification. llms.txt is committed; llms-full.txt is built when the site
+is deployed, so ``--check`` compares llms.txt only.
 
 Usage:
     python scripts/build_llms_txt.py
-    python scripts/build_llms_txt.py --check  # CI: check if files are up to date
+    python scripts/build_llms_txt.py --check  # CI: check if llms.txt is up to date
 """
 
 from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, TypedDict
 
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
+import tomllib
 
 ROOT_DIR = Path(__file__).parent.parent
 DOCS_DIR = ROOT_DIR / "docs"
 ZENSICAL_TOML = ROOT_DIR / "zensical.toml"
+MIGRATION_BUILDER = Path(__file__).parent / "build_migration_docs.py"
+"""Builds the upgrade guide's pages from the repository's records, as the docs deploy does before this script."""
 OPTIONAL_PATTERNS = ("faq.md", "development-contributing.md", "cli-reference/manual/*.md")
 SKIP_PREFIXES = ("```", "!!!", "[![", "![", "<", "---")
 MAX_DESC_LINES, MAX_DESC_LEN = 2, 150
@@ -236,8 +237,20 @@ def check_files(files: dict[Path, str]) -> int:
             print(f"Error: {e}", file=sys.stderr)
         print("\nRun 'python scripts/build_llms_txt.py' to regenerate.", file=sys.stderr)
         return 1
-    print("llms.txt files are up to date")
+    print("llms.txt is up to date")
     return 0
+
+
+def build_missing_guide(docs_dir: Path, builder: Path = MIGRATION_BUILDER) -> None:
+    """Build the upgrade guide's all-changes page, which llms.txt lists, when it is absent and its builder is present.
+
+    The page is built at deploy and not committed, so a local run builds it first, as the deploy does; otherwise the
+    index would be written without it.
+    """
+    if (docs_dir / "migration" / "changes.md").exists() or not builder.exists():
+        return
+    arguments = ["--docs-dir", str(docs_dir / "migration"), "--json", str(docs_dir / "data" / "migration.json")]
+    subprocess.run([sys.executable, str(builder), *arguments], check=True)
 
 
 def main() -> int:
@@ -247,16 +260,16 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=DOCS_DIR, help="Output directory (default: docs/)")
     args = parser.parse_args()
 
+    build_missing_guide(DOCS_DIR)
     config = parse_zensical_toml(ZENSICAL_TOML)
     sections = flatten_nav(config["nav"])
     pages = collect_pages(sections, config["site_url"])
-    files = {
-        args.output_dir / "llms.txt": generate_llms_txt(config, sections, pages),
-        args.output_dir / "llms-full.txt": generate_llms_full_txt(pages),
-    }
+    index = {args.output_dir / "llms.txt": generate_llms_txt(config, sections, pages)}
 
     if args.check:
-        return check_files(files)
+        return check_files(index)
+
+    files = {**index, args.output_dir / "llms-full.txt": generate_llms_full_txt(pages)}
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for path, content in files.items():

@@ -7,13 +7,12 @@ import importlib.util
 import inspect
 import json
 import os
-import platform
 import re
 import shutil
 import sys
 import tokenize
 import warnings
-from argparse import ArgumentTypeError, BooleanOptionalAction, Namespace
+from argparse import BooleanOptionalAction, Namespace
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
@@ -56,7 +55,7 @@ from datamodel_code_generator.__main__ import (
     _generation_config,
     run_generate_from_config,
 )
-from datamodel_code_generator.arguments import _dataclass_arguments, arg_parser
+from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.deprecations import DEPRECATIONS, Deprecation
 from datamodel_code_generator.format import CodeFormatter, Formatter, PythonVersion
@@ -65,6 +64,8 @@ from datamodel_code_generator.model.pydantic_v2 import UnionMode
 from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from tests.capabilities import needs
+from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
     CHECK_MODEL_GRAPH_ENV,
@@ -73,6 +74,7 @@ from tests.conftest import (
     CHECK_RENDER_PLANS_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
     CHECK_STORE_WRITES_ENV,
+    CHECK_TEMPLATE_ASSIGNMENTS_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -120,7 +122,6 @@ if TYPE_CHECKING:
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 BLACK_VERSION = version.parse(black.__version__)
 BLACK_LT_233 = version.parse("23.3.0") > BLACK_VERSION
-BLACK_LT_24 = version.parse("24.0.0") > BLACK_VERSION
 CLI_OPTION_SUGGESTIONS_PATH = EXPECTED_MAIN_PATH / "cli_option_suggestions"
 
 
@@ -140,9 +141,8 @@ def test_collapse_root_models_retry_reraises_second_recursion_error(mocker: Mock
         except RecursionError as exc:
             raise datamodel_code_generator._CollapseRootModelsRecursionError from exc
 
-    parse_with_disposal = mocker.patch.object(
-        datamodel_code_generator,
-        "_parse_with_disposal",
+    parse_with_disposal = mocker.patch(
+        "datamodel_code_generator._generation._parse_with_disposal",
         side_effect=raise_collapse_recursion,
     )
 
@@ -162,9 +162,8 @@ def test_collapse_root_models_retry_normalizes_sentinel_without_cause(mocker: Mo
     """Never expose the private retry sentinel when an abnormal retry loses its cause."""
     initial_error = datamodel_code_generator._CollapseRootModelsRecursionError()
     initial_error.__cause__ = RecursionError("initial parse recursion")
-    parse_with_disposal = mocker.patch.object(
-        datamodel_code_generator,
-        "_parse_with_disposal",
+    parse_with_disposal = mocker.patch(
+        "datamodel_code_generator._generation._parse_with_disposal",
         side_effect=[initial_error, datamodel_code_generator._CollapseRootModelsRecursionError("retry recursion")],
     )
 
@@ -183,7 +182,7 @@ def test_collapse_root_models_retry_normalizes_sentinel_without_cause(mocker: Mo
 @pytest.mark.allow_direct_assert("counts the parser disposals that no generated output shows")
 def test_failed_untyped_nullable_map_parse_disposes_the_typed_parser(mocker: MockerFixture) -> None:
     """Release the typed parser when parsing the nullable map values again untyped fails."""
-    mocker.patch.object(datamodel_code_generator, "_parse_again", side_effect=_GenerateParseAbort)
+    mocker.patch("datamodel_code_generator._generation._parse_again", side_effect=_GenerateParseAbort)
     dispose = mocker.spy(OpenAPIParser, "dispose")
 
     with pytest.raises(_GenerateParseAbort):
@@ -220,7 +219,7 @@ def test_default_target_python_version_follows_the_interpreter(monkeypatch: pyte
         defaults.append(f"{interpreter.major}.{interpreter.minor} -> {module.DEFAULT_TARGET_PYTHON_VERSION.value}")
     monkeypatch.undo()
 
-    assert_output("\n".join(defaults) + "\n", EXPECTED_MAIN_PATH / "default_target_python_version.txt")
+    assert_output("\n".join(defaults) + "\n")
 
 
 @freeze_time("2019-07-26")
@@ -247,10 +246,7 @@ def test_collapse_root_models_retry_preserves_circular_schema_output(mocker: Moc
         collapse_root_models=True,
     )
 
-    assert_output(
-        f"{cast('str', result)}\n",
-        EXPECTED_MAIN_PATH / "jsonschema" / "jsonschema_collapse_root_models_self_reference.py",
-    )
+    assert_output(f"{cast('str', result)}\n", suffix=".py")
 
 
 @pytest.mark.abnormal_path(
@@ -291,7 +287,7 @@ def test_collapse_root_models_recursion_limit_is_a_model_graph_violation(
     }
     if flag == "check":
         with pytest.raises(
-            Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: collapsing root models reached the recursion limit"
+            CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: collapsing root models reached the recursion limit"
         ):
             generate(source, input_file_type=InputFileType.JsonSchema, **options)
         return
@@ -317,11 +313,11 @@ def test_parser_collects_empty_model_metadata() -> None:
     try:
         assert_output(
             f"{parser.parse(collect_model_metadata=True, format_=False)!r}\n",
-            EXPECTED_MAIN_PATH / "empty_model_metadata_modules.txt",
+            name="empty_model_metadata_modules",
         )
         assert_output(
             f"{dump_model_metadata(parser.model_metadata)}\n",
-            EXPECTED_MAIN_PATH / "empty_model_metadata_map.txt",
+            name="empty_model_metadata_map",
         )
     finally:
         parser._dispose()
@@ -390,11 +386,11 @@ def test_parser_run_context_preserves_subclass_lifecycle_hooks(tmp_path: Path) -
 
     assert_output(
         "# generated by datamodel-codegen:\n#   filename:  person.json\n\n" + generated,
-        EXPECTED_MAIN_PATH / "person.py",
+        name="person",
     )
     assert_output(
         "\n".join(parser.events) + "\n",
-        EXPECTED_MAIN_PATH / "parser_run_context_lifecycle.txt",
+        name="parser_run_context_lifecycle",
     )
     assert_warnings_do_not_contain(
         warning_records,
@@ -447,11 +443,8 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
         "target_python_version": PythonVersion.PY_311,
     }
     parser = CacheProbeJsonSchemaParser(input_path, **parser_options)
-    assert_output(parser.parse(), EXPECTED_MAIN_PATH / "builtin_import_cache_retention.py")
-    assert_output(
-        f"{parser.module_processing_calls}\n",
-        EXPECTED_MAIN_PATH / "process_single_module_single_call.txt",
-    )
+    assert_output(parser.parse(), name="retention", suffix=".py")
+    assert_output(f"{parser.module_processing_calls}\n", name="single_calls")
 
     input_path = JSON_SCHEMA_DATA_PATH / "unique_items_unhashable_default.json"
     unhashable_default_parser = CacheProbeJsonSchemaParser(
@@ -463,14 +456,8 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
             "use_unique_items_as_set": True,
         },
     )
-    assert_output(
-        unhashable_default_parser.parse(),
-        EXPECTED_MAIN_PATH / "builtin_import_cache_unique_items_unhashable.py",
-    )
-    assert_output(
-        f"{unhashable_default_parser.module_processing_calls}\n",
-        EXPECTED_MAIN_PATH / "process_single_module_single_call.txt",
-    )
+    assert_output(unhashable_default_parser.parse(), name="unhashable", suffix=".py")
+    assert_output(f"{unhashable_default_parser.module_processing_calls}\n", name="single_calls")
 
     input_path = DATA_PATH / "performance" / "large_models.json"
     parser = CacheProbeJsonSchemaParser(
@@ -482,18 +469,9 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
         parser.parse(module_split_mode=datamodel_code_generator.ModuleSplitMode.Single),
     )
 
-    assert_output(
-        large_models["model499.py",].body,
-        EXPECTED_MAIN_PATH / "module_split_large_models_model499.py",
-    )
-    assert_output(
-        f"{type(large_models).__name__}\n{len(large_models)}\nmodel499.py\n",
-        EXPECTED_MAIN_PATH / "module_split_large_models_manifest.txt",
-    )
-    assert_output(
-        f"{parser.module_processing_calls}\n",
-        EXPECTED_MAIN_PATH / "process_single_module_large_models_calls.txt",
-    )
+    assert_output(large_models["model499.py",].body, name="model499", suffix=".py")
+    assert_output(f"{type(large_models).__name__}\n{len(large_models)}\nmodel499.py\n", name="manifest")
+    assert_output(f"{parser.module_processing_calls}\n", name="large_calls")
 
     input_path = JSON_SCHEMA_DATA_PATH / "person.json"
     custom_parser = JsonSchemaParser(
@@ -501,16 +479,10 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
         data_model_type=CacheAwareBaseModel,
         **parser_options,
     )
-    assert_output(
-        custom_parser.parse(),
-        EXPECTED_MAIN_PATH / "custom_import_cache_invalidation.py",
-    )
+    assert_output(custom_parser.parse(), name="invalidation", suffix=".py")
 
     injected_parser = InjectingJsonSchemaParser(input_path, **parser_options)
-    assert_output(
-        injected_parser.parse(),
-        EXPECTED_MAIN_PATH / "custom_import_cache_invalidation.py",
-    )
+    assert_output(injected_parser.parse(), name="invalidation", suffix=".py")
 
     input_path = JSON_SCHEMA_DATA_PATH / "unique_items_enum_set.json"
     unique_items_parser = JsonSchemaParser(
@@ -518,10 +490,7 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
         data_model_type=CacheAwareBaseModel,
         **{**parser_options, "use_unique_items_as_set": True},
     )
-    assert_output(
-        unique_items_parser.parse(),
-        EXPECTED_MAIN_PATH / "custom_import_cache_unique_items.py",
-    )
+    assert_output(unique_items_parser.parse(), name="unique_items", suffix=".py")
 
     alias_input_path = JSON_SCHEMA_DATA_PATH / "alias_import_alias" / "date.schema.json"
     alias_parser = JsonSchemaParser(
@@ -529,10 +498,7 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
         data_model_type=CacheAwareBaseModel,
         **{**parser_options, "base_path": alias_input_path.parent},
     )
-    assert_output(
-        alias_parser.parse(),
-        EXPECTED_MAIN_PATH / "custom_import_cache_alias_invalidation.py",
-    )
+    assert_output(alias_parser.parse(), name="alias", suffix=".py")
 
     generic_input_path = JSON_SCHEMA_DATA_PATH / "extra_fields.json"
     generic_parser = JsonSchemaParser(
@@ -542,10 +508,7 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
         use_generic_base_class=True,
         **{**parser_options, "base_path": generic_input_path.parent},
     )
-    assert_output(
-        generic_parser.parse(),
-        EXPECTED_MAIN_PATH / "custom_import_cache_generic_base.py",
-    )
+    assert_output(generic_parser.parse(), name="generic_base", suffix=".py")
 
 
 def test_parser_preserves_cross_module_external_import_cache_hook() -> None:
@@ -593,14 +556,14 @@ def test_parser_preserves_cross_module_external_import_cache_hook() -> None:
     )
     modules = cast("dict[tuple[str, ...], Any]", parser.parse())
 
-    assert_generated_modules_output(modules, EXPECTED_MAIN_PATH / "custom_import_cache_cross_module")
+    assert_generated_modules_output(modules)
     assert_output(
         "\n".join(ProbeStruct.clear_history) + "\n",
-        EXPECTED_MAIN_PATH / "custom_import_cache_cross_module_history.txt",
+        name="custom_import_cache_cross_module_history",
     )
     assert_output(
         "\n".join("/".join(module) for module in modules) + "\n",
-        EXPECTED_MAIN_PATH / "custom_import_cache_cross_module_order.txt",
+        name="custom_import_cache_cross_module_order",
     )
 
 
@@ -644,14 +607,14 @@ def test_parser_rechecks_external_enum_after_module_materialization() -> None:
         parser.parse(module_split_mode=ModuleSplitMode.Single),
     )
 
-    assert_generated_modules_output(modules, EXPECTED_MAIN_PATH / "custom_import_cache_inherited_enum")
+    assert_generated_modules_output(modules)
     assert_output(
         "\n".join(ProbeEnum.clear_history) + "\n",
-        EXPECTED_MAIN_PATH / "custom_import_cache_inherited_enum_history.txt",
+        name="custom_import_cache_inherited_enum_history",
     )
     assert_output(
         "\n".join("/".join(module) for module in modules) + "\n",
-        EXPECTED_MAIN_PATH / "custom_import_cache_inherited_enum_order.txt",
+        name="custom_import_cache_inherited_enum_order",
     )
 
 
@@ -750,7 +713,7 @@ def test_model_graph_check_reports_a_copied_reference(
         JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
     )
     if flag == "check":
-        with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a copy of the Reference of Child "):
+        with pytest.raises(CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a copy of the Reference of Child "):
             parser.parse()
         return
     assert_output(cast("str", parser.parse()))
@@ -891,7 +854,9 @@ def test_model_graph_check_reports_a_written_model_that_the_store_retired(
         formatters=[Formatter.BUILTIN],
     )
     if flag == "check":
-        with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is written but is not an"):
+        with pytest.raises(
+            CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is written but is not an"
+        ):
             parser.parse()
         return
     assert_output(cast("str", parser.parse()))
@@ -904,15 +869,15 @@ def test_model_graph_check_reports_an_emitted_model_that_is_not_written() -> Non
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
     class DroppingParser(JsonSchemaParser):
-        def _finalize_modules(self, contexts: Any, *args: Any) -> None:
+        def _finalize_modules(self, contexts: Any, *args: Any, **kwargs: object) -> None:
             contexts[0].models.pop()
-            super()._finalize_modules(contexts, *args)
+            super()._finalize_modules(contexts, *args, **kwargs)
 
     parser = DroppingParser(
         JSON_SCHEMA_DATA_PATH / "reuse_model_inline_definitions.json", formatters=[Formatter.BUILTIN]
     )
     with pytest.raises(
-        Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is an emitted model but is not"
+        CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is an emitted model but is not"
     ):
         parser.parse()
 
@@ -968,7 +933,7 @@ def test_process_single_module_override_gives_module_names_by_path() -> None:
             return context
 
     parser = RelabelingParser(OPEN_API_DATA_PATH / "modular.yaml", formatters=[Formatter.BUILTIN])
-    with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: ") as exc_info:
+    with pytest.raises(CheckFailure, match=f"^{CHECK_MODULE_IMPORTS_ENV}: ") as exc_info:
         parser.parse()
     assert_output(str(exc_info.value))
 
@@ -1157,7 +1122,9 @@ def test_model_graph_check_reports_a_model_without_an_owner(monkeypatch: pytest.
     parser = AddingParser(
         JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
     )
-    with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: models without an owner that are not roots: Added "):
+    with pytest.raises(
+        CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: models without an owner that are not roots: Added "
+    ):
         parser.parse()
 
 
@@ -1221,16 +1188,16 @@ def test_show_help(no_color: bool, capsys: pytest.CaptureFixture[str]) -> None:
 
 
 @pytest.mark.parametrize(
-    ("args", "expected_stderr_name"),
+    ("args"),
     [
-        (["--output-model-tipe"], "output_model_type.txt"),
-        (["--output-model-tipe=pydantic_v2.BaseModel"], "output_model_type_with_value.txt"),
-        (["--output-model-tipe", "--input-file-tipe"], "multiple_options.txt"),
-        (["--output-model-tipe", "--output-model-tipe"], "deduplicated_option.txt"),
-        (["--not-a-valid-option"], "unknown_option.txt"),
-        (["not-an-option"], "positional_argument.txt"),
-        (["--", "--output-model-tipe"], "option_terminator.txt"),
-        (["--output-model-type"], "missing_option_value.txt"),
+        (["--output-model-tipe"]),
+        (["--output-model-tipe=pydantic_v2.BaseModel"]),
+        (["--output-model-tipe", "--input-file-tipe"]),
+        (["--output-model-tipe", "--output-model-tipe"]),
+        (["--not-a-valid-option"]),
+        (["not-an-option"]),
+        (["--", "--output-model-tipe"]),
+        (["--output-model-type"]),
     ],
     ids=[
         "close-match",
@@ -1243,9 +1210,7 @@ def test_show_help(no_color: bool, capsys: pytest.CaptureFixture[str]) -> None:
         "missing-value",
     ],
 )
-def test_invalid_cli_option_suggestions(
-    args: list[str], expected_stderr_name: str, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_invalid_cli_option_suggestions(args: list[str], capsys: pytest.CaptureFixture[str]) -> None:
     """Suggest close option names without changing unrelated parser errors."""
     run_main_with_system_exit(args, expected_code=Exit.ERROR)
     assert_output(
@@ -1253,7 +1218,6 @@ def test_invalid_cli_option_suggestions(
         .readouterr()
         .err.replace("usage: \n", "usage:\n")
         .replace(f"{arg_parser.prog}: error:", "pytest: error:"),
-        CLI_OPTION_SUGGESTIONS_PATH / expected_stderr_name,
     )
 
 
@@ -1287,8 +1251,6 @@ def test_standard_preset_pydantic_v2(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--preset", "standard-py312-20260619"],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_pydantic_v2.py",
     )
 
 
@@ -1301,8 +1263,6 @@ def test_generate_standard_preset_public_api_kwargs(output_file: Path) -> None:
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
         preset="standard-py312-20260619",
-        assert_func=assert_file_content,
-        expected_file="standard_preset_pydantic_v2.py",
     )
 
 
@@ -1319,7 +1279,7 @@ def test_generate_standard_preset_public_api_config(output_file: Path) -> None:
         builtin_format_line_length=88,
     )
     generate(input_=JSON_SCHEMA_DATA_PATH / "person.json", config=config)
-    assert_file_content(output_file, "standard_preset_pydantic_v2.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_run_generate_from_config_json_mapping_file_like(output_file: Path) -> None:
@@ -1341,7 +1301,7 @@ def test_run_generate_from_config_json_mapping_file_like(output_file: Path) -> N
         command_line=None,
         custom_formatters_kwargs=None,
     )
-    assert_file_content(output_file, "jsonschema/base_class_map.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @freeze_time(TIMESTAMP)
@@ -1365,8 +1325,6 @@ def test_generate_standard_preset_public_api_explicit_options(output_file: Path)
         snake_case_field=True,
         allow_population_by_field_name=True,
         use_frozen_field=True,
-        assert_func=assert_file_content,
-        expected_file="standard_preset_no_use_annotated.py",
     )
 
 
@@ -1388,8 +1346,6 @@ def test_standard_preset_uses_literal_for_single_value_enum(output_file: Path) -
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--preset", "standard-py310-20260619"],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_enum_literal_one.py",
     )
 
 
@@ -1405,10 +1361,6 @@ def test_standard_preset_no_snake_case_cli_override(output_file: Path) -> None:
             "standard-py310-20260619",
             "--no-snake-case-field",
         ],
-        assert_func=assert_file_content,
-        expected_file=(
-            "standard_preset_no_snake_case_black_lt_24.py" if BLACK_LT_24 else "standard_preset_no_snake_case.py"
-        ),
     )
 
 
@@ -1424,8 +1376,6 @@ def test_standard_preset_no_use_annotated_cli_override(output_file: Path) -> Non
             "standard-py310-20260619",
             "--no-use-annotated",
         ],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_no_use_annotated.py",
     )
 
 
@@ -1442,8 +1392,6 @@ def test_standard_preset_allows_original_field_name_delimiter_after_merge(output
             "--original-field-name-delimiter",
             "-",
         ],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_pydantic_v2.py",
     )
 
 
@@ -1456,8 +1404,6 @@ def test_standard_preset_cli_overrides_pyproject_option(output_file: Path, tmp_p
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--preset", "standard-py310-20260619"],
-            assert_func=assert_file_content,
-            expected_file="standard_preset_pydantic_v2.py",
             copy_files=[
                 (DATA_PATH / "config" / "pyproject_standard_preset_cli_override.toml", tmp_path / "pyproject.toml")
             ],
@@ -1473,8 +1419,6 @@ def test_standard_preset_pyproject_uses_final_output_model_type(output_file: Pat
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--output-model-type", "dataclasses.dataclass"],
-            assert_func=assert_file_content,
-            expected_file="standard_preset_dataclass.py",
             copy_files=[(DATA_PATH / "config" / "pyproject_standard_preset.toml", tmp_path / "pyproject.toml")],
         )
 
@@ -1493,8 +1437,6 @@ def test_standard_preset_msgspec_struct(output_file: Path) -> None:
             "--output-model-type",
             "msgspec.Struct",
         ],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_msgspec_struct.py",
     )
 
 
@@ -1512,37 +1454,33 @@ def test_standard_preset_typed_dict(output_file: Path) -> None:
             "--output-model-type",
             "typing.TypedDict",
         ],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_typed_dict.py",
     )
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "date", "expected_name"),
+    ("output_model_type", "date"),
     [
-        ("typing.TypedDict", "20261015", "typed_dict_20261015"),
-        ("typing.TypedDict", "20261017", "typed_dict_20261017"),
-        ("dataclasses.dataclass", "20261015", "dataclass_20261015"),
-        ("dataclasses.dataclass", "20261017", "dataclass_20261017"),
-        ("pydantic_v2.BaseModel", "20261015", "pydantic_v2"),
-        ("pydantic_v2.BaseModel", "20261017", "pydantic_v2"),
-        ("pydantic_v2.dataclass", "20261015", "pydantic_v2_dataclass"),
-        ("pydantic_v2.dataclass", "20261017", "pydantic_v2_dataclass"),
+        ("typing.TypedDict", "20261015"),
+        ("typing.TypedDict", "20261017"),
+        ("dataclasses.dataclass", "20261015"),
+        ("dataclasses.dataclass", "20261017"),
+        ("pydantic_v2.BaseModel", "20261015"),
+        ("pydantic_v2.BaseModel", "20261017"),
+        ("pydantic_v2.dataclass", "20261015"),
+        ("pydantic_v2.dataclass", "20261017"),
     ],
 )
-def test_standard_preset_enum_shapes(output_model_type: str, date: str, expected_name: str, output_file: Path) -> None:
+def test_standard_preset_enum_shapes(output_model_type: str, date: str, output_file: Path) -> None:
     """The 20261017 presets render raw-value enums as Literal only for stdlib dataclass and TypedDict output."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "preset_enum_shapes.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--preset", f"standard-py314-{date}", "--output-model-type", output_model_type],
-        assert_func=assert_file_content,
-        expected_file=f"preset_enum_shapes/{expected_name}.py",
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="the 3.14 preset writes type statements")
+@needs("type-statements")
 @pytest.mark.parametrize("date", ["20261017", "20261027"])
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_standard_preset_enums_read_as_their_const(output_model_type: str, date: str, output_file: Path) -> None:
@@ -1581,8 +1519,6 @@ def test_standard_preset_target_py310_does_not_force_specialized_enum(output_fil
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--preset", "standard-py310-20260619"],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_string_enum_py310.py",
     )
 
 
@@ -1594,8 +1530,6 @@ def test_standard_preset_accepts_matching_target_python_version(output_file: Pat
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--preset", "standard-py310-20260619", "--target-python-version", "3.10"],
-        assert_func=assert_file_content,
-        expected_file="standard_preset_pydantic_v2.py",
     )
 
 
@@ -1607,8 +1541,6 @@ def test_practical_preset_pydantic_v2(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--preset", "practical-py310-20260619"],
-        assert_func=assert_file_content,
-        expected_file="practical_preset_pydantic_v2.py",
     )
 
 
@@ -1620,8 +1552,6 @@ def test_practical_preset_keeps_homogeneous_fixed_length_arrays_as_lists(output_
         output_path=output_file,
         input_file_type="openapi",
         extra_args=["--preset", "practical-py310-20260619"],
-        assert_func=assert_file_content,
-        expected_file="openapi/fixed_length_array_tuples_practical_preset.py",
         force_exec_validation=True,
     )
 
@@ -1692,35 +1622,17 @@ def test_generated_pydantic_v2_model_accepts_runtime_value(output_file: Path) ->
 
 def test_list_deprecations(capsys: pytest.CaptureFixture[str]) -> None:
     """List registered deprecations without requiring an input schema."""
-    run_main_with_args(
-        ["--list-deprecations"],
-        capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / "list_deprecations.txt",
-        assert_no_stderr=True,
-    )
+    run_main_with_args(["--list-deprecations"], capsys=capsys, derived_stdout=True, assert_no_stderr=True)
 
 
 def test_list_deprecations_json(capsys: pytest.CaptureFixture[str]) -> None:
     """List registered deprecations as JSON."""
-    run_main_with_args(
-        ["--list-deprecations", "json"],
-        capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / "list_deprecations_json.txt",
-        assert_no_stderr=True,
-    )
+    run_main_with_args(["--list-deprecations", "json"], capsys=capsys, derived_stdout=True, assert_no_stderr=True)
 
 
-@pytest.mark.parametrize(
-    ("format_", "expected_file"),
-    [
-        ("table", "list_scheduled_deprecations.txt"),
-        ("json", "list_scheduled_deprecations_json.txt"),
-        ("markdown", "list_scheduled_deprecations_markdown.txt"),
-    ],
-)
+@pytest.mark.parametrize("format_", ["table", "json", "markdown"])
 def test_list_scheduled_deprecations(
     format_: str,
-    expected_file: str,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1737,32 +1649,17 @@ def test_list_scheduled_deprecations(
     )
     monkeypatch.setitem(DEPRECATIONS, scheduled.id, scheduled)
 
-    run_main_with_args(
-        ["--list-deprecations", format_],
-        capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / expected_file,
-        assert_no_stderr=True,
-    )
+    run_main_with_args(["--list-deprecations", format_], capsys=capsys, derived_stdout=True, assert_no_stderr=True)
 
 
 def test_list_experimental(capsys: pytest.CaptureFixture[str]) -> None:
     """List registered experimental features without requiring an input schema."""
-    run_main_with_args(
-        ["--list-experimental"],
-        capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / "list_experimental.txt",
-        assert_no_stderr=True,
-    )
+    run_main_with_args(["--list-experimental"], capsys=capsys, derived_stdout=True, assert_no_stderr=True)
 
 
 def test_list_experimental_json(capsys: pytest.CaptureFixture[str]) -> None:
     """List registered experimental features as JSON."""
-    run_main_with_args(
-        ["--list-experimental", "json"],
-        capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / "list_experimental_json.txt",
-        assert_no_stderr=True,
-    )
+    run_main_with_args(["--list-experimental", "json"], capsys=capsys, derived_stdout=True, assert_no_stderr=True)
 
 
 @pytest.mark.allow_direct_assert
@@ -1784,8 +1681,6 @@ def test_cli_pyproject_ignores_generate_only_options(output_file: Path, tmp_path
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / "force_optional_required.json",
             output_path=output_file,
-            assert_func=assert_file_content,
-            expected_file="jsonschema/cli_pyproject_ignores_generate_only_options.py",
             copy_files=[(DATA_PATH / "config" / "pyproject_generate_only_options.toml", tmp_path / "pyproject.toml")],
         )
 
@@ -1852,7 +1747,7 @@ def test_pyproject_msgspec_derives_constraints_from_final_config(
     with chdir(nested_path):
         run_main_with_args(args)
 
-    assert_file_content(project_path / "model.py", "jsonschema/msgspec_array_length_constraints_use_annotated.py")
+    assert_output((project_path / "model.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_cli_output_model_override_does_not_keep_pyproject_msgspec_defaults(tmp_path: Path) -> None:
@@ -1869,7 +1764,7 @@ def test_cli_output_model_override_does_not_keep_pyproject_msgspec_defaults(tmp_
     with chdir(nested_path):
         run_main_with_args(["--output-model-type", "pydantic_v2.BaseModel"])
 
-    assert_file_content(project_path / "model.py", "pyproject_msgspec_cli_pydantic.py")
+    assert_output((project_path / "model.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -1893,7 +1788,7 @@ def test_cli_no_use_annotated_clears_only_implicit_field_constraints(config_name
     with chdir(nested_path):
         run_main_with_args(["--no-use-annotated"])
 
-    assert_file_content(project_path / "model.py", "pyproject_msgspec_no_annotated.py")
+    assert_output((project_path / "model.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_cli_relative_output_remains_relative_to_the_invocation_directory(tmp_path: Path) -> None:
@@ -1910,7 +1805,7 @@ def test_cli_relative_output_remains_relative_to_the_invocation_directory(tmp_pa
     with chdir(nested_path):
         run_main_with_args(["--output", "cli-model.py"])
 
-    assert_file_content(nested_path / "cli-model.py", "jsonschema/msgspec_array_length_constraints_use_annotated.py")
+    assert_output((nested_path / "cli-model.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_cli_without_pyproject_keeps_absolute_input_and_output_paths(
@@ -1924,8 +1819,6 @@ def test_cli_without_pyproject_keeps_absolute_input_and_output_paths(
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file="person.py",
     )
 
 
@@ -2004,6 +1897,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
 
     assert boolean_optional_dests == snapshot([
         "allow_remote_refs",
+        "untrusted_input",
         "allow_private_network",
         "read_input_model_dataclass_fields_by_alias",
         "reuse_every_reached_input_model_type",
@@ -2013,6 +1907,10 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_constrained_root_models_in_every_container",
         "keep_enum_literal_aliases",
         "keep_reference_null_on_collapsed_root_models",
+        "keep_shared_members_on_collapsed_root_models",
+        "collapse_constrained_root_models_as_annotated",
+        "remove_unused_models_beside_type_overrides",
+        "keep_self_referencing_array_items",
         "collapse_reuse_models",
         "singularize_last_word_of_item_names",
         "disable_timestamp",
@@ -2028,10 +1926,12 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "rename_submodules_hidden_by_classes",
         "use_schema_description",
         "use_title_as_name",
+        "infer_union_discriminators",
         "name_allof_union_members_after_branches",
         "use_standard_primitive_types",
         "use_duplicate_name_suffix_for_every_collision",
         "name_converted_payloads_by_message",
+        "merge_message_trait_headers",
         "use_single_value_enum_as_const",
         "read_const_beside_enum",
         "filter_literal_values",
@@ -2039,21 +1939,27 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "intersect_combined_schema_keywords",
         "distribute_allof_over_unions",
         "read_allof_parents_in_mro_order",
+        "read_inherited_property_schemas_in_mro_order",
         "omit_redundant_constraints",
         "read_length_keywords_by_type",
+        "read_object_keywords_by_type",
         "read_msgspec_union_bounds_exactly",
         "use_site_models_for_constrained_refs",
+        "use_bounds_for_float_const",
         "use_one_model_per_ref_site",
         "use_annotated",
         "use_serialize_as_any_for_every_subclass",
         "use_decimal_in_field_forms",
         "use_encoded_str_for_constrained_base64",
+        "use_strict_str_for_base64",
         "merge_shared_variant_tags",
+        "use_unmapped_variant_tag_values",
         "use_standard_collections",
         "use_object_type",
         "use_typed_nullable_map_values",
         "use_typed_map_values_beside_other_types",
         "read_unevaluated_properties",
+        "read_kubernetes_extensions",
         "use_single_dict_for_object_maps",
         "use_subclass_enum",
         "use_specialized_enum",
@@ -2064,15 +1970,23 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_tuple_for_fixed_items",
         "use_tuple_for_closed_arrays",
         "use_closed_typed_dict",
+        "use_validate_default_for_root_model_type_aliases",
         "use_plain_alias_for_recursive_models",
+        "read_format_as_annotation",
+        "read_uuid6_uuid7_uuid8_formats",
         "type_overrides_replace_whole_type",
-        "use_x_python_type_unions",
+        "use_x_python_type_as_written",
+        "use_x_python_import_for_every_ref",
+        "use_bytes_for_content_media_type",
         "capitalise_numbered_enum_members",
         "snake_case_field",
         "strict_nullable",
         "omit_redundant_reference_null",
         "keep_reference_null_on_merged_models",
+        "keep_defaults_of_inherited_required_fields",
+        "omit_incomplete_model_defaults",
         "use_default_kwarg",
+        "apply_field_options_to_every_field",
         "read_nullable_beside_type_list",
         "keep_field_defaults_off_branch_roots",
         "use_field_description",
@@ -2082,14 +1996,22 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "check_pattern_maps_strictly",
         "use_type_checking_imports",
         "dedupe_request_response_variants",
+        "dedupe_numbered_request_response_variants",
         "keep_first_character_of_path_keys",
         "keep_content_parameter_refs",
         "skip_path_extension_keys",
+        "use_enum_field_as_literal_in_operations",
         "read_schema_version_per_document",
         "read_escaped_ref_pointers",
         "read_dynamic_anchors_in_document_order",
+        "read_ids_with_empty_fragment",
+        "read_single_allof_refs_in_their_documents",
+        "read_ref_siblings_in_closed_allof_members",
         "ignore_ref_siblings_by_schema_version",
+        "read_yaml_1_1_numbers_as_text",
+        "read_implied_options_from_merged_values",
         "server_include_request",
+        "client_deep_object_brackets",
     ])
 
 
@@ -2133,7 +2055,7 @@ def test_generate_call_keyword_source_uses_unparse_fallback() -> None:
 
 
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(platform.system() == "Windows", reason="text-mode writes use CRLF on Windows")
+@needs("posix")
 def test_generated_file_line_endings_are_lf_with_single_trailing_newline(output_file: Path) -> None:
     """Generated files use LF line endings and exactly one trailing newline."""
     result = generate(
@@ -2157,7 +2079,6 @@ def test_space_and_special_characters_dict(output_file: Path) -> None:
         input_path=PYTHON_DATA_PATH / "space_and_special_characters_dict.py",
         output_path=output_file,
         input_file_type="dict",
-        assert_func=assert_file_content,
     )
 
 
@@ -2168,11 +2089,10 @@ def test_space_and_special_characters_dict_stdin(monkeypatch: pytest.MonkeyPatch
         output_path=output_file,
         monkeypatch=monkeypatch,
         input_file_type="dict",
-        assert_func=assert_file_content,
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@needs("posix")
 @pytest.mark.timeout(30)
 @pytest.mark.parametrize(
     ("source", "input_file_type"),
@@ -2207,12 +2127,11 @@ def test_main_named_pipe_input_is_read_once(
         output_path=output_file,
         input_file_type=input_file_type,
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
     )
     writer.join()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@needs("posix")
 @pytest.mark.timeout(30)
 @pytest.mark.parametrize("input_file_type", [None, "jsonschema"], ids=["auto", "jsonschema"])
 def test_main_named_pipe_input_resolves_references_beside_it(
@@ -2236,12 +2155,11 @@ def test_main_named_pipe_input_resolves_references_beside_it(
         output_path=output_file,
         input_file_type=input_file_type,
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
     )
     writer.join()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@needs("posix")
 @pytest.mark.timeout(30)
 def test_main_named_pipe_csv_input_is_read_up_to_its_first_row(
     tmp_path: Path, output_file: Path, monkeypatch: pytest.MonkeyPatch
@@ -2265,7 +2183,6 @@ def test_main_named_pipe_csv_input_is_read_up_to_its_first_row(
         output_path=output_file,
         input_file_type="csv",
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
     )
     generated.set()
     writer.join()
@@ -2282,31 +2199,29 @@ def test_direct_input_dict(tmp_path: Path) -> None:
         output_model_type=DataModelType.PydanticV2BaseModel,
         snake_case_field=True,
     )
-    assert_file_content(output_file)
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize(
-    ("input_file", "expected_file"),
+    ("input_file"),
     [
-        ("direct_tool.json", "mcp_tools/direct_tool.py"),
-        ("tools_list.json", "mcp_tools/tools_list.py"),
-        ("server_definition.json", "mcp_tools/server_definition.py"),
-        ("schema_tool_definitions.json", "mcp_tools/schema_tool_definitions.py"),
-        ("top_level_list.json", "mcp_tools/top_level_list.py"),
-        ("mcp_servers.json", "mcp_tools/mcp_servers.py"),
-        ("servers_list.json", "mcp_tools/servers_list.py"),
-        ("top_level_tool_definitions.json", "mcp_tools/top_level_tool_definitions.py"),
-        ("definitions_ref.json", "mcp_tools/definitions_ref.py"),
+        ("direct_tool.json"),
+        ("tools_list.json"),
+        ("server_definition.json"),
+        ("schema_tool_definitions.json"),
+        ("top_level_list.json"),
+        ("mcp_servers.json"),
+        ("servers_list.json"),
+        ("top_level_tool_definitions.json"),
+        ("definitions_ref.json"),
     ],
 )
-def test_mcp_tools(input_file: str, expected_file: str, output_file: Path) -> None:
+def test_mcp_tools(input_file: str, output_file: Path) -> None:
     """Generate models from MCP tool schema profiles."""
     run_main_and_assert(
         input_path=DATA_PATH / "mcp_tools" / input_file,
         output_path=output_file,
         input_file_type="mcp-tools",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
     )
 
 
@@ -2317,8 +2232,6 @@ def test_mcp_tools_dangling_local_ref(output_file: Path) -> None:
             input_path=DATA_PATH / "mcp_tools" / "external_ref.json",
             output_path=output_file,
             input_file_type="mcp-tools",
-            assert_func=assert_file_content,
-            expected_file="mcp_tools/external_ref.py",
         )
 
 
@@ -2337,7 +2250,6 @@ def test_mcp_tools_hoisted_definition_references_conversion(input_name: str) -> 
     converted = convert_mcp_tools_to_jsonschema(source)
     assert_output(
         f"{json.dumps(converted, indent=2)}\n",
-        EXPECTED_MAIN_PATH / "mcp_tools" / f"{input_name}.txt",
     )
 
 
@@ -2347,8 +2259,6 @@ def test_mcp_tools_hoisted_definition_references_cli(output_file: Path) -> None:
         input_path=DATA_PATH / "mcp_tools" / "nested_definition_references.json",
         output_path=output_file,
         input_file_type="mcp-tools",
-        assert_func=assert_file_content,
-        expected_file="mcp_tools/nested_definition_references.py",
         extra_args=["--strict-refs", "--disable-timestamp"],
     )
     assert_generated_model_json_validation(
@@ -2367,8 +2277,6 @@ def test_mcp_tools_hoisted_definition_references_api(output_file: Path) -> None:
         input_path=DATA_PATH / "mcp_tools" / "nested_definition_references.json",
         output_path=output_file,
         input_file_type=InputFileType.MCPTools,
-        assert_func=assert_file_content,
-        expected_file="mcp_tools/nested_definition_references.py",
         strict_refs=True,
         disable_timestamp=True,
     )
@@ -2386,14 +2294,11 @@ def test_mcp_tools_hoisted_definition_references_api(output_file: Path) -> None:
 def test_mcp_tools_hoisted_keyword_references(entrypoint: str, output_file: Path) -> None:
     """Keep schemas below keyword-shaped property names when hoisting definitions."""
     input_path = DATA_PATH / "mcp_tools" / "nested_keyword_references.json"
-    expected_file = "mcp_tools/nested_keyword_references.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type="mcp-tools",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=["--strict-refs", "--disable-timestamp"],
         )
     else:
@@ -2401,8 +2306,6 @@ def test_mcp_tools_hoisted_keyword_references(entrypoint: str, output_file: Path
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.MCPTools,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             strict_refs=True,
             disable_timestamp=True,
         )
@@ -2420,14 +2323,11 @@ def test_mcp_tools_hoisted_keyword_references(entrypoint: str, output_file: Path
 def test_mcp_tools_dynamic_definition_references(entrypoint: str, output_file: Path) -> None:
     """Resolve dynamic pointers to hoisted definitions without dropping their types."""
     input_path = DATA_PATH / "mcp_tools" / "dynamic_definition_references.json"
-    expected_file = "mcp_tools/dynamic_definition_references.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type="mcp-tools",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=["--strict-refs", "--disable-timestamp"],
         )
     else:
@@ -2435,8 +2335,6 @@ def test_mcp_tools_dynamic_definition_references(entrypoint: str, output_file: P
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.MCPTools,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             strict_refs=True,
             disable_timestamp=True,
         )
@@ -2464,14 +2362,11 @@ def test_mcp_tools_dynamic_definition_references(entrypoint: str, output_file: P
 def test_mcp_tools_referenced_false_definitions(input_name: str, entrypoint: str, output_file: Path) -> None:
     """Keep valid tool inputs usable when an optional or negated definition is false."""
     input_path = DATA_PATH / "mcp_tools" / f"{input_name}.json"
-    expected_file = f"mcp_tools/{input_name}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type="mcp-tools",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=["--disable-timestamp", "--formatters", "builtin"],
             force_exec_validation=True,
         )
@@ -2480,8 +2375,6 @@ def test_mcp_tools_referenced_false_definitions(input_name: str, entrypoint: str
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.MCPTools,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
         )
@@ -2504,7 +2397,6 @@ def test_mcp_tools_schema_value_references_conversion(input_name: str) -> None:
         converted = convert_mcp_tools_to_jsonschema(source)
     assert_output(
         f"{json.dumps(converted, indent=2)}\n",
-        EXPECTED_MAIN_PATH / "mcp_tools" / f"{input_name}.txt",
     )
 
 
@@ -2527,8 +2419,6 @@ def test_mcp_tools_schema_value_references_cli(output_file: Path, input_name: st
         input_path=DATA_PATH / "mcp_tools" / f"{input_name}.json",
         output_path=output_file,
         input_file_type="mcp-tools",
-        assert_func=assert_file_content,
-        expected_file=f"mcp_tools/{input_name}.py",
         extra_args=[
             "--strict-refs",
             "--disable-timestamp",
@@ -2563,8 +2453,6 @@ def test_mcp_tools_schema_value_references_api(output_file: Path, input_name: st
         input_path=DATA_PATH / "mcp_tools" / f"{input_name}.json",
         output_path=output_file,
         input_file_type=InputFileType.MCPTools,
-        assert_func=assert_file_content,
-        expected_file=f"mcp_tools/{input_name}.py",
         strict_refs=True,
         disable_timestamp=True,
         **({"formatters": [Formatter.BUILTIN]} if input_name == "schema_value_references" else {}),
@@ -2594,11 +2482,8 @@ def test_mcp_tools_schema_value_references_api(output_file: Path, input_name: st
 def test_mcp_tools_generate_direct_input(input_kind: str, output_file: Path) -> None:
     """Generate MCP tool models from direct generate() input values."""
     input_file = "direct_tool.json"
-    expected_file = "mcp_tools/direct_tool.py"
-    match input_kind:
-        case "list":
-            input_file = "top_level_list.json"
-            expected_file = "mcp_tools/top_level_list.py"
+    if input_kind == "list":
+        input_file = "top_level_list.json"
     input_text = (DATA_PATH / "mcp_tools" / input_file).read_text(encoding="utf-8")
     input_: object = json.loads(input_text) if input_kind in {"mapping", "list"} else input_text
 
@@ -2608,7 +2493,7 @@ def test_mcp_tools_generate_direct_input(input_kind: str, output_file: Path) -> 
         input_filename=input_file,
         output=output_file,
     )
-    assert_file_content(output_file, expected_file)
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_mcp_tools_url_preserves_relative_ref_context(
@@ -2629,7 +2514,7 @@ def test_mcp_tools_url_preserves_relative_ref_context(
         "--output",
         str(output_file),
     ])
-    assert_file_content(output_file, "mcp_tools/remote_relative_ref.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
     assert_httpx_get_kwargs(
         httpx_get_mock,
         expected_urls=[f"{base_url}tools.json", f"{base_url}common.json"],
@@ -2675,25 +2560,22 @@ def test_mcp_tools_invalid(
 
 @freeze_time(TIMESTAMP)
 @pytest.mark.parametrize(
-    ("keyword_only", "target_python_version", "expected_file"),
+    ("keyword_only", "target_python_version"),
     [
-        (False, PythonVersion.PY_310, "frozen_dataclasses.py"),
-        (True, PythonVersion.PY_310, "frozen_dataclasses_keyword_only.py"),
+        (False, PythonVersion.PY_310),
+        (True, PythonVersion.PY_310),
     ],
 )
 def test_frozen_dataclasses(
     output_file: Path,
     keyword_only: bool,
     target_python_version: PythonVersion,
-    expected_file: str,
 ) -> None:
     """Test --frozen-dataclasses flag functionality."""
     run_generate_file_and_assert(
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         output_model_type=DataModelType.DataclassesDataclass,
         frozen_dataclasses=True,
         keyword_only=keyword_only,
@@ -2715,23 +2597,20 @@ keyword-only arguments.""",
 )
 @freeze_time(TIMESTAMP)
 @pytest.mark.parametrize(
-    ("extra_args", "expected_file"),
+    ("extra_args"),
     [
-        (["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses"], "frozen_dataclasses.py"),
-        (
-            [
-                "--output-model-type",
-                "dataclasses.dataclass",
-                "--frozen-dataclasses",
-                "--keyword-only",
-                "--target-python-version",
-                "3.10",
-            ],
-            "frozen_dataclasses_keyword_only.py",
-        ),
+        (["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses"]),
+        [
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--frozen-dataclasses",
+            "--keyword-only",
+            "--target-python-version",
+            "3.10",
+        ],
     ],
 )
-def test_frozen_dataclasses_command_line(output_file: Path, extra_args: list[str], expected_file: str) -> None:
+def test_frozen_dataclasses_command_line(output_file: Path, extra_args: list[str]) -> None:
     """Generate frozen dataclasses with optional keyword-only fields.
 
     The `--frozen-dataclasses` flag generates dataclass instances that are immutable
@@ -2742,8 +2621,6 @@ def test_frozen_dataclasses_command_line(output_file: Path, extra_args: list[str
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=extra_args,
     )
 
@@ -2755,8 +2632,6 @@ def test_class_decorators(output_file: Path) -> None:
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="class_decorators_dataclass.py",
         output_model_type=DataModelType.DataclassesDataclass,
         class_decorators=["@dataclass_json"],
         additional_imports=["dataclasses_json.dataclass_json"],
@@ -2781,7 +2656,7 @@ The `@` prefix is optional and will be added automatically if missing.""",
         "--additional-imports",
         "dataclasses_json.dataclass_json",
     ],
-    golden_output="class_decorators_dataclass.py",
+    golden_output="main_general/class_decorators.py",
     related_options=["--additional-imports", "--output-model-type"],
 )
 @freeze_time(TIMESTAMP)
@@ -2798,8 +2673,6 @@ def test_class_decorators_command_line(output_file: Path) -> None:
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="class_decorators_dataclass.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -2818,8 +2691,6 @@ def test_class_decorators_without_at_prefix(output_file: Path) -> None:
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="class_decorators_dataclass.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -2838,8 +2709,6 @@ def test_class_decorators_with_empty_entries(output_file: Path) -> None:
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="class_decorators_dataclass.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -2853,12 +2722,12 @@ def test_class_decorators_with_empty_entries(output_file: Path) -> None:
 
 @freeze_time(TIMESTAMP)
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_file"),
+    ("output_model_type"),
     [
-        ("pydantic_v2.BaseModel", "class_decorators_pydantic_v2_BaseModel.py"),
-        ("pydantic_v2.dataclass", "class_decorators_pydantic_v2_dataclass.py"),
-        ("dataclasses.dataclass", "class_decorators_dataclasses_dataclass.py"),
-        ("msgspec.Struct", "class_decorators_msgspec_Struct.py"),
+        ("pydantic_v2.BaseModel"),
+        ("pydantic_v2.dataclass"),
+        ("dataclasses.dataclass"),
+        ("msgspec.Struct"),
         # Note: TypedDict is excluded because its template doesn't support decorators
     ],
     ids=[
@@ -2868,14 +2737,12 @@ def test_class_decorators_with_empty_entries(output_file: Path) -> None:
         "msgspec",
     ],
 )
-def test_class_decorators_all_output_types(output_file: Path, output_model_type: str, expected_file: str) -> None:
+def test_class_decorators_all_output_types(output_file: Path, output_model_type: str) -> None:
     """Test --class-decorators works with all output model types that support decorators."""
     run_main_and_assert(
         input_path=DATA_PATH / "jsonschema" / "simple_frozen_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -2899,7 +2766,7 @@ def test_use_attribute_docstrings(tmp_path: Path) -> None:
         use_field_description=True,
         use_attribute_docstrings=True,
     )
-    assert_file_content(output_file)
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @freeze_time(TIMESTAMP)
@@ -2933,8 +2800,6 @@ def test_use_attribute_docstrings_command_line(output_file: Path) -> None:
         input_path=DATA_PATH / "jsonschema" / "use_attribute_docstrings_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_attribute_docstrings.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -3149,11 +3014,7 @@ use-specialized-enum = false
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
 
     with chdir(tmp_path):
-        run_main_with_args(
-            ["--generate-cli-command"],
-            capsys=capsys,
-            expected_stdout_path=EXPECTED_MAIN_PATH / "generate_cli_command" / "no_use_specialized_enum.txt",
-        )
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_cli_command_with_false_boolean(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -3166,11 +3027,7 @@ use-exact-imports = false
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
 
     with chdir(tmp_path):
-        run_main_with_args(
-            ["--generate-cli-command"],
-            capsys=capsys,
-            expected_stdout_path=EXPECTED_MAIN_PATH / "generate_cli_command" / "regular_false_boolean.txt",
-        )
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_cli_command_with_true_boolean(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -3183,11 +3040,7 @@ snake-case-field = true
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
 
     with chdir(tmp_path):
-        run_main_with_args(
-            ["--generate-cli-command"],
-            capsys=capsys,
-            expected_stdout_path=EXPECTED_MAIN_PATH / "generate_cli_command" / "true_boolean.txt",
-        )
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_cli_command_with_list_option(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -3200,11 +3053,7 @@ strict-types = ["str", "int"]
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
 
     with chdir(tmp_path):
-        run_main_with_args(
-            ["--generate-cli-command"],
-            capsys=capsys,
-            expected_stdout_path=EXPECTED_MAIN_PATH / "generate_cli_command" / "list_option.txt",
-        )
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_pyproject_config_json_mapping_option_preserves_value(capsys: pytest.CaptureFixture[str]) -> None:
@@ -3216,7 +3065,7 @@ def test_generate_pyproject_config_json_mapping_option_preserves_value(capsys: p
             (DATA_PATH / "config" / "base_class_map.json").read_text(encoding="utf-8"),
         ],
         capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / "generate_pyproject_config" / "json_mapping_option.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -3231,7 +3080,7 @@ def test_generate_pyproject_config_json_mapping_option_preserves_value(capsys: p
 )
 def test_dataclass_arguments_valid(json_str: str, expected: dict) -> None:
     """Test that valid JSON is parsed correctly."""
-    assert _dataclass_arguments(json_str) == expected
+    assert arg_parser.parse_args(["--dataclass-arguments", json_str]).dataclass_arguments == expected
 
 
 @pytest.mark.parametrize(
@@ -3245,10 +3094,14 @@ def test_dataclass_arguments_valid(json_str: str, expected: dict) -> None:
         ('{"frozen": "not_bool"}', "Expected bool for 'frozen', got str"),
     ],
 )
-def test_dataclass_arguments_invalid(json_str: str, match: str) -> None:
-    """Test that invalid input raises ArgumentTypeError."""
-    with pytest.raises(ArgumentTypeError, match=match):
-        _dataclass_arguments(json_str)
+def test_dataclass_arguments_invalid(json_str: str, match: str, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test that invalid input is refused as an invalid value of the option."""
+    run_main_with_system_exit(
+        ["--dataclass-arguments", json_str],
+        expected_code=2,
+        capsys=capsys,
+        expected_stderr_contains=f"argument --dataclass-arguments: {match}",
+    )
 
 
 @pytest.mark.cli_doc(
@@ -3278,7 +3131,6 @@ def test_import_overrides(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "datetime.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -3299,8 +3151,6 @@ def test_generate_import_overrides(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "datetime.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="import_overrides.py",
         output_model_type=DataModelType.TypingTypedDict,
         target_python_version=PythonVersion.PY_310,
         import_overrides={
@@ -3317,7 +3167,6 @@ def test_import_overrides_preserve_alias(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--use-generic-base-class",
             "--allow-population-by-field-name",
@@ -3334,7 +3183,6 @@ def test_import_overrides_on_a_target_without_shared_imports(output_file: Path) 
         input_path=JSON_SCHEMA_DATA_PATH / "datetime.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -3372,7 +3220,7 @@ def test_module_imports_written_outside_the_import_ledger(
     monkeypatch.setenv(CHECK_MODULE_IMPORTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = DirectImportWriter(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
+        with pytest.raises(CheckFailure, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3445,11 +3293,149 @@ def test_render_plan_that_drops_a_declared_item(monkeypatch: pytest.MonkeyPatch,
         formatters=[Formatter.BUILTIN],
     )
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan of Person.firstName leaves"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan of Person.firstName leaves"
+        ):
             parser.parse()
         return
     assert_output(str(parser.parse()))
     assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+_NESTED_OPTIONAL_MODEL = (
+    '{"title": "Holder", "type": "object", "properties": {"pet": {"$ref": "#/definitions/Pet"}},'
+    ' "definitions": {"Pet": {"type": "object", "properties": {"name": {"type": "string"}}}}}'
+)
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_template_assignment_check_reports_a_line_the_facts_do_not_bind(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A field class that strips every ``None`` default makes the dataclass template write a default Python drops.
+
+    The template reads ``--strip-default-none`` itself and writes ``= None``; the row reads the field's
+    ``should_strip_default_none`` and decides that the class body binds nothing. The check (`1`, as the test suite
+    sets it) raises when the model renders; `report:<path>` appends a JSON line per field and goes on; `0` writes the
+    lines as the template does.
+    """
+    from datamodel_code_generator.model.dataclass import DataClass, DataModelField
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class StripsEveryNone(DataModelField):
+        def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
+            return self.default is None or super().should_strip_default_none(keep_optional=keep_optional)
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(
+        CHECK_TEMPLATE_ASSIGNMENTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag]
+    )
+    parser = JsonSchemaParser(
+        JSON_SCHEMA_DATA_PATH / "person.json",
+        data_model_type=DataClass,
+        data_model_field_type=StripsEveryNone,
+        formatters=[Formatter.BUILTIN],
+    )
+    if flag == "check":
+        with pytest.raises(CheckFailure) as raised:
+            parser.parse()
+        assert_output(f"{raised.value}\n")
+        return
+    output = str(parser.parse())
+    assert_output(output + (report_path.read_text(encoding="utf-8") if flag == "report" else ""))
+
+
+def test_template_assignment_check_records_the_legacy_annotated_factory_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Under ``--use-annotated``, a nested model's default factory goes into ``Annotated`` and its line has no value.
+
+    The model row still counts the default as an assignment, the shape row ``legacy-annotated-factory-binds`` of
+    ``tests/checks/template_assignments.py`` names: a report file records it, the check never raises for it, and this
+    output changes when the row decides the line the template writes.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_TEMPLATE_ASSIGNMENTS_ENV, f"report:{report_path}")
+    output = JsonSchemaParser(
+        _NESTED_OPTIONAL_MODEL,
+        use_annotated=True,
+        field_constraints=True,
+        use_default_factory_for_optional_nested_models=True,
+        formatters=[Formatter.BUILTIN],
+    ).parse()
+    assert_output(f"{output}{report_path.read_text(encoding='utf-8')}")
+
+
+_EVERY_FIELD_LINE_SCHEMA = (
+    '{"title": "Holder", "type": "object", "properties": {"kind": {"$ref": "#/definitions/Kind"},'
+    ' "tags": {"$ref": "#/definitions/Tags"}, "count": {"type": "integer", "default": 3}, "name": {"type": "string"}},'
+    ' "required": ["name"], "definitions": {"Kind": {"type": "string", "enum": ["a", "b"]},'
+    ' "Tags": {"type": "array", "items": {"type": "string"}}}}'
+)
+
+
+@pytest.mark.allow_direct_assert("a scope gate fails on its own, never through a stored output a fix run accepts")
+@pytest.mark.parametrize("output_model_type", list(DataModelType), ids=lambda model_type: model_type.value)
+def test_template_assignment_check_compares_every_field_line(
+    monkeypatch: pytest.MonkeyPatch, output_model_type: DataModelType
+) -> None:
+    """Every class-scope field line of every built-in output model type, enums and root models too, is compared.
+
+    A built-in model class whose template writes field lines that the check does not compare, by its scope or by the
+    form of its lines, leaves lines of the output uncompared and fails this test.
+    """
+    from tests.checks import template_assignments
+
+    facts = template_assignments.assignment_facts
+    compared: set[tuple[str, str]] = set()
+
+    def recorded(
+        model: template_assignments.DataModel, field: template_assignments.DataModelFieldBase
+    ) -> template_assignments.AssignmentFacts:
+        compared.add((model.class_name, template_assignments.line_name(model, field)))
+        return facts(model, field)
+
+    monkeypatch.setattr(template_assignments, "assignment_facts", recorded)
+    output = str(
+        generate(
+            _EVERY_FIELD_LINE_SCHEMA,
+            input_file_type=InputFileType.JsonSchema,
+            output_model_type=output_model_type,
+            formatters=[Formatter.BUILTIN],
+        )
+    )
+    written = {(line.scope.qualname, line.name) for line in template_assignments.field_lines(output) or ()}
+    assert written, output
+    assert written <= compared, f"lines the check does not compare: {sorted(written - compared)}"
+    assert_output(f"{output}\n" + "".join(f"compared {model}.{name}\n" for model, name in sorted(compared)))
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.TypingTypedDict, DataModelType.PydanticV2BaseModel],
+    ids=lambda model_type: model_type.value,
+)
+def test_template_assignment_check_records_the_legacy_typed_dict_and_enum_rows(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, output_model_type: DataModelType
+) -> None:
+    """A TypedDict field with a default is written without a value and an enum member with one, unlike their rows.
+
+    The model row counts the defaults of the TypedDict ``Holder`` as assignments and decides that the members of the
+    enum ``Kind`` bind nothing, the shape rows ``legacy-typed-dict-binds`` and ``legacy-enum-member-unbound`` of
+    ``tests/checks/template_assignments.py`` name: a report file records them, the check never raises for them, and
+    this output changes when the row decides the line the template writes.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_TEMPLATE_ASSIGNMENTS_ENV, f"report:{report_path}")
+    output = generate(
+        _EVERY_FIELD_LINE_SCHEMA,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=output_model_type,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(f"{output}\n{report_path.read_text(encoding='utf-8')}")
 
 
 @pytest.mark.parametrize("nested", [False, True])
@@ -3518,7 +3504,9 @@ def test_render_plan_whose_field_changes_after_render_preparation(
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = LateDescription(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan frozen for field firstName"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan frozen for field firstName"
+        ):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3547,7 +3535,9 @@ def test_type_expression_whose_field_changes_after_render_preparation(
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = LateList(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the type expression frozen for field firstName"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_PLANS_ENV}: the type expression frozen for field firstName"
+        ):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3580,7 +3570,7 @@ def test_render_memo_that_an_extension_makes_stale(monkeypatch: pytest.MonkeyPat
     parser = LateUnionAlias(schema, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
-            Error, match=f"^{CHECK_RENDER_MEMOS_ENV}: the union members joined to Union.str, bool. that"
+            CheckFailure, match=f"^{CHECK_RENDER_MEMOS_ENV}: the union members joined to Union.str, bool. that"
         ):
             parser.parse()
         return
@@ -3623,7 +3613,9 @@ components:
     monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = LateMemberValue(schema, formatters=[Formatter.BUILTIN], set_default_enum_member=True)
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_MEMOS_ENV}: the enum member index of Kind that the memo"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_MEMOS_ENV}: the enum member index of Kind that the memo"
+        ):
             parser.parse()
         return
     output = parser.parse()
@@ -3657,6 +3649,24 @@ def test_render_memos_record_the_stale_values_legacy_rows_keep(
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, f"report:{report_path}")
     OpenAPIParser(OPEN_API_DATA_PATH / input_name, formatters=[Formatter.BUILTIN], **options).parse()
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_render_memo_report_of_issue_6490_records_the_stale_plan_of_a_cyclic_type(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Issue 6490: a memoized msgspec field plan of a cyclic model differs in ``is_optional`` when computed again.
+
+    The report records the finding and never raises; it changes when 6490 is fixed.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, f"report:{report_path}")
+    generate(
+        JSON_SCHEMA_DATA_PATH / "type_union_constraints" / "modeled_root.json",
+        output=tmp_path / "model.py",
+        output_model_type=DataModelType.MsgspecStruct,
+        formatters=[Formatter.BUILTIN],
+    )
     assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
@@ -3709,6 +3719,48 @@ def test_dataclass_field_type_imports_follow_its_field(override: str) -> None:
     assert_output(output)
     if override != "none":
         validate_generated_code(output, "<generated>", do_exec=True)
+
+
+@pytest.mark.parametrize("override", ["no-symbol-imports", "field-statement"])
+def test_pydantic_field_type_imports_follow_its_field_statement(override: str) -> None:
+    """A Pydantic field type outside the package imports ``Annotated`` and ``Field`` by ``_has_field_statement()``.
+
+    One whose render plans list no symbol import still imports the ``Field`` it writes; one whose
+    ``_has_field_statement`` is true for every field imports both, though no field writes ``Field()``.
+    """
+    from dataclasses import replace
+
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    types = get_data_model_types(DataModelType.PydanticV2BaseModel, PythonVersion.PY_311)
+
+    class NoSymbolImports(types.field_model):
+        def _build_render_plan(self) -> Any:
+            return replace(super()._build_render_plan(), symbol_imports=())
+
+    class FieldStatement(types.field_model):
+        def _has_field_statement(self) -> bool:
+            return True
+
+    schema = _FIELD_TYPE_SCHEMA
+    if override == "no-symbol-imports":
+        schema = '{"title": "M", "type": "object", "properties": {"b": {"type": "string", "description": "bee"}}}'
+    parser = JsonSchemaParser(
+        schema,
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type={"no-symbol-imports": NoSymbolImports, "field-statement": FieldStatement}[override],
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        use_annotated=True,
+        field_constraints=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    output = str(parser.parse())
+    assert_output(output)
+    validate_generated_code(output, "<generated>", do_exec=True)
 
 
 @pytest.mark.parametrize(
@@ -3821,8 +3873,6 @@ def test_import_overrides_apply_to_additional_imports(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="import_overrides_additional_import.py",
         extra_args=[
             "--additional-imports",
             "typing_extensions.TypeAlias",
@@ -3842,7 +3892,7 @@ def test_generate_config_accepts_additional_imports(output_file: Path) -> None:
         output=output_file,
     )
     generate(JSON_SCHEMA_DATA_PATH / "person.json", config=config)
-    assert_file_content(output_file, "additional_imports_generate_config.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -3896,7 +3946,7 @@ def test_main_rejects_additional_import_injection(output_file: Path, capsys: pyt
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED_MAIN_PATH / "additional_imports_invalid.txt")
+    assert_output(capsys.readouterr().err)
 
 
 def test_main_rejects_additional_import_injection_in_extra_template_data(
@@ -3914,7 +3964,7 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED_MAIN_PATH / "additional_imports_invalid.txt")
+    assert_output(capsys.readouterr().err)
 
 
 @pytest.mark.parametrize(
@@ -4113,6 +4163,9 @@ instead of generating them.
 | `{"ModelName": "package.Type"}` | Model-level: Skip generation; replace field and inheritance refs |
 | `{"Model.field": "package.Type"}` | Scoped: Override only specific field in specific model |
 
+A key that matches no generated model or field is reported in a warning, with the key that would match where there
+is a close one, such as `ItemModel.price` for `Item.price` when the schema's `Item` is written as `ItemModel`.
+
 !!! note "Model-level overrides skip generation"
     When you specify a model-level override (without a dot in the key), the generator will
     **skip generating that model entirely** and import it from the specified package instead.
@@ -4139,7 +4192,6 @@ def test_type_overrides_model_level(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--type-overrides",
             '{"CustomType": "my_app.types.CustomType"}',
@@ -4157,7 +4209,6 @@ def test_type_overrides_model_level_collapse_root_models(output_file: Path, outp
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_collapsed_root.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -4398,8 +4449,6 @@ def test_type_overrides_model_level_from_file(output_file: Path, tmp_path: Path)
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_overrides_model_level.py",
         extra_args=[
             "--type-overrides",
             str(mapping_path),
@@ -4415,7 +4464,7 @@ def test_type_overrides_model_level_from_file(output_file: Path, tmp_path: Path)
         "--type-overrides",
         '{"Feature": "geojson_pydantic.Feature", "FeatureCollection": "geojson_pydantic.FeatureCollection"}',
     ],
-    golden_output="main/type_overrides_external_lib.py",
+    golden_output="main/main_general/type_overrides_external_lib.py",
 )
 @freeze_time(TIMESTAMP)
 def test_type_overrides_external_lib(output_file: Path) -> None:
@@ -4424,7 +4473,6 @@ def test_type_overrides_external_lib(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_external_lib.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--type-overrides",
             '{"Feature": "geojson_pydantic.Feature", "FeatureCollection": "geojson_pydantic.FeatureCollection"}',
@@ -4439,7 +4487,6 @@ def test_type_overrides_scoped(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_scoped.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--type-overrides",
             '{"User.address": "my_app.Address"}',
@@ -4448,15 +4495,14 @@ def test_type_overrides_scoped(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("collapse_args", "expected_file"),
+    ("collapse_args"),
     [
-        pytest.param([], "reuse_type_overrides.py", id="inherit"),
-        pytest.param(["--collapse-reuse-models"], "reuse_type_overrides_collapsed.py", id="collapse"),
+        pytest.param([], id="inherit"),
+        pytest.param(["--collapse-reuse-models"], id="collapse"),
     ],
 )
 def test_type_overrides_preserved_during_module_reuse(
     collapse_args: list[str],
-    expected_file: str,
     output_file: Path,
 ) -> None:
     """Keep scoped and model-level overrides outside module reuse optimizations."""
@@ -4464,8 +4510,6 @@ def test_type_overrides_preserved_during_module_reuse(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_type_overrides.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -4488,7 +4532,6 @@ def test_type_overrides_nested_types(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_nested.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
         extra_args=[
             "--type-overrides",
             '{"Tag": "my_app.Tag"}',
@@ -4522,8 +4565,6 @@ def test_type_overrides_model_level_base_class(
             input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="type_overrides_base_class.py",
             extra_args=[
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
@@ -4616,8 +4657,6 @@ def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_dict_key.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_overrides_dict_key.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -4628,37 +4667,43 @@ def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "expected_file"),
+    ("target_python_version"),
     [
-        pytest.param("3.10", "type_overrides_target_310.py", id="python-3.10"),
-        pytest.param("3.12", "type_overrides_target_312.py", id="python-3.12"),
+        pytest.param("3.10", id="python-3.10"),
+        pytest.param("3.12", id="python-3.12"),
     ],
 )
-def test_type_overrides_for_target(output_file: Path, target_python_version: str, expected_file: str) -> None:
-    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--output-model-type",
-            "typing.TypedDict",
-            "--target-python-version",
-            target_python_version,
-            "--formatters",
-            "builtin",
-            "--disable-timestamp",
-            "--type-overrides",
-            json.dumps({
-                "Model.c": "typing.LiteralString",
-                "D": "collections.abc.Buffer",
-                "Missing": "pathlib.types.PathInfo",
-                "Model.missing": "enum.StrEnum",
-            }),
-        ],
-        force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+def test_type_overrides_for_target(output_file: Path, target_python_version: str) -> None:
+    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked.
+
+    The overrides no model uses are reported as keys that matched nothing.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "typing.TypedDict",
+                "--target-python-version",
+                target_python_version,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps({
+                    "Model.c": "typing.LiteralString",
+                    "D": "collections.abc.Buffer",
+                    "Missing": "pathlib.types.PathInfo",
+                    "Model.missing": "enum.StrEnum",
+                }),
+            ],
+            force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+        )
+    assert_warnings_contain(
+        recorded, "--type-overrides: 2 keys matched no generated model or field: 'Missing', 'Model.missing'"
     )
 
 
@@ -4668,8 +4713,6 @@ def test_type_overrides_replace_custom_type_path_unavailable_for_target(output_f
         input_path=JSON_SCHEMA_DATA_PATH / "custom_type_path_overridden.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_overrides_custom_type_path_overridden.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -4762,7 +4805,7 @@ def test_skip_root_model(tmp_path: Path) -> None:
         output_model_type=DataModelType.PydanticV2BaseModel,
         skip_root_model=True,
     )
-    assert_file_content(output_file, "skip_root_model.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.cli_doc(
@@ -4787,8 +4830,6 @@ def test_skip_root_model_command_line(output_file: Path) -> None:
         input_path=DATA_PATH / "jsonschema" / "skip_root_model_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="skip_root_model.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--skip-root-model"],
     )
 
@@ -4859,8 +4900,6 @@ def test_check_suffixless_file_matches(tmp_path: Path) -> None:
         output_path=output_path,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file="person.py",
     )
     run_main_and_assert(
         input_path=input_path,
@@ -4884,7 +4923,6 @@ def test_check_suffixless_file_differs(tmp_path: Path, capsys: pytest.CaptureFix
     )
     assert_output(
         capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
-        EXPECTED_MAIN_PATH / "check" / "suffixless_file_differs.txt",
     )
 
 
@@ -4900,7 +4938,6 @@ def test_check_suffixless_file_does_not_exist(tmp_path: Path, capsys: pytest.Cap
     )
     assert_output(
         capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
-        EXPECTED_MAIN_PATH / "check" / "suffixless_file_does_not_exist.txt",
     )
 
 
@@ -4917,12 +4954,10 @@ def test_output_format_json_writes_suffixless_file(
         output_path=output_path,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--formatters", "builtin", "--output-format", "json"],
-        assert_func=assert_file_content,
-        expected_file="person.py",
     )
     assert_output(
         capsys.readouterr().out.replace(output_path.as_posix(), "<OUTPUT_FILE>"),
-        EXPECTED_MAIN_PATH / "output_format_json" / "suffixless_file.txt",
+        name="output_format_json",
     )
 
 
@@ -5180,7 +5215,7 @@ exports from direct child modules. This improves IDE autocomplete and explicit e
 Use 'recursive' to include all descendant exports with collision handling.""",
     input_schema="openapi/modular.yaml",
     cli_args=["--all-exports-scope", "children"],
-    golden_output="openapi/modular_all_exports_children",
+    golden_output="main_general/all_exports_scope_children",
     related_options=["--all-exports-collision-strategy"],
 )
 def test_all_exports_scope_children(output_dir: Path) -> None:
@@ -5195,7 +5230,6 @@ def test_all_exports_scope_children(output_dir: Path) -> None:
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--all-exports-scope", "children"],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_children",
     )
 
 
@@ -5209,7 +5243,7 @@ minimum module path prefix needed to disambiguate colliding names, while 'full-p
 uses the complete module path. Requires `--all-exports-scope=recursive`.""",
     input_schema="openapi/modular.yaml",
     cli_args=["--all-exports-scope", "recursive", "--all-exports-collision-strategy", "minimal-prefix"],
-    golden_output="openapi/modular_all_exports_recursive",
+    golden_output="main_general/all_exports_scope_recursive_with_collision",
     related_options=["--all-exports-scope"],
 )
 def test_all_exports_scope_recursive_with_collision(output_dir: Path) -> None:
@@ -5231,7 +5265,6 @@ def test_all_exports_scope_recursive_with_collision(output_dir: Path) -> None:
             "--all-exports-collision-strategy",
             "minimal-prefix",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_recursive",
     )
 
 
@@ -5247,7 +5280,6 @@ def test_all_exports_scope_children_with_docstring_header(output_dir: Path) -> N
             "--custom-file-header-path",
             str(DATA_PATH / "custom_file_header_docstring.txt"),
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_children_docstring",
     )
 
 
@@ -5262,7 +5294,6 @@ def test_all_exports_scope_recursive_collision_avoided_by_renaming(output_dir: P
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--all-exports-scope", "recursive"],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_scope_recursive_collision_avoided_by_renaming",
     )
 
 
@@ -5299,7 +5330,6 @@ def test_all_exports_scope_recursive_with_full_prefix(output_dir: Path) -> None:
             "--all-exports-collision-strategy",
             "full-prefix",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_recursive_full_prefix",
     )
 
 
@@ -5316,7 +5346,6 @@ def test_all_exports_collision_resolved_successfully(output_dir: Path) -> None:
             "--all-exports-collision-strategy",
             "minimal-prefix",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_collision_success",
     )
 
 
@@ -5397,7 +5426,6 @@ def test_all_exports_scope_recursive_jsonschema_multi_file(output_dir: Path) -> 
             "--all-exports-scope",
             "recursive",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_multi_file",
     )
 
 
@@ -5487,7 +5515,6 @@ def test_all_exports_scope_children_no_child_exports(output_dir: Path) -> None:
             "--all-exports-scope",
             "children",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_no_child",
     )
 
 
@@ -5502,7 +5529,6 @@ def test_all_exports_scope_children_with_local_models(output_dir: Path) -> None:
             "--all-exports-scope",
             "children",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_with_local_models",
     )
 
 
@@ -5517,7 +5543,6 @@ def test_all_exports_scope_children_jsonschema_hyphenated_package(output_dir: Pa
             "--all-exports-scope",
             "children",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_hyphenated_directory",
     )
 
 
@@ -5552,33 +5577,11 @@ def test_check_respects_pyproject_toml_settings(tmp_path: Path) -> None:
     )
 
     output_file = tmp_path / "output.py"
-    expected_output = """\
-# generated by datamodel-codegen:
-#   filename:  input.json
-
-from __future__ import annotations
-
-from typing import Annotated
-
-from pydantic import BaseModel, Field
-
-
-class Person(BaseModel):
-    firstName: Annotated[
-        str,
-        Field(
-            max_length=100,
-            min_length=1,
-            pattern='^[A-Za-z]+$',
-        ),
-    ]
-"""
     run_main_and_assert(
         input_path=input_json,
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--use-annotated"],
-        expected_output=expected_output,
     )
 
     run_main_and_assert(
@@ -5623,8 +5626,6 @@ def test_use_specialized_enum_with_python_311_ok(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--use-specialized-enum", "--target-python-version", "3.11"],
-        assert_func=assert_file_content,
-        expected_file="use_specialized_enum_py311.py",
     )
 
 
@@ -5670,8 +5671,6 @@ def test_use_specialized_enum_pyproject_override_with_cli(output_file: Path, tmp
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--no-use-specialized-enum"],
-            assert_func=assert_file_content,
-            expected_file="no_use_specialized_enum.py",
         )
 
 
@@ -5698,8 +5697,6 @@ def test_cli_input_overrides_pyproject_url(
             input_path=cli_input.relative_to(tmp_path),
             output_path=output_file,
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file="cli_input_overrides_pyproject_url.py",
         )
 
     assert_httpx_get_kwargs(httpx_get_mock, called=False)
@@ -5861,7 +5858,7 @@ def test_cli_url_overrides_pyproject_input(
             "--disable-timestamp",
         ])
 
-    assert_file_content(output_file, "cli_url_overrides_pyproject_input.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
     assert_httpx_get_kwargs(httpx_get_mock, expected_url="https://example.com/schema.json")
 
 
@@ -5874,7 +5871,7 @@ named after the class in snake_case. Use with `--all-exports-scope=recursive` to
 create an __init__.py that re-exports all models for convenient imports.""",
     input_schema="jsonschema/module_split_single/input.json",
     cli_args=["--module-split-mode", "single", "--all-exports-scope", "recursive", "--use-exact-imports"],
-    golden_output="jsonschema/module_split_single",
+    golden_output="main_general/generate_builtin_string_normalization_module_split",
     related_options=["--all-exports-scope", "--use-exact-imports"],
 )
 def test_module_split_mode_single(output_dir: Path) -> None:
@@ -5896,7 +5893,6 @@ def test_module_split_mode_single(output_dir: Path) -> None:
             "recursive",
             "--use-exact-imports",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "module_split_single",
     )
 
 
@@ -5914,7 +5910,7 @@ output types. Pydantic already uses these types by default.""",
         "dataclasses.dataclass",
         "--use-standard-primitive-types",
     ],
-    golden_output="use_standard_primitive_types.py",
+    golden_output="main_general/use_standard_primitive_types.py",
     related_options=["--output-model-type", "--output-datetime-class"],
 )
 @freeze_time(TIMESTAMP)
@@ -5936,7 +5932,6 @@ def test_use_standard_primitive_types(output_file: Path) -> None:
             "--use-standard-primitive-types",
             "--disable-timestamp",
         ],
-        expected_file=EXPECTED_MAIN_PATH / "use_standard_primitive_types.py",
     )
 
 
@@ -5960,7 +5955,7 @@ def test_format_code_fallback_on_error(tmp_path: Path, mocker: MockerFixture) ->
             disable_timestamp=True,
         )
 
-    assert_file_content(output, "format_code_fallback_on_error.py")
+    assert_output(output.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_format_code_fallback_on_error_init_exports(tmp_path: Path, mocker: MockerFixture) -> None:
@@ -5982,7 +5977,7 @@ def test_format_code_fallback_on_error_init_exports(tmp_path: Path, mocker: Mock
             all_exports_scope=AllExportsScope.Children,
         )
 
-    assert_directory_content(output_dir, EXPECTED_MAIN_PATH / "openapi" / "format_code_fallback_on_error_init_exports")
+    assert_directory_content(output_dir)
 
 
 def test_init_exports_without_formatting(tmp_path: Path) -> None:
@@ -5996,7 +5991,7 @@ def test_init_exports_without_formatting(tmp_path: Path) -> None:
         all_exports_scope=AllExportsScope.Children,
     )
 
-    assert_generated_modules_output(results, EXPECTED_MAIN_PATH / "openapi" / "init_exports_without_formatting")
+    assert_generated_modules_output(results)
 
 
 def test_generate_parent_scoped_naming_backward_compat(tmp_path: Path) -> None:
@@ -6010,7 +6005,7 @@ def test_generate_parent_scoped_naming_backward_compat(tmp_path: Path) -> None:
         disable_timestamp=True,
         parent_scoped_naming=True,
     )
-    assert_file_content(output_file, "generate_parent_scoped_naming_backward_compat.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_ruff_check_and_format_combined(output_file: Path) -> None:
@@ -6019,8 +6014,6 @@ def test_ruff_check_and_format_combined(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
         output_path=output_file,
         extra_args=["--formatters", "ruff-check", "ruff-format", "--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file="jsonschema/simple_string.py",
     )
 
 
@@ -6030,8 +6023,6 @@ def test_ruff_check_only(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
         output_path=output_file,
         extra_args=["--formatters", "ruff-check", "--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file="jsonschema/simple_string.py",
     )
 
 
@@ -6041,17 +6032,6 @@ def test_ruff_format_only(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
         output_path=output_file,
         extra_args=["--formatters", "ruff-format", "--disable-timestamp"],
-        expected_output="""\
-# generated by datamodel-codegen:
-#   filename:  simple_string.json
-
-from __future__ import annotations
-from pydantic import BaseModel
-
-
-class Model(BaseModel):
-    s: str
-""",
     )
 
 
@@ -6064,18 +6044,6 @@ def test_builtin_formatter_does_not_validate_black_support(output_file: Path, mo
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--disable-timestamp"],
-        expected_output="""\
-# generated by datamodel-codegen:
-#   filename:  simple_string.json
-
-from __future__ import annotations
-
-from pydantic import BaseModel
-
-
-class Model(BaseModel):
-    s: str
-""",
     )
 
 
@@ -6118,7 +6086,6 @@ def test_ruff_batch_formatting_directory(output_dir: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "all_exports_multi_file",
         output_path=output_dir,
         extra_args=["--formatters", "ruff-check", "ruff-format", "--disable-timestamp"],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_multi_file_ruff",
         skip_code_validation=True,
     )
 
@@ -6200,7 +6167,7 @@ def test_type_checking_imports_default_to_runtime_imports_for_modular_pydantic_r
             "--disable-timestamp",
         ],
     )
-    assert_runtime_import_package(output_dir, EXPECTED_MAIN_PATH / "openapi" / "no_use_type_checking_imports")
+    assert_runtime_import_package(output_dir)
 
 
 @pytest.mark.cli_doc(
@@ -6250,7 +6217,7 @@ def test_no_use_type_checking_imports(output_dir: Path) -> None:
             "--disable-timestamp",
         ],
     )
-    assert_runtime_import_package(output_dir, EXPECTED_MAIN_PATH / "openapi" / "no_use_type_checking_imports")
+    assert_runtime_import_package(output_dir)
 
 
 def test_generate_multi_module_pydantic_ruff_defaults_to_runtime_imports() -> None:
@@ -6266,7 +6233,6 @@ def test_generate_multi_module_pydantic_ruff_defaults_to_runtime_imports() -> No
 
     assert_generated_modules_output(
         result,
-        EXPECTED_MAIN_PATH / "openapi" / "generate_multi_module_pydantic_ruff_defaults_to_runtime_imports",
     )
 
 
@@ -6286,7 +6252,7 @@ for multi-module Pydantic output where runtime imports might otherwise be preser
         "--use-type-checking-imports",
         "--disable-timestamp",
     ],
-    golden_output="openapi/use_type_checking_imports_for_multi_module_pydantic_ruff/_internal.py",
+    golden_output="main_general/use_type_checking_imports_for_multi_module_pydantic_ruff/_internal.py",
     related_options=["--no-use-type-checking-imports", "--formatters", "--use-exact-imports"],
 )
 def test_use_type_checking_imports_for_multi_module_pydantic_ruff() -> None:
@@ -6307,7 +6273,6 @@ def test_use_type_checking_imports_for_multi_module_pydantic_ruff() -> None:
 
     assert_generated_modules_output(
         result,
-        EXPECTED_MAIN_PATH / "openapi" / "use_type_checking_imports_for_multi_module_pydantic_ruff",
     )
 
 
@@ -6319,7 +6284,6 @@ def test_generate_returns_string_when_output_none() -> None:
         input_file_type=InputFileType.JsonSchema,
         input_filename="test.json",
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_when_output_none.py",
     )
 
 
@@ -6334,8 +6298,6 @@ def test_generate_accepts_path_input(output_file: Path) -> None:
             disable_timestamp=True,
             settings_path=relative_root,
             http_local_ref_path=relative_root,
-            assert_func=assert_file_content,
-            expected_file="generate_accepts_path_input.py",
         )
 
 
@@ -6349,8 +6311,6 @@ def test_generate_with_empty_formatters(output_file: Path, custom_formatters: li
         disable_timestamp=True,
         formatters=[],
         custom_formatters=custom_formatters,
-        assert_func=assert_file_content,
-        expected_file="generate_with_empty_formatters.py",
     )
 
 
@@ -6372,7 +6332,7 @@ def test_generate_does_not_mutate_extra_template_data() -> None:
             config=config.model_copy(update={"allow_extra_fields": False}),
         )
 
-    assert_output(f"{result}\n", EXPECTED_MAIN_PATH / "generate_with_empty_formatters.py")
+    assert_output(f"{result}\n")
 
 
 @pytest.mark.allow_direct_assert
@@ -6483,8 +6443,47 @@ def test_generate_serializes_cwd_dependent_extensions(tmp_path: Path) -> None:
         "first": {first_output.parent},
         "second": {second_output.parent},
     }
-    assert_file_content(first_output, "generate_with_empty_formatters.py")
-    assert_file_content(second_output, "generate_with_empty_formatters.py")
+    assert_output(first_output.read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output(second_output.read_text(encoding="utf-8"), name="model", suffix=".py")
+
+
+def test_generate_in_overlapping_threads_keeps_the_warning_hook(recwarn: pytest.WarningsRecorder) -> None:
+    """Show the warning of a later generation after two generations overlap in threads, each inside its parse.
+
+    The parse that ends first leaves the hook its warnings are shown through to the other, and the one that ends last
+    puts back the hook it replaced, so no hook of an ended parse stays to drop the warning a later generation shows.
+    """
+    warnings.simplefilter("always")
+    hook = warnings.showwarning
+    options = {
+        "input_": JSON_SCHEMA_DATA_PATH / "closed_pattern_properties.json",
+        "input_file_type": InputFileType.JsonSchema,
+        "formatters": [],
+    }
+
+    def generate_held(entered: Event, release: Event) -> str | GeneratedModules | None:
+        def hold(name: str) -> str:
+            entered.set()
+            release.wait(timeout=5)
+            return name
+
+        return generate(**options, custom_class_name_generator=hold)
+
+    first_entered, first_release, second_entered, second_release = Event(), Event(), Event(), Event()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(generate_held, first_entered, first_release)
+        observations = [f"first_inside={first_entered.wait(timeout=5)}"]
+        second = executor.submit(generate_held, second_entered, second_release)
+        observations.append(f"second_inside={second_entered.wait(timeout=5)}")
+        first_release.set()
+        first.result(timeout=5)
+        second_release.set()
+        second.result(timeout=5)
+    observations.append(f"hook_kept={warnings.showwarning is hook}")
+    shown_before = len(recwarn)
+    generate(**options)
+    observations.extend(str(warning.message) for warning in list(recwarn)[shown_before:])
+    assert_output("\n".join((*observations, "")))
 
 
 @pytest.mark.allow_direct_assert
@@ -6542,8 +6541,8 @@ def test_generate_does_not_capture_legacy_output_cwd(tmp_path: Path) -> None:
         release_legacy.set()
 
     assert Path.cwd() == caller_cwd
-    assert_file_content(legacy_output, "generate_with_empty_formatters.py")
-    assert_file_content(normal_output, "generate_with_empty_formatters.py")
+    assert_output(legacy_output.read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output(normal_output.read_text(encoding="utf-8"), name="model", suffix=".py")
 
 
 def test_generate_resolves_relative_custom_template_dir_from_caller_cwd(
@@ -6607,8 +6606,6 @@ def test_generate_with_custom_formatter_and_empty_formatters(output_file: Path) 
         disable_timestamp=True,
         formatters=[],
         custom_formatters=["tests.data.python.custom_formatters.add_comment"],
-        assert_func=assert_file_content,
-        expected_file="generate_with_custom_formatter_and_empty_formatters.py",
     )
 
 
@@ -6638,14 +6635,8 @@ def test_parser_formatter_builder_override_with_empty_formatters() -> None:
         source=(JSON_SCHEMA_DATA_PATH / "person.json").resolve(),
         formatters=[],
     )
-    assert_output(
-        f"{parser.parse()}\n",
-        EXPECTED_MAIN_PATH / "parser_formatter_builder_override_with_empty_formatters.py",
-    )
-    assert_output(
-        f"{parser.code_formatter_build_count}\n",
-        EXPECTED_MAIN_PATH / "parser_formatter_builder_override_with_empty_formatters_calls.txt",
-    )
+    assert_output(f"{parser.parse()}\n", suffix=".py")
+    assert_output(f"{parser.code_formatter_build_count}\n", name="calls")
 
 
 def test_parser_instance_formatter_builder_with_empty_formatters() -> None:
@@ -6675,14 +6666,8 @@ def test_parser_instance_formatter_builder_with_empty_formatters() -> None:
         return code_formatter
 
     parser._build_code_formatter = build_code_formatter  # type: ignore[method-assign]
-    assert_output(
-        f"{parser.parse()}\n",
-        EXPECTED_MAIN_PATH / "parser_formatter_builder_override_with_empty_formatters.py",
-    )
-    assert_output(
-        f"{code_formatter_build_count}\n",
-        EXPECTED_MAIN_PATH / "parser_formatter_builder_override_with_empty_formatters_calls.txt",
-    )
+    assert_output(f"{parser.parse()}\n", suffix=".py")
+    assert_output(f"{code_formatter_build_count}\n", name="calls")
 
 
 def test_generate_keeps_existing_path_string_input() -> None:
@@ -6692,7 +6677,6 @@ def test_generate_keeps_existing_path_string_input() -> None:
         input_file_type=InputFileType.Yaml,
         input_filename="inline.yaml",
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_keeps_existing_path_string_input.py",
     )
 
 
@@ -6703,7 +6687,6 @@ def test_generate_keeps_non_path_string_input() -> None:
         input_file_type=InputFileType.Yaml,
         input_filename="inline.yaml",
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_keeps_non_path_string_input.py",
     )
 
 
@@ -6773,7 +6756,6 @@ def test_generate_returns_string_with_pydantic_v2() -> None:
         input_filename="schema.json",
         output_model_type=DataModelType.PydanticV2BaseModel,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_with_pydantic_v2.py",
     )
 
 
@@ -6786,7 +6768,6 @@ def test_generate_returns_string_with_dataclass() -> None:
         input_filename="data.json",
         output_model_type=DataModelType.DataclassesDataclass,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_with_dataclass.py",
     )
 
 
@@ -6799,7 +6780,6 @@ def test_generate_uses_multiline_docstring_by_default() -> None:
         input_filename="schema.json",
         use_schema_description=True,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_uses_multiline_docstring_by_default.py",
     )
 
 
@@ -6813,7 +6793,6 @@ def test_generate_uses_single_line_docstring_when_enabled() -> None:
         use_schema_description=True,
         use_single_line_docstring=True,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_uses_single_line_docstring_when_enabled.py",
     )
 
 
@@ -6826,7 +6805,7 @@ as compact single-line docstrings while keeping the historical multi-line
 format as the default.""",
     input_schema="jsonschema/person.json",
     cli_args=["--use-field-description", "--use-single-line-docstring"],
-    golden_output="main/use_single_line_docstring.py",
+    golden_output="main/main_general/main_use_single_line_docstring.py",
     related_options=["--use-schema-description", "--use-field-description"],
 )
 def test_main_use_single_line_docstring(output_file: Path) -> None:
@@ -6834,8 +6813,6 @@ def test_main_use_single_line_docstring(output_file: Path) -> None:
     run_main_and_assert(
         input_path=DATA_PATH / "jsonschema" / "person.json",
         output_path=output_file,
-        assert_func=assert_file_content,
-        expected_file="use_single_line_docstring.py",
         extra_args=["--use-field-description", "--use-single-line-docstring"],
     )
 
@@ -6917,7 +6894,7 @@ def test_generate_returns_dict_for_multiple_modules(tmp_path: Path) -> None:
 
     assert_generated_modules_output(
         result,
-        EXPECTED_MAIN_PATH / "generate_returns_dict_for_multiple_modules",
+        name="modules",
         transform=lambda output: output.replace(f"#   filename:  {tmp_path.name}", "#   filename:  <tmpdir>"),
     )
 
@@ -6929,7 +6906,7 @@ def test_generate_returns_dict_for_multiple_modules(tmp_path: Path) -> None:
         )
     assert_generated_modules_output(
         result,
-        EXPECTED_MAIN_PATH / "generate_returns_dict_for_multiple_modules",
+        name="modules",
         transform=lambda output: output.replace("#   filename:  <dict>", "#   filename:  <tmpdir>"),
     )
 
@@ -6937,9 +6914,6 @@ def test_generate_returns_dict_for_multiple_modules(tmp_path: Path) -> None:
 def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Generate relative and external API path lists without changing module paths."""
     source_dir = JSON_SCHEMA_DATA_PATH / "multiple_files"
-    list_api_expected_dir = EXPECTED_MAIN_PATH / "jsonschema" / "path_list_inputs_api"
-    list_file_expected_dir = EXPECTED_MAIN_PATH / "jsonschema" / "path_list_inputs"
-    directory_expected_dir = EXPECTED_MAIN_PATH / "jsonschema" / "multiple_files"
     source_names = ("file_d.json", "file_b.json", "file_a.json", "file_c.json")
     absolute_paths = [source_dir / name for name in source_names]
     formatters = [Formatter.BLACK, Formatter.ISORT]
@@ -6949,32 +6923,27 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
     for input_paths in (relative_paths, absolute_paths):
         with assert_inputs_not_mutated({"input_paths": input_paths}):
             modules = generate(input_paths, input_file_type=InputFileType.Auto, formatters=formatters)
-        assert_generated_modules_output(modules, list_api_expected_dir)
+        assert_generated_modules_output(modules, name="api")
 
     run_generate_and_assert(
         input_=Path("file_b.json"),
         input_file_type=InputFileType.Auto,
-        expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "path_list_single" / "file_b.py",
         formatters=formatters,
     )
     run_generate_and_assert(
         input_=(source_dir / "file_b.json").read_text(encoding="utf-8"),
         input_file_type=InputFileType.Auto,
         input_filename="file_b.json",
-        expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "path_list_single" / "file_b.py",
         formatters=formatters,
     )
 
     single_modules = generate([Path("file_b.json")], input_file_type=InputFileType.Auto, formatters=formatters)
-    assert_generated_modules_output(
-        single_modules,
-        EXPECTED_MAIN_PATH / "jsonschema" / "path_list_single",
-    )
+    assert_generated_modules_output(single_modules, name="single")
 
     monkeypatch.chdir(tmp_path)
     with assert_inputs_not_mutated({"input_paths": absolute_paths}):
         modules = generate(absolute_paths, input_file_type=InputFileType.Auto, formatters=formatters)
-    assert_generated_modules_output(modules, list_api_expected_dir)
+    assert_generated_modules_output(modules, name="api")
 
     api_output = tmp_path / "api"
     with assert_inputs_not_mutated({"input_paths": absolute_paths}):
@@ -6984,13 +6953,12 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
             output=api_output,
             formatters=formatters,
         )
-    assert_directory_content(api_output, list_file_expected_dir)
+    assert_directory_content(api_output, name="files")
 
     run_main_and_assert(
         input_path=source_dir,
         output_path=tmp_path / "cli",
         input_file_type="jsonschema",
-        expected_directory=directory_expected_dir,
     )
 
 
@@ -7025,14 +6993,8 @@ def test_generate_auto_path_list_reuses_detected_first_file(
                 encoding=encoding,
                 formatters=[Formatter.BLACK, Formatter.ISORT],
             )
-            assert_generated_modules_output(
-                modules,
-                EXPECTED_MAIN_PATH / "jsonschema" / "path_list_inputs_api",
-            )
-            assert_output(
-                f"{json.dumps(reads, indent=2)}\n",
-                EXPECTED_MAIN_PATH / "jsonschema" / "path_list_input_reads.txt",
-            )
+            assert_generated_modules_output(modules, name="api")
+            assert_output(f"{json.dumps(reads, indent=2)}\n", name="reads")
 
 
 def test_generate_modular_stdout_and_directory_match_fixture(output_dir: Path) -> None:
@@ -7040,14 +7002,13 @@ def test_generate_modular_stdout_and_directory_match_fixture(output_dir: Path) -
     generate_options = {
         "input_file_type": InputFileType.OpenAPI,
     }
-    expected_directory = EXPECTED_MAIN_PATH / "openapi" / "modular"
 
     with freeze_time(TIMESTAMP):
         generated = generate(OPEN_API_DATA_PATH / "modular.yaml", **generate_options)
-        assert_generated_modules_output(generated, expected_directory, transform=lambda output: f"{output}\n")
+        assert_generated_modules_output(generated, name="tree", transform=lambda output: f"{output}\n")
 
         generate(OPEN_API_DATA_PATH / "modular.yaml", output=output_dir, **generate_options)
-    assert_directory_content(output_dir, expected_directory)
+    assert_directory_content(output_dir, name="tree")
 
 
 def test_generate_multimodule_builtin_directory_matches_fixture(output_dir: Path) -> None:
@@ -7060,7 +7021,7 @@ def test_generate_multimodule_builtin_directory_matches_fixture(output_dir: Path
         disable_timestamp=True,
         all_exports_scope=AllExportsScope.Recursive,
     )
-    assert_directory_content(output_dir, EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_multi_file")
+    assert_directory_content(output_dir)
 
 
 def test_generate_builtin_string_normalization_matches_fixture(output_file: Path) -> None:
@@ -7072,8 +7033,6 @@ def test_generate_builtin_string_normalization_matches_fixture(output_file: Path
         formatters=[Formatter.BUILTIN],
         use_double_quotes=True,
         disable_timestamp=True,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "person_use_double_quotes.py",
     )
 
 
@@ -7094,7 +7053,6 @@ def test_generate_builtin_string_normalization_module_split(output_dir: Path) ->
             "recursive",
             "--use-exact-imports",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "module_split_single",
     )
 
 
@@ -7113,7 +7071,6 @@ def test_generate_returns_string_with_custom_file_header() -> None:
         input_file_type=InputFileType.JsonSchema,
         custom_file_header=custom_header,
         enable_version_header=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_with_custom_file_header.py",
     )
 
 
@@ -7132,7 +7089,7 @@ timestamp, version, and command metadata. The default `replace` mode preserves e
         "--disable-timestamp",
         "--enable-version-header",
     ],
-    golden_output="main/custom_file_header_prepend.py",
+    golden_output="main/main_general/main_custom_file_header_prepend.py",
     related_options=["--custom-file-header", "--custom-file-header-path", "--enable-version-header"],
 )
 def test_main_custom_file_header_prepend(output_file: Path) -> None:
@@ -7141,8 +7098,6 @@ def test_main_custom_file_header_prepend(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="custom_file_header_prepend.py",
         extra_args=[
             "--custom-file-header",
             "# Copyright {year}",
@@ -7165,7 +7120,6 @@ def test_generate_returns_string_with_custom_file_header_prepend() -> None:
         custom_file_header="# SPDX-License-Identifier: MIT",
         custom_file_header_mode=CustomFileHeaderMode.Prepend,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_with_custom_file_header_prepend.py",
     )
 
 
@@ -7196,7 +7150,6 @@ def test_generate_returns_modules_with_custom_file_header_prepend() -> None:
 
     assert_generated_modules_output(
         result,
-        EXPECTED_MAIN_PATH / "jsonschema" / "custom_file_header_path_prepend_multi_file",
         transform=lambda output: f"{output}\n",
     )
 
@@ -7211,7 +7164,6 @@ def test_generate_custom_file_header_prepend_after_formatter_comment() -> None:
         custom_file_header='"""Module docstring."""\n\nimport sys',
         custom_file_header_mode=CustomFileHeaderMode.Prepend,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_prepend_after_formatter_comment.py",
     )
 
 
@@ -7225,7 +7177,6 @@ def test_generate_custom_file_header_prepend_after_formatter_docstring() -> None
         custom_file_header='"""Module docstring."""\n\nimport sys',
         custom_file_header_mode=CustomFileHeaderMode.Prepend,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_prepend_after_formatter_docstring.py",
     )
 
 
@@ -7239,43 +7190,36 @@ def test_generate_custom_file_header_prepend_after_formatter_parenthesized_docst
         custom_file_header='"""Module docstring."""\n\nimport sys',
         custom_file_header_mode=CustomFileHeaderMode.Prepend,
         disable_timestamp=True,
-        expected_file=(
-            EXPECTED_MAIN_PATH / "generate_custom_file_header_prepend_after_formatter_parenthesized_docstring.py"
-        ),
     )
 
 
 @pytest.mark.parametrize(
-    ("mode", "formatter", "expected_name"),
+    ("mode", "formatter"),
     [
         pytest.param(
             CustomFileHeaderMode.Replace,
             "add_docstring",
-            "generate_custom_comment_header_after_formatter_docstring.py",
             id="replace-docstring",
         ),
         pytest.param(
             CustomFileHeaderMode.Prepend,
             "add_docstring",
-            "generate_custom_comment_header_prepend_after_formatter_docstring.py",
             id="prepend-docstring",
         ),
         pytest.param(
             CustomFileHeaderMode.Replace,
             "add_parenthesized_docstring",
-            "generate_custom_comment_header_after_formatter_parenthesized_docstring.py",
             id="replace-parenthesized-docstring",
         ),
         pytest.param(
             CustomFileHeaderMode.Replace,
             "add_comment",
-            "generate_custom_comment_header_after_formatter_comment.py",
             id="replace-comment",
         ),
     ],
 )
 def test_generate_custom_comment_header_keeps_formatter_docstring_first(
-    mode: CustomFileHeaderMode, formatter: str, expected_name: str
+    mode: CustomFileHeaderMode, formatter: str
 ) -> None:
     """Keep a formatter docstring as the module docstring under a comment-only header."""
     run_generate_and_assert(
@@ -7286,7 +7230,30 @@ def test_generate_custom_comment_header_keeps_formatter_docstring_first(
         custom_file_header="# My header",
         custom_file_header_mode=mode,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / expected_name,
+    )
+
+
+def test_generate_custom_file_header_with_a_backslash_continued_blank_line(tmp_path: Path, output_file: Path) -> None:
+    """Place the future import before the import of a header whose blank line is continued by a backslash."""
+    header_path = tmp_path / "header.txt"
+    header_path.write_text("# Header\n\\\n\nimport os\n", encoding="utf-8")
+    input_path = tmp_path / "schema.json"
+    input_path.write_text(
+        '{"type": "object", "title": "A", "properties": {"a": {"type": "string"}}}',
+        encoding="utf-8",
+    )
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--custom-file-header-path",
+            str(header_path),
+        ],
     )
 
 
@@ -7385,8 +7352,6 @@ def test_custom_file_header_prepend_preserves_future_import_text(output_file: Pa
         input_path=JSON_SCHEMA_DATA_PATH / "custom_file_header_schema_description_future.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="jsonschema/custom_file_header_schema_description_future.py",
         extra_args=[
             "--custom-file-header",
             "# SPDX-License-Identifier: MIT",
@@ -7406,7 +7371,6 @@ def test_generate_returns_string_with_custom_file_header_and_code() -> None:
         input_=json_schema,
         input_file_type=InputFileType.JsonSchema,
         custom_file_header=custom_header,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_with_custom_file_header_and_code.py",
     )
 
 
@@ -7418,7 +7382,6 @@ def test_generate_custom_file_header_preserves_runtime_target_tokenizer_boundary
         custom_file_header_path=DATA_PATH / "custom_file_header_with_newer_target_syntax.txt",
         target_python_version=PythonVersion.PY_312,
         formatters=[],
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_with_newer_target_syntax.py",
     )
 
 
@@ -7430,7 +7393,6 @@ def test_generate_custom_file_header_does_not_treat_fstring_as_docstring() -> No
         custom_file_header_path=DATA_PATH / "custom_file_header_with_fstring.txt",
         target_python_version=PythonVersion.PY_312,
         formatters=[],
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_with_fstring.py",
     )
 
 
@@ -7441,7 +7403,6 @@ def test_generate_custom_file_header_does_not_treat_postfix_call_as_docstring() 
         input_file_type=InputFileType.JsonSchema,
         custom_file_header_path=DATA_PATH / "custom_file_header_with_postfix_call.txt",
         formatters=[],
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_with_postfix_call.py",
     )
 
 
@@ -7452,7 +7413,6 @@ def test_generate_custom_file_header_with_form_feed() -> None:
         input_file_type=InputFileType.JsonSchema,
         custom_file_header_path=DATA_PATH / "custom_file_header_with_form_feed.txt",
         formatters=[],
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_with_form_feed.py",
     )
 
 
@@ -7463,7 +7423,6 @@ def test_generate_custom_file_header_comments_only_fast_path() -> None:
         input_file_type=InputFileType.JsonSchema,
         custom_file_header_path=DATA_PATH / "custom_file_header_fast_path.txt",
         formatters=[],
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_comments_only.py",
     )
 
 
@@ -7475,7 +7434,6 @@ def test_generate_custom_file_header_with_parenthesized_docstring() -> None:
         custom_file_header_path=DATA_PATH / "custom_file_header_with_parenthesized_docstring.txt",
         target_python_version=PythonVersion.PY_312,
         formatters=[],
-        expected_file=EXPECTED_MAIN_PATH / "generate_custom_file_header_with_parenthesized_docstring.py",
     )
 
 
@@ -7488,7 +7446,6 @@ def test_generate_returns_string_with_custom_file_header_no_future() -> None:
         input_file_type=InputFileType.JsonSchema,
         custom_file_header=custom_header,
         disable_future_imports=True,
-        expected_file=EXPECTED_MAIN_PATH / "generate_returns_string_with_custom_file_header_no_future.py",
     )
 
 
@@ -7500,12 +7457,11 @@ def test_generate_with_dict_jsonschema() -> None:
         input_=jsonschema_dict,
         input_file_type=InputFileType.JsonSchema,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "dict_input" / "jsonschema.py",
         assert_input_unchanged=True,
     )
 
 
-def test_generate_with_dict_jsonschema_boolean_exclusive_bounds_keeps_input_unchanged(tmp_path: Path) -> None:
+def test_generate_with_dict_jsonschema_boolean_exclusive_bounds_keeps_input_unchanged() -> None:
     """Test boolean exclusive bounds in dict input are normalized without mutating the caller's schema."""
     schema: dict[str, object] = {
         "type": "object",
@@ -7519,26 +7475,11 @@ def test_generate_with_dict_jsonschema_boolean_exclusive_bounds_keeps_input_unch
             },
         },
     }
-    expected_file = tmp_path / "expected.py"
-    expected_file.write_text(
-        """# generated by datamodel-codegen:
-#   filename:  <dict>
-
-from __future__ import annotations
-
-from pydantic import BaseModel, confloat
-
-
-class Model(BaseModel):
-    score: confloat(ge=0.0, lt=10.0) | None = None""",
-        encoding="utf-8",
-    )
 
     run_generate_and_assert(
         input_=schema,
         input_file_type=InputFileType.JsonSchema,
         disable_timestamp=True,
-        expected_file=expected_file,
         assert_input_unchanged=True,
     )
 
@@ -7551,7 +7492,6 @@ def test_generate_with_dict_openapi() -> None:
         input_=openapi_dict,
         input_file_type=InputFileType.OpenAPI,
         disable_timestamp=True,
-        expected_file=EXPECTED_MAIN_PATH / "dict_input" / "openapi.py",
         assert_input_unchanged=True,
     )
 
@@ -7593,7 +7533,6 @@ def test_generate_with_dict_openapi_validation_warns() -> None:
             input_file_type=InputFileType.OpenAPI,
             validation=True,
             disable_timestamp=True,
-            expected_file=EXPECTED_MAIN_PATH / "dict_input" / "openapi.py",
         )
         # Check that both deprecated warning and dict input warning were raised
         assert_warnings_contain(w, "deprecated", "dict input")
@@ -7632,7 +7571,7 @@ def test_generate_with_config_object(output_file: Path) -> None:
         input_='{"type": "object", "properties": {"userName": {"type": "string"}}}',
         config=config,
     )
-    assert_file_content(output_file, "generate_with_config_object.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 _EXTRA_TEMPLATE_COMMENT = "safe comment\rprint('PWNED')\nraise SystemExit(1)\vimport os\fexec('PWNED')"
@@ -7661,7 +7600,6 @@ _BUILTIN_TEMPLATE_RESERVED_DATA_PATH = JSON_SCHEMA_DATA_PATH / "extra_data_built
 _BUILTIN_TEMPLATE_TYPED_DICT_DATA_PATH = JSON_SCHEMA_DATA_PATH / "extra_data_builtin_template_typed_dict.json"
 _BUILTIN_TEMPLATE_CUSTOM_DIR = DATA_PATH / "templates_builtin_template_data"
 _BUILTIN_TEMPLATE_INCLUDE_ONLY_DIR = DATA_PATH / "templates_include_only"
-_BUILTIN_TEMPLATE_EXPECTED_PATH = EXPECTED_MAIN_PATH / "template_data"
 
 
 def _generate_with_extra_template_comment(input_: str, **generate_kwargs: Any) -> str:
@@ -7771,7 +7709,7 @@ def test_generate_builtin_template_data_is_non_executing() -> None:
     if not isinstance(generated, str):  # pragma: no cover
         pytest.fail(f"Expected generate() to return str, got {type(generated).__name__}")
     validate_generated_code(generated, "<generated>")
-    assert_output(f"{generated}\n", _BUILTIN_TEMPLATE_EXPECTED_PATH / "api_builtin_config.py")
+    assert_output(f"{generated}\n", suffix=".py")
     tree = ast.parse(generated)
     marker_assignments = [
         node
@@ -7784,24 +7722,21 @@ def test_generate_builtin_template_data_is_non_executing() -> None:
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "template_data_path", "expected_file"),
+    ("output_model_type", "template_data_path"),
     [
         pytest.param(
             "pydantic_v2.BaseModel",
             _BUILTIN_TEMPLATE_CONFIG_DATA_PATH,
-            _BUILTIN_TEMPLATE_EXPECTED_PATH / "builtin_config.py",
             id="pydantic-config",
         ),
         pytest.param(
             "msgspec.Struct",
             _BUILTIN_TEMPLATE_MSGSPEC_DATA_PATH,
-            _BUILTIN_TEMPLATE_EXPECTED_PATH / "builtin_msgspec.py",
             id="msgspec-base-class-kwargs",
         ),
         pytest.param(
             "typing.TypedDict",
             _BUILTIN_TEMPLATE_TYPED_DICT_DATA_PATH,
-            _BUILTIN_TEMPLATE_EXPECTED_PATH / "builtin_typed_dict.py",
             id="typed-dict-extra-items",
         ),
     ],
@@ -7810,7 +7745,6 @@ def test_main_builtin_template_data_is_non_executing(
     output_file: Path,
     output_model_type: str,
     template_data_path: Path,
-    expected_file: Path,
 ) -> None:
     """Keep built-in CLI template data literal-only with fixture-backed output."""
     run_main_and_assert(
@@ -7828,8 +7762,6 @@ def test_main_builtin_template_data_is_non_executing(
             "--extra-template-data",
             str(template_data_path),
         ],
-        assert_func=assert_file_content,
-        expected_file=expected_file,
     )
 
 
@@ -7890,8 +7822,6 @@ def test_main_custom_template_data_remains_unrestricted(output_file: Path) -> No
             "--extra-template-data",
             str(_BUILTIN_TEMPLATE_RESERVED_DATA_PATH),
         ],
-        assert_func=assert_file_content,
-        expected_file=_BUILTIN_TEMPLATE_EXPECTED_PATH / "custom_template.py",
     )
 
 
@@ -7915,7 +7845,7 @@ def test_generate_extra_template_data_comment_object_is_safe() -> None:
     assert_no_uncommented_generated_code(generated, forbidden_starts=("__import__(",))
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statement requires Python 3.12+")
+@needs("type-statements")
 @pytest.mark.skipif(version.parse(black.__version__) < version.parse("23.3.0"), reason="black too old")
 def test_generate_extra_template_data_comment_is_safe_for_type_statement() -> None:
     """Ensure type statement comments cannot add Python statements."""
@@ -7937,7 +7867,6 @@ def test_generate_config_with_union_mode() -> None:
     run_generate_and_assert(
         input_='{"type": "object", "properties": {"value": {"anyOf": [{"type": "string"}, {"type": "integer"}]}}}',
         config=config,
-        expected_file=EXPECTED_MAIN_PATH / "generate_config_union_mode.py",
     )
 
 
@@ -7968,7 +7897,7 @@ def test_generate_disposes_parser_when_parse_raises(parse_error: BaseException, 
     parser = mocker.Mock()
     parser.parse.side_effect = parse_error
     parser.dispose.side_effect = RuntimeError("dispose failed")
-    mocker.patch.object(datamodel_code_generator, "_build_parser", return_value=parser)
+    mocker.patch("datamodel_code_generator._generation._build_parser", return_value=parser)
 
     with pytest.raises(type(parse_error)) as exc_info:
         generate("{}", input_file_type=InputFileType.JsonSchema, formatters=[])
@@ -8263,7 +8192,6 @@ def test_generate_with_imported_config_from_top_level() -> None:
     run_generate_and_assert(
         input_='{"type": "object"}',
         config=config,
-        expected_file=EXPECTED_MAIN_PATH / "generate_with_imported_config_from_top_level.py",
     )
 
 
@@ -8305,6 +8233,9 @@ def test_all_exports_includes_generate_config() -> None:
             ("20261027", ("310", "311", "312", "313", "314", "315")),
             ("20261104", ("310", "311", "312", "313", "314", "315")),
             ("20261106", ("310", "311", "312", "313", "314", "315")),
+            ("20261111", ("310", "311", "312", "313", "314", "315")),
+            ("20261112", ("310", "311", "312", "313", "314", "315")),
+            ("20261113", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets
@@ -8335,13 +8266,10 @@ def test_builtin_preset_formatter_selection(
             ],
             use_builtin_default_formatter=False,
         )
-    assert_output(
-        output_file.read_text(encoding="utf-8"),
-        EXPECTED_MAIN_PATH / "formatter_policy" / f"{family}-{target}-{formatters[0] if formatters else 'builtin'}.py",
-    )
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
     assert_output(
         "\n".join(str(item.message) for item in recorded if "Default formatters" in str(item.message)),
-        EXPECTED_MAIN_PATH / "formatter_policy" / "no_warning.txt",
+        name="warnings",
     )
 
 
@@ -8384,16 +8312,8 @@ def test_formatter_policy_warning(mode: str, api: bool, output_file: Path) -> No
                 use_builtin_default_formatter=False,
             )
     formatter_warnings = "\n".join(str(item.message) for item in recorded if "Default formatters" in str(item.message))
-    assert_output(
-        formatter_warnings,
-        EXPECTED_MAIN_PATH
-        / "formatter_policy"
-        / ("warning.txt" if mode in {"implicit", "old-preset"} else "no_warning.txt"),
-    )
-    assert_output(
-        output_file.read_text(encoding="utf-8"),
-        EXPECTED_MAIN_PATH / "formatter_policy" / f"{mode}-{'api' if api else 'cli'}.py",
-    )
+    assert_output(formatter_warnings, name="warnings")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize("mode", ["builtin", "ruff", "black", "empty", "implicit"])
@@ -8417,14 +8337,9 @@ def test_formatter_policy_pyproject(mode: str, override: bool, output_file: Path
         )
     assert_output(
         "\n".join(str(item.message) for item in recorded if "Default formatters" in str(item.message)),
-        EXPECTED_MAIN_PATH
-        / "formatter_policy"
-        / ("warning.txt" if mode == "implicit" and not override else "no_warning.txt"),
+        name="warnings",
     )
-    assert_output(
-        output_file.read_text(encoding="utf-8"),
-        EXPECTED_MAIN_PATH / "formatter_policy" / f"pyproject-{mode}-{'override' if override else 'configured'}.py",
-    )
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize("checks_off", [(CHECK_FACT_FINALITY_ENV,), (CHECK_FACT_FINALITY_ENV, CHECK_STORE_WRITES_ENV)])
@@ -8453,5 +8368,4 @@ def test_generation_without_parse_checks(
         output_path=output_file,
         input_file_type="openapi",
         extra_args=args,
-        assert_func=assert_file_content,
     )

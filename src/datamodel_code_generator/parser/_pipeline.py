@@ -4,10 +4,10 @@ The tables of ``parser/_passes/_tables.py`` hold the pipeline, which ``Parser`` 
 named as its declaration in ``scripts/pass_decls.py``; a ``ForEachModule`` runs passes once per output module; a
 ``HookCall`` calls an overridable parser method whose default runs a table of its own; a ``Segment`` runs the steps of
 one phase, entering the phase first. The ``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is
-false and runs every other one. A ``DecisionPhase`` runs the decision passes of the parser's registry
-(``parser/_phases.py``) in registry order. ``scripts/check_pass_pipeline.py`` checks the tables and the registries
-against the declarations and the order rule. ``PARSE_CALLER``, set to ``parse_caller()``, and
-``stacklevel_at_parse_caller`` let a warning name the code that called ``Parser.parse()`` however deep in the pipeline
+false or whose ``trigger`` is false and runs every other one. A ``DecisionPhase`` runs the decision passes of the
+parser's registry (``parser/_phases.py``) in registry order. ``scripts/check_pass_pipeline.py`` checks the tables and
+the registries against the declarations and the order rule. ``PARSE_CALLER``, set to ``parse_caller()``, and
+``warn_at_parse_caller`` let a warning name the code that called ``Parser.parse()`` however deep in the pipeline
 it is emitted.
 """
 
@@ -16,11 +16,12 @@ from __future__ import annotations
 import sys
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Final, Generic, Protocol, TypeVar, cast
+from warnings import warn
 
 from typing_extensions import ParamSpec, final
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator._warning_control import is_tracer_frame
+from datamodel_code_generator._warning_control import is_tracer_frame, warn_at_frame
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -40,7 +41,7 @@ __all__ = [
     "StepLike",
     "late",
     "parse_caller",
-    "stacklevel_at_parse_caller",
+    "warn_at_parse_caller",
 ]
 
 P = TypeVar("P")
@@ -74,11 +75,16 @@ def late(function: Callable[Q, R]) -> Callable[Q, R]:
 @final
 @record
 class PassSpec(Generic[P, S]):
-    """One pass, named as its declaration: ``run`` runs it on the state of its segment when ``when`` (if any) holds."""
+    """One pass, named as its declaration: ``run`` runs it on the state of its segment when ``when`` (if any) holds.
+
+    ``when`` is an option the pass needs: running it anyway is not a no-op. ``trigger`` is whether the fact the pass
+    rewrites is present: where it is false, running the pass would write nothing, so the runner skips it.
+    """
 
     name: str
     run: Callable[[P, S], None]
     when: Callable[[P, S], bool] | None = None
+    trigger: Callable[[P, S], bool] | None = None
 
     def execute(self, runner: Runner, parser: P, state: S) -> None:
         """Run the pass through the runner."""
@@ -163,8 +169,10 @@ class Runner:
     enter_phase: Callable[[Phase], None]
 
     def run_pass(self, spec: PassSpec[P, S], parser: P, state: S) -> None:  # noqa: PLR6301
-        """Run one pass, unless its ``when`` is false."""
-        if spec.when is not None and not spec.when(parser, state):
+        """Run one pass, unless its ``when`` or its ``trigger`` is false."""
+        if (spec.when is not None and not spec.when(parser, state)) or (
+            spec.trigger is not None and not spec.trigger(parser, state)
+        ):
             return
         spec.run(parser, state)
 
@@ -186,21 +194,23 @@ PARSE_CALLER: Final[ContextVar[FrameType | None]] = ContextVar("parse_caller", d
 
 def parse_caller() -> FrameType | None:
     """Return the frame that called the ``Parser.parse()`` calling this, past the wrapper frames of ``--debug``."""
-    frame = sys._getframe(2)  # noqa: SLF001
+    frame = sys._getframe(2)
     while frame is not None and is_tracer_frame(frame):
         frame = frame.f_back
     return frame
 
 
-def stacklevel_at_parse_caller() -> int:
-    """Return the ``stacklevel`` that makes a ``warn()`` in the calling function name the caller of ``Parser.parse()``.
+def warn_at_parse_caller(message: str, category: type[Warning]) -> None:
+    """Warn as ``warn()`` does for the frame that called the running ``Parser.parse()``, where it names the code.
 
-    Outside ``Parser.parse()`` there is no such caller, and the warning names the outermost frame.
+    Outside ``Parser.parse()`` there is no such caller, and ``warn()`` names no frame of the call stack.
+    The module that filters match is the caller's, with the generation core as ``datamodel_code_generator``
+    (``warn_at_frame``).
     """
-    anchor = PARSE_CALLER.get()
-    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
-    level = 1
-    while frame is not None and frame is not anchor:
-        frame = frame.f_back
-        level += 1
-    return level
+    if (frame := PARSE_CALLER.get()) is not None:
+        warn_at_frame(frame, message, category)
+        return
+    depth, outer = 1, sys._getframe(1)
+    while outer is not None:
+        depth, outer = depth + 1, outer.f_back
+    warn(message, category, stacklevel=depth + 1)

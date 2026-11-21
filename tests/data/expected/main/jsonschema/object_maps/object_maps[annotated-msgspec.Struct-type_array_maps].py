@@ -28,7 +28,9 @@ MArrayOrNamesCountAdditionalPropertyObject: TypeAlias = Annotated[
 ]
 
 
-MArrayOrNamesCountAdditionalProperty: TypeAlias = MArrayOrNamesCountAdditionalPropertyObject | list[Any] | None
+MArrayOrNamesCountAdditionalProperty: TypeAlias = (
+    MArrayOrNamesCountAdditionalPropertyObject | list[Any] | None
+)
 
 
 StringOrPatterns: TypeAlias = dict[str, int] | str
@@ -57,9 +59,9 @@ class Model(Struct):
     mStringOrPatterns: dict[str, dict[str, int] | str] | UnsetType = UNSET
     iStringOrNames: list[IStringOrNamesObject | str | None] | UnsetType = UNSET
     mStringOrNames: dict[str, MStringOrNamesObject | str | None] | UnsetType = UNSET
-    iArrayOrNamesCount: list[IArrayOrNamesCountObject | list[Any] | None] | UnsetType = (
-        UNSET
-    )
+    iArrayOrNamesCount: (
+        list[IArrayOrNamesCountObject | list[Any] | None] | UnsetType
+    ) = UNSET
     mArrayOrNamesCount: dict[str, MArrayOrNamesCountAdditionalProperty] | UnsetType = (
         UNSET
     )

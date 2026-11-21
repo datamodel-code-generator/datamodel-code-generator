@@ -9,7 +9,7 @@ import re
 import sys
 import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 ALLOWED_BREAKING_CHANGE_HEADINGS = frozenset({
     "Code Generation Changes",
@@ -43,6 +43,9 @@ UNREADABLE_DIFF_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 TOKEN_BOUNDARY_CHARS = r"A-Za-z0-9_.:/-"
+ELLIPSES = ("...", "\u2026")
+MIN_ELIDED_QUOTE_LENGTH = 8
+"""A quoted token that starts or ends with an ellipsis elides text there; the rest must be at least this long."""
 ACTIVE_MARKDOWN_RE = re.compile(
     r"\[|\]|@|<|>|\b(?:https?|ftp)://|\bwww\.|(?<!:)//",
     re.IGNORECASE | re.MULTILINE,
@@ -210,8 +213,21 @@ def _read_range(tool_use_result: Any, expected_path: str) -> tuple[int, int, int
     return (start_line, end_line, total_lines) if end_line <= total_lines else None
 
 
-def _covers_entire_file(read_ranges: list[tuple[int, int, int]]) -> bool:
-    """Return whether successful Read ranges cover every line in one file."""
+def _empty_final_line(file_path: str) -> int:
+    """Return the number of the empty line Read counts after a trusted artifact's final newline, or 0 without one."""
+    try:
+        data = Path(file_path).read_bytes()
+    except OSError:
+        return 0
+    return data.count(b"\n") + 1 if data.endswith(b"\n") else 0
+
+
+def _covers_entire_file(read_ranges: list[tuple[int, int, int]], *, empty_final_line: int = 0) -> bool:
+    """Return whether successful Read ranges cover every line in one file.
+
+    Read counts the empty text after a final newline as the last line, so a ``totalLines`` equal to
+    ``empty_final_line`` does not require that line, which holds nothing to read.
+    """
     if not read_ranges or len(total_lines := {read_range[2] for read_range in read_ranges}) != 1:
         return False
     total_line_count = total_lines.pop()
@@ -222,7 +238,7 @@ def _covers_entire_file(read_ranges: list[tuple[int, int, int]]) -> bool:
         if start_line > next_line:
             return False
         next_line = max(next_line, end_line + 1)
-    return next_line > total_line_count
+    return next_line > total_line_count - (total_line_count == empty_final_line)
 
 
 def _validate_execution_evidence(
@@ -272,12 +288,15 @@ def _validate_execution_evidence(
             continue
         if read_range := _read_range(tool_use_result, file_path):
             successful_read_ranges[file_path].append(read_range)
-    if all(_covers_entire_file(read_ranges) for read_ranges in successful_read_ranges.values()):
+    if all(
+        _covers_entire_file(read_ranges, empty_final_line=_empty_final_line(path))
+        for path, read_ranges in successful_read_ranges.items()
+    ):
         return
     _fail_closed("Claude did not completely read all prepared artifacts; refusing to update the draft.")
 
 
-def _fail_closed(message: str) -> None:
+def _fail_closed(message: str) -> NoReturn:
     """Print a non-sensitive validation error and stop the workflow."""
     print(message, file=sys.stderr)
     raise SystemExit(1)
@@ -439,11 +458,20 @@ def _claimed_removed_tokens(line: str) -> set[str]:
 
 
 def _token_present(token: str, deleted_lines: str) -> bool:
-    """Return whether token appears with non-token boundaries in deleted lines."""
+    """Return whether token appears in deleted lines, with token boundaries on the sides not elided by an ellipsis."""
     if not (normalized := _normalize_token(token)):
         return False
-    pattern = re.compile(rf"(?<![{TOKEN_BOUNDARY_CHARS}]){re.escape(normalized)}(?![{TOKEN_BOUNDARY_CHARS}])")
-    return bool(pattern.search(deleted_lines))
+    start, end = 0, len(normalized)
+    if normalized.startswith(ELLIPSES):
+        start = 3 if normalized.startswith("...") else 1
+    if normalized.endswith(ELLIPSES):
+        end -= 3 if normalized.endswith("...") else 1
+    text = normalized[start : max(start, end)].strip()
+    if (start or end < len(normalized)) and len(text) < MIN_ELIDED_QUOTE_LENGTH:
+        return False
+    before = "" if start else rf"(?<![{TOKEN_BOUNDARY_CHARS}])"
+    after = "" if end < len(normalized) else rf"(?![{TOKEN_BOUNDARY_CHARS}])"
+    return bool(re.search(f"{before}{re.escape(text)}{after}", deleted_lines))
 
 
 def _validate_removal_claims(breaking_changes_content: str, deleted_lines_path: Path) -> None:

@@ -15,6 +15,6 @@ FracItem: TypeAlias = Annotated[int, Meta(ge=1, le=9)]
 
 class Model(Struct):
     frac: Annotated[int, Meta(ge=1, le=9)] | UnsetType = UNSET
-    frac_prop: int | UnsetType = UNSET
+    frac_prop: Annotated[int, Meta(ge=1, le=9)] | UnsetType = UNSET
     frac_items: list[FracItem] | UnsetType = UNSET
     frac_map: dict[str, FracMap] | UnsetType = UNSET

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -13,7 +13,8 @@ from tests.api_generation.support.fastapi_generation import (
 )
 from tests.conftest import assert_generated_modules_output, assert_output
 
-EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi"
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.parametrize(
@@ -27,6 +28,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "names",
         "names-default",
         "types",
+        "containers",
         "methods",
         "native",
         "native-merged-null",
@@ -47,6 +49,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "response-keys",
         "querystring-nameless",
         "serialize-as-any-aliases",
+        "applied-config",
         "media-kept",
         "parameter-errors",
         "selector-errors",
@@ -64,6 +67,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "argument-errors",
         "security",
         "security-errors",
+        "auth-parameters",
         "security-roles",
         "security-roles-30",
         "parameter-ref-loop-30",
@@ -73,6 +77,15 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "references",
         "reference-errors",
         "pointer-references",
+        "served-self-names",
+        "served-root-id",
+        "served-ids-30",
+        "served-embedded-id",
+        "served-same-root-id",
+        "served-relative-root-id",
+        "served-inline-id",
+        "served-held-by-path-item",
+        "served-id-after-pointer",
         "link-errors",
         "info",
         "callbacks",
@@ -84,14 +97,16 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "template-invalid",
         "text-bound-types-errors",
         "parts-bound-types-errors",
+        "nullable-parameters",
+        "nullable-parameters-31",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's parameters, body, and responses, and render the package they need."""
     report, rendered, documented = fastapi_render(case, tmp_path / "render")
-    assert_output(report, EXPECTED / f"{case}.txt")
+    assert_output(report, name="report")
     package = {(backend, *parts): body for backend, modules in rendered.items() for parts, body in modules.items()}
-    assert_generated_modules_output({**package, **documented}, EXPECTED / "packages" / case, pattern="*")
+    assert_generated_modules_output({**package, **documented}, pattern="*", name="package")
 
 
 @pytest.mark.parametrize(
@@ -114,25 +129,24 @@ def test_fastapi_template_fallback(case: str, *, builtin_sources: bool, tmp_path
     """Render a package from copies of the builtin templates' Jinja sources, or without server overrides, unchanged.
 
     The copies live in the fastapi directory of a custom template directory; a custom template directory without one
-    falls back to the builtin roles. Each case reports under the name of the case it equals.
+    falls back to the builtin roles. Each case reports what the case it equals reports.
     """
     report, rendered, documented = fastapi_render(case, tmp_path / "render", builtin_sources=builtin_sources)
-    expected = report.splitlines()[0].removeprefix("# ")
-    assert_output(report, EXPECTED / f"{expected}.txt")
+    assert_output(report, name="report")
     package = {(backend, *parts): body for backend, modules in rendered.items() for parts, body in modules.items()}
-    assert_generated_modules_output({**package, **documented}, EXPECTED / "packages" / expected, pattern="*")
+    assert_generated_modules_output({**package, **documented}, pattern="*", name="package")
 
 
 def test_fastapi_api(tmp_path: Path) -> None:
     """Return the files without an output, generate twice, then restore an edited package file."""
-    assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")
+    assert_output(fastapi_api_report(tmp_path))
 
 
 def test_fastapi_scope(tmp_path: Path) -> None:
     """Stop unsupported settings before generating models, locking, or publishing."""
-    assert_output(fastapi_scope_report(tmp_path), EXPECTED / "acceptance" / "scope.txt")
+    assert_output(fastapi_scope_report(tmp_path))
 
 
 def test_fastapi_checkouts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Write the same bytes from every checkout and directory, and nothing new after moving a checkout."""
-    assert_output(fastapi_checkout_report(tmp_path, monkeypatch), EXPECTED / "acceptance" / "checkouts.txt")
+    assert_output(fastapi_checkout_report(tmp_path, monkeypatch))

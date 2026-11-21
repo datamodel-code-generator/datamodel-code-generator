@@ -130,8 +130,7 @@ class PNoPatternKeys(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]
         {
             'declared_properties': (),
             'rejected_patterns': ('^x',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': int,
             'allow_unmatched': True,
         },
@@ -257,8 +256,7 @@ class INoPatternKey(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]])
         {
             'declared_properties': (),
             'rejected_patterns': ('^x',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': int,
             'allow_unmatched': True,
         },
@@ -272,8 +270,7 @@ class MNoPatternKeys(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]
         {
             'declared_properties': (),
             'rejected_patterns': ('^x',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': int,
             'allow_unmatched': True,
         },
@@ -343,8 +340,7 @@ class NoPatternKeys(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]])
         {
             'declared_properties': (),
             'rejected_patterns': ('^x',),
-            'pattern_properties': (
-            ),
+            'pattern_properties': (),
             'additional_property_type': int,
             'allow_unmatched': True,
         },

@@ -1,0 +1,1 @@
+warning: msgspec.Meta does not take max_length on UUID; Event.limited is generated without this constraint.

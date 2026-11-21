@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.types import DataType
 
 
 class TypeAliasBase(DataModel):
@@ -54,6 +56,17 @@ class TypeAliasBase(DataModel):
             imports = chain_as_tuple(imports, (IMPORT_ANNOTATED,))
 
         return imports
+
+
+def _alias_value(data_type: DataType) -> tuple[TypeAliasBase, DataModelFieldBase] | None:
+    """Return the type alias ``data_type`` names with the field that holds its value, or None for no alias with one."""
+    if (
+        (reference := data_type.reference) is None
+        or not isinstance(alias := reference.source, TypeAliasBase)
+        or not alias.fields
+    ):
+        return None
+    return alias, alias.fields[0]
 
 
 class TypeAlias(TypeAliasBase):

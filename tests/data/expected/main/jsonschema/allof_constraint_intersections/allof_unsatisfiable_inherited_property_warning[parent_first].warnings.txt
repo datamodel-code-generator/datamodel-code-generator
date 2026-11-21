@@ -1,0 +1,2 @@
+allof_unsatisfiable_inherited_parent_first.json#/$defs/Parent/allOf/1/properties/x: no value satisfies every part of this schema (the allOf members that declare it), since no value meets all of their `minLength`, `maxLength`; the generated code keeps its earlier `minLength`, `maxLength`.
+Field name `x` is duplicated on Parent

@@ -1,0 +1,6 @@
+LookaroundBlob 'QUJDRA==': valid
+LookaroundBlob '-QUJD': string_pattern_mismatch
+LookaroundBlob value: 'ABCD'
+LongBlob 'QUJDRA==': valid
+LongBlob '': string_pattern_mismatch
+LongBlob value: 'ABCD'

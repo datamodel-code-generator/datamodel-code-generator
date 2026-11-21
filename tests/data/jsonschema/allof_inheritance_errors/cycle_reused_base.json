@@ -1,0 +1,11 @@
+{
+  "$defs": {
+    "Dup1": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "Dup2": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "A": {"allOf": [{"$ref": "#/$defs/Dup2"}, {"$ref": "#/$defs/B"}]},
+    "B": {"allOf": [{"$ref": "#/$defs/A"}]},
+    "U": {"allOf": [{"$ref": "#/$defs/Dup1"}]}
+  },
+  "type": "object",
+  "properties": {"a": {"$ref": "#/$defs/A"}, "u": {"$ref": "#/$defs/U"}}
+}

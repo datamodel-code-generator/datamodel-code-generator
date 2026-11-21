@@ -7,8 +7,7 @@ kind. ``object_members`` reads the members of one object by the table, the root 
 ``held_schemas`` the schemas an object holds, through the objects between them. A document a reference names at its
 root holds an object of the role that the reference's position expects (OpenAPI: "Detecting a document containing a
 referenceable Object at its root based on the expected type of the reference"), so the schemas that declare its `$id`
-and `$anchor` values are the ones ``held_schemas`` yields for that role; the parser's schema resources and the served
-document read them so.
+and `$anchor` values are the ones ``held_schemas`` yields for that role; the parser's schema resources read them so.
 """
 
 from __future__ import annotations

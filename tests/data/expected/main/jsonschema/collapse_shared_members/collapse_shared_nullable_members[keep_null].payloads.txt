@@ -1,0 +1,6 @@
+valid {"notes": {"k": "x"}}: rejected
+valid {"notes": {"k": null}}: rejected
+valid {"notes": {"k": {"reply": "y"}}}: rejected
+valid {"notes": {"k": {"reply": null}}}: accepted
+invalid {"notes": {"k": 5}}: rejected
+invalid {"notes": {"k": {"reply": 5}}}: rejected

@@ -3,15 +3,39 @@
 from __future__ import annotations
 
 import ast
+import difflib
+import functools
 import importlib
 import inspect
+import pickle
+import subprocess
+import sys
 import types
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, get_origin
 
 import pytest
 from typing_extensions import NotRequired
 
-from datamodel_code_generator import DEFAULT_SHARED_MODULE_NAME, generate
+from datamodel_code_generator import (
+    DEFAULT_SHARED_MODULE_NAME,
+    DanglingRefWarning,
+    DefaultValueTypeWarning,
+    DocumentationAnnotationWarning,
+    Error,
+    InvalidClassNameError,
+    InvalidFileFormatError,
+    LeftoverFilesWarning,
+    NamingHintWarning,
+    SchemaFetchError,
+    SchemaParseError,
+    SchemaResourceRefWarning,
+    generate,
+    reference,
+    util,
+)
+from datamodel_code_generator import __main__ as main_module
+from datamodel_code_generator import types as types_module
 from datamodel_code_generator.enums import (
     AliasGenerator,
     AllExportsCollisionStrategy,
@@ -19,6 +43,7 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
     ClientType,
@@ -33,6 +58,7 @@ from datamodel_code_generator.enums import (
     ModuleSplitMode,
     NamingStrategy,
     OpenAPIScope,
+    OpenEnums,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
@@ -45,12 +71,15 @@ from datamodel_code_generator.enums import (
 )
 from datamodel_code_generator.format import PythonVersionMin
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, DataModelField, DataTypeManager, RootModel
+from datamodel_code_generator.parser import asyncapi, avro, jsonschema
+from datamodel_code_generator.parser import base as parser_base
 from datamodel_code_generator.parser.base import YamlValue, title_to_class_name
+from tests.conftest import assert_output
+from tests.main import public_api_record
 
 if TYPE_CHECKING:
     from collections import defaultdict
     from collections.abc import Callable, Iterable, Mapping, Sequence
-    from pathlib import Path
     from typing import Unpack
     from urllib.parse import ParseResult
 
@@ -69,231 +98,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.validators import ModelValidators
 
 
-_PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
-    "datamodel_code_generator": frozenset({
-        "DEFAULT_FORMATTERS",
-        "DEFAULT_SHARED_MODULE_NAME",
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "AllExportsCollisionStrategy",
-        "AllExportsScope",
-        "AllOfClassHierarchy",
-        "AllOfMergeMode",
-        "AliasGenerator",
-        "AsyncAPIVersion",
-        "ClassNameAffixScope",
-        "ClientBodyArguments",
-        "ClientSignatureStyle",
-        "ClientType",
-        "CollapseRootModelsNameStrategy",
-        "ConstructorFieldOrder",
-        "CustomFileHeaderMode",
-        "DanglingRefWarning",
-        "DateClassType",
-        "DatetimeClassType",
-        "DefaultValueType",
-        "DefaultValueTypeWarning",
-        "DefaultPutDict",
-        "DocumentationAnnotationWarning",
-        "LeftoverFilesWarning",
-        "NamingHintWarning",
-        "Error",
-        "FieldTypeCollisionStrategy",
-        "GenerateConfig",
-        "GeneratedModules",
-        "load_pyproject_config",
-        "GraphQLScope",
-        "HTTPBackend",
-        "InputFileType",
-        "InputModelRefStrategy",
-        "InvalidClassNameError",
-        "InvalidFileFormatError",
-        "JsonSchemaVersion",
-        "LiteralType",
-        "ModuleSplitMode",
-        "NamingStrategy",
-        "OpenAPIAsDefinitions",
-        "OpenAPIScope",
-        "OpenAPIVersion",
-        "ProtobufVersion",
-        "PythonVersion",
-        "PythonVersionMin",
-        "ReadOnlyWriteOnlyModelType",
-        "ReuseScope",
-        "SchemaValidatorType",
-        "SchemaParseError",
-        "SchemaResourceRefWarning",
-        "ServerBodyMode",
-        "ServerHandlerMode",
-        "ServerLayout",
-        "ServerType",
-        "TargetPydanticVersion",
-        "VersionMode",
-        "XMLSchemaVersion",
-        "clear_dynamic_models_cache",
-        "detect_jsonschema_version",
-        "detect_openapi_version",
-        "detect_xmlschema_version",
-        "enable_parsed_source_cache",
-        "generate",
-        "generate_dynamic_models",
-    }),
-    "datamodel_code_generator._types": frozenset({
-        "AsyncAPIParserConfigDict",
-        "AvroParserConfigDict",
-        "GenerateConfigDict",
-        "GraphQLParserConfigDict",
-        "JSONSchemaParserConfigDict",
-        "ModelDict",
-        "OpenAPIParserConfigDict",
-        "ParseConfigDict",
-        "ParserConfigDict",
-        "ProtobufParserConfigDict",
-        "XMLSchemaParserConfigDict",
-    }),
-    "datamodel_code_generator.arguments": frozenset({"DEFAULT_ENCODING", "arg_parser", "namespace"}),
-    "datamodel_code_generator.enums": frozenset({
-        "DEFAULT_SHARED_MODULE_NAME",
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "AllExportsCollisionStrategy",
-        "AllExportsScope",
-        "AllOfClassHierarchy",
-        "AllOfMergeMode",
-        "AliasGenerator",
-        "AsyncAPIVersion",
-        "ClassNameAffixScope",
-        "ClientBodyArguments",
-        "ClientSignatureStyle",
-        "ClientType",
-        "CollapseRootModelsNameStrategy",
-        "ConstructorFieldOrder",
-        "CustomFileHeaderMode",
-        "DataModelType",
-        "DataclassArguments",
-        "DefaultValueType",
-        "FieldTypeCollisionStrategy",
-        "GraphQLScope",
-        "HTTPBackend",
-        "InputFileType",
-        "InputModelRefStrategy",
-        "JsonSchemaVersion",
-        "ModuleSplitMode",
-        "NamingStrategy",
-        "OpenAPIAsDefinitions",
-        "OpenAPIScope",
-        "OpenAPIVersion",
-        "ProtobufVersion",
-        "ReadOnlyWriteOnlyModelType",
-        "ReuseScope",
-        "SchemaValidatorType",
-        "ServerBodyMode",
-        "ServerHandlerMode",
-        "ServerLayout",
-        "ServerType",
-        "StrictTypes",
-        "TargetPydanticVersion",
-        "UnionMode",
-        "VersionMode",
-        "XMLSchemaVersion",
-    }),
-    "datamodel_code_generator.model": frozenset({
-        "DEFAULT_TARGET_PYTHON_VERSION",
-        "UNDEFINED",
-        "ConstraintsBase",
-        "DataModel",
-        "DataModelFieldBase",
-        "DataModelSet",
-        "_rebuild_model_with_datamodel_namespace",
-        "get_data_model_types",
-    }),
-    "datamodel_code_generator.model.pydantic_v2": frozenset({
-        "BaseModel",
-        "DataModelField",
-        "DataTypeManager",
-        "RootModel",
-        "RootModelTypeAlias",
-        "UnionMode",
-        "dump_resolve_reference_action",
-    }),
-    "datamodel_code_generator.parser": frozenset({"DefaultPutDict", "LiteralType"}),
-    "datamodel_code_generator.parser.avro": frozenset({
-        "AvroParser",
-        "convert_avro_schema_data",
-        "is_avro_schema_data",
-    }),
-    "datamodel_code_generator.parser.protobuf": frozenset({"ProtobufParser", "convert_protobuf_schema_data"}),
-    "datamodel_code_generator.parser.schema_version": frozenset({
-        "DataFormatMapping",
-        "DocumentDialect",
-        "FeatureMetadata",
-        "JsonSchemaFeatures",
-        "OpenAPISchemaFeatures",
-        "SchemaFeaturesT",
-        "SchemaKind",
-        "detect_asyncapi_version",
-        "detect_jsonschema_version",
-        "detect_openapi_version",
-        "document_dialect",
-        "get_data_formats",
-    }),
-    "datamodel_code_generator.parser.xmlschema": frozenset({
-        "XMLSchemaParser",
-        "convert_xml_schema_data",
-        "detect_xmlschema_version",
-        "is_xml_schema_text",
-    }),
-}
-
-
-_DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
-    "datamodel_code_generator.format": frozenset({
-        "CodeFormatter",
-        "Formatter",
-        "PythonVersion",
-        "PythonVersionMin",
-    }),
-    "datamodel_code_generator.imports": frozenset({
-        "IMPORT_ANNOTATIONS",
-        "Import",
-        "Imports",
-    }),
-    "datamodel_code_generator.parser.base": frozenset({
-        "Parser",
-        "SPECIAL_PATH_FORMAT",
-        "Source",
-        "YamlValue",
-        "title_to_class_name",
-    }),
-    "datamodel_code_generator.parser.graphql": frozenset({"GraphQLParser"}),
-    "datamodel_code_generator.parser.jsonschema": frozenset({
-        "JsonSchemaObject",
-        "JsonSchemaParser",
-        "get_model_by_path",
-        "get_special_path",
-    }),
-    "datamodel_code_generator.parser.openapi": frozenset({
-        "MediaObject",
-        "OpenAPIParser",
-        "Operation",
-        "ParameterObject",
-        "RequestBodyObject",
-        "ResponseObject",
-    }),
-    "datamodel_code_generator.reference": frozenset({
-        "ModelResolver",
-        "Reference",
-        "snake_to_upper_camel",
-    }),
-    "datamodel_code_generator.types": frozenset({
-        "DataType",
-        "DataTypeManager",
-        "StrictTypes",
-        "Types",
-    }),
-}
-
-
 def _baseline_generate(
     input_: Path | str | ParseResult | Mapping[str, Any] | list[Any],
     *,
@@ -304,6 +108,7 @@ def _baseline_generate(
     emit_model_metadata: Path | None = None,
     output_model_type: DataModelType = DataModelType.PydanticV2BaseModel,
     preset: PresetName | None = None,
+    read_implied_options_from_merged_values: bool = False,
     target_python_version: PythonVersion = PythonVersionMin,
     target_pydantic_version: TargetPydanticVersion | None = None,
     base_class: str = "",
@@ -351,6 +156,7 @@ def _baseline_generate(
     use_inline_field_description: bool = False,
     use_single_line_docstring: bool = False,
     use_default_kwarg: bool = False,
+    apply_field_options_to_every_field: bool = False,
     deserialize_default_values: Sequence[DefaultValueType] = (),
     use_missing_sentinel: bool = False,
     reuse_model: bool = False,
@@ -359,14 +165,21 @@ def _baseline_generate(
     encoding: str = "utf-8",
     enum_field_as_literal: LiteralType | None = None,
     enum_field_as_literal_map: dict[str, str] | None = None,
+    open_enums: OpenEnums | None = None,
+    open_enum_base_class_map: dict[str, str] | None = None,
     ignore_enum_constraints: bool = False,
     use_one_literal_as_default: bool = False,
     use_enum_values_in_discriminator: bool = False,
     merge_shared_variant_tags: bool = False,
+    use_unmapped_variant_tag_values: bool = False,
     read_schema_version_per_document: bool = False,
     read_escaped_ref_pointers: bool = False,
     read_dynamic_anchors_in_document_order: bool = False,
+    read_ids_with_empty_fragment: bool = False,
+    read_single_allof_refs_in_their_documents: bool = False,
+    read_ref_siblings_in_closed_allof_members: bool = False,
     ignore_ref_siblings_by_schema_version: bool = False,
+    read_yaml_1_1_numbers_as_text: bool = False,
     use_msgspec_tagged_unions: bool = False,
     tag_msgspec_by_payload_name: bool = False,
     use_msgspec_nullable_enum_alias: bool = False,
@@ -375,13 +188,17 @@ def _baseline_generate(
     use_typed_map_values_beside_other_types: bool = False,
     use_single_dict_for_object_maps: bool = False,
     read_unevaluated_properties: bool = False,
+    read_kubernetes_extensions: bool = False,
     use_single_value_enum_as_const: bool = False,
     read_const_beside_enum: bool = False,
+    read_format_as_annotation: bool = False,
+    read_uuid6_uuid7_uuid8_formats: bool = False,
     filter_literal_values: bool = False,
     intersect_allof_keywords: bool = False,
     intersect_combined_schema_keywords: bool = False,
     distribute_allof_over_unions: bool = False,
     read_allof_parents_in_mro_order: bool = False,
+    read_inherited_property_schemas_in_mro_order: bool = False,
     read_nullable_beside_type_list: bool = False,
     keep_field_defaults_off_branch_roots: bool = False,
     keep_enum_member_values: bool = False,
@@ -414,6 +231,7 @@ def _baseline_generate(
     use_title_as_name: bool = False,
     infer_union_variant_names: bool = False,
     use_tag_as_union_variant_name: bool = False,
+    infer_union_discriminators: bool = False,
     name_allof_union_members_after_branches: bool = False,
     use_operation_id_as_name: bool = False,
     use_unique_items_as_set: bool = False,
@@ -427,6 +245,7 @@ def _baseline_generate(
     allof_class_hierarchy: AllOfClassHierarchy = AllOfClassHierarchy.IfNoConflict,
     allow_remote_refs: bool | None = None,
     strict_refs: bool = False,
+    untrusted_input: bool = False,
     allow_private_network: bool = False,
     http_backend: HTTPBackend = HTTPBackend.AUTO,
     http_headers: Sequence[tuple[str, str]] | None = None,
@@ -443,10 +262,12 @@ def _baseline_generate(
     use_decimal_for_multiple_of: bool = False,
     use_decimal_in_field_forms: bool = False,
     use_encoded_str_for_constrained_base64: bool = False,
+    use_strict_str_for_base64: bool = False,
     use_msgspec_meta_for_map_keys: bool = False,
     merge_msgspec_str_like_union_members: bool = False,
     omit_redundant_constraints: bool = False,
     read_length_keywords_by_type: bool = False,
+    read_object_keywords_by_type: bool = False,
     read_msgspec_union_bounds_exactly: bool = False,
     read_input_model_dataclass_fields_by_alias: bool = False,
     reuse_every_reached_input_model_type: bool = False,
@@ -461,12 +282,19 @@ def _baseline_generate(
     keep_constrained_root_models_in_every_container: bool = False,
     keep_enum_literal_aliases: bool = False,
     keep_reference_null_on_collapsed_root_models: bool = False,
+    keep_shared_members_on_collapsed_root_models: bool = False,
+    collapse_constrained_root_models_as_annotated: bool = False,
+    remove_unused_models_beside_type_overrides: bool = False,
+    keep_self_referencing_array_items: bool = False,
+    keep_defaults_of_inherited_required_fields: bool = False,
+    omit_incomplete_model_defaults: bool = False,
     collapse_reuse_models: bool = False,
     skip_root_model: bool = False,
     use_root_model_sequence_interface: bool = False,
     use_type_alias: bool = False,
     use_type_alias_type: bool = False,
     use_root_model_type_alias: bool = False,
+    use_validate_default_for_root_model_type_aliases: bool = False,
     use_plain_alias_for_recursive_models: bool = False,
     special_field_name_prefix: str | None = None,
     remove_special_field_name_prefix: bool = False,
@@ -482,6 +310,7 @@ def _baseline_generate(
     use_pendulum: bool = False,
     use_standard_primitive_types: bool = False,
     use_object_type: bool = False,
+    untyped_value_type: str | None = None,
     http_query_parameters: Sequence[tuple[str, str]] | None = None,
     treat_dot_as_module: bool | None = None,
     strict_dotted_module_names: bool = False,
@@ -511,14 +340,20 @@ def _baseline_generate(
     type_mappings: list[str] | None = None,
     type_overrides: dict[str, str] | None = None,
     type_overrides_replace_whole_type: bool = False,
-    use_x_python_type_unions: bool = False,
+    use_x_python_type_as_written: bool = False,
+    use_x_python_import_for_every_ref: bool = False,
+    use_bytes_for_content_media_type: bool = False,
+    use_bounds_for_float_const: bool = False,
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None,
     dedupe_request_response_variants: bool = False,
+    dedupe_numbered_request_response_variants: bool = False,
     use_status_code_in_response_name: bool = False,
     keep_first_character_of_path_keys: bool = False,
     keep_content_parameter_refs: bool = False,
     skip_path_extension_keys: bool = False,
+    use_enum_field_as_literal_in_operations: bool = False,
     name_converted_payloads_by_message: bool = False,
+    merge_message_trait_headers: bool = False,
     all_exports_scope: AllExportsScope | None = None,
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None,
     field_type_collision_strategy: FieldTypeCollisionStrategy | None = None,
@@ -550,6 +385,8 @@ def _baseline_generate(
     client_operations: Mapping[str, Mapping[str, Any]] | None = None,
     client_default_base_url: str | None = None,
     client_server_base_url: str | None = None,
+    client_deep_object_brackets: bool | None = None,
+    client_asyncapi_perspective: ClientAsyncAPIPerspective | None = None,
     client_protocols: Mapping[str, Any] | None = None,
 ) -> str | object | None:
     raise NotImplementedError
@@ -565,7 +402,7 @@ def _baseline_generate_runtime_signature(
 
 
 def _baseline_parser_parse_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     with_import: bool | None = True,
     format_: bool | None = True,
     settings_path: Path | None = None,
@@ -579,7 +416,7 @@ def _baseline_parser_parse_runtime_signature(
 
 
 def _baseline_process_single_module_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     module_: ModulePath,
     models: list[DataModel],
     results: dict[ModulePath, Result],
@@ -593,7 +430,7 @@ def _baseline_process_single_module_runtime_signature(
 
 
 def _baseline_openapi_parser_parse_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     *args: Any,
     **kwargs: Any,
 ) -> str | dict[tuple[str, ...], Result]:
@@ -651,6 +488,7 @@ class _BaselineParser:
         use_inline_field_description: bool = False,
         use_single_line_docstring: bool = False,
         use_default_kwarg: bool = False,
+        apply_field_options_to_every_field: bool = False,
         deserialize_default_values: Sequence[DefaultValueType] = (),
         use_missing_sentinel: bool = False,
         reuse_model: bool = False,
@@ -659,6 +497,8 @@ class _BaselineParser:
         encoding: str = "utf-8",
         enum_field_as_literal: LiteralType | None = None,
         enum_field_as_literal_map: dict[str, str] | None = None,
+        open_enums: OpenEnums | None = None,
+        open_enum_base_class_map: dict[str, str] | None = None,
         ignore_enum_constraints: bool = False,
         set_default_enum_member: bool = False,
         use_subclass_enum: bool = False,
@@ -683,6 +523,7 @@ class _BaselineParser:
         use_title_as_name: bool = False,
         infer_union_variant_names: bool = False,
         use_tag_as_union_variant_name: bool = False,
+        infer_union_discriminators: bool = False,
         name_allof_union_members_after_branches: bool = False,
         use_operation_id_as_name: bool = False,
         use_unique_items_as_set: bool = False,
@@ -696,6 +537,7 @@ class _BaselineParser:
         allof_class_hierarchy: AllOfClassHierarchy = AllOfClassHierarchy.IfNoConflict,
         allow_remote_refs: bool | None = None,
         strict_refs: bool = False,
+        untrusted_input: bool = False,
         allow_private_network: bool = False,
         http_backend: HTTPBackend = HTTPBackend.AUTO,
         http_headers: Sequence[tuple[str, str]] | None = None,
@@ -709,10 +551,12 @@ class _BaselineParser:
         use_decimal_for_multiple_of: bool = False,
         use_decimal_in_field_forms: bool = False,
         use_encoded_str_for_constrained_base64: bool = False,
+        use_strict_str_for_base64: bool = False,
         use_msgspec_meta_for_map_keys: bool = False,
         merge_msgspec_str_like_union_members: bool = False,
         omit_redundant_constraints: bool = False,
         read_length_keywords_by_type: bool = False,
+        read_object_keywords_by_type: bool = False,
         read_msgspec_union_bounds_exactly: bool = False,
         use_site_models_for_constrained_refs: bool = False,
         use_one_model_per_ref_site: bool = False,
@@ -726,10 +570,17 @@ class _BaselineParser:
         keep_constrained_root_models_in_every_container: bool = False,
         keep_enum_literal_aliases: bool = False,
         keep_reference_null_on_collapsed_root_models: bool = False,
+        keep_shared_members_on_collapsed_root_models: bool = False,
+        collapse_constrained_root_models_as_annotated: bool = False,
+        remove_unused_models_beside_type_overrides: bool = False,
+        keep_self_referencing_array_items: bool = False,
+        keep_defaults_of_inherited_required_fields: bool = False,
+        omit_incomplete_model_defaults: bool = False,
         collapse_reuse_models: bool = False,
         skip_root_model: bool = False,
         use_root_model_sequence_interface: bool = False,
         use_type_alias: bool = False,
+        use_validate_default_for_root_model_type_aliases: bool = False,
         use_plain_alias_for_recursive_models: bool = False,
         special_field_name_prefix: str | None = None,
         remove_special_field_name_prefix: bool = False,
@@ -740,10 +591,15 @@ class _BaselineParser:
         use_one_literal_as_default: bool = False,
         use_enum_values_in_discriminator: bool = False,
         merge_shared_variant_tags: bool = False,
+        use_unmapped_variant_tag_values: bool = False,
         read_schema_version_per_document: bool = False,
         read_escaped_ref_pointers: bool = False,
         read_dynamic_anchors_in_document_order: bool = False,
+        read_ids_with_empty_fragment: bool = False,
+        read_single_allof_refs_in_their_documents: bool = False,
+        read_ref_siblings_in_closed_allof_members: bool = False,
         ignore_ref_siblings_by_schema_version: bool = False,
+        read_yaml_1_1_numbers_as_text: bool = False,
         use_msgspec_tagged_unions: bool = False,
         tag_msgspec_by_payload_name: bool = False,
         use_msgspec_nullable_enum_alias: bool = False,
@@ -752,13 +608,17 @@ class _BaselineParser:
         use_typed_map_values_beside_other_types: bool = False,
         use_single_dict_for_object_maps: bool = False,
         read_unevaluated_properties: bool = False,
+        read_kubernetes_extensions: bool = False,
         use_single_value_enum_as_const: bool = False,
         read_const_beside_enum: bool = False,
+        read_format_as_annotation: bool = False,
+        read_uuid6_uuid7_uuid8_formats: bool = False,
         filter_literal_values: bool = False,
         intersect_allof_keywords: bool = False,
         intersect_combined_schema_keywords: bool = False,
         distribute_allof_over_unions: bool = False,
         read_allof_parents_in_mro_order: bool = False,
+        read_inherited_property_schemas_in_mro_order: bool = False,
         read_nullable_beside_type_list: bool = False,
         keep_field_defaults_off_branch_roots: bool = False,
         keep_enum_member_values: bool = False,
@@ -768,6 +628,7 @@ class _BaselineParser:
         use_pendulum: bool = False,
         use_standard_primitive_types: bool = False,
         use_object_type: bool = False,
+        untyped_value_type: str | None = None,
         http_query_parameters: Sequence[tuple[str, str]] | None = None,
         treat_dot_as_module: bool | None = None,
         strict_dotted_module_names: bool = False,
@@ -796,9 +657,13 @@ class _BaselineParser:
         type_mappings: list[str] | None = None,
         type_overrides: dict[str, str] | None = None,
         type_overrides_replace_whole_type: bool = False,
-        use_x_python_type_unions: bool = False,
+        use_x_python_type_as_written: bool = False,
+        use_x_python_import_for_every_ref: bool = False,
+        use_bytes_for_content_media_type: bool = False,
+        use_bounds_for_float_const: bool = False,
         read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None,
         dedupe_request_response_variants: bool = False,
+        dedupe_numbered_request_response_variants: bool = False,
         field_type_collision_strategy: FieldTypeCollisionStrategy | None = None,
         target_pydantic_version: TargetPydanticVersion | None = None,
         external_ref_mapping: dict[str, str] | None = None,
@@ -913,7 +778,7 @@ def test_normalize_union_str_equivalence(type_a: str, type_b: str) -> None:
     assert _normalize_union_str(type_a) == _normalize_union_str(type_b)
 
 
-def _normalize_type(tp: Any) -> str:  # noqa: PLR0911  # pragma: no cover
+def _normalize_type(tp: Any) -> str:  # ruff: ignore[too-many-return-statements]  # pragma: no cover
     """Normalize type for comparison between Config and TypedDict."""
     if tp is None or tp is type(None):
         return "None"
@@ -957,30 +822,282 @@ def _types_match(config_type: Any, dict_type: Any) -> bool:
     return _normalize_type(config_type) == _normalize_type(dict_type)
 
 
-@pytest.mark.parametrize(("module_name", "expected_exports"), _PUBLIC_MODULE_EXPORTS.items())
-def test_public_module_all_exports_match_baseline(module_name: str, expected_exports: frozenset[str]) -> None:
-    """Pin focused public module export surfaces used by compatibility shims."""
-    module = importlib.import_module(module_name)
-    module_exports = list(module.__all__)
-    actual_exports = set(module_exports)
-    missing_exports = [name for name in module_exports if not hasattr(module, name)]
+@functools.cache
+def _public_api() -> public_api_record.PublicApi:
+    """Read the public API of the package once for the tests that compare it."""
+    return public_api_record.read(Path(__file__).parents[2] / "src")
 
-    assert len(module_exports) == len(actual_exports), f"{module_name}.__all__ contains duplicate names"
-    assert actual_exports == expected_exports, (
-        f"{module_name}.__all__ changed:\n"
-        f"  removed: {sorted(expected_exports - actual_exports)}\n"
-        f"  added: {sorted(actual_exports - expected_exports)}"
+
+def test_public_api_record_matches_stored_output() -> None:
+    """Pin the public API: each public module's names, followed to their definitions and written from source.
+
+    The record imports nothing of the package, so it has the same bytes on every Python and platform and with or
+    without optional libraries (`tests/main/public_api_record.py` says what it writes and what it refuses).
+    """
+    assert_output(_public_api().text())
+
+
+def test_public_api_record_refuses_what_it_cannot_read(tmp_path: Path) -> None:
+    """A public name the record cannot follow stops the record with its module and line, instead of a silent gap."""
+    package = tmp_path / "package"
+    package.mkdir()
+    (package / "__init__.py").write_text(
+        "from importlib import import_module\n\n"
+        "__all__ = sorted(['loop'])\n"
+        "for loop in range(2):\n    pass\n"
+        "globals()['dynamic'] = import_module('json')\n",
+        encoding="utf-8",
     )
-    assert missing_exports == [], f"{module_name}.__all__ contains non-importable names: {missing_exports}"
+    (package / "hooked.py").write_text(
+        "def _serve(name):\n    return name\n\n\n__getattr__ = _serve\n", encoding="utf-8"
+    )
+    with pytest.raises(public_api_record.RecordError) as refused:
+        public_api_record.read(tmp_path, "package").text()
+
+    assert_output(f"{refused.value}\n")
 
 
-@pytest.mark.parametrize(("module_name", "expected_symbols"), _DE_FACTO_PUBLIC_SYMBOLS.items())
-def test_de_facto_public_symbols_remain_importable(module_name: str, expected_symbols: frozenset[str]) -> None:
-    """Pin importable symbols used downstream without requiring module __all__ changes."""
-    module = importlib.import_module(module_name)
-    missing_symbols = sorted(name for name in expected_symbols if not hasattr(module, name))
+_HOOK_PACKAGE = {
+    "_lazy_exports.py": (
+        "def module_hooks(module_name, table):\n    return (lambda name: table[name]), (lambda: sorted(table))\n"
+    ),
+    "_table.py": "class Served:\n    pass\n\n\nclass Other:\n    pass\n",
+    "__init__.py": (
+        "from ._lazy_exports import module_hooks\n"
+        "from ._table import Other, Served\n\n"
+        '_SERVED = frozenset({"Legacy"})\n'
+        "_REGISTERED = {}\n\n\n"
+        "def _load_loaded() -> object:\n"
+        '    _REGISTERED.setdefault("Loaded", Served)\n'
+        "    from ._table import Served as Loaded\n\n"
+        "    return Loaded\n\n\n"
+        '_LAZY = {"Pair": ("package._table", "Served"), "Loaded": _load_loaded}\n'
+        "_lazy_getattr, __dir__ = module_hooks(__name__, _LAZY)\n\n\n"
+        "def __getattr__(name: str) -> object:\n"
+        "    _REGISTERED.setdefault(name, Served)\n"
+        "    if name in _SERVED:\n"
+        "        return Served\n"
+        "    return _lazy_getattr(name)\n"
+    ),
+    "plain/__init__.py": "VALUE = 1\n",
+    "cyclic/__init__.py": "_a = lambda: _b\n_b = lambda: _a\n\n\ndef public(factory=_a):\n    pass\n",
+}
+_HOOK_EDITS = {
+    "the-hook-serves-another-class": ("__init__.py", "        return Served\n", "        return Other\n"),
+    "the-hook-registers-another-class": ("__init__.py", "setdefault(name, Served)", "setdefault(name, Other)"),
+    "the-loader-registers-another-class": ("__init__.py", '("Loaded", Served)', '("Loaded", Other)'),
+    "a-constant-the-hook-reads-gains-a-name": ("__init__.py", '{"Legacy"}', '{"Legacy", "Older"}'),
+    "the-pair-entry-names-another-attribute": (
+        "__init__.py",
+        '"package._table", "Served"',
+        '"package._table", "Other"',
+    ),
+    "a-module-gains-a-hook": (
+        "plain/__init__.py",
+        "VALUE = 1\n",
+        (
+            "VALUE = 1\n\n\ndef __getattr__(name: str) -> object:\n"
+            '    if name == "Legacy":\n        return VALUE\n'
+            "    raise AttributeError(name)\n"
+        ),
+    ),
+}
 
-    assert missing_symbols == [], f"{module_name} no longer exposes de facto public symbols: {missing_symbols}"
+
+def _hook_record(tmp_path: Path, edit: tuple[str, str, str] | None = None) -> str:
+    """Write the hook package under ``tmp_path``, with an optional edit (file, old, new), and read its record."""
+    package = tmp_path / "package"
+    for name, text in _HOOK_PACKAGE.items():
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text(
+            text if edit is None or edit[0] != name else text.replace(*edit[1:]), encoding="utf-8"
+        )
+    return public_api_record.read(tmp_path, "package").text()
+
+
+def test_public_api_record_writes_the_hooks_a_module_defines(tmp_path: Path) -> None:
+    """Write a module's own ``__getattr__`` with the constants it reads, and a lazy ``(module, attribute)`` entry."""
+    assert_output(_hook_record(tmp_path))
+
+
+@pytest.mark.parametrize("edit", [pytest.param(edit, id=name) for name, edit in _HOOK_EDITS.items()])
+def test_public_api_record_moves_with_an_edit_of_a_hook(tmp_path: Path, edit: tuple[str, str, str]) -> None:
+    """Change the record when a hook, a constant it reads, a pair entry or the hooks a module defines change."""
+    before = _hook_record(tmp_path / "before")
+    after = _hook_record(tmp_path / "after", edit)
+    changed = difflib.unified_diff(before.splitlines(), after.splitlines(), lineterm="", n=0)
+    assert_output("\n".join(line for line in changed if not line.startswith(("---", "+++", "@@"))) + "\n")
+
+
+def _runtime_names(module: types.ModuleType, facts: public_api_record.ModuleFacts) -> set[str]:
+    """Return the public names ``dir()`` lists, less the submodules the import system attached and ``__future__``."""
+    names = {name for name in dir(module) if not name.startswith("_") and name.isidentifier()}
+    return {
+        name
+        for name in names
+        if name in facts.bound
+        or not (
+            type(value := getattr(module, name)).__module__ == "__future__"
+            or (isinstance(value, types.ModuleType) and value.__name__ == f"{module.__name__}.{name}")
+        )
+    }
+
+
+def _runtime_problems(module: types.ModuleType, facts: public_api_record.ModuleFacts) -> list[str]:
+    """Compare what the record reads of a public module with the module: names, lazy names, identities, ``__all__``."""
+    names = _runtime_names(module, facts)
+    listed = dir(module)
+    problems = [f"bound at run time, not read from source: {name}" for name in sorted(names - facts.bound)]
+    problems += [f"always bound in source, missing at run time: {name}" for name in sorted(facts.always - names)]
+    problems += [f"a lazy name dir() does not list: {name}" for name in sorted(set(facts.lazy) - set(listed))]
+    for name, identities in sorted(facts.identities.items()):
+        value = getattr(module, name)
+        found = (getattr(value, "__module__", None), getattr(value, "__qualname__", "").rpartition(".")[2])
+        problems += [f"{name} is {found[0]}.{found[1]}, read as {sorted(identities)}"] * (found not in identities)
+    if facts.computed_all:
+        exported = set(module.__all__) - (set(listed) - names)
+        problems += [f"__all__ differs: {sorted(exported ^ names)}"] * (exported != names)
+    return [f"{module.__name__}: {problem}" for problem in problems]
+
+
+@pytest.mark.allow_direct_assert("the run-time check of the record fails on its own, never through a stored output")
+def test_public_api_record_matches_runtime_namespaces(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check the record's reading of every public module against the imported module (it writes nothing).
+
+    The public names ``dir()`` lists are those the source binds; each name bound whichever branch runs resolves; each
+    lazy name is listed by ``dir()``; each class or function a public name leads to has the ``__module__`` and name the
+    record reads; a computed ``__all__`` lists the public names. The lazy names and the ``__all__`` that the reads
+    stored in a module are removed afterwards, so later tests still find them unread; nothing else is, since the import
+    system does not set a submodule attribute again. ``__main__`` is imported without command-line arguments.
+    """
+    api = _public_api()
+    monkeypatch.setattr(sys, "argv", ["datamodel-codegen"])
+    problems = []
+    for name in api.public:
+        module = importlib.import_module(name)
+        facts = api.facts[name]
+        before = set(vars(module))
+        try:
+            problems += _runtime_problems(module, facts)
+            problems += [
+                f"{name}: {item} does not resolve" for item in sorted(facts.always) if not hasattr(module, item)
+            ]
+        finally:
+            for added in {*facts.lazy, "__all__"} - before:
+                vars(module).pop(added, None)
+
+    assert not problems, "\n".join(problems)
+    assert_output(f"public modules: {len(api.public)}\nproblems: none\n")
+
+
+_LAZY_NAMES_PROBE = """
+import importlib
+import sys
+
+module_name = sys.argv.pop()
+module = importlib.import_module(module_name)
+for name in sorted(set(dir(module)) - vars(module).keys()):
+    value = getattr(module, name)
+    print(name, getattr(value, "__module__", None), getattr(value, "__qualname__", getattr(value, "__name__", None)))
+listed = dir(module)
+exported = list(getattr(module, "__all__", ()))
+print("dir lists each name once:", len(listed) == len(set(listed)))
+print("__all__ lists each name once:", len(exported) == len(set(exported)))
+"""
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        pytest.param(module, id=module.__name__)
+        for module in (
+            sys.modules[generate.__module__],
+            main_module,
+            asyncapi,
+            avro,
+            parser_base,
+            jsonschema,
+            reference,
+            types_module,
+            util,
+        )
+    ],
+)
+def test_lazy_public_names_are_listed_once_by_dir(module: types.ModuleType) -> None:
+    """List every lazy name of a module in ``dir()``, each name once in ``dir()`` and ``__all__`` after it was read.
+
+    A fresh process lists the names ``dir()`` gives that the module has not bound yet and reads each of them, so
+    ``dir()`` and ``__all__`` are then built after the reads (#7152). The same holds in this process, which removes
+    afterwards only the lazy names and ``__all__`` that its reads stored in the module. A missing name keeps its
+    ``AttributeError`` text.
+    """
+    result = subprocess.run(
+        [sys.executable, "-c", _LAZY_NAMES_PROBE, module.__name__], check=True, capture_output=True, text=True
+    )
+    bound = set(vars(module))
+    unbound = {*dir(module), "__all__"} - bound
+    try:
+        for name in unbound - {"__all__"}:
+            getattr(module, name)
+        listed = dir(module)
+        exported = list(getattr(module, "__all__", ()))
+        with pytest.raises(AttributeError) as missing:
+            _ = module.no_such_name
+    finally:
+        for name in unbound:
+            vars(module).pop(name, None)
+
+    assert_output(
+        f"{result.stdout}in this process: dir lists each name once: {len(listed) == len(set(listed))}, "
+        f"__all__ lists each name once: {len(exported) == len(set(exported))}\nmissing name: {missing.value}\n"
+    )
+
+
+@pytest.mark.allow_direct_assert("pickling and repr are checked against the class itself, never a stored output")
+def test_errors_warnings_and_cli_records_pickle_and_repr_under_their_public_names() -> None:
+    """Pickle and repr each error, warning and CLI record under the module of its public name.
+
+    The classes live in leaf modules that other modules import without importing the package root or ``__main__``;
+    each keeps ``datamodel_code_generator`` or ``datamodel_code_generator.__main__`` as its module, so its repr reads
+    and its pickle loads as before.
+    """
+    samples = (
+        Error("message"),
+        InvalidClassNameError("1bad"),
+        InvalidFileFormatError(ValueError("boom"), InputFileType.JsonSchema, source="a.json"),
+        SchemaParseError("bad", ["a", "b"], ValueError("x")),
+        SchemaFetchError("message"),
+        DanglingRefWarning("message"),
+        SchemaResourceRefWarning("message"),
+        DefaultValueTypeWarning("message"),
+        DocumentationAnnotationWarning("message"),
+        LeftoverFilesWarning("message"),
+        NamingHintWarning("message"),
+        main_module.Exit.OK,
+        main_module.Exit.KeyboardInterrupt,
+        main_module.ComparisonDifference("changed", "a.py", diff="-x\n+y\n"),
+        main_module.OutputComparison([main_module.ComparisonDifference("missing", "b.py", "MISSING")], "content"),
+        main_module.OutputComparisonOptions(is_directory_output=True, input_diff=True),
+        main_module.DirectoryChangedFile("c.py", ["-a", "+b"]),
+    )
+    for sample in samples:
+        kind = type(sample)
+        loaded = pickle.loads(pickle.dumps(sample))
+        assert getattr(sys.modules[kind.__module__], kind.__qualname__) is kind
+        assert kind.__module__ in {"datamodel_code_generator", "datamodel_code_generator.__main__"}
+        assert (type(loaded), repr(loaded), str(loaded)) == (kind, repr(sample), str(sample))
+
+
+@pytest.mark.abnormal_path("downstream code assigns this module attribute, so the assignment is the contract pinned")
+def test_import_secret_str_assignment_changes_the_generated_import(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the module attribute that downstream code assigns to replace the password string type."""
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model import pydantic_v2
+
+    monkeypatch.setattr(pydantic_v2.types, "IMPORT_SECRET_STR", Import.from_full_path("custom_types.CustomSecretStr"))
+    schema = '{"type": "object", "properties": {"token": {"type": "string", "format": "password"}}}'
+
+    assert_output(generate(schema, output_model_type=DataModelType.PydanticV2BaseModel))
 
 
 def test_data_model_set_tuple_abi_matches_baseline() -> None:
@@ -1324,6 +1441,15 @@ def test_config_models_force_rebuild_after_defer_build() -> None:
     assert set(config_model_types) == expected_model_names
     for model_type in config_model_types.values():
         assert model_type.model_rebuild(force=True, _types_namespace=rebuild_namespace)
+
+
+def test_config_star_import_lists_the_public_names() -> None:
+    """Ensure a star import of config takes its public names, the parser config models it builds on access included."""
+    importlib.import_module("datamodel_code_generator.config")
+    config_module = sys.modules["datamodel_code_generator.config"]
+
+    assert config_module.__all__ == [name for name in dir(config_module) if not name.startswith("_")]
+    assert {"GraphQLParserConfig", "OpenAPIParserConfig", "ParserConfig"} <= set(config_module.__all__)
 
 
 def test_generate_config_dict_fields_match_generate_config() -> None:

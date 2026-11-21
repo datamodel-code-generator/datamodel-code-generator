@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: kennel, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+      x-python-import: {module: pets, name: Pet}
+    Wrapper:
+      type: object
+      properties:
+        pet: {$ref: '#/components/schemas/Pet'}
+    Owner:
+      allOf:
+        - $ref: '#/components/schemas/Wrapper'
+        - type: object
+          properties:
+            name: {type: string}
+    Holder:
+      type: object
+      properties:
+        owner: {$ref: '#/components/schemas/Owner'}
+    Visit:
+      type: object
+      properties:
+        wrapper: {$ref: '#/components/schemas/Wrapper'}

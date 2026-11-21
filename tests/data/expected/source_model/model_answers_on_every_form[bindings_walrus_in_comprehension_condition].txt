@@ -1,0 +1,12 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  f: def@4 [always]
+scope function f#0 'f': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  xs: param@4 [function:body@4]
+  ys: assign@5 [function:body@4]; value [y for x in xs if (y := x * 2) > 1]
+  y: walrus@5 [function:body@4|loop:body@5]
+scope comprehension f.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 5; nonlocal y
+  opened by a node evaluated in f#0
+  x: comprehension@5 [function:body@4|loop:body@5]
+== code objects: one per scope that compiles on this Python

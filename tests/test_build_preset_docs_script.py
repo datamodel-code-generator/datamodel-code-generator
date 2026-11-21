@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import black
 import pytest
@@ -16,6 +18,7 @@ from datamodel_code_generator.preset import (
     PresetConfig,
     PresetConfigItem,
     PresetContext,
+    PresetError,
     PresetOptionGroup,
     get_latest_preset_name,
     get_preset_infos,
@@ -25,8 +28,10 @@ from datamodel_code_generator.preset import (
 from scripts import build_preset_docs
 from tests.conftest import assert_output
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_preset_docs.py"
-EXPECTED_PRESET_DOCS_PATH = Path(__file__).resolve().parent / "data" / "expected" / "preset_docs"
 BLACK_LT_233 = version.parse("23.3.0") > version.parse(black.__version__)
 
 
@@ -45,7 +50,7 @@ def test_build_preset_docs_json_format() -> None:
         text=True,
     )
 
-    assert_output(result.stdout, EXPECTED_PRESET_DOCS_PATH / "presets_json.txt")
+    assert_output(result.stdout)
 
 
 def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
@@ -57,16 +62,16 @@ def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
         text=True,
     )
 
-    assert_output(result.stdout, EXPECTED_PRESET_DOCS_PATH / "build_preset_docs_help.txt")
+    assert_output(result.stdout)
 
 
 def test_preset_metadata_renderers() -> None:
     """Preset metadata renderers expose the committed preset reference."""
-    assert_output(render_presets("markdown"), EXPECTED_PRESET_DOCS_PATH / "presets_markdown.txt")
-    assert_output(render_presets("json"), EXPECTED_PRESET_DOCS_PATH / "presets_json.txt")
+    assert_output(render_presets("markdown"), name="presets_markdown")
+    assert_output(render_presets("json"), name="presets_json")
     assert_output(
         f"{get_latest_preset_name()}\n{get_preset_infos()[0].name.value}\n",
-        EXPECTED_PRESET_DOCS_PATH / "preset_names.txt",
+        name="preset_names",
     )
 
 
@@ -74,7 +79,6 @@ def test_readme_supported_sections_are_rendered_from_enums() -> None:
     """README supported input/output lists are synchronized from public enums."""
     assert_output(
         build_preset_docs._render_readme_supported_sections(),
-        EXPECTED_PRESET_DOCS_PATH / "readme_supported_sections.txt",
     )
 
 
@@ -84,7 +88,6 @@ def test_marked_section_replacement_uses_end_marker_after_begin() -> None:
 
     assert_output(
         build_preset_docs._replace_marked_section(markdown, "<!-- BEGIN -->", "<!-- END -->", "Generated"),
-        EXPECTED_PRESET_DOCS_PATH / "marked_section_replacement.txt",
     )
 
 
@@ -96,7 +99,6 @@ def test_marked_section_replacement_indents_as_the_begin_marker() -> None:
         build_preset_docs._replace_marked_section(
             markdown, "<!-- BEGIN -->", "<!-- END -->", "```python\nx = 1\n\ny = 2\n```\n"
         ),
-        EXPECTED_PRESET_DOCS_PATH / "marked_section_replacement_indented.txt",
     )
 
 
@@ -126,7 +128,76 @@ def test_preset_config_supports_enum_backed_string_and_sequence_options() -> Non
         "",
     ))
 
-    assert_output(output, EXPECTED_PRESET_DOCS_PATH / "preset_config_enum_values.txt")
+    assert_output(output)
+
+
+def test_preset_api_refuses_an_unknown_format_and_an_unknown_field() -> None:
+    """The preset API names the format or the config field it does not know."""
+    unknown_format: object = "xml"
+    unknown_field: dict[str, object] = {"no_such_field": True}
+    with pytest.raises(PresetError, match="Unsupported preset docs format: 'xml'"):
+        render_presets(unknown_format)
+    with pytest.raises(PresetError, match="Preset field 'no_such_field' is not a BaseGenerateConfig field"):
+        PresetConfig(**unknown_field)
+
+
+@pytest.mark.parametrize(
+    ("build", "message"),
+    [
+        pytest.param(
+            lambda: PresetConfig(extra_fields="bogus"),
+            "Unsupported extra_fields preset value: 'bogus'",
+            id="extra-fields-value",
+        ),
+        pytest.param(
+            lambda: PresetConfig(wrap_string_literal=None),
+            "Preset field 'wrap_string_literal' cannot be rendered as a preset CLI option",
+            id="value-without-a-rendering",
+        ),
+        pytest.param(
+            lambda: PresetOptionGroup(title="order", config=PresetConfig(keep_model_order=True), description=""),
+            "has no --no- form to turn it off",
+            id="enabled-option-without-a-negative",
+        ),
+        pytest.param(
+            lambda: (
+                PresetOptionGroup(title="dot", config=PresetConfig(treat_dot_as_module=True), description="").options
+            ),
+            "Preset field 'treat_dot_as_module' does not map to a documented CLI option",
+            id="field-without-an-option",
+        ),
+        pytest.param(
+            lambda: (
+                PresetOptionGroup(title="order", config=PresetConfig(keep_model_order=False), description="").options
+            ),
+            "Preset field 'keep_model_order' does not map to a documented negative CLI option",
+            id="disabled-option-without-a-negative",
+        ),
+    ],
+)
+def test_preset_config_refuses_what_the_command_line_cannot_write(build: Callable[[], object], message: str) -> None:
+    """A config or option group that no CLI option spells is refused, naming the field."""
+    with pytest.raises(PresetError, match=re.escape(message)):
+        build()
+
+
+@pytest.mark.allow_direct_assert("states which contexts a preset option group applies to, which writes no output")
+def test_preset_option_group_applies_to_its_input_file_types() -> None:
+    """A group that names input file types applies to those only."""
+    group = PresetOptionGroup(
+        title="openapi only",
+        config=PresetConfig(),
+        description="",
+        input_file_types=frozenset({InputFileType.OpenAPI}),
+    )
+    context = PresetContext(
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        target_python_version=PythonVersion.PY_310,
+    )
+
+    assert group.applies_to(context) is False
+    assert group.applies_to(PresetContext(InputFileType.OpenAPI, context.output_model_type, PythonVersion.PY_310))
 
 
 def test_dated_presets_keep_default_deserialization_immutable() -> None:
@@ -165,7 +236,7 @@ def test_dated_presets_keep_default_deserialization_immutable() -> None:
         label = f"{preset_name} explicit" if explicit_fields else preset_name
         lines.append(f"{label}: {[value.value for value in values]}, legacy={legacy}")
 
-    assert_output("\n".join((*lines, "")), EXPECTED_PRESET_DOCS_PATH / "preset_decimal_defaults.txt")
+    assert_output("\n".join((*lines, "")))
 
 
 def _render_preset_config_item(item: PresetConfigItem) -> str:

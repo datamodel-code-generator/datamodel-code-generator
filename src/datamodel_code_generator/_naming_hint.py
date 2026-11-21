@@ -13,11 +13,11 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._free_names import is_numbered
+from datamodel_code_generator._records import mutable_record, record
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
@@ -35,7 +35,7 @@ MIN_NUMBERED_NAMES: Final = 10
 MIN_NUMBERED_SHARE: Final = 5
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class NumberedNames:
     """The classes whose names are numbered collisions, and the largest family of such names as an example."""
 
@@ -65,7 +65,7 @@ def numbered_names(names: Sequence[tuple[str, str]]) -> NumberedNames | None:
     return NumberedNames(count=count, example=ordered[0] if len(ordered) == 1 else f"{ordered[0]}...{ordered[-1]}")
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class NamingHint:
     """The naming hint of one command line invocation: whether it was shown, and the class names collected last.
 

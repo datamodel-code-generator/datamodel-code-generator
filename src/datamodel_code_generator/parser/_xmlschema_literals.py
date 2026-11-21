@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import contextlib
-import datetime as datetime_module
+import datetime as dt
 import re
 from decimal import Decimal
 from math import isfinite
@@ -83,7 +83,7 @@ def _safe_isoformat_expression(kind: str, value: str) -> _PythonExpression | Non
     """Return the expression that builds ``kind`` from a value Python reads, with ``Z`` as ``+00:00``."""
     normalized = _normalize_timezone(value.strip(XSD_WHITESPACE_CHARS))
     with contextlib.suppress(ValueError):
-        getattr(datetime_module, kind).fromisoformat(normalized)
+        getattr(dt, kind).fromisoformat(normalized)
         return _isoformat_expression(kind, normalized)
     return None
 

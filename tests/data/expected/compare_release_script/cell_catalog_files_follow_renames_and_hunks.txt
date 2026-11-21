@@ -1,0 +1,4 @@
+added.py: FileMap(catalog=None, hunks=((0, 0, 1, 10),))
+edited.py: FileMap(catalog='edited.py', hunks=((7, 1, 6, 0),))
+now.py: FileMap(catalog='renamed.py', hunks=())
+then.py: FileMap(catalog='moved_and_edited.py', hunks=((4, 1, 4, 1),))

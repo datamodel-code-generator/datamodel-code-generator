@@ -1,0 +1,6 @@
+[
+  "/mixed const null: invalid, model accepts",
+  "/mixed const true: invalid, model accepts",
+  "/narrowed const null: invalid, model accepts",
+  "/narrowed enum null: invalid, model accepts"
+]

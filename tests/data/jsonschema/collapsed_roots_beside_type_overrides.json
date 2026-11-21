@@ -1,0 +1,15 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "code": {"$ref": "#/$defs/Code"},
+    "codes": {"type": "array", "items": {"$ref": "#/$defs/Codes"}},
+    "other": {"$ref": "#/$defs/Other"}
+  },
+  "$defs": {
+    "Code": {"type": "string", "maxLength": 3},
+    "Codes": {"$ref": "#/$defs/Name"},
+    "Name": {"type": "object", "properties": {"first": {"type": "string"}}},
+    "Other": {"type": "object", "properties": {"a": {"type": "string"}}}
+  }
+}

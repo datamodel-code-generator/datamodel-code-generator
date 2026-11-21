@@ -1,0 +1,5 @@
+Warning: --reuse-scope=tree has no effect without --reuse-model
+Error: --collapse-root-models-name-strategy requires --collapse-root-models
+exit: ERROR
+written:
+  pyproject.toml

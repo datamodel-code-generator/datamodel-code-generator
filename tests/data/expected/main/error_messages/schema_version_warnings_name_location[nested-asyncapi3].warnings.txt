@@ -1,0 +1,2 @@
+exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_asyncapi3.yaml#/components/schemas/User/properties/score
+exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_asyncapi3.yaml#/channels/user~1signup/messages/UserSignedUp/payload/properties/age

@@ -1,0 +1,18 @@
+"""G13 floor-syntax: syntax only Python 3.12 and later reads is a site, though the running Python parses it.
+
+min-python: 3.12
+
+A type statement and a type parameter list of a function or a class are refused by the oldest supported grammar. Only
+a file of a newer Python holds them: they are stored as ``.py.txt`` and copied where a test reads them on a Python that
+parses them.
+"""
+
+type Alias = int
+
+
+def generic[T](value: T) -> T:
+    return value
+
+
+class Box[T]:
+    value: T

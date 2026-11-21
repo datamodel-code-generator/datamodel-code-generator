@@ -1,0 +1,5 @@
+DeprecationWarning: Pydantic v2 with --use-annotated is recommended for correct type annotations. In a future version, --use-annotated will be enabled by default for Pydantic v2. The current default (use_annotated=False) generates constrained types like 'conint(ge=1, le=365)' which are discouraged in Pydantic v2.
+Error: --open-enum-base-class-map requires --open-enums extensible or --open-enums all
+exit: ERROR
+written:
+  header.txt

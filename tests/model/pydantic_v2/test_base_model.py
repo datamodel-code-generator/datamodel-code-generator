@@ -10,6 +10,7 @@ from itertools import product
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator import DataModelType, Formatter, PythonVersion
 from datamodel_code_generator.config import JSONSchemaParserConfig
@@ -36,7 +37,7 @@ from datamodel_code_generator.model.runtime_validation import (
 )
 from datamodel_code_generator.parser.base import Parser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.reference import Reference, model_key_of
+from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
 
@@ -76,7 +77,6 @@ def test_base_model_methods_render_once_after_all_fields() -> None:
 
     assert_output(
         f"method count: {rendered.count('def generated_method(')}\n\n{rendered}\n",
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_methods_once.txt",
     )
 
 
@@ -105,36 +105,6 @@ def test_schema_runtime_validation_unique_items_follows_model_description() -> N
     model.invalidate_render_caches()
 
     assert_output(model.render(), expected)
-
-
-@pytest.mark.allow_direct_assert
-def test_schema_runtime_validation_base_inheritance_detects_transitive_base() -> None:
-    """Detect inherited runtime validation bases through non-runtime intermediate models."""
-    runtime_base = BaseModel(
-        fields=[],
-        reference=Reference(name="RuntimeBase", path="#/RuntimeBase"),
-        extra_template_data=defaultdict(
-            dict,
-            {"#/RuntimeBase": {"schema_runtime_validation": _schema_runtime_validation()}},
-        ),
-    )
-
-    intermediate = BaseModel(
-        fields=[],
-        reference=Reference(name="Intermediate", path="#/Intermediate"),
-        base_classes=[runtime_base.reference],
-    )
-    runtime_leaf = BaseModel(
-        fields=[],
-        reference=Reference(name="RuntimeLeaf", path="#/RuntimeLeaf"),
-        base_classes=[intermediate.reference],
-    )
-
-    assert BaseModel._inherits_schema_runtime_validation_base(runtime_leaf, seen=set())
-    assert not BaseModel._inherits_schema_runtime_validation_base(
-        runtime_leaf,
-        seen={model_key_of(runtime_leaf.reference)},
-    )
 
 
 @pytest.mark.allow_direct_assert
@@ -531,6 +501,19 @@ def test_parser_simple_field_preserves_parent_and_fresh_extras() -> None:
     assert first.extras is not second.extras
 
 
+def test_constraints_validation_refuses_a_value_that_is_no_mapping() -> None:
+    """``Constraints`` leaves a value that is no mapping to Pydantic, which refuses it."""
+    with pytest.raises(ValidationError, match="Input should be a valid dictionary or instance of Constraints"):
+        Constraints.model_validate(["minItems", 1])
+
+
+def test_get_data_model_types_refuses_a_value_that_is_no_model_type() -> None:
+    """``get_data_model_types`` takes the enum member, not its string value."""
+    not_a_member: object = "pydantic_v2.BaseModel"
+    with pytest.raises(ValueError, match=r"pydantic_v2\.BaseModel is unsupported data model type"):
+        get_data_model_types(not_a_member)
+
+
 @pytest.mark.allow_direct_assert
 def test_parser_simple_field_falls_back_for_processed_values() -> None:
     """Retain Pydantic validation for constraints, extras, and const fields."""
@@ -565,12 +548,12 @@ def test_parser_simple_field_call_keywords_match_model_fields() -> None:
     constructor_calls = [
         node
         for node in ast.walk(build_field)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "constructor"
+        if isinstance(node, ast.Call) and ast.unparse(node.func) == "self._field_policy[row]"
     ]
     assert len(constructor_calls) == 1
     assert [ast.unparse(keyword.value) for keyword in constructor_calls[0].keywords if keyword.arg is None] == [
-        "{**options, **aliases, **facts}",
-        "self._data_model_field_common_kwargs()",
+        "{**aliases, **facts}",
+        "self._data_model_field_common_kwargs_cache",
     ]
     keywords = {keyword.arg for keyword in constructor_calls[0].keywords if keyword.arg is not None} | {
         node.slice.value

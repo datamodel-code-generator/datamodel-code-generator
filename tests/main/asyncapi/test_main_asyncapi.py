@@ -13,7 +13,6 @@ from datamodel_code_generator import InputFileType, inferred_message
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.parser.asyncapi import AsyncAPIParser
 from tests.conftest import assert_output
-from tests.main.asyncapi.conftest import assert_file_content
 from tests.main.conftest import (
     ASYNC_API_DATA_PATH,
     BACKEND_GOLDEN_CASES,
@@ -83,8 +82,6 @@ def test_main_asyncapi_2_yaml(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
     )
 
 
@@ -104,8 +101,6 @@ def test_main_asyncapi_single_value_enum_as_const(
         input_path=ASYNC_API_DATA_PATH / directory / f"{version}.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file=f"single_value_enum_as_const_{version}.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
     )
 
@@ -127,8 +122,6 @@ def test_main_asyncapi_3_json(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "order-events.json",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="order_events.py",
     )
 
 
@@ -157,12 +150,37 @@ def test_main_asyncapi_output_model_types(
         input_path=ASYNC_API_DATA_PATH / "order-events.json",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/order_events_{expected_name}.py",
         extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
         force_exec_validation=True,
         importable_module_name=f"generated_asyncapi_{expected_name}",
         importable_module_attribute="Order",
+    )
+
+
+@pytest.mark.parametrize(
+    ("version", "model_name"),
+    [("v2", "AdoptionsPublishPayload"), ("v3", "PetsAdoptionPayload")],
+    ids=["v2", "v3"],
+)
+def test_main_asyncapi_string_discriminator(version: str, model_name: str, output_file: Path) -> None:
+    """Read a string discriminator, the AsyncAPI Schema Object's form, as the object naming that property (#6638).
+
+    A reference to its schema is the union of the schemas whose ``allOf`` references it, tagged by their names.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "string_discriminator" / f"{version}.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"asyncapi_string_discriminator_{version}",
+        model_name=model_name,
+        valid_json=json.dumps({"pet": {"petType": "Cat", "meows": True}}),
+        invalid_json=json.dumps({"pet": {"petType": "Bird"}}),
+        expected_error_type="union_tag_invalid",
+        expected_repr=f"{model_name}(pet=Cat(petType='Cat', meows=True))",
     )
 
 
@@ -172,8 +190,6 @@ def test_main_asyncapi_auto_inference(output_file: Path, capsys: pytest.CaptureF
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
         capsys=capsys,
         expected_stderr=inferred_message.format("asyncapi") + "\n",
     )
@@ -185,8 +201,6 @@ def test_generate_asyncapi(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type=InputFileType.AsyncAPI,
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
     )
 
 
@@ -196,8 +210,6 @@ def test_main_asyncapi_schema_version(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "order-events.json",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="order_events.py",
         extra_args=["--schema-version", "3.0"],
         expected_exit=Exit.OK,
     )
@@ -209,8 +221,6 @@ def test_main_asyncapi_unknown_version_falls_back_to_v3(output_file: Path) -> No
         input_path=ASYNC_API_DATA_PATH / "unknown-version.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="unknown_version.py",
         extra_args=[*PY310_TARGET_ARGS, "--schema-version-mode", "strict"],
     )
 
@@ -221,8 +231,6 @@ def test_main_asyncapi_edge_cases(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "edge-cases.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="edge_cases.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -233,8 +241,6 @@ def test_main_asyncapi_non_object_components(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "non-object-components.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="non_object_components.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -261,8 +267,6 @@ def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "external-message-ref.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="external_message_ref.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -283,8 +287,6 @@ def test_main_asyncapi_dynamic_ref(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "dynamic_ref" / "events.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="dynamic_ref.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -295,8 +297,6 @@ def test_main_asyncapi_stable_surface(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "stable-surface.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="stable_surface.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -307,8 +307,6 @@ def test_main_asyncapi_multi_format_schema_objects(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "multi-format-schemas.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="multi_format_schemas.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -337,8 +335,6 @@ def test_main_asyncapi_v2_message_schema_format(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "schema-format-v2.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="schema_format_v2.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -349,8 +345,6 @@ def test_main_asyncapi_protobuf_schema_format(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "protobuf-schema-format.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="protobuf_schema_format.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -361,8 +355,6 @@ def test_main_asyncapi_protobuf_schema_format_local_import(output_file: Path) ->
         input_path=ASYNC_API_DATA_PATH / "protobuf-local-import.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="protobuf_local_import.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -373,8 +365,6 @@ def test_main_asyncapi_xml_schema_format(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "xml-schema-format.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="xml_schema_format.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -385,8 +375,6 @@ def test_main_asyncapi_non_finite_embedded_schemas(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "non_finite_embedded_schemas.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="non_finite_embedded_schemas.py",
         force_exec_validation=True,
     )
 
@@ -465,8 +453,6 @@ def test_main_asyncapi_validation_flag(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
         extra_args=["--validation"],
     )
 
@@ -481,6 +467,42 @@ def test_main_asyncapi_invalid_schema_version(output_file: Path, capsys: pytest.
         expected_exit=Exit.ERROR,
         expected_stderr_contains="Invalid AsyncAPI version: invalid-version",
         capsys=capsys,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_asyncapi_v2_converted_payload_ref_siblings(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the defaults an Avro or XML Schema payload of an AsyncAPI 2 document writes beside a ``$ref`` (#6394).
+
+    AsyncAPI 2 ignores the keywords beside a ``$ref``, so --ignore-ref-siblings-by-schema-version leaves out the
+    ``default`` beside ``Tone`` in the JSON Schema payload; the converted payloads write theirs as parts of a field
+    typed by a named type, so ``suit`` and ``color`` keep them.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "converted_payload_ref_siblings_v2.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_v2_converted_payload_ref_siblings",
+        model_name="PaintsPublishPayload",
+        valid_json="{}",
+        invalid_json='{"color": "green"}',
+        expected_error_type="enum",
+        expected_attribute_path=("color",),
+        expected_attribute_value="blue",
     )
 
 
@@ -580,4 +602,70 @@ def test_main_asyncapi_trait_headers_inline_and_ref_in_either_order(output_file:
         output_path=output_file,
         input_file_type="asyncapi",
         extra_args=PY310_TARGET_ARGS,
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--merge-message-trait-headers"],
+    option_description="""Give an AsyncAPI message the headers of all its traits, merged in order, and then its own.
+
+AsyncAPI 2 and 3 apply the traits of a message in the order they are listed, each as a JSON Merge Patch, and the
+message's own fields win over them. Without the option a message's headers are its own, else those of its one trait
+that is no `$ref` and defines them, else those of a referenced trait; the headers of the other traits are left out, and
+a second inline trait with headers is an error. With `--merge-message-trait-headers` the headers of every trait, inline
+or `$ref`, are merged in order and then the message's own: a property a later trait or the message gives replaces the
+earlier one, a `$ref` is read as the schema it names, and a property set to null is removed. A message whose headers
+come from one place keeps the model it has without the option.""",
+    input_schema="asyncapi/merged_trait_headers/v3.yaml",
+    cli_args=["--merge-message-trait-headers"],
+    golden_output="main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-merged].py",
+    comparison_output="main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-released].py",
+)
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("merged_trait_headers/v3.yaml", [], id="v3-released"),
+        pytest.param("merged_trait_headers/v3.yaml", ["--merge-message-trait-headers"], id="v3-merged"),
+        pytest.param("merged_trait_headers/v2/api.yaml", [], id="v2-released"),
+        pytest.param("merged_trait_headers/v2/api.yaml", ["--merge-message-trait-headers"], id="v2-merged"),
+        pytest.param("merged_trait_headers/null_member.yaml", ["--merge-message-trait-headers"], id="null-merged"),
+    ],
+)
+def test_main_asyncapi_merge_message_trait_headers(output_file: Path, input_name: str, extra_args: list[str]) -> None:
+    """Merge the headers of every trait of a message in order, then its own, under ``--merge-message-trait-headers``.
+
+    Without the option an inline trait's headers drop those of a referenced trait in either order and a message's own
+    headers drop those of its traits (#5884); with it they are merged as JSON Merge Patches in AsyncAPI 2 and 3, a
+    later string ``b`` replacing an earlier integer one, a referenced ``Trace`` read as its properties, a ``$ref`` of
+    another file keeping its model and a null property or headers removed.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel", *extra_args],
+    )
+    if input_name == "merged_trait_headers/v3.yaml" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="asyncapi_merge_message_trait_headers",
+            model_name="COwnHeadersHeaders",
+            valid_json='{"id": 1, "b": true, "traceId": "123e4567-e89b-12d3-a456-426614174000"}',
+            invalid_json='{"b": true}',
+            expected_error_type="missing",
+        )
+
+
+def test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits(output_file: Path) -> None:
+    """Merge the headers of two inline traits under ``--merge-message-trait-headers``, an error without it (#5884)."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "asyncapi_invalid" / "multiple-trait-headers.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[
+            *PY310_TARGET_ARGS,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--merge-message-trait-headers",
+        ],
     )

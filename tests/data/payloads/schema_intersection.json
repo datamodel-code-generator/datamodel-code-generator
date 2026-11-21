@@ -8507,5 +8507,181 @@
         ]
       }
     }
+  },
+  "allof_beside_discriminated_branch": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "owned": {
+        "valid": [
+          {
+            "petType": "Cat",
+            "owner": "o"
+          },
+          {
+            "fins": 1,
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat"
+          },
+          {
+            "petType": "Cat",
+            "owner": "o",
+            "meow": "abcd"
+          }
+        ]
+      },
+      "nested": {
+        "valid": [
+          {
+            "petType": "Cat",
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat"
+          }
+        ]
+      },
+      "based": {
+        "valid": [
+          {
+            "id": "i",
+            "kind": "sq",
+            "side": 1
+          }
+        ],
+        "invalid": [
+          {
+            "kind": "sq",
+            "side": 1
+          }
+        ]
+      },
+      "field": {
+        "valid": [
+          {
+            "petType": "Dog",
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Dog"
+          }
+        ]
+      }
+    }
+  },
+  "allof_beside_site_discriminator": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "named": {
+        "valid": [
+          {
+            "id": "i",
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "Dog",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "Cat"
+          }
+        ]
+      },
+      "mapped": {
+        "valid": [
+          {
+            "id": "i",
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "d",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "d"
+          }
+        ]
+      }
+    }
+  },
+  "ref_branches_beside_properties": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "owned": {
+        "valid": [
+          {
+            "owner": "o",
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "Dog",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "Dog"
+          }
+        ]
+      },
+      "mapped": {
+        "valid": [
+          {
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "d",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "c"
+          },
+          {
+            "owner": 1,
+            "petType": "d",
+            "bark": "b"
+          }
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,14 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$defs":{
+  "C":{"allOf":[{"$ref":"#/$defs/P"}],"required":["plain","nested","typed","wrapped","named","open"],"properties":{"y":{"type":"integer"}}},
+  "P":{"allOf":[{"$ref":"#/$defs/A"}]},
+  "A":{"$ref":"#/$defs/B"},
+  "B":{"allOf":[{"$ref":"#/$defs/D"}],"type":"object","properties":{
+    "plain":{"type":"array"},
+    "nested":{"type":"array","items":{"type":"array"}},
+    "typed":{"type":"array","items":{"type":"string"}},
+    "wrapped":{"allOf":[{"type":"array"}]},
+    "named":{"type":"string"},
+    "open":{}}},
+  "D":{"type":"object","properties":{"d":{"type":"string"}}}
+ }}

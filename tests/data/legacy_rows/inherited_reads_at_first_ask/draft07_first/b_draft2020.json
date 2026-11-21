@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Draft2020One",
+  "allOf": [
+    {
+      "$ref": "base.json"
+    }
+  ],
+  "properties": {
+    "y": {
+      "type": "integer"
+    },
+    "id": {
+      "type": "string",
+      "description": "redeclared"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "errors": [],
+  "data": {
+    "search": [
+      {
+        "__typename": "TextMatch",
+        "property": "p"
+      },
+      {
+        "__typename": "Repository",
+        "name": "dcg"
+      }
+    ],
+    "node": {
+      "__typename": "Repository",
+      "id": "3"
+    }
+  }
+}

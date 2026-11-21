@@ -18,6 +18,7 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
@@ -38,9 +39,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )
@@ -134,9 +133,9 @@ def test_use_enum_values_in_discriminator_without_member(output_model_type: str,
     lack, ``E`` by a mapping key that names a member and one that does not, ``I`` inherits the Enum of its base. ``G``
     and ``H`` share one Enum, so their tags would share every value: that union keeps no discriminator, as does the
     one of ``N1`` and ``N2``, whose mapping key ``"1"`` names the member ``1`` that the other one, tagged by no member,
-    takes too. The member ``1`` of the plain Enum that ``P1`` is tagged with never equals the literal ``1`` of ``P2``,
-    so that union keeps its discriminator. The module imports and each model accepts the documents of its schema and
-    rejects the others, ``P1`` apart, whose Enum member Pydantic does not take for the JSON value.
+    takes too. The member ``1`` of the plain Enum that ``P1`` is tagged with equals no JSON value, so its tag also holds
+    the value ``1`` (#6390), which ``P2``'s ``Literal[1]`` holds too, so that union is a plain one as well. The module
+    imports and each model accepts the documents of its schema and rejects the others.
     """
     run_main_and_assert(
         input_path=INPUT_PATH,

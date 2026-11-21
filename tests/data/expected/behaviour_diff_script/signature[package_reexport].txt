@@ -25,7 +25,7 @@
           "fields": {
             "name": {
               "alias": "Name",
-              "ctype": "Annotated[str, MinLen(min_length=1)]",
+              "ctype": "Annotated[str, min_length=1]",
               "default": null,
               "required": true,
               "serialization_alias": "Name",

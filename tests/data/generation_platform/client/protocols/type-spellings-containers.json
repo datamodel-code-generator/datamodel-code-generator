@@ -1,0 +1,15 @@
+{
+  "routes.legs": {
+    "kind": "pagination",
+    "operation": "/paths/~1routes/get",
+    "items": {"from": "body", "pointer": "/legs"},
+    "item_schema": {"pointer": "/components/schemas/Leg"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 0,
+      "step": {"page_items_count": true},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    }
+  }
+}

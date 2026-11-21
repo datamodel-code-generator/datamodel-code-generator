@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Passed",
+  "type": "object",
+  "properties": {
+    "text": {"$ref": "anchors.json#text"},
+    "group": {"$ref": "anchors.json#group"},
+    "deep": {"$ref": "anchors.json#deep"},
+    "named": {"$ref": "anchors.json#named"},
+    "twice": {"$ref": "anchors.json#twice"}
+  }
+}

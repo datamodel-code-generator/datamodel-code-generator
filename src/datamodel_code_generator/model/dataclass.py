@@ -46,6 +46,7 @@ from datamodel_code_generator.model._render_plan import (
     RuleId,
     Why,
     _FieldCallWriter,
+    _package_class,
     written_argument_names,
     written_text,
 )
@@ -64,7 +65,6 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.imports import IMPORT_DATACLASS, IMPORT_FIELD
 from datamodel_code_generator.model.types import DataTypeManager as _DataTypeManager
 from datamodel_code_generator.python_literal import represent_python_value
-from datamodel_code_generator.types import DataType, StrictTypes, chain_as_tuple
 
 if TYPE_CHECKING:
     from collections import defaultdict
@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model._render_plan import Omitted
     from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType, StrictTypes
 
 
 def has_field_assignment(field: DataModelFieldBase) -> bool:
@@ -339,7 +340,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             return False
         return field.extras.pop("init", None) is False
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,
@@ -398,20 +399,19 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         "metadata",
         "kw_only",
     }
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    constraints: Optional[Constraints] = None
 
     @override
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
 
-    @property
     @override
-    def imports(self) -> tuple[Import, ...]:
-        """Get imports including field() when the field writes ``field(...)``, as its ``field`` property gives it."""
-        if (field := self.field) and field.startswith("field("):
-            return chain_as_tuple(super().imports, (IMPORT_FIELD,))
-        return super().imports
+    def _call_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:
+        """Return the call's imports; a field class outside the package imports ``field`` where ``field`` writes it."""
+        if _package_class(type(self)):
+            return super()._call_imports(plan)
+        return (IMPORT_FIELD,) if (field := self.field) and field.startswith("field(") else ()
 
     @property
     @override
@@ -553,7 +553,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 class DataTypeManager(_DataTypeManager):
     """Type manager for dataclass models."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
         use_standard_collections: bool = False,  # noqa: FBT001, FBT002

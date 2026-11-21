@@ -1,0 +1,4 @@
+[
+  "/field_with_constraints maxLength \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\": invalid, model accepts",
+  "/field_with_constraints minLength \"aaaa\": invalid, model accepts"
+]

@@ -1,0 +1,19 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+allowlist:JUSTIFIED_VIOLATIONS                     1       2      +1
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+allowlist:JUSTIFIED_VIOLATIONS rose by 1 (1 -> 2), approved up to 2 for #7172 in scripts/ratchet_approvals.toml (decision #7172): a pure test of private cores
+
+scripts/ratchet_approvals.toml: the approval of allowlist:JUSTIFIED_VIOLATIONS up to 2 for #7172 is stale: this tree already counts 2, so it accepts no rise. Remove it (in #7172 itself when that pull request reaches the count), so that the table holds only pending approvals.
+
+No key rose, but scripts/ratchet_approvals.toml needs the changes above. Exit status 0 unless --enforce is given.

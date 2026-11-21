@@ -1,0 +1,14 @@
+verdict problems: none
+undeclared questions: none
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:19: FinalFacts built in Parser.__enter
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:30: FinalFacts built in Store
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:31: FinalFacts built in Store.seal
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:29: FinalFacts built in Store
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:37: reaches Parser._Parser__runner
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:37: reaches Parser.__enter
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:42: reaches Parser.__index
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:42: reaches Parser.__runner
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:47: deep warning in warns
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:51: deep warning in warns
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:51: deep warning in nested
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:57: deep warning in warns_later

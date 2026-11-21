@@ -9,7 +9,6 @@ and the components of a ``$ref`` loop of two, and keep their other bases.
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -18,6 +17,7 @@ import yaml
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import OPEN_API_DATA_PATH, _generated_model, _model_json_validator, run_main_and_assert
 
@@ -31,9 +31,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )

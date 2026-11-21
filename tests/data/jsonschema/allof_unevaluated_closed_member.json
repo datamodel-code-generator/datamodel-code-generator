@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Filters",
+  "type": "object",
+  "properties": {
+    "closed": {
+      "$ref": "#/$defs/ClosedFilters"
+    },
+    "nested": {
+      "$ref": "#/$defs/NestedClosedFilters"
+    },
+    "merged": {
+      "$ref": "#/$defs/MergedClosedFilters"
+    },
+    "open": {
+      "$ref": "#/$defs/MapFilters"
+    },
+    "pattern": {
+      "$ref": "#/$defs/PatternClosedFilters"
+    }
+  },
+  "$defs": {
+    "OpenFilters": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "LimitedFilters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "maxLength": 8
+        }
+      }
+    },
+    "ClosedFilters": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OpenFilters"
+        },
+        {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "status": {
+              "type": "string"
+            },
+            "owner": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "NestedClosedFilters": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OpenFilters"
+        },
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "unevaluatedProperties": false,
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "owner": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "MergedClosedFilters": {
+      "allOf": [
+        {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "status": {
+              "type": "string"
+            },
+            "owner": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/OpenFilters"
+        },
+        {
+          "$ref": "#/$defs/LimitedFilters"
+        }
+      ]
+    },
+    "MapFilters": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OpenFilters"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "unevaluatedProperties": false,
+          "properties": {
+            "owner": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "PatternFilters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x_": {
+          "type": "string"
+        }
+      }
+    },
+    "PatternClosedFilters": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PatternFilters",
+          "unevaluatedProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

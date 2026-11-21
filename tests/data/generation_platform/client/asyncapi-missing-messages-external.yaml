@@ -1,0 +1,18 @@
+asyncapi: 3.0.0
+info: {title: A message reference to a missing pointer of a loaded document, version: 1.0.0}
+servers:
+  socket: {host: socket.example.com, protocol: wss}
+channels:
+  quotes:
+    address: /quotes
+    messages:
+      quote:
+        $ref: 'asyncapi-missing-messages-library.yaml#/components/messages/Qoute'
+  plain:
+    address: /plain
+    messages:
+      plain:
+        payload: {type: object, properties: {x: {type: integer}}}
+operations:
+  readQuotes: {action: receive, channel: {$ref: '#/channels/quotes'}}
+  readPlain: {action: receive, channel: {$ref: '#/channels/plain'}}

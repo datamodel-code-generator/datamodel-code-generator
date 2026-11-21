@@ -1,0 +1,4 @@
+exit status 0
+client-httpx2-min-e2e	source-envs
+dispatch	pattern-lines
+py312-nocov-parallel	source-envs

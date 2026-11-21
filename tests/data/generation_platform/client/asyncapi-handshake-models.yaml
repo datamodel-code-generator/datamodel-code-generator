@@ -1,0 +1,101 @@
+asyncapi: 3.0.0
+info:
+  title: Chat rooms
+  version: 1.0.0
+servers:
+  chat:
+    host: chat.example.com
+    protocol: wss
+channels:
+  rooms:
+    address: /rooms
+    bindings:
+      ws:
+        query:
+          allOf:
+            - $ref: '#/components/schemas/Paging'
+            - type: object
+              properties:
+                room:
+                  type: string
+              required: [room]
+        headers:
+          $schema: https://json-schema.org/draft/2020-12/schema
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+          examples:
+            - X-Trace: trace-1
+          properties:
+            X-Trace:
+              $ref: '#/components/schemas/Trace'
+            Sec-WebSocket-Protocol:
+              oneOf:
+                - const: chat.v1
+                - const: chat.v2
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+  feeds:
+    address: /feeds
+    bindings:
+      ws:
+        query:
+          type: object
+          additionalProperties:
+            type: string
+    messages:
+      item:
+        contentType: text/plain
+        payload:
+          type: string
+  lobby:
+    address: /lobby
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            Sec-WebSocket-Protocol:
+              $ref: '#/components/schemas/Protocols'
+    messages:
+      note:
+        contentType: text/plain
+        payload:
+          type: string
+operations:
+  receiveNote:
+    action: receive
+    channel:
+      $ref: '#/channels/lobby'
+  receiveLine:
+    action: receive
+    channel:
+      $ref: '#/channels/rooms'
+  receiveItem:
+    action: receive
+    channel:
+      $ref: '#/channels/feeds'
+components:
+  schemas:
+    Protocols:
+      oneOf:
+        - $ref: '#/components/schemas/LobbyV1'
+        - $ref: '#/components/schemas/LobbyV2'
+    LobbyV1:
+      const: lobby.v1
+    LobbyV2:
+      const: lobby.v2
+    Paging:
+      type: object
+      properties:
+        limit:
+          type: integer
+          default: 20
+      required: [limit]
+    Trace:
+      type: string
+      description: The trace id of the call

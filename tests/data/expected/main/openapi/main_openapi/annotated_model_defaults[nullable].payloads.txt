@@ -1,0 +1,6 @@
+{"flags":{"enabled":false},"optionalFlags":{"enabled":true},"limits":{"max-items":3},"outer":{"name":"x","inner":{"flags":{"enabled":true}}},"tags":["a","b"]}
+['Flags', 'Flags', 'Limits', 'Outer', 'Tags']
+shared: False
+Folder(readme=Document(title='README', folder=None))
+{"flags": {"enabled": false}, "optionalFlags": {"enabled": true}, "limits": {"max-items": 3}, "outer": {"name": "x", "inner": {"flags": {"enabled": true}}}, "tags": ["a", "b"]}
+Broken: [('int_parsing', ('limits', 'max-items'))]

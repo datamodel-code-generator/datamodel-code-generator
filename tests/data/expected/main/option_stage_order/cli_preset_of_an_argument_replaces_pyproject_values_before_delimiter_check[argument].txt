@@ -1,0 +1,5 @@
+FutureWarning: Default formatters will change to builtin no earlier than three months after 0.92.0. Set --formatters or --preset explicitly; see "Dependency migration notices" in the documentation. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).
+exit: OK
+written:
+  output.py
+  pyproject.toml

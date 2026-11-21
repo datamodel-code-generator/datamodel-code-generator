@@ -26,10 +26,11 @@ from urllib.parse import urlparse
 
 from typing_extensions import Self
 
-from datamodel_code_generator import SchemaFetchError
 from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._caches import BoundedLru
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._message_text import extra_requirement, install_command
+from datamodel_code_generator._shared_types import SchemaFetchError
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
 from datamodel_code_generator.python_literal import stable_repr
@@ -63,44 +64,56 @@ if TYPE_CHECKING:
 
     class _HTTPTransportURL(Protocol):
         @property
-        def raw_scheme(self) -> bytes: ...
+        def raw_scheme(self) -> bytes:
+            """The scheme of the URL as bytes."""
 
         @property
-        def raw_host(self) -> bytes: ...
+        def raw_host(self) -> bytes:
+            """The host of the URL as bytes."""
 
         @property
-        def port(self) -> int | None: ...
+        def port(self) -> int | None:
+            """The port of the URL, or None for the scheme's default."""
 
         @property
-        def raw_path(self) -> bytes: ...
+        def raw_path(self) -> bytes:
+            """The path and query of the URL as bytes."""
 
     class _HTTPTransportHeaders(Protocol):
         @property
-        def raw(self) -> Sequence[tuple[bytes, bytes]]: ...
+        def raw(self) -> Sequence[tuple[bytes, bytes]]:
+            """The header name and value pairs as bytes."""
 
     # Extension payloads are dynamically typed upstream. Keep them opaque so values must be narrowed before use.
     _Extensions = Mapping[str, object]
 
     class _HTTPTransportRequest(Protocol):
         @property
-        def method(self) -> str: ...
+        def method(self) -> str:
+            """The request method."""
 
         @property
-        def url(self) -> _HTTPTransportURL: ...
+        def url(self) -> _HTTPTransportURL:
+            """The URL the request is sent to."""
 
         @property
-        def headers(self) -> _HTTPTransportHeaders: ...
+        def headers(self) -> _HTTPTransportHeaders:
+            """The headers of the request."""
 
         @property
-        def stream(self) -> Iterable[bytes]: ...
+        def stream(self) -> Iterable[bytes]:
+            """The body of the request as byte chunks."""
 
         @property
-        def extensions(self) -> _Extensions: ...
+        def extensions(self) -> _Extensions:
+            """The transport extensions of the request."""
 
     class _HTTPTransport(Protocol):
-        def handle_request(self, request: _HTTPTransportRequest) -> _HTTPResponse: ...
+        def handle_request(self, request: _HTTPTransportRequest) -> _HTTPResponse:
+            """Send ``request`` and return its response."""
 
-        def close(self) -> None: ...
+        def close(self) -> None:
+            """Release the connections of the transport."""
 
     _SocketOption = tuple[int, int, int] | tuple[int, int, bytes | bytearray] | tuple[int, int, None, int]
 
@@ -111,22 +124,26 @@ if TYPE_CHECKING:
             pinned_host: str,
             pinned_ips: tuple[IPv4Address | IPv6Address, ...],
             verify: bool,
-        ) -> _HTTPTransportT_co: ...
+        ) -> _HTTPTransportT_co:
+            """Return a transport that connects only to ``pinned_ips`` for ``pinned_host``."""
 
     class _HTTPCookies(Protocol):
-        def clear(self) -> None: ...
+        def clear(self) -> None:
+            """Drop every stored cookie."""
 
     class _HTTPXClient(Protocol):
         cookies: _HTTPCookies
 
-        def __enter__(self) -> Self: ...
+        def __enter__(self) -> Self:
+            """Return the client for a ``with`` block."""
 
         def __exit__(
             self,
             exc_type: type[BaseException] | None,
             exc_value: BaseException | None,
             traceback: TracebackType | None,
-        ) -> None: ...
+        ) -> None:
+            """Close the client when the ``with`` block ends."""
 
         def get(
             self,
@@ -135,9 +152,11 @@ if TYPE_CHECKING:
             headers: Sequence[tuple[str, str]] | None,
             follow_redirects: bool,
             params: Sequence[tuple[str, str]] | None,
-        ) -> _HTTPResponse: ...
+        ) -> _HTTPResponse:
+            """Send a GET request to ``url`` and return its response."""
 
-        def close(self) -> None: ...
+        def close(self) -> None:
+            """Release the connections of the client."""
 
     class _HTTPXClientFactory(Protocol):
         def __call__(
@@ -146,7 +165,8 @@ if TYPE_CHECKING:
             transport: _HTTPTransport | None = None,
             timeout: float,
             verify: bool = True,
-        ) -> _HTTPXClient: ...
+        ) -> _HTTPXClient:
+            """Return a client that sends its requests through ``transport``."""
 
     class _FetchSettings(Protocol):
         """The options of a config or a parser that say how a URL input is fetched."""
@@ -180,12 +200,15 @@ if TYPE_CHECKING:
             """The encoding the body is read in."""
 
     class _HTTPXURLJoiner(Protocol):
-        def join(self, url: str) -> _HTTPXURLJoiner: ...
+        def join(self, url: str) -> _HTTPXURLJoiner:
+            """Return this URL joined with the relative ``url``."""
 
-        def __str__(self) -> str: ...
+        def __str__(self) -> str:
+            """Return the URL as text."""
 
     class _HTTPXURLFactory(Protocol):
-        def __call__(self, url: str) -> _HTTPXURLJoiner: ...
+        def __call__(self, url: str) -> _HTTPXURLJoiner:
+            """Return the URL ``url``."""
 
     class _HTTPXResponseFactory(Protocol):
         def __call__(
@@ -196,7 +219,8 @@ if TYPE_CHECKING:
             content: bytes,
             extensions: _Extensions,
             request: _HTTPTransportRequest,
-        ) -> _HTTPResponse: ...
+        ) -> _HTTPResponse:
+            """Return a response made of the given status, headers and body."""
 
     class _HTTPXModule(Protocol):
         BaseTransport: type[_HTTPTransport]
@@ -205,7 +229,7 @@ if TYPE_CHECKING:
         URL: _HTTPXURLFactory
         create_ssl_context: Callable[[bool], ssl.SSLContext]
 
-        def get(  # noqa: PLR0913
+        def get(
             self,
             url: str,
             *,
@@ -214,24 +238,30 @@ if TYPE_CHECKING:
             follow_redirects: bool,
             params: Sequence[tuple[str, str]] | None,
             timeout: float,
-        ) -> _HTTPResponse: ...
+        ) -> _HTTPResponse:
+            """Send a GET request to ``url`` and return its response."""
 
     class _ClosableByteStream(Iterable[bytes], Protocol):
-        def close(self) -> None: ...
+        def close(self) -> None:
+            """Release the resources behind the stream."""
 
     class _NetworkStream(Protocol):
-        def read(self, max_bytes: int, timeout: float | None = None) -> bytes: ...
+        def read(self, max_bytes: int, timeout: float | None = None) -> bytes:
+            """Read at most ``max_bytes`` bytes from the stream."""
 
-        def write(self, buffer: bytes, timeout: float | None = None) -> None: ...
+        def write(self, buffer: bytes, timeout: float | None = None) -> None:
+            """Write ``buffer`` to the stream."""
 
-        def close(self) -> None: ...
+        def close(self) -> None:
+            """Close the stream."""
 
         def start_tls(
             self,
             ssl_context: ssl.SSLContext,
             server_hostname: str | None = None,
             timeout: float | None = None,
-        ) -> Self: ...
+        ) -> Self:
+            """Upgrade the stream to TLS and return the secured stream."""
 
     class _NetworkBackend(Protocol[_NetworkStreamT_co]):
         def connect_tcp(
@@ -241,16 +271,19 @@ if TYPE_CHECKING:
             timeout: float | None = None,
             local_address: str | None = None,
             socket_options: Iterable[_SocketOption] | None = None,
-        ) -> _NetworkStreamT_co: ...
+        ) -> _NetworkStreamT_co:
+            """Open a TCP stream to ``host`` and ``port``."""
 
         def connect_unix_socket(
             self,
             path: str,
             timeout: float | None = None,
             socket_options: Iterable[_SocketOption] | None = None,
-        ) -> _NetworkStreamT_co: ...
+        ) -> _NetworkStreamT_co:
+            """Open a stream to the Unix socket at ``path``."""
 
-        def sleep(self, seconds: float) -> None: ...
+        def sleep(self, seconds: float) -> None:
+            """Pause for ``seconds``."""
 
     class _HTTPCoreURL(Protocol):
         scheme: bytes
@@ -279,7 +312,8 @@ if TYPE_CHECKING:
             host: bytes,
             port: int | None,
             target: bytes,
-        ) -> _HTTPCoreURL: ...
+        ) -> _HTTPCoreURL:
+            """Return a URL made of the given parts."""
 
     class _HTTPCoreRequestFactory(Protocol):
         def __call__(
@@ -290,12 +324,15 @@ if TYPE_CHECKING:
             headers: Sequence[tuple[bytes, bytes]],
             content: Iterable[bytes],
             extensions: _Extensions,
-        ) -> _HTTPCoreRequest: ...
+        ) -> _HTTPCoreRequest:
+            """Return a request made of the given method, URL, headers and body."""
 
     class _HTTPCoreConnectionPool(Protocol):
-        def handle_request(self, request: _HTTPCoreRequest) -> _HTTPCoreResponse: ...
+        def handle_request(self, request: _HTTPCoreRequest) -> _HTTPCoreResponse:
+            """Send ``request`` and return its response."""
 
-        def close(self) -> None: ...
+        def close(self) -> None:
+            """Close the connections of the pool."""
 
     class _HTTPCoreConnectionPoolFactory(Protocol):
         def __call__(
@@ -303,10 +340,12 @@ if TYPE_CHECKING:
             *,
             ssl_context: ssl.SSLContext | None,
             network_backend: _NetworkBackend[_NetworkStream],
-        ) -> _HTTPCoreConnectionPool: ...
+        ) -> _HTTPCoreConnectionPool:
+            """Return a pool that opens connections through ``network_backend``."""
 
     class _NetworkBackendFactory(Protocol):
-        def __call__(self) -> _NetworkBackend[_NetworkStream]: ...
+        def __call__(self) -> _NetworkBackend[_NetworkStream]:
+            """Return a network backend."""
 
     class _HTTPCoreModule(Protocol):
         ConnectionPool: _HTTPCoreConnectionPoolFactory
@@ -798,7 +837,7 @@ class _HTTPFetchSession:
         self._dns_cache.put(host, resolved_ips, _HTTP_FETCH_DNS_CACHE_MAX_SIZE)
         return resolved_ips
 
-    def get_response(  # noqa: PLR0913
+    def get_response(
         self,
         http_stack: _HTTPStack[_HTTPTransport],
         url: str,
@@ -838,14 +877,14 @@ class _HTTPFetchSession:
                 with contextlib.suppress(Exception):
                     client.close()
 
-    def get_body(  # noqa: PLR0913
+    def get_body(
         self,
         url: str,
         headers: Sequence[tuple[str, str]] | None = None,
-        ignore_tls: bool = False,  # noqa: FBT001, FBT002
+        *,
+        ignore_tls: bool = False,
         query_parameters: Sequence[tuple[str, str]] | None = None,
         timeout: float = DEFAULT_HTTP_TIMEOUT,
-        *,
         allow_private_network: bool = False,
         encoding: str = "utf-8",
     ) -> str:
@@ -853,9 +892,9 @@ class _HTTPFetchSession:
         return _get_body(
             url,
             headers,
-            ignore_tls,
-            query_parameters,
-            timeout,
+            ignore_tls=ignore_tls,
+            query_parameters=query_parameters,
+            timeout=timeout,
             allow_private_network=allow_private_network,
             session=self,
             response_observer=self._response_observer,
@@ -871,7 +910,7 @@ class _HTTPFetchSession:
                 client.close()
 
 
-def _get_http_response(  # noqa: PLR0913
+def _get_http_response(
     http_stack: _HTTPStack[_HTTPTransport],
     url: str,
     *,
@@ -1056,7 +1095,7 @@ def _get_redirect_headers(
     return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
-def get_body(  # noqa: PLR0913
+def get_body(
     url: str,
     headers: Sequence[tuple[str, str]] | None = None,
     ignore_tls: bool = False,  # noqa: FBT001, FBT002
@@ -1087,9 +1126,9 @@ def get_body(  # noqa: PLR0913
     return _get_body(
         url,
         headers,
-        ignore_tls,
-        query_parameters,
-        timeout,
+        ignore_tls=ignore_tls,
+        query_parameters=query_parameters,
+        timeout=timeout,
         allow_private_network=allow_private_network,
         http_backend=http_backend,
         response_observer=response_observer,
@@ -1117,21 +1156,21 @@ def _get_configured_body(
     return fetch(
         url,
         settings.http_headers,
-        settings.http_ignore_tls,
-        settings.http_query_parameters,
-        DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
+        ignore_tls=settings.http_ignore_tls,
+        query_parameters=settings.http_query_parameters,
+        timeout=DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
         allow_private_network=settings.allow_private_network,
         encoding=settings.encoding,
     )
 
 
-def _get_body(  # noqa: PLR0913, PLR0914
+def _get_body(  # noqa: PLR0914
     url: str,
     headers: Sequence[tuple[str, str]] | None,
-    ignore_tls: bool,  # noqa: FBT001
+    *,
+    ignore_tls: bool,
     query_parameters: Sequence[tuple[str, str]] | None,
     timeout: float,
-    *,
     allow_private_network: bool,
     http_backend: HTTPBackend = HTTPBackend.AUTO,
     session: _HTTPFetchSession | None = None,
@@ -1197,7 +1236,7 @@ def _get_body(  # noqa: PLR0913, PLR0914
     # Decode the raw entity explicitly. HTTP client charset heuristics must not
     # change how the same locked bytes are interpreted between runs.
     body = response.content
-    if not isinstance(body, bytes):  # pragma: no cover - compatibility for text-only HTTP client test doubles
+    if not isinstance(body, bytes):
         body = response.text.encode(encoding)
     if response_observer is not None:
         # Redirects are transport details. The lock identity remains the
@@ -1234,7 +1273,7 @@ def join_url(  # noqa: PLR0912
 
         # Fragment-only ref: keep the original path
         if not ref_path:
-            joined = url.split("#", maxsplit=1)[0]
+            joined = document_part(url)
             if frag:
                 joined += f"#{frag[0]}"
             return joined

@@ -1,7 +1,17 @@
 exit=0
 summary: identical=4, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 4
+evidence: input group tests/data/openapi files | pydantic_v2.BaseModel | --collapse-root-models: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | typing.TypedDict | --collapse-root-models: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | typing.TypedDict | default: 1 compared, 0 failed on both sides
+evidence: complete
 
 exit=0
 summary: identical=4, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 4 of 4
+evidence: input group tests/data/openapi files | pydantic_v2.BaseModel | --collapse-root-models: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | typing.TypedDict | --collapse-root-models: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | typing.TypedDict | default: 1 compared, 0 failed on both sides
+evidence: complete

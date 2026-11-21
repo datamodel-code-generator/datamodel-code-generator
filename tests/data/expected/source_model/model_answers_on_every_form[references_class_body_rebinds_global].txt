@@ -1,0 +1,7 @@
+== references
+3:0 _limit store in <module> -> local <module> @3
+7:4 _limit store in C -> local C @7, else global <module> @3
+7:13 _limit load in C -> local C @7, else global <module> @3
+uses of <module>:_limit@3: read@7
+uses of C:_limit@7: read@7
+== code objects: one per scope that compiles on this Python

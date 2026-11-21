@@ -127,22 +127,26 @@ class AsyncDefaultResource:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
         """
         Call POST /pets.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (tag,),
-            body=body,
-            fields=(name, kind, pet_tag, birthDate, owner, secret),
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (tag,),
+                body=body,
+                fields=(name, kind, pet_tag, birthDate, owner, secret),
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     @overload
     async def update_pet(
@@ -201,14 +205,16 @@ class AsyncDefaultResource:
         """
         Call PATCH /pets/{petId}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (petId,),
-            body=body,
-            fields=(name, tag),
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (petId,),
+                body=body,
+                fields=(name, tag),
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     @overload
     async def log_visit(
@@ -256,14 +262,16 @@ class AsyncDefaultResource:
         """
         Call POST /pets/{petId}/visits.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (petId,),
-            body=body,
-            fields=(note, visit_options),
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (petId,),
+                body=body,
+                fields=(note, visit_options),
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def set_owner(
         self,
@@ -276,13 +284,15 @@ class AsyncDefaultResource:
         """
         Call PUT /pets/{petId}/owner.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (petId,),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (petId,),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     @overload
     async def create_owner(
@@ -316,14 +326,16 @@ class AsyncDefaultResource:
         """
         Call POST /owners.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            body=body,
-            fields=(email, nickName),
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                body=body,
+                fields=(email, nickName),
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     @overload
     async def put_labels(
@@ -357,14 +369,16 @@ class AsyncDefaultResource:
         """
         Call PUT /pets/{petId}/labels.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (petId,),
-            body=body,
-            fields=(size,),
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (petId,),
+                body=body,
+                fields=(size,),
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def put_photo(
         self,
@@ -377,13 +391,15 @@ class AsyncDefaultResource:
         """
         Call PUT /pets/{petId}/photo.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (petId,),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (petId,),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     @overload
     async def replace_pet(
@@ -420,14 +436,16 @@ class AsyncDefaultResource:
         """
         Call PUT /pets/{petId}/records.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (petId,),
-            body=body,
-            fields=(name, tag),
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (petId,),
+                body=body,
+                fields=(name, tag),
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:
@@ -512,7 +530,9 @@ class AsyncDefaultWithResponse:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
@@ -897,7 +917,9 @@ class AsyncDefaultWithRawResponse:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1282,7 +1304,9 @@ class AsyncDefaultWithStreamingResponse:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

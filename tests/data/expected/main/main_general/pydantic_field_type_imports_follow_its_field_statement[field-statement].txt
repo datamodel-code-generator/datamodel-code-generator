@@ -1,0 +1,11 @@
+from __future__ import annotations
+
+from typing import Annotated, Optional
+
+from pydantic import BaseModel, Field
+
+
+class M(BaseModel):
+    a: int
+    b: Optional[str] = 'x'
+    c: Optional[int] = None

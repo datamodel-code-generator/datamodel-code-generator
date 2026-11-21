@@ -27,16 +27,28 @@ class Holder(BaseModel):
     subscription: Any | None = None
     typename__: Literal['Holder'] | None = Field('Holder', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__
+
 
 class Other(BaseModel):
     value: String
     typename__: Literal['Other'] | None = Field('Other', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
 
 
 class Second(BaseModel):
     self: Second | None = None
     value: String
     typename__: Literal['Second'] | None = Field('Second', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Second'] | None:
+        return self.typename__
 
 
 Choice = TypeAliasType(

@@ -59,7 +59,7 @@ def _get_inherited_type_modifiers(
     drops_null_members: bool = False,
 ) -> _InheritedTypeModifiers:
     """Compress a partial type before replacing its forward placeholder."""
-    list_wrapper = _copy_data_type(data_type, register_references=False) if data_type._wraps_one_list else None  # noqa: SLF001
+    list_wrapper = _copy_data_type(data_type, register_references=False) if data_type._wraps_one_list else None
     return _InheritedTypeModifiers(
         null_rule=null_rule,
         is_optional=data_type.is_optional,
@@ -105,7 +105,7 @@ def _merge_data_type_modifiers(
         new_type.is_optional = new_type.is_optional or current_type.is_optional
     if isinstance(current_type, _InheritedTypeModifiers) and current_type.excludes_null:
         new_type.is_optional = False
-    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):  # noqa: SLF001
+    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):
         new_type.is_dict = new_type.is_dict or current_type.is_dict
         new_type.is_list = new_type.is_list or current_type.is_list
         new_type.is_set = new_type.is_set or current_type.is_set
@@ -135,8 +135,19 @@ def _inherited_field_nullability(
     nullable, type_has_null = inherited_field.nullable, inherited_field.type_has_null
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
-            nullable, type_has_null = (False if required or field.nullable is False else None), False
+            nullable, type_has_null = (
+                _nullable_without_inherited_null(override_nullable=field.nullable, required=required),
+                False,
+            )
     return {"nullable": nullable, "type_has_null": type_has_null}
+
+
+def _nullable_without_inherited_null(*, override_nullable: bool | None, required: bool) -> bool | None:
+    """Return the ``nullable`` of a copy whose override drops the inherited null.
+
+    It is False where the copy is required or the override is not null, else undecided.
+    """
+    return False if required or override_nullable is False else None
 
 
 def _apply_inherited_field_nullability(
@@ -149,7 +160,29 @@ def _apply_inherited_field_nullability(
         GenerationStore.clear_target_null(copied_field.data_type)  # ty: ignore[deprecated]
 
 
-def _copy_resolved_inherited_field(  # noqa: PLR0913
+def _keep_nullable_without_default(
+    copied_field: DataModelFieldBase,
+    field: DataModelFieldBase,
+    inherited_field: DataModelFieldBase,
+    current_type: DataType | _InheritedTypeModifiers,
+) -> None:
+    """Give the copy the ``nullable`` it has without a default, read as its ``nullable`` is, or none where they agree.
+
+    A copy that keeps the inherited ``nullable`` (``_inherited_field_nullability``) keeps what that field has without
+    its default; one whose override ``field`` drops the null reads the ``nullable`` the override has without its
+    default instead of the override's ``nullable``.
+    """
+    without_default = inherited_field.nullable_without_default
+    match current_type:
+        case _InheritedTypeModifiers(excludes_null=True):
+            without_default = _nullable_without_inherited_null(
+                override_nullable=field.nullable_without_default, required=copied_field.required
+            )
+    if copied_field.nullable_without_default is not without_default:
+        GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]
+
+
+def _copy_resolved_inherited_field(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     *,
@@ -172,7 +205,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
             wrapper_template = (
                 current_type.list_wrapper
                 if isinstance(current_type, _InheritedTypeModifiers)
-                else (current_type if current_type._wraps_one_list else None)  # noqa: SLF001
+                else (current_type if current_type._wraps_one_list else None)
             )
             if wrapper_template is not None and copied_data_type.is_list:
                 wrapper = _copy_data_type(wrapper_template, register_references=register_references)
@@ -211,6 +244,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                 **facts,
             )
             _apply_inherited_field_nullability(copied_field, current_type)
+            _keep_nullable_without_default(copied_field, field, inherited_field, current_type)
             if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                 copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, ClassScope():

@@ -92,8 +92,8 @@ With `pip install 'datamodel-code-generator[ryaml]'`, YAML input is read by ryam
 | --- | --- | --- | --- |
 | `<<: *base` (merge key) | keys of `base` are merged in | `<<` stays a key holding `base` | Avoid merge keys; write the keys out |
 | `017` | integer `15` (octal) | string `"017"` | Write `15`, or quote it as a string |
-| `1_000` | integer `1000` | string `"1_000"` | Write `1000` |
-| `1:20` | integer `80` (base 60) | string `"1:20"` | Write `80`, or quote it as a string |
+| `1_000` | integer `1000` | string `"1_000"` | Write `1000`, or pass `--read-yaml-1-1-numbers-as-text` for the string |
+| `1:20` | integer `80` (base 60) | string `"1:20"` | Write `80`, or quote it, or pass `--read-yaml-1-1-numbers-as-text` |
 | `0o17` | string `"0o17"` | integer `15` | Quote it if it is a string |
 | `1.0e3` | string `"1.0e3"` | float `1000.0` | Quote it if it is a string, or write `1000.0` |
 | `12345678901234567890123456789012345678901` (41 digits) | integer | float `1.2345678901234568e+40` | Quote it, or keep integers within 64 bits |
@@ -101,7 +101,7 @@ With `pip install 'datamodel-code-generator[ryaml]'`, YAML input is read by ryam
 | `!!omap [a: 1]` | list of tuples | list of one-key mappings | Write a list of mappings |
 | `!foo bar` (unknown tag) | error | mapping `{"!foo": "bar"}` | Remove the tag |
 
-`!!set` is rejected with either reader. Unquoted `YES`, `no`, `on` and `off` stay strings with both readers. The `True`, `False`, `TRUE` and `FALSE` spellings are read as booleans by both and warn as deprecated; write `true` or `false`.
+Where such a value with `_` or `:` makes a document invalid with PyYAML, because a string is required there (a `pattern: 00:00:00.00`, a component named `18_24`), the document is read again with these values as text where a string is required. `!!set` is rejected with either reader. Unquoted `YES`, `no`, `on` and `off` stay strings with both readers. The `True`, `False`, `TRUE` and `FALSE` spellings are read as booleans by both and warn as deprecated; write `true` or `false`.
 
 📎 Related: [#4511](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4511), [#5546](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5546)
 
@@ -120,6 +120,11 @@ datamodel-codegen --field-constraints ...
 # Use Annotated[int, Field(ge=0)]
 datamodel-codegen --use-annotated ...
 ```
+
+In Pydantic v2 output (`pydantic_v2.BaseModel`, `pydantic_v2.dataclass`), a member of a union that takes its own
+constraints, such as the `string` of `type: [integer, string]` with a `pattern`, stays a `con*` call with
+`--field-constraints` alone; `--use-annotated` writes it as `Annotated[str, Field(pattern=...)]`, which mypy accepts
+(#7109).
 
 See [Field Constraints](field-constraints.md) for more information.
 
@@ -756,9 +761,9 @@ class Root(BaseModel):
 | Preset | `20261104` |
 | Class | opt-in |
 | Release | 0.90.0 |
-| Issue | [#5845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5845), [#5958](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5958) |
+| Issue | [#5845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5845), [#5958](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5958), [#6394](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6394) |
 
-**Affects:** a `$ref` with keywords beside it in a version that ignores them: JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2. Without the option those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling `maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With the option the field is typed by the referenced schema alone; annotations beside the `$ref` (`description`, `default`, `title`) and extensions are left out too. Versions that apply the keywords beside a `$ref` read them as before; the version is the one `--read-schema-version-per-document` reads, else that of the document being parsed.
+**Affects:** a `$ref` with keywords beside it in a version that ignores them: JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2. Without the option those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling `maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With the option the field is typed by the referenced schema alone; annotations beside the `$ref` (`description`, `default`, `title`) and extensions are left out too. Versions that apply the keywords beside a `$ref` read them as before; the version is the one `--read-schema-version-per-document` reads, else that of the document being parsed. A schema converted from Avro, XML Schema or Protocol Buffers, also as an AsyncAPI payload, keeps the keywords its converter writes beside a `$ref`, such as the default of a field typed by a named type (0.90.0 left them out, [#6394](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6394)).
 
 Schema: an OpenAPI 3.0 `Holder` whose `data` is `{"$ref": "#/components/schemas/Text", "format": "binary"}`, with `Text` a string.
 

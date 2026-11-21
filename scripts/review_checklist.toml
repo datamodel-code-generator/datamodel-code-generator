@@ -1,0 +1,103 @@
+# The review items of scripts/review_checklist.py, most important first.
+#
+# Each item is a written rule of the repository that no check, test or hook enforces: `rule` is the file that states
+# it and `words` its words there (whitespace aside), `question` what a reviewer asks of a diff that may break it, and
+# `pulls` the public pull requests where it was broken or that it came from. An item enters with two such pull
+# requests and leaves once a check enforces its rule. A trigger names `paths` (globs relative to the repository root,
+# `**` for any depth) and optional regular expressions: `added` searches the added lines, `removed` the removed lines
+# of a hunk that also adds lines; a trigger without either fires on every added line of its paths.
+
+[[item]]
+id = "home-keeps-site-reading"
+title = "A site moved into a home reads what it read before"
+rule = "docs/architecture.md"
+words = "A new exception to a home is a new named row, never an anonymous `if`."
+question = """The diff replaces a site's own lookup (a key, a path, a name, a default) with a shared one. Does the \
+shared one read the same at this site, with no fallback, legacy row or default the site did not apply? Where it \
+differs, keep the site's reading as a named row with an input whose output shows it, or argue from the code why no \
+input can tell them apart."""
+pulls = [6547, 7118]
+
+[[item.trigger]]
+paths = ["src/**/*.py"]
+removed = [
+  '\b(?:model_)?key_of\(',
+  '\.(?:short_name|class_name)\b',
+  '\b\w*(?:index|indexes|positions|by_key|by_path|by_name)\b\s*(?:\[|\.get\()',
+]
+added = ['\blegacy-[a-z0-9-]+', '\bfallback\b']
+
+[[item]]
+id = "comparison-reads-output"
+title = "A comparison judges a stand-in for the output"
+rule = "docs/development-contributing.md"
+words = "Prefer full expected-file or inline snapshot comparisons for generated output over substring checks."
+question = """What does each side of the comparison read: the output this code generates, or a stand-in (a stored \
+file, a signature, a transformed, normalized or masked text)? Name an output change a user would see that the \
+comparison now calls equal, and run it; a normalization replaces only what differs by host or run (paths, commit \
+ids, line numbers of warnings)."""
+pulls = [5403, 6121]
+
+[[item.trigger]]
+paths = [
+  "scripts/compare_release.py",
+  "scripts/behaviour_diff.py",
+  "scripts/_behaviour_*.py",
+  "scripts/declared_changes.py",
+  "scripts/_change_records.py",
+  "scripts/fix_expected.py",
+  "tests/conftest.py",
+  "tests/units.py",
+  "tests/checks/**/*.py",
+]
+
+[[item.trigger]]
+paths = ["tests/**/*.py"]
+added = ['\btransform\s*=', '\bre\.sub\(', '\bnormaliz', '\bmask']
+
+[[item]]
+id = "decision-on-final-facts"
+title = "A parser decision reads facts before they are final"
+rule = "AGENTS.md"
+words = "Never predict what a later pass will do."
+question = """List the facts the new condition reads and the pass after which each is final \
+(docs/architecture.md, Model processing passes): does it run after the last of them, and decide scope on the schema \
+object rather than from the parse path? The finality check reports late writes, not early reads. A fix that spans \
+passes needs a reviewed design first."""
+pulls = [6296, 6517]
+
+[[item.trigger]]
+paths = [
+  "src/datamodel_code_generator/parser/**/*.py",
+  "src/datamodel_code_generator/model/**/*.py",
+  "src/datamodel_code_generator/types.py",
+]
+added = ['^\s*(?:if|elif|while|case)\b', '\bif\b.+\belse\b']
+
+[[item]]
+id = "guide-entry-claims"
+title = "An upgrade-guide entry claims what no run proves"
+rule = "docs/development-contributing.md"
+words = "`keep` (the output changes and `keep.flags` restore it"
+question = """`--verify` runs only the entries with `source = "run"`. For the others, was each claim run: do the \
+`keep.flags` restore the earlier output (every field, not only the one the entry names), do `before` and `after` \
+appear in the outputs?"""
+pulls = [6832, 7027]
+
+[[item.trigger]]
+paths = ["docs/data/migration/**/*.toml"]
+added = ['^\s*(?:keep|before|after|migrate)\s*=', '^\s*\[\[?change\.keep\b']
+
+[[item]]
+id = "second-copy-of-a-decision"
+title = "A new function decides what a home already decides"
+rule = "docs/development-contributing.md"
+words = "for a decision without a home, add the home in the same change instead of writing a second copy."
+question = """Does the new function decide something that a home of docs/architecture.md ("One home per decision") \
+or another function already decides? Call that home, or say why this is another decision; the clone check finds \
+only equal bodies."""
+pulls = [7021, 7034]
+
+[[item.trigger]]
+paths = ["src/**/*.py"]
+added = ['^\s*(?:async\s+)?def\s']

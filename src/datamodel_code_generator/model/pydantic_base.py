@@ -6,17 +6,21 @@ Provides Constraints, DataModelField, and BaseModelBase used by Pydantic v2 mode
 from __future__ import annotations
 
 from abc import ABC
-from functools import cached_property
+from collections.abc import Collection
+from functools import cache, cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, NamedTuple, Optional, cast
 
 from pydantic import Field as _Field
 from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
+from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS, SEQUENCES, SETS, ContainerKind
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
-from datamodel_code_generator.imports import IMPORT_DECIMAL, _import_key
+from datamodel_code_generator._regex_syntax import python_rejects
+from datamodel_code_generator.imports import IMPORT_DECIMAL, Import, _import_key
 from datamodel_code_generator.model import (
     UNDEFINED,
     DataModel,
@@ -46,31 +50,32 @@ from datamodel_code_generator.model._render_plan import (
     Positional,
     RuleId,
     Why,
+    _package_class,
     frozen_render_plan,
 )
 from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model.base import (
     _default_state,
+    _field_render,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
 )
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import (
+    DataType,
     DataTypeManager,
+    _copy_data_type,
     _non_finite_as_written,
-    chain_as_tuple,
 )
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._views import ModelView, ReferenceView
     from datamodel_code_generator.reference import Reference
-    from datamodel_code_generator.types import DataType
 
 # Preserve names that were historically importable from this module.
 Field = _Field
@@ -85,6 +90,13 @@ def _constraint_arguments(constraints: type[_ConstraintsBase]) -> dict[str, str]
 
 
 _FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = _constraint_arguments(Constraints)
+
+
+@cache
+def _constraint_keywords_of(constraints: type[_ConstraintsBase]) -> dict[str, str]:
+    """Return the schema keyword of each field of a constraints model: its alias, else its name."""
+    return {name: info.alias or name for name, info in constraints.model_fields.items()}
+
 
 _FIELD_CALL = Why(RuleId("D11.pydantic.field-call"))
 """The field writes a ``Field()`` call: an argument, a default factory or a required ``None`` needs one."""
@@ -104,6 +116,10 @@ _NONE_TYPE = RuleId("D2.pydantic.none-type-number")
 _MULTIPLE_OF_ONE = RuleId("D2.pydantic.integer-multiple-of-one")
 _NON_FINITE_MULTIPLE_OF = RuleId("D2.pydantic.non-finite-multiple-of")
 """Pydantic takes ``multiple_of`` only as a finite number (``_non_finite_as_written``)."""
+_PYTHON_ENGINE_REJECTS = RuleId("D2.pydantic.python-engine-rejects-pattern")
+"""Python's ``re``, which ``python-re`` runs, rejects the pattern (``python_rejects``) of a model built with it."""
+PYTHON_ENGINE_BUILDS_KEY: Final = "python_engine_builds_patterns"
+"""The internal template data key of a model whose patterns a config selecting ``python-re`` builds."""
 _EXTRA = RuleId("D11.pydantic.field-extra")
 _DISCRIMINATOR = RuleId("D7.tag.discriminator")
 
@@ -139,11 +155,77 @@ def _put_discriminator_last(args: _FieldArguments) -> None:
             args.omit_entry(discriminator, "not-a-property-name", why)
 
 
+_MODEL_CAST = Why(RuleId("D4.default.model-cast"), option="--use-annotated")
+"""The class body casts the default of an ``Annotated`` field to the field's type, which Pydantic validates it into."""
+_IMPORT_CAST = Import.from_full_path("typing.cast")
+_LITERAL_KINDS: Final[Mapping[type, ContainerKind]] = {dict: MAPPINGS, list: SEQUENCES, set: SETS, frozenset: SETS}
+"""The container kind whose type a type checker reads a literal of each container type as."""
+_LITERAL_TYPES: Final[Mapping[type, frozenset[str]]] = {
+    str: frozenset({"str"}),
+    bool: frozenset({"bool", "int", "float"}),
+    int: frozenset({"int", "float"}),
+    float: frozenset({"float"}),
+}
+"""The builtin scalar types a type checker reads a literal of each scalar class as."""
+
+
+def _value_has_type(value: object, data_type: DataType) -> bool:
+    """Return whether a type checker reads ``value`` as of ``data_type``, as a literal written in the class body.
+
+    A model or a root model takes none: Pydantic builds it from the value; an enum takes only its own members (a value
+    whose ``enum`` is the enum, ``--set-default-enum-member``). A type alias takes what its type takes; a list, a set or
+    a mapping takes the value of its kind whose items its item types take, and a tuple takes none, as a default is never
+    one; a union takes what one of its members takes; ``None`` takes ``None``. A ``Literal`` takes its values, ``Any``
+    every value, a builtin scalar the values of the classes it reads as it (``_LITERAL_TYPES``), and any other type
+    (formats, ``Decimal``, strict types) none.
+    """
+    if data_type.type == "None" or (value is None and data_type.is_optional):
+        return value is None
+    if (reference := data_type.reference) is not None and isinstance(source := reference.source, DataModel):
+        return getattr(value, "enum", None) is source or (
+            source.is_alias
+            and not isinstance(source, BaseModelBase)
+            and any(_value_has_type(value, field.data_type) for field in source.fields[:1])
+        )
+    if data_type not in CONTAINERS:
+        if data_type.data_types:
+            return any(_value_has_type(value, member) for member in data_type.data_types)
+        return (
+            any(type(value) is type(literal) and value == literal for literal in data_type.literals)
+            if data_type.literals
+            else data_type.type == "Any" or data_type.type in _LITERAL_TYPES.get(type(value), ())
+        )
+    if (kind := _LITERAL_KINDS.get(type(value))) is None or data_type not in kind:
+        return False
+    items = value.values() if isinstance(value, dict) else value if isinstance(value, Collection) else ()
+    return not data_type.data_types or all(
+        any(_value_has_type(item, member) for member in data_type.data_types) for item in items
+    )
+
+
+def _casts_default(field: DataModelField) -> bool:
+    """Return whether an ``Annotated`` field's class body casts its default to the field's type.
+
+    Pydantic validates the default into the field's models at instantiation (``validate_default``), but type checkers
+    read the value assigned in the class body as the literal it is, which a model does not take (``_value_has_type``);
+    ``cast`` keeps the value and gives it the field's type. Only the class body of a model class assigns a default; an
+    alias writes none.
+    """
+    return (
+        field.use_annotated
+        and isinstance(parent := field.parent, BaseModelBase)
+        and not parent.is_alias
+        and field.extras.get("validate_default") is True
+        and not _value_has_type(field.default, field.data_type)
+    )
+
+
 class DataModelField(DataModelFieldBase):
     """Field implementation for Pydantic models."""
 
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = True
     _FREEZES_RENDER_PLAN: ClassVar[bool] = True
+    VALIDATES_STRUCTURED_DEFAULTS: ClassVar[bool] = True
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",
@@ -168,7 +250,9 @@ class DataModelField(DataModelFieldBase):
     leaves out."""
     _TYPE_MANAGER: ClassVar[type[DataTypeManager]] = DataTypeManager
     """The type manager of the output model, whose tables give the keywords the value of an enum's base takes."""
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    _TYPE_WITHOUT_PATTERN: ClassVar[Callable[[DataType], DataType] | None] = None
+    """The type a type of the output writes without its pattern (``_written_type``), or None to keep every pattern."""
+    constraints: Optional[Constraints] = None
 
     @property
     def has_default_factory_in_field(self) -> bool:
@@ -214,6 +298,15 @@ class DataModelField(DataModelFieldBase):
             if overridden.reason == "override-type-does-not-take":
                 reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {overridden.detail}")
                 count += cast("int", overridden.value)
+        if rejected := [
+            *(o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS),
+            *(pattern for _, pattern in self._rejected_type_patterns()),
+        ]:
+            reasons.append(
+                "Python's regex engine, which the config building it selects, does not compile "
+                + ", ".join(f"pattern={represent_python_value(value)}" for value in rejected)
+            )
+            count += len(rejected)
         if non_finite := [
             *(o.value for o in omitted if o.why.rule == _NON_FINITE_MULTIPLE_OF),
             *(
@@ -263,8 +356,8 @@ class DataModelField(DataModelFieldBase):
         return plan.assignment, subscript_text("Annotated", (self.type_hint, plan.rendered))
 
     def _has_field_statement(self) -> bool:
-        """Return whether rendering this field will require a Field() call."""
-        return self._render_plan().call is not None
+        """Return whether rendering this field will require a Field() call: by its plan, unless known without one."""
+        return not (render := _field_render(self)).writes_no_call() and render.plan().call is not None
 
     def _may_have_field_statement(self) -> bool:
         """Return whether field metadata may require a Field() call."""
@@ -280,6 +373,70 @@ class DataModelField(DataModelFieldBase):
         )
         needs_required_nullable_field = self.nullable and requires_value(self)
         return bool(has_field_metadata or needs_required_nullable_field or self._takes_nested_model_factory())
+
+    def _python_engine_rejects(self, pattern: object) -> bool:
+        """Return whether ``python-re`` builds a pattern of the field that Python's ``re`` rejects (#6593).
+
+        The config of the model or of a model that builds the field's patterns selects that engine for another
+        pattern, such as a lookaround (``PYTHON_ENGINE_BUILDS_KEY``), so one only the default engine reads, such as a
+        Unicode property, would fail at import.
+        """
+        return isinstance(pattern, str) and self._python_engine_builds() and python_rejects(pattern)
+
+    def _python_engine_builds(self) -> bool:
+        """Return whether the config building the field's patterns selects ``python-re``."""
+        return bool(getattr(self.parent, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY))
+
+    def _rejected_type_patterns(self) -> list[tuple[DataType, str]]:
+        """Return each type of the field whose pattern ``python-re`` builds and Python's ``re`` rejects, with it.
+
+        The rule that leaves such a pattern out of ``Field()`` (``_python_engine_rejects``) decides for the pattern of
+        every type the field writes: a ``constr``, an annotated string, a type alias body, an ``EncodedStr``, nested in
+        items, values, keys and union members.
+        """
+        if not self._python_engine_builds():
+            return []
+        return [
+            (data_type, pattern)
+            for data_type in self.data_type.all_data_types
+            if data_type.kwargs
+            and isinstance(pattern := data_type.kwargs.get("pattern"), str)
+            and self._python_engine_rejects(pattern)
+        ]
+
+    def _written_type(self) -> DataType | None:
+        """Return the copy of the field's type its hint writes without the patterns of ``_rejected_type_patterns``.
+
+        None when it writes its own type. The copy holds each such type written without its pattern
+        (``_TYPE_WITHOUT_PATTERN``) and shares the field's references, as msgspec's copies do.
+        """
+        if (without := self._TYPE_WITHOUT_PATTERN) is None or not (rejected := self._rejected_type_patterns()):
+            return None
+        return _copy_data_type(
+            self.data_type,
+            register_references=False,
+            link_parents=False,
+            replacements={id(data_type): without(data_type) for data_type, _ in rejected},
+        )
+
+    @override
+    def _hint_data_type(self) -> DataType:
+        """Return the type the field's hint and its imports write: the copy its frozen plan holds, else its own type.
+
+        Before B2 the copy is built at each read (``_written_type``), so no read builds a plan.
+        """
+        if not self._python_engine_builds():
+            return self.data_type
+        if (plan := frozen_render_plan(self)) is not None:
+            return plan.written_type if isinstance(plan.written_type, DataType) else self.data_type
+        return self._written_type() or self.data_type
+
+    @override
+    def _collect_field_imports(self, *, needs_annotated: bool, data_type: DataType | None = None) -> tuple[Import, ...]:
+        """Collect the imports of the type the hint writes (``_hint_data_type``)."""
+        return super()._collect_field_imports(
+            needs_annotated=needs_annotated, data_type=data_type or self._hint_data_type()
+        )
 
     def _normalized_constraint_arguments(
         self, omitted: list[Omitted], *, beside_models: bool = True
@@ -309,6 +466,17 @@ class DataModelField(DataModelFieldBase):
                 if key in untaken
             )
             dumped = {key: value for key, value in dumped.items() if key not in untaken}
+        if self._python_engine_rejects(pattern := dumped.get("pattern")):
+            omitted.append(
+                Omitted(
+                    "constraint:pattern",
+                    pattern,
+                    "backend-cannot-express",
+                    Why(_PYTHON_ENGINE_REJECTS, "pattern"),
+                    warns=True,
+                )
+            )
+            dumped = {key: value for key, value in dumped.items() if key != "pattern"}
         has_integer_constraints = bool(self._INTEGER_CONSTRAINTS & dumped.keys())
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float", "Float")
         is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int", "Int")
@@ -348,12 +516,12 @@ class DataModelField(DataModelFieldBase):
             )
         ) is None:
             return {}
-        fields = type(cast("Constraints", self.constraints)).model_fields
+        keywords = _constraint_keywords_of(type(cast("Constraints", self.constraints)))
         return {
             key: keyword
             for key in declared
             if key not in self._UNWRITTEN_CONSTRAINT_ARGUMENTS
-            and (keyword := fields[key].alias or key) in _applicability.TYPE_DEPENDENT_KEYWORDS
+            and (keyword := keywords[key]) in _applicability.TYPE_DEPENDENT_KEYWORDS
             and keyword not in taken
         }
 
@@ -374,9 +542,7 @@ class DataModelField(DataModelFieldBase):
             is_container = inside_container or data_type._is_container  # noqa: SLF001
             if data_type.import_ == IMPORT_ANYURL:
                 return not is_container
-            return any(has_anyurl(child, inside_container=is_container) for child in data_type.data_types) or (
-                data_type.dict_key is not None and has_anyurl(data_type.dict_key, inside_container=is_container)
-            )
+            return any(has_anyurl(child, inside_container=is_container) for child in type_children(data_type))
 
         return has_anyurl(self.data_type, inside_container=False)
 
@@ -443,13 +609,13 @@ class DataModelField(DataModelFieldBase):
         constraints = self.constraints
         anyurl = self._drops_constraints_for_anyurl()
         if constraints is not None and anyurl:
-            fields = type(constraints).model_fields
+            keywords = _constraint_keywords_of(type(constraints))
             omitted.extend(
                 Omitted(
                     f"constraint:{name}",
                     value,
                     "anyurl",
-                    Why(_ANYURL, fields[name].alias or name),
+                    Why(_ANYURL, keywords[name]),
                     warns=value is not None,
                 )
                 for name, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
@@ -524,9 +690,9 @@ class DataModelField(DataModelFieldBase):
         if not written:
             return {}
         constraints = cast("Constraints", self.constraints)
-        fields = type(constraints).model_fields
+        keywords = _constraint_keywords_of(type(constraints))
         return {
-            fields[name].alias or name: value
+            keywords[name]: value
             for name, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
             if f"constraint:{name}" in written
         }
@@ -581,14 +747,6 @@ class DataModelField(DataModelFieldBase):
         """Return the default factory the call writes: the one the field's facts give it."""
         return args.factory
 
-    def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:
-        """Build Field() keyword data and the effective default_factory."""
-        if self.is_class_var:
-            return {}, None
-        omitted, anyurl = self._warned_omissions()
-        args = self._field_arguments(omitted, anyurl=anyurl)
-        return args.data(), None if (factory := self._call_default_factory(args)) is None else factory.value
-
     @override
     def _build_render_plan(self) -> FieldRenderPlan:
         """Build the field's render plan from its facts as they are now."""
@@ -616,8 +774,7 @@ class DataModelField(DataModelFieldBase):
             else:
                 kwargs.append(argument)
         factory = self._call_default_factory(args)
-        missing = self._uses_missing_sentinel(factory_present=args.factory is not None)
-        default = FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE)
+        default = self._field_default(missing=self._uses_missing_sentinel(factory_present=args.factory is not None))
         call: CallPlan | None = None
         if kwargs or factory is not None:
             positional: Positional | None = None
@@ -660,9 +817,24 @@ class DataModelField(DataModelFieldBase):
             default,
             has_default_factory_in_field,
             omitted,
-            () if call is None else ((IMPORT_FIELD, call.why),),
+            (
+                *(() if call is None else ((IMPORT_FIELD, call.why),)),
+                *(((_IMPORT_CAST, default.why),) if default.casts else ()),
+            ),
             ANNOTATED_ANNOTATION if annotated else PLAIN_ANNOTATION,
+            written_type=self._written_type(),
         )
+
+    def _field_default(self, *, missing: bool) -> FieldDefault:
+        """Return the default the field writes: its value, the ``MISSING`` sentinel, or its value cast to its type."""
+        if _casts_default(self):
+            return FieldDefault(self.default, missing, _MODEL_CAST, casts=True)
+        return FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE)
+
+    def _written_default(self, default: FieldDefault) -> str:
+        """Write what the class body assigns for ``default``: its value, cast to the field's type if it casts it."""
+        value = represent_python_value(default.value)
+        return call_text("cast", (represent_python_value(self.type_hint), value)) if default.casts else value
 
     def _uses_missing_sentinel(self, *, factory_present: bool) -> bool:  # noqa: ARG002, PLR6301
         """Return whether the field writes Pydantic's ``MISSING`` sentinel as its default; only Pydantic 2 does."""
@@ -733,6 +905,8 @@ class DataModelField(DataModelFieldBase):
             is_class_var = self.is_class_var
         if is_class_var:
             return subscript_text("ClassVar", (super().type_hint,))
+        if (written := self._hint_data_type()) is not self.data_type:
+            return self._type_hint_from_data_type(written)
         return super().type_hint
 
     @property
@@ -755,20 +929,19 @@ class DataModelField(DataModelFieldBase):
     @property
     @override
     def imports(self) -> tuple[Import, ...]:
-        """Get all required imports including Field if needed.
+        """Get the imports of the type hint, with ``Annotated`` where it writes ``Field()``, then those of the call.
 
-        Computes _has_field_statement() once and derives needs_annotated from it:
-        str(self) is non-empty exactly when _has_field_statement() is true (both
-        come from the same Field() data), so this matches bool(self.annotated)
-        without rebuilding the type hint and Field() string.
+        Both follow ``_has_field_statement()``, so a field known to write no call reads no plan. str(self) is non-empty
+        exactly when the plan has a call (both come from the same Field() data), so this matches bool(self.annotated)
+        without rebuilding the type hint and Field() string. The call's imports are those of its plan; a field class
+        outside the package imports ``Field``.
         """
-        has_field_statement = self._has_field_statement()
-        base_imports = self._collect_field_imports(
-            needs_annotated=self.use_annotated and not self.is_class_var and has_field_statement
-        )
-        if has_field_statement:
-            return chain_as_tuple(base_imports, (IMPORT_FIELD,))
-        return base_imports
+        if not self._has_field_statement():
+            return self._collect_field_imports(needs_annotated=False)
+        hint = self._collect_field_imports(needs_annotated=self.use_annotated and not self.is_class_var)
+        if _package_class(type(self)):
+            return (*hint, *self._call_imports(self._render_plan()))
+        return (*hint, IMPORT_FIELD)
 
 
 class BaseModelBase(DataModel, ABC):
@@ -777,7 +950,7 @@ class BaseModelBase(DataModel, ABC):
     REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK: ClassVar[bool] = True
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

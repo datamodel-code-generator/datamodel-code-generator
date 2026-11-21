@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Main",
+  "type": "object",
+  "properties": {"s": {"$ref": "#/$defs/Status"}},
+  "$defs": {
+    "Code": {"$anchor": "code", "type": "string", "enum": ["a", "b"]},
+    "Status": {"allOf": [{"$ref": "#code"}]}
+  }
+}

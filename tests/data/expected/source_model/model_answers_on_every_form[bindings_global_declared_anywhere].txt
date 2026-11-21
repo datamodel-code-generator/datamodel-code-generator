@@ -1,0 +1,16 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  _CONFIGS: assign@3 [always]; value {}
+  _define: def@6 [always]
+  JsonConfig: class@10 [function:body@6]
+  _LATE: assign@13 [function:body@6]; value 1
+  reader: def@17 [always]
+scope function _define#0 '_define': code yes; first line 6; global JsonConfig,_LATE
+  opened by a node evaluated in <module>#0
+scope class JsonConfig#0 'JsonConfig': code yes; first line 10
+  opened by a node evaluated in _define#0
+  strict: assign@11 [function:body@6]; value True
+  members: strict
+scope function reader#0 'reader': code yes; first line 17
+  opened by a node evaluated in <module>#0
+== code objects: one per scope that compiles on this Python

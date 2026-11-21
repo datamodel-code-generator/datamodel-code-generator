@@ -8,35 +8,34 @@ Typed accessors the package generates read a result through the fields of its re
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (
     _fits,
-    _json_type,
     _label,
     _page_use,
     _Pages,
     _problem,
+    _value_types_problem,
 )
 from datamodel_code_generator._client.plan import success_response
-from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._json_schema import json_type
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Mapping
+    from collections.abc import Iterator, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._client.model_facts import ItemStep, ModelFacts
-    from datamodel_code_generator._client.pagination import _Types
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.model_facts import ItemStep
+    from datamodel_code_generator._client.pagination import _Reached, _Types
+    from datamodel_code_generator._client.plan import OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId, TypeView
+    from datamodel_code_generator._target_contract import TypeUseBinding, TypeView
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 
@@ -86,13 +85,27 @@ class _Result:
     fetch_use: TypeUseBinding | None = None
 
 
+def _declared(reached: _Reached) -> tuple[TypeView, tuple[ItemStep, ...]] | None:
+    """Return the type and accessor steps of the property a pointer ends at, when it has a schema and model facts."""
+    member = reached.member
+    return (
+        None
+        if member is None or member.schema is None or member.model_facts is None
+        else (member.model_facts.type, reached.steps)
+    )
+
+
 class _Polls:
     """Check and plan every enabled polling helper of a client target."""
 
     def __init__(self, pages: _Pages) -> None:
-        """Keep the shared pagination checks and a static type speller."""
+        """Keep the shared pagination checks."""
         self.pages = pages
-        self.spelling = TargetModule(TypeNames(pages.request.batch), qualified=True)
+
+    @cached_property
+    def spelling(self) -> TargetModule:
+        """Return the static type speller that compares the types of an immediate result, built when first read."""
+        return TargetModule(TypeNames(self.pages.request.batch), qualified=True)
 
     def model(self, response: ResponseSpec) -> TypeView | None:
         """Return the type of a response's one JSON media with a codec, or None for any other response."""
@@ -143,13 +156,8 @@ class _Polls:
         if isinstance(types := self.read(helper, created, read, at, "expiry"), Diagnostic):
             yield types
         elif not _fits("string", types):
-            spec = created[0].spec
-            message = (
-                f"The expiry of {stable_repr(helper.name)} reads "
-                f"{english_list(sorted(cast('frozenset[str]', types)), 'or', 'serial')} values, where only a string "
-                "gives a date and time"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            others = sorted(cast("frozenset[str]", types))
+            yield _value_types_problem(helper, created[0].spec, "expiry", others, "a string gives a date and time", at)
 
     def cancel(
         self, helper: Helper, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
@@ -215,14 +223,14 @@ class _Polls:
             return
         for name in STATES:
             for index, value in enumerate(tree[name]):
-                if not _fits(kind := _json_type(value), types):
+                if not _fits(kind := json_type(value), types):
                     message = (
                         f"The state {stable_repr(value)} of {stable_repr(helper.name)} is {kind}, which its state "
                         "never reads"
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{helper.at}.{name}[{index}]", message, polled.spec)
 
-    def bindings(  # noqa: PLR0913, PLR0917
+    def bindings(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -258,7 +266,7 @@ class _Polls:
             yield from self.required(helper, spec, [key for key, _ in writes], at, complete=complete)
 
     @staticmethod
-    def required(  # noqa: PLR0913
+    def required(
         helper: Helper,
         spec: OperationSpec,
         written: list[tuple[str, ...]],
@@ -306,7 +314,7 @@ class _Polls:
             message = f"{label} requires a request body, which no binding of {stable_repr(helper.name)} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
-    def reached(  # noqa: PLR0913, PLR0917
+    def reached(  # noqa: PLR0917
         self, helper: Helper, source: _Source, selector: Mapping[str, Any], reference: Any, at: str, what: str
     ) -> _Result | Diagnostic:
         """Return the type and accessor of the property a body pointer names, checked against the declared schema."""
@@ -318,28 +326,13 @@ class _Polls:
             )
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
         assert source.body is not None
-        pointer = selector["pointer"]
-        if (reached := self.pages.walk(source.body, pointer)) == "unsupported":
-            message = (
-                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or map, which "
-                "is not supported yet"
-            )
-            return _problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.selector", message, spec)
-        if (
-            isinstance(reached, str)
-            or (member := reached.member) is None
-            or member.schema is None
-            or member.model_facts is None
-        ):
-            message = (
-                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the "
-                f"{_label(spec)} response"
-            )
-            return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
-        value, noun, mismatch = member.model_facts.type, f"{what} schema", "the schema its pointer reads"
+        hit = self.pages.reached(helper, spec, source.body, selector["pointer"], f"{at}.selector", what, _declared)
+        if isinstance(hit, Diagnostic):
+            return hit
+        (value, steps), noun, mismatch = hit, f"{what} schema", "the schema its pointer reads"
         if found := self.pages.schema(helper, spec, reference, value, "response", f"{at}.schema", noun, mismatch):
             return found
-        return _Result(value=without_none(value), steps=reached.steps)
+        return _Result(value=without_none(value), steps=steps)
 
     def result(
         self, helper: Helper, polled: _Source, created: list[_Source], problems: list[Diagnostic]
@@ -415,15 +408,8 @@ class _Polls:
         return reached.steps
 
 
-def plan_polling(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_polling(polls: _Polls | None) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled polling helper, returning them and each checked helper's problems."""
-    if protocols is None:
+    if polls is None:
         return (), {}
-    polls = _Polls(_Pages(protocols, plan, facts, codecs, request))
     return polls.pages.each(("polling",), polls.helper)

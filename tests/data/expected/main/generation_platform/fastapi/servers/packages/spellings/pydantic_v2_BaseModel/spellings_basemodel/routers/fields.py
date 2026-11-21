@@ -31,7 +31,12 @@ def _add_post_thing(
 
     def post_thing(
         *,
-        body: Annotated[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], Body(media_type='application/json')],
+        body: Annotated[
+            tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+                'items'
+            ].annotation.__args__[0],
+            Body(media_type='application/json'),
+        ],
     ) -> object:
         return dispatch(
             post_thing_handler(
@@ -45,7 +50,11 @@ def _add_post_thing(
         post_thing,
         methods=['POST'],
         status_code=200,
-        response_model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
+        response_model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+            'items'
+        ].annotation.__args__[
+            0
+        ],
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='postThing',
@@ -68,7 +77,9 @@ def _add_post_field(
 
     def post_field(
         *,
-        body: Annotated[spellings_basemodel_models.FieldModel, Body(media_type='application/json')],
+        body: Annotated[
+            spellings_basemodel_models.FieldModel, Body(media_type='application/json')
+        ],
     ) -> object:
         return dispatch(
             post_field_handler(

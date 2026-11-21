@@ -1,0 +1,9 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs this change moves are not declared:
+  changed  models/w.warnings.txt  tests/test_models.py::test_warn
+Declare them:
+  python scripts/declared_changes.py declare fix-the-thing --category '<category>' --rest --base base
+    <category>: one of experimental, crash-fix, decided-change, notice
+Categories: docs/development-contributing.md#declared-changes
+failed

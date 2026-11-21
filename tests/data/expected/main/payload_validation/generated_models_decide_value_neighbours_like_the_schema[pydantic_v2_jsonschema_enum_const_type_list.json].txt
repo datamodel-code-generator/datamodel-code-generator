@@ -1,0 +1,4 @@
+[
+  "/listOrWord const null: invalid, model accepts",
+  "/listOrWord enum null: invalid, model accepts"
+]

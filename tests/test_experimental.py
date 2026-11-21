@@ -94,7 +94,6 @@ def test_experimental_markdown_output_includes_details() -> None:
     assert "cli-option.generate-schema-validators" in output
     assert "cli-option.install-skill" in output
     assert "cli-option.use-missing-sentinel" in output
-    assert "formatter.builtin" in output
     assert "behavior.remote-reference-lock" in output
     assert "lock document schema and request-identity compatibility may evolve" in output
     assert "integrity mismatches remain fail-closed and credentials are never persisted" in output
@@ -117,7 +116,6 @@ def test_release_note_output_filters_by_version() -> None:
     assert "--input-file-type avro" in output
     assert "--input-file-type protobuf" in output
     assert "--input-file-type xmlschema" in output
-    assert "--formatters builtin" in output
 
     batch_jobs_output = render_release_note_experimental_features("0.72.3")
 

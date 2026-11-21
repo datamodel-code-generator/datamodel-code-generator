@@ -4,10 +4,6 @@
 
 Generated code is automatically formatted using code formatters. By default, `black` and `isort` are used to produce consistent, well-formatted output.
 
-!!! warning "Experimental"
-    The built-in formatter (`--formatters builtin`) is experimental and may change as generated-output coverage is
-    expanded.
-
 This page is a practical guide for choosing and configuring formatters. For the exact built-in formatter scope and
 configuration precedence, see [Formatter Behavior](formatter-behavior.md).
 
@@ -168,7 +164,7 @@ datamodel-codegen \
 ```
 
 This overrides `skip_string_normalization` in black config.
-When using `--formatters builtin` without `--use-double-quotes`, the built-in formatter also reads `[tool.black].skip-string-normalization`. Set it to `false` to normalize simple generated string literals to double quotes.
+When using `--formatters builtin` without `--use-double-quotes`, the built-in formatter also reads `[tool.black].skip-string-normalization`. Set it to `false` to choose string quotes as Black does.
 
 ## 🎨 Custom Formatters
 

@@ -29,3 +29,7 @@ class Model:
     code: Code | None = None
     levels: list[Literal[HTTPStatus.OK, HTTPStatus.CREATED]] | None = None
     typename__: Literal['Model'] | None = 'Model'
+
+    @property
+    def __typename(self) -> Literal['Model'] | None:
+        return self.typename__

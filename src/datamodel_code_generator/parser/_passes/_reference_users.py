@@ -17,6 +17,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._passes._shared import _written_name
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 
 if TYPE_CHECKING:
@@ -69,7 +70,7 @@ def type_reference_users(
     Bases keep it, and so do the types of the models whose ids ``kept_owners`` holds. The users are read before any
     is typed, as each change makes the index read the owner's types again.
     """
-    builder = host._graph_builder  # noqa: SLF001
+    builder = host._graph_builder
     index = host.generation_store.index
     users = [
         fact
@@ -95,14 +96,14 @@ def type_additional_properties_users(
 
     The other classes they reference stay ``reference_classes``; ``extra_items`` is written again.
     """
-    context = host._output_model_context  # noqa: SLF001
+    context = host._output_model_context
     source = cast("DataType", context.additional_properties_type_source(model.extra_template_data))
     for data_type in [data_type for data_type in source.all_data_types if data_type.reference is reference]:
-        host._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+        host._graph_builder.detach_data_type_ref(data_type)
         if data_type is source:
             source = new_type()
         else:
-            host._graph_builder.swap_data_type(data_type, new_type())  # noqa: SLF001
+            host._graph_builder.swap_data_type(data_type, new_type())
     context.store_additional_properties_type(
         model.extra_template_data,
         _make_referencing_type_expression(source),
@@ -110,20 +111,19 @@ def type_additional_properties_users(
         imports=tuple(source.all_imports),
         target_python_version=host.target_python_version,
     )
-    model._name_final_classes()  # noqa: SLF001
+    model._name_final_classes()
 
 
 def _named_alias(model: DataModel) -> TypeAliasBase | None:
     """Return the type alias that a built-in type alias writes as its whole value, by nothing but its name."""
-    if (target := _referenced_alias(model)) is None or model._uses_custom_root_template:  # noqa: SLF001
+    if (target := _referenced_alias(model)) is None or model._uses_custom_root_template:
         return None
     field = model.fields[0]
     data_type = field.data_type
     if (
         field.annotated
         or field.field
-        or field.type_hint.strip("\"'")
-        != (data_type.alias or cast("Reference", data_type.reference).short_name).strip("\"'")
+        or field.type_hint.strip("\"'") != _written_name(data_type, cast("Reference", data_type.reference)).strip("\"'")
     ):
         return None
     return target

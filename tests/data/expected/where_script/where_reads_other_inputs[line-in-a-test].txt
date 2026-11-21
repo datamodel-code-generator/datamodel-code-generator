@@ -1,0 +1,2 @@
+exit status 2
+where: tests/test_where_script.py: not a module of src or scripts

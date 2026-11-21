@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info: {title: T, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        list: {type: string, default: list}
+        items: {type: array, items: {type: string}}
+        int: {type: integer, default: 0}
+        count: {type: integer}
+    Items:
+      type: array
+      items: {type: integer}
+    Count: {type: integer}

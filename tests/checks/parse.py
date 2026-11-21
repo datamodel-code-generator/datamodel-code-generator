@@ -3,7 +3,8 @@
 The run of the whole pipeline (``PIPELINE``) of a parse reads the modes of its checks and, when ``STORE_WRITES`` or
 ``FACT_FINALITY`` is on, opens the checks of ``finality.py`` (``PARSE_CHECKS``). When the pipeline enters ``PARSED``,
 the checks of L1 run and those of ``finality.py`` arm; when the modules are final (``FINALIZE_SEGMENTS``), the model
-graph check compares the models they write with the emitted ones. Every pass and decision runs inside the finality
+graph check compares the models they write with the emitted ones; from B2 on (``render_ready``), every fact and render
+plan of the parse is final. Every pass and decision runs inside the finality
 scope of its declaration, every output module inside its module checkpoint, and every segment with a scope name inside
 that pass scope, as the pass trace (``trace.py``) records them. ``Parser.parse`` itself stays unwrapped: it remembers
 the frame that called it, which warnings name.
@@ -17,6 +18,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
 from scripts.pass_decls import BOUNDARY_BEFORE, DECISION_DECLS, HOOK_BODIES, PASS_DECLS, SCOPE_NAMES, Boundary
+from tests.checks import areas
 from tests.checks.areas import MODES, Area, read_modes
 from tests.checks.finality import (
     NO_SCOPE,
@@ -42,6 +44,10 @@ _SEGMENT_SCOPES: Final[dict[int, tuple[str, Any]]] = {}
 """The scope name (``SCOPE_NAMES``) and phase of each segment with a scope name, by the id of its steps."""
 _PARSED_STEPS: Final[set[int]] = set()
 """The ids of the steps of the segments that enter ``PARSED`` (``BOUNDARY_BEFORE``)."""
+_RENDER_READY_STEPS: Final[set[int]] = set()
+"""The ids of the steps of the segments that enter B2 (``Boundary.RENDER_READY`` in ``BOUNDARY_BEFORE``)."""
+_PAST_RENDER_READY: Final[ContextVar[bool]] = ContextVar("past_render_ready", default=False)
+"""Whether the parse that runs has entered B2."""
 _DECLS: Final = {decl.name: decl for decl in PASS_DECLS}
 """The declaration of each table pass, by the name of its ``PassSpec``."""
 _HOOKS: Final = ("_process_single_module",)
@@ -51,6 +57,16 @@ _HOOKS: Final = ("_process_single_module",)
 def viewed(value: Any) -> Any:
     """Return the object a guarded view stands for, or ``value`` itself when it is no view."""
     return value._object if isinstance(value, GuardedView) else value
+
+
+def render_ready() -> bool:
+    """Return whether the parse that runs has entered B2: its facts and its fields' render plans are final from then on.
+
+    The pipeline enters B2 where its segment ``imports`` starts (``BOUNDARY_BEFORE``), right after
+    ``freeze_field_render_plans`` froze the render plans; the renders before only build what passes compare, such as
+    the deduplication keys of ``--reuse-model``.
+    """
+    return _PAST_RENDER_READY.get()
 
 
 def _traced(name: str) -> None:
@@ -67,8 +83,10 @@ def _segment_scopes(steps: Iterable[Any]) -> None:
         if isinstance(step, Segment):
             if (scope_name := SCOPE_NAMES.get(step.name)) is not None:
                 _SEGMENT_SCOPES[id(step.steps)] = (scope_name, step.phase)
-            if BOUNDARY_BEFORE.get(step.name) is Boundary.PARSED:
+            if (boundary := BOUNDARY_BEFORE.get(step.name)) is Boundary.PARSED:
                 _PARSED_STEPS.add(id(step.steps))
+            elif boundary is Boundary.RENDER_READY:
+                _RENDER_READY_STEPS.add(id(step.steps))
             _segment_scopes(step.steps)
         elif isinstance(step, ForEachModule):
             _segment_scopes(step.body)
@@ -191,8 +209,9 @@ def _wrap_hooks(parser_class: type) -> None:
 def run_steps(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``Runner.run_steps``: the pipeline of a parse runs with its checks, a segment's steps in its scope.
 
-    The steps after ``PARSED`` start with the checks of L1 and the arming of those of the parse; the modules that the
-    steps of ``FINALIZE_SEGMENTS`` leave are compared with the emitted models.
+    The steps after ``PARSED`` start with the checks of L1 and the arming of those of the parse, and the steps after B2
+    mark the parse as past B2 (``render_ready``); the modules that the steps of ``FINALIZE_SEGMENTS`` leave are
+    compared with the emitted models.
     """
 
     @wraps(original)
@@ -208,6 +227,8 @@ def run_steps(original: Callable[..., None]) -> Callable[..., None]:
             )
         if id(steps) in _PARSED_STEPS:
             _enter_parsed(parser)
+        if id(steps) in _RENDER_READY_STEPS:
+            _PAST_RENDER_READY.set(True)
         if (
             (scope := _SEGMENT_SCOPES.get(id(steps))) is not None
             and (checks := PARSE_CHECKS.get()) is not None
@@ -229,28 +250,39 @@ def _run_pipeline(original: Callable[..., None], runner: Any, steps: Any, parser
         _segment_scopes(steps)
     _wrap_hooks(type(parser))
     modes = read_modes()
-    token, module = MODES.set(modes), _IN_MODULE.set(False)
+    token, module, ready = MODES.set(modes), _IN_MODULE.set(False), _PAST_RENDER_READY.set(False)
     try:
         start_naming(parser)
         with NO_SCOPE if Area.STORE_WRITES not in modes and Area.FACT_FINALITY not in modes else _checks(parser):
             return original(runner, steps, parser, state)
     finally:
+        _PAST_RENDER_READY.reset(ready)
         _IN_MODULE.reset(module)
         MODES.reset(token)
 
 
 def _checks(parser: object) -> AbstractContextManager[None]:
     """Open the checks of one parse of ``parser``; ``finality.py`` loads only then."""
-    from datamodel_code_generator import Error
+    return parse_checks(parser)
 
-    return parse_checks(parser, Error)
+
+def _runs_idle(spec: Any, parser: object, state: object) -> bool:
+    """Return whether the trigger check runs the pass of ``spec`` idle: ``when`` holds and ``trigger`` is false."""
+    return (
+        spec.trigger is not None
+        and areas.mode(Area.PASS_TRIGGERS) is not None
+        and (spec.when is None or spec.when(parser, state))
+        and not spec.trigger(parser, state)
+    )
 
 
 def run_pass(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``Runner.run_pass``: a pass that runs is traced and runs inside the finality scope of its declaration.
 
-    ``when`` is evaluated once, by the original: the pass it runs is the instrumented one, which the checks of a parse
-    make once for each pass spec (``ParseChecks.passes``).
+    ``when`` and ``trigger`` are evaluated by the original: the pass it runs is the instrumented one, which the checks
+    of a parse make once for each pass spec (``ParseChecks.passes``). With ``PASS_TRIGGERS`` on, a pass whose ``when``
+    holds and whose ``trigger`` is false runs untraced inside ``ParseChecks.idle_pass`` instead, so that the traces are
+    those of a run with the area off.
     """
 
     @wraps(original)
@@ -258,6 +290,10 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
         trace, checks = TRACE.get(), PARSE_CHECKS.get()
         if trace is None and checks is None:
             return original(self, spec, parser, state)
+        if checks is not None and _runs_idle(spec, parser, state):
+            with checks.idle_pass(_DECLS[spec.name], parser, state):
+                spec.run(parser, state)
+            return None
         passes = {} if checks is None else checks.passes
         if (known := passes.get(id(spec))) is not None and known[0] is spec:
             return original(self, known[1], parser, state)
@@ -330,8 +366,8 @@ def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(original)
-    def seal_facts(self: Any, modules: Any, member_keywords: Any, options: Any) -> Any:
-        facts = original(self, modules, member_keywords, options)
+    def seal_facts(self: Any, modules: Any, member_keywords: Any, options: Any, constrained_member: Any) -> Any:
+        facts = original(self, modules, member_keywords, options, constrained_member)
         checks = PARSE_CHECKS.get()
         return facts if checks is None or checks.finality is None else _views(checks.finality, facts)
 
@@ -354,11 +390,13 @@ def drop_held_null(original: Callable[..., None]) -> Callable[..., None]:
 
 
 def drop_field_constraints(original: Callable[..., None]) -> Callable[..., None]:
-    """Wrap ``_DecisionWriter.drop_field_constraints``: it writes the field that the guarded view it gets names."""
+    """Wrap ``_DecisionWriter.drop_field_constraints``: it writes the objects that the guarded views it gets name."""
 
     @wraps(original)
-    def drop_field_constraints(self: Any, model: Any, field: Any, keywords: frozenset[str]) -> None:
-        return original(self, viewed(model), viewed(field), keywords)
+    def drop_field_constraints(self: Any, model: Any, field: Any, keywords: frozenset[str], members: Any) -> None:
+        return original(
+            self, viewed(model), viewed(field), keywords, [(viewed(member), written) for member, written in members]
+        )
 
     return drop_field_constraints
 
@@ -381,6 +419,16 @@ def write_additional_properties_sets(original: Callable[..., None]) -> Callable[
         return original(self, viewed(model), [viewed(data_type) for data_type in lists])
 
     return write_additional_properties_sets
+
+
+def omit_default(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.omit_default``: it writes the field that the guarded view it gets names."""
+
+    @wraps(original)
+    def omit_default(self: Any, model: Any, field: Any) -> None:
+        return original(self, viewed(model), viewed(field))
+
+    return omit_default
 
 
 def merge_str_like_members(original: Callable[..., None]) -> Callable[..., None]:
@@ -409,8 +457,8 @@ def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]
     """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
 
     @wraps(original)
-    def mark_serialized_as_any(self: Any, model: Any, wrapped: bool) -> None:
-        return original(self, viewed(model), wrapped)
+    def mark_serialized_as_any(self: Any, model: Any, *, wrapped: bool) -> None:
+        return original(self, viewed(model), wrapped=wrapped)
 
     return mark_serialized_as_any
 

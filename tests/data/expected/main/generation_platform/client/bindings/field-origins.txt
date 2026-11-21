@@ -1,7 +1,9 @@
 # field-origins
 render pydantic_v2.BaseModel api
+  warning UserWarning: field-origins.json#/components/schemas/Envelope/properties/tuple: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
   models.py
   model_bindings.py pydantic_v2_BaseModel/api
 render pydantic_v2.BaseModel schemas
+  warning UserWarning: field-origins.json#/components/schemas/Envelope/properties/tuple: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
   models.py
   model_bindings.py pydantic_v2_BaseModel/api

@@ -1,0 +1,7 @@
+[
+  "/enabled enum 0: invalid, model accepts",
+  "/enabled enum 0.0: invalid, model accepts",
+  "/enabled enum 1: invalid, model accepts",
+  "/enabled enum 1.0: invalid, model accepts",
+  "/enabled enum null: invalid, model accepts"
+]

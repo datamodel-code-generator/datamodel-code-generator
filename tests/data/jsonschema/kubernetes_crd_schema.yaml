@@ -1,0 +1,121 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Widget
+description: Widget is the Schema for the widgets API.
+type: object
+x-kubernetes-group-version-kind:
+- group: example.com
+  kind: Widget
+  version: v1
+required:
+- spec
+properties:
+  apiVersion:
+    description: APIVersion defines the versioned schema of this representation of an object.
+    type: string
+  kind:
+    description: Kind is a string value representing the REST resource this object represents.
+    type: string
+  metadata:
+    type: object
+  spec:
+    description: WidgetSpec defines the desired state of Widget.
+    type: object
+    required:
+    - replicas
+    properties:
+      replicas:
+        type: integer
+        format: int32
+      maxSurge:
+        anyOf:
+        - type: integer
+        - type: string
+        x-kubernetes-int-or-string: true
+      port:
+        x-kubernetes-int-or-string: true
+      targetPort:
+        type:
+        - integer
+        - string
+        x-kubernetes-int-or-string: true
+      resources:
+        type: object
+        properties:
+          limits:
+            type: object
+            additionalProperties:
+              anyOf:
+              - type: integer
+              - type: string
+              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+              x-kubernetes-int-or-string: true
+      selector:
+        type: object
+        properties:
+          app:
+            type: string
+        x-kubernetes-preserve-unknown-fields: true
+      config:
+        x-kubernetes-preserve-unknown-fields: true
+      template:
+        type: object
+        x-kubernetes-embedded-resource: true
+        x-kubernetes-preserve-unknown-fields: true
+      ports:
+        type: array
+        items:
+          type: object
+          required:
+          - name
+          properties:
+            name:
+              type: string
+            port:
+              type: integer
+        x-kubernetes-list-map-keys:
+        - name
+        x-kubernetes-list-type: map
+      finalizers:
+        type: array
+        items:
+          type: string
+        x-kubernetes-list-type: set
+      labels:
+        type: object
+        additionalProperties:
+          type: string
+        x-kubernetes-map-type: atomic
+      paused:
+        type: boolean
+        nullable: true
+      updatePolicy:
+        type: string
+        enum:
+        - Recreate
+    x-kubernetes-validations:
+    - message: replicas must not be negative
+      rule: self.replicas >= 0
+  status:
+    type: object
+    properties:
+      readyReplicas:
+        type: integer
+      conditions:
+        type: array
+        items:
+          type: object
+          required:
+          - type
+          - status
+          properties:
+            type:
+              type: string
+            status:
+              type: string
+              enum:
+              - "True"
+              - "False"
+              - Unknown
+        x-kubernetes-list-map-keys:
+        - type
+        x-kubernetes-list-type: map

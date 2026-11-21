@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import ast
+import re
+import subprocess
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, cast
 
@@ -16,8 +18,8 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS_ROOT = ROOT / "tests"
-EXPECTED_PACKAGE_METADATA_PATH = ROOT / "tests" / "data" / "expected" / "package_metadata"
 EXCLUDED_IMPORT_ROOTS = frozenset({"datamodel_code_generator", "tests"})
+LOCAL_ONLY_FILE = re.compile(r"(?:.*/)?(?:CLAUDE\.md|\.coverage(?:\..+)?)")
 
 
 def _load_pyproject() -> dict[str, Any]:
@@ -96,7 +98,7 @@ def test_sdist_include_root_normalizes_entries() -> None:
         ]
     )
 
-    assert_output(f"{output}\n", EXPECTED_PACKAGE_METADATA_PATH / "sdist_include_roots.txt")
+    assert_output(f"{output}\n")
 
 
 def test_sdist_includes_test_support_imports() -> None:
@@ -105,7 +107,6 @@ def test_sdist_includes_test_support_imports() -> None:
 
     assert_output(
         "\n".join(import_roots) + "\n",
-        EXPECTED_PACKAGE_METADATA_PATH / "test_support_import_roots.txt",
     )
 
     if not (missing_roots := [root for root in import_roots if root not in _sdist_include_roots()]):
@@ -128,5 +129,11 @@ def test_formatter_extras_preserve_required_ranges_and_markers() -> None:
             f"all={f'datamodel-code-generator[{name}]' in project['optional-dependencies']['all']}"
             for name in ("black", "isort")
         ),
-        EXPECTED_PACKAGE_METADATA_PATH / "formatter_extras.txt",
     )
+
+
+def test_no_local_only_file_is_tracked() -> None:
+    """No CLAUDE.md and no coverage data file (``.coverage``, ``.coverage.*``) is committed; none outside a checkout."""
+    listing = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True, check=False).stdout
+    tracked = [name for name in listing.split("\0") if LOCAL_ONLY_FILE.fullmatch(name)]
+    assert_output("\n".join(["Tracked files that stay local:", *(tracked or ["none"]), ""]))

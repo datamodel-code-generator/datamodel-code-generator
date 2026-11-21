@@ -122,7 +122,7 @@ class Plain(Enum):
 
 
 class P1(BaseModel):
-    k: Literal[Plain.int_1]
+    k: Plain
     p: str
 
 
@@ -138,4 +138,4 @@ class Model(BaseModel):
     shared: G | H | None = None
     inherited: I | J | None = Field(None, discriminator='k')
     coerced: N1 | N2 | None = None
-    plain: P1 | P2 | None = Field(None, discriminator='k')
+    plain: P1 | P2 | None = None

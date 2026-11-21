@@ -29,7 +29,13 @@ class PetsService(Protocol):
         X_Request_Id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> pets_dataclass_models.PetsGetResponse | HTTPResult[pets_dataclass_models.PetsGetResponse | pets_dataclass_models.Error] | Response:
+    ) -> (
+        pets_dataclass_models.PetsGetResponse
+        | HTTPResult[
+            pets_dataclass_models.PetsGetResponse | pets_dataclass_models.Error
+        ]
+        | Response
+    ):
         """
         Handle GET /pets.
         """
@@ -47,7 +53,11 @@ class PetsService(Protocol):
     @abstractmethod
     def list_my_pets(
         self,
-    ) -> pets_dataclass_models.PetsMineGetResponse | HTTPResult[pets_dataclass_models.PetsMineGetResponse] | Response:
+    ) -> (
+        pets_dataclass_models.PetsMineGetResponse
+        | HTTPResult[pets_dataclass_models.PetsMineGetResponse]
+        | Response
+    ):
         """
         Handle GET /pets/mine.
         """
@@ -57,7 +67,11 @@ class PetsService(Protocol):
         self,
         *,
         petId: int,
-    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error] | Response:
+    ) -> (
+        pets_dataclass_models.Pet
+        | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error]
+        | Response
+    ):
         """
         Handle GET /pets/{petId}.
         """
@@ -79,7 +93,11 @@ class StoreService(Protocol):
     @abstractmethod
     def get_inventory(
         self,
-    ) -> pets_dataclass_models.StoreInventoryGetResponse | HTTPResult[pets_dataclass_models.StoreInventoryGetResponse] | Response:
+    ) -> (
+        pets_dataclass_models.StoreInventoryGetResponse
+        | HTTPResult[pets_dataclass_models.StoreInventoryGetResponse]
+        | Response
+    ):
         """
         Handle GET /store/inventory.
         """

@@ -1,0 +1,8 @@
+== references
+3:0 _CACHE store in <module> -> local <module> @3
+4:0 _USED store in <module> -> local <module> @4
+8:11 _CACHE load in f -> local f @7
+12:11 _USED load in g -> global <module> @4; origin forms.references.parameter_shadows_global._USED
+uses of <module>:_USED@4: read@12
+uses of f:_CACHE@7: read@8
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from typing import Annotated, Optional
+
+from pydantic import BaseModel, Field
+
+
+class Pet(BaseModel):
+    name: Optional[str] = None
+
+
+class Holder(BaseModel):
+    pet: Annotated[Optional[Pet], Field(default_factory=Pet)]
+{"area": "TEMPLATE_ASSIGNMENTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: pydantic_v2/BaseModel.jinja2 writes Holder.pet with no value under row legacy-annotated-factory-binds, where classify_assignment decides binds_class_attribute=True (assigned=True, rule default)", "row": "legacy-annotated-factory-binds", "template": "pydantic_v2/BaseModel.jinja2", "model": "Holder", "field": "pet", "written": "no value"}

@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Legacy",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "value": {
+      "type": "integer"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Small": {
+      "properties": {
+        "value": {
+          "maximum": 5
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "a"
+      }
+    },
+    "required": [
+      "kind"
+    ]
+  },
+  "then": {
+    "$ref": "#/definitions/Small",
+    "properties": {
+      "value": {
+        "maximum": 1
+      }
+    }
+  },
+  "else": {
+    "required": [
+      "note"
+    ],
+    "properties": {
+      "note": {
+        "$ref": "common.json#/definitions/Note"
+      }
+    }
+  }
+}

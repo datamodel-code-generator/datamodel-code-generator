@@ -1,0 +1,19 @@
+== references
+9:11 check_tree load in test_tree -> global <module> @5; origin scripts.check_tree
+10:15 scripts load in test_tree -> global <module> @3; origin scripts
+11:11 aliased load in test_tree -> global <module> @4; origin scripts.check_alias
+15:11 check_tree load in test_fixture -> global <module> @5; origin scripts.check_tree
+19:11 check_rooted load in test_rooted -> global <module> @5; origin scripts.check_rooted
+20:11 check_rooted load in test_rooted -> global <module> @5; origin scripts.check_rooted
+24:4 check_tree load in test_discarded -> global <module> @5; origin scripts.check_tree
+28:11 check_nested load in helper -> global <module> @5; origin scripts.check_nested
+33:15 check_nested load in test_nested.<locals>.inner -> global <module> @5; origin scripts.check_nested
+35:43 range load in test_nested -> builtin; origin builtins.range
+35:38 _ store in test_nested.<locals>.<listcomp> -> local test_nested.<locals>.<listcomp> @35
+35:12 check_nested load in test_nested.<locals>.<listcomp> -> global <module> @5; origin scripts.check_nested
+uses of <module>:scripts@3: read@10
+uses of <module>:aliased@4: call:main@11
+uses of <module>:check_nested@5: call:main@28, call:main@33, call:main@35
+uses of <module>:check_rooted@5: call:main@19, call:main@20
+uses of <module>:check_tree@5: call:main@9, call:main@15, call:main@24
+== code objects: one per scope that compiles on this Python

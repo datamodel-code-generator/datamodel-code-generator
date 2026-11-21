@@ -1,0 +1,12 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  f: def@4 [always]
+scope function f#0 'f': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  x: assign@5 [function:body@4]; value 1
+  x: assign@9 [function:body@4]; value 2
+  C: class@7 [function:body@4]
+scope class f.<locals>.C#0 'C': code yes; first line 7; nonlocal x
+  opened by a node evaluated in f#0
+  members: 
+== code objects: one per scope that compiles on this Python

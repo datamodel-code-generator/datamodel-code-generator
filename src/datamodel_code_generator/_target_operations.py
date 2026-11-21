@@ -5,7 +5,7 @@ The targets keep their own scopes and forms, such as the client's resources and 
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
@@ -21,7 +21,6 @@ from datamodel_code_generator._target_contract import (
     parameter_location,
 )
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
-from datamodel_code_generator._target_types import takes_null
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -29,23 +28,22 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, OperationSelector
+    from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, CodecReason
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         DeclarationId,
-        FieldUseBinding,
-        FinalModelSymbol,
         OperationContract,
         OperationId,
         SourceDocumentId,
         SourceLocation,
-        SymbolId,
         TypeUseBinding,
         TypeUseId,
         TypeView,
         WireDeclaration,
     )
-    from datamodel_code_generator._target_naming import TargetNames
+    from datamodel_code_generator._target_naming import Candidate, TargetNames
+    from datamodel_code_generator._target_types import TypeTables
 
 SettingT = TypeVar("SettingT")
 
@@ -60,7 +58,8 @@ class TargetPolicy:
     option and the quoted operation key, of two settings of one option that select one operation; `path_code` the
     code of a path placeholder without a path parameter and of a path parameter without a placeholder, and
     `placeholder_label` whether the first names its operation; `media_code` the code of a media key that no
-    Content-Type header carries.
+    Content-Type header carries; `name_code` the code of an explicit name that its scope already holds; `verb` the
+    word an operation's docstring names its route after.
     """
 
     stage: Callable[[str], DiagnosticStage]
@@ -68,18 +67,32 @@ class TargetPolicy:
     path_code: str
     placeholder_label: bool
     media_code: str
+    name_code: str
+    verb: str
 
     def problem(
-        self, code: str, message: str, source: SourceLocation | None = None, option_path: str | None = None
+        self,
+        code: str,
+        message: str,
+        source: SourceLocation | None = None,
+        option_path: str | None = None,
+        *,
+        operation: OperationContract | None = None,
+        feature: ClientFeature | None = None,
     ) -> Diagnostic:
-        """Return one planning error at its stage."""
+        """Return one planning error at its stage.
+
+        `operation` names the operation whose own declarations cause it, and `feature` the OpenAPI feature it uses.
+        """
         return Diagnostic(
             code=code,
             severity="error",
             stage=self.stage(code),
             message=message,
             source_pointer=None if source is None else source.pointer,
+            operation=None if operation is None else operation_ref(operation.id),
             option_path=option_path,
+            feature=feature,
         )
 
 
@@ -89,6 +102,8 @@ CLIENT: Final = TargetPolicy(
     path_code="E_METADATA_REQUIRED",
     placeholder_label=True,
     media_code="E_METADATA_REQUIRED",
+    name_code="E_NAME_COLLISION",
+    verb="Call",
 )
 SERVER: Final = TargetPolicy(
     stage=lambda code: "config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
@@ -96,6 +111,8 @@ SERVER: Final = TargetPolicy(
     path_code="F_ROUTE_INVALID",
     placeholder_label=False,
     media_code="F_MEDIA_UNSUPPORTED",
+    name_code="F_NAME_CONFLICT",
+    verb="Handle",
 )
 
 
@@ -136,16 +153,46 @@ def native_type(use: TypeUseBinding) -> TypeView | Refusal:
     return Refusal(code, "The use has no generated native type")
 
 
-def binding_problem(code: str, message: str, source: SourceLocation) -> Diagnostic:
-    """Return one error at the binding stage, whatever stage a target's policy reports its code at."""
-    return Diagnostic(code=code, severity="error", stage="binding", message=message, source_pointer=source.pointer)
+def operation_ref(operation: OperationId) -> OperationRef:
+    """Return the reference that selects a root operation: the pointer of its use site in the root document."""
+    return OperationRef(pointer=operation.use_site.pointer)
+
+
+def binding_problem(
+    code: str,
+    message: str,
+    source: SourceLocation,
+    operation: OperationId | None = None,
+    feature: ClientFeature | None = None,
+) -> Diagnostic:
+    """Return one error at the binding stage, whatever stage a target's policy reports its code at.
+
+    `operation` names the operation whose own declarations cause it, and `feature` the OpenAPI feature it uses.
+    """
+    return Diagnostic(
+        code=code,
+        severity="error",
+        stage="binding",
+        message=message,
+        source_pointer=source.pointer,
+        operation=None if operation is None else operation_ref(operation),
+        feature=feature,
+    )
 
 
 def raise_selected(diagnostics: Iterable[CodecDiagnostic], selected: Iterable[OperationId]) -> None:
-    """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations."""
+    """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations.
+
+    A diagnostic of a request body's type use names the media it refuses.
+    """
     operations = {None, *selected}
     if problems := tuple(
-        binding_problem(item.code, item.message, item.source) for item in diagnostics if item.operation in operations
+        replace(
+            binding_problem(item.code, item.message, item.source, item.operation, item.feature),
+            media=next((use.media for use in item.uses if use.role.startswith("request")), None),
+        )
+        for item in diagnostics
+        if item.operation in operations
     ):
         raise APIGenerationError(problems)
 
@@ -157,6 +204,17 @@ def described(operation: OperationContract) -> str:
     """
     texts = (fact(operation, name) for name in ("summary", "description"))
     return "\n\n".join(text.strip() for text in texts if isinstance(text, str) and text.strip())
+
+
+def operation_docstring(
+    operation: OperationContract, *, schema: bool, verb: str, description: str | None = None
+) -> str:
+    """Return the text of an operation's docstring: its configured `description`, else its route after `verb`.
+
+    With `schema`, as `--use-schema-description` sets it, the operation's summary and description (`described`) come
+    before the route.
+    """
+    return description or (schema and described(operation)) or f"{verb} {label(operation)}."
 
 
 def response_bodyless(operation: OperationContract, key: str) -> bool:
@@ -201,18 +259,17 @@ def declared_media_type(
     media_type, problem = declared_media(declaration.name or "")
     if problem is not None:
         message = f"The media type {stable_repr(declaration.name)} of {label(operation)} {problem}"
-        problems.append(policy.problem(policy.media_code, message, declaration.use_site))
+        problems.append(policy.problem(policy.media_code, message, declaration.use_site, operation=operation))
     return media_type
 
 
 def json_null(
     kind: MediaKind,
     use: TypeUseBinding | None,
-    symbols: Mapping[SymbolId, FinalModelSymbol],
-    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+    tables: TypeTables,
 ) -> bool:
     """Return whether a body or response of a media kind sends None as JSON null: JSON whose type takes null."""
-    return kind == "json" and takes_null(None if use is None else use.type, symbols, members)
+    return kind == "json" and tables.takes_null(None if use is None else use.type)
 
 
 def coded_use(kind: MediaKind, use: TypeUseBinding | None) -> TypeUseBinding | None:
@@ -248,25 +305,58 @@ def type_names(names: TargetNames, items: Iterable[tuple[str, OperationContract,
     )
 
 
+def claim(
+    names: TargetNames,
+    scope: NameScope,
+    items: Sequence[str | Candidate],
+    reserved: Iterable[str] = (),
+    refused: Container[str] = (),
+) -> tuple[list[str], list[str]]:
+    """Name each item: an explicit name, taken first in order, or a derived one, claimed in order after `reserved`.
+
+    Also return, sorted, each explicit name that the scope or an earlier explicit name already holds, which the
+    target reports once. An explicit name in `refused`, which the target reports itself, is not taken.
+    """
+    held = sorted({item for item in items if isinstance(item, str) and item not in refused and not scope.take(item)})
+    for name in reserved:
+        scope.take(name)
+    claimed = iter(names.claim(scope, [item for item in items if not isinstance(item, str)]))
+    return [item if isinstance(item, str) else next(claimed) for item in items], held
+
+
 def argument_names(
-    names: TargetNames, scope: NameScope, arguments: Sequence[tuple[str, str | None, bool]], scopes: tuple[str, ...]
+    policy: TargetPolicy,
+    names: TargetNames,
+    operation: OperationContract,
+    arguments: Sequence[tuple[str, str | None, bool]],
+    scopes: tuple[str, ...],
+    *,
+    held: Iterable[str] = (),
+    reserved: Iterable[str],
+    refused: Container[str] = (),
+    problems: list[Diagnostic],
 ) -> list[str]:
     """Name each argument: its given name, or one claimed in order after its wire name as a model field's.
 
-    Each argument is its wire name, its given name or None, and whether the operation's document declares it.
+    Each argument is its wire name, its given name or None, and whether the operation's document declares it. A given
+    name that the `held` names or another given name take is reported once, one in `refused` by the target itself;
+    derived names keep apart from `reserved`.
     """
-    bases = {index: names.argument(wire_name) for index, (wire_name, given, _) in enumerate(arguments) if given is None}
-    claimed = dict(
-        zip(
-            bases,
-            names.claim(scope, [(base, arguments[index][2], scopes) for index, base in bases.items()]),
-            strict=True,
-        )
+    python_names, taken = claim(
+        names,
+        NameScope(held),
+        [given or (names.argument(wire_name), declared, scopes) for wire_name, given, declared in arguments],
+        reserved,
+        refused,
     )
-    return [given or claimed[index] for index, (_, given, _) in enumerate(arguments)]
+    head = f"The arguments of {label(operation)} take"
+    problems.extend(
+        policy.problem(policy.name_code, f"{head} {stable_repr(name)} twice", operation.id.use_site) for name in taken
+    )
+    return python_names
 
 
-def alias(  # noqa: PLR0913
+def alias(
     policy: TargetPolicy,
     names: TargetNames,
     operation: OperationContract,
@@ -323,11 +413,11 @@ def placeholder_problems(
     for placeholder in dict.fromkeys(placeholders):
         if placeholder not in declared:
             message = f"The path placeholder {stable_repr(placeholder)}{named} has no path parameter"
-            yield policy.problem(policy.path_code, message, operation.id.use_site)
+            yield policy.problem(policy.path_code, message, operation.id.use_site, operation=operation)
     template = path_placeholders(operation.path)
     for declaration in operation.parameters:
         if parameter_location(declaration) == "path" and declaration.name not in template:
             message = (
                 f"The path parameter {stable_repr(declaration.name)} of {label(operation)} names no path placeholder"
             )
-            yield policy.problem(policy.path_code, message, declaration.use_site)
+            yield policy.problem(policy.path_code, message, declaration.use_site, operation=operation)

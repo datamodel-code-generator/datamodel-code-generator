@@ -1,0 +1,8 @@
+{
+  "$defs": {
+    "X": {
+      "type": "object",
+      "properties": {"inner": {"type": "object", "properties": {"value": {"type": "integer"}}}}
+    }
+  }
+}

@@ -8,7 +8,6 @@ import pytest
 
 from datamodel_code_generator import InputFileType, OpenAPIScope
 from tests.main.conftest import (
-    EXPECTED_OPENAPI_PATH,
     OPEN_API_DATA_PATH,
     _generated_package_module,
     run_generate_file_and_assert,
@@ -32,7 +31,6 @@ def test_generate_reuse_with_empty_modules(
         input_path=OPEN_API_DATA_PATH / "all_exports_no_child.yaml",
         output_path=output_dir,
         input_file_type=InputFileType.OpenAPI,
-        expected_directory=EXPECTED_OPENAPI_PATH / "reuse_dedup_empty_modules",
         reuse_model=True,
         collapse_reuse_models=True,
         disable_timestamp=True,
@@ -53,7 +51,6 @@ def test_cli_reuse_with_empty_modules(
         input_path=OPEN_API_DATA_PATH / "all_exports_no_child.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "reuse_dedup_empty_modules",
         extra_args=[
             "--reuse-model",
             "--collapse-reuse-models",

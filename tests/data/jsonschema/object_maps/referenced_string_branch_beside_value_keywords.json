@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Labels",
+  "type": "object",
+  "$defs": {
+    "Name": {"type": "string"}
+  },
+  "properties": {
+    "label": {
+      "anyOf": [{"$ref": "#/$defs/Name"}, {"type": "object"}],
+      "minLength": 2,
+      "patternProperties": {"^x-": {"type": "integer"}}
+    }
+  }
+}

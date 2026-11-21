@@ -1,0 +1,13 @@
+{
+  "valid": [
+    {"name": "abcde", "labels": {"a": "b"}, "counts": [1, 2, 3], "code": "ab", "score": 5, "short": "abcde"}
+  ],
+  "invalid": [
+    {"name": "abcdef"},
+    {"labels": {}},
+    {"counts": [1]},
+    {"code": "zz"},
+    {"score": 7},
+    {"short": "abcdef"}
+  ]
+}

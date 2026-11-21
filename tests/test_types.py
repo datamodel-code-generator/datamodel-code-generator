@@ -27,6 +27,7 @@ from datamodel_code_generator.python_literal import (
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import (
     DataType,
+    Types,
     UnionIntFloat,
     _contains_decimal,
     _remove_none_from_union,
@@ -56,7 +57,6 @@ def test_union_int_float_conversion_after_json_round_trip() -> None:
     }
     assert_output(
         json.dumps(result, indent=2) + "\n",
-        data_path / "expected" / "types" / "union_int_float.txt",
     )
 
 
@@ -303,6 +303,34 @@ def test_datatype_remove_reference_detaches_compatibility_child() -> None:
     assert [child is data_type for child in reference.children] == []
 
 
+def test_datatype_replace_reference_requires_a_reference() -> None:
+    """Refuse to replace the reference of a type that holds none."""
+    with pytest.raises(Exception, match=r"`DataType.replace_reference\(\)` can't be called"):
+        DataType().replace_reference(None)
+
+
+def test_datatype_swap_with_leaves_a_type_without_a_parent_alone() -> None:
+    """Swapping a type that has no parent only detaches it: nothing holds the new type."""
+    old, new = DataType(type="int"), DataType(type="str")
+
+    old.swap_with(new)
+
+    assert old.parent is None
+    assert new.parent is None
+
+
+def test_union_int_float_public_conversions() -> None:
+    """Convert a UnionIntFloat to int, and validate instances, numeric strings and other values."""
+    value = UnionIntFloat(3.7)
+
+    assert int(value) == 3
+    assert UnionIntFloat.validate(value) is value
+    assert UnionIntFloat.validate("5").value == "5"
+    assert UnionIntFloat.validate("2.5").value == "2.5"
+    with pytest.raises(TypeError, match="x is not int or float"):
+        UnionIntFloat.validate("x")
+
+
 def test_hostname_regex_aliases_canonical_data_type_manager() -> None:
     """Test model modules reuse the canonical hostname regex."""
     from datamodel_code_generator.model import types as model_types
@@ -437,6 +465,7 @@ _DICT_INSIDE_ITSELF["self"] = _DICT_INSIDE_ITSELF
         pytest.param(_LIST_INSIDE_ITSELF, id="list-inside-itself"),
         pytest.param(_DICT_INSIDE_ITSELF, id="dict-inside-itself"),
         pytest.param({"key": "word " * 30}, id="long-string-in-a-dict"),
+        pytest.param({"word", "other", ("a", 1)}, id="set-in-iteration-order"),
         pytest.param("short line\n" + "word " * 30, id="long-string-with-a-short-line"),
         pytest.param("x" * 100, id="word-longer-than-a-line"),
         pytest.param(["y" * 100], id="word-longer-than-a-line-in-a-list"),
@@ -589,6 +618,23 @@ def test_external_datatype_subclass_keeps_legacy_rendering_contract() -> None:
 
     assert data_type.type_hint == "Annotated[Union[custom_constr(limit=1), int], Field(discriminator='kind')]"
     assert data_type.base_type_hint == "Union[bytes, int]"
+
+
+def test_type_map_factory_validates_external_datatype_subclass() -> None:
+    """Type maps built from an external DataType subclass run its validators on every entry."""
+    from pydantic import field_validator
+
+    from datamodel_code_generator.model.pydantic_v2 import types as pydantic_v2_types
+
+    class ExternalDataType(DataType):
+        @field_validator("type")
+        @classmethod
+        def _prefix(cls, value: str | None) -> str | None:
+            return value and f"external_{value}"
+
+    type_map = pydantic_v2_types.type_map_factory(ExternalDataType, (), "pattern", False)
+
+    assert (type_map[Types.integer].type, type_map[Types.password].type) == ("external_int", "external_SecretStr")
 
 
 def test_datatype_type_hint_uses_dict_key_render_selector() -> None:

@@ -1,0 +1,6 @@
+valid {"tree": ["a", ["b", []]]}: accepted
+valid {"chain": [[], [[]]]}: accepted
+invalid {"tree": [1]}: rejected
+invalid {"tree": [["a", 2]]}: rejected
+invalid {"chain": [1]}: rejected
+invalid {"chain": [[{"a": 1}]]}: rejected

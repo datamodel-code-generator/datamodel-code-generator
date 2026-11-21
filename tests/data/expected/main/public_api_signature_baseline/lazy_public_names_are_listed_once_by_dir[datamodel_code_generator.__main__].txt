@@ -1,0 +1,5 @@
+Config datamodel_code_generator.__main__ Config
+dir lists each name once: True
+__all__ lists each name once: True
+in this process: dir lists each name once: True, __all__ lists each name once: True
+missing name: module 'datamodel_code_generator.__main__' has no attribute 'no_such_name'

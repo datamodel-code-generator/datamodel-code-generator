@@ -25,7 +25,5 @@ class CustomToolCall:
 
 ToolCallUnion = TypeAliasType(
     "ToolCallUnion",
-    Annotated[
-        FunctionToolCall | CustomToolCall, Field(..., discriminator='type')
-    ],
+    Annotated[FunctionToolCall | CustomToolCall, Field(..., discriminator='type')],
 )

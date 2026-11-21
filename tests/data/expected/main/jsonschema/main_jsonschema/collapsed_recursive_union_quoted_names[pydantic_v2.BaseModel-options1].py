@@ -8,7 +8,17 @@ from pydantic import BaseModel, Field, RootModel
 
 
 class JsonValue(
-    RootModel[Optional[Union[str, float, bool, list[Optional["JsonValue"]], dict[str, Optional["JsonValue"]]]]]
+    RootModel[
+        Optional[
+            Union[
+                str,
+                float,
+                bool,
+                list[Optional["JsonValue"]],
+                dict[str, Optional["JsonValue"]],
+            ]
+        ]
+    ]
 ):
     root: Optional[
         Union[
@@ -39,7 +49,11 @@ class Quoted(RootModel[Union[str, list[Union[Quoted1, "Quoted"]]]]):
 
 
 class Matrix(
-    RootModel[Union[float, list[Optional["Matrix"]] | None, dict[str, list[Optional["Matrix"]]]]]
+    RootModel[
+        Union[
+            float, list[Optional["Matrix"]] | None, dict[str, list[Optional["Matrix"]]]
+        ]
+    ]
 ):
     root: Union[
         float, list[Optional["Matrix"]] | None, dict[str, list[Optional["Matrix"]]]

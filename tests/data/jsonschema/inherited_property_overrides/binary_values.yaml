@@ -1,0 +1,19 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  Parent:
+    type: object
+    properties:
+      blob:
+        enum: [!!binary aGVsbG8=]
+  Child:
+    allOf:
+      - $ref: '#/$defs/Parent'
+      - properties:
+          blob:
+            type: string
+            minLength: 1
+  Values:
+    type: object
+    properties:
+      value:
+        enum: [1, !!binary aGVsbG8=, [1], {a: 1}]

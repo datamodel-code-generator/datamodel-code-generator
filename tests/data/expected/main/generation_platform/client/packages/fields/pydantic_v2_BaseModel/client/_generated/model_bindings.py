@@ -11,7 +11,9 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.PetsPostQueryTagParameter]] = PydanticCodec(models.PetsPostQueryTagParameter)
+codec_0: Final[PydanticCodec[models.PetsPostQueryTagParameter]] = PydanticCodec(
+    models.PetsPostQueryTagParameter
+)
 """Codec of /paths/~1pets/post parameter (request query tag)."""
 
 codec_1: Final[PydanticCodec[models.NewPet]] = PydanticCodec(models.NewPet)
@@ -23,37 +25,51 @@ codec_2: Final[PydanticCodec[models.PetForm]] = PydanticCodec(models.PetForm)
 codec_3: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
 """Codec of /paths/~1pets/post response_body (response 201 application/json)."""
 
-codec_4: Final[PydanticCodec[models.PetsPetIdPatchPathPetIdParameter]] = PydanticCodec(models.PetsPetIdPatchPathPetIdParameter)
+codec_4: Final[PydanticCodec[models.PetsPetIdPatchPathPetIdParameter]] = PydanticCodec(
+    models.PetsPetIdPatchPathPetIdParameter
+)
 """Codec of /paths/~1pets~1{petId}/patch parameter (request path petId)."""
 
 codec_5: Final[PydanticCodec[models.PetPatch]] = PydanticCodec(models.PetPatch)
 """Codec of /paths/~1pets~1{petId}/patch request_body (request application/json)."""
 
-codec_6: Final[PydanticCodec[models.PetsPetIdVisitsPostPathPetIdParameter]] = PydanticCodec(models.PetsPetIdVisitsPostPathPetIdParameter)
+codec_6: Final[PydanticCodec[models.PetsPetIdVisitsPostPathPetIdParameter]] = (
+    PydanticCodec(models.PetsPetIdVisitsPostPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1visits/post parameter (request path petId)."""
 
 codec_7: Final[PydanticCodec[models.Visit]] = PydanticCodec(models.Visit)
 """Codec of /paths/~1pets~1{petId}~1visits/post request_body (request application/json)."""
 
-codec_8: Final[PydanticCodec[models.PetsPetIdOwnerPutPathPetIdParameter]] = PydanticCodec(models.PetsPetIdOwnerPutPathPetIdParameter)
+codec_8: Final[PydanticCodec[models.PetsPetIdOwnerPutPathPetIdParameter]] = (
+    PydanticCodec(models.PetsPetIdOwnerPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1owner/put parameter (request path petId)."""
 
 codec_9: Final[PydanticCodec[models.Owner]] = PydanticCodec(models.Owner)
 """Codec of /paths/~1pets~1{petId}~1owner/put request_body (request application/json)."""
 
-codec_10: Final[PydanticCodec[models.OwnersPostRequest]] = PydanticCodec(models.OwnersPostRequest)
+codec_10: Final[PydanticCodec[models.OwnersPostRequest]] = PydanticCodec(
+    models.OwnersPostRequest
+)
 """Codec of /paths/~1owners/post request_body (request application/json)."""
 
-codec_11: Final[PydanticCodec[models.PetsPetIdLabelsPutPathPetIdParameter]] = PydanticCodec(models.PetsPetIdLabelsPutPathPetIdParameter)
+codec_11: Final[PydanticCodec[models.PetsPetIdLabelsPutPathPetIdParameter]] = (
+    PydanticCodec(models.PetsPetIdLabelsPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1labels/put parameter (request path petId)."""
 
 codec_12: Final[PydanticCodec[models.Labels]] = PydanticCodec(models.Labels)
 """Codec of /paths/~1pets~1{petId}~1labels/put request_body (request application/json)."""
 
-codec_13: Final[PydanticCodec[models.PetsPetIdPhotoPutPathPetIdParameter]] = PydanticCodec(models.PetsPetIdPhotoPutPathPetIdParameter)
+codec_13: Final[PydanticCodec[models.PetsPetIdPhotoPutPathPetIdParameter]] = (
+    PydanticCodec(models.PetsPetIdPhotoPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1photo/put parameter (request path petId)."""
 
-codec_14: Final[PydanticCodec[models.PetsPetIdRecordsPutPathPetIdParameter]] = PydanticCodec(models.PetsPetIdRecordsPutPathPetIdParameter)
+codec_14: Final[PydanticCodec[models.PetsPetIdRecordsPutPathPetIdParameter]] = (
+    PydanticCodec(models.PetsPetIdRecordsPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1records/put parameter (request path petId)."""
 
 codec_15: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)

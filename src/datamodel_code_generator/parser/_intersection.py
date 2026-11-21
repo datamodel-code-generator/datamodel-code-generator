@@ -53,8 +53,8 @@ from __future__ import annotations
 from copy import copy
 from fractions import Fraction
 from functools import partial
-from itertools import chain, product, starmap
-from math import gcd, isfinite, isnan, lcm, prod
+from itertools import chain, product
+from math import gcd, isfinite, lcm, prod
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, final
 from warnings import warn
 
@@ -66,6 +66,8 @@ from datamodel_code_generator._json_schema import (
     SINGLE_SCHEMA_SHAPES,
     admitted_types,
     declared_types,
+    json_value_key,
+    json_values_equal,
     non_null_types,
     schema_positions,
 )
@@ -77,6 +79,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "BRANCH_COMBINATION_LIMIT",
+    "ENUM_ENTRY_NAMES",
     "ENUM_METADATA_KEYWORDS",
     "INHERITED_SCHEMA_KEYWORDS",
     "INTERSECTED_KEYWORDS",
@@ -100,11 +103,12 @@ __all__ = [
     "intersect_keywords",
     "intersect_multiple_of",
     "intersect_types",
-    "is_hash_safe_json_scalar",
     "json_values_equal",
+    "kept_enum_entries",
     "kept_legacy_rows",
     "merge_inherited_keyword",
     "merge_inherited_value",
+    "retained_enum_metadata",
     "warn_unsatisfiable",
     "warn_untaken_patterns",
 ]
@@ -133,8 +137,13 @@ POSITIONAL_SCHEMA_KEYWORDS: Final = frozenset(schema_positions("child", shapes=S
 """The keywords that can declare a tuple, whose positions an inherited property and its override merge by index."""
 _NOT_INHERITED: Final = {"constraints": frozenset({"default", "examples", "example"})}
 """The keywords an override does not inherit, by ``--allof-merge-mode`` value; ``none`` inherits no keyword."""
-ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
-_HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
+ENUM_ENTRY_NAMES: Final = (
+    ("x-enum-varnames", "x_enum_varnames"),
+    ("x-enumNames", "x_enum_names"),
+    ("x-enum-descriptions", "x_enum_descriptions"),
+)
+"""The keywords that list one entry per enum value, each with the name of its schema object field."""
+ENUM_METADATA_KEYWORDS: Final = tuple(keyword for keyword, _ in ENUM_ENTRY_NAMES)
 _REMOVED: Final = Sentinel("_REMOVED")
 INTERSECTED_KEYWORDS: Final = _BOUNDS.union((
     "multipleOf",
@@ -198,7 +207,8 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
     "distribute_allof_over_unions": {
         "legacy-ref-branch-without-site-parts": (
             "a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf "
-            "members nor the value keywords beside it"
+            "members nor the value keywords beside it, and the subtypes of a discriminated `$ref` branch take none of "
+            "the allOf members"
         ),
         "legacy-operation-all-of-before-union": (
             "an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the "
@@ -206,7 +216,7 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
         ),
         "legacy-union-parts-joined": (
             "every anyOf and oneOf of an allOf is parsed at the site's path and their branches join one union, each "
-            "with the other parts"
+            "with the other parts; a discriminated `$ref` branch of them is left out"
         ),
         "legacy-ref-member-union-dropped": (
             "an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a "
@@ -273,63 +283,10 @@ class KeywordIntersection:
     untaken_patterns: tuple[str, ...] = ()
 
 
-def json_values_equal(left: object, right: object) -> bool:  # ruff: ignore[too-many-return-statements]
-    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: booleans are not numbers, ``1 == 1.0``.
-
-    NaN, which a YAML document can write, equals NaN.
-    """
-    match left:
-        case None:
-            return right is None
-        case bool() as boolean:
-            return isinstance(right, bool) and boolean == right
-        case int() | float() as number:
-            return (
-                not isinstance(right, bool)
-                and isinstance(right, (int, float))
-                and (
-                    number == right
-                    or (isinstance(number, float) and isinstance(right, float) and isnan(number) and isnan(right))
-                )
-            )
-        case str() as string:
-            return isinstance(right, str) and string == right
-        case list() as array:
-            return (
-                isinstance(right, list)
-                and len(array) == len(right)
-                and all(starmap(json_values_equal, zip(array, right, strict=True)))
-            )
-        case dict() as object_:
-            return (
-                isinstance(right, dict)
-                and len(object_) == len(right)
-                and all(key in right and json_values_equal(item, right[key]) for key, item in object_.items())
-            )
-    return False
-
-
-def is_hash_safe_json_scalar(value: object) -> bool:
-    """Return whether a JSON scalar hashes and compares as its base type, so a set can hold it; NaN cannot."""
-    value_type = type(value)
-    if isinstance(value, float) and isnan(value):
-        return False
-    return value_type in _HASHABLE_SCALAR_TYPES or any(
-        isinstance(value, scalar_type)
-        and value_type.__eq__ is scalar_type.__eq__
-        and value_type.__hash__ is scalar_type.__hash__
-        for scalar_type in (str, int, float)
-    )
-
-
 def _retained_indices(first: Sequence[Any], second: Sequence[Any]) -> list[int]:
-    """Return the positions of the values of ``first`` that ``second`` also lists."""
-    if all(map(is_hash_safe_json_scalar, chain(first, second))):
-        keys = {(isinstance(value, bool), value) for value in second}
-        return [index for index, value in enumerate(first) if (isinstance(value, bool), value) in keys]
-    return [
-        index for index, value in enumerate(first) if any(json_values_equal(value, candidate) for candidate in second)
-    ]
+    """Return the positions of the values of ``first`` that ``second`` also lists, by the key of each value."""
+    listed = set(map(json_value_key, second))
+    return [index for index, value in enumerate(first) if json_value_key(value) in listed]
 
 
 def _same_values(first: Sequence[Any], second: Sequence[Any]) -> bool:
@@ -458,11 +415,11 @@ def common_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]
 
 def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int) -> object:
     """Return the annotation of a retained enum value: the first part's, else that of the next part that has one."""
-    value = enum_parts[0]["enum"][index]
+    value = json_value_key(enum_parts[0]["enum"][index])
     positions = (
         index
         if part is enum_parts[0]
-        else next(i for i, item in enumerate(part["enum"]) if json_values_equal(value, item))
+        else next(i for i, item in enumerate(part["enum"]) if value == json_value_key(item))
         for part in enum_parts
     )
     return next(
@@ -473,6 +430,39 @@ def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int)
         ),
         None,
     )
+
+
+def retained_enum_metadata(parts: Sequence[Mapping[str, Any]], indices: Sequence[int]) -> dict[str, list[object]]:
+    """Return the x-enum entries of the values of the first part's enum at ``indices`` (``enum_metadata``).
+
+    Only the keywords some part writes.
+    """
+    return {
+        key: [enum_metadata(parts, key, index) for index in indices]
+        for key in ENUM_METADATA_KEYWORDS
+        if any(part.get(key) for part in parts)
+    }
+
+
+def kept_enum_entries(
+    values: Sequence[object],
+    entries: Sequence[object],
+    keeps: Callable[[int], bool],
+    *,
+    skips_null: bool,
+    keeps_extra: bool,
+) -> list[object]:
+    """Return the x-enum entries whose enum value stays (``keeps``, by the value's position).
+
+    Each entry is matched to its value as the schema's enum class reads them: past the null where the entries leave it
+    out (``skips_null``). ``keeps_extra``: the entries past the last value matched stay.
+    """
+    positions = [position for position, value in enumerate(values) if value is not None or not skips_null]
+    return [
+        entry
+        for index, entry in enumerate(entries)
+        if (keeps(positions[index]) if index < len(positions) else keeps_extra)
+    ]
 
 
 @final
@@ -616,11 +606,7 @@ class _Reconciler:
         if isinstance(row_enum := row.get("enum"), list) and _same_values(row_enum, retained):
             return
         updates["enum"] = retained
-        updates.update({
-            key: [enum_metadata(enum_parts, key, index) for index in indices]
-            for key in ENUM_METADATA_KEYWORDS
-            if any(part.get(key) for part in enum_parts)
-        })
+        updates.update(retained_enum_metadata(enum_parts, indices))
 
     def _enum_outside_type(
         self,
@@ -655,10 +641,9 @@ class _Reconciler:
         skips_null = self.enum_entries_skip_null({
             key: value for key, value in {**row, **updates}.items() if value is not _REMOVED
         })
-        entry_positions = [index for index, value in enumerate(values) if value is not None or not skips_null]
         kept = set(indices)
         updates.update({
-            key: [entry for position, entry in zip(entry_positions, metadata, strict=False) if position in kept]
+            key: kept_enum_entries(values, metadata, kept.__contains__, skips_null=skips_null, keeps_extra=False)
             for key in ENUM_METADATA_KEYWORDS
             if isinstance(metadata := updates.get(key, row.get(key)), list)
         })
@@ -707,7 +692,7 @@ class _Reconciler:
         return self.schema(schemas, row_value) if isinstance(row_value, dict) else None
 
 
-def intersect_keywords(  # noqa: PLR0913
+def intersect_keywords(
     parts: Sequence[Mapping[str, Any]],
     row: dict[str, Any],
     *,
@@ -808,7 +793,7 @@ def merge_inherited_value(
     return child
 
 
-def merge_inherited_keyword(  # noqa: PLR0913
+def merge_inherited_keyword(
     key: str,
     parent: object,
     child: object,
@@ -963,11 +948,7 @@ def all_of_member_row(
     ):
         retained_ids = {id(value) for value in result["enum"]}
         indices = [index for index, value in enumerate(parent_enum) if id(value) in retained_ids]
-        result.update({
-            key: [enum_metadata((parent, child), key, index) for index in indices]
-            for key in ENUM_METADATA_KEYWORDS
-            if parent.get(key) or child.get(key)
-        })
+        result.update(retained_enum_metadata((parent, child), indices))
     return result
 
 

@@ -1,0 +1,33 @@
+# auth-parameters pydantic_v2.BaseModel
+credentials ('header', 'query', 'cookie')
+  > GET https://api.example.com/header
+    [host: api.example.com, accept-encoding: gzip, deflate, x-key: given] b''
+  header given = None
+  > GET https://api.example.com/header
+    [host: api.example.com, accept-encoding: gzip, deflate, x-key: header-secret] b''
+  header = None
+  > GET https://api.example.com/query?key=given
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  query given = None
+  > GET https://api.example.com/query?key=query-secret
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  query = None
+  > GET https://api.example.com/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, cookie: session=given] b''
+  cookie given = None
+  > GET https://api.example.com/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, cookie: session=cookie-secret] b''
+  cookie = None
+credentials ()
+  > GET https://api.example.com/header
+    [host: api.example.com, accept-encoding: gzip, deflate, x-key: given] b''
+  header given = None
+  header ! ConfigurationError: ConfigurationError(operation_id='header', reason='missing_credentials', field_path='auth') [operation_id='header', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/query?key=given
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  query given = None
+  query ! ConfigurationError: ConfigurationError(operation_id='query', reason='missing_credentials', field_path='auth') [operation_id='query', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, cookie: session=given] b''
+  cookie given = None
+  cookie ! ConfigurationError: ConfigurationError(operation_id='cookie', reason='missing_credentials', field_path='auth') [operation_id='cookie', field_path=('auth',)] missing_credentials

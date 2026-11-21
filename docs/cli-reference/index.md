@@ -8,15 +8,15 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 53 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 65 | Model generation behavior |
+| 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
+| 🔧 [Typing Customization](typing-customization.md) | 63 | Type annotation and import behavior |
+| 🏷️ [Field Customization](field-customization.md) | 42 | Field naming and docstring behavior |
+| 🏗️ [Model Customization](model-customization.md) | 74 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
-| 📘 [OpenAPI-only Options](openapi-only-options.md) | 13 | OpenAPI-specific features |
+| 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
+| ⚙️ [General Options](general-options.md) | 27 | Utilities and meta options |
+| 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -25,10 +25,10 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 30 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 34 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
-| [OpenAPI](topics/openapi.md) | 12 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
+| [Typing Customization](topics/typing-customization.md) | 42 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
 
@@ -40,10 +40,12 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--use-annotated`](typing-customization.md#use-annotated) | Implies | Always | [`--field-constraints`](field-customization.md#field-constraints) enabled | - |
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.11+` | `--use-specialized-enum` requires `--target-python-version` 3.11 or higher. |
 | [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
+| [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) | Requires | Always | [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled | `--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`. |
 | [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Requires | Always | [`--snake-case-field`](field-customization.md#snake-case-field) enabled | `--original-field-name-delimiter` can not be used without `--snake-case-field`. |
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
 | [`--keyword-only`](model-customization.md#keyword-only) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.10+` | `--keyword-only` requires `--target-python-version` 3.10 or higher for dataclasses. |
+| [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) | Requires | Always | [`--open-enums`](typing-customization.md#open-enums) | `--open-enum-base-class-map` requires `--open-enums extensible` or `--open-enums all`. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Implies | `--output-model-type` = `msgspec.Struct` | [`--use-annotated`](typing-customization.md#use-annotated) enabled | - |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Implies | Always | [`--naming-strategy`](model-customization.md#naming-strategy) = `parent-prefixed` | - |
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Requires | `--reuse-scope` = `tree` | [`--reuse-model`](model-customization.md#reuse-model) enabled | `--reuse-scope=tree` has no effect without `--reuse-model`. |
@@ -64,8 +66,11 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--job` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
+| [`--untrusted-input`](general-options.md#untrusted-input) | Implies | Always | [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-asyncapi-perspective` requires `--generate-client httpx2`. |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-model-package` requires `--generate-client httpx2`. |
 | [`--client-operations`](target-generation-options.md#client-operations) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-operations` requires `--generate-client httpx2`. |
@@ -78,7 +83,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-client` requires `--input-file-type openapi`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) | `--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
@@ -119,6 +124,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name)
 - [`--allow-private-network`](general-options.md#allow-private-network)
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs)
+- [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field)
 
 ### B {#b}
 
@@ -136,7 +142,9 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
+- [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective)
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets)
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url)
 - [`--client-model-package`](target-generation-options.md#client-model-package)
 - [`--client-operations`](target-generation-options.md#client-operations)
@@ -146,6 +154,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--client-resource-names`](target-generation-options.md#client-resource-names)
 - [`--client-server-base-url`](target-generation-options.md#client-server-base-url)
 - [`--client-signature-style`](target-generation-options.md#client-signature-style)
+- [`--collapse-constrained-root-models-as-annotated`](model-customization.md#collapse-constrained-root-models-as-annotated)
 - [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models)
 - [`--collapse-root-models`](model-customization.md#collapse-root-models)
 - [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy)
@@ -161,6 +170,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments)
 - [`--debug`](utility-options.md#debug)
+- [`--dedupe-numbered-request-response-variants`](openapi-only-options.md#dedupe-numbered-request-response-variants)
 - [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants)
 - [`--default-values`](field-customization.md#default-values)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
@@ -227,6 +237,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--ignore-ref-siblings-by-schema-version`](base-options.md#ignore-ref-siblings-by-schema-version)
 - [`--import-overrides`](typing-customization.md#import-overrides)
 - [`--include-path-parameters`](openapi-only-options.md#include-path-parameters)
+- [`--infer-union-discriminators`](field-customization.md#infer-union-discriminators)
 - [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names)
 - [`--input`](base-options.md#input)
 - [`--input-file-type`](base-options.md#input-file-type)
@@ -244,6 +255,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container)
 - [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs)
+- [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields)
 - [`--keep-enum-literal-aliases`](model-customization.md#keep-enum-literal-aliases)
 - [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values)
 - [`--keep-false-dataclass-arguments`](model-customization.md#keep-false-dataclass-arguments)
@@ -252,6 +264,8 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-model-order`](model-customization.md#keep-model-order)
 - [`--keep-reference-null-on-collapsed-root-models`](model-customization.md#keep-reference-null-on-collapsed-root-models)
 - [`--keep-reference-null-on-merged-models`](model-customization.md#keep-reference-null-on-merged-models)
+- [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items)
+- [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
 ### L {#l}
@@ -263,6 +277,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### M {#m}
 
+- [`--merge-message-trait-headers`](model-customization.md#merge-message-trait-headers)
 - [`--merge-msgspec-str-like-union-members`](model-customization.md#merge-msgspec-str-like-union-members)
 - [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags)
 - [`--model-extra-keys`](model-customization.md#model-extra-keys)
@@ -288,8 +303,11 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### O {#o}
 
+- [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults)
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints)
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null)
+- [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map)
+- [`--open-enums`](typing-customization.md#open-enums)
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions)
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version)
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)
@@ -317,15 +335,26 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
+- [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation)
+- [`--read-ids-with-empty-fragment`](base-options.md#read-ids-with-empty-fragment)
+- [`--read-implied-options-from-merged-values`](general-options.md#read-implied-options-from-merged-values)
+- [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order)
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
+- [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly)
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list)
+- [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
+- [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
+- [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
+- [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats)
+- [`--read-yaml-1-1-numbers-as-text`](base-options.md#read-yaml-1-1-numbers-as-text)
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
+- [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides)
 - [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes)
 - [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type)
 - [`--reuse-model`](model-customization.md#reuse-model)
@@ -378,10 +407,14 @@ These links are generated from CLI option metadata and summarize options that im
 ### U {#u}
 
 - [`--union-mode`](model-customization.md#union-mode)
+- [`--untrusted-input`](general-options.md#untrusted-input)
+- [`--untyped-value-type`](typing-customization.md#untyped-value-type)
 - [`--update-lock`](general-options.md#update-lock)
 - [`--url`](base-options.md#url)
 - [`--use-annotated`](typing-customization.md#use-annotated)
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings)
+- [`--use-bounds-for-float-const`](field-customization.md#use-bounds-for-float-const)
+- [`--use-bytes-for-content-media-type`](typing-customization.md#use-bytes-for-content-media-type)
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict)
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of)
 - [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms)
@@ -391,6 +424,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-double-quotes`](template-customization.md#use-double-quotes)
 - [`--use-duplicate-name-suffix-for-every-collision`](model-customization.md#use-duplicate-name-suffix-for-every-collision)
 - [`--use-encoded-str-for-constrained-base64`](typing-customization.md#use-encoded-str-for-constrained-base64)
+- [`--use-enum-field-as-literal-in-operations`](openapi-only-options.md#use-enum-field-as-literal-in-operations)
 - [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator)
 - [`--use-exact-imports`](template-customization.md#use-exact-imports)
 - [`--use-field-description`](field-customization.md#use-field-description)
@@ -425,6 +459,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections)
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name)
+- [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64)
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 - [`--use-title-as-name`](field-customization.md#use-title-as-name)
@@ -440,7 +475,10 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-union-operator`](typing-customization.md#use-union-operator)
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set)
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value)
-- [`--use-x-python-type-unions`](typing-customization.md#use-x-python-type-unions)
+- [`--use-unmapped-variant-tag-values`](field-customization.md#use-unmapped-variant-tag-values)
+- [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases)
+- [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref)
+- [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written)
 
 ### V {#v}
 

@@ -135,7 +135,7 @@ class Plain(Enum):
 
 @dataclass
 class P1:
-    k: Literal[Plain.int_1]
+    k: Plain
     p: str
 
 

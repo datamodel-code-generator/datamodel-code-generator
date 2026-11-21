@@ -1,0 +1,1 @@
+DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS: dataclass.jinja2 writes Person.firstName with = None, where classify_assignment decides binds_class_attribute=False (assigned=False, rule unassigned)

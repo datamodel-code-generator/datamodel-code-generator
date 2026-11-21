@@ -32,10 +32,16 @@ def _add_list_pets(
 
     def list_pets(
         *,
-        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
+        limit: Annotated[
+            int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')
+        ] = 20,
         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
-        kind: Annotated[pets_dataclass_models.PetsGetQueryKindParameter | None, Query(alias='kind')] = None,
-        X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
+        kind: Annotated[
+            pets_dataclass_models.PetsGetQueryKindParameter | None, Query(alias='kind')
+        ] = None,
+        X_Request_Id: Annotated[
+            UUID | None, Header(alias='X-Request-Id', convert_underscores=False)
+        ] = None,
         since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
@@ -79,7 +85,9 @@ def _add_create_pet(
 
     def create_pet(
         *,
-        body: Annotated[pets_dataclass_models.NewPet, Body(media_type='application/json')],
+        body: Annotated[
+            pets_dataclass_models.NewPet, Body(media_type='application/json')
+        ],
     ) -> object:
         return dispatch(
             create_pet_handler(

@@ -1,0 +1,13 @@
+"""Review R08, must M4: a generic function and a generic class with a method that reads the class's parameter.
+
+min-python: 3.12
+questions: references
+"""
+
+
+def first[T: int](x: T) -> T:
+    return x
+
+
+class Box[T]:
+    def get(self) -> T: ...

@@ -1,0 +1,8 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Digits:
+      type: string
+      pattern: '^\p{Nd}{1,4096}$'

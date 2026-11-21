@@ -1,0 +1,3 @@
+[
+  "/plugin~1rule enum 1.0: valid, model rejects"
+]

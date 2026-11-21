@@ -1,0 +1,70 @@
+openapi: 3.2.0
+info:
+  title: Item streams
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /events:
+    get:
+      operationId: watchEvents
+      parameters:
+        - {name: topic, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Each event as its parsed fields.
+          content:
+            text/event-stream:
+              itemSchema: {$ref: '#/components/schemas/Event'}
+  /logs:
+    get:
+      operationId: tailLogs
+      responses:
+        '200':
+          description: JSON Lines log entries.
+          content:
+            application/jsonl:
+              itemSchema: {$ref: '#/components/schemas/LogEntry'}
+  /records:
+    get:
+      operationId: streamRecords
+      responses:
+        '200':
+          description: NDJSON log entries, each ending with a line feed.
+          content:
+            application/x-ndjson:
+              itemSchema: {$ref: '#/components/schemas/LogEntry'}
+  /excerpt:
+    get:
+      operationId: getExcerpt
+      responses:
+        '200':
+          description: A bounded log as JSON, or the same entries as JSON Lines.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/LogEntry'}
+            application/jsonl:
+              itemSchema: {$ref: '#/components/schemas/LogEntry'}
+        '404':
+          description: No such log.
+          content:
+            application/jsonl:
+              itemSchema: {$ref: '#/components/schemas/LogEntry'}
+components:
+  schemas:
+    Event:
+      type: object
+      required: [data]
+      properties:
+        data: {type: string}
+        event: {type: string, enum: [message, add, done]}
+        id: {type: string}
+        retry: {type: integer, minimum: 0}
+    LogEntry:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}
+        level: {type: integer, minimum: 0}

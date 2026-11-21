@@ -26,10 +26,10 @@ class Pair(RootModel[list[str]]):
 
 
 class Measurement(BaseModel):
-    count: int | None = None
-    code: constr(pattern=r'^[A-Z]') | None = None
+    count: int | None = Field(None, ge=5)
+    code: constr(pattern=r'^[A-Z]') | None = Field(None, max_length=3)
     tags: Tags | None = None
-    score: int | None = None
+    score: int | None = Field(None, le=100)
     counts: list[int] | None = None
     limits: dict[str, int] | None = None
     point: Point | None = None
@@ -40,7 +40,7 @@ class Measurement(BaseModel):
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
     pp: dict[constr(pattern=r'^a|^b'), int] | None = None
     ap: dict[str, int] | None = None
-    q_allof: conint(ge=1) | None = None
+    q_allof: conint(ge=1) | None = Field(None, le=10)
     q_items: list[conint(ge=1)] | None = None
     q_map: dict[str, conint(ge=1)] | None = None
     short_status: Status | None = None

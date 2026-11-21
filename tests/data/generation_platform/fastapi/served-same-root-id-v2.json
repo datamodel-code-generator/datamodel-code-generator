@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/pet.json",
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 50}}}
+  }
+}

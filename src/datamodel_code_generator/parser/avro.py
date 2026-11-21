@@ -11,22 +11,26 @@ from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 
 from typing_extensions import Unpack
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._avro_detection import COMPLEX_TYPES as _COMPLEX_TYPES
 from datamodel_code_generator._avro_detection import JSON_SCHEMA_MARKER_KEYS as _JSON_SCHEMA_MARKER_KEYS
 from datamodel_code_generator._avro_detection import NAMED_TYPES, PRIMITIVE_TYPES
 from datamodel_code_generator._avro_detection import (
     is_avro_schema_data as _is_avro_schema_data,
 )
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import definition_ref
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._name_words import first_upper
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
 from datamodel_code_generator.imports import Import
+from datamodel_code_generator.parser import _schema_documents
 from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser._type_overrides import override_spells_builtin
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -67,14 +71,11 @@ def is_avro_schema_data(data: YamlValue) -> bool:
     return _is_avro_schema_data(data)
 
 
-def __getattr__(name: str) -> Any:
-    """Return compatibility constants moved to the lightweight detector."""
-    match name:
-        case "COMPLEX_TYPES":
-            return _COMPLEX_TYPES
-        case "JSON_SCHEMA_MARKER_KEYS":
-            return _JSON_SCHEMA_MARKER_KEYS
-    raise AttributeError(name)
+_LAZY_EXPORTS = {
+    "COMPLEX_TYPES": lambda: _COMPLEX_TYPES,
+    "JSON_SCHEMA_MARKER_KEYS": lambda: _JSON_SCHEMA_MARKER_KEYS,
+}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS, missing_message="name")
 
 
 class _Name(NamedTuple):
@@ -248,8 +249,6 @@ class _AvroSchemaConverter:
             case dict() as schema:
                 return self._convert_schema_dict(schema, namespace, root=root)
 
-        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
         msg = f"Unsupported Avro schema value: {stable_repr(schema)}"
         raise Error(msg)
 
@@ -272,8 +271,6 @@ class _AvroSchemaConverter:
             case str() as type_name:
                 return self._convert_schema_object(schema, type_name, namespace, root=root)
             case _:
-                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
                 msg = f"Avro schema object requires a string, object, or union type: {stable_repr(schema)}"
                 raise Error(msg)
 
@@ -336,8 +333,6 @@ class _AvroSchemaConverter:
                     raise Error(msg)
                 union_type = type_value if isinstance(type_value, str) and type_value not in NAMED_TYPES else None
             else:
-                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
                 msg = f"Unsupported Avro union value: {stable_repr(item)}"
                 raise Error(msg)
 
@@ -370,9 +365,7 @@ class _AvroSchemaConverter:
             converted = self._convert_enum(raw_schema, fullname)
         elif type_value == "fixed":
             converted = self._convert_fixed(raw_schema, fullname)
-        else:  # pragma: no cover
-            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
+        else:  # pragma: no cover - not proven unreachable
             msg = f"Unsupported Avro named type: {stable_repr(type_value)}"
             raise Error(msg)
         converted.setdefault("title", definition_key)
@@ -539,8 +532,11 @@ class _AvroSchemaConverter:
     def _convert_default_type(
         self, value: Any, schema: Any, namespace: str | None, type_override: Import | None = None
     ) -> Any:
-        """Resolve named defaults in their record scope and decode bytes leaves."""
-        if not isinstance(schema, str):  # pragma: no cover - rejected while converting the field schema
+        """Resolve named defaults in their record scope and decode bytes leaves.
+
+        A key of a record default that the record does not declare has no schema: its value is kept as written.
+        """
+        if not isinstance(schema, str):
             return value
         if schema not in {"bytes", "fixed"}:
             fullname = self._resolve_fullname(schema, namespace)
@@ -805,7 +801,8 @@ class AvroParser(JsonSchemaParser):
     def parse_raw(self) -> None:
         """Parse all Avro schema input sources into data models."""
         self._default_converters: dict[str, _AvroSchemaConverter] | None = {} if self._type_override_imports else None
-        self._parse_converted_sources(
+        _schema_documents.parse_converted_sources(
+            self,
             lambda: _AvroSchemaConverter(
                 self._logical_default,
                 convert_logical_defaults=self.data_model_type.SUPPORTS_DESERIALIZED_DEFAULT_VALUES,
@@ -814,7 +811,7 @@ class AvroParser(JsonSchemaParser):
                 else None,
                 default_type_overrides=self._default_type_overrides if self._type_override_imports else None,
                 default_converters=self._default_converters,
-            )
+            ),
         )
         if self._has_runtime_expressions:
             from datamodel_code_generator.python_literal import (  # ruff: ignore[import-outside-top-level]
@@ -835,7 +832,7 @@ class AvroParser(JsonSchemaParser):
 
             for context in contexts:
                 for model in context.models:
-                    converter = self._default_converters.get(model.reference.path.partition("#")[0] or ".")
+                    converter = self._default_converters.get(document_part(model.reference.path) or ".")
                     fullname = model.extra_template_data.get("extensions", {}).get("x-avro-fullname")
                     if converter is None or not converter.overridden_defaults:
                         continue
@@ -876,7 +873,7 @@ class AvroParser(JsonSchemaParser):
     def _default_type_overrides(self, name: str, schema: JsonSchema, as_root: bool) -> dict[str, Import]:  # ruff: ignore[boolean-type-hint-positional-argument]
         """Resolve default overrides with the existing model and field naming rules."""
         if as_root:
-            name, preserve_name = self._resolve_root_model_name({"title": name})
+            name, preserve_name = _schema_documents.resolve_root_model_name(self, {"title": name})
         else:
             preserve_name = False
         class_name = self.model_resolver.get_class_name(

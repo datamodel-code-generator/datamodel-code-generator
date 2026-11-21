@@ -1,0 +1,38 @@
+asyncapi: 2.6.0
+info:
+  title: Sensors
+  version: 1.0.0
+servers:
+  socket:
+    url: wss://sensors.example.com
+    protocol: wss
+channels:
+  /readings:
+    servers: [socket]
+    subscribe:
+      message:
+        schemaFormat: application/vnd.oai.openapi;version=3.0.0
+        payload:
+          type: object
+          properties:
+            sensor:
+              type: string
+            value:
+              type: number
+          required: [sensor, value]
+  /notes:
+    servers: [socket]
+    subscribe:
+      message:
+        traits:
+          - $ref: '#/components/messageTraits/described'
+        payload:
+          type: object
+          properties:
+            text:
+              type: string
+          required: [text]
+components:
+  messageTraits:
+    described:
+      schemaFormat: application/SCHEMA+YAML;version=draft-07

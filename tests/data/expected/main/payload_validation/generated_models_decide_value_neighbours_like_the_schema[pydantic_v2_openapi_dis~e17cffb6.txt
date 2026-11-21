@@ -1,0 +1,4 @@
+[
+  "/kind enum \"2\": invalid, model accepts",
+  "/kind enum \"3\": invalid, model accepts"
+]

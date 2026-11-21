@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import types
 from collections.abc import Callable as ABCCallable
+from contextlib import suppress
 from enum import Enum
 from functools import lru_cache
 from typing import Annotated, Concatenate, ForwardRef, Literal, ParamSpec, Union, get_args, get_origin
@@ -23,16 +24,18 @@ from datamodel_code_generator._python_type_annotation import (
 
 
 def _runtime_symbol(module: str, qualname: str, *, qualify: bool) -> PythonTypeExpr:
-    """Build a runtime-identity leaf without parsing its rendered spelling."""
+    """Build a runtime-identity leaf without parsing its rendered spelling, or its text where the node refuses a name.
+
+    Row ``legacy-host-identifier-runtime-names``: a name with a part the running interpreter does not read as an
+    identifier is text, whichever names the newest target binds.
+    """
     parts = tuple(qualname.split("."))
-    if not all(part.isidentifier() for part in parts):
-        return PythonTypeOpaqueText(f"{module}.{qualname}" if module and qualify else qualname)
-    if qualify and module not in {"", "builtins", "typing", "collections.abc"}:
-        try:
-            return PythonTypeRuntimeSymbol(module, parts)
-        except ValueError:
-            return PythonTypeOpaqueText(f"{module}.{qualname}")
-    return python_type_name(qualname) if len(parts) == 1 else PythonTypeRuntimeSymbol("", parts)
+    if all(part.isidentifier() for part in parts):
+        with suppress(ValueError):
+            if qualify and module not in {"", "builtins", "typing", "collections.abc"}:
+                return PythonTypeRuntimeSymbol(module, parts)
+            return python_type_name(qualname) if len(parts) == 1 else PythonTypeRuntimeSymbol("", parts)
+    return PythonTypeOpaqueText(f"{module}.{qualname}" if module and qualify else qualname)
 
 
 def _runtime_leaf_expr(tp: object) -> PythonTypeExpr:
@@ -149,9 +152,10 @@ class _IdentityWeakRef:
 @lru_cache(maxsize=256)
 def _python_type_expr_from_runtime_cached(
     type_ref: _IdentityWeakRef,
-    full_name: bool,  # noqa: FBT001
+    *,
+    full_name: bool,
 ) -> PythonTypeExpr:
-    if (tp := type_ref()) is None:  # pragma: no cover
+    if (tp := type_ref()) is None:  # pragma: no cover - the type is collected between its cache key and this call
         msg = "Runtime type was released during annotation binding"
         raise RuntimeError(msg)
     return _runtime_expr(tp, full_name=full_name)
@@ -168,7 +172,7 @@ def _cached_runtime_expression(tp: object, *, full_name: bool) -> PythonTypeExpr
         type_ref = _IdentityWeakRef(tp)
     except TypeError:
         return _runtime_expr(tp, full_name=full_name)
-    return _python_type_expr_from_runtime_cached(type_ref, full_name)
+    return _python_type_expr_from_runtime_cached(type_ref, full_name=full_name)
 
 
 def python_type_expr_from_runtime(tp: object) -> PythonTypeExpr:

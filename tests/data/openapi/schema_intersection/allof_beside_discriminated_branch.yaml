@@ -1,0 +1,148 @@
+openapi: 3.0.3
+info:
+  title: allOf beside a discriminated $ref branch
+  version: "1"
+paths:
+  /owned:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  required: [owner]
+                  properties:
+                    owner:
+                      type: string
+              anyOf:
+                - $ref: '#/components/schemas/Pet'
+                - $ref: '#/components/schemas/Fish'
+      responses:
+        '204':
+          description: Stored.
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          type: string
+      discriminator:
+        propertyName: petType
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            meow:
+              type: string
+              minLength: 1
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            bark:
+              type: string
+    Fish:
+      type: object
+      required: [fins]
+      properties:
+        fins:
+          type: integer
+    Shape:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+      discriminator:
+        propertyName: kind
+        mapping:
+          sq: '#/components/schemas/Square'
+          ci: '#/components/schemas/Circle'
+    Square:
+      type: object
+      required: [kind, side]
+      properties:
+        kind:
+          type: string
+        side:
+          type: integer
+    Circle:
+      type: object
+      required: [kind, radius]
+      properties:
+        kind:
+          type: string
+        radius:
+          type: integer
+    Base:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+    Owned:
+      allOf:
+        - type: object
+          required: [owner]
+          properties:
+            owner:
+              type: string
+            meow:
+              type: string
+              maxLength: 3
+      anyOf:
+        - $ref: '#/components/schemas/Pet'
+        - $ref: '#/components/schemas/Fish'
+    OwnedListed:
+      allOf:
+        - type: object
+          required: [owner]
+          properties:
+            owner:
+              type: string
+            meow:
+              type: string
+              maxLength: 3
+      anyOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+        - $ref: '#/components/schemas/Fish'
+    Based:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+      oneOf:
+        - $ref: '#/components/schemas/Shape'
+    Nested:
+      allOf:
+        - type: object
+          required: [owner]
+          properties:
+            owner:
+              type: string
+        - anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - $ref: '#/components/schemas/Fish'
+    Holder:
+      type: object
+      properties:
+        owned:
+          $ref: '#/components/schemas/Owned'
+        nested:
+          $ref: '#/components/schemas/Nested'
+        based:
+          $ref: '#/components/schemas/Based'
+        field:
+          allOf:
+            - type: object
+              required: [owner]
+              properties:
+                owner:
+                  type: string
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - $ref: '#/components/schemas/Fish'

@@ -1,0 +1,12 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  annotations: import-from@3 [always]; origin __future__.annotations
+  Annotated: import-from@5 [always]; origin typing.Annotated
+  M: class@8 [always]
+scope class M#0 'M': code yes; first line 8
+  opened by a node evaluated in <module>#0
+  x: annassign@9 [always]; value []
+  members: x
+scope lambda M.<lambda>#0 '<lambda>': code no; first line 9; in deferred annotation
+  opened by a node evaluated in M#0
+== code objects: one per scope that compiles on this Python

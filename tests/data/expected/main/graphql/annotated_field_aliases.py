@@ -30,3 +30,7 @@ class DateTimePeriod(BaseModel):
     typename__: Annotated[
         Literal['DateTimePeriod'] | None, Field(alias='__typename')
     ] = 'DateTimePeriod'
+
+    @property
+    def __typename(self) -> Literal['DateTimePeriod'] | None:
+        return self.typename__

@@ -57,7 +57,11 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     if (adapter := pattern_adapters.get(index)) is None:
                         adapter = TypeAdapter(
                             value_type,
-                            config={'regex_engine': 'python-re'} if index in rule.get('python_regex_types', ()) else None,
+                            config=(
+                                {'regex_engine': 'python-re'}
+                                if index in rule.get('python_regex_types', ())
+                                else None
+                            ),
                         )
                         pattern_adapters[index] = adapter
                     value = adapter.validate_python(value)
@@ -70,7 +74,12 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     if additional_adapter is None:
                         additional_adapter = TypeAdapter(
                             rule['additional_property_type'],
-                            config={'regex_engine': 'python-re'} if len(rule['pattern_properties']) in rule.get('python_regex_types', ()) else None,
+                            config=(
+                                {'regex_engine': 'python-re'}
+                                if len(rule['pattern_properties'])
+                                in rule.get('python_regex_types', ())
+                                else None
+                            ),
                         )
                     if values is data:
                         values = dict(data)

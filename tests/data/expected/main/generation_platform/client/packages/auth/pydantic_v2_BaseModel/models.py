@@ -51,13 +51,19 @@ class ApiKeyCookieGetResponse(RootModel[bytes]):
     root: bytes
 
 
-ApiKeyCookieParametersGetCookieThemeParameter = TypeAliasType("ApiKeyCookieParametersGetCookieThemeParameter", str)
+ApiKeyCookieParametersGetCookieThemeParameter = TypeAliasType(
+    "ApiKeyCookieParametersGetCookieThemeParameter", str
+)
 
 
-ApiKeyCookieParametersGetQueryPageParameter = TypeAliasType("ApiKeyCookieParametersGetQueryPageParameter", int)
+ApiKeyCookieParametersGetQueryPageParameter = TypeAliasType(
+    "ApiKeyCookieParametersGetQueryPageParameter", int
+)
 
 
-ApiKeyCookieParametersGetHeaderXTraceParameter = TypeAliasType("ApiKeyCookieParametersGetHeaderXTraceParameter", str)
+ApiKeyCookieParametersGetHeaderXTraceParameter = TypeAliasType(
+    "ApiKeyCookieParametersGetHeaderXTraceParameter", str
+)
 
 
 class ApiKeyCookieParametersGetQueryFilterParameter(BaseModel):

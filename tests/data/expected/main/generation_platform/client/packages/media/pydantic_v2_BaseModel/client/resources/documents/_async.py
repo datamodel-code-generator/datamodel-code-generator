@@ -131,21 +131,30 @@ class AsyncDocumentsResource:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse:
         """
         Call POST /documents.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_20,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_20,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def read_document(
         self,
@@ -159,12 +168,14 @@ class AsyncDocumentsResource:
         """
         Call GET /documents/{id}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_21,
-            (id, filter, X_Mode),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_21,
+                (id, filter, X_Mode),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def store_note(
         self,
@@ -176,13 +187,15 @@ class AsyncDocumentsResource:
         """
         Call POST /notes.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_22,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_22,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     @overload
     async def replace_note(
@@ -218,13 +231,15 @@ class AsyncDocumentsResource:
         """
         Call PUT /notes.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_23,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_23,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncDocumentsWithResponse:
@@ -319,7 +334,14 @@ class AsyncDocumentsWithResponse:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]:
@@ -453,7 +475,14 @@ class AsyncDocumentsWithRawResponse:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -587,7 +616,14 @@ class AsyncDocumentsWithStreamingResponse:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

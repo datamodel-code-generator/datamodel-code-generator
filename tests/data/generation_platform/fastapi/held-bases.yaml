@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Held bases
+  version: "1"
+  description: >-
+    Form-data bodies whose classes inherit the configuration of a base class outside the schema, alone or before a
+    generated base whose configuration forbids other members.
+paths:
+  /parts/plain:
+    post:
+      operationId: postPlainParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Child"}}}}
+      responses: {"204": {description: Done.}}
+  /parts/closed:
+    post:
+      operationId: postClosedParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Mixed"}}}}
+      responses: {"204": {description: Done.}}
+components:
+  schemas:
+    Root: {type: object, properties: {size: {type: integer}}}
+    Strict: {type: object, properties: {page: {type: integer}}}
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Root"
+        - {type: object, properties: {name: {type: string}}}
+    Mixed:
+      allOf:
+        - $ref: "#/components/schemas/Root"
+        - $ref: "#/components/schemas/Strict"

@@ -1,8 +1,8 @@
-Option recommendations (experimental; full mode; rules 2026-10-19)
+Option recommendations (experimental; full mode; rules 2026-11-19)
 
 Schema  not analysed (directory input)
 
-Start from  --preset standard-py310-20261106
+Start from  --preset standard-py310-20261120
 
 Add  nothing on top of the preset
 
@@ -24,9 +24,9 @@ Notes
   - The trial read the input as jsonschema; set --input-file-type to choose the input file type.
 
 Command
-  datamodel-codegen --input . --preset standard-py310-20261106
+  datamodel-codegen --input . --preset standard-py310-20261120
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "."
-  preset = "standard-py310-20261106"
+  preset = "standard-py310-20261120"

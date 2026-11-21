@@ -1,0 +1,2 @@
+msgspec cannot decode the discriminated union Holder.owned: its Struct types Owned1, Owned2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Holder.mapped: its Struct types Mapped1, Mapped2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

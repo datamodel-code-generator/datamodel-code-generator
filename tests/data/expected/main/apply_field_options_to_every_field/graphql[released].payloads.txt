@@ -1,0 +1,1 @@
+Owner {}: Owner(address=None, name=None, typename__='Owner')

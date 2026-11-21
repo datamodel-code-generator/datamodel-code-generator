@@ -1,0 +1,1 @@
+pkg/two_way.py:1: the compiler counts a read of rest in f the model misses (form: FunctionDef); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request

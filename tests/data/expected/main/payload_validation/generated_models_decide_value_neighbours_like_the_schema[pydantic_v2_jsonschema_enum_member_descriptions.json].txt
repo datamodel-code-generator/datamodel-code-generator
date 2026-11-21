@@ -1,0 +1,9 @@
+[
+  "/level const \"1\": invalid, model accepts",
+  "/level const \"2\": invalid, model accepts",
+  "/level const null: invalid, model accepts",
+  "/level const true: invalid, model accepts",
+  "/shadow enum null: invalid, model accepts",
+  "/status enum null: invalid, model accepts",
+  "/status_copy enum null: invalid, model accepts"
+]

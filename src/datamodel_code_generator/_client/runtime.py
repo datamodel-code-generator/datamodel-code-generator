@@ -64,10 +64,10 @@ _RESUMED: Final = (*_PAGES, "protocols/resume.py")
 _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "pagination": _PAGES,
     "polling": (*_RESUMED, "protocols/polling.py"),
-    "streams": (*_RESUMED, "protocols/streams.py"),
+    "streams": (*_RESUMED, "protocols/routes.py", "protocols/streams.py"),
     "uploads": (*_RESUMED, "protocols/sources.py", "protocols/uploads.py"),
     "cache": (*_BASE, "protocols/cache.py", "protocols/cache_stores.py", "protocols/caches.py"),
-    "websocket": (*_BASE, "protocols/websocket.py"),
+    "websocket": (*_BASE, "protocols/routes.py", "protocols/values.py", "protocols/websocket.py"),
     "webhooks": (*_BASE, "protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
 }

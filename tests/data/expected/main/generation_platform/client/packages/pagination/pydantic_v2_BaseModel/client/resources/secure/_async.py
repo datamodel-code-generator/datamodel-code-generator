@@ -48,12 +48,14 @@ class AsyncSecureResource:
         """
         Call GET /secure/users.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_8,
-            (cursor,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_8,
+                (cursor,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncSecureWithResponse:

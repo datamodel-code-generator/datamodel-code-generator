@@ -1,0 +1,2 @@
+Reading the XML Schema include schemaLocation xml-common.xsd is refused under --untrusted-input.
+Reason: --untrusted-input reads only the input, so a schema can include or import only a file of the input.

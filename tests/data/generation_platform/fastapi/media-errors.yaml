@@ -463,7 +463,7 @@ paths:
             schema:
               type: object
               properties:
-                page: {type: object, properties: {size: {type: integer}}}
+                page: {type: object, properties: {size: {type: integer}}, additionalProperties: true}
                 filter: {type: object, additionalProperties: {type: string}}
             encoding:
               page: {explode: true}

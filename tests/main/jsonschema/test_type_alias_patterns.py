@@ -13,6 +13,7 @@ from jsonschema import Draft7Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import ConfigDict, TypeAdapter, ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -106,7 +107,7 @@ def _validation_results(namespace: dict[str, Any], fixture: str, target_pydantic
             "type_statement",
             [*TYPE_ALIAS, "--target-python-version", "3.12"],
             marks=[
-                pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements need Python 3.12"),
+                needs("type-statements"),
                 pytest.mark.skipif(
                     not installed_pydantic_runs_target("2.10"),
                     reason="Pydantic builds models that use type statements from 2.10",
@@ -172,7 +173,6 @@ def test_type_alias_lookaround_reuse_scope_tree(output_dir: Path, target_pydanti
             input_path=LOOKAROUND_SCHEMAS / "tree",
             output_path=output_dir,
             input_file_type="jsonschema",
-            expected_directory=EXPECTED_JSON_SCHEMA_PATH / _expected("tree", target_pydantic_version),
             extra_args=[
                 "--use-type-alias",
                 "--reuse-model",
@@ -196,7 +196,7 @@ def test_type_alias_lookaround_reuse_scope_tree(output_dir: Path, target_pydanti
         results = _validation_results(
             vars(sys.modules["type_alias_lookaround_tree_shared"]), "tree", target_pydantic_version
         )
-    assert_output(results, LOOKAROUND_EXPECTED / "tree_runtime.txt")
+    assert_output(results, name="tree_runtime")
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,48 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  sys: import@7 [always]; origin sys
+  TYPE_CHECKING: import-from@8 [always]; origin typing.TYPE_CHECKING
+  TypeAliasType: import-from@11 [version:body@10]; origin typing.TypeAliasType
+  TypeAliasType: import-from@13 [version:else@10]; origin typing_extensions.TypeAliasType
+  DEFAULT_TARGET: assign@16 [try:body@15]; value int(f"{sys.version_info.major}{sys.version_info.minor}")
+  DEFAULT_TARGET: assign@18 [try:except@17]; value 314
+  graphql: import@21 [import-error:body@20]; origin graphql
+  resolver_kind: assign@26 [try:body@25]; value graphql.TypeResolvers().kind
+  resolver_kind: assign@28 [try:except@27]; value graphql.TypeFields.kind
+  Callable: import-from@31 [type-checking:body@30]; origin collections.abc.Callable
+  Callable: assign@33 [type-checking:else@30]; value object
+  _BaseModel: class@36 [always]
+  _define_configs: def@42 [always]
+  JsonConfig: class@45 [function:body@42]
+  get_safe_loader: def@49 [always]
+  WATCH_BACKEND: assign@58 [platform:body@57]; value "polling"
+  WATCH_BACKEND: assign@60 [platform:else@57]; value "native"
+scope class _BaseModel#0 '_BaseModel': code yes; first line 36
+  opened by a node evaluated in <module>#0
+  __getattr__: def@38 [type-checking:else@37]
+  members: __getattr__
+scope function _BaseModel.__getattr__#0 '__getattr__': code yes; first line 38
+  opened by a node evaluated in _BaseModel#0
+  self: param@38 [type-checking:else@37|function:body@38]
+  name: param@38 [type-checking:else@37|function:body@38]
+  receiver: self@38
+scope function _define_configs#0 '_define_configs': code yes; first line 42; global JsonConfig
+  opened by a node evaluated in <module>#0
+scope class JsonConfig#0 'JsonConfig': code yes; first line 45
+  opened by a node evaluated in _define_configs#0
+  strict: assign@46 [function:body@42]; value True
+  members: strict
+scope function get_safe_loader#0 'get_safe_loader': code yes; first line 49
+  opened by a node evaluated in <module>#0
+  Loader: import-from@51 [function:body@49|import-error:body@50]; origin yaml.CSafeLoader
+  Loader: import-from@53 [function:body@49|import-error:except@52]; origin yaml.SafeLoader
+== imports
+import@7 sys as sys from sys in <module> [always]; unconditional
+from@8 typing.TYPE_CHECKING as TYPE_CHECKING from typing in <module> [always]; unconditional
+from@11 typing.TypeAliasType as TypeAliasType from typing in <module> [version:body@10]
+from@13 typing_extensions.TypeAliasType as TypeAliasType from typing_extensions in <module> [version:else@10]
+import@21 graphql as graphql from graphql in <module> [import-error:body@20]
+from@31 collections.abc.Callable as Callable from collections.abc in <module> [type-checking:body@30]; typing only
+from@51 yaml.CSafeLoader as Loader from yaml in get_safe_loader [function:body@49|import-error:body@50]
+from@53 yaml.SafeLoader as Loader from yaml in get_safe_loader [function:body@49|import-error:except@52]
+== code objects: one per scope that compiles on this Python

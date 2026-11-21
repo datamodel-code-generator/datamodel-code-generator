@@ -1,0 +1,124 @@
+# held-extras pydantic_v2.BaseModel
+  plain object {'size': 2, 'foo': 'bar'} = Plain(size=2)
+  > GET https://example.com/plain?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  plain query = None
+  closed object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Closed
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  closed object {'size': 2} = Closed(size=2)
+  > GET https://example.com/closed?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  closed query = None
+  open object {'size': 2, 'foo': 'bar'} = Open(size=2, foo='bar')
+  > GET https://example.com/open?size=2&foo=bar
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  open query = None
+  > GET https://example.com/cookie
+    [host: example.com, accept-encoding: gzip, deflate, cookie: session=s; size=3] b''
+  cookie = None
+  > GET https://example.com/two?size=1&page=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  two objects = None
+  post_plain_parts {'size': 2, 'foo': 1} = Plain(size=2)
+  > POST https://example.com/parts/plain
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_plain_parts = None
+  post_closed_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Closed
+foo
+  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden []
+  post_closed_parts {'size': 2} = Closed(size=2)
+  > POST https://example.com/parts/closed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_closed_parts = None
+  post_open_parts {'size': 2, 'foo': 1} = Open(size=2, foo=1)
+  > POST https://example.com/parts/open
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 241] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="foo"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>--\r\n'
+  post_open_parts = None
+  post_typed {'size': 1, 'x': 5} = Typed(size=1, x=5)
+  > POST https://example.com/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 10] b'size=1&x=5'
+  post_typed = None
+  post_typed_parts {'size': 1, 'x': 5} = Typed(size=1, x=5)
+  > POST https://example.com/parts/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 207] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="x"\r\n\r\n5\r\n--<boundary>--\r\n'
+  post_typed_parts = None
+  post_located_parts {'size': 1, 'x': {'lat': 5}} = Located(size=1, x=LocatedAdditionalProperty(lat=5))
+  > POST https://example.com/parts/located
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 247] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="x"\r\nContent-Type: application/json\r\n\r\n{"lat":5}\r\n--<boundary>--\r\n'
+  post_located_parts = None
+  > POST https://example.com/uploads
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 257] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nkept\r\n--<boundary>--\r\n'
+  upload = None
+  > GET https://example.com/downloads
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_download = MultipartData(<2 parts>)
+  read_download parts [('photo', b'\x89PNG'), ('x', b'1')]
+  > GET https://example.com/downloads/typed
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_typed_download = MultipartData(<2 parts>)
+  read_typed_download parts [('photo', b'\x89PNG'), ('x', 1)]
+# held-extras pydantic_v2.dataclass
+  plain object {'size': 2, 'foo': 'bar'} = Plain(size=2)
+  > GET https://example.com/plain?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  plain query = None
+  closed object {'size': 2, 'foo': 'bar'} ! ValidationError: 1 validation error for Closed
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='bar', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  closed object {'size': 2} = Closed(size=2)
+  > GET https://example.com/closed?size=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  closed query = None
+  open object {'size': 2, 'foo': 'bar'} = Open(size=2)
+  > GET https://example.com/open?size=2&foo=bar
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  open query = None
+  > GET https://example.com/cookie
+    [host: example.com, accept-encoding: gzip, deflate, cookie: session=s; size=3] b''
+  cookie = None
+  > GET https://example.com/two?size=1&page=2
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  two objects = None
+  post_plain_parts {'size': 2, 'foo': 1} = Plain(size=2)
+  > POST https://example.com/parts/plain
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_plain_parts = None
+  post_closed_parts {'size': 2, 'foo': 1} ! ValidationError: 1 validation error for Closed
+foo
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=1, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument []
+  post_closed_parts {'size': 2} = Closed(size=2)
+  > POST https://example.com/parts/closed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>--\r\n'
+  post_closed_parts = None
+  post_open_parts {'size': 2, 'foo': 1} = Open(size=2)
+  > POST https://example.com/parts/open
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 241] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="foo"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>--\r\n'
+  post_open_parts = None
+  post_typed {'size': 1, 'x': 5} = Typed(size=1)
+  > POST https://example.com/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 10] b'size=1&x=5'
+  post_typed = None
+  post_typed_parts {'size': 1, 'x': 5} = Typed(size=1)
+  > POST https://example.com/parts/typed
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 207] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="x"\r\n\r\n5\r\n--<boundary>--\r\n'
+  post_typed_parts = None
+  post_located_parts {'size': 1, 'x': {'lat': 5}} = Located(size=1)
+  > POST https://example.com/parts/located
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 247] b'--<boundary>\r\nContent-Disposition: form-data; name="size"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="x"\r\nContent-Type: application/json\r\n\r\n{"lat":5}\r\n--<boundary>--\r\n'
+  post_located_parts = None
+  > POST https://example.com/uploads
+    [host: example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 257] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nkept\r\n--<boundary>--\r\n'
+  upload = None
+  > GET https://example.com/downloads
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_download = MultipartData(<2 parts>)
+  read_download parts [('photo', b'\x89PNG'), ('x', b'1')]
+  > GET https://example.com/downloads/typed
+    [host: example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  read_typed_download = MultipartData(<2 parts>)
+  read_typed_download parts [('photo', b'\x89PNG'), ('x', 1)]

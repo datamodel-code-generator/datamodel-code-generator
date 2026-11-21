@@ -1,0 +1,30 @@
+"""Architecture boundaries: a backend module, ``DataModelType`` or ``ModelType`` is read by origin, whatever it is called.
+
+layers: config, input-model, parser
+"""
+from datamodel_code_generator.model import typed_dict as output_backend
+from datamodel_code_generator.parser import LiteralType
+
+
+class Config:
+    output_type = output_backend.TypedDict
+    literal_type = LiteralType
+
+
+from datamodel_code_generator import DataModelType
+from datamodel_code_generator.reference import ModelType as NamingType
+
+OUTPUT_FAMILY = DataModelType.MsgspecStruct
+OUTPUT_NAMING = NamingType.PYDANTIC
+
+
+def rewrite_schema(schema):
+    from datamodel_code_generator.parser.mcp import _rewrite_schema_refs
+
+    return _rewrite_schema_refs(schema, {}, prefix="local_")
+
+
+def rewrite_shared_schema(schema):
+    from datamodel_code_generator._json_schema import _rewrite_schema_refs
+
+    return _rewrite_schema_refs(schema, {}, prefix="local_")

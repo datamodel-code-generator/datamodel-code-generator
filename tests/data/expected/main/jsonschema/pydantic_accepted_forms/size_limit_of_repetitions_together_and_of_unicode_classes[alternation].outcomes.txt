@@ -1,0 +1,2 @@
+user: valid
+role: string_pattern_mismatch

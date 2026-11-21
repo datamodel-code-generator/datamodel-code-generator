@@ -270,9 +270,8 @@ def get_module_future_imports(original: Callable[..., str]) -> Callable[..., str
 
 
 def _violation(imports_mode: Mode, message: str, **details: object) -> None:
-    from datamodel_code_generator import Error
 
-    imports_mode.violation(Error, message, **details)
+    imports_mode.violation(message, **details)
 
 
 def _replay(ledger: Any, imports: Imports, *, without: str | None = None) -> Imports:
@@ -345,16 +344,14 @@ def _plan_module_imports(imports_mode: Mode, parser: Any, run: Any) -> None:
     A model's final module is the module that writes it.
     """
     from datamodel_code_generator._model_keys import model_key_of
+    from datamodel_code_generator._module_paths import dotted_module
     from datamodel_code_generator.parser._graph_ids import keyed_models
-    from datamodel_code_generator.parser._passes._shared import _module_name_from_module_path
     from datamodel_code_generator.parser._passes.imports import submodules_hidden_by_packages
 
     hidden = submodules_hidden_by_packages(parser, run.contexts, run, run.config) if run.args.with_import else {}
     emitted = keyed_models((model for ctx in run.contexts for model in ctx.models), "module import plan")
     names = NameTable({
-        model_key_of(model.reference): FinalName(
-            model.reference.short_name, _module_name_from_module_path(ctx.module_key), ctx.module
-        )
+        model_key_of(model.reference): FinalName(model.reference.short_name, dotted_module(ctx.module_key), ctx.module)
         for ctx in run.contexts
         for model in ctx.models
     })
@@ -434,7 +431,9 @@ def _module_import_plan(
     imports it; any other model of another module through the name ``allocate_bindings`` gives its import, from its
     module where its package hides the module (``hidden_modules``) or where an import of no model binds the name of
     the module's import too (``modules_hidden_by_imports``), which plans the module again with those modules hidden.
-    An import of a name that ``--import-overrides`` lists comes from the module it names.
+    An import of a name that ``--import-overrides`` lists comes from the module it names. The names the shared imports
+    bind are read from them as they are now, not from the target a pass kept them on (``ModuleImportTarget``), so a
+    pass that named an import by names they no longer bind writes what the plan does not.
     """
     from datamodel_code_generator._model_keys import model_key_of
     from datamodel_code_generator.imports import Import
@@ -442,11 +441,13 @@ def _module_import_plan(
     from datamodel_code_generator.parser._passes._import_binding import (
         generic_base_class_import,
         reference_import_target,
+        shared_import_bindings,
     )
     from datamodel_code_generator.parser._passes._shared import _get_model_module_name
     from datamodel_code_generator.parser._passes.imports import modules_hidden_by_imports
 
     members = keyed_models(ctx.models, "module import plan")
+    shared_bindings = shared_import_bindings(parser.imports)
     overrides = parser._import_overrides or {}
     generic_base = None if parser._generic_base_model is None else model_key_of(parser._generic_base_model.reference)
     uses: list[ReferenceUse] = []
@@ -483,7 +484,7 @@ def _module_import_plan(
                     init=ctx.is_init,
                     internal_modules=internal_modules,
                     base_class=base_class,
-                    shared_imports=parser.imports,
+                    shared_bindings=shared_bindings,
                     hidden_modules=hidden_modules,
                 )
                 pending.append((

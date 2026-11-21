@@ -20,6 +20,7 @@ import base64
 import binascii
 import hashlib
 import json
+import operator
 import os
 import posixpath
 import re
@@ -40,9 +41,11 @@ __all__ = [
     "INPUT_TREES",
     "KEEP",
     "ORDER",
+    "ORDERS",
     "PAYLOAD_DECODED_LIMIT",
     "REFS_HEADER",
     "REFS_SUFFIX",
+    "VERSION_FACTS",
     "Desired",
     "Event",
     "Observations",
@@ -54,9 +57,15 @@ __all__ = [
     "RefsIndex",
     "UnsafeWriteError",
     "apply_payload",
+    "common_contents",
+    "condition_holds",
+    "condition_problem",
     "decode_payload",
     "deduplicate",
+    "derived_directory",
+    "derived_file_name",
     "derived_name",
+    "derived_siblings",
     "duplicate_inputs_message",
     "duplicate_storages_message",
     "duplicates",
@@ -65,6 +74,7 @@ __all__ = [
     "facts_fit",
     "format_refs",
     "input_duplicates",
+    "is_derived_label",
     "item_problem",
     "label_path",
     "label_problem",
@@ -79,13 +89,16 @@ __all__ = [
     "predicate_text",
     "read_unit",
     "refs_sections",
+    "release",
     "resolve",
     "split_label",
     "stored_digest",
+    "stored_member",
     "tree_label",
     "tree_member",
     "uncollected_items",
     "unit_digest",
+    "unit_value",
     "unrecorded_files",
     "unrecorded_files_message",
     "write_files",
@@ -98,7 +111,7 @@ REFS_HEADER = (
     "(see AGENTS.md).\n"
 )
 """The first lines of every sidecar pytest writes; the parser skips the ``#`` lines a sidecar starts with."""
-FACTS = ("python", "formatter", "black", "isort", "platform")
+FACTS = ("python", "formatter", "black", "isort", "platform", "pydantic")
 _TOOL_VERSION = re.compile(r"(?:\d[0-9A-Za-z.+-]*)?")
 _FACT_SHAPES = {
     "python": re.compile(r"\d+\.\d+"),
@@ -106,6 +119,7 @@ _FACT_SHAPES = {
     "black": _TOOL_VERSION,
     "isort": _TOOL_VERSION,
     "platform": re.compile(r"linux|darwin|win32"),
+    "pydantic": _TOOL_VERSION,
 }
 _NAME_BYTES = 255
 PAYLOAD_DECODED_LIMIT = 4 * 1024 * 1024
@@ -190,27 +204,35 @@ def encode_value(suffix: str, value: object) -> str:
     return str(value)
 
 
-def _tree_files(directory: Path, pattern: str) -> dict[str, str]:
+def _tree_files(directory: Path, pattern: str) -> dict[str, object]:
     if not directory.is_dir():
         return {}
     return {
-        path.relative_to(directory).as_posix(): _normalize(path.read_bytes().decode("utf-8"))
+        path.relative_to(directory).as_posix(): unit_value(path.name, path.read_bytes(), in_tree=True)
         for path in sorted(directory.rglob(pattern))
         if tree_member(path, directory)
     }
 
 
-def tree_member(path: Path, directory: Path) -> bool:
-    """Return whether a path belongs to a stored tree: any file, hidden files included, outside caches.
+def unit_value(name: str, data: bytes, *, in_tree: bool = False) -> object:
+    """Return the value a stored file holds: its text, or the decoded value of a JSON file that is not in a tree."""
+    text = _normalize(data.decode("utf-8"))
+    return _normalize_value(json.loads(text)) if PurePosixPath(name).suffix == ".json" and not in_tree else text
 
-    Bytecode and hidden directories (tool caches such as ``.ruff_cache``) are not output.
+
+def stored_member(relative: PurePosixPath) -> bool:
+    """Return whether a file at a path relative to a stored tree is output: not bytecode, not in a hidden directory.
+
+    Hidden files count; hidden directories are tool caches such as ``.ruff_cache``.
     """
-    folders = path.relative_to(directory).parts[:-1]
-    return (
-        path.is_file()
-        and path.suffix != ".pyc"
-        and not any(part == "__pycache__" or part.startswith(".") for part in folders)
+    return relative.suffix != ".pyc" and not any(
+        part == "__pycache__" or part.startswith(".") for part in relative.parts[:-1]
     )
+
+
+def tree_member(path: Path, directory: Path) -> bool:
+    """Return whether a path belongs to a stored tree: any file, hidden files included, outside caches."""
+    return path.is_file() and stored_member(PurePosixPath(path.relative_to(directory).as_posix()))
 
 
 def _occupied(path: Path) -> bool:
@@ -226,10 +248,10 @@ def read_unit(path: Path, pattern: str | None) -> object | None:
     if pattern is not None:
         return _tree_files(path, pattern)
     try:
-        text = _normalize(path.read_bytes().decode("utf-8"))
+        data = path.read_bytes()
     except OSError:
         return None
-    return _normalize_value(json.loads(text)) if path.suffix == ".json" else text
+    return unit_value(path.name, data)
 
 
 class UnsafeWriteError(ValueError):
@@ -342,6 +364,71 @@ def parse_predicate(text: str) -> tuple[tuple[str, str], ...]:
 def predicate_matches(predicate: tuple[tuple[str, str], ...], facts: Mapping[str, str]) -> bool:
     """Return whether an environment's facts satisfy a predicate; versions match by their leading components."""
     return all((actual := facts.get(fact, "")) == value or actual.startswith(f"{value}.") for fact, value in predicate)
+
+
+VERSION_FACTS = frozenset({"python", "black", "isort", "pydantic"})
+"""The facts whose values are versions, which a condition may compare in order (``black>=24``)."""
+_CONDITION = re.compile(r"(?P<fact>[a-z]+)(?P<op>==|!=|>=|<=|<|>)(?P<value>[^\s|]+)")
+_RELEASE = re.compile(r"\d+(?:\.\d+)*")
+ORDERS: dict[str, Callable[[tuple[int, ...], tuple[int, ...]], bool]] = {
+    "<": operator.lt,
+    "<=": operator.le,
+    ">": operator.gt,
+    ">=": operator.ge,
+}
+"""The order operators of a condition, over numeric releases (`release`)."""
+
+
+def condition_problem(clause: str) -> str | None:
+    """Return why a condition clause is malformed, or None.
+
+    A clause is one or more alternatives joined by ``|``; each alternative is ``<fact><op><value>``, where the fact is
+    one of `FACTS`, the value has its shape, and only a version fact (`VERSION_FACTS`) is compared in order (``<``,
+    ``<=``, ``>``, ``>=``) with a numeric release (``3.12``, ``23.3``).
+    """
+    for alternative in clause.split("|"):
+        if (match := _CONDITION.fullmatch(alternative)) is None or not _fact_fits(match["fact"], match["value"]):
+            return f"{alternative!r} is not <fact><op><value> with a fact of {', '.join(FACTS)}"
+        if match["op"] in ORDERS and (match["fact"] not in VERSION_FACTS or not _RELEASE.fullmatch(match["value"])):
+            return f"{alternative!r} orders a fact that is not a version, or by a value that is not a release"
+    return None
+
+
+def release(value: str) -> tuple[int, ...]:
+    """Return the numeric release a version starts with (``(26, 1)`` for ``26.1a1``), empty for none."""
+    match = _RELEASE.match(value)
+    return tuple(int(part) for part in match.group().split(".")) if match else ()
+
+
+def condition_holds(clause: str, facts: Mapping[str, str]) -> bool:
+    """Return whether an environment's facts satisfy a well-formed clause (`condition_problem`): any alternative holds.
+
+    ``==`` and ``!=`` match a version by its leading components, as overrides do (``black==22`` holds for ``22.1.0``).
+    An order compares the actual version's release cut to the length of the value's (``black>=24`` holds for
+    ``24.1.0``). A tool that is not installed (an empty fact) satisfies only ``!=``.
+    """
+    for match in filter(None, map(_CONDITION.fullmatch, clause.split("|"))):
+        fact, op, value = match["fact"], match["op"], match["value"]
+        actual = facts.get(fact, "")
+        if op in ORDERS:
+            wanted = release(value)
+            found = release(actual)[: len(wanted)]
+            if found and ORDERS[op](found, wanted):
+                return True
+        elif predicate_matches(((fact, value),), facts) is (op == "=="):
+            return True
+    return False
+
+
+def _overlap(first: tuple[tuple[str, str], ...], second: tuple[tuple[str, str], ...]) -> bool:
+    """Return whether one environment can satisfy both predicates: each fact they share names one release series."""
+    facts = dict(second)
+    return all(
+        fact not in facts
+        or predicate_matches(((fact, value),), facts)
+        or predicate_matches(((fact, facts[fact]),), {fact: value})
+        for fact, value in first
+    )
 
 
 @dataclass(frozen=True)
@@ -735,6 +822,65 @@ def derived_name(name: str) -> str:
     if len(safe) <= _MAX_NAME:
         return safe
     return f"{safe[:80]}~{hashlib.sha1(name.encode()).hexdigest()[:8]}"
+
+
+def derived_directory(module: PurePosixPath) -> PurePosixPath:
+    """Return the directory below the expected root that holds the derived outputs of a test module.
+
+    ``module`` is the module's path relative to the tests root: ``main/test_x.py`` gives ``main/x``.
+    """
+    return module.parent / module.stem.removeprefix("test_")
+
+
+def derived_file_name(
+    stem: str, function: str, param: str, siblings: Collection[str], role: str = "", suffix: str = ""
+) -> str:
+    """Name the output of a test that names no expected path: ``<function>[<id>]<role><suffix>``.
+
+    ``stem`` is the module name without its ``test_`` prefix and ``function`` the test with its class
+    (``Class::test_x``). The ``<module>_`` prefix of the function is dropped unless that collides with a name in
+    ``siblings`` (the other tests of its class or module without their ``test_`` prefix), so the name never depends
+    on which tests ran first.
+    """
+    owner, _, name = function.rpartition("::")
+    short = name.removeprefix("test_")
+    if short.startswith(f"{stem}_"):
+        stripped = short[len(stem) + 1 :]
+        short = short if stripped in siblings else stripped
+    base = f"{owner.replace('::', '.')}.{short}" if owner else short
+    identifier = param
+    if len(f"{base}[{identifier}]{role}{suffix}") > _MAX_NAME:
+        identifier = f"{param[:80]}~{hashlib.sha1(param.encode()).hexdigest()[:8]}"
+    return derived_name(f"{base}[{identifier}]" if param else base) + role + suffix
+
+
+def derived_siblings(function: str, tests: Iterable[str]) -> set[str]:
+    """Return the names, without ``test_``, of the other tests of the class or module of ``function``.
+
+    ``tests`` holds the tests of a module as nodeids show them, with their classes (``Class::test_x``).
+    """
+    owner = function.rpartition("::")[0]
+    return {test.rpartition("::")[2].removeprefix("test_") for test in tests if test.rpartition("::")[0] == owner}
+
+
+def is_derived_label(module: PurePosixPath, line: RefLine, siblings: Collection[str]) -> bool:
+    """Return whether the harness itself names the stored output a reference line compares, not the test.
+
+    The label lies in the module's derived directory, and its file name is what `derived_file_name` writes for the
+    item and the rest of the name after some ``.``: the role and suffix the harness appends. Each split is tried with
+    that function, so the shortening of long ids, which depends on the role and suffix, and the ``<module>_`` prefix,
+    which depends on the ``siblings`` of the item (`derived_siblings`), are decided as the harness decides them. A tree
+    label has the pattern ``*`` where the harness names it; another pattern comes from a test that names its directory.
+    """
+    label, pattern = split_label(line.label)
+    path = PurePosixPath(label)
+    stem, name = module.stem.removeprefix("test_"), path.name
+    splits = [*(index for index, character in enumerate(name) if character == "."), len(name)]
+    return (
+        pattern in {None, "*"}
+        and path.parent == derived_directory(module)
+        and any(derived_file_name(stem, line.function, line.param, siblings, name[index:]) == name for index in splits)
+    )
 
 
 @dataclass(frozen=True)
@@ -1254,11 +1400,25 @@ class _Resolution:
             )
 
     def collapse_overrides(self) -> None:
+        """Drop each override that stores what the environments it matches would compare without it.
+
+        Without the override, such an environment compares the most specific other line of the label it matches: the
+        most specific line the override's predicate implies, or a line no less specific that it may match too. The
+        override goes only when every one of those lines stores the same content, so no lane falls back to an older,
+        broader override; the most specific overrides are decided first.
+        """
         for lines in self.kept.values():
-            bases = {(line.function, line.param, line.label): line for line in lines if not line.predicate}
-            for line in [line for line in lines if line.predicate]:
-                base = bases.get((line.function, line.param, line.label))
-                if base is not None and self.digest(base.stored) == self.digest(line.stored):
+            for line in sorted((line for line in lines if line.predicate), key=lambda line: -len(line.predicate)):
+                others = [other for other in lines if other is not line and other.key[:3] == line.key[:3]]
+                implied = [other for other in others if predicate_matches(other.predicate, dict(line.predicate))]
+                floor = max((len(other.predicate) for other in implied), default=0)
+                fallbacks = [
+                    other
+                    for other in others
+                    if floor <= len(other.predicate) <= len(line.predicate)
+                    and _overlap(other.predicate, line.predicate)
+                ]
+                if implied and all(self.digest(other.stored) == self.digest(line.stored) for other in fallbacks):
                     lines.remove(line)
 
     def collect_garbage(self) -> None:
@@ -1551,9 +1711,15 @@ def deduplicate(
 
 
 def _fact_value(fact: str, value: str) -> str:
-    """Return the value a predicate keys on: the major version of a tool (``26`` for ``26.1a1``), else the value."""
+    """Return the value a predicate keys on: the release series of a tool, else the value.
+
+    A formatter's series is its major version (``26`` for ``26.1a1``); Pydantic changes output within a major version,
+    so its series is the minor version (``2.0`` for ``2.0.3``).
+    """
     if fact in {"black", "isort"} and (major := re.match(r"\d+", value)):
         return major.group()
+    if fact == "pydantic" and (minor := re.match(r"\d+\.\d+", value)):
+        return minor.group()
     return value
 
 
@@ -1578,15 +1744,15 @@ def _distinguishing(
 def payload_predicate(facts: Mapping[str, str], local: Mapping[str, str]) -> tuple[tuple[str, str], ...] | None:
     """Return the predicate of a foreign environment's override, or None when no predicate tells it apart from here.
 
-    A tool pinned to another major version than here (``black=22``) names its lane alone. Otherwise the predicate
-    is the lane's formatter and Python, and its tools when the formatter is external: Python and formatter alone are
-    shared by several lanes, which would pick the override up and then disagree with it. The platform joins the
-    predicate only when it is what tells the lane apart from here. Predicates key on major versions, so a lane that
-    differs from here only in minor tool versions is this environment.
+    A tool pinned to another release series than here (``black=22``, ``pydantic=2.0``) names its lane alone. Otherwise
+    the predicate is the lane's formatter and Python, and its tools when the formatter is external: Python and formatter
+    alone are shared by several lanes, which would pick the override up and then disagree with it. The platform joins
+    the predicate only when it is what tells the lane apart from here. Predicates key on release series, so a lane that
+    differs from here only within a tool's series is this environment.
     """
-    for tool in ("black", "isort"):
-        if (major := _fact_value(tool, facts[tool])) and major != _fact_value(tool, local[tool]):
-            return ((tool, major),)
+    for tool in ("black", "isort", "pydantic"):
+        if (series := _fact_value(tool, facts[tool])) and series != _fact_value(tool, local[tool]):
+            return ((tool, series),)
     chosen = ("formatter", "python", "black", "isort") if facts["formatter"] == "external" else ("formatter", "python")
     predicate = tuple(sorted((fact, _fact_value(fact, facts[fact])) for fact in chosen if facts[fact]))
     if predicate_matches(predicate, local) and facts["platform"] != local["platform"]:
@@ -1728,14 +1894,44 @@ def _merged_lines(
     return lines
 
 
+def common_contents(payloads: Iterable[Payload], local: Mapping[str, str]) -> dict[tuple[str, str], tuple[str, int]]:
+    """Return the content that lanes of different overrides sent alike for an item's label, by item and label.
+
+    Lanes count by the predicate of the override their payload is stored under (``payload_predicate``), the facts a
+    stored file can tell apart: lanes that share one override, such as one Python on two platforms, count once, and
+    payloads no predicate tells apart from here count not at all (an apply session refuses or skips them). Each entry
+    holds the digest the most lanes sent, on a tie the one whose lowest predicate's text sorts first, and how many
+    lanes sent it; labels whose content no two lanes share are left out.
+    """
+    senders: dict[tuple[str, str], dict[str, set[str]]] = {}
+    for payload in payloads:
+        if "digest" not in payload or (predicate := payload_predicate(payload["facts"], local)) is None:
+            continue
+        by_digest = senders.setdefault((payload["item"], payload["label"]), {})
+        by_digest.setdefault(payload["digest"], set()).add(predicate_text(predicate))
+    common = {}
+    for key, by_digest in senders.items():
+        digest = min(by_digest, key=lambda name: (-len(by_digest[name]), min(by_digest[name])))
+        if (count := len(by_digest[digest])) > 1:
+            common[key] = digest, count
+    return common
+
+
 def apply_payload(
-    base: list[Desired], lines: list[RefLine], payload: Payload, local: Mapping[str, str], *, exists: bool
+    base: list[Desired],
+    lines: list[RefLine],
+    payload: Payload,
+    local: Mapping[str, str],
+    *,
+    exists: bool,
+    as_base: bool = False,
 ) -> list[Desired]:
     """Merge one CI payload, what another environment compared for an item, into the item's desired lines.
 
     A stale payload (the lane lacks the item) marks the item's lines for that lane conditional when the item exists
     here, and drops them when it exists nowhere. A value payload from this environment raises ``ValueError``: apply
-    sessions refuse it before, since only a local run may change what this environment compares.
+    sessions refuse it before, since only a local run may change what this environment compares. With ``as_base``
+    the value also becomes the label's base line, so the lane's override equals it and the resolution drops it.
     """
     facts = payload["facts"]
     if payload.get("stale"):
@@ -1753,6 +1949,11 @@ def apply_payload(
             for want in desired
         ]
     value, digest = payload["value"], payload["digest"]
+    if as_base:
+        desired = [
+            replace(want, value=value, digest=digest) if want.label == label and not want.predicate else want
+            for want in desired
+        ]
     candidates = [want for want in desired if want.label == label and predicate_matches(want.predicate, facts)]
     applicable = max(candidates, key=lambda want: len(want.predicate), default=None)
     if applicable is None:

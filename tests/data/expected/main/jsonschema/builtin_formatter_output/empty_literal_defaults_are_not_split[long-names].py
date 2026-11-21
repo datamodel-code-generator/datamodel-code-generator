@@ -9,11 +9,11 @@ from pydantic import BaseModel, Field
 
 
 class EmptyLiteralDefaults(BaseModel):
-    some_really_long_field_name_that_goes_on_and_on_and_on_and_on: dict[str, str] | None = (
-        {}
-    )
-    another_really_long_list_field_name_that_goes_on_and_on_and_on_and_on: list[str] | None = (
-        []
-    )
+    some_really_long_field_name_that_goes_on_and_on_and_on_and_on: (
+        dict[str, str] | None
+    ) = {}
+    another_really_long_list_field_name_that_goes_on_and_on_and_on_and_on: (
+        list[str] | None
+    ) = []
     mapping: dict[str, Any] | None = Field({}, description='x')
     values: list[str] | None = Field([], description='y')

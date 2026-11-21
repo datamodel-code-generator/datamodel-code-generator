@@ -33,18 +33,25 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v3
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v3
         with:
           languages: ${{ matrix.language }}
           queries: +security-and-quality
           config: |
             paths-ignore:
               - tests/data/**
+            # ruff's F401 and RET503 (selected through ALL) check these classes, and the escape-hatch ratchet counts
+            # their suppressions; the CodeQL copies only repeat those sites.
+            query-filters:
+              - exclude:
+                  id: py/unused-import
+              - exclude:
+                  id: py/mixed-returns
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v3
+        uses: github/codeql-action/autobuild@33d7b85da1a04171e211befe2c739303b9a4c066 # v3
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v3
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v3
         with:
           category: "/language:${{ matrix.language }}"

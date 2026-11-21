@@ -356,6 +356,61 @@ def _run_no_formatter_generation_probe() -> dict[str, Any]:
     )
 
 
+OPTIONAL_DEPENDENCY_SCENARIOS = {
+    "openapi": (
+        "generate(Path('tests/data/openapi/api.yaml'), input_file_type=InputFileType.OpenAPI, disable_timestamp=True)"
+    ),
+    "jsonschema": (
+        "generate(Path('tests/data/jsonschema/person.json'), input_file_type=InputFileType.JsonSchema, "
+        "disable_timestamp=True)"
+    ),
+    "cli": (
+        "main(['--input', 'tests/data/openapi/api.yaml', '--input-file-type', 'openapi', "
+        "'--output', os.devnull, '--disable-timestamp'])"
+    ),
+    "dynamic": (
+        "generate_dynamic_models(json.loads(Path('tests/data/jsonschema/person.json').read_text(encoding='utf-8')))"
+    ),
+    "json-data": (
+        "generate(Path('tests/data/json/pet.json'), input_file_type=InputFileType.Json, disable_timestamp=True)"
+    ),
+    "custom-template": (
+        "generate(Path('tests/data/jsonschema/person.json'), input_file_type=InputFileType.JsonSchema, "
+        "custom_template_dir=Path('tests/data/jsonschema'), disable_timestamp=True)"
+    ),
+    "completion": "os.environ.update(_ARGCOMPLETE='1'); sys.modules['argcomplete'] = completion; main(['--help'])",
+}
+
+
+def _run_optional_dependency_probe(scenario: str) -> dict[str, Any]:
+    return _run_probe(
+        textwrap.dedent(
+            f"""
+            import contextlib
+            import io
+            import json
+            import os
+            import sys
+            import types
+            import warnings
+            from pathlib import Path
+
+            from datamodel_code_generator import InputFileType, generate, generate_dynamic_models
+            from datamodel_code_generator.__main__ import main
+
+            completion = types.ModuleType("argcomplete")
+            completion.autocomplete = lambda parser: None
+            warnings.simplefilter("ignore")
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.suppress(SystemExit):
+                {OPTIONAL_DEPENDENCY_SCENARIOS[scenario]}
+            print(json.dumps({{
+                name: name in sys.modules for name in ("argcomplete", "genson", "jinja2")
+            }}, indent=2, sort_keys=True))
+            """
+        )
+    )
+
+
 def _run_custom_template_include_probe() -> dict[str, Any]:
     return _run_probe(
         textwrap.dedent(
@@ -859,7 +914,6 @@ def test_version_fast_path_uses_embedded_version(version_option: str) -> None:
 
     assert_output(
         f"{json.dumps(output, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/version_fast_path.txt",
     )
 
 
@@ -869,7 +923,6 @@ def test_agent_skill_fast_path_skips_generation_imports() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/agent_skill_install.txt",
     )
 
 
@@ -905,7 +958,6 @@ def test_empty_formatters_skip_formatter_runtime() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/empty_formatters.txt",
     )
 
 
@@ -915,8 +967,13 @@ def test_custom_template_include_uses_jinja_in_a_fresh_process() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/custom_template_include.txt",
     )
+
+
+@pytest.mark.parametrize("scenario", OPTIONAL_DEPENDENCY_SCENARIOS)
+def test_optional_dependencies_are_imported_only_where_they_are_used(scenario: str) -> None:
+    """Default generation, the CLI and dynamic models load none of jinja2, genson and argcomplete."""
+    assert_output(json.dumps(_run_optional_dependency_probe(scenario), indent=2, sort_keys=True) + "\n")
 
 
 def test_schema_runtime_validation_module_helper_skips_jinja_in_a_fresh_process() -> None:
@@ -925,18 +982,15 @@ def test_schema_runtime_validation_module_helper_skips_jinja_in_a_fresh_process(
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/schema_runtime_validation_helper.txt",
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="The Playground runtime targets Pyodide Python 3.14")
 def test_playground_builtin_generation_skips_jinja_and_custom_templates() -> None:
     """The browser runtime uses compiled templates and filters custom template input."""
     result = _run_playground_builtin_template_probe()
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/playground_builtin_templates.txt",
     )
 
 
@@ -946,7 +1000,6 @@ def test_input_model_transport_skips_codec_and_preserves_metadata() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/input_model_type_transport.txt",
     )
 
 
@@ -956,7 +1009,6 @@ def test_input_model_without_runtime_type_skips_nonce_and_codec() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/input_model_without_runtime_type.txt",
     )
 
 
@@ -971,7 +1023,6 @@ def test_external_ref_parses_only_external_raw_python_type() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/external_ref_type_transport.txt",
     )
 
 
@@ -981,7 +1032,6 @@ def test_python_type_codec_supports_codec_first_import() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/python_type_codec_import_order.txt",
     )
 
 
@@ -991,7 +1041,6 @@ def test_file_url_join_skips_http_backend_imports() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/file_url_http_imports.txt",
     )
 
 
@@ -1011,7 +1060,6 @@ def test_generate_prompt_fast_path_suggests_invalid_options() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/generate_prompt_invalid_option.txt",
     )
 
 
@@ -1056,3 +1104,95 @@ def test_cli_generation_with_validated_config_skips_parser_config_import() -> No
 
     assert generated["generated_user"] is True
     assert generated["imported_config"] is False
+
+
+STARTUP_PATHS = {
+    "import": None,
+    "version": ["--version"],
+    "help": ["--help"],
+    "json-schema-config": ["--output-format-json-schema", "config"],
+    "json-schema-config-equals": ["--output-format-json-schema=config"],
+    "json-schema-generation": ["--output-format-json-schema=generation"],
+    "json-schema-model-metadata": ["--output-format-json-schema=model-metadata"],
+    "json-schema-structured-output": ["--output-format-json-schema=structured-output"],
+    "json-schema-generate-prompt": ["--output-format-json-schema=generate-prompt"],
+    "generate-prompt": ["--generate-prompt"],
+    "install-skill": ["--install-skill", "codex"],
+}
+HEAVY_MODULES = frozenset({
+    "argcomplete",
+    "black",
+    "certifi",
+    "genson",
+    "graphql",
+    "grpc_tools",
+    "httpx",
+    "httpx2",
+    "inflect",
+    "isort",
+    "jinja2",
+    "lxml",
+    "msgspec",
+    "openapi_spec_validator",
+    "prance",
+    "pydantic",
+    "pydantic_core",
+    "pysnooper",
+    "ruff",
+    "ryaml",
+    "watchfiles",
+    "yaml",
+})
+
+
+def _run_startup_modules_probe(args: list[str] | None) -> dict[str, object]:
+    return _run_probe(
+        textwrap.dedent(
+            f"""
+            import contextlib
+            import io
+            import json
+            import os
+            import runpy
+            import sys
+            import tempfile
+
+            args = {args!r}
+            loaded_before = set(sys.modules)
+            code = None
+            previous_cwd = os.getcwd()
+            with tempfile.TemporaryDirectory() as directory:
+                os.chdir(directory)
+                os.environ["HOME"] = os.environ["USERPROFILE"] = directory
+                sys.argv = ["datamodel-codegen", *(args or [])]
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    try:
+                        if args is None:
+                            import datamodel_code_generator
+                        else:
+                            runpy.run_module("datamodel_code_generator.__main__", run_name="__main__", alter_sys=True)
+                    except SystemExit as exc:
+                        code = exc.code
+                os.chdir(previous_cwd)
+            loaded = set(sys.modules) - loaded_before
+            top_level = {{name.partition(".")[0] for name in loaded}}
+            print(json.dumps({{
+                "code": code,
+                "package": sorted(name for name in loaded if name.partition(".")[0] == "datamodel_code_generator"),
+                "heavy_third_party": sorted(top_level.intersection({sorted(HEAVY_MODULES)!r})),
+            }}))
+            """
+        )
+    )
+
+
+@pytest.mark.parametrize("path", STARTUP_PATHS)
+def test_fast_paths_load_these_modules(path: str) -> None:
+    """Record the package and heavy third-party modules a fresh interpreter holds after the import or a fast path.
+
+    The heavy modules are the package's dependencies and extras by import name. ``-V`` and ``-h`` take the paths of
+    ``--version`` and ``--help``. Changes to the import structure are proven against these lists.
+    """
+    result = _run_startup_modules_probe(STARTUP_PATHS[path])
+
+    assert_output(f"{json.dumps(result, indent=2)}\n")

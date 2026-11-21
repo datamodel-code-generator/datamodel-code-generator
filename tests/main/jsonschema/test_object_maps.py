@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import operator
-import sys
 import typing
 from functools import reduce
 from typing import TYPE_CHECKING, Any
@@ -20,6 +19,7 @@ from referencing import Registry, Resource
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -27,6 +27,8 @@ from tests.main.conftest import (
     OPEN_API_DATA_PATH,
     _generated_model,
     _generated_package_module,
+    assert_generated_model_json_invalid,
+    assert_generated_model_json_validation,
     run_main_and_assert,
 )
 
@@ -55,9 +57,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )
@@ -1234,4 +1234,249 @@ def test_paths_bodies_inline_hint(output_file: Path, capsys: pytest.CaptureFixtu
             "Models not found in the input data; request or response bodies of the paths or webhooks scope are "
             "typed inline, and --openapi-as-definitions paths-bodies gives them the models their schema definitions get"
         ),
+    )
+
+
+OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS = {
+    "off": (),
+    "on": ("--read-object-keywords-by-type",),
+    "validators-off": ("--generate-schema-validators",),
+    "validators-on": ("--generate-schema-validators", "--read-object-keywords-by-type"),
+}
+
+
+@pytest.mark.cli_doc(
+    options=["--read-object-keywords-by-type"],
+    option_description="""Read the keywords that constrain objects only beside an `anyOf` or `oneOf` for its objects.
+
+`properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `required`,
+`minProperties` and `maxProperties` apply to objects only. Without this option every branch of an `anyOf` or `oneOf`
+is read with those beside it, so a `{"type": "string"}` branch beside `patternProperties` becomes a map, which merges
+with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch that admits no
+object, such as a string `type`, a `const`, an `enum`, an `allOf` of such parts or a `$ref` naming such a schema, is
+read without them and keeps its type, while the object branches still take them. Under
+`--generate-schema-validators` such a site is the union of its branches instead of one validated object model.""",
+    input_schema="jsonschema/object_maps/string_branches_beside_object_keywords.json",
+    cli_args=["--read-object-keywords-by-type"],
+    golden_output="main/jsonschema/object_maps/object_keywords_by_type[on].py",
+    comparison_output="main/jsonschema/object_maps/object_keywords_by_type[off].py",
+)
+@pytest.mark.parametrize("option_set", OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS)
+def test_object_keywords_by_type(output_file: Path, option_set: str) -> None:
+    """Read the object keywords beside an anyOf or oneOf for its object branches only under the option (#6736).
+
+    Without it the string branch of an icon beside patternProperties becomes a map and only objects validate, a string
+    branch beside properties is a model, and with validators the whole site is one object model. With it the string,
+    the string or null of a type list and a ``$ref`` to a string stay themselves beside the map or model of the object
+    branch, which keeps the keywords, as a union also with validators.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "string_branches_beside_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            *OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS[option_set],
+        ],
+    )
+    if not option_set.endswith("on"):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name="object_keywords_by_type",
+            model_name="Manifest",
+            invalid_json='{"default_icon": "icons/star.png"}',
+            expected_error_type="dict_type" if option_set == "off" else "model_type",
+        )
+        return
+    for valid_json, invalid_json, error_type in (
+        ('{"default_icon": "icons/star.png"}', '{"default_icon": 3}', "string_type"),
+        ('{"default_icon": {"16": "a.png"}}', '{"default_icon": {"16": 5}}', "string_type"),
+        ('{"page_icon": "a.png", "action_icon": "b.png"}', '{"page_icon": 3}', "string_type"),
+        ('{"theme": null, "sidebar_theme": "dark"}', '{"theme": {"dark": "b"}}', "string_type"),
+        ('{"theme": "dark", "sidebar_theme": {"light": "a"}}', '{"sidebar_theme": 4}', "string_type"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="object_keywords_by_type",
+            model_name="Manifest",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )
+
+
+@pytest.mark.parametrize(
+    "option_set",
+    {
+        "distribute-off": ("--distribute-allof-over-unions",),
+        "distribute-on": ("--distribute-allof-over-unions", "--read-object-keywords-by-type"),
+        "preset": ("--preset", "standard-py313-20261112"),
+    }.items(),
+    ids=operator.itemgetter(0),
+)
+def test_object_keywords_by_type_referenced_branch_beside_value_keywords(
+    output_file: Path, option_set: tuple[str, tuple[str, ...]]
+) -> None:
+    """Keep a ``$ref`` string branch a string beside value and object keywords where allOf is distributed (#6736).
+
+    The branch is read with the ``minLength`` beside the ``anyOf``, which makes it an inline branch; without
+    --read-object-keywords-by-type it also takes the ``patternProperties`` and becomes a map, so ``"hello"`` is
+    rejected. With it, also through the 20261112 preset, the string branch takes the ``minLength`` only.
+    """
+    name, args = option_set
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "referenced_string_branch_beside_value_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *args],
+    )
+    if name == "distribute-off":
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name="referenced_string_branch",
+            model_name="Labels",
+            invalid_json='{"label": "hello"}',
+            expected_error_type="dict_type",
+        )
+        return
+    for valid_json, invalid_json, error_type in (
+        ('{"label": "hello"}', '{"label": "a"}', "string_too_short"),
+        ('{"label": {"x-a": 1}}', '{"label": {"x-a": "b"}}', "string_type"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="referenced_string_branch",
+            model_name="Labels",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )
+
+
+@pytest.mark.parametrize("option_set", ["off", "on", "validators-on"])
+def test_object_keywords_by_type_const_enum_branches(output_file: Path, option_set: str) -> None:
+    """Keep a ``const`` and an ``enum`` branch beside the object keywords of an anyOf themselves (#6774).
+
+    They have no ``type`` but admit no object, so with --read-object-keywords-by-type, also with validators, they take
+    none of the ``properties`` and ``required`` beside the anyOf and ``"none"`` and ``"system"`` validate beside the
+    model of the object branch; without it they merge into that model and only objects validate.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "const_enum_branches_beside_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            *OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS[option_set],
+        ],
+    )
+    if option_set == "off":
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name="const_enum_branches",
+            model_name="Account",
+            invalid_json='{"owner": "none"}',
+            expected_error_type="model_type",
+        )
+        return
+    for valid_json, invalid_json in (
+        ('{"owner": "none"}', '{"owner": {}}'),
+        ('{"owner": "system"}', '{"owner": 5}'),
+        ('{"owner": {"id": "u1"}}', '{"owner": "x"}'),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="const_enum_branches",
+            model_name="Account",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type="literal_error",
+        )
+
+
+@pytest.mark.parametrize("option_set", ["off", "on"])
+def test_object_keywords_by_type_mapped_ref_branch(output_file: Path, option_set: str) -> None:
+    """Type a ``$ref`` branch that --external-ref-mapping maps by its import, without reading its document (#6736).
+
+    The mapped document does not exist and --strict-refs rejects a missing document that is read: the option reads
+    the type of a ``$ref`` branch to leave the object keywords out of it, and a mapped one is not read, so it keeps
+    them as it does without the option.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "mapped_ref_branch_beside_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--strict-refs",
+            "--external-ref-mapping",
+            f"{OBJECT_MAPS / 'absent_names.json'}=external.names",
+            *OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS[option_set],
+        ],
+    )
+
+
+def test_additional_properties_all_of_of_clashing_primitive_types(tmp_path: Path, output_file: Path) -> None:
+    """Keep the value of a map whose ``additionalProperties`` ``allOf`` types a string and an integer as one model."""
+    input_path = tmp_path / "clashing_primitives.json"
+    input_path.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Counts",
+            "type": "object",
+            "additionalProperties": {
+                "allOf": [{"type": "string", "minLength": 1}, {"type": "integer", "minimum": 1}],
+            },
+        }),
+        encoding="utf-8",
+    )
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--field-constraints", "--use-annotated"],
+    )
+
+
+def test_additional_properties_all_of_of_a_reference_into_a_cycle(tmp_path: Path, output_file: Path) -> None:
+    """Keep a map value whose ``allOf`` member refers, beside its own ``allOf``, to a schema with a cycle."""
+    input_path = tmp_path / "forest.json"
+    input_path.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Forest",
+            "type": "object",
+            "properties": {
+                "trees": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "allOf": [{"$ref": "#/$defs/Tree", "allOf": [{"type": "string", "minLength": 1}]}],
+                    },
+                },
+            },
+            "$defs": {
+                "Tree": {
+                    "type": "object",
+                    "properties": {"children": {"type": "array", "items": {"$ref": "#/$defs/Tree"}}},
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--field-constraints", "--use-annotated"],
     )

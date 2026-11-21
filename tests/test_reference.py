@@ -2,20 +2,23 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator.http import join_url
 from datamodel_code_generator.reference import (
     ModelResolver,
+    Reference,
     get_relative_path,
     get_singular_name,
     is_url,
     snake_to_upper_camel,
 )
+from datamodel_code_generator.types import DataType
+from tests.capabilities import needs
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -63,6 +66,42 @@ def test_get_relative_path_windows(base_path: str, target_path: str, expected: s
     assert PureWindowsPath(
         get_relative_path(PureWindowsPath(base_path), PureWindowsPath(target_path))
     ) == PureWindowsPath(expected)
+
+
+def test_model_resolver_add_takes_the_singular_of_a_field_name() -> None:
+    """A reference added with ``singular_name`` and no ``class_name`` takes the singular of its name."""
+    assert ModelResolver().add(["#", "definitions", "pets"], "pets", singular_name=True).name == "pet"
+
+
+def test_reference_validation_refuses_a_value_that_is_no_mapping() -> None:
+    """``Reference`` leaves a value that is no mapping to Pydantic, which refuses it."""
+    with pytest.raises(ValidationError, match="Input should be a valid dictionary or instance of Reference"):
+        Reference.model_validate("Model")
+
+
+def test_reference_dict_leaves_out_the_children() -> None:
+    """Return the fields of a reference as ``dict()``, without the types that hold it."""
+    reference = Reference(path="Model", original_name="Model", name="Model")
+    DataType(reference=reference)
+
+    assert reference.dict() == {
+        "path": "Model",
+        "original_name": "Model",
+        "name": "Model",
+        "duplicate_name": None,
+        "loaded": True,
+        "source": None,
+    }
+    assert reference.dict(exclude={"path"}, exclude_none=True) == {
+        "original_name": "Model",
+        "name": "Model",
+        "loaded": True,
+    }
+
+
+def test_model_resolver_is_after_load_is_false_for_a_local_reference() -> None:
+    """A reference into the current document points to no file loaded after it."""
+    assert ModelResolver().is_after_load("#/definitions/Pet") is False
 
 
 def test_model_resolver_add_ref_with_hash() -> None:
@@ -298,6 +337,23 @@ def test_resolve_ref_with_relative_root_id_and_base_url() -> None:
     assert result == "http://localhost:8888/schemas/v1/sub.schema.json#"
 
 
+def test_current_base_path_context_without_a_path_resolves_from_the_base_path(tmp_path: Path) -> None:
+    """Resolve from the base path inside a context entered with no path, and restore the outer path on exit."""
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (tmp_path / "shared.json").touch()
+    (nested / "shared.json").touch()
+
+    resolver = ModelResolver(base_path=tmp_path)
+    with resolver.current_base_path_context(nested):
+        assert resolver.resolve_ref("shared.json#/$defs/A") == "nested/shared.json#/$defs/A"
+        with resolver.current_base_path_context(None):
+            assert resolver.current_base_path is None
+            assert resolver.resolve_ref("shared.json#/$defs/A") == "shared.json#/$defs/A"
+        assert resolver.current_base_path == nested
+        assert resolver.resolve_ref("shared.json#/$defs/A") == "nested/shared.json#/$defs/A"
+
+
 def test_resolve_ref_caches_local_file_parts_by_base_path(tmp_path: Path) -> None:
     """Keep fragment handling separate while caching each local file path per base path."""
     first_base_path = tmp_path / "first"
@@ -340,7 +396,7 @@ def test_resolve_ref_normalizes_empty_path_as_root_fragment() -> None:
         assert resolver.resolve_ref("") == "root#"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="requires POSIX symlinks")
+@needs("symlinks")
 @pytest.mark.parametrize("symlink_kind", ["file", "parent"])
 def test_resolve_ref_local_file_cache_tracks_retargeted_symlinks(
     tmp_path: Path, symlink_kind: Literal["file", "parent"]

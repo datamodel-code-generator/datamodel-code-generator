@@ -3,13 +3,23 @@
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
 
+from packaging.version import Version
+from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+
+from .constants import PYDANTIC_V2_0_RUNTIME_MAX_VERSION, PYDANTIC_V2_0_UNION_SERIALIZER_WARNING
 
 if TYPE_CHECKING:
     from .models import SchemaCase
+
+_UNION_SERIALIZER_WARNING_ACTION = (
+    "ignore" if Version(PYDANTIC_VERSION) < Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION) else "error"
+)
+"""What a dump does with a union serializer warning under the installed Pydantic."""
 
 NATIVE_FLOAT_CONTRACT = json.loads(
     (Path(__file__).parents[2] / "data" / "payloads" / "native_float_multiple_contract.json").read_text()
@@ -85,3 +95,15 @@ def pydantic_payload_result(adapter: TypeAdapter[Any], payload: Any) -> tuple[An
         return adapter.validate_python(payload), []
     except ValidationError as exc:
         return None, exc.errors(include_url=False)
+
+
+def pydantic_payload_dump(adapter: TypeAdapter[object], value: object) -> object:
+    """Dump a validated payload as the JSON values the source schema checks.
+
+    Pydantic 2.0.x warns that a boolean ``Literal`` member of a union, beside another literal or inside a list or a
+    model, does not match the union it validated (2.1.0 fixed it): its dumps ignore that warning, and the source schema
+    still checks what they write. Every other Pydantic keeps the warning an error.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(_UNION_SERIALIZER_WARNING_ACTION, PYDANTIC_V2_0_UNION_SERIALIZER_WARNING, UserWarning)
+        return adapter.dump_python(value, mode="json", by_alias=True, exclude_unset=True)

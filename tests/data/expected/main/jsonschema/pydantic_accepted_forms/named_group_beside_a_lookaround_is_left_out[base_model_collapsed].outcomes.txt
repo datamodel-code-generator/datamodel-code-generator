@@ -1,0 +1,5 @@
+Python's regex engine, which the config building it selects, does not compile pattern='^(?<year>\\d{4})-(?<month>\\d{2})$'; Release.date is generated without this constraint.
+valid: valid
+draft tag: string_pattern_mismatch
+any date: valid
+value: '2026-11'

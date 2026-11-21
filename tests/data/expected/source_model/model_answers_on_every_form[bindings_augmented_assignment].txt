@@ -1,0 +1,11 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  TOTAL: assign@3 [always]; value 0
+  TOTAL: augassign@4 [always]
+  bump: def@7 [always]
+scope function bump#0 'bump': code yes; first line 7
+  opened by a node evaluated in <module>#0
+  counter: param@7 [function:body@7]
+  counter: augassign@8 [function:body@7]
+  table: param@7 [function:body@7]
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,5 @@
+== imports
+import@4 fast as fast from fast in <module> [import-error:body@3]
+import@12 local_error as local_error from local_error in <module> [import-error:body@11]
+import@21 shadowed as shadowed from shadowed in shadowing [function:body@17|try:body@20]
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Color">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="red"/>
+      <xs:enumeration value="blue"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="Paint">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="color" type="Color" default="blue" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>The color of the paint.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

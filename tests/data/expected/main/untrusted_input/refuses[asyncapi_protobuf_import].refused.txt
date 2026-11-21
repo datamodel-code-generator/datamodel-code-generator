@@ -1,0 +1,1 @@
+Protocol Buffers input is refused under --untrusted-input: protoc reads the files its imports name from the include paths by itself, so the input cannot be kept to the given document.

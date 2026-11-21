@@ -1,0 +1,6 @@
+{
+ "cells": null,
+ "problems": [
+  "entry x: cells 1: input is not a non-empty list of path globs"
+ ]
+}

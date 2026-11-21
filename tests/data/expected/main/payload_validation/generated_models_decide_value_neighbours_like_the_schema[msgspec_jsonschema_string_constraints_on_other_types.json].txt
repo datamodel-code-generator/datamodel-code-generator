@@ -1,0 +1,7 @@
+[
+  "/overridden_min_length minLength \"a\": invalid, model accepts",
+  "/untyped_min_length minLength \"a\": invalid, model accepts",
+  "/untyped_mixed maxLength \"bbbb\": invalid, model accepts",
+  "/untyped_mixed minimum 4: invalid, model accepts",
+  "/untyped_mixed minimum 4.9: invalid, model accepts"
+]

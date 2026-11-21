@@ -37,7 +37,10 @@ ItemsItemIdGetQuerySlugParameter: TypeAlias = Annotated[
 ItemsItemIdGetQueryTagsParameterItem: TypeAlias = Annotated[str, Meta(max_length=8)]
 
 
-ItemsItemIdGetQueryTagsParameter: TypeAlias = Annotated[list[ItemsItemIdGetQueryTagsParameterItem], Meta(max_length=5)] | UnsetType
+ItemsItemIdGetQueryTagsParameter: TypeAlias = (
+    Annotated[list[ItemsItemIdGetQueryTagsParameterItem], Meta(max_length=5)]
+    | UnsetType
+)
 
 
 ItemsItemIdGetQueryLabelsParameterItem: TypeAlias = Annotated[str, Meta(max_length=8)]
@@ -69,7 +72,9 @@ ItemsItemIdGetQueryCodesParameter1: TypeAlias = Annotated[
 ItemsItemIdGetQueryCodesParameterItem: TypeAlias = Annotated[str, Meta(max_length=4)]
 
 
-ItemsItemIdGetQueryCodesParameter: TypeAlias = ItemsItemIdGetQueryCodesParameter1 | list[ItemsItemIdGetQueryCodesParameterItem]
+ItemsItemIdGetQueryCodesParameter: TypeAlias = (
+    ItemsItemIdGetQueryCodesParameter1 | list[ItemsItemIdGetQueryCodesParameterItem]
+)
 
 
 ItemsItemIdGetQueryNullableParameter: TypeAlias = Annotated[int, Meta(ge=0)] | None

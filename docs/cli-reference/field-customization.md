@@ -16,6 +16,7 @@
 | [`--field-extra-keys-without-x-prefix`](#field-extra-keys-without-x-prefix) | Include schema extension keys in Field() without requiring '... |
 | [`--field-include-all-keys`](#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydan... |
+| [`--infer-union-discriminators`](#infer-union-discriminators) | Write a oneOf or anyOf whose branches each pin a tag as a di... |
 | [`--infer-union-variant-names`](#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of the... |
 | [`--merge-shared-variant-tags`](#merge-shared-variant-tags) | Give a variant that discriminated unions tag differently eve... |
 | [`--name-allof-union-members-after-branches`](#name-allof-union-members-after-branches) | Name the classes an allOf gives the branches of a oneOf or a... |
@@ -25,12 +26,14 @@
 | [`--original-field-name-delimiter`](#original-field-name-delimiter) | Specify delimiter for original field names when using snake-... |
 | [`--read-length-keywords-by-type`](#read-length-keywords-by-type) | Read the string and the array keywords for their own kind on... |
 | [`--read-msgspec-union-bounds-exactly`](#read-msgspec-union-bounds-exactly) | Decide the bounds of the int member of a msgspec union on th... |
+| [`--read-object-keywords-by-type`](#read-object-keywords-by-type) | Read the keywords that constrain objects only beside an `any... |
 | [`--remove-special-field-name-prefix`](#remove-special-field-name-prefix) | Remove the special prefix from field names. |
 | [`--serialization-aliases`](#serialization-aliases) | Apply custom Pydantic v2 serialization aliases via inline JS... |
 | [`--set-default-enum-member`](#set-default-enum-member) | Use the legacy flag for deserializing enum defaults. |
 | [`--snake-case-field`](#snake-case-field) | Convert field names to snake_case format. |
 | [`--special-field-name-prefix`](#special-field-name-prefix) | Prefix to add to special field names (like reserved keywords... |
 | [`--use-attribute-docstrings`](#use-attribute-docstrings) | Generate field descriptions as attribute docstrings instead ... |
+| [`--use-bounds-for-float-const`](#use-bounds-for-float-const) | Type a finite float `const` as a float whose minimum and max... |
 | [`--use-enum-values-in-discriminator`](#use-enum-values-in-discriminator) | Use enum values in discriminator mappings for union types. |
 | [`--use-field-description`](#use-field-description) | Include schema descriptions as Field docstrings. |
 | [`--use-field-description-example`](#use-field-description-example) | Add field examples to docstrings. |
@@ -42,6 +45,7 @@
 | [`--use-site-models-for-constrained-refs`](#use-site-models-for-constrained-refs) | Give an allOf of `$ref` members whose other parts add assert... |
 | [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what ... |
 | [`--use-title-as-name`](#use-title-as-name) | Use schema title as the generated class name. |
+| [`--use-unmapped-variant-tag-values`](#use-unmapped-variant-tag-values) | Give a mapped variant the unmapped values of its tag propert... |
 
 ---
 
@@ -468,6 +472,10 @@ providing fine-grained control over generated names independent of schema defini
             typename__: Literal['DateTimePeriod'] | None = Field(
                 'DateTimePeriod', alias='__typename'
             )
+
+            @property
+            def __typename(self) -> Literal['DateTimePeriod'] | None:
+                return self.typename__
         ```
 
         <!-- fmt: on -->
@@ -968,6 +976,8 @@ The `--extra-fields` flag sets the generated models to allow, forbid, or
 ignore extra fields. With `--extra-fields allow`, models will accept and
 store fields not defined in the schema. Options: allow, ignore, forbid.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -1188,6 +1198,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         vehicles_ids: list[ID]
         typename__: Literal['Film'] | None = Field('Film', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Film'] | None:
+            return self.typename__
+
 
     class Person(BaseModel):
         model_config = ConfigDict(
@@ -1214,6 +1228,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         vehicles_ids: list[ID]
         typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Person'] | None:
+            return self.typename__
+
 
     class Planet(BaseModel):
         model_config = ConfigDict(
@@ -1235,6 +1253,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         terrain: String | None = None
         typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Planet'] | None:
+            return self.typename__
+
 
     class Species(BaseModel):
         model_config = ConfigDict(
@@ -1255,6 +1277,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         people_ids: list[ID]
         skin_colors: String | None = None
         typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['Species'] | None:
+            return self.typename__
 
 
     class Starship(BaseModel):
@@ -1281,6 +1307,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         starship_class: String | None = None
         typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Starship'] | None:
+            return self.typename__
+
 
     class Vehicle(BaseModel):
         model_config = ConfigDict(
@@ -1303,6 +1333,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         pilots_ids: list[ID]
         vehicle_class: String | None = None
         typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['Vehicle'] | None:
+            return self.typename__
 
 
     Film.model_rebuild()
@@ -1770,6 +1804,8 @@ Include specific extra keys in Field() definitions.
 
 The `--field-extra-keys` flag configures the code generation behavior.
 
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -2105,6 +2141,167 @@ to preserve the original field name, instead of renaming the field and adding an
 
 ---
 
+## `--infer-union-discriminators` {#infer-union-discriminators}
+
+Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.
+
+Typed languages write an internally tagged enum as a `oneOf` whose every branch requires one property holding one
+value, a `const` or a one-value `enum`, without a `discriminator` keyword. With this option such a union is written
+as a discriminated union, as a `discriminator` keyword writes it: Pydantic `Field(discriminator=...)`, and msgspec
+Structs tagged with `tag_field` and `tag`. It applies where every branch that is not null requires the same property
+with one string or integer value, read from the branch, the schema its local `$ref` names and its `allOf` members,
+and no two branches share a value; in Pydantic output a union that declares a `discriminator` keeps it. Valid
+payloads parse to the same values, and an invalid payload reports the errors of the branch its tag names, or one
+error for an unknown or missing tag, instead of an error for every branch. A tag written as a one-value `enum`
+without `--use-single-value-enum-as-const` or `--enum-field-as-literal` is typed by its value (`Literal['email']`),
+as a `discriminator` keyword types it; under `--use-one-literal-as-default` a payload without the tag is rejected, as
+the schema rejects it. Without this option these unions are smart unions in Pydantic output, and msgspec output tags
+only those whose tags are written on the branches themselves, as in 0.96.0. The option does not apply to
+`dataclasses.dataclass` and `typing.TypedDict` output, which validate nothing.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input serde_tagged_root.json --infer-union-discriminators # (1)!
+    ```
+
+    1. :material-arrow-left: `--infer-union-discriminators` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Notification",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "string",
+              "const": "email"
+            },
+            "address": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "channel",
+            "address"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "string",
+              "const": "sms"
+            },
+            "number": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "channel",
+            "number"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "string",
+              "const": "push"
+            }
+          },
+          "required": [
+            "channel"
+          ]
+        }
+      ]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serde_tagged_root.json
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Notification1(BaseModel):
+            channel: Literal['email']
+            address: str
+
+
+        class Notification2(BaseModel):
+            channel: Literal['sms']
+            number: str
+
+
+        class Notification3(BaseModel):
+            channel: Literal['push']
+
+
+        class Notification(RootModel[Notification1 | Notification2 | Notification3]):
+            root: Notification1 | Notification2 | Notification3 = Field(
+                ..., discriminator='channel', title='Notification'
+            )
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serde_tagged_root.json
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Notification1(BaseModel):
+            channel: Literal['email']
+            address: str
+
+
+        class Notification2(BaseModel):
+            channel: Literal['sms']
+            number: str
+
+
+        class Notification3(BaseModel):
+            channel: Literal['push']
+
+
+        class Notification(RootModel[Notification1 | Notification2 | Notification3]):
+            root: Notification1 | Notification2 | Notification3 = Field(
+                ..., title='Notification'
+            )
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--infer-union-variant-names` {#infer-union-variant-names}
 
 Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` + `type: "cat"` -> `PetCat`) instead of `Pet1`, `Pet2`.
@@ -2121,6 +2318,8 @@ only tagged branch and branches tagged by their only key, use
 Existing generated output is preserved unless this option is enabled.
 
 **Related:** [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name), [`--use-title-as-name`](#use-title-as-name)
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -3756,6 +3955,155 @@ the schema writes, exactly (msgspec.Struct output only).
 
 ---
 
+## `--read-object-keywords-by-type` {#read-object-keywords-by-type}
+
+Read the keywords that constrain objects only beside an `anyOf` or `oneOf` for its objects.
+
+`properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `required`,
+`minProperties` and `maxProperties` apply to objects only. Without this option every branch of an `anyOf` or `oneOf`
+is read with those beside it, so a `{"type": "string"}` branch beside `patternProperties` becomes a map, which merges
+with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch that admits no
+object, such as a string `type`, a `const`, an `enum`, an `allOf` of such parts or a `$ref` naming such a schema, is
+read without them and keeps its type, while the object branches still take them. Under
+`--generate-schema-validators` such a site is the union of its branches instead of one validated object model.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input string_branches_beside_object_keywords.json --read-object-keywords-by-type # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-object-keywords-by-type` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Manifest",
+      "type": "object",
+      "properties": {
+        "default_icon": {"$ref": "#/definitions/icon"},
+        "page_icon": {
+          "anyOf": [{"type": "string"}, {"type": "object"}],
+          "patternProperties": {"^[1-9]\\d+$": {"type": "string"}},
+          "additionalProperties": false
+        },
+        "theme": {
+          "oneOf": [{"type": ["string", "null"]}, {"type": "object"}],
+          "properties": {"light": {"type": "string"}, "dark": {"type": "string"}},
+          "required": ["light"]
+        },
+        "action_icon": {
+          "anyOf": [{"$ref": "#/definitions/path"}, {"type": "object"}],
+          "patternProperties": {"^[1-9]\\d+$": {"type": "string"}}
+        },
+        "sidebar_theme": {
+          "anyOf": [{"$ref": "#/definitions/path"}, {"type": "object"}],
+          "properties": {"light": {"type": "string"}},
+          "required": ["light"]
+        }
+      },
+      "definitions": {
+        "path": {"type": "string"},
+        "icon": {
+          "anyOf": [{"type": "string"}, {"type": "object"}],
+          "additionalProperties": false,
+          "patternProperties": {"^[1-9]\\d+$": {"type": "string", "format": "uri-reference"}},
+          "format": "uri-reference"
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  string_branches_beside_object_keywords.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel, constr
+
+
+        class Theme(BaseModel):
+            light: str
+            dark: str | None = None
+
+
+        class SidebarTheme(BaseModel):
+            light: str
+
+
+        class Path(RootModel[str]):
+            root: str
+
+
+        class Icon(RootModel[str | dict[constr(pattern=r'^[1-9]\d+$'), str]]):
+            root: str | dict[constr(pattern=r'^[1-9]\d+$'), str]
+
+
+        class Manifest(BaseModel):
+            default_icon: Icon | None = None
+            page_icon: str | dict[constr(pattern=r'^[1-9]\d+$'), str] | None = None
+            theme: str | Theme | None = None
+            action_icon: Path | dict[constr(pattern=r'^[1-9]\d+$'), str] | None = None
+            sidebar_theme: Path | SidebarTheme | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  string_branches_beside_object_keywords.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel, constr
+
+
+        class Theme(BaseModel):
+            light: str
+            dark: str | None = None
+
+
+        class SidebarTheme(BaseModel):
+            light: str
+
+
+        class Path(RootModel[str]):
+            root: str
+
+
+        class Icon(RootModel[dict[constr(pattern=r'^[1-9]\d+$'), str]]):
+            root: dict[constr(pattern=r'^[1-9]\d+$'), str]
+
+
+        class Manifest(BaseModel):
+            default_icon: Icon | None = None
+            page_icon: dict[constr(pattern=r'^[1-9]\d+$'), str] | None = None
+            theme: Theme | None = None
+            action_icon: Path | dict[constr(pattern=r'^[1-9]\d+$'), str] | None = None
+            sidebar_theme: SidebarTheme | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--remove-special-field-name-prefix` {#remove-special-field-name-prefix}
 
 Remove the special prefix from field names.
@@ -4454,6 +4802,142 @@ This provides better IDE support for hovering over attributes. Requires
 
 ---
 
+## `--use-bounds-for-float-const` {#use-bounds-for-float-const}
+
+Type a finite float `const` as a float whose minimum and maximum both equal it.
+
+No `Literal` holds a float, so without this option a float `const`, such as `{"type": "number", "const": 1.5}`, is typed
+`float`, which accepts any other number, with a warning. With it the const takes an equal `minimum` and `maximum`,
+written as the output writes number bounds: `confloat(ge=1.5, le=1.5)` for Pydantic, `Field(ge=1.5, le=1.5)` under
+`--field-constraints` and inside `Annotated` under `--use-annotated`, and `Meta(ge=1.5, le=1.5)` for msgspec, so other
+numbers are rejected and the members of a `oneOf` that differ by such consts accept only their own. Of a `minimum` or
+`maximum` beside the const the tighter bound is kept, and the other number keywords stay, so a const the schema rejects
+stays rejected. Output that checks no bounds, such as dataclasses and TypedDict, keeps `float` with the warning, and so
+do the items, map values and union members where the bounds are written on the field (`--field-constraints`, msgspec), a
+field of a Pydantic dataclass with `--field-constraints` and without `--use-annotated`, where `Field()` could move it in
+the constructor, and a const beside an `enum`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input float_const_bounds.json --use-bounds-for-float-const # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-bounds-for-float-const` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "exact": {"const": 1.5},
+        "typed": {"type": "number", "const": 2.5},
+        "bounded": {"type": "number", "const": 3.5, "minimum": 0},
+        "stepped": {"type": "number", "const": 1.5, "multipleOf": 0.5, "maximum": 10},
+        "items": {"type": "array", "items": {"const": 1.5}},
+        "values": {"type": "object", "additionalProperties": {"const": 1.5}},
+        "either": {"anyOf": [{"const": 4.5}, {"type": "string"}]},
+        "ratio": {"$ref": "#/$defs/Ratio"},
+        "variant": {"oneOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]}
+      },
+      "required": ["exact", "variant"],
+      "$defs": {
+        "Ratio": {"type": "number", "const": 0.5},
+        "A": {"type": "object", "properties": {"k": {"const": 1.5}}, "required": ["k"]},
+        "B": {"type": "object", "properties": {"k": {"const": 2.5}}, "required": ["k"]}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  float_const_bounds.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel, confloat
+
+
+        class Ratio(RootModel[confloat(ge=0.5, le=0.5)]):
+            root: confloat(ge=0.5, le=0.5)
+
+
+        class A(BaseModel):
+            k: confloat(ge=1.5, le=1.5)
+
+
+        class B(BaseModel):
+            k: confloat(ge=2.5, le=2.5)
+
+
+        class Model(BaseModel):
+            exact: confloat(ge=1.5, le=1.5)
+            typed: confloat(ge=2.5, le=2.5) = None
+            bounded: confloat(ge=3.5, le=3.5) = None
+            stepped: confloat(ge=1.5, le=1.5, multiple_of=0.5) = None
+            items: list[confloat(ge=1.5, le=1.5)] | None = None
+            values: dict[str, confloat(ge=1.5, le=1.5)] | None = None
+            either: confloat(ge=4.5, le=4.5) | str | None = None
+            ratio: Ratio | None = None
+            variant: A | B
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  float_const_bounds.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Ratio(RootModel[float]):
+            root: float
+
+
+        class A(BaseModel):
+            k: float
+
+
+        class B(BaseModel):
+            k: float
+
+
+        class Model(BaseModel):
+            exact: float
+            typed: float = None
+            bounded: float = None
+            stepped: float = None
+            items: list[float] | None = None
+            values: dict[str, float] | None = None
+            either: float | str | None = None
+            ratio: Ratio | None = None
+            variant: A | B
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-enum-values-in-discriminator` {#use-enum-values-in-discriminator}
 
 Use enum values in discriminator mappings for union types.
@@ -4543,11 +5027,11 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 
     class RequestV1(RequestBase):
         request_id: str = Field(..., description='there is description', title='test title')
-        version: Literal[RequestVersionEnum.v1]
+        version: Literal[RequestVersionEnum.v1, 'v1']
 
 
     class RequestV2(RequestBase):
-        version: Literal[RequestVersionEnum.v2]
+        version: Literal[RequestVersionEnum.v2, 'v2']
 
 
     class Request(RootModel[RequestV1 | RequestV2]):
@@ -6291,6 +6775,8 @@ like any other name when another model has it.
 
 **Related:** [`--infer-union-variant-names`](#infer-union-variant-names), [`--use-title-as-name`](#use-title-as-name)
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -6706,5 +7192,144 @@ This is useful when schemas have descriptive titles that should be preserved.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-unmapped-variant-tag-values` {#use-unmapped-variant-tag-values}
+
+Give a mapped variant the unmapped values of its tag property.
+
+A discriminated variant whose tag property admits several values, `Cat.kind: enum [cat, kitty]`, is selected by every
+one of them in the schema's `oneOf`. Without this option a variant that a mapping key names takes only its mapping
+keys, `Literal['cat']`, as in 0.97.0, so `{"kind": "kitty"}`, which the schema accepts, is rejected. With it the
+variant keeps its mapping keys and also takes the values of its tag property that no mapping key and no other variant
+claim, `Literal['cat', 'kitty']`, so the union accepts the documents of the variant that carry them. A value that
+another variant also admits stays rejected, as a tag selects one variant. A variant that no mapping key names takes
+those values without the option. A msgspec Struct keeps its one tag.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input several_values_mapped.yaml --use-unmapped-variant-tag-values # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-unmapped-variant-tag-values` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: '3.1.0'
+    info: {title: A mapped variant whose tag property admits several values, version: 1.0.0}
+    paths: {}
+    components:
+      schemas:
+        Cat:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string, enum: [cat, kitty]}
+            name: {type: string}
+        Dog:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string, enum: [dog]}
+            bark: {type: boolean}
+        Pet:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: '#/components/schemas/Cat'
+              dog: '#/components/schemas/Dog'
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  several_values_mapped.yaml
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Kind(Enum):
+            cat = 'cat'
+            kitty = 'kitty'
+
+
+        class Cat(BaseModel):
+            kind: Literal['cat', 'kitty']
+            name: str | None = None
+
+
+        class Kind1(Enum):
+            dog = 'dog'
+
+
+        class Dog(BaseModel):
+            kind: Literal['dog']
+            bark: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  several_values_mapped.yaml
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Kind(Enum):
+            cat = 'cat'
+            kitty = 'kitty'
+
+
+        class Cat(BaseModel):
+            kind: Literal['cat']
+            name: str | None = None
+
+
+        class Kind1(Enum):
+            dog = 'dog'
+
+
+        class Dog(BaseModel):
+            kind: Literal['dog']
+            bark: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+        ```
+
+        <!-- fmt: on -->
 
 ---

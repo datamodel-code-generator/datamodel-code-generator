@@ -1,0 +1,8 @@
+[
+  "/frac maximum 10: invalid, model accepts",
+  "/frac minimum 0: invalid, model accepts",
+  "/frac_items/0 maximum 10: invalid, model accepts",
+  "/frac_items/0 minimum 0: invalid, model accepts",
+  "/frac_prop maximum 10: invalid, model accepts",
+  "/frac_prop minimum 0: invalid, model accepts"
+]

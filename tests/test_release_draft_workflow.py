@@ -6,13 +6,13 @@ import json
 import os
 import shlex
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 import yaml
 from jsonschema import Draft202012Validator
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 
@@ -75,7 +75,6 @@ def test_maintenance_exclusion_is_wired_before_note_generation() -> None:
             sort_keys=True,
         )
         + "\n",
-        root / "tests/data/expected/release_draft_workflow/maintenance_exclusion.txt",
     )
 
 
@@ -91,7 +90,6 @@ def test_claude_output_schema_rejects_invalid_reasoning() -> None:
     cases = json.loads((root / "tests/data/release_draft_workflow/reasoning.json").read_text(encoding="utf-8"))
     assert_output(
         json.dumps({name: validator.is_valid(output) for name, output in cases.items()}, indent=2) + "\n",
-        root / "tests/data/expected/release_draft_workflow/reasoning.txt",
     )
 
 
@@ -127,7 +125,6 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
             sort_keys=True,
         )
         + "\n",
-        root / "tests/data/expected/release_draft_workflow/manual_dispatch.txt",
     )
 
 
@@ -135,7 +132,7 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
     "requested_pr",
     json.loads((Path(__file__).parent / "data/release_draft_workflow/invalid_pr_numbers.json").read_text()),
 )
-@pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
+@needs("posix")
 def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tmp_path: Path) -> None:
     """Invalid caller input exits the real shell step before any API or credential use.
 
@@ -165,11 +162,10 @@ def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tm
             sort_keys=True,
         )
         + "\n",
-        root / "tests/data/expected/release_draft_workflow/invalid_pr_number.txt",
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
+@needs("posix")
 def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
     """Both checkout jobs stop before repository scripts run unless HEAD is the workflow commit."""
     root = Path(__file__).parents[1]
@@ -231,5 +227,4 @@ def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
             }
     assert_output(
         json.dumps(results, indent=2, sort_keys=True) + "\n",
-        root / "tests/data/expected/release_draft_workflow/trusted_checkout.txt",
     )

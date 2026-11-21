@@ -127,7 +127,7 @@ def build_base_config_parameters(
             config_parameters[to] = not value if invert else value
 
     for data_type in all_data_types:
-        if data_type.is_custom_type:  # pragma: no cover
+        if data_type.is_custom_type:
             config_parameters["arbitrary_types_allowed"] = True
             break
 

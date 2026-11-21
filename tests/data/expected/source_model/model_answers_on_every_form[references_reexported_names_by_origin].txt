@@ -1,0 +1,11 @@
+== references
+10:0 BACKEND store in <module> -> local <module> @10
+11:0 OUTPUT_FAMILY store in <module> -> local <module> @11
+11:16 DataModelType load in <module> -> local <module> @7; origin datamodel_code_generator.base_config.DataModelType
+15:11 import_module load in load -> global <module> @8; origin datamodel_code_generator.format.import_module
+15:25 BACKEND load in load -> global <module> @10; origin forms.references.reexported_names_by_origin.BACKEND
+uses of <module>:DataModelType@7: read@11
+uses of <module>:import_module@8: call@15
+uses of <module>:BACKEND@10: argument@15
+type positions @10: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2 = None
+== code objects: one per scope that compiles on this Python

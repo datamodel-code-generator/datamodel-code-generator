@@ -1,0 +1,20 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  annotations: import-from@7 [always]; origin __future__.annotations
+  Optional: import-from@9 [always]; origin typing.Optional
+  Protocol: import-from@9 [always]; origin typing.Protocol
+  FixtureHost: class@12 [always]
+  read: def@16 [always]
+scope class FixtureHost#0 'FixtureHost': code yes; first line 12
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@13 [always]
+  members: _state
+scope function read#0 'read': code yes; first line 16
+  opened by a node evaluated in <module>#0
+  plain: param@17 [function:body@16]
+  optional: param@18 [function:body@16]
+  quoted: param@19 [function:body@16]
+  wrapped: param@20 [function:body@16]
+  kind: param@21 [function:body@16]
+  kinds: param@22 [function:body@16]
+== code objects: one per scope that compiles on this Python

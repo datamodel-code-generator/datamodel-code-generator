@@ -84,12 +84,19 @@ class AsyncPetsResource:
         Call GET /pets.
         """
         KEYWORDS_0.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
-            options=kwargs.get('options'),
-            response_media_type=kwargs.get('response_media_type'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (
+                    kwargs.get('limit', UNSET),
+                    kwargs.get('labels', UNSET),
+                    kwargs['X_Trace'],
+                    kwargs.get('session', UNSET),
+                ),
+                options=kwargs.get('options'),
+                response_media_type=kwargs.get('response_media_type'),
+            )
+        ).data
 
     @overload
     async def create_pet(
@@ -109,14 +116,16 @@ class AsyncPetsResource:
         Create a pet "quoted" \\ escaped.
         """
         KEYWORDS_1.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            body=kwargs['body'],
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-            response_media_type=kwargs.get('response_media_type'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                body=kwargs['body'],
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+                response_media_type=kwargs.get('response_media_type'),
+            )
+        ).data
 
     @overload
     async def get_pet(
@@ -141,12 +150,14 @@ class AsyncPetsResource:
         Call GET /pets/{petId}.
         """
         KEYWORDS_2.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (kwargs['petId'],),
-            options=kwargs.get('options'),
-            response_media_type=kwargs.get('response_media_type'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (kwargs['petId'],),
+                options=kwargs.get('options'),
+                response_media_type=kwargs.get('response_media_type'),
+            )
+        ).data
 
     async def delete_pets_by_pet_id(
         self,
@@ -156,11 +167,13 @@ class AsyncPetsResource:
         Call DELETE /pets/{petId}.
         """
         KEYWORDS_3.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (kwargs['petId'],),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (kwargs['petId'],),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     async def head_pet(
         self,
@@ -170,11 +183,13 @@ class AsyncPetsResource:
         Call HEAD /pets/{petId}.
         """
         KEYWORDS_4.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (kwargs['petId'],),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (kwargs['petId'],),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     async def attach_files(
         self,
@@ -184,13 +199,15 @@ class AsyncPetsResource:
         Call POST /pets/{petId}/files.
         """
         KEYWORDS_6.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (kwargs['petId'],),
-            body=kwargs['body'],
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (kwargs['petId'],),
+                body=kwargs['body'],
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     async def read_files(
         self,
@@ -200,12 +217,14 @@ class AsyncPetsResource:
         Call GET /pets/{petId}/files.
         """
         KEYWORDS_7.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (kwargs['petId'],),
-            options=kwargs.get('options'),
-            response_media_type=kwargs.get('response_media_type'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (kwargs['petId'],),
+                options=kwargs.get('options'),
+                response_media_type=kwargs.get('response_media_type'),
+            )
+        ).data
 
 
 class AsyncPetsWithResponse:
@@ -225,7 +244,12 @@ class AsyncPetsWithResponse:
         KEYWORDS_0.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -364,7 +388,12 @@ class AsyncPetsWithRawResponse:
         KEYWORDS_0.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -488,7 +517,12 @@ class AsyncPetsWithStreamingResponse:
         KEYWORDS_0.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )

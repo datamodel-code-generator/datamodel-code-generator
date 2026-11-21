@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: Mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Code:
+      type: string
+      minLength: 2
+    Base:
+      type: object
+      properties:
+        id:
+          type: string

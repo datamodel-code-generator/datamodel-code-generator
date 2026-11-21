@@ -44,6 +44,10 @@ class Cross(Base, kw_only=True):
     value: Int
     typename__: Literal['Cross'] | UnsetType = field(name='__typename', default='Cross')
 
+    @property
+    def __typename(self) -> Literal['Cross'] | UnsetType:
+        return self.typename__
+
 
 class Item(ZNode, kw_only=True):
     camel_value: Int = field(name='camelValue')
@@ -51,12 +55,20 @@ class Item(ZNode, kw_only=True):
     typename___1_1: Int = field(name='typename___1')
     typename___1: Literal['Item'] | UnsetType = field(name='__typename', default='Item')
 
+    @property
+    def __typename(self) -> Literal['Item'] | UnsetType:
+        return self.typename___1
+
 
 class Ordinary(Base):
     value: Int
     typename__: Literal['Ordinary'] | UnsetType = field(
         name='__typename', default='Ordinary'
     )
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | UnsetType:
+        return self.typename__
 
 
 class Second(ZNode, kw_only=True):
@@ -67,10 +79,18 @@ class Second(ZNode, kw_only=True):
         name='__typename', default='Second'
     )
 
+    @property
+    def __typename(self) -> Literal['Second'] | UnsetType:
+        return self.typename___1
+
 
 class Solo(Struct):
     typename__: String
     typename___1: Literal['Solo'] | UnsetType = field(name='__typename', default='Solo')
+
+    @property
+    def __typename(self) -> Literal['Solo'] | UnsetType:
+        return self.typename___1
 
 
 class ItemInput(Struct):

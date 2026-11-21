@@ -1,0 +1,14 @@
+exit: 0
+tests/test_skips.py:9: raw-skip: pytest.mark.skipif
+tests/test_skips.py:10: raw-skip: pytest.mark.skipif
+tests/test_skips.py:12: raw-skip: pytest.mark.skip
+tests/test_skips.py:14: raw-skip: pytest.skip
+tests/test_skips.py:15: raw-skip: pytest.importorskip
+tests/test_skips.py:17: raw-skip: pytest.mark.skipif
+tests/test_skips.py:19: raw-skip: pytest.skip
+tests/test_skips.py:22: raw-skip: unittest.skipUnless
+tests/test_skips.py:23: raw-skip: unittest.skipIf
+tests/test_skips.py:25: raw-skip: unittest.SkipTest
+
+rule counts:
+  raw-skip: 10 (ratchet); fix: say what the test needs with a capability of tests/capabilities.py (`@needs("symlinks")`), adding one with its reason when none fits; delete a skip that no lane takes

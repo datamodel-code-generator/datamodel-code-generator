@@ -54,8 +54,11 @@ _PARSER_PARAMETERS = frozenset({"host", "parser"})
 _RECEIVER_DECORATORS = frozenset({"classmethod", "staticmethod"})
 
 
-def _takes_parser(node: ast.stmt) -> bool:
-    return isinstance(node, ast.FunctionDef) and bool(node.args.args) and node.args.args[0].arg in _PARSER_PARAMETERS
+def _parser_parameter(node: ast.stmt) -> str | None:
+    """Return the name of the parser parameter a function takes first, or None."""
+    if isinstance(node, ast.FunctionDef) and node.args.args and node.args.args[0].arg in _PARSER_PARAMETERS:
+        return node.args.args[0].arg
+    return None
 
 
 class _UndoRewrite(ast.NodeTransformer):
@@ -135,9 +138,10 @@ def _normalized_old(node: ast.stmt, name: str, transformer: _UndoRewrite, *, tak
 
 def _normalized_new(node: ast.stmt) -> str:
     node = ast.parse(ast.unparse(node)).body[0]
-    if _takes_parser(node) and (name := node.args.args[0].arg) != "parser":
-        node = _Renamed(name).visit(node)
-        node.args.args[0].arg = "parser"
+    if (name := _parser_parameter(node)) is not None and name != "parser":
+        renamed = _Renamed(name).visit(node)
+        renamed.args.args[0].arg = "parser"
+        node = renamed
     return _without_parameter_annotations(node)
 
 
@@ -170,7 +174,7 @@ def main() -> int:
         for name, node in _definitions(ast.parse(path.read_text(encoding="utf-8"))).items():
             if name not in before:
                 new_by_name[name] = (relative, node)
-    takes_parser = {name: _takes_parser(node) for name, (_, node) in new_by_name.items()}
+    takes_parser = {name: _parser_parameter(node) is not None for name, (_, node) in new_by_name.items()}
     transformer = _UndoRewrite(renames, takes_parser)
     old_by_new_name = {transformer.function_name(method): method for method in old_methods if method.startswith("__")}
     changed = 0

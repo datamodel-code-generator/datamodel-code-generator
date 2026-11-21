@@ -21,7 +21,9 @@ ValuesGetQueryCodesParameterItem = TypeAliasType(
 )
 
 
-ValuesGetQueryCodesParameter = TypeAliasType("ValuesGetQueryCodesParameter", list[ValuesGetQueryCodesParameterItem])
+ValuesGetQueryCodesParameter = TypeAliasType(
+    "ValuesGetQueryCodesParameter", list[ValuesGetQueryCodesParameterItem]
+)
 
 
 ValuesGetQueryPlainParameter = TypeAliasType(

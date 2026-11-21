@@ -1,0 +1,53 @@
+asyncapi: 2.6.0
+info:
+  title: Converted payloads beside JSON Schema payloads
+  version: 1.0.0
+channels:
+  hands:
+    publish:
+      message:
+        name: Hand
+        schemaFormat: application/vnd.apache.avro+json;version=1.9.0
+        payload:
+          type: record
+          name: Hand
+          fields:
+            - name: suit
+              type: {type: enum, name: Suit, symbols: [CLUBS, HEARTS]}
+              default: HEARTS
+  paints:
+    publish:
+      message:
+        name: Paint
+        schemaFormat: application/xml;version=1.0
+        payload: |
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:simpleType name="Color">
+              <xs:restriction base="xs:string">
+                <xs:enumeration value="red"/>
+                <xs:enumeration value="blue"/>
+              </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="Paint">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="color" type="Color" default="blue" minOccurs="0"/>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+  shades:
+    publish:
+      message:
+        name: Shade
+        payload:
+          type: object
+          properties:
+            tone:
+              $ref: '#/components/schemas/Tone'
+              default: dark
+components:
+  schemas:
+    Tone:
+      type: string
+      enum: [dark, light]

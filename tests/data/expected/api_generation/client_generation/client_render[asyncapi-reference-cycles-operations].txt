@@ -1,0 +1,3 @@
+# asyncapi-reference-cycles-operations
+render pydantic_v2.BaseModel
+  Error: /channels/quotes: operation /operations/looped references another document

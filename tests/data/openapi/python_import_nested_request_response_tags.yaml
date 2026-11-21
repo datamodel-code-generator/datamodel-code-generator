@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Tags
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Tag:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true

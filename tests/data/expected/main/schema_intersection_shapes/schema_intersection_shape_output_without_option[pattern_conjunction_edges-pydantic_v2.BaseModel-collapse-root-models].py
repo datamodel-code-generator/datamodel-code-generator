@@ -61,8 +61,8 @@ class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    rust_escape: constr(pattern=r'(?=\p{L})(?=a)') | None = None
-    braced_escape: constr(pattern=r'(?=a)(?=\x{62})') | None = None
+    rust_escape: str | None = None
+    braced_escape: str | None = None
     repeated_name: constr(pattern=r'(?=(?P<n>a))(?=(?P<n>b)c)') | None = None
     global_flags: constr(pattern=r'(?=(?i)a)(?=b)') | None = None
     python_rejects: constr(pattern=r'(?=a)(?=(?U)b+)') | None = None
@@ -82,7 +82,7 @@ class Model(BaseModel):
     trailing_newline_enum: TrailingNewlineEnum | None = None
     python_rejected_enum: PythonRejectedEnum | None = None
     non_alike_enum: NonAlikeEnum | None = None
-    python_group_name: constr(pattern=r'(?=a)(?=(?<n>b))') | None = None
+    python_group_name: str | None = None
     non_portable_enum: NonPortableEnum | None = None
     bad_range_enum: BadRangeEnum | None = None
     non_identifier_group_name: constr(pattern=r'(?=a)(?=(?P<ids[]>b))') | None = None

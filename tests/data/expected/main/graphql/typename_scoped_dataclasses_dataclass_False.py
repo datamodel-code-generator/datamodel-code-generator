@@ -67,6 +67,10 @@ class Item(Mid, Base):
     typename___1: Int = field()
     typename___2: Literal['Item'] | None = 'Item'
 
+    @property
+    def __typename(self) -> Literal['Item'] | None:
+        return self.typename___2
+
 
 @dataclass
 class Multi(OtherBase, Side, Common):
@@ -75,11 +79,19 @@ class Multi(OtherBase, Side, Common):
     typename__: Int = field()
     typename___1: Literal['Multi'] | None = 'Multi'
 
+    @property
+    def __typename(self) -> Literal['Multi'] | None:
+        return self.typename___1
+
 
 @dataclass
 class MultiOrdinary(OtherBase, Common):
     value: Int
     typename__: Literal['MultiOrdinary'] | None = 'MultiOrdinary'
+
+    @property
+    def __typename(self) -> Literal['MultiOrdinary'] | None:
+        return self.typename__
 
 
 @dataclass
@@ -87,6 +99,10 @@ class Ordinary(Base):
     value: Int
     label: String = field(kw_only=True)
     typename___1: Literal['Ordinary'] | None = 'Ordinary'
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | None:
+        return self.typename___1
 
 
 @dataclass
@@ -96,3 +112,7 @@ class Terminal(Mid, Base):
     typename___2: Int = field()
     typename___1: Int = field()
     typename___3: Literal['Terminal'] | None = 'Terminal'
+
+    @property
+    def __typename(self) -> Literal['Terminal'] | None:
+        return self.typename___3

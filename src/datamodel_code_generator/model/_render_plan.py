@@ -13,14 +13,19 @@ member is a field of the output's backend). The parser freezes one plan per fiel
 render preparation ends (B2), and the field's ``field``, ``annotated``, ``type_hint``, ``represented_default``,
 ``has_default_factory_in_field`` and imports read the frozen plan from then on. Before B2, and for a field that no
 parse froze, they read the plan the parse's memo keeps for the field (``model/base.py:live_render_plan``) while the
-revisions it read hold, and B2 freezes that plan; the field's imports are kept the same way, by the plan they read
-(``model/base.py:field_imports``).
-A field, model or parser of a class outside this package computes both at each read. A frozen plan keeps its field's
-revisions, or, for such a class or under custom templates, the contents of what it read from its field; a field whose
-revisions or contents differ when its model renders, as a model's ``render`` may change them, renders from a plan
-rebuilt then. A plan holds values, not text: its text is
-written when it is read, so the names it holds (the model a default factory builds, an aliased pattern expression) are
-the final ones.
+revisions it read hold; the field's imports are kept the same way, by the plan they read
+(``model/base.py:field_imports``); those of a Pydantic v2 field known to write no call are kept without one
+(``_FieldRender.imports``). One accessor resolves both (``model/base.py:_field_render``).
+A field, model or parser of a class outside this package computes both at each read. B2 builds each plan from the
+field's facts, which are final then, and keeps with it the expression of the field's type hint, which the field's
+``type_hint`` renders from then on. A plan of a field of this package's classes is final, except one that holds a copy
+of the field's type (msgspec's ``written_type``, or a Pydantic field's copy without the patterns ``python-re``
+cannot compile, #6941), which keeps its field's revisions; a plan of a class outside this
+package, or under custom templates, keeps the contents of what it read from its field. A field whose revisions or
+contents differ when its model renders, as a model's ``render`` may change them, renders from a plan rebuilt then; the
+expression of such a class is built at each read. A plan holds
+values, not text: its text is written when it is read, so the names it holds (the model a default factory builds, an
+aliased pattern expression) are the final ones.
 
 Named legacy row ``legacy.L-NF``: render preparation decides the default factories of optional nested models
 (``NestedFactoryMetadata``) before B2, but the import snapshot reads each field as if the factory were written, as it
@@ -85,6 +90,7 @@ __all__ = [
     "RuleId",
     "Why",
     "field_call_text",
+    "frozen_field_hint",
     "frozen_render_plan",
     "unchanged_render_inputs",
     "visible_nested_factories",
@@ -257,7 +263,8 @@ OmitReason: TypeAlias = Literal[
 * ``use-field-description``: ``--use-field-description`` writes the description as the field's docstring.
 * ``backend-cannot-express``: the backend has no argument for it (``unique_items`` in Pydantic 2 and msgspec, a
   non-finite bound in msgspec ``Meta``).
-* ``union-mode-inapplicable``: ``union_mode`` on a type that is no union, or beside a discriminator.
+* ``union-mode-inapplicable``: ``union_mode`` on a type that is no union, beside a discriminator, or beside a
+  constraint Pydantic applies around the union (``min_length``, ``ge``, ...).
 * ``alias-generator-reproduces``: the model's alias generator gives the same alias.
 * ``validation-aliases``: ``AliasChoices`` replaces the single alias.
 * ``serialization-alias-is-name``: the serialization alias equals the field name.
@@ -413,13 +420,15 @@ class CallPlan:
 class FieldDefault:
     """The default a field writes: its value, or Pydantic's ``MISSING`` sentinel (``--use-missing-sentinel``).
 
-    ``items`` are the declared items a default written alone (``FieldRenderPlan.bare_default``) writes.
+    ``items`` are the declared items a default written alone (``FieldRenderPlan.bare_default``) writes. ``casts`` is
+    whether the class body casts the value to the field's type (``typing.cast``), which names the type when it is read.
     """
 
     value: object
     missing_sentinel: bool
     why: Why
     items: tuple[str, ...] = ()
+    casts: bool = False
 
 
 AnnotationForm: TypeAlias = Literal["plain", "annotated", "classvar"]
@@ -441,8 +450,10 @@ class FieldRenderPlan:
     the annotation; a msgspec or stdlib dataclass field with ``bare_default`` writes its default alone after the
     annotation. ``written_type`` is the type a msgspec annotation writes when it writes a copy of the field's type: its
     ``Annotated`` type, or its union with ``UnsetType``; the type writes its text when it is read. It is a ``DataType``,
-    typed ``object`` since importing ``types`` here would close an import cycle. ``qualifiers`` name the subscripts
-    that wrap the type hint, innermost first (``TypedDict``'s ``ReadOnly``, ``NotRequired``).
+    typed ``object`` since importing ``types`` here would close an import cycle. A Pydantic field holds it when its type
+    writes a pattern that Python's ``re`` rejects in a model built with ``python-re``: the copy is written without it.
+    ``qualifiers`` name the subscripts that wrap the type hint, innermost first (``TypedDict``'s ``ReadOnly``,
+    ``NotRequired``).
     """
 
     annotation_form: AnnotationForm
@@ -533,14 +544,18 @@ class NestedFactoryMetadata:
 class _FrozenPlan(NamedTuple):
     """A field's frozen plan, the plan the import snapshot reads if different, and what the plan read from the field.
 
-    ``inputs`` are the field's revisions (`ParseMemo.revision`) when the plan was frozen, or, for a class outside this
-    package or under custom templates, its ``_render_inputs``.
+    ``inputs`` are None for a final plan, the field's revisions (`ParseMemo.revision`) when the plan was frozen for a
+    plan that holds a copy of the field's type, or, for a class outside this package or under custom templates, its
+    ``_render_inputs``. ``hint`` is the expression of the field's type hint then (``types.type_expr_of``), which the
+    field renders unless the plan keeps contents (``RenderReady.hint_of``); this module only keeps it, so it does not
+    import ``types``, which imports the models.
     """
 
     field: object
     plan: FieldRenderPlan
     import_plan: FieldRenderPlan | None
-    inputs: _FieldRevision | RenderInputs
+    inputs: _FieldRevision | RenderInputs | None
+    hint: object
 
 
 @final
@@ -548,9 +563,11 @@ class RenderReady:
     """The field render plans one parse froze at B2, and the nested-factory decision render preparation made.
 
     A plan is looked up by its field object. ``import_view`` returns, inside it, the second plan of a field that row
-    ``legacy.L-NF`` keeps. Each plan keeps its field's revisions or the contents of what it read from its field, and
-    ``refreshed`` rebuilds it when the field's model renders with them changed, as a model's ``render`` that changes its
-    fields first does.
+    ``legacy.L-NF`` keeps. A plan that holds a copy of the field's type keeps its field's revisions, a plan of a class
+    outside this package or under custom templates the contents of what it read from its field, and ``refreshed``
+    rebuilds such a plan when the field's model renders with them changed, as a model's ``render`` that changes its
+    fields first does. Every other plan is final. Each plan keeps the expression of the field's type hint, which a field
+    whose plan keeps no contents renders (``hint_of``).
     """
 
     __slots__ = ("_deciding", "_import_view", "_plans", "_rebuilding", "memo", "nested_factories")
@@ -568,9 +585,11 @@ class RenderReady:
         self.memo = memo if _package_class(parser_class) else None
         self.nested_factories: NestedFactoryMetadata | None = None
 
-    def freeze(self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None = None) -> None:
-        """Keep the field's plan and the plan the import snapshot reads if different."""
-        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, self._frozen_inputs(field))
+    def freeze(
+        self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None, hint: object
+    ) -> None:
+        """Keep the field's plan, the plan the import snapshot reads if different, and the expression of its hint."""
+        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, self._frozen_inputs(field, plan), hint)
 
     def plan_of(self, field: object) -> FieldRenderPlan | None:
         """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it.
@@ -587,15 +606,31 @@ class RenderReady:
         """Rebuild the plan frozen for ``field`` if what it read from the field changed since; return the rebuilt plan.
 
         The plan is rebuilt from the field's facts as the frozen plans' check rebuilds it, and kept with what it read
-        now; the import snapshot's plan stays. Return None when the parse froze no plan for the field or its revisions,
-        or the contents it read, are the same.
+        now; the import snapshot's plan and the hint's expression stay. Return None when the parse froze no plan for the
+        field, its plan is final, or its revisions, or the contents it read, are the same.
         """
-        if (entry := self._plans.get(id(field))) is None or self._unchanged(field, entry.inputs):
+        if (entry := self._plans.get(id(field))) is None or (inputs := entry.inputs) is None:
+            return None
+        if self._unchanged(field, inputs):
             return None
         with self.rebuilding():
             plan = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
-        self._plans[id(field)] = entry._replace(plan=plan, inputs=self._frozen_inputs(field))
+        self._plans[id(field)] = entry._replace(plan=plan, inputs=self._frozen_inputs(field, plan))
         return plan
+
+    def hint_of(self, field: object) -> object:
+        """Return the expression of the field's type hint kept with its plan, or None where it is built at each read.
+
+        It is built at each read where the plan keeps the contents it read, which a pass of a class outside this package
+        may change after B2, and where a field is rebuilt to compare with its entry.
+        """
+        if (
+            self._rebuilding
+            or (entry := self._plans.get(id(field))) is None
+            or (entry.inputs is not None and type(entry.inputs) is not _FieldRevision)
+        ):
+            return None
+        return entry.hint
 
     def derived_from(self, field: Any) -> ParseMemo | None:
         """Return the memo that keeps the derived values of ``field`` now (`memo`, `_derives`), or None.
@@ -604,17 +639,18 @@ class RenderReady:
         """
         return self.memo if self.memo is not None and not self._rebuilding and _derives(field) else None
 
-    def _frozen_inputs(self, field: Any) -> _FieldRevision | RenderInputs:
-        """Return what a frozen plan compares when its model renders: the field's revisions when the memo keeps them.
+    def _frozen_inputs(self, field: Any, plan: FieldRenderPlan) -> _FieldRevision | RenderInputs | None:
+        """Return what a frozen plan compares when its model renders, or None for a final plan.
 
         A field, model or parser of a class outside this package, or a model under custom templates, which see the raw
-        fields, keeps the contents of what the plan read (``_render_inputs``).
+        fields, keeps the contents of what the plan read (``_render_inputs``). A plan that holds a copy of the field's
+        type (``written_type``) keeps the field's revisions: a name written after B2 reaches the type, not the copy.
         """
         if (memo := self.derived_from(field)) is None or (
             (parent := field.parent) is not None and parent._custom_template_dir is not None  # noqa: SLF001
         ):
             return field._render_inputs()  # noqa: SLF001
-        return _FieldRevision(*memo.revision(field))
+        return None if plan.written_type is None else _FieldRevision(*memo.revision(field))
 
     def _unchanged(self, field: Any, inputs: _FieldRevision | RenderInputs) -> bool:
         """Return whether what a frozen plan read from its field holds: its revisions, or its contents."""
@@ -670,6 +706,16 @@ def frozen_render_plan(field: object) -> FieldRenderPlan | None:
     if (ready := RENDER_READY.get()) is None:
         return None
     return ready.plan_of(field)
+
+
+def frozen_field_hint(field: object) -> object:
+    """Return the expression of the field's type hint the running parse kept at B2 (``RenderReady.hint_of``), or None.
+
+    None before B2, outside a parse, and for a field whose expression is built at each read.
+    """
+    if (ready := RENDER_READY.get()) is None:
+        return None
+    return ready.hint_of(field)
 
 
 _PACKAGE_CLASSES: Final[dict[type | None, bool]] = {None: True, type(None): True}

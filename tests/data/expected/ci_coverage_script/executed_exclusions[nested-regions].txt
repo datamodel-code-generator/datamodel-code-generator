@@ -1,0 +1,2 @@
+Executed coverage exclusions: 1
+sign.py:8 [(top level)] 2 line(s) ran: def clamp(value):  # pragma: no cover

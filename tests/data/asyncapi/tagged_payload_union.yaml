@@ -1,0 +1,29 @@
+asyncapi: 3.0.0
+info:
+  title: Jobs
+  version: 1.0.0
+channels:
+  jobs:
+    address: jobs
+    messages:
+      command:
+        payload:
+          $ref: '#/components/schemas/Command'
+operations:
+  sendCommand:
+    action: send
+    channel: {$ref: '#/channels/jobs'}
+components:
+  schemas:
+    Command:
+      oneOf:
+        - type: object
+          properties:
+            op: {type: string, const: start}
+            job: {type: string}
+          required: [op, job]
+        - type: object
+          properties:
+            op: {type: string, const: cancel}
+            reason: {type: string}
+          required: [op]

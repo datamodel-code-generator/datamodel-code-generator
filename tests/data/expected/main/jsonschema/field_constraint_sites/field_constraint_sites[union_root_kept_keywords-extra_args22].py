@@ -7,7 +7,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Union
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, constr
 
 
 class Item(BaseModel):
@@ -36,7 +36,7 @@ class TextOrLoop1(RootModel[str]):
 
 
 class Model(BaseModel):
-    text: Item | str | None = Field(None, max_length=3)
+    text: Item | constr(max_length=3) | None = None
     count: CountOrNumber1 | int | None = Field(None, ge=3)
     code: Code | CodeOrText1 | None = Field(None, max_length=3)
     loop: TextOrLoop1 | Loop | None = None

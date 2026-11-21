@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Account",
+  "type": "object",
+  "properties": {
+    "password": {"type": "string", "pattern": "^(?=.*[A-Z]).{8,}$"},
+    "name": {"$ref": "#/definitions/Name"},
+    "nicknames": {"type": "array", "items": {"type": "string", "pattern": "^\\p{L}+$"}},
+    "labels": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^\\p{L}+$"}},
+    "scores": {"type": "object", "propertyNames": {"pattern": "^\\p{L}+$"}, "additionalProperties": {"type": "integer"}},
+    "handle": {"anyOf": [{"type": "string", "pattern": "^\\p{L}+$", "maxLength": 8}, {"type": "integer"}]},
+    "avatar": {"type": "string", "format": "byte", "pattern": "^\\p{L}*$", "maxLength": 12}
+  },
+  "definitions": {
+    "Name": {"type": "string", "pattern": "^\\p{L}+$"}
+  }
+}

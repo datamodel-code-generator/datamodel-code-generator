@@ -1,0 +1,12 @@
+[
+  "seed: valid",
+  "/0 const \"1\": valid",
+  "/0 const 1: valid",
+  "/0 const 1.0: valid",
+  "/0 const [1]: valid",
+  "/0 const null: valid",
+  "/0 const true: valid",
+  "/0 const {\"a\": 1}: valid",
+  "contains [\"a\", \"a\"]: invalid",
+  "minItems [1]: invalid"
+]

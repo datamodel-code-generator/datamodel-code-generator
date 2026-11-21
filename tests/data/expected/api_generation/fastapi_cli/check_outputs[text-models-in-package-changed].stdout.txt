@@ -1,0 +1,16 @@
+--- server/models.py
++++ server/models.py (expected)
+@@ -71,4 +71,3 @@
+ 
+ class StoreInventoryGetResponse(RootModel[dict[str, int]]):
+     root: dict[str, int]
+-# changed
+--- server/services.py
++++ server/services.py (expected)
+@@ -91,4 +91,3 @@
+         """
+         Handle GET /store/inventory.
+         """
+-# changed
+EXTRA: server/extensions.py (no longer generated)
+MISSING: server/README.md (file does not exist but should be generated)

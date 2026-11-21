@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import is_dataclass, replace
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.api_generation.support.client_runtime import (
@@ -29,7 +31,40 @@ _MEMBERS: Final = (
     ("get_holder", "holder square", {"b": 1, "shape": {"side": 2}}),
     ("get_inline", "inline circle", {"b": 1, "shape": {"radius": 1}}),
     ("get_inline", "inline square", {"b": 1, "shape": {"side": 2}}),
+    ("get_level", "level 1", {"level": 1, "since": "2024-01-02"}),
+    ("get_level", "level 2", {"level": 2, "certified": "2024-01-02T03:04:05Z"}),
+    ("get_level", "level named as its schema", {"level": "Basic", "since": "2024-01-02"}),
+    ("get_level", "level true is no integer", {"level": True, "since": "2024-01-02"}),
+    ("get_rank", "rank 1", {"rank": 1, "since": "2024-01-02"}),
+    ("get_rank", "rank 2", {"rank": 2, "certified": "2024-01-02T03:04:05Z"}),
+    ("get_switch", "switch on", {"enabled": True, "since": "2024-01-02"}),
+    ("get_switch", "switch off", {"enabled": False, "until": "2024-01-02T03:04:05Z"}),
+    ("get_switch", "switch 1 is no true", {"enabled": 1, "since": "2024-01-02"}),
+    ("get_switch", "switch 0 is no false", {"enabled": 0, "until": "2024-01-02T03:04:05Z"}),
+    ("get_mixed", "mixed integer", {"code": 1, "since": "2024-01-02"}),
+    ("get_mixed", "mixed boolean", {"code": True, "until": "2024-01-02T03:04:05Z"}),
+    ("get_odd", "odd plain", {"kind": "plain", "since": "2024-01-02"}),
+    ("get_odd", "odd object", {"kind": {"a": 1}, "until": "2024-01-02T03:04:05Z"}),
+    ("get_animal", "animal cat", {"kind": "cat", "born": "2024-01-02"}),
+    ("get_animal", "animal dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
+    ("get_feline", "feline cat", {"kind": "cat", "born": "2024-01-02"}),
+    ("get_feline", "feline kitty", {"kind": "kitty", "born": "2024-01-02"}),
+    ("get_feline", "feline named as its schema", {"kind": "Feline", "born": "2024-01-02"}),
+    ("get_feline", "feline dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
+    ("get_mapped_feline", "mapped feline cat", {"kind": "cat", "born": "2024-01-02"}),
+    ("get_mapped_feline", "mapped feline kitty", {"kind": "kitty", "born": "2024-01-02"}),
+    ("get_mapped_feline", "mapped feline dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
+    ("get_grade", "grade 1", {"grade": 1, "since": "2024-01-02"}),
+    ("get_grade", "grade 2", {"grade": 2, "until": "2024-01-02T03:04:05Z"}),
+    ("get_grade", "grade '1' is no integer", {"grade": "1", "since": "2024-01-02"}),
 )
+
+
+class _Level(Enum):
+    one = 1
+    two = 2
+
+
 _COPIES: Final = (
     ("get_child", "inherited pet c", {"pet": {"kind": "c", "mane": True}, "pets_by_name": {"a": {"kind": "d"}}}),
     ("get_child", "inherited pet d", {"pet": {"kind": "d"}, "pets_by_name": {"b": {"kind": "c", "mane": False}}}),
@@ -50,6 +85,26 @@ def unions(package: ModuleType, lines: list[str]) -> None:
             if (method := getattr(api.default, operation, None)) is not None:
                 exchange.respond(json_response(200, payload))
                 record(lines, label, method)
+
+
+def _with_member(body: object, member: _Level) -> object:
+    """Return the body with its tag field holding the Enum member."""
+    if isinstance(body, dict):
+        return {**body, "level": member}
+    return replace(body, level=member) if is_dataclass(body) and not isinstance(body, type) else body
+
+
+def enum_tag_bodies(package: ModuleType, lines: list[str]) -> None:
+    """Send bodies of a union whose tag is an Enum member, which selects the variant its value tags."""
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for member, wire in (
+            (_Level.one, {"level": 1, "since": "2024-01-02"}),
+            (_Level.two, {"level": 2, "certified": "2024-01-02T03:04:05Z"}),
+        ):
+            body = _with_member(request_body(package, "createLevel", None, wire), member)
+            exchange.respond(raw_response(204))
+            record(lines, f"send {member.name}", lambda body=body: api.default.create_level(body=body))
 
 
 def _split(exchange: Exchange, api: Any, package: ModuleType, payload: dict[str, object]) -> Callable[[], Any]:

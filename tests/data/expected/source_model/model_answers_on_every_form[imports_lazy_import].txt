@@ -1,0 +1,16 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  json: import@7 [always]; origin json
+  path: import-from@8 [always]; origin os.path
+  f: def@11 [always]
+scope function f#0 'f': code yes; first line 11
+  opened by a node evaluated in <module>#0
+== references
+12:11 json load in f -> global <module> @7; origin json
+12:23 path load in f -> global <module> @8; origin os.path
+uses of <module>:json@7: read@12
+uses of <module>:path@8: read@12
+== imports
+import@7 json as json from json in <module> [always]; lazy; unconditional
+from@8 os.path as path from os in <module> [always]; lazy; unconditional
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,33 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       0      -1
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       0      -1
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:B009@tests                                    0       1      +1
+ruff:F401@src                                      0       1      +1
+ruff:PLC0415@src                                   1       1       0
+ruff:RUF105@src                                    0       2      +2
+unreadable:hook-arg:--config                       0       1      +1
+unreadable:hook-arg:--select                       0       1      +1
+
+ruff:B009@tests rose by 1 (0 -> 1). Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore count the same, so moving one changes nothing; if one must stay, remove another suppression of this rule in the same area.
+  tests/test_a.py: 0 -> 1 (lines 8)
+
+ruff:F401@src rose by 1 (0 -> 1). Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore count the same, so moving one changes nothing; if one must stay, remove another suppression of this rule in the same area.
+  src/pkg/generated/out.py: 0 -> 1 (lines 1)
+
+ruff:RUF105@src rose by 2 (0 -> 2). Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore count the same, so moving one changes nothing; if one must stay, remove another suppression of this rule in the same area.
+  src/pkg/a.py: 0 -> 1 (lines 5)
+  src/pkg/generated/out.py: 0 -> 1 (lines 1)
+
+unreadable:hook-arg:--config in .pre-commit-config.yaml: the counter cannot read it. Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config (put those in pyproject.toml), so that the counter can read them.
+
+unreadable:hook-arg:--select in .pre-commit-config.yaml: the counter cannot read it. Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config (put those in pyproject.toml), so that the counter can read them.
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

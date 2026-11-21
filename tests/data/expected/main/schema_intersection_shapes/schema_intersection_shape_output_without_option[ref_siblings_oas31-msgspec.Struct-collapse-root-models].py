@@ -181,8 +181,8 @@ class Model(Struct):
     wc_prop: AB | UnsetType = UNSET
     wc_items: list[AB] | UnsetType = UNSET
     wc_map: dict[str, AB] | UnsetType = UNSET
-    wd: Annotated[int, Meta(examples=[1, 2], ge=1)] | UnsetType = UNSET
-    wd_prop: Annotated[int, Meta(examples=[1, 2], ge=1)] | UnsetType = UNSET
+    wd: Annotated[int, Meta(examples=[1, 2], ge=1, le=10)] | UnsetType = UNSET
+    wd_prop: Annotated[int, Meta(examples=[1, 2], ge=1, le=10)] | UnsetType = UNSET
     wd_items: list[Q] | UnsetType = UNSET
     wd_map: dict[str, WdMap] | UnsetType = UNSET
     we: Annotated[int, Meta(examples=[1, 2], ge=1)] | UnsetType = UNSET

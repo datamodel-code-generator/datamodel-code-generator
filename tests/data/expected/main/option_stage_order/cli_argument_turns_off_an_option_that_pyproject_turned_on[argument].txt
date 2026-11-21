@@ -1,0 +1,4 @@
+UserWarning: --field-constraints was turned off but stays on: use-annotated = true in pyproject.toml turns it on, which --no-use-annotated does not undo; use-annotated = false in pyproject.toml or --read-implied-options-from-merged-values turns it off
+exit: OK
+resolved:
+  a: int | None = Field(None, le=10)

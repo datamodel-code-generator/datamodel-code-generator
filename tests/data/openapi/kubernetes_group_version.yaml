@@ -1,0 +1,204 @@
+openapi: 3.0.0
+info:
+  title: Kubernetes
+  version: unversioned
+paths:
+  /apis/apps/v1/namespaces/{namespace}/deployments/{name}:
+    get:
+      operationId: readAppsV1NamespacedDeployment
+      x-kubernetes-action: get
+      x-kubernetes-group-version-kind:
+        group: apps
+        kind: Deployment
+        version: v1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/io.k8s.api.apps.v1.Deployment'
+    parameters:
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+components:
+  schemas:
+    io.k8s.apimachinery.pkg.util.intstr.IntOrString:
+      description: IntOrString is a type that can hold an int32 or a string.
+      format: int-or-string
+      oneOf:
+      - type: integer
+      - type: string
+    io.k8s.apimachinery.pkg.api.resource.Quantity:
+      description: Quantity is a fixed-point representation of a number.
+      oneOf:
+      - type: string
+      - type: number
+    io.k8s.apimachinery.pkg.runtime.RawExtension:
+      description: RawExtension is used to hold extensions in external versions.
+      type: object
+    io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta:
+      description: ObjectMeta is metadata that all persisted resources must have.
+      type: object
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            default: ''
+            type: string
+    io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions:
+      description: DeleteOptions may be provided when deleting an API object.
+      type: object
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        dryRun:
+          type: array
+          items:
+            default: ''
+            type: string
+          x-kubernetes-list-type: atomic
+        gracePeriodSeconds:
+          format: int64
+          type: integer
+      x-kubernetes-group-version-kind:
+      - group: ''
+        kind: DeleteOptions
+        version: v1
+      - group: apps
+        kind: DeleteOptions
+        version: v1
+    io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent:
+      description: Event represents a single event to a watched resource.
+      type: object
+      required:
+      - type
+      - object
+      properties:
+        object:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.apimachinery.pkg.runtime.RawExtension'
+        type:
+          default: ''
+          type: string
+      x-kubernetes-group-version-kind:
+      - group: ''
+        kind: WatchEvent
+        version: v1
+      - group: apps
+        kind: WatchEvent
+        version: v1
+    io.k8s.api.apps.v1.RollingUpdateDeployment:
+      description: Spec to control the desired behavior of rolling update.
+      type: object
+      properties:
+        maxSurge:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.apimachinery.pkg.util.intstr.IntOrString'
+        maxUnavailable:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.apimachinery.pkg.util.intstr.IntOrString'
+    io.k8s.api.apps.v1.DeploymentSpec:
+      description: DeploymentSpec is the specification of the desired behavior of the Deployment.
+      type: object
+      properties:
+        replicas:
+          format: int32
+          type: integer
+        selector:
+          type: object
+          additionalProperties:
+            type: string
+        strategy:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.api.apps.v1.RollingUpdateDeployment'
+          default: {}
+    io.k8s.api.apps.v1.Deployment:
+      description: Deployment enables declarative updates for Pods and ReplicaSets.
+      type: object
+      properties:
+        apiVersion:
+          description: APIVersion defines the versioned schema of this representation of an object.
+          type: string
+        kind:
+          description: Kind is a string value representing the REST resource this object represents.
+          type: string
+        metadata:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta'
+          default: {}
+        spec:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.api.apps.v1.DeploymentSpec'
+          default: {}
+      x-kubernetes-group-version-kind:
+      - group: apps
+        kind: Deployment
+        version: v1
+    com.example.v1.Widget:
+      description: Widget is the Schema for the widgets API.
+      type: object
+      required:
+      - spec
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          allOf:
+          - $ref: '#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta'
+        spec:
+          type: object
+          properties:
+            size:
+              allOf:
+              - $ref: '#/components/schemas/io.k8s.apimachinery.pkg.api.resource.Quantity'
+            port:
+              x-kubernetes-int-or-string: true
+            template:
+              type: object
+              properties:
+                apiVersion:
+                  type: string
+                kind:
+                  type: string
+                metadata:
+                  type: object
+              x-kubernetes-embedded-resource: true
+              x-kubernetes-preserve-unknown-fields: true
+          x-kubernetes-preserve-unknown-fields: true
+      x-kubernetes-group-version-kind:
+      - group: example.com
+        kind: Widget
+        version: v1
+    io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.JSONSchemaProps:
+      description: JSONSchemaProps is a JSON-Schema following Specification Draft 4.
+      type: object
+      properties:
+        type:
+          type: string
+        format:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.JSONSchemaProps'
+        x-kubernetes-int-or-string:
+          type: boolean
+        x-kubernetes-preserve-unknown-fields:
+          type: boolean

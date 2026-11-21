@@ -1,0 +1,24 @@
+{
+  "Track": {
+    "type": "track",
+    "name": "a"
+  },
+  "Chapter": {
+    "title": null,
+    "type": "chapter"
+  },
+  "CardPayment": {
+    "kind": "card",
+    "card_number": null
+  },
+  "Queue": {
+    "current": {
+      "type": "track",
+      "name": "a"
+    }
+  },
+  "Payment": {
+    "code": "x",
+    "kind": "voucher"
+  }
+}

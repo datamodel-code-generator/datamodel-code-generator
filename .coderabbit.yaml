@@ -52,6 +52,32 @@ reviews:
     # Exclude IDE/editor files
     - "!.idea/**"
     - "!.vscode/**"
+  # Review guidance. Reports are for defects that a user's ordinary schema or command reaches.
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Report only defects that an ordinary schema or an ordinary command line reaches. Do not ask for defensive code
+        for states that no real schema or command produces (absurd nesting depth, hand-built internal states, values
+        no parser can emit). A rare composition of ordinary features is still a real defect.
+        Report a defect that the pull request did not introduce, but only once, and start the comment with
+        "Pre-existing:" instead of asking for a fix in this pull request.
+        Do not ask to work around the behaviour of an upstream library.
+        Flag speed only when a measured whole-generation slowdown is above about 10 % or the complexity class of an
+        algorithm changes; do not suggest micro-optimizations.
+        The default output of the generator is a contract: a change of generated names, structure or parsed values
+        for an existing schema must be behind an option, and rows of legacy behaviour that tests pin are intentional.
+        Must-check items, always examine them when the diff touches the matching code:
+        - JSON-kind identity: 1, true and "1" are different JSON values; equality, hashing, sets, dict keys and
+          deduplication must not merge them (Python treats 1 == True).
+        - Python-version splits: behaviour that differs between supported Python versions or target Python versions.
+    - path: "src/**/*.py"
+      instructions: |
+        Keep one implementation per decision: a fix belongs in the existing home of that decision, not in a second
+        copy. Check that generated output for existing schemas stays byte-identical unless an option opts in.
+    - path: "tests/data/expected/**"
+      instructions: |
+        Stored output is written by pytest. A hand-edited expected file, or a diff that changes existing default
+        output without an announced option, is a finding.
   tools:
     ruff:
       enabled: true

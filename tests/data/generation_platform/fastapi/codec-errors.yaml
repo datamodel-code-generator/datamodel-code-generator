@@ -8,6 +8,13 @@ paths:
         - {name: choice, in: query, schema: {anyOf: [{type: string}, {type: object}]}}
       responses:
         "204": {description: Done.}
+  /items-or-arrays:
+    get:
+      operationId: getItemsOrArrays
+      parameters:
+        - {name: cwes, in: query, schema: {oneOf: [{type: string}, {type: array, items: {type: string}}]}}
+      responses:
+        "204": {description: Done.}
   /enum-arrays:
     get:
       operationId: getEnumArrays

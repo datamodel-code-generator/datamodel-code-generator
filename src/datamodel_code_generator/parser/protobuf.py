@@ -7,8 +7,9 @@ the descriptor model to JSON Schema definitions for the existing JSON Schema par
 from __future__ import annotations
 
 import contextlib
-import io
+import os
 import re
+import sys
 import tempfile
 from copy import deepcopy
 from pathlib import Path
@@ -17,16 +18,21 @@ from warnings import warn
 
 from typing_extensions import Unpack
 
-from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
-from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator._process import run_captured
+from datamodel_code_generator._python_syntax import normalize_newlines as normalize_newlines
+from datamodel_code_generator._shared_types import Error, SchemaParseError
+from datamodel_code_generator._source import input_text as _input_text
+from datamodel_code_generator.enums import ProtobufVersion, VersionMode
+from datamodel_code_generator.parser import _schema_documents
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.parser.schema_version import configured_version
 from datamodel_code_generator.python_literal import _converted_float, stable_repr
 from datamodel_code_generator.util import (
-    _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
+    _collecting_watch_dependencies,
     record_watch_dependency,
 )
 
@@ -162,20 +168,19 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
 }
 
 
-def _load_grpc_tools() -> tuple[Any, Path]:
+def _load_grpc_tools() -> Path:
     try:
         import grpc_tools  # noqa: PLC0415
-        from grpc_tools import protoc  # noqa: PLC0415
-    except ImportError as exc:  # pragma: no cover
+    except ImportError as exc:
         msg = f"protobuf input requires grpcio-tools. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
-    return protoc, Path(grpc_tools.__file__).parent / "_proto"
+    return Path(grpc_tools.__file__).parent / "protoc.py"
 
 
 def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
-    except ImportError as exc:  # pragma: no cover
+    except ImportError as exc:  # pragma: no cover - the protobuf extra is not installed
         msg = f"protobuf input requires google.protobuf. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
@@ -284,7 +289,7 @@ def convert_protobuf_schema_data(
     )
 
 
-def _convert_protobuf_schema_data(  # noqa: PLR0913
+def _convert_protobuf_schema_data(
     raw_schema: Any,
     *,
     base_path: Path | None = None,
@@ -292,6 +297,7 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
     schema_version_mode: VersionMode | None = None,
     encoding: str = "utf-8",
     source_safe_non_finite: bool,
+    untrusted_input: bool = False,
 ) -> dict[str, Any]:
     """Convert Protocol Buffers data for a parser that may need source-safe float values."""
     if not isinstance(raw_schema, str):
@@ -303,6 +309,7 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
         protobuf_version=protobuf_version,
         schema_version_mode=schema_version_mode,
         encoding=encoding,
+        untrusted_input=untrusted_input,
     )
     return parser._convert_to_json_schema_data(source_safe_non_finite=source_safe_non_finite)  # noqa: SLF001
 
@@ -355,6 +362,16 @@ def _comment_map(file_descriptor: Any) -> dict[tuple[int, ...], str]:
     return comments
 
 
+def _run_protoc(protoc_script: Path, args: Sequence[str]) -> tuple[int, str]:
+    """Run ``protoc`` in its own process and return its exit code and what it printed.
+
+    ``protoc`` is C++ code that writes to its own standard error, so neither ``contextlib.redirect_stderr`` nor
+    redirecting file descriptor 2 sees it where the extension carries its own C runtime (the Windows wheels).
+    """
+    result = run_captured((sys.executable, str(protoc_script), *args))
+    return result.returncode, result.stderr.decode("utf-8", errors="replace").replace("\r\n", "\n")
+
+
 class _ProtoInputPreparer:
     def __init__(self, parser: ProtobufParser) -> None:
         self.parser = parser
@@ -394,6 +411,19 @@ class _ProtoInputPreparer:
         assert self.temp_dir is not None
         self.temp_dir.cleanup()
 
+    def without_temp_dir(self, text: str) -> str:
+        """Return `text` without the run's temporary directory in its paths (`protoc` names files by disk path).
+
+        Each spelling of the directory (as given and resolved) is also taken in its POSIX form: on Windows ``protoc``
+        writes it with forward slashes (``C:/Users/RUNNER~1/...``).
+        """
+        assert self.temp_dir is not None
+        root = Path(self.temp_dir.name)
+        forms = {form for path in (root, Path(os.path.realpath(root))) for form in (str(path), path.as_posix())}
+        prefixes = {form + separator for form in forms for separator in (os.sep, "/", "\\")}
+        pattern = "|".join(re.escape(prefix) for prefix in sorted(prefixes, key=len, reverse=True))
+        return re.sub(pattern, "", text, flags=re.IGNORECASE if sys.platform == "win32" else 0)
+
     def _input_files(self, temp_path: Path) -> list[Path]:
         source = self.parser.source
         if isinstance(source, Path):
@@ -418,12 +448,12 @@ class _ProtoInputPreparer:
         record_watch_dependency(source_path)
         if source_path.is_relative_to(root):
             target = temp_path / source_path.relative_to(root)
-        else:  # pragma: no cover
+        else:  # pragma: no cover - not proven unreachable: a source outside the import root
             target = temp_path / source_path.name
         target.parent.mkdir(parents=True, exist_ok=True)
         encoding = self.parser.encoding
         data = self.parser._prefetched_data(source_path)  # noqa: SLF001
-        text = source_path.read_text(encoding=encoding) if data is None else normalize_newlines(data.decode(encoding))
+        text = _input_text(source_path, encoding, data)
         target.write_text(_sanitize_proto_source(text), encoding=encoding)
         return target
 
@@ -545,15 +575,15 @@ class _ProtobufDescriptorConverter:
 
     def _effective_version(self, file_descriptor: Any) -> ProtobufVersion:
         declared = self._declared_version(file_descriptor)
-        if self.protobuf_version is None or self.protobuf_version == ProtobufVersion.Auto:
+        if (configured := configured_version(self.protobuf_version, ProtobufVersion.Auto)) is None:
             return declared
-        if self.schema_version_mode == VersionMode.Strict and self.protobuf_version != declared:
+        if self.schema_version_mode == VersionMode.Strict and configured != declared:
             warn(
                 f"Protobuf file {stable_repr(file_descriptor.name)} declares {declared.value}, but --schema-version "
-                f"{self.protobuf_version.value} was requested.",
+                f"{configured.value} was requested.",
                 stacklevel=3,
             )
-        return self.protobuf_version
+        return configured
 
     @staticmethod
     def _declared_version(file_descriptor: Any) -> ProtobufVersion:
@@ -655,7 +685,7 @@ class _ProtobufDescriptorConverter:
             if type_name in WELL_KNOWN_SCHEMAS:
                 return deepcopy(WELL_KNOWN_SCHEMAS[type_name])
             return self._reference_schema(type_name)
-        return {}  # pragma: no cover
+        return {}  # pragma: no cover - not proven unreachable
 
     def _map_field_schema(self, field: Any) -> dict[str, Any] | None:
         if field.type != TYPE_MESSAGE:
@@ -664,14 +694,14 @@ class _ProtobufDescriptorConverter:
         if entry is None:
             return None
         key_field = next((item for item in entry.field if item.name == "key"), None)
-        if key_field is None:  # pragma: no cover
+        if key_field is None:  # pragma: no cover - not proven unreachable
             return None
         map_key_python_type = MAP_KEY_PYTHON_TYPES.get(key_field.type)
-        if map_key_python_type is None:  # pragma: no cover
+        if map_key_python_type is None:  # pragma: no cover - not proven unreachable
             msg = f"Protocol Buffers map field {stable_repr(field.name)} uses unsupported key type"
             raise SchemaParseError(msg)
         value_field = next((item for item in entry.field if item.name == "value"), None)
-        if value_field is None:  # pragma: no cover
+        if value_field is None:  # pragma: no cover - not proven unreachable
             return None
         return {
             "type": "object",
@@ -728,9 +758,16 @@ class ProtobufParser(JsonSchemaParser):
         super().__init__(source=source, config=config, **options)
 
     def _compile_descriptor_set(self) -> tuple[Any, frozenset[str]]:
-        protoc, well_known_include = _load_grpc_tools()
+        if self.untrusted_input:
+            msg = (
+                "Protocol Buffers input is refused under --untrusted-input: protoc reads the files its imports name "
+                "from the include paths by itself, so the input cannot be kept to the given document."
+            )
+            raise Error(msg)
+        protoc_script = _load_grpc_tools()
         descriptor_pb2 = _load_descriptor_pb2()
-        with _ProtoInputPreparer(self) as (input_files, include_paths, input_file_names):
+        preparer = _ProtoInputPreparer(self)
+        with preparer as (input_files, include_paths, input_file_names):
             if not input_files:
                 msg = "No .proto files found in input"
                 raise SchemaParseError(msg)
@@ -744,20 +781,19 @@ class ProtobufParser(JsonSchemaParser):
                     persistent_include_paths = self._persistent_include_paths(lexical_sources)
                     self._record_lexical_import_candidates(lexical_sources, persistent_include_paths)
                 args = [
-                    "grpc_tools.protoc",
-                    *(f"-I{path}" for path in [*include_paths, well_known_include]),
+                    *(f"-I{path}" for path in include_paths),
                     "--include_imports",
                     "--include_source_info",
                     f"--descriptor_set_out={output_path}",
                     *(str(path) for path in input_files),
                 ]
-                stderr = io.StringIO()
-                with contextlib.redirect_stderr(stderr):
-                    exit_code = protoc.main(args)
+                exit_code, printed = _run_protoc(protoc_script, args)
+                details = preparer.without_temp_dir(printed).strip()
                 if exit_code:
-                    details = stderr.getvalue().strip()
                     msg = f"Invalid Protocol Buffers schema: {details or f'protoc exited with {exit_code}'}"
                     raise SchemaParseError(msg)
+                if details:
+                    sys.stderr.write(f"{details}\n")
                 descriptor_set = descriptor_pb2.FileDescriptorSet()
                 descriptor_set.ParseFromString(output_path.read_bytes())
                 if collect_dependencies:
@@ -840,6 +876,7 @@ class ProtobufParser(JsonSchemaParser):
             source = next(self.iter_source)
             source.raw_data = raw_obj
             self.raw_obj = raw_obj
+            _schema_documents.note_converted_document(self, [])
             self._parse_file(raw_obj, "Model", [])
 
 

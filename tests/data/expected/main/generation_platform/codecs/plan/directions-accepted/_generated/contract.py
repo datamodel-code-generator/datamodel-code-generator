@@ -26,5 +26,10 @@ class PostItems:
     """Plans of the post_items operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=plan_directions_accepted_models.Item)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=plan_directions_accepted_models.Item,
+            )
+        },
     )

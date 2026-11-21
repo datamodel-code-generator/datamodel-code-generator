@@ -24,6 +24,10 @@ class Other(Struct):
     value: String
     typename__: Literal['Other'] | UnsetType = field(name='__typename', default='Other')
 
+    @property
+    def __typename(self) -> Literal['Other'] | UnsetType:
+        return self.typename__
+
 
 class Subscription(Struct):
     value: String
@@ -31,6 +35,10 @@ class Subscription(Struct):
     typename__: Literal['Subscription'] | UnsetType = field(
         name='__typename', default='Subscription'
     )
+
+    @property
+    def __typename(self) -> Literal['Subscription'] | UnsetType:
+        return self.typename__
 
 
 Choice: TypeAlias = Union[
@@ -46,3 +54,7 @@ class Holder(Struct):
     typename__: Literal['Holder'] | UnsetType = field(
         name='__typename', default='Holder'
     )
+
+    @property
+    def __typename(self) -> Literal['Holder'] | UnsetType:
+        return self.typename__

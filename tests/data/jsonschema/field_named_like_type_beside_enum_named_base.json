@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Store",
+  "type": "object",
+  "properties": {
+    "owner": {"$ref": "#/$defs/Owner"},
+    "shop": {"$ref": "#/$defs/Shop"},
+    "Pet": {"$ref": "#/$defs/Pet"}
+  },
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "EnumerationBase": {"type": "object", "properties": {"code": {"type": "string"}}},
+    "PlainBase": {"type": "object", "properties": {"code": {"type": "string"}}},
+    "Owner": {"allOf": [{"$ref": "#/$defs/EnumerationBase"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]},
+    "Shop": {"allOf": [{"$ref": "#/$defs/PlainBase"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
+  }
+}

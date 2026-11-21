@@ -1,0 +1,2 @@
+Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.
+Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.

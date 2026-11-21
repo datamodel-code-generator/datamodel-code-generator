@@ -264,6 +264,54 @@ def test_removed_token_partial_match_fails(claim: str, deleted_text: str, tmp_pa
         validator._validate_removal_claims(f"* Removed `{claim}`.", deleted_lines)
 
 
+ELIDED_DELETED_LINE = (
+    "msgspec checks all str members of a union against the constraints of each of them, so min_length, pattern of "
+    "one member would reject values another member accepts, and it keeps max_length=3, which every member implies; "
+    "Parted is generated without these constraints.\n"
+)
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "... Parted is generated without these constraints.",
+        "\u2026 Parted is generated without these constraints.",
+        "msgspec checks all str members of a union...",
+        "msgspec checks all str members of a union\u2026",
+        "... it keeps max_length=3, which every member implies ...",
+        "... which every member",
+    ],
+)
+def test_elided_quote_of_deleted_line_passes(quote: str, tmp_path: Path) -> None:
+    """An ellipsis at the start or end of a quote elides text, so the rest is searched in the deleted lines."""
+    deleted_lines = tmp_path / "deleted-lines.txt"
+    deleted_lines.write_text(ELIDED_DELETED_LINE, encoding="utf-8")
+
+    validator._validate_removal_claims(f"* Removed the warning `{quote}`.", deleted_lines)
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "... Parted is generated with these constraints.",
+        "msgspec checks no str members...",
+        "... it keeps max_length=4, which every member ...",
+        "...",
+        "\u2026",
+        "... short ...",
+        "... Parted is gen",
+        "Parted is generated ... without these constraints.",
+    ],
+)
+def test_elided_quote_not_in_deleted_line_fails(quote: str, tmp_path: Path) -> None:
+    """Elided quotes fail when the rest is absent or too short, or is a bare ellipsis; inner ellipses stay literal."""
+    deleted_lines = tmp_path / "deleted-lines.txt"
+    deleted_lines.write_text(ELIDED_DELETED_LINE, encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        validator._validate_removal_claims(f"* Removed the warning `{quote}`.", deleted_lines)
+
+
 def test_explicit_removed_token_missing_fails(tmp_path: Path) -> None:
     """Explicit removal claims fail when the token is absent from deleted lines."""
     deleted_lines = tmp_path / "deleted-lines.txt"
@@ -522,6 +570,84 @@ def test_execution_evidence_rejects_incomplete_token_capped_pagination(
             analysis_context_path,
             diff_path,
         )
+
+
+def _diff_pages_execution_record(
+    tmp_path: Path, diff_content: str, pages: list[tuple[int, int]], total_lines: int
+) -> tuple[list[dict[str, Any]], Path, Path, Path]:
+    """Build an execution record that reads a three-line context whole and the diff in the given pages.
+
+    Both artifacts end with a newline where the content does, and Read reports the empty text after it as a line.
+    """
+    marker_path = tmp_path / "marker.txt"
+    analysis_context_path = tmp_path / "analysis-context.md"
+    diff_path = tmp_path / "pr.diff"
+    marker_path.write_text("read-boundary-marker\n", encoding="utf-8")
+    analysis_context_path.write_text("line\nline\nline\n", encoding="utf-8", newline="\n")
+    diff_path.write_text(diff_content, encoding="utf-8", newline="\n")
+
+    execution_record = _execution_record(marker_path, analysis_context_path, diff_path)
+    execution_record[3]["tool_use_result"] = _file_read_output(analysis_context_path, num_lines=3, total_lines=4)
+    first_start, first_count = pages[0]
+    execution_record[5]["tool_use_result"] = _file_read_output(
+        diff_path, start_line=first_start, num_lines=first_count, total_lines=total_lines
+    )
+    for number, (start_line, num_lines) in enumerate(pages[1:], 2):
+        tool_use_id = f"toolu_read_diff_page_{number}"
+        execution_record[-1:-1] = [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": tool_use_id,
+                            "name": "Read",
+                            "input": {"file_path": str(diff_path), "offset": start_line, "limit": num_lines},
+                        },
+                    ],
+                },
+            },
+            {
+                "type": "user",
+                "message": {"content": [{"type": "tool_result", "tool_use_id": tool_use_id}]},
+                "tool_use_result": _file_read_output(
+                    diff_path, start_line=start_line, num_lines=num_lines, total_lines=total_lines
+                ),
+            },
+        ]
+    return execution_record, marker_path, analysis_context_path, diff_path
+
+
+def test_execution_evidence_accepts_reads_that_end_at_the_final_newline(tmp_path: Path) -> None:
+    """Pages that stop at the last line before the final newline read the whole artifact."""
+    execution_record, marker_path, analysis_context_path, diff_path = _diff_pages_execution_record(
+        tmp_path, "diff\n" * 4, [(1, 2), (3, 2)], 5
+    )
+
+    validator._validate_execution_evidence(execution_record, marker_path, analysis_context_path, diff_path)
+
+
+@pytest.mark.parametrize(
+    ("diff_content", "pages", "total_lines"),
+    [
+        ("diff\n" * 4, [(1, 1), (3, 2)], 5),
+        ("diff\n" * 4, [(1, 2), (3, 1)], 5),
+        ("diff\n" * 4 + "diff", [(1, 2), (3, 2)], 5),
+        ("diff\n" * 4, [(1, 2), (3, 3)], 6),
+    ],
+    ids=["gap", "last-line-unread", "no-final-newline", "total-past-the-final-newline"],
+)
+def test_execution_evidence_rejects_reads_that_skip_a_line_before_the_final_newline(
+    diff_content: str, pages: list[tuple[int, int]], total_lines: int, tmp_path: Path
+) -> None:
+    """Only the empty line Read counts after the final newline may stay unread."""
+    execution_record, marker_path, analysis_context_path, diff_path = _diff_pages_execution_record(
+        tmp_path, diff_content, pages, total_lines
+    )
+
+    with pytest.raises(SystemExit):
+        validator._validate_execution_evidence(execution_record, marker_path, analysis_context_path, diff_path)
 
 
 @pytest.mark.parametrize(
@@ -847,6 +973,9 @@ def test_range_coverage_handles_empty_and_inconsistent_metadata() -> None:
     assert validator._covers_entire_file([(1, 0, 0)]) is True
     assert validator._covers_entire_file([(1, 1, 1), (1, 1, 2)]) is False
     assert validator._covers_entire_file([(2, 2, 2)]) is False
+    assert validator._covers_entire_file([(1, 2, 3)], empty_final_line=3) is True
+    assert validator._covers_entire_file([(1, 1, 3)], empty_final_line=3) is False
+    assert validator._covers_entire_file([(1, 2, 3)], empty_final_line=4) is False
 
 
 @pytest.mark.parametrize(
@@ -973,7 +1102,7 @@ def test_main_persists_in_process_validated_output(monkeypatch: pytest.MonkeyPat
     )
 
     validator.main()
-    assert_output(analysis_path.read_text(encoding="utf-8"), EXPECTED_PATH / "no_breaking_changes.txt")
+    assert_output(analysis_path.read_text(encoding="utf-8"))
 
 
 def test_main_rejects_nonpositive_pr_number(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1005,11 +1134,10 @@ def test_main_rejects_nonpositive_pr_number(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 @pytest.mark.parametrize(
-    ("claude_output", "expected_file", "token_capped_initial_page"),
+    ("claude_output", "token_capped_initial_page"),
     [
         (
             {"has_breaking_changes": False, "breaking_changes_content": "", "reasoning": "Prepared diff was read."},
-            "no_breaking_changes.txt",
             False,
         ),
         (
@@ -1018,19 +1146,16 @@ def test_main_rejects_nonpositive_pr_number(monkeypatch: pytest.MonkeyPatch) -> 
                 "breaking_changes_content": _valid_breaking_changes_content(),
                 "reasoning": "Prepared diff was read.",
             },
-            "breaking_changes.txt",
             False,
         ),
         (
             {"has_breaking_changes": False, "breaking_changes_content": "", "reasoning": "Prepared diff was read."},
-            "no_breaking_changes.txt",
             True,
         ),
     ],
 )
 def test_script_writes_validated_analysis(
     claude_output: dict[str, Any],
-    expected_file: str,
     token_capped_initial_page: bool,
     tmp_path: Path,
 ) -> None:
@@ -1087,7 +1212,7 @@ def test_script_writes_validated_analysis(
     )
 
     result.check_returncode()
-    assert_output(analysis_path.read_text(encoding="utf-8"), EXPECTED_PATH / expected_file)
+    assert_output(analysis_path.read_text(encoding="utf-8"))
 
 
 def test_script_rejects_partial_artifact_read(tmp_path: Path) -> None:
@@ -1152,7 +1277,6 @@ def test_script_rejects_partial_artifact_read(tmp_path: Path) -> None:
             sort_keys=True,
         )
         + "\n",
-        EXPECTED_PATH / "partial_artifact_read.txt",
     )
 
 

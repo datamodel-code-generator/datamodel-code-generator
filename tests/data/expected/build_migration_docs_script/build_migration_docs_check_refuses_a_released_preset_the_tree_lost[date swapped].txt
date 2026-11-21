@@ -1,0 +1,3 @@
+date swapped: written None, exit 1
+Invalid migration data:
+- preset practical-py314-20260301: the 20260301 presets of 0.4.0 include it, but this tree no longer does; released presets are frozen

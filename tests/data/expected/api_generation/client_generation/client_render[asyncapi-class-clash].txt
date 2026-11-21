@@ -1,0 +1,3 @@
+# asyncapi-class-clash
+render pydantic_v2.BaseModel
+  Error: --client-operations['/channels/ticker'].resource: The helper name 'live__feed' gives the class name 'LiveFeedWebsocket', which 'live_feed' already gives

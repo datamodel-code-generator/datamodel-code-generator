@@ -8,7 +8,7 @@ from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
-RustEscape: TypeAlias = Annotated[str, Meta(pattern='\\p{L}')]
+RustEscape: TypeAlias = Annotated[str, Meta(pattern='a')]
 
 
 BracedEscape: TypeAlias = Annotated[str, Meta(pattern='a')]
@@ -159,7 +159,7 @@ class Mixed(Enum):
 BadRange: TypeAlias = Annotated[str, Meta(pattern='[z-a]')]
 
 
-Letter: TypeAlias = Annotated[str, Meta(pattern='^\\p{L}')]
+Letter: TypeAlias = str
 
 
 Lookahead: TypeAlias = Annotated[str, Meta(pattern='(?=a)')]

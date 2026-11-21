@@ -41,5 +41,7 @@ class Base(BaseModel):
 class Child(Base):
     settings: Settings | None = None
     tagged: (
-        dict[constr(pattern=r'default|type'), str] | dict[constr(pattern=r'^n'), TaggedPatternProperty] | None
+        dict[constr(pattern=r'default|type'), str]
+        | dict[constr(pattern=r'^n'), TaggedPatternProperty]
+        | None
     ) = None

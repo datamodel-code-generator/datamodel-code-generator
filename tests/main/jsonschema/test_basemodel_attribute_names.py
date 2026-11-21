@@ -75,5 +75,4 @@ def test_installed_basemodel_attribute_names_are_renamed(output_file: Path) -> N
         with _generated_model(output_file, "installed_basemodel_attribute_names", "Names") as model:
             assert_output(
                 f"kept: {sorted(name for name, field in model.model_fields.items() if name == field.alias)}\n",
-                EXPECTED_JSON_SCHEMA_PATH / "basemodel_attribute_names_kept.txt",
             )

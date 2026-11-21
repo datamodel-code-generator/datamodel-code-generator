@@ -1,0 +1,1 @@
+--validation is refused under --untrusted-input: its validator resolves the $ref of the document by itself, reading files and URLs that --untrusted-input does not read.

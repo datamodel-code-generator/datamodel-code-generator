@@ -29,9 +29,7 @@ InlineLinkOrNumber2 = TypeAliasType("InlineLinkOrNumber2", int)
 
 InlineLinkOrNumber = TypeAliasType(
     "InlineLinkOrNumber",
-    Annotated[
-        InlineLinkOrNumber1 | InlineLinkOrNumber2, Field(..., min_length=12)
-    ],
+    Annotated[InlineLinkOrNumber1 | InlineLinkOrNumber2, Field(..., min_length=12)],
 )
 
 

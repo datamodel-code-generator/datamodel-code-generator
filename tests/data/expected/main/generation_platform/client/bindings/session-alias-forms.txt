@@ -3,23 +3,23 @@ render pydantic_v2.BaseModel py311
   models.py
   model_bindings.py pydantic_v2_BaseModel/py311
 change pydantic_v2.BaseModel py311 value-0
-  @@ -18 +18 @@
+  @@ -17 +17 @@
   -Nullable = TypeAliasType("Nullable", str | None)
   +Nullable: str
 change pydantic_v2.BaseModel py311 value-1
-  @@ -18 +18 @@
+  @@ -17 +17 @@
   -Nullable = TypeAliasType("Nullable", str | None)
   +Nullable =
 change pydantic_v2.BaseModel py311 value-2
-  @@ -18 +18 @@
+  @@ -17 +17 @@
   -Nullable = TypeAliasType("Nullable", str | None)
   +Nullable = TypeAliasType("Wrong", str | None)
 change pydantic_v2.BaseModel py311 value-3
-  @@ -18 +18 @@
+  @@ -17 +17 @@
   -Nullable = TypeAliasType("Nullable", str | None)
   +Nullable = TypeAliasType("Nullable")
 change pydantic_v2.BaseModel py311 value-4
-  @@ -18 +18 @@
+  @@ -17 +17 @@
   -Nullable = TypeAliasType("Nullable", str | None)
   +Nullable = TypeAliasType("Nullable", str | None, str)
 render pydantic_v2.BaseModel py311-annotated

@@ -1,0 +1,2 @@
+inherited_type_narrowing.json#/allOf/1/properties/positions: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+inherited_type_narrowing.json#/$defs/Base/properties/positions: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.

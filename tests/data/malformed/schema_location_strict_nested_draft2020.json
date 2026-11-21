@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "minimum": 0,
+  "exclusiveMinimum": true,
+  "properties": {
+    "age": {"type": "integer", "minimum": 0, "exclusiveMinimum": true},
+    "scores": {
+      "type": "array",
+      "items": {"type": "number", "maximum": 100, "exclusiveMaximum": true}
+    },
+    "size": {
+      "allOf": [
+        {"$ref": "#/$defs/Size"},
+        {"type": "object", "properties": {"depth": {"type": "number", "maximum": 10, "exclusiveMaximum": true}}}
+      ]
+    },
+    "other": {"$ref": "#/$defs/Size"}
+  },
+  "$defs": {
+    "Size": {
+      "type": "object",
+      "properties": {
+        "width": {"type": "number", "minimum": 1, "exclusiveMinimum": true}
+      }
+    }
+  }
+}

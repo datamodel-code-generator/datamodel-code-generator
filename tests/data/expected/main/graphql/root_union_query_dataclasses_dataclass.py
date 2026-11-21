@@ -24,6 +24,10 @@ class Other:
     value: String
     typename__: Literal['Other'] | None = 'Other'
 
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
+
 
 Choice: TypeAlias = Union[
     'Other',
@@ -38,6 +42,10 @@ class Query:
     self: Query | None = None
     typename__: Literal['Query'] | None = 'Query'
 
+    @property
+    def __typename(self) -> Literal['Query'] | None:
+        return self.typename__
+
 
 @dataclass
 class Holder:
@@ -45,3 +53,7 @@ class Holder:
     query: Query | None = None
     subscription: Any | None = None
     typename__: Literal['Holder'] | None = 'Holder'
+
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__

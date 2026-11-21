@@ -30,7 +30,7 @@ class _DataTypeUnionBase(DataModel):
 
     FORMAT_DESCRIPTION_AS_DOCSTRING: ClassVar[bool] = False
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

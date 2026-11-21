@@ -31,7 +31,7 @@ from datamodel_code_generator.enums import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Mapping, Sequence
 
 Library: TypeAlias = Literal["python", "pydantic"]
 UnsetTarget: TypeAlias = Literal["newest", "unsupported"]
@@ -101,6 +101,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.coerce_numbers_to_str",
     "pydantic.dataclass_alias",
     "pydantic.regex_engine",
+    "pydantic.json_value",
     "pydantic.attribute_docstrings",
     "pydantic.field_deprecated",
     "pydantic.dict_key_forward_ref",
@@ -113,6 +114,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.protected_namespaces",
     "pydantic.type_alias_module_namespace",
     "pydantic.annotated_forward_ref",
+    "pydantic.uuid_version_types",
     "pydantic.validate_by_name",
     "pydantic.validate_by_alias",
     "pydantic.serialize_by_alias",
@@ -234,6 +236,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     ),
     Requirement("pydantic.dataclass_alias", "pydantic", "2.4"),
     Requirement("pydantic.regex_engine", "pydantic", "2.5", label="regex_engine", config_key="regex_engine"),
+    Requirement("pydantic.json_value", "pydantic", "2.5", form="pydantic.JsonValue", label="pydantic.JsonValue"),
     Requirement(
         "pydantic.attribute_docstrings",
         "pydantic",
@@ -252,6 +255,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     Requirement("pydantic.protected_namespaces", "pydantic", "2.10"),
     Requirement("pydantic.type_alias_module_namespace", "pydantic", "2.10"),
     Requirement("pydantic.annotated_forward_ref", "pydantic", "2.11"),
+    Requirement("pydantic.uuid_version_types", "pydantic", "2.11", label="UUID6, UUID7 and UUID8"),
     Requirement(
         "pydantic.validate_by_name",
         "pydantic",
@@ -370,20 +374,29 @@ def pydantic_floor_message(floor: PydanticFloor, *, target_from: str | None = No
     )
 
 
+def refused_bytes_pattern_message(owners: Sequence[str]) -> str:
+    """Say that Pydantic 2.14 refuses the ``bytes`` patterns of ``owners`` at import, and how to avoid it (#6673).
+
+    Lists three owners, then a count.
+    """
+    return (
+        "Pydantic 2.14 compiles patterns on bytes with its Rust regex engine, which rejects the pattern of "
+        f"{listed_with_more(owners[:_LISTED_OWNERS], len(owners))}, so the generated models fail to import on "
+        "Pydantic 2.14; pass --target-pydantic-version 2.14 to select Python's regex engine for it."
+    )
+
+
 def form_path(construct: Construct) -> str:
     """Return the import that ``construct`` writes on a target that has it."""
-    return _import_path(REQUIREMENTS[construct].form, construct)
+    path = REQUIREMENTS[construct].form
+    assert path is not None
+    return path
 
 
 def backport_path(construct: Construct) -> str:
     """Return the import that stands in for ``construct`` on a target before its minimum."""
-    return _import_path(REQUIREMENTS[construct].backport, construct)
-
-
-def _import_path(path: str | None, construct: Construct) -> str:
-    if path is None:  # pragma: no cover
-        msg = f"the requirement row {construct!r} names no such import"
-        raise LookupError(msg)
+    path = REQUIREMENTS[construct].backport
+    assert path is not None
     return path
 
 
@@ -404,4 +417,5 @@ __all__ = [
     "pydantic_floor_message",
     "pydantic_target_meets",
     "python_target_meets",
+    "refused_bytes_pattern_message",
 ]

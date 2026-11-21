@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "code": {"type": ["integer", "string"], "pattern": "^[0-9]+$", "minLength": 1},
+    "count": {"type": ["integer", "boolean"], "minimum": 1},
+    "ratio": {"type": ["number", "string"], "exclusiveMinimum": 0.5},
+    "share": {"type": ["number", "string"], "exclusiveMinimum": 0},
+    "price": {"type": ["number", "string"], "format": "decimal", "minimum": 1, "multipleOf": 0.01},
+    "label": {"type": ["integer", "string", "null"], "maxLength": 4},
+    "tags": {"type": "array", "items": {"type": ["integer", "string"], "maxLength": 4}},
+    "scores": {"type": "object", "additionalProperties": {"type": ["integer", "string"], "maximum": 9}},
+    "grid": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": {"type": ["number", "string"], "pattern": "^a"}}
+    },
+    "word": {"$ref": "#/$defs/Word"}
+  },
+  "$defs": {
+    "Word": {"type": ["integer", "string"], "pattern": "^(?!x)\\w+$", "maxLength": 4}
+  }
+}

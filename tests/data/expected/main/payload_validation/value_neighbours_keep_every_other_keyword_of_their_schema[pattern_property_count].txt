@@ -1,0 +1,5 @@
+[
+  "seed: valid",
+  "maxProperties {\"neighbour0\": 0, \"neighbour1\": 0, \"neighbour2\": 0}: invalid",
+  "maxProperties {\"neighbour0\": 0, \"neighbour1\": 0}: valid"
+]

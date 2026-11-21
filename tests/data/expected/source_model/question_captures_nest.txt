@@ -1,0 +1,2 @@
+outer: ['bindings', 'suppressions']
+inner: ['bindings']

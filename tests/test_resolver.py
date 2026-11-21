@@ -32,7 +32,6 @@ from tests.data.python.model_resolver_pickle_types import (
 if TYPE_CHECKING:
     from datamodel_code_generator.format import PythonVersion
 
-EXPECTED_RESOLVER_PATH = Path(__file__).parent / "data" / "expected" / "resolver"
 MODEL_RESOLVER_PICKLE_HELPER = Path(__file__).parent / "data" / "python" / "model_resolver_pickle_compat.py"
 MODEL_RESOLVER_MAIN_PICKLE = Path(__file__).parent / "data" / "python" / "model_resolver_main_protocol4.pickle.b64"
 MODEL_RESOLVER_SLOTTED_MAIN_PICKLE = (
@@ -234,7 +233,7 @@ def test_model_resolver_output_providers_load_only_for_compatibility_access() ->
         text=True,
     )
 
-    assert_output(result.stdout, EXPECTED_RESOLVER_PATH / "field_name_resolver_laziness.txt")
+    assert_output(result.stdout)
 
 
 def test_model_resolver_pickles_are_compatible_across_the_resolver_state_rename(  # noqa: PLR0914
@@ -326,7 +325,7 @@ def test_model_resolver_pickles_are_compatible_across_the_resolver_state_rename(
         )
         outputs.append(result.stdout)
 
-    assert_output("".join(outputs), EXPECTED_RESOLVER_PATH / "model_resolver_pickle_compatibility.txt")
+    assert_output("".join(outputs))
 
 
 def test_model_resolver_reference_name_cache_preserves_multiplicity() -> None:
@@ -389,7 +388,6 @@ def test_model_resolver_reference_name_cache_preserves_multiplicity() -> None:
             f"legacy cache allocated: {legacy_allocated.name}\n",
             f"counter cache allocated: {counter_allocated.name}\n",
         )),
-        EXPECTED_RESOLVER_PATH / "reference_name_multiplicity.txt",
     )
 
 

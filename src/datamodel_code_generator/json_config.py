@@ -15,8 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 from datamodel_code_generator._config_fields import DEFAULT_ENCODING, json_file
 from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
+from datamodel_code_generator._json_output import JSON_SCHEMA_DRAFT_2020_12 as JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator._json_output import (
-    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established json_config export.
     schema_document,
 )
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -40,6 +40,7 @@ JsonConfigOptionName: TypeAlias = Literal[
     "--extra-template-data",
     "--import-overrides",
     "--model-name-map",
+    "--open-enum-base-class-map",
     "--serialization-aliases",
     "--server-body-modes",
     "--server-handler-modes",
@@ -74,6 +75,10 @@ class StringOrStringListMappingConfig(RootModel[dict[str, str | list[str]]]):
 
 class EnumFieldAsLiteralMapConfig(RootModel[dict[str, Literal["literal", "enum"]]]):
     """Per-field enum/literal generation override mapping."""
+
+
+class OpenEnumBaseClassMapConfig(RootModel[dict[Literal["Enum", "StrEnum", "IntEnum"], str]]):
+    """Base classes that open the Enum classes of open enums, by the class an enum is written on."""
 
 
 class DuplicateNameSuffixConfig(RootModel[dict[Literal["model", "enum", "default"], str]]):
@@ -142,6 +147,7 @@ JsonConfigStrictModel: TypeAlias = (
     | type[StringOrStringListMappingConfig]
     | type[EnumFieldAsLiteralMapConfig]
     | type[DuplicateNameSuffixConfig]
+    | type[OpenEnumBaseClassMapConfig]
     | type[DefaultValuesConfig]
     | type[ExtraTemplateDataConfig]
     | type[ClientOperationsConfig]
@@ -174,6 +180,7 @@ class JsonConfigSchemasPayload(BaseModel):
     extra_template_data: ExtraTemplateDataConfig | None = Field(default=None, alias="extra-template-data")
     import_overrides: StringMappingConfig | None = Field(default=None, alias="import-overrides")
     model_name_map: StringMappingConfig | None = Field(default=None, alias="model-name-map")
+    open_enum_base_class_map: OpenEnumBaseClassMapConfig | None = Field(default=None, alias="open-enum-base-class-map")
     serialization_aliases: StringMappingConfig | None = Field(default=None, alias="serialization-aliases")
     server_body_modes: ServerBodyModesConfig | None = Field(default=None, alias="server-body-modes")
     server_handler_modes: ServerHandlerModesConfig | None = Field(default=None, alias="server-handler-modes")
@@ -333,7 +340,6 @@ class JsonConfigSpec:
                 "but a future release will fail when the value does not match the documented JSON Schema. "
                 f"First validation issue: {format_validation_error(strict_error)}"
             ),
-            stacklevel=4,
         )
         return result
 
@@ -388,6 +394,7 @@ class JsonConfigSpecs:
         ),
         "import_overrides": JsonConfigSpec("--import-overrides", StringMappingConfig),
         "model_name_map": JsonConfigSpec("--model-name-map", StringMappingConfig),
+        "open_enum_base_class_map": JsonConfigSpec("--open-enum-base-class-map", OpenEnumBaseClassMapConfig),
         "serialization_aliases": JsonConfigSpec(
             "--serialization-aliases",
             StringMappingConfig,

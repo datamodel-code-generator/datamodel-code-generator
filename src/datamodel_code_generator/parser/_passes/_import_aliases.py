@@ -89,7 +89,7 @@ def _alias_field_runtime_expressions(
         return
     builder.set_field_default(field, rewrite_runtime_expressions(field.default, aliased_imports))
     builder.set_field_extras(field, cast("dict[str, Any]", rewrite_runtime_expressions(field.extras, aliased_imports)))
-    field._set_runtime_expression_imports(rewritten_imports)  # noqa: SLF001
+    field._set_runtime_expression_imports(rewritten_imports)
 
 
 def _alias_data_type_structured_imports(
@@ -144,9 +144,9 @@ def _alias_additional_imports(
     aliased_imports: dict[tuple[str | None, str], Import],
 ) -> None:
     """Replace every additional import with the module's canonical identity binding."""
-    for index, import_ in enumerate(model._additional_imports):  # noqa: SLF001
+    for index, import_ in enumerate(model._additional_imports):
         if (aliased_import := _aliased_import(import_, aliased_imports)) is not None:
-            model._additional_imports[index] = aliased_import  # noqa: SLF001
+            model._additional_imports[index] = aliased_import
 
 
 def alias_shadowed_imports(
@@ -163,9 +163,9 @@ def alias_shadowed_imports(
     )
     if not (has_python_type or has_runtime_expressions):
         if ordinary_aliases:
-            _apply_structured_import_aliases(host._graph_builder, models, ordinary_aliases)  # noqa: SLF001
+            _apply_structured_import_aliases(host._graph_builder, models, ordinary_aliases)
         return
-    host._has_bound_python_types = host._has_bound_python_types or has_python_type  # noqa: SLF001
+    host._has_bound_python_types = host._has_bound_python_types or has_python_type
     if has_runtime_expressions:
         register_runtime_expression(host)
     # Keep structured import machinery lazy: ordinary schemas must not
@@ -183,7 +183,7 @@ def alias_shadowed_imports(
     )
     if not aliased_imports:
         return
-    _apply_structured_import_aliases(host._graph_builder, models, aliased_imports)  # noqa: SLF001
+    _apply_structured_import_aliases(host._graph_builder, models, aliased_imports)
     if module_imports is not None:
         for aliased_import in aliased_imports.values():
-            host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)  # noqa: SLF001
+            host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)

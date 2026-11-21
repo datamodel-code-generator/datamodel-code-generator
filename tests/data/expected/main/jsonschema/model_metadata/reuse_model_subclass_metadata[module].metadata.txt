@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "A",
+      "name": "A",
+      "module": "",
+      "source_ref": "reuse_model_subclass_metadata.json#/properties/a",
+      "source_path": [
+        "properties",
+        "a"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "k",
+          "alias": "k",
+          "original_name": "k",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "B",
+      "name": "B",
+      "module": "",
+      "source_ref": "reuse_model_subclass_metadata.json#/properties/b",
+      "source_path": [
+        "properties",
+        "b"
+      ],
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "",
+      "source_ref": "reuse_model_subclass_metadata.json#",
+      "source_path": [],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "A | None",
+          "required": false
+        },
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": "b",
+          "type": "B | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

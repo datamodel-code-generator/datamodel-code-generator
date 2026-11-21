@@ -1,0 +1,17 @@
+class {{ class_name }}({{ base_class }}):
+    """{{ class_name }} model."""
+
+    # Fields
+{%- for field in fields %}
+    {{ field.name }}: {{ field.type_hint }}
+{%- endfor %}
+
+    # Helpers
+
+
+    # Describe the model
+    def describe(self) -> str:
+        return repr(self)
+    @property
+    def label(self) -> str:
+        return str(self)

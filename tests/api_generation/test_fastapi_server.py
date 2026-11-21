@@ -6,10 +6,11 @@ The cross-target cases call each server through the client generated from the sa
 from __future__ import annotations
 
 import shutil
-import sys
 from pathlib import Path
 
 import pytest
+
+from tests.capabilities import needs
 
 pytest.importorskip("fastapi")
 
@@ -47,7 +48,7 @@ CODECS = DATA / "generation_platform/codecs/pydantic"
 CODEC_EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
 CROSS = Path(__file__).parents[1] / "data/expected/main/generation_platform/cross"
-PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start preset emits type statements")
+PRESET = needs("type-statements")
 assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
 
 
@@ -79,6 +80,8 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "nullable-3-0-strict",
         "nullable-alias",
         "nullable-force-optional",
+        "nullable-parameters",
+        "nullable-parameters-31",
         "results",
         "nullable-results",
         "nullable-results-3-0",
@@ -100,6 +103,14 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "variants-reuse",
         "forms",
         "forms-by-name",
+        "forms-by-alias",
+        "held-extras",
+        "held-extras-ignore",
+        "held-extras-forbid",
+        "held-extras-allow",
+        "held-extras-base",
+        "held-extras-base-dataclass",
+        "held-bases",
         "responses",
         "nested-models",
         "stale",
@@ -136,6 +147,8 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "ndjson",
         "raw",
         "raw_strict",
+        "content_media_type",
+        "content_media_type_bytes",
         "extras",
         "reused_forms",
         "forms",
@@ -152,6 +165,8 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "ref_siblings",
         "ref_siblings_30",
         "ref_siblings_30_ignored",
+        "binary_json",
+        "union_parts",
     ],
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:

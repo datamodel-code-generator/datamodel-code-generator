@@ -1,0 +1,28 @@
+exit: 1
+scripts/test_sleep_allowlist.toml:1: flaky-test-workarounds: tests/test_unlisted.py allows 1, holds 0
+tests/test_names.py:16: flaky-test-workarounds: rerun plugin or option
+tests/test_names.py:18: flaky-test-workarounds: flaky marker
+tests/test_names.py:19: flaky-test-workarounds: flaky marker
+tests/test_names.py:20: flaky-test-workarounds: flaky marker
+tests/test_retries.py:1: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:3: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:4: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:5: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:7: flaky-test-workarounds: flaky marker
+tests/test_retries.py:9: flaky-test-workarounds: flaky marker
+tests/test_retries.py:11: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:11: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:11: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:11: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:12: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:12: flaky-test-workarounds: rerun plugin or option
+tests/test_retries.py:12: flaky-test-workarounds: rerun plugin or option
+tests/test_shadowed.py:26: flaky-test-workarounds: time.sleep beyond the allowlist
+tests/test_shadowed.py:27: flaky-test-workarounds: time.sleep beyond the allowlist
+tests/test_shadowed.py:32: flaky-test-workarounds: time.sleep beyond the allowlist
+tests/test_shadowed.py:33: flaky-test-workarounds: time.sleep beyond the allowlist
+tests/test_sleeps.py:8: flaky-test-workarounds: time.sleep beyond the allowlist
+tests/test_sleeps.py:9: flaky-test-workarounds: time.sleep beyond the allowlist
+
+rule counts:
+  flaky-test-workarounds: 24 (absolute); fix: fix the race the retry or sleep hides (wait on an event, a condition or an injected clock) or delete the test with the reason in the commit; never add an entry to scripts/test_sleep_allowlist.toml

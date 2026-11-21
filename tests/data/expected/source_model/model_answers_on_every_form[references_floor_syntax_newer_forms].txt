@@ -1,0 +1,15 @@
+== references
+10:5 Alias store in <module> -> local <module> @10
+10:13 int load in Alias -> builtin; origin builtins.int
+13:22 T load (evaluated annotation) in <generic parameters of generic> -> local <generic parameters of generic> @13
+13:28 T load (evaluated annotation) in <generic parameters of generic> -> local <generic parameters of generic> @13
+14:11 value load in generic -> local generic @13
+18:4 value store in Box -> local Box @18, else unbound
+18:11 T load (evaluated annotation) in Box -> enclosing <generic parameters of Box> @17
+uses of <generic parameters of generic>:T@13: read@13, read@13
+uses of generic:value@13: read@14
+uses of <generic parameters of Box>:T@17: read@18
+type positions @13: T
+type positions @18: T
+type positions @13: T
+== code objects: one per scope that compiles on this Python

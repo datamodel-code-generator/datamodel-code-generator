@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -41,10 +42,23 @@ def _manifest(tmp_path: Path, replacements: tuple[tuple[str, str], ...] = ()) ->
 
 
 def _run(args: list[str], tmp_path: Path, out: Path | None = None, placeholders: dict[str, str] | None = None) -> str:
-    stdout, stderr = StringIO(), StringIO()
-    with redirect_stdout(stdout), redirect_stderr(stderr):
-        code = recommender_calibrate.main([*args, "--cache-dir", str(tmp_path / "cache")])
-    sections = [f"exit={code}", "--- stdout", stdout.getvalue(), "--- stderr", stderr.getvalue()]
+    args = [*args, "--cache-dir", str(tmp_path / "cache")]
+    if "--jobs" in args:
+        # A process pool started in this process leaves helpers that end with pytest, after coverage combined.
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/recommender_calibrate.py"), *args],
+            capture_output=True,
+            check=False,
+            cwd=ROOT,
+            text=True,
+        )
+        code, stdout_text, stderr_text = completed.returncode, completed.stdout, completed.stderr
+    else:
+        stdout, stderr = StringIO(), StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = recommender_calibrate.main(args)
+        stdout_text, stderr_text = stdout.getvalue(), stderr.getvalue()
+    sections = [f"exit={code}", "--- stdout", stdout_text, "--- stderr", stderr_text]
     for file in sorted(out.iterdir()) if out and out.exists() else ():
         sections += [f"--- {file.name}", file.read_text(encoding="utf-8")]
     text = "\n".join(sections)

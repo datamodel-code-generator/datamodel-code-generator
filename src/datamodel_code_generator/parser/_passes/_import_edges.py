@@ -10,7 +10,7 @@ other from the references between their models (``module_dependency_graph``) and
 an ``_internal`` module. An import cycle through an ``_internal`` module that fails once the merges move there
 (``_failing_import_cycles``) joins its merge: ``_failing_cycles`` finds the cycles that fail when one of their modules
 is imported first, and under ``--all-exports-scope`` the ``__init__`` module of a package imports the modules below it
-that it re-exports (``_exported_imports``).
+that it re-exports (``parser/_init_exports.py:exported_modules``).
 
 The modules whose models take the generic base class import it from the module that holds it
 (``generic_base_class_module``).
@@ -39,6 +39,7 @@ from datamodel_code_generator._module_paths import (
     is_package_init,
     module_parts,
     package_path,
+    relative_level,
     written_path,
 )
 from datamodel_code_generator._records import record
@@ -46,7 +47,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, G
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.imports import _stored_import
 from datamodel_code_generator.parser._graph_ids import keyed_models
-from datamodel_code_generator.parser._init_exports import exports_reach
+from datamodel_code_generator.parser._init_exports import exported_modules
 from datamodel_code_generator.parser._passes._shared import _parsed_rule_data_types
 
 if TYPE_CHECKING:
@@ -149,14 +150,19 @@ NO_IMPORT_CYCLE_SEEDS: Final = ImportCycleSeeds()
 """The seeds of a first attempt, which lays out nothing otherwise."""
 
 
-def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
-    """Return the package whose ``__init__.py`` the module writes, by its written path, or None for another module.
+def _written_package_init(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
+    """Return the written path of the package ``__init__.py`` the module writes, or None for another module.
 
     The module writes it whatever the input that holds it was named: ``ctx.is_init`` is the module's place in the
     import paths, which the root package and the models of an input ``__init__.json`` do not take.
     """
     path = written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
-    return path[:-1] if is_package_init(path[-1]) else None
+    return path if is_package_init(path[-1]) else None
+
+
+def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
+    """Return the package whose ``__init__.py`` the module writes, by its written path (``_written_package_init``)."""
+    return None if (path := _written_package_init(ctx, treat_dot_as_module=treat_dot_as_module)) is None else path[:-1]
 
 
 def relative_import_targets(importer: str, imports: Imports, *, is_init: bool) -> Iterator[tuple[str, str, list[str]]]:
@@ -181,7 +187,7 @@ def module_import_edges(
 
     Each relative import block reaches the module it names and the dotted name of each name it imports, which is the
     submodule of that name where the module has one (``relative_import_targets``). With ``all_exports_scope`` the
-    ``__init__`` module of a package imports the modules with models that its exports reach (``_exported_imports``) too.
+    ``__init__`` module of a package imports the modules with models that it re-exports (``exported_modules``) too.
     """
     edges: dict[str, set[str]] = {}
     exporters: list[tuple[tuple[str, ...], int]] = []
@@ -196,7 +202,7 @@ def module_import_edges(
         if all_exports_scope is not None and ctx.models and (parts := module_parts(path)):
             exporters.append((parts, -1))
     if all_exports_scope is not None:
-        for package, nodes in _exported_imports(exporters, all_exports_scope).items():
+        for package, nodes in exported_modules(exporters, all_exports_scope).items():
             edges.setdefault(".".join(package), set()).update(".".join(node[0]) for node in nodes)
     return edges
 
@@ -276,23 +282,7 @@ def _failing_cycles(
             yield component
 
 
-def _exported_imports(
-    exporters: Iterable[tuple[tuple[str, ...], int]], scope: AllExportsScope
-) -> defaultdict[tuple[str, ...], set[tuple[tuple[str, ...], int]]]:
-    """Return the exporters that the ``__init__`` module of each package imports to re-export their names.
-
-    A package re-exports the modules below it that its scope reaches (``exports_reach``).
-    """
-    imported: defaultdict[tuple[str, ...], set[tuple[tuple[str, ...], int]]] = defaultdict(set)
-    for node in exporters:
-        path = node[0]
-        for size in range(len(path)):
-            if exports_reach(len(path) - size, scope):
-                imported[path[:size]].add(node)
-    return imported
-
-
-def _failing_import_cycles(  # noqa: PLR0913
+def _failing_import_cycles(
     merges: list[set[tuple[str, ...]]],
     internal_modules: list[tuple[str, ...]],
     module_graph: GroupGraph[tuple[str, ...]],
@@ -329,8 +319,8 @@ def _failing_import_cycles(  # noqa: PLR0913
         exporters = [(place(module), -1) for module in exporting if module not in forwarded]
         merged_paths = set(map(place, forwarded))
         exports = {
-            (package, -1): targets
-            for package, targets in _exported_imports([*exporters, *internal_nodes], all_exports_scope).items()
+            (package, -1): set(targets)
+            for package, targets in exported_modules([*exporters, *internal_nodes], all_exports_scope).items()
             if package not in merged_paths
         }
     edges = {node: imports.get(node, set()) | exports.get(node, set()) for node in imports.keys() | exports.keys()}
@@ -366,8 +356,8 @@ def _failing_import_cycles(  # noqa: PLR0913
 
 def _written_order(from_: str) -> tuple[int, str]:
     """Return where the formatters write the relative import block of ``from_``: the furthest package first."""
-    module = from_.lstrip(".")
-    return len(module) - len(from_), module
+    level, module = relative_level(from_)
+    return -level, module
 
 
 def written_import_blocks(importer: str, imports: Iterable[Imports], *, is_init: bool) -> tuple[ImportBlock, ...]:

@@ -1,0 +1,5 @@
+UserWarning: --use-type-alias was turned off but stays on: --use-type-alias-type, given as well, turns it on; both are off without --use-type-alias-type
+exit: OK
+resolved:
+  a: Annotated[int | None, Field(le=10)] = None
+  A = TypeAliasType("A", Annotated[int, Field(le=5)])

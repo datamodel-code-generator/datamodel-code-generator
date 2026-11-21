@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-19)
+Option recommendations (experimental; quick mode; rules 2026-11-19)
 
 Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   components                       1, 0 operations
@@ -38,10 +38,12 @@ Add (2 options)
       --use-title-as-name, its title: Inventory), and full-path prefixes that name onto root-level
       models. The suggested name comes from the input file name; replace it with the name the
       project wants.
-      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
-      became TsConfig, names over 40 characters 6 -> 0
-      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
-      Workflow, Compose and PackageJson
+      measured: SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile
+      became Tsconfig, names over 40 characters 6 -> 0
+      measured: SchemaStore github-workflow schema: Model became GithubWorkflow
+      measured: compose spec with --naming-strategy full-path: ComposeSpecification became
+      ComposeSpec
+      measured: SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package
 
 Optional (policy; not in the command)
   --strict-types int float bool   [policy.strict-scalar-types]
@@ -56,7 +58,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261106
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261120
 
 Command
   datamodel-codegen --class-name RedundantConstraints --input redundant_constraints.json --omit-redundant-constraints --preset standard-py314-20261017

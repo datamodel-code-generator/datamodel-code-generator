@@ -28,7 +28,7 @@ class Cat(Pet):
 
 
 class Dog(Pet):
-    petType: Literal['Dog']
+    petType: Literal['dog']
 
 
 class Holder(BaseModel):

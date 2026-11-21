@@ -1,0 +1,1 @@
+raised Error: --generate-server and --generate-client cannot be used together

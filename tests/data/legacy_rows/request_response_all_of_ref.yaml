@@ -1,0 +1,33 @@
+openapi: "3.1.0"
+info:
+  title: A constrained map value with an allOf beside a $ref
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    Label:
+      type: string
+      maxLength: 20
+    Labels:
+      type: object
+      properties:
+        default:
+          type: string
+      additionalProperties:
+        $ref: "#/components/schemas/Label"
+        minLength: 2
+        allOf:
+          - pattern: "^[a-z]+$"
+    Holder:
+      type: object
+      properties:
+        labels:
+          $ref: "#/components/schemas/Labels"
+    Account:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        holder:
+          $ref: "#/components/schemas/Holder"

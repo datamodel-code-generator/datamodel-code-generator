@@ -1,0 +1,9 @@
+exit status 2
+table.toml is invalid:
+  an item without an id: missing id, pulls, question, rule, trigger, words
+  unstated: AGENTS.md does not hold the words 'Words no rule file holds'
+  unstated: names 1 pull request(s), an item needs 2
+  unstated: has no trigger
+  no-file: docs/missing.md does not hold the words 'Anything'
+  no-file: pattern '(unclosed' does not compile: missing ), unterminated subpattern at position 0
+  no-file: pattern '[a-' does not compile: unterminated character set at position 0

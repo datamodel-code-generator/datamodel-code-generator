@@ -1,0 +1,3 @@
+def read():
+    nonlocal missing
+    missing = 1

@@ -46,7 +46,38 @@ class GetText:
     """Plans of the get_text operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.TextsGetResponse, null=True), '201': Declared(media_type='application/json', model=nullable_results_basemodel_models.TextsGetResponse1, null=True), '202': Declared(media_type='application/json', model=nullable_results_basemodel_models.Thing), '203': Declared(media_type='text/plain', kind='text', model=nullable_results_basemodel_models.TextsGetResponse2), '2XX': Declared(media_type='application/json', null=True), '4XX': Declared(media_type='application/json', model=nullable_results_basemodel_models.Color, null=True), 'default': Declared(media_type='application/problem+json', model=nullable_results_basemodel_models.Pet | None, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.TextsGetResponse,
+                null=True,
+            ),
+            '201': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.TextsGetResponse1,
+                null=True,
+            ),
+            '202': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Thing,
+            ),
+            '203': Declared(
+                media_type='text/plain',
+                kind='text',
+                model=nullable_results_basemodel_models.TextsGetResponse2,
+            ),
+            '2XX': Declared(media_type='application/json', null=True),
+            '4XX': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Color,
+                null=True,
+            ),
+            'default': Declared(
+                media_type='application/problem+json',
+                model=nullable_results_basemodel_models.Pet | None,
+                null=True,
+            ),
+        },
     )
 
 
@@ -64,7 +95,13 @@ class GetList:
     """Plans of the get_list operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.ListsGetResponse, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.ListsGetResponse,
+                null=True,
+            )
+        },
     )
 
 
@@ -72,7 +109,13 @@ class GetName:
     """Plans of the get_name operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.Name | None, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Name | None,
+                null=True,
+            )
+        },
     )
 
 
@@ -80,7 +123,13 @@ class GetValue:
     """Plans of the get_value operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.ValuesGetResponse, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.ValuesGetResponse,
+                null=True,
+            )
+        },
     )
 
 
@@ -97,7 +146,13 @@ class GetPet:
     """Plans of the get_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/vnd.pet+json', model=nullable_results_basemodel_models.Pet | None, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/vnd.pet+json',
+                model=nullable_results_basemodel_models.Pet | None,
+                null=True,
+            )
+        },
         primary=200,
     )
 
@@ -106,7 +161,12 @@ class GetThing:
     """Plans of the get_thing operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.Thing)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Thing,
+            )
+        },
     )
 
 
@@ -114,7 +174,13 @@ class GetNote:
     """Plans of the get_note operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='text/plain', kind='text', model=nullable_results_basemodel_models.NotesGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='text/plain',
+                kind='text',
+                model=nullable_results_basemodel_models.NotesGetResponse,
+            )
+        },
         primary=200,
     )
 
@@ -123,10 +189,24 @@ class PostMemo:
     """Plans of the post_memo operation."""
 
     BODY: Final = BodyAdapter(
-        media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_results_basemodel_models.MemosPostRequest | None)),),
+        media=(
+            BodyMedia(
+                media_type='application/json',
+                kind='json',
+                adapter=TypeAdapter(
+                    nullable_results_basemodel_models.MemosPostRequest | None
+                ),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.MemosPostResponse | None, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.MemosPostResponse | None,
+                null=True,
+            )
+        },
     )
 
 
@@ -134,7 +214,13 @@ class GetRange:
     """Plans of the get_range operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'2XX': Declared(media_type='application/json', model=nullable_results_basemodel_models.RangesGetResponse, null=True)},
+        responses={
+            '2XX': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.RangesGetResponse,
+                null=True,
+            )
+        },
     )
 
 
@@ -142,7 +228,12 @@ class GetAccepted:
     """Plans of the get_accepted operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'2XX': Declared(media_type='application/json', model=nullable_results_basemodel_models.Thing)},
+        responses={
+            '2XX': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Thing,
+            )
+        },
     )
 
 
@@ -150,7 +241,12 @@ class GetDefault:
     """Plans of the get_default operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'default': Declared(media_type='application/json', model=nullable_results_basemodel_models.Thing)},
+        responses={
+            'default': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Thing,
+            )
+        },
     )
 
 
@@ -158,7 +254,13 @@ class GetError:
     """Plans of the get_error operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'4XX': Declared(media_type='text/plain', kind='text', model=nullable_results_basemodel_models.ErrorsGetResponse)},
+        responses={
+            '4XX': Declared(
+                media_type='text/plain',
+                kind='text',
+                model=nullable_results_basemodel_models.ErrorsGetResponse,
+            )
+        },
         bare=False,
     )
 
@@ -167,7 +269,18 @@ class GetOk:
     """Plans of the get_ok operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.Ok, null=True), '4XX': Declared(media_type='application/json', model=nullable_results_basemodel_models.Ok, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Ok,
+                null=True,
+            ),
+            '4XX': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Ok,
+                null=True,
+            ),
+        },
     )
 
 
@@ -175,7 +288,13 @@ class PostOk:
     """Plans of the post_ok operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.Ok, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.Ok,
+                null=True,
+            )
+        },
     )
 
 
@@ -183,7 +302,13 @@ class GetAnyAlias:
     """Plans of the get_any_alias operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.AnyAlias, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.AnyAlias,
+                null=True,
+            )
+        },
     )
 
 
@@ -191,7 +316,13 @@ class PostAnyAlias:
     """Plans of the post_any_alias operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.AnyAlias, null=True)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=nullable_results_basemodel_models.AnyAlias,
+                null=True,
+            )
+        },
     )
 
 

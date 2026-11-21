@@ -1,0 +1,12 @@
+== references
+5:4 default store in build -> local build @5
+8:8 name store in build.<locals>.Config -> local build.<locals>.Config @8, else unbound
+8:15 kind load in build.<locals>.Config -> enclosing build @4
+9:8 size store in build.<locals>.Config -> local build.<locals>.Config @9, else unbound
+9:15 default load in build.<locals>.Config -> enclosing build @5
+12:19 kind load in build.<locals>.Config.describe -> enclosing build @4
+14:11 Config load in build -> local build @7
+uses of build:kind@4: read@8, read@12
+uses of build:default@5: read@9
+uses of build:Config@7: read@14
+== code objects: one per scope that compiles on this Python

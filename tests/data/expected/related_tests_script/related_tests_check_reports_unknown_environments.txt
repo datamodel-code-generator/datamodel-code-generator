@@ -1,0 +1,7 @@
+exit status 1
+unknown: unknown environment py313-parallel
+unknown: unknown environment nightly
+unknown: unknown environment client-httpx2-e2e
+unknown: unknown environment py312-nocov
+no-prs: envs without the pull requests of their incident (prs)
+empty: selects no test and no environment

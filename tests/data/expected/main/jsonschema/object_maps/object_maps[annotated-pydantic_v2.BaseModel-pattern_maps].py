@@ -72,7 +72,12 @@ OverlapPatternProperty1 = TypeAliasType(
 
 
 class Overlap(
-    RootModel[dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], OverlapPatternProperty | OverlapPatternProperty1]]
+    RootModel[
+        dict[
+            Annotated[str, StringConstraints(pattern=r'^a|b$')],
+            OverlapPatternProperty | OverlapPatternProperty1,
+        ]
+    ]
 ):
     root: dict[
         Annotated[str, StringConstraints(pattern=r'^a|b$')],
@@ -99,7 +104,11 @@ class TrueEmpty(
 
 
 class NamesTwo(
-    RootModel[dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str]]
+    RootModel[
+        dict[
+            Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str
+        ]
+    ]
 ):
     root: dict[
         Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str
@@ -160,14 +169,20 @@ class Model(BaseModel):
     ) = None
     iOverlap: (
         list[
-            dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], IOverlapPatternProperty | IOverlapPatternProperty1]
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|b$')],
+                IOverlapPatternProperty | IOverlapPatternProperty1,
+            ]
         ]
         | None
     ) = None
     mOverlap: (
         dict[
             str,
-            dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], MOverlapPatternProperty | MOverlapPatternProperty1],
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|b$')],
+                MOverlapPatternProperty | MOverlapPatternProperty1,
+            ],
         ]
         | None
     ) = None
@@ -191,14 +206,20 @@ class Model(BaseModel):
     ) = None
     iNamesTwo: (
         list[
-            dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str]
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)],
+                int | str,
+            ]
         ]
         | None
     ) = None
     mNamesTwo: (
         dict[
             str,
-            dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str],
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)],
+                int | str,
+            ],
         ]
         | None
     ) = None

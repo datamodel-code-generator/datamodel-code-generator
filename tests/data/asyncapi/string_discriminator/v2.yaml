@@ -1,0 +1,35 @@
+asyncapi: '2.6.0'
+info: {title: Pets, version: '1'}
+channels:
+  pets:
+    subscribe:
+      message:
+        payload: {$ref: '#/components/schemas/Pet'}
+  adoptions:
+    publish:
+      message:
+        payload:
+          type: object
+          properties:
+            pet: {$ref: '#/components/schemas/Pet'}
+          required: [pet]
+components:
+  schemas:
+    Pet:
+      type: object
+      discriminator: petType
+      properties:
+        petType: {type: string}
+      required: [petType]
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            meows: {type: boolean}
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            barks: {type: boolean}

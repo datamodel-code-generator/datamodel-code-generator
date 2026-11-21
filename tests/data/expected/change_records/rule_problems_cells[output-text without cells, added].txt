@@ -1,0 +1,3 @@
+[
+ "entry x: category output-text names the cells it covers ([[change.cells]])"
+]

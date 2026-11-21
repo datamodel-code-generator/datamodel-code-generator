@@ -20,12 +20,12 @@ pydantic_v2.BaseModel default tags_len_map {"k": ["a", "b", "c", "d"]} rejected
 pydantic_v2.BaseModel default tags_len_map {"k": [1]} rejected
 pydantic_v2.dataclass default tags_len ["a"] accepted
 pydantic_v2.dataclass default tags_len ["a", "b", "c"] accepted
-pydantic_v2.dataclass default tags_len [] accepted
+pydantic_v2.dataclass default tags_len [] rejected
 pydantic_v2.dataclass default tags_len ["a", "b", "c", "d"] rejected
 pydantic_v2.dataclass default tags_len [1] rejected
 pydantic_v2.dataclass default tags_len_prop ["a"] accepted
 pydantic_v2.dataclass default tags_len_prop ["a", "b", "c"] accepted
-pydantic_v2.dataclass default tags_len_prop [] accepted
+pydantic_v2.dataclass default tags_len_prop [] rejected
 pydantic_v2.dataclass default tags_len_prop ["a", "b", "c", "d"] rejected
 pydantic_v2.dataclass default tags_len_prop [1] rejected
 pydantic_v2.dataclass default tags_len_items [["a"]] accepted
@@ -45,7 +45,7 @@ msgspec.Struct default tags_len ["a", "b", "c", "d"] rejected
 msgspec.Struct default tags_len [1] rejected
 msgspec.Struct default tags_len_prop ["a"] accepted
 msgspec.Struct default tags_len_prop ["a", "b", "c"] accepted
-msgspec.Struct default tags_len_prop [] accepted
+msgspec.Struct default tags_len_prop [] rejected
 msgspec.Struct default tags_len_prop ["a", "b", "c", "d"] rejected
 msgspec.Struct default tags_len_prop [1] rejected
 msgspec.Struct default tags_len_items [["a"]] accepted
@@ -125,7 +125,7 @@ msgspec.Struct --collapse-root-models tags_len ["a", "b", "c", "d"] accepted
 msgspec.Struct --collapse-root-models tags_len [1] rejected
 msgspec.Struct --collapse-root-models tags_len_prop ["a"] accepted
 msgspec.Struct --collapse-root-models tags_len_prop ["a", "b", "c"] accepted
-msgspec.Struct --collapse-root-models tags_len_prop [] accepted
+msgspec.Struct --collapse-root-models tags_len_prop [] rejected
 msgspec.Struct --collapse-root-models tags_len_prop ["a", "b", "c", "d"] rejected
 msgspec.Struct --collapse-root-models tags_len_prop [1] rejected
 msgspec.Struct --collapse-root-models tags_len_items [["a"]] accepted

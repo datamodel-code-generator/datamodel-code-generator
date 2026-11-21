@@ -1,0 +1,42 @@
+== extents
+Expr@1 lines 1
+Import@3 lines 3
+FunctionDef@8 lines 6-9: function 6-8/9
+Return@9 lines 9
+ClassDef@13 lines 12-16: class 12-13/14-16
+FunctionDef@15 lines 14-16: function 14-15/16
+Return@16 lines 16
+AsyncFunctionDef@20 lines 19-21: async def 19-20/21
+Return@21 lines 21
+code lines: 1,3,6-9,12-16,19-21
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: Import@3; owner <module>#0; tokens <module>#0:body
+line 4: -; owner <module>#0; tokens -
+line 5: -; owner <module>#0; tokens -
+line 6: FunctionDef@8; owner cached#0; tokens cached#0:header
+line 7: FunctionDef@8; owner cached#0; tokens cached#0:header
+line 8: FunctionDef@8; owner cached#0; tokens cached#0:header
+line 9: Return@9; owner cached#0; tokens cached#0:body
+line 10: -; owner <module>#0; tokens -
+line 11: -; owner <module>#0; tokens -
+line 12: ClassDef@13; owner Ordered#0; tokens Ordered#0:header
+line 13: ClassDef@13; owner Ordered#0; tokens Ordered#0:header
+line 14: FunctionDef@15; owner Ordered.value#0; tokens Ordered.value#0:header
+line 15: FunctionDef@15; owner Ordered.value#0; tokens Ordered.value#0:header
+line 16: Return@16; owner Ordered.value#0; tokens Ordered.value#0:body
+line 17: -; owner <module>#0; tokens -
+line 18: -; owner <module>#0; tokens -
+line 19: AsyncFunctionDef@20; owner waits#0; tokens waits#0:header
+line 20: AsyncFunctionDef@20; owner waits#0; tokens waits#0:header
+line 21: Return@21; owner waits#0; tokens waits#0:body
+header cached: 6-8
+header Ordered: 12-13
+header Ordered.value: 14-15
+header waits: 19-20
+source @1: """C3 region from @, co_firstlineno: a definition starts at its first decorator, class and async included."""
+source @3: import functools
+source @9: return 1
+source @16: return 1
+source @21: return 2
+== code objects: one per scope that compiles on this Python

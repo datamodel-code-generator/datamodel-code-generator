@@ -69,7 +69,9 @@ class ItemsItemIdGetQueryShadeParameter(Enum):
     dark = 'dark'
 
 
-ItemsItemIdGetQueryPinnedParameter = TypeAliasType("ItemsItemIdGetQueryPinnedParameter", Literal['on'])
+ItemsItemIdGetQueryPinnedParameter = TypeAliasType(
+    "ItemsItemIdGetQueryPinnedParameter", Literal['on']
+)
 
 
 ItemsItemIdGetQueryColorsParameter = TypeAliasType(
@@ -93,7 +95,9 @@ class ItemsItemIdGetQueryOwnerParameter(BaseModel):
     name: constr(max_length=3) | None = None
 
 
-ItemsItemIdGetQueryExtraParameter = TypeAliasType("ItemsItemIdGetQueryExtraParameter", dict[str, str])
+ItemsItemIdGetQueryExtraParameter = TypeAliasType(
+    "ItemsItemIdGetQueryExtraParameter", dict[str, str]
+)
 
 
 ItemsItemIdGetPathItemIdParameter = TypeAliasType(

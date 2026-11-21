@@ -1,0 +1,13 @@
+== imports
+import@5 importlib as importlib from importlib in <module> [always]; unconditional
+from@6 importlib.import_module as load from importlib in <module> [always]; unconditional
+dynamic@8 json from json in <module> [always]; unconditional
+dynamic@9 pkg.parser from pkg.parser in <module> [always]; unconditional
+dynamic@10 pkg.sibling from pkg.sibling in <module> [always]; unconditional
+dynamic@11 forms.imports.dynamic_imports.child from forms.imports.dynamic_imports.child in <module> [always]; unconditional
+dynamic@12 pkg.up from pkg.up in <module> [always]; unconditional
+dynamic@15 xml.dom from xml.dom in <module> [always]; unconditional
+dynamic@16 forms.imports.leaf from forms.imports.leaf in <module> [always]; unconditional
+dynamic@17 forms.up from forms.up in <module> [always]; unconditional
+dynamic@18 email from email in <module> [always]; unconditional
+== code objects: one per scope that compiles on this Python

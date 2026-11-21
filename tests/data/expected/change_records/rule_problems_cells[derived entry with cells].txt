@@ -1,0 +1,3 @@
+[
+ "entry option:--new-flag: an entry that extends a derived entry has no category and no cells"
+]

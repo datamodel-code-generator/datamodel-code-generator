@@ -228,6 +228,39 @@ This allows you to set a default base class with `--base-class`, override specif
 | `format` values | Mapped to Python/Pydantic types where supported |
 | Custom extensions | `customBasePath` and related options can steer generated base classes |
 
+## Tagged unions without a discriminator keyword
+
+Typed languages write an internally tagged enum, such as a Rust `#[serde(tag = "type")]` enum described by schemars,
+as a `oneOf` whose every branch requires one property holding one value, a `const` or a one-value `enum`, with no
+`discriminator` keyword:
+
+```json
+{
+  "title": "Notification",
+  "oneOf": [
+    {"type": "object", "properties": {"channel": {"const": "email"}, "address": {"type": "string"}}, "required": ["channel", "address"]},
+    {"type": "object", "properties": {"channel": {"const": "push"}}, "required": ["channel"]}
+  ]
+}
+```
+
+By default such a union is a plain union, which Pydantic validates by trying every branch. With
+[`--infer-union-discriminators`](cli-reference/field-customization.md#infer-union-discriminators) it is written as a
+discriminated union, as a `discriminator` keyword writes it:
+
+```python
+class Notification(RootModel[Notification1 | Notification2]):
+    root: Notification1 | Notification2 = Field(..., discriminator="channel", title="Notification")
+```
+
+The tag is read from the branch, the schema its local `$ref` names and its `allOf` members; a `null` branch stays the
+`None` of the union. A union is left as it is where a branch leaves the tag out, two branches share a value, a branch
+is no object with the tag, or the tag is no string or integer. Valid payloads parse to the same values, except that
+in Pydantic output a tag written as a one-value enum class becomes its `Literal` value, as
+`--use-single-value-enum-as-const` writes it (the dated presets already do). With `--use-one-literal-as-default`, a
+payload without the tag is rejected, because the schema requires it. An invalid payload reports the errors of the
+branch its tag names.
+
 ## Regular Expression Patterns
 
 Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default, and pydantic-core compiles the
@@ -258,10 +291,12 @@ older. A pattern in a type alias has no model that owns it, so the alias carries
 | Atomic groups | `(?>a+)` | `python-re`; Python's `re` parses them from 3.11 on |
 | Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
 | Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
-| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
+| Syntax both engines reject | `(?L)`, `a{99999999999}` | `python-re`; still fails at import, with Python's error |
+| Syntax both engines are known to reject | `\p{Print}`, `[\w- ]`, `([a-z])\1\p{L}` | the `pattern` is left out, with a warning |
+| A `[` inside a class that leaves the class open for Rust | `[[A-Z0-9]{1,18}` | written `[\[A-Z0-9]{1,18}`, which both engines read as Python's `re` reads the pattern; Rust engine |
 | Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
 | Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
-| Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
+| Counted repetitions past Rust's compiled size limit | `[\w.-]{1,256}`, `\S{1,8192}`, `.{0,262144}`, `^[\w-]{1,128}:[\w-]{1,128}$`, `^[\w\s-]{1,255}$`, `[^\p{C}]{1,2048}`, `^\p{L}{1,256}$`, `^.{0,10240}$`, `^[^<>]{1,10000}$`, `[\p{L}\p{N}_-]{1,256}`, `user-[\w-]{1,128}\|group-[\w-]{1,128}` | `python-re` where one repetition reaches the copies from which pydantic-core 2.10 to 2.50 refuse its atom alone (the reading since 0.92.0), or where the repetitions together pass the limit by 1 % at the least size that every release compiles them to: repetitions of `\w \W \d \D \s \S` (also the property of decimal digits, which is `\d`), `.`, a major general category (`\p{L}`, `\P{C}`) or a class of one of them and ASCII characters (also `[\w\d]` and `[\w\s]`, which count as `\w`), with each optional copy; where no flag `i` folds case, also each run of ASCII characters that a copy matches (`\w` has four: `0-9`, `A-Z`, `_`, `a-z`), a negated class of ASCII characters (every character), `\p{Lu}`, `\p{Ll}` and the unions of general categories that schemas write (`[\p{L}\p{N}]`, `[\p{L}\p{Z}\p{N}]`, `[\p{L}\p{M}\p{N}\p{P}\p{S}\p{Z}]`, `[\p{L}\d]`, `[\p{L}\p{N}\s]`, ...). A single copy counts where another part follows it (`(\w-){110}`). The sum counts in a pattern that starts with `^`, ends with `$`, holds no alternation, no lazy quantifier and no flag `U`, or in which every branch holds at least one copy of these atoms outside a group. A pattern Python's `re` rejects too (`\p{...}`) is left out, with a warning. Nothing else is counted: a pattern that passes the limit by anything else (a class with a character beyond ASCII, a count within 1 % of the limit) keeps the Rust engine and fails at import |
 | Verbose patterns that start with `(?x)` | `(?x) ([a-z])\1`, `(?x) a b # note \1` | `python-re` for the first; the Rust engine for the second, whose comment runs to the end of the line |
 | Other verbose patterns | `a(?x) b`, `(?x:a) b`, `(?x) a (?-x) b` | Rust engine; the scan reads no other flag group that mentions `x` |
 
@@ -281,6 +316,9 @@ field (`--use-missing-sentinel`), so such a pattern fails at import there too. A
 beside `bytes`, such as `str | bytes`, follows the string rules for every target. With a target older than `2.14`
 the generation warns about every `bytes` pattern it writes (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
+msgspec output validates with Python's `re` alone, so it leaves out, with the same warning, a `pattern` that the
+static check shows Python's `re` rejects, such as `\p{L}`; a pattern it does not recognize as invalid, such as the
+reversed range `[z-a]`, stays and fails when a payload is first decoded. Standard-library outputs write no pattern.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
@@ -302,3 +340,4 @@ schema keywords are represented as type hints or field metadata rather than full
 - 🏷️ [CLI Reference: Field Customization](cli-reference/field-customization.md) - Field naming and constraint options
 - 📊 [Supported Data Types](supported-data-types.md) - JSON Schema data type support
 - 🏗️ [CLI Reference: Model Customization](cli-reference/model-customization.md) - Base class and model customization options
+- ☸️ [Kubernetes Schemas](kubernetes.md) - CRD schemas and the x-kubernetes extensions

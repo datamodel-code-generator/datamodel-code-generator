@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info: {title: t, version: '1'}
+paths:
+  /a:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {type: string, enum: [x, y]}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: {type: string, enum: [p, q]}
+        '201':
+          description: ok
+          content:
+            application/json:
+              schema: {type: string, enum: [s], x-enum-field-as-literal: false}
+components:
+  schemas:
+    C: {type: string, enum: [m, n]}

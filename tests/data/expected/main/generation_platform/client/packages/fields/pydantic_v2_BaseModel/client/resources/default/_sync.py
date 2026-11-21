@@ -127,7 +127,9 @@ class DefaultResource:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
@@ -512,7 +514,9 @@ class DefaultWithResponse:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
@@ -897,7 +901,9 @@ class DefaultWithRawResponse:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1282,7 +1288,9 @@ class DefaultWithStreamingResponse:
         birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        media_type: (
+            Literal['application/json', 'application/x-www-form-urlencoded'] | None
+        ) = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

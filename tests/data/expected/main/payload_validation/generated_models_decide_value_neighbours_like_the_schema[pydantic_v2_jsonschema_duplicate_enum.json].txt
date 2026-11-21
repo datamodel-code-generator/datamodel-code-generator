@@ -1,0 +1,4 @@
+[
+  "/animal enum null: invalid, model accepts",
+  "/pet enum null: invalid, model accepts"
+]

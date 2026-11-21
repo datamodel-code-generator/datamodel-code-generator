@@ -1,0 +1,26 @@
+openapi: 3.2.0
+$self: https://example.com/api/openapi.yaml
+info: {title: Plain names spelled by $self, version: "1"}
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "https://example.com/api/openapi.yaml#/components/schemas/Pet"}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        tag: {$ref: "#tag"}
+        owner: {$ref: "https://example.com/api/openapi.yaml#owner"}
+        label: {$ref: "#label"}
+      $defs:
+        v1:
+          Label: {$anchor: label, type: string, maxLength: 8}
+    Tag: {$anchor: tag, type: string}
+    Owner: {$anchor: owner, type: object, properties: {name: {type: string}}}

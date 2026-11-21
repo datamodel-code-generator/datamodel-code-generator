@@ -23,8 +23,10 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import override
 
+from datamodel_code_generator._format_types import NEWEST_TARGET
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
-from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
+from datamodel_code_generator._regex_syntax import read_pattern
+from datamodel_code_generator.parser._null_facts import null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, validate_resolved_ref
 from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, is_url
@@ -32,12 +34,13 @@ from datamodel_code_generator.types import FloatConstraint, UnionIntFloat  # noq
 from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Mapping
+    from collections.abc import Container, Mapping, Sequence
 
     from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
     from pydantic_core import CoreSchema
     from typing_extensions import Self, TypeIs
 
+    from datamodel_code_generator.parser._null_facts import NullSources
     from datamodel_code_generator.parser._schema_graph import SchemaNodeId
     from datamodel_code_generator.reference import SchemaLocation
 
@@ -47,6 +50,7 @@ __all__ = [
     "EXCLUDE_FIELD_KEYS",
     "EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA",
     "IGNORED_REF_SIBLINGS_CONTEXT",
+    "PATTERN_READING_CONTEXT",
     "READ_UNEVALUATED_PROPERTIES_CONTEXT",
     "Discriminator",
     "JSONReference",
@@ -56,7 +60,7 @@ __all__ = [
     "reads_ref_alone",
 ]
 
-JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
+JsonSchemaLiteral = Union[bool, int, str]
 
 _MODELED_POSITIONS = frozenset(schema_positions("modeled"))
 """The subschema keywords ``JsonSchemaObject`` holds as fields."""
@@ -210,28 +214,31 @@ def _read_type(obj: JsonSchemaObject) -> str | list[str] | None:
     return obj.type
 
 
-def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
-    """Return the null sources of a schema object without the answer ``JsonSchemaObject.type_has_null`` recorded."""
-    type_ = _read_type(obj)
-    is_list = isinstance(type_, list)
-    return NullSources(
-        type_null=type_ == "null",
-        type_list=is_list,
-        type_lists_null=is_list and "null" in type_,
-        type_lists_object=is_list and "object" in type_,
-        typed=type_ is not None,
-        type_string=type_ == "string",
-        member_null=any(
-            isinstance(item, JsonSchemaObject)
-            and (item.type == "null" or (isinstance(item.type, list) and "null" in item.type))
-            for item in (*obj.oneOf, *obj.anyOf)
-        ),
+def _type_null_sources(
+    obj: JsonSchemaObject,
+    *,
+    type_has_null: bool = False,
+    enum: Sequence[Any] | None = None,
+    const_support: bool = True,
+) -> NullSources:
+    """Return the null sources of a schema object (``parser/_null_facts.py:null_sources``).
+
+    ``type_has_null`` is the answer ``JsonSchemaObject.type_has_null`` recorded, for the sites that read it; ``enum``
+    the values its ``enum`` is read as, its own by default; without ``const_support`` its ``const`` is not read.
+    """
+    extras = obj.extras
+    return null_sources(
+        _read_type(obj),
         nullable=obj.nullable,
+        type_has_null=type_has_null,
+        member_types=(
+            [item.type for item in (*obj.oneOf, *obj.anyOf) if isinstance(item, JsonSchemaObject)]
+            if obj.oneOf or obj.anyOf
+            else ()
+        ),
         copied_nullable=bool(obj.__dict__.get(_COPIED_NULLABLE_KEY)),
-        enum_null=None in obj.enum,
-        enum_set=bool(obj.enum),
-        const_set="const" in obj.extras,
-        const_null="const" in obj.extras and obj.extras["const"] is None,
+        enum=obj.enum if enum is None else enum,
+        const=(extras["const"],) if const_support and "const" in extras else (),
     )
 
 
@@ -252,7 +259,7 @@ class Discriminator(BaseModel):
     """
 
     propertyName: str  # noqa: N815
-    mapping: Optional[dict[str, str]] = None  # noqa: UP045
+    mapping: Optional[dict[str, str]] = None
 
 
 _REF_KEYWORDS: Final = ("$ref", "$dynamicRef", "$recursiveRef")
@@ -267,6 +274,9 @@ IGNORED_REF_SIBLINGS_CONTEXT: Final = "ignored_ref_siblings"
 siblings."""
 EMPTY_ENUM_CONTEXT: Final = "empty_enum"
 """The context key of the set that collects the location of each schema object whose ``enum`` lists no value."""
+PATTERN_READING_CONTEXT: Final = "pattern_reading"
+"""The context key of the regex engines of the output's models and the map that collects, by location, each
+``pattern`` that no engine compiles (``_regex_syntax.read_pattern``)."""
 
 
 _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
@@ -416,9 +426,33 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         if not alias_extras and not raw_extras:
             return values
         extras = {**alias_extras, **raw_extras}
-        if "const" in alias_extras:  # pragma: no cover
+        if "const" in alias_extras:
             extras["const"] = alias_extras["const"]
         return {**values, cls.__extra_key__: extras}
+
+    @model_validator(mode="before")
+    @classmethod
+    def read_pattern_as_the_engines_compile_it(cls, values: Any, info: ValidationInfo) -> Any:
+        """Write a schema's ``pattern`` as the regex engines of the output's models compile it (``read_pattern``).
+
+        The parser passes the engines in the validation context with the map that collects, by location, each pattern
+        no engine compiles, which is left out and reported after the schema parsing; a ``[`` inside a class that only
+        Rust leaves open is escaped. The decision reads the pattern's text alone. Only an object with a location is
+        read, a document object or the dump of one, so that a pattern is never left out unreported. It runs after the
+        validators that read the document object as written.
+        """
+        if (
+            (reading := (info.context or {}).get(PATTERN_READING_CONTEXT)) is None
+            or not isinstance(values, dict)
+            or not isinstance(pattern := values.get("pattern"), str)
+            or (read := read_pattern(pattern, reading[0])) == pattern
+            or (location := _source_location(values)) is None
+        ):
+            return values
+        if read is None:
+            reading[1].setdefault(location, pattern)
+            return _located({key: value for key, value in values.items() if key != "pattern"}, location)
+        return _located({**values, "pattern": read}, location)
 
     @model_validator(mode="before")
     @classmethod
@@ -544,60 +578,60 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
             value = [v if v is not None else "null" for v in value]
         return value
 
-    items: Optional[Union[list[Union[JsonSchemaObject, bool]], JsonSchemaObject, bool]] = None  # noqa: UP007, UP045
-    additionalItems: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
-    prefixItems: Optional[list[Union[JsonSchemaObject, bool]]] = None  # noqa: N815, UP007, UP045
-    uniqueItems: Optional[bool] = None  # noqa: N815, UP045
-    type: Optional[Union[str, list[str]]] = None  # noqa: UP007, UP045
-    format: Optional[str] = None  # noqa: UP045
-    pattern: Optional[str] = None  # noqa: UP045
-    minLength: Optional[int] = None  # noqa:  N815,UP045
-    maxLength: Optional[int] = None  # noqa:  N815,UP045
-    minimum: Optional[UnionIntFloat] = None  # noqa:  UP045
-    maximum: Optional[UnionIntFloat] = None  # noqa:  UP045
-    minItems: Optional[int] = None  # noqa:  N815,UP045
-    maxItems: Optional[int] = None  # noqa:  N815,UP045
-    minProperties: Optional[int] = None  # noqa: N815, UP045
-    maxProperties: Optional[int] = None  # noqa: N815, UP045
-    multipleOf: Optional[FloatConstraint] = None  # noqa: N815, UP045
-    exclusiveMaximum: Optional[Union[FloatConstraint, bool]] = None  # noqa: N815, UP007, UP045
-    exclusiveMinimum: Optional[Union[FloatConstraint, bool]] = None  # noqa: N815, UP007, UP045
-    additionalProperties: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
-    unevaluatedProperties: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
-    unevaluatedItems: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
-    patternProperties: Optional[dict[str, Union[JsonSchemaObject, bool]]] = None  # noqa: N815, UP007, UP045
-    propertyNames: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
-    oneOf: list[Union[JsonSchemaObject, bool]] = Field(default_factory=list)  # noqa: N815, UP007
-    anyOf: list[Union[JsonSchemaObject, bool]] = Field(default_factory=list)  # noqa: N815, UP007
-    allOf: list[Union[JsonSchemaObject, bool]] = Field(default_factory=list)  # noqa: N815, UP007
+    items: Optional[Union[list[Union[JsonSchemaObject, bool]], JsonSchemaObject, bool]] = None
+    additionalItems: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815
+    prefixItems: Optional[list[Union[JsonSchemaObject, bool]]] = None  # noqa: N815
+    uniqueItems: Optional[bool] = None  # noqa: N815
+    type: Optional[Union[str, list[str]]] = None
+    format: Optional[str] = None
+    pattern: Optional[str] = None
+    minLength: Optional[int] = None  # noqa: N815
+    maxLength: Optional[int] = None  # noqa: N815
+    minimum: Optional[UnionIntFloat] = None
+    maximum: Optional[UnionIntFloat] = None
+    minItems: Optional[int] = None  # noqa: N815
+    maxItems: Optional[int] = None  # noqa: N815
+    minProperties: Optional[int] = None  # noqa: N815
+    maxProperties: Optional[int] = None  # noqa: N815
+    multipleOf: Optional[FloatConstraint] = None  # noqa: N815
+    exclusiveMaximum: Optional[Union[FloatConstraint, bool]] = None  # noqa: N815
+    exclusiveMinimum: Optional[Union[FloatConstraint, bool]] = None  # noqa: N815
+    additionalProperties: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815
+    unevaluatedProperties: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815
+    unevaluatedItems: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815
+    patternProperties: Optional[dict[str, Union[JsonSchemaObject, bool]]] = None  # noqa: N815
+    propertyNames: Optional[Union[JsonSchemaObject, bool]] = None  # noqa: N815
+    oneOf: list[Union[JsonSchemaObject, bool]] = Field(default_factory=list)  # noqa: N815
+    anyOf: list[Union[JsonSchemaObject, bool]] = Field(default_factory=list)  # noqa: N815
+    allOf: list[Union[JsonSchemaObject, bool]] = Field(default_factory=list)  # noqa: N815
     enum: list[Any] = Field(default_factory=list)
-    writeOnly: Optional[bool] = None  # noqa: N815, UP045
-    readOnly: Optional[bool] = None  # noqa: N815, UP045
-    properties: Optional[dict[str, Union[JsonSchemaObject, bool]]] = None  # noqa: UP007, UP045
+    writeOnly: Optional[bool] = None  # noqa: N815
+    readOnly: Optional[bool] = None  # noqa: N815
+    properties: Optional[dict[str, Union[JsonSchemaObject, bool]]] = None
     required: list[str] = Field(default_factory=list)
-    ref: Optional[str] = Field(default=None, alias="$ref")  # noqa: UP045
-    recursiveRef: Optional[str] = Field(default=None, alias="$recursiveRef")  # noqa: N815, UP045
-    recursiveAnchor: Optional[bool] = Field(default=None, alias="$recursiveAnchor")  # noqa: N815, UP045
-    dynamicRef: Optional[str] = Field(default=None, alias="$dynamicRef")  # noqa: N815, UP045
-    dynamicAnchor: Optional[str] = Field(default=None, alias="$dynamicAnchor")  # noqa: N815, UP045
-    nullable: Optional[bool] = None  # noqa: UP045
+    ref: Optional[str] = Field(default=None, alias="$ref")
+    recursiveRef: Optional[str] = Field(default=None, alias="$recursiveRef")  # noqa: N815
+    recursiveAnchor: Optional[bool] = Field(default=None, alias="$recursiveAnchor")  # noqa: N815
+    dynamicRef: Optional[str] = Field(default=None, alias="$dynamicRef")  # noqa: N815
+    dynamicAnchor: Optional[str] = Field(default=None, alias="$dynamicAnchor")  # noqa: N815
+    nullable: Optional[bool] = None
     x_enum_varnames: list[str | None] = Field(default_factory=list, alias="x-enum-varnames")
     x_enum_descriptions: list[str | None] = Field(default_factory=list, alias="x-enum-descriptions")
     x_enum_names: list[str | None] = Field(default_factory=list, alias="x-enumNames")
-    x_enum_field_as_literal: Optional[bool] = Field(default=None, alias="x-enum-field-as-literal")  # noqa: UP045
-    description: Optional[str] = None  # noqa: UP045
-    title: Optional[str] = None  # noqa: UP045
+    x_enum_field_as_literal: Optional[bool] = Field(default=None, alias="x-enum-field-as-literal")
+    description: Optional[str] = None
+    title: Optional[str] = None
     example: Any = None
     examples: Any = None
     default: Any = None
-    id: Optional[str] = Field(default=None, alias="$id")  # noqa: UP045
-    anchor: Optional[str] = Field(default=None, alias="$anchor")  # noqa: UP045
-    custom_type_path: Optional[str] = Field(default=None, alias="customTypePath")  # noqa: UP045
+    id: Optional[str] = Field(default=None, alias="$id")
+    anchor: Optional[str] = Field(default=None, alias="$anchor")
+    custom_type_path: Optional[str] = Field(default=None, alias="customTypePath")
     custom_base_path: str | list[str] | None = Field(default=None, alias="customBasePath")
     is_boolean_schema_false: bool = Field(default=False, exclude=True)
     read_as_const: bool = Field(default=False, alias=_READ_AS_CONST_KEY)
     extras: dict[str, Any] = Field(alias=__extra_key__, default_factory=dict)
-    discriminator: Optional[Union[Discriminator, str]] = None  # noqa: UP007, UP045
+    discriminator: Optional[Union[Discriminator, str]] = None
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         ignored_types=(cached_property,),
@@ -663,7 +697,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         return has_items and "array" in self.type
 
     @cached_property
-    def ref_object_name(self) -> str:  # pragma: no cover
+    def ref_object_name(self) -> str:
         """Extract the object name from the reference path."""
         return (self.ref or "").rsplit("/", 1)[-1]
 
@@ -681,7 +715,6 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
 
         The parser checks a path again for the run's target where a model takes it as its base class.
         """
-        from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
         from datamodel_code_generator.validators import _validate_schema_python_import_path  # noqa: PLC0415
 
         match value:

@@ -1,0 +1,15 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Plain
+type: object
+properties:
+  kind:
+    type: string
+  count:
+    anyOf:
+    - type: integer
+    - type: string
+  labels:
+    type: object
+    properties:
+      app:
+        type: string

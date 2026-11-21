@@ -1,0 +1,55 @@
+== references
+6:0 _UNUSED store in <module> -> local <module> @6
+7:0 _READ store in <module> -> local <module> @7
+8:0 _SHADOWED store in <module> -> local <module> @8
+9:0 _COMPREHENSION store in <module> -> local <module> @9
+10:0 _LISTED store in <module> -> local <module> @10
+11:0 _COUNTER store in <module> -> local <module> @11,36
+12:0 _FIRST store in <module> -> local <module> @12
+12:8 _SECOND store in <module> -> local <module> @12
+13:0 _ANNOTATED store in <module> -> local <module> @13
+13:12 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+14:0 _TYPE store in <module> -> local <module> @14
+14:7 type load (evaluated annotation) in <module> -> builtin; origin builtins.type
+14:14 int load in <module> -> builtin; origin builtins.int
+15:0 _CLASS_BODY store in <module> -> local <module> @15
+16:0 _LATE store in <module> -> local <module> @16
+18:0 __all__ store in <module> -> local <module> @18,19
+19:0 __all__ load in <module> -> local <module> @18,19
+19:0 __all__ store in <module> -> local <module> @18,19
+23:11 _READ load in reader -> global <module> @7; origin forms.references.private_globals_read_or_shadowed._READ
+23:18 _FIRST load in reader -> global <module> @12; origin forms.references.private_globals_read_or_shadowed._FIRST
+27:11 _SHADOWED load in shadow -> local shadow @26
+31:49 range load in comprehension -> builtin; origin builtins.range
+31:31 _COMPREHENSION store in comprehension.<locals>.<listcomp> -> local comprehension.<locals>.<listcomp> @31
+31:12 _COMPREHENSION load in comprehension.<locals>.<listcomp> -> local comprehension.<locals>.<listcomp> @31
+31:72 range load in comprehension -> builtin; origin builtins.range
+31:67 x store in comprehension.<locals>.<listcomp> -> local comprehension.<locals>.<listcomp> @31
+31:84 x load in comprehension.<locals>.<listcomp> -> local comprehension.<locals>.<listcomp> @31
+31:88 _ANNOTATED load in comprehension.<locals>.<listcomp> -> global <module> @13; origin forms.references.private_globals_read_or_shadowed._ANNOTATED
+31:61 x load in comprehension.<locals>.<listcomp> -> local comprehension.<locals>.<listcomp> @31
+36:4 _COUNTER load in bump -> global <module> @11,36
+36:4 _COUNTER store in bump -> global <module> @11,36
+39:21 _TYPE load (evaluated annotation) in <module> -> local <module> @14; origin builtins.int
+44:4 _CLASS_BODY store in Holder -> local Holder @44, else global <module> @15
+44:18 _CLASS_BODY load in Holder -> local Holder @44, else global <module> @15
+48:11 _LATE load in late -> global <module> @16; origin forms.references.private_globals_read_or_shadowed._LATE
+uses of <module>:_READ@7: read@23
+uses of <module>:_COUNTER@11: augassign@36
+uses of <module>:_COUNTER@36: augassign@36
+uses of <module>:_FIRST@12: read@23
+uses of <module>:_ANNOTATED@13: read@31
+uses of <module>:_TYPE@14: read@39
+uses of <module>:_CLASS_BODY@15: read@44
+uses of <module>:_LATE@16: read@48
+uses of <module>:__all__@18: augassign@19
+uses of <module>:__all__@19: augassign@19
+uses of shadow:_SHADOWED@26: read@27
+uses of comprehension.<locals>.<listcomp>:_COMPREHENSION@31: read@31
+uses of comprehension.<locals>.<listcomp>:x@31: read@31, read@31
+uses of Holder:_CLASS_BODY@44: read@44
+type positions @13: int
+type positions @14: type
+type positions @39: -
+type positions @39: _TYPE
+== code objects: one per scope that compiles on this Python

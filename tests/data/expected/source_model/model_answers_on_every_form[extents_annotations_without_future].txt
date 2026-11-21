@@ -1,0 +1,43 @@
+== extents
+Expr@1 lines 1-4
+FunctionDef@7 lines 7-9: function 7/8-9
+AnnAssign@8 lines 8
+Return@9 lines 9
+code lines: 1-4,7-9
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: Expr@1; owner <module>#0; tokens -
+line 3: Expr@1; owner <module>#0; tokens -
+line 4: Expr@1; owner <module>#0; tokens -
+line 5: -; owner <module>#0; tokens -
+line 6: -; owner <module>#0; tokens -
+line 7: FunctionDef@7; owner convert#0; tokens convert#0:header
+line 8: AnnAssign@8; owner convert#0; tokens convert#0:body
+line 9: Return@9; owner convert#0; tokens convert#0:body
+header convert: 7
+source @1: """C3 (scripts/_change_units.py): without the future import a function's annotations may run; a local one never does.
+
+segments: yes
+"""
+source @8: local: int = value
+source @9: return local
+token 1:0 '"""C3 (scripts/_change_units.py): without the future import a function\'s annotations may run; a local one never does.\n\nsegments: yes\n"""': statement 1:0-4:3; header -; node Constant 1:0-4:3; typing-only -
+token 7:0 'def': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:4 'convert': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:11 '(': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:12 'value': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:17 ':': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:19 'int': statement 7:0-9:16; header convert#0; node Name 7:19-7:22; typing-only -
+token 7:23 '=': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:25 '1': statement 7:0-9:16; header convert#0; node Constant 7:25-7:26; typing-only -
+token 7:26 ')': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:28 '->': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 7:31 'int': statement 7:0-9:16; header convert#0; node Name 7:31-7:34; typing-only -
+token 7:34 ':': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
+token 8:4 'local': statement 8:4-8:22; header -; node Name 8:4-8:9; typing-only -
+token 8:9 ':': statement 8:4-8:22; header -; node AnnAssign 8:4-8:22; typing-only -
+token 8:11 'int': statement 8:4-8:22; header -; node Name 8:11-8:14; typing-only local-annotation
+token 8:15 '=': statement 8:4-8:22; header -; node AnnAssign 8:4-8:22; typing-only -
+token 8:17 'value': statement 8:4-8:22; header -; node Name 8:17-8:22; typing-only -
+token 9:4 'return': statement 9:4-9:16; header -; node Return 9:4-9:16; typing-only -
+token 9:11 'local': statement 9:4-9:16; header -; node Name 9:11-9:16; typing-only -
+== code objects: one per scope that compiles on this Python

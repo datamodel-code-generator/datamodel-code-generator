@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
 
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
-from datamodel_code_generator._paths import file_uri_path
+from datamodel_code_generator._paths import file_uri, file_uri_path
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -44,10 +44,10 @@ def document_identity(document: str, base: Path) -> str:
     parts = urlsplit(document)
     match parts.scheme:
         case "file":
-            return file_uri_path(document).resolve().as_uri()
+            return file_uri(file_uri_path(document).resolve())
         case scheme if len(scheme) > 1:
             return document
-    return (base / document).resolve().as_uri()
+    return file_uri((base / document).resolve())
 
 
 def named_document(written: str | None, identity: str | None) -> str:

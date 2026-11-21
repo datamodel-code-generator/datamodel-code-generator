@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {"a": {"type": "string"}, "b": {"type": "string"}},
+      "required": ["a", "b"]
+    },
+    "Child": {
+      "allOf": [{"$ref": "#/$defs/Base"}],
+      "properties": {"a": {"type": "string", "default": "x"}, "b": {"type": "string"}}
+    },
+    "Own": {
+      "allOf": [{"$ref": "#/$defs/Base"}],
+      "properties": {"a": {"type": "string", "default": "x"}, "b": {"type": "string"}},
+      "required": ["a"]
+    },
+    "Middle": {"allOf": [{"$ref": "#/$defs/Base"}]},
+    "Grandchild": {
+      "allOf": [{"$ref": "#/$defs/Middle"}],
+      "properties": {"a": {"type": "string", "default": "y"}}
+    },
+    "InlineMember": {
+      "allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"a": {"type": "string", "default": "z"}}}]
+    }
+  },
+  "properties": {
+    "child": {"$ref": "#/$defs/Child"},
+    "own": {"$ref": "#/$defs/Own"},
+    "grandchild": {"$ref": "#/$defs/Grandchild"},
+    "inline_member": {"$ref": "#/$defs/InlineMember"}
+  }
+}

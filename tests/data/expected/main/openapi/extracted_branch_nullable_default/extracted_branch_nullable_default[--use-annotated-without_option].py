@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -18,4 +18,6 @@ class Grade1(RootModel[str | None]):
 
 
 class Model(BaseModel):
-    grade: Annotated[Grade | Grade1 | None, Field(validate_default=True)] = 2
+    grade: Annotated[Grade | Grade1 | None, Field(validate_default=True)] = cast(
+        'Grade | Grade1 | None', 2
+    )

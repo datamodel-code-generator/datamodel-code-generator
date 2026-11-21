@@ -1,0 +1,61 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "A schema below a relative id inside a document with a root id",
+  "version": "1"
+ },
+ "paths": {
+  "/owners": {
+   "get": {
+    "operationId": "getOwner",
+    "responses": {
+     "200": {
+      "description": "The owner.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Owner"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Owner": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "$ref": "#/components/schemas/Name"
+     },
+     "tag": {
+      "$ref": "#/components/schemas/Tag"
+     }
+    },
+    "$defs": {
+     "Name": {
+      "type": "string",
+      "maxLength": 10
+     },
+     "Tag": {
+      "$anchor": "tag",
+      "type": "string",
+      "maxLength": 3
+     }
+    }
+   },
+   "Name": {
+    "type": "string",
+    "maxLength": 10
+   },
+   "Tag": {
+    "$anchor": "tag",
+    "type": "string",
+    "maxLength": 3
+   }
+  }
+ }
+}

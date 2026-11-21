@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess  # noqa: S404
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -19,21 +18,27 @@ from importlib.machinery import ModuleSpec, PathFinder
 from importlib.util import source_from_cache
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 from warnings import warn
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
 from typing_extensions import Sentinel
 
 from datamodel_code_generator import _format_types
+from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._module_paths import is_below_name, is_within_name
+from datamodel_code_generator._process import run_captured
+from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.util import load_toml
+from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
+
+    from datamodel_code_generator._process import ProcessResult
 
 DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
 EXTERNAL_FORMATTERS = _format_types.EXTERNAL_FORMATTERS
@@ -183,8 +188,6 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
         return module
     replacement, code = prepared
 
-    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
-
     with PROCESS_STATE_LOCK:
         exec(code, replacement.__dict__)  # noqa: S102
         sys.modules[module.__name__] = replacement
@@ -228,8 +231,6 @@ def _fresh_watch_package(module: ModuleType) -> ModuleType:
     if (prepared := _prepare_watch_module(module)) is None:
         return module
     replacement, code = prepared
-
-    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
         loaded_modules = sys.modules.copy()
@@ -276,8 +277,6 @@ def _load_watch_formatter_module(module_name: str, watch_dependencies: Any) -> M
     _record_watch_module_candidates(module_name, watch_dependencies)
     generation = watch_dependencies.collector_identity()
 
-    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
-
     with PROCESS_STATE_LOCK:
         module = sys.modules.get(module_name)
         if module is None:
@@ -307,7 +306,6 @@ _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_ImportCategory",
     "_is_valid_builtin_line_length",
     "_line_indent",
-    "_indent_first_line",
     "_find_pyproject_toml",
     "_get_builtin_line_length",
     "_get_builtin_known_first_party",
@@ -320,78 +318,19 @@ _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_has_inline_comment",
     "_format_import_node_without_reordering",
     "_import_node_category",
-    "_format_import_node",
     "_from_import_key",
     "_modules_with_aliased_imports",
-    "_can_merge_from_imports",
     "_iter_aliased_from_import_lines",
     "_import_line_sort_key",
     "_build_builtin_import_block",
     "_is_name_or_attr",
-    "_is_type_checking_if",
-    "_source_segment",
-    "_inline_source_segment",
-    "_format_call_argument",
-    "_format_dict_literal",
-    "_format_list_literal",
-    "_split_escaped_string_literal",
-    "_format_wrapped_string_literal",
-    "_format_call_argument_for_block",
-    "_format_call",
-    "_format_constrained_call",
-    "_is_call",
-    "_has_attribute_root",
-    "_is_datetime_module_call",
-    "_is_annotated",
-    "_is_list_of_annotated",
-    "_is_union",
-    "_CONSTRAINED_CALL_NAMES",
-    "_is_constrained_string_call",
-    "_is_constrained_call",
-    "_contains_constrained_string_call",
-    "_contains_annotated",
-    "_contains_list_of_annotated",
-    "_is_simple_union_annotation",
-    "_should_format_constrained_call_union",
-    "_can_parenthesize_field_value",
-    "_should_format_union_annotation",
-    "_iter_bit_or_elements",
-    "_format_bit_or_element",
-    "_format_bit_or_elements",
-    "_format_parenthesized_bit_or_annotation",
-    "_should_format_field_bit_or_annotation_assignment",
-    "_should_format_field_bit_or_value_assignment",
-    "_format_parenthesized_field_value",
-    "_should_format_string_bit_or_annotation_assignment",
-    "_format_bit_or_annotation_assignment",
-    "_iter_subscript_elements",
-    "_format_annotated",
-    "_config_dict_assignment",
-    "_format_generated_annotation_assignment",
-    "_format_generated_class_statement",
-    "_format_constrained_call_union",
-    "_format_annotated_union",
-    "_format_list_of_annotated",
-    "_format_union_subscript",
-    "_format_subscript_value",
-    "_format_type_alias_type_call",
-    "_format_type_alias_union_assignment",
-    "_format_typed_dict_call",
-    "_is_root_model_constrained_union",
-    "_format_root_model_constrained_union_base",
-    "_format_root_model_union_base",
-    "_format_generated_class_definition",
-    "_format_generated_module_statement",
-    "_format_type_checking_block",
     "_LineReplacement",
     "_collect_builtin_replacements",
     "_module_docstring_node",
     "_docstring_node",
-    "_leading_lines_before_imports",
     "_iter_module_import_nodes",
     "_apply_line_replacements",
     "_previous_non_empty_line_index",
-    "_ensure_post_class_annotation_assignment_spacing",
     "_normalize_top_level_blank_lines",
     "_normalize_string_quotes",
     "_finalize_builtin_code",
@@ -430,11 +369,11 @@ def _get_black() -> Any:
 
 
 @lru_cache(maxsize=1)
-def _get_black_mode() -> Any:  # pragma: no cover
+def _get_black_mode() -> Any:
     black = _get_black()
     try:
         import black.mode  # noqa: PLC0415
-    except ImportError:
+    except ImportError:  # pragma: no cover - black before 20.8b0 has no black.mode (floor black>=19.10b0)
         return None
     else:
         return black.mode
@@ -447,7 +386,18 @@ def _get_isort() -> Any:
     return _isort
 
 
-def apply_builtin_formatter(  # noqa: PLR0913
+def _is_formatter_available(formatter: Formatter) -> bool:
+    """Return True if the external package required by *formatter* can be imported."""
+    try:
+        import_module(formatter.value)
+    except ModuleNotFoundError as exc:
+        if exc.name != formatter.value:
+            raise
+        return False
+    return True
+
+
+def apply_builtin_formatter(
     code: str,
     *,
     line_length: int = DEFAULT_LINE_LENGTH,
@@ -477,7 +427,7 @@ def _get_black_python_version_map() -> dict[PythonVersion, Any]:
     }
 
 
-def is_supported_in_black(python_version: PythonVersion) -> bool:  # pragma: no cover
+def is_supported_in_black(python_version: PythonVersion) -> bool:
     """Check if a Python version is supported by the installed black version."""
     return python_version in _get_black_python_version_map()
 
@@ -492,13 +442,23 @@ def unsupported_black_message(python_version: PythonVersion) -> str:
 
 
 def black_find_project_root(sources: Sequence[Path]) -> Path:
-    """Find the project root directory for black configuration."""
+    """Find the project root directory for black configuration; an invalid pyproject.toml raises ``Error``."""
     from black import find_project_root as _find_project_root  # noqa: PLC0415
 
-    project_root = _find_project_root(tuple(str(s) for s in sources))
+    try:
+        project_root = _find_project_root(tuple(str(s) for s in sources))
+    except ValueError:
+        # Black (24.2.0 and later) parses each pyproject.toml on its way up without naming it; reading them again in
+        # the same order raises the error of the first invalid one, which names it, and reads no file past it.
+        start = sources[0].resolve()
+        for directory in (start, *start.parents):
+            if (path := directory / "pyproject.toml").is_file():
+                _load_config_toml(path)
+        raise  # pragma: no cover - only a file made valid between Black's read and this one
     if isinstance(project_root, tuple):
-        return project_root[0]
-    return project_root  # pragma: no cover
+        # Black types the root as optional for sources without a common parent; one source always has one.
+        return cast("Path", project_root[0])
+    return project_root  # pragma: no cover - black before 22.1 returns the root as a bare Path
 
 
 def resolve_use_type_checking_imports(
@@ -519,7 +479,7 @@ def resolve_use_type_checking_imports(
 class CodeFormatter:
     """Formats generated code using black, isort, ruff, and custom formatters."""
 
-    def __init__(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
+    def __init__(  # noqa: PLR0912, PLR0914, PLR0915, PLR0917
         self,
         python_version: PythonVersion,
         settings_path: Path | None = None,
@@ -537,13 +497,10 @@ class CodeFormatter:
     ) -> None:
         """Initialize code formatter with configuration for black, isort, ruff, and custom formatters."""
         if formatters is None:
-            warn_deprecated(
-                "format.default-formatters",
-                stacklevel=2,
-            )
+            warn_deprecated("format.default-formatters")
             formatters = list(DEFAULT_FORMATTERS)
         elif Formatter.BLACK in formatters or Formatter.ISORT in formatters:
-            warn_deprecated("dependency.external-formatters-optional", stacklevel=2)
+            warn_deprecated("dependency.external-formatters-optional")
 
         if not settings_path:
             settings_path = Path.cwd()
@@ -555,15 +512,39 @@ class CodeFormatter:
                     settings_path = parent
                     break
             else:
-                settings_path = Path.cwd()  # pragma: no cover
+                settings_path = Path.cwd()  # pragma: no cover - the parents of a missing path end at one that exists
 
         self.settings_path: str = str(settings_path)
-        self.formatters = formatters
         self.defer_formatting = defer_formatting
         self.encoding = encoding
         self.use_type_checking_imports = use_type_checking_imports
         self.python_version = python_version
         self._formatting_generated_code = False
+
+        missing_formatters = [
+            formatter
+            for formatter in (Formatter.BLACK, Formatter.ISORT)
+            if formatter in formatters and not _is_formatter_available(formatter)
+        ]
+        if missing_formatters:
+            if len(missing_formatters) == 1:
+                formatter_name = missing_formatters[0].value
+                msg = (
+                    f"{formatter_name} is not installed but was requested as an output formatter. "
+                    f"Install it (datamodel-code-generator[{formatter_name}]), or use the built-in formatter "
+                    "with --formatters builtin (formatters=[Formatter.BUILTIN] in the Python API)."
+                )
+            else:
+                formatter_names = " and ".join(formatter.value for formatter in missing_formatters)
+                extras = ",".join(formatter.value for formatter in missing_formatters)
+                msg = (
+                    f"{formatter_names} are not installed but were requested as output formatters. "
+                    f"Install them (datamodel-code-generator[{extras}]), or use the built-in formatter "
+                    "with --formatters builtin (formatters=[Formatter.BUILTIN] in the Python API)."
+                )
+            raise ImportError(msg)
+
+        self.formatters = formatters
 
         has_external_formatter = bool(EXTERNAL_FORMATTERS.intersection(formatters))
         if Formatter.BUILTIN in formatters and has_external_formatter:
@@ -583,7 +564,7 @@ class CodeFormatter:
                 builtin_format_line_length, _builtin_formatter_global("_is_valid_builtin_line_length")
             )
             builtin_tool_config = _builtin_formatter_attr("_load_builtin_tool_config")(
-                settings_path, _builtin_formatter_global("_find_pyproject_toml"), load_toml
+                settings_path, _builtin_formatter_global("_find_pyproject_toml"), _load_config_toml
             )
 
         self.builtin_line_length = (
@@ -616,13 +597,11 @@ class CodeFormatter:
 
         if use_black:
             if (black_target_version := _get_black_python_version_map().get(python_version)) is None:
-                from datamodel_code_generator import Error  # noqa: PLC0415
-
                 raise Error(unsupported_black_message(python_version))
             root = black_find_project_root((settings_path,))
             path = root / "pyproject.toml"
             if path.is_file():
-                pyproject_toml = load_toml(path)
+                pyproject_toml = _load_config_toml(path)
                 config = pyproject_toml.get("tool", {}).get("black", {})
             else:
                 config = {}
@@ -634,15 +613,15 @@ class CodeFormatter:
             black_kwargs: dict[str, Any] = {}
             if wrap_string_literal is not None:
                 experimental_string_processing = wrap_string_literal
-            elif black.__version__ < "24.1.0":  # pragma: no cover
+            elif black.__version__ < "24.1.0":
                 experimental_string_processing = config.get("experimental-string-processing")
             else:
-                experimental_string_processing = config.get("preview", False) and (  # pragma: no cover
+                experimental_string_processing = config.get("preview", False) and (
                     config.get("unstable", False) or "string_processing" in config.get("enable-unstable-feature", [])
                 )
 
-            if experimental_string_processing is not None:  # pragma: no cover
-                if black.__version__.startswith("19."):
+            if experimental_string_processing is not None:
+                if black.__version__.startswith("19."):  # pragma: no cover - black 19 is not in CI
                     warn(
                         f"black doesn't support `experimental-string-processing` option"
                         f" for wrapping string literal in {black.__version__}",
@@ -673,7 +652,7 @@ class CodeFormatter:
             if formatter_cwd is not None:
                 self.isort_config_kwargs["directory"] = str(formatter_cwd)
 
-            if isort.__version__.startswith("4."):  # pragma: no cover
+            if isort.__version__.startswith("4."):  # pragma: no cover - isort 4 (floor isort>=4.3.21) is not in CI
                 self.isort_config = None
             else:
                 self.isort_config = isort.Config(settings_path=self.settings_path, **self.isort_config_kwargs)
@@ -694,8 +673,6 @@ class CodeFormatter:
             else:
                 import_ = import_module(custom_formatter_import)
         except ImportError as e:
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
             msg = f"Unable to import custom formatter {stable_repr(custom_formatter_import)}: {e}"
             raise Error(msg) from e
 
@@ -778,7 +755,7 @@ class CodeFormatter:
         )
 
     @staticmethod
-    def apply_builtin_formatter(  # noqa: PLR0913
+    def apply_builtin_formatter(
         code: str,
         *,
         line_length: int = DEFAULT_LINE_LENGTH,
@@ -823,17 +800,8 @@ class CodeFormatter:
         *,
         stdin: bytes | None = None,
         allow_stdout_on_error: bool = False,
-    ) -> subprocess.CompletedProcess[bytes]:
-        kwargs: dict[str, Any] = {}
-        if stdin is not None:
-            kwargs["input"] = stdin
-        result = subprocess.run(  # noqa: S603
-            command,
-            capture_output=True,
-            check=False,
-            cwd=self.settings_path,
-            **kwargs,
-        )
+    ) -> ProcessResult:
+        result = run_captured(command, cwd=self.settings_path, stdin=stdin)
         if result.returncode == 0 or (allow_stdout_on_error and result.returncode == 1 and result.stdout):
             return result
         if (message := result.stderr.decode(_RUFF_ENCODING, errors="replace").strip()) or (
@@ -864,7 +832,6 @@ class CodeFormatter:
             return str(ruff_in_venv)
         if ruff_path := shutil.which("ruff"):
             return ruff_path
-        from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
 
         msg = f"Ruff executable was not found. Install it with {install_command('ruff')}."
         raise RuntimeError(msg)
@@ -872,7 +839,7 @@ class CodeFormatter:
     def apply_isort(self, code: str) -> str:
         """Sort imports using isort."""
         isort = _get_isort()
-        if self.isort_config is None:  # pragma: no cover
+        if self.isort_config is None:  # pragma: no cover - isort 4 (floor isort>=4.3.21) is not in CI
             return isort.SortImports(
                 file_contents=code,
                 settings_path=self.settings_path,

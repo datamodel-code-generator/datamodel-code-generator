@@ -1,0 +1,48 @@
+{
+  "type": "object",
+  "title": "Escapes",
+  "properties": {
+    "named_reference": {
+      "type": "string",
+      "pattern": "^(?<q>[\"'])[^\"']*\\k<q>$"
+    },
+    "control_letter": {
+      "type": "string",
+      "pattern": "^a\\cJb$"
+    },
+    "escape_letter": {
+      "type": "string",
+      "pattern": "^\\e$"
+    },
+    "control_letter_in_class": {
+      "type": "string",
+      "pattern": "^[\\cJ]$"
+    },
+    "key_letter_in_class": {
+      "type": "string",
+      "pattern": "^[\\k]x$"
+    },
+    "accented_escape": {
+      "type": "string",
+      "pattern": "^\\é$"
+    },
+    "accented_escape_in_class": {
+      "type": "string",
+      "pattern": "^[\\é]$"
+    },
+    "plain": {
+      "type": "string",
+      "pattern": "^[a-z]+$"
+    }
+  },
+  "required": [
+    "named_reference",
+    "control_letter",
+    "escape_letter",
+    "control_letter_in_class",
+    "key_letter_in_class",
+    "accented_escape",
+    "accented_escape_in_class",
+    "plain"
+  ]
+}

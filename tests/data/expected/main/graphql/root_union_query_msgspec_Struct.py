@@ -24,6 +24,10 @@ class Other(Struct):
     value: String
     typename__: Literal['Other'] | UnsetType = field(name='__typename', default='Other')
 
+    @property
+    def __typename(self) -> Literal['Other'] | UnsetType:
+        return self.typename__
+
 
 Choice: TypeAlias = Union[
     'Other',
@@ -37,6 +41,10 @@ class Query(Struct):
     self: Query | None | UnsetType = UNSET
     typename__: Literal['Query'] | UnsetType = field(name='__typename', default='Query')
 
+    @property
+    def __typename(self) -> Literal['Query'] | UnsetType:
+        return self.typename__
+
 
 class Holder(Struct):
     mutation: Any | None | UnsetType = UNSET
@@ -45,3 +53,7 @@ class Holder(Struct):
     typename__: Literal['Holder'] | UnsetType = field(
         name='__typename', default='Holder'
     )
+
+    @property
+    def __typename(self) -> Literal['Holder'] | UnsetType:
+        return self.typename__

@@ -1,0 +1,79 @@
+
+### Schema Feature Support (from code)
+
+The JSON Schema and OpenAPI feature matrix below is generated from the same code metadata used by the schema version support page.
+
+#### JSON Schema Features
+
+| Feature | Introduced | Status | Description |
+|---------|------------|--------|-------------|
+| `Null in type array` | Draft 4 or earlier | ✅ Supported | Allows `type: ['string', 'null']` syntax for nullable types |
+| `$defs` | 2019-09 | ✅ Supported | Uses `$defs` instead of `definitions` for schema definitions |
+| `prefixItems` | 2020-12 | ✅ Supported | Tuple validation using `prefixItems` keyword |
+| `Boolean schemas` | Draft 6 | ✅ Supported | Allows `true` and `false` as valid schemas |
+| `$id` | Draft 6 | ✅ Supported | Schema identifier field (`id` in Draft 4, `$id` in Draft 6+) |
+| `definitions/$defs` | Draft 4 | ✅ Supported | Key for reusable schema definitions |
+| `exclusiveMinimum/Maximum as number` | Draft 6 | ✅ Supported | Numeric `exclusiveMinimum`/`exclusiveMaximum` (boolean in Draft 4) |
+| `readOnly/writeOnly` | Draft 7 | ✅ Supported | Field visibility hints for read-only and write-only properties |
+| `const` | Draft 6 | ✅ Supported | Single constant value constraint |
+| `propertyNames` | Draft 6 | ✅ Supported | Dict key type constraints via pattern, enum, or $ref |
+| `contains` | Draft 6 | ⚠️ Partial | Count constraints are modeled when contains matches every item; general schema-valued contains is not supported |
+| `minContains/maxContains` | 2019-09 | ⚠️ Partial | Count limits on the items `contains` matches (a `contains` needs one match before 2019-09) |
+| `deprecated` | 2019-09 | ⚠️ Partial | Marks schema elements as deprecated |
+| `if/then/else` | Draft 7 | ❌ Not Supported | Conditional schema validation |
+| `contentMediaType/contentEncoding` | Draft 7 | ⚠️ Partial | Content type and encoding hints for strings |
+| `contentSchema` | 2019-09 | ⚠️ Partial | Schema for decoded string content |
+| `$anchor` | 2019-09 | ✅ Supported | Location-independent schema references |
+| `$vocabulary` | 2019-09 | ❌ Not Supported | Vocabulary declarations for meta-schemas |
+| `unevaluatedProperties` | 2019-09 | ⚠️ Partial | Additional properties not evaluated by subschemas |
+| `unevaluatedItems` | 2019-09 | ⚠️ Partial | Additional items not evaluated by subschemas |
+| `dependentRequired` | 2019-09 | ❌ Not Supported | Conditional property requirements |
+| `dependentSchemas` | 2019-09 | ❌ Not Supported | Conditional schema application based on property presence |
+| `$recursiveRef/$recursiveAnchor` | 2019-09 | ✅ Supported | Recursive reference resolution via anchors |
+| `$dynamicRef/$dynamicAnchor` | 2020-12 | ✅ Supported | Dynamic reference resolution across schemas |
+| `$ref with sibling keywords` | 2019-09 | ⚠️ Partial | Keywords beside `$ref` apply with the referenced schema (ignored in Draft 4-7 and OAS 3.0) |
+
+#### OpenAPI-Specific Features
+
+Client: whether the generated Python client (`--generate-client`) supports the feature; an operation that uses an unsupported one is skipped with a warning. A dash means the client follows the models.
+
+| Feature | Introduced | Status | Client | Description |
+|---------|------------|--------|--------|-------------|
+| `nullable` | OAS 3.0 | ✅ Supported | — | Uses `nullable: true` for nullable types (deprecated in 3.1) |
+| `discriminator` | OAS 3.0 | ✅ Supported | — | Polymorphism support via `discriminator` keyword |
+| `webhooks` | OAS 3.1 | ✅ Supported | ⚠️ Partial | Top-level webhooks object for incoming events; the client generates no methods for webhook operations, only helpers that verify and decode deliveries |
+| `itemSchema` | OAS 3.2 | ✅ Supported | — | Media Type Object item schema for sequential media |
+| `$self` | OAS 3.2 | ✅ Supported | — | Root document URI for relative and absolute reference resolution |
+| `querystring` | OAS 3.2 | ✅ Supported | ⚠️ Partial | Query string parameter object without a parameter name; the client ignores the `encoding` declarations of the members of a nameless form querystring |
+| `xml` | OAS 3.0 | ⚠️ Partial | — | XML serialization metadata (name, namespace, prefix) |
+| `externalDocs` | OAS 3.0 | ⚠️ Partial | — | Reference to external documentation |
+| `links` | OAS 3.0 | ❌ Not Supported | — | Links between operations |
+| `callbacks` | OAS 3.0 | ❌ Not Supported | — | Callback definitions for webhooks |
+| `securitySchemes` | OAS 3.0 | ❌ Not Supported | — | API security mechanism definitions |
+| `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
+| `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
+| `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects of scalars, and arrays, scalars, nested objects and arrays of objects, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value`, `name=value`, `name[key][key]=value` and `name[0][key]=value` only with `--client-deep-object-brackets` |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a URL-encoded form member, that takes one item or an array of them, and with `--client-deep-object-brackets` deepObject values, as `style: deepObject` describes |
+| `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
+| `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
+| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
+
+#### AsyncAPI Client Features
+
+The AsyncAPI features the generated Python client plans itself; a channel that uses an unsupported one is left out of the client with a warning, and its models are generated as usual. Message headers leave no channel out.
+
+| Feature | Introduced | Client | Description |
+|---------|------------|--------|-------------|
+| `server protocols` | AsyncAPI 2.0 | ⚠️ Partial | The protocol of a server; the client opens the channels of `ws` and `wss` servers as WebSockets, and the server-sent event channels of `http`, `https` and `sse` servers |
+| `server-sent event channels` | AsyncAPI 2.0 | ⚠️ Partial | A channel that carries `text/event-stream` messages, its own or a trait's, or that no `ws` or `wss` server serves and an `sse` server serves or whose `http` binding fixes `Accept` or `Content-Type` to `text/event-stream`; the client opens it with a GET, whose query and header parameters are those of the `http` bindings of the channel and its operations, and receives the JSON data of each of its messages until the stream ends, without reconnecting; it does not receive other content types on it or open it with another method |
+| `server variables` | AsyncAPI 2.0 | ⚠️ Partial | The variables of a server's URL; the client substitutes each by its `default`, which OpenAPI requires and AsyncAPI does not |
+| `channels without an address` | AsyncAPI 3.0 | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
+| `WebSocket channel bindings` | AsyncAPI 2.0 | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes, with the properties of objects `query` and `headers` as parameters, and the values a `Sec-WebSocket-Protocol` header fixes as the subprotocols it offers |
+| `message content types` | AsyncAPI 2.0 | ⚠️ Partial | The payloads of messages of AsyncAPI, JSON Schema or OpenAPI schemas; the client codes JSON by the models, binary media and binary strings as bytes, and text media whose models type a string as UTF-8 text; a form or multipart message is carried as bytes where its payload is a binary string, and not where it is structured |
+| `messages without a payload` | AsyncAPI 2.0 | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
+| `message headers` | AsyncAPI 2.0 | ⚠️ Partial | The `headers` of a message; the client codes its payload but neither sends nor reads headers, which a WebSocket frame does not carry, and opens the channel without a warning |
+| `several messages per direction` | AsyncAPI 2.0 | ⚠️ Partial | More than one message that an application sends, or receives, on one channel; the client tells JSON messages apart by a tag their models declare, else by their class when it sends them, and Pydantic models code them as a union; it does not receive text and JSON messages on one channel |
+| `channels sharing an address` | AsyncAPI 2.0 | ⚠️ Partial | Channels at one address on the same servers, which the client opens as one connection that carries the messages of them all; their handshakes must take the same parameters, offer the same subprotocols and need the same security |
+| `operation replies` | AsyncAPI 3.0 | ⚠️ Partial | The `reply` of an operation; the client sends or receives its messages on the operation's connection, without correlating them with a request, and does not open a reply on a channel at another address or sent to an address a runtime expression gives |
+| `security requirements` | AsyncAPI 2.0 | ⚠️ Partial | The security of a server or an operation, its own or a trait's; the client sends `httpApiKey`, `http`, `oauth2` and `openIdConnect` credentials on a handshake, and needs every server of a channel to require the same |

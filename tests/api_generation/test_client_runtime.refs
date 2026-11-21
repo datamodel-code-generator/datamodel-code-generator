@@ -3,6 +3,7 @@
 [test_client_copied_runtime]
 	main/generation_platform/client/runtime/copied-runtime.txt
 [test_client_readme_examples]
+asyncapi-market-v3	main/generation_platform/client/readme-examples/asyncapi-market-v3.txt
 auth	main/generation_platform/client/readme-examples/auth.txt
 ndjson-split	main/generation_platform/client/readme-examples/ndjson-split.txt
 pets	main/generation_platform/client/readme-examples/pets.txt
@@ -16,10 +17,27 @@ allowreserved-path-31	main/generation_platform/client/runtime/allowreserved-path
 allowreserved-path-31-shorthand	main/generation_platform/client/packages/allowreserved-path-31/pydantic_v2_BaseModel//*.py
 allowreserved-path-31-shorthand	main/generation_platform/client/runtime/allowreserved-path-31.txt
 allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path-32.txt
-allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
+allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py
 allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
+asyncapi-connections	main/generation_platform/client/runtime/asyncapi-connections.txt
+asyncapi-enum-tag-sends	main/generation_platform/client/runtime/asyncapi-enum-tag-sends.txt
+asyncapi-event-unions	main/generation_platform/client/runtime/asyncapi-event-unions.txt
+asyncapi-events	main/generation_platform/client/runtime/asyncapi-events.txt
+asyncapi-handshake	main/generation_platform/client/runtime/asyncapi-handshake.txt
+asyncapi-handshake-models	main/generation_platform/client/runtime/asyncapi-handshake-models.txt
+asyncapi-message-codecs	main/generation_platform/client/runtime/asyncapi-message-codecs.txt
+asyncapi-messages	main/generation_platform/client/runtime/asyncapi-messages.txt
+asyncapi-optional-tags	main/generation_platform/client/runtime/asyncapi-optional-tags.txt
+asyncapi-perspective	main/generation_platform/client/runtime/asyncapi-perspective.txt
+asyncapi-schema-formats	main/generation_platform/client/runtime/asyncapi-schema-formats.txt
+asyncapi-serverless	main/generation_platform/client/runtime/asyncapi-serverless.txt
+asyncapi-sockets	main/generation_platform/client/runtime/asyncapi-sockets.txt
+asyncapi-subclass-sends	main/generation_platform/client/runtime/asyncapi-subclass-sends.txt
+asyncapi-union-sends	main/generation_platform/client/runtime/asyncapi-union-sends.txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
+auth-parameters	main/generation_platform/client/runtime/auth-parameters.txt
+auth-shared-wire	main/generation_platform/client/runtime/auth-shared-wire.txt
 auth-values	main/generation_platform/client/runtime/auth-values.txt
 bodies	main/generation_platform/client/runtime/bodies.txt
 body-replay	main/generation_platform/client/runtime/body-replay.txt
@@ -34,19 +52,30 @@ deadline-cleanup	main/generation_platform/client/runtime/deadline-cleanup.txt
 deadline-options	main/generation_platform/client/runtime/deadline-options.txt
 deadline-races	main/generation_platform/client/runtime/deadline-races.txt
 deadline-streams	main/generation_platform/client/runtime/deadline-streams.txt
+deep-object-brackets	main/generation_platform/client/runtime/deep-object-brackets.txt
 default-server	main/generation_platform/client/runtime/default-server.txt
 discriminator-copies	main/generation_platform/client/runtime/discriminator-copies.txt
+discriminator-enum-bodies	main/generation_platform/client/runtime/discriminator-enum-bodies.txt
 discriminator-reuse	main/generation_platform/client/runtime/discriminator-reuse.txt
+discriminator-values	main/generation_platform/client/runtime/discriminator-values.txt
+discriminator-values-unmapped	main/generation_platform/client/runtime/discriminator-values-unmapped.txt
 discriminator-variants	main/generation_platform/client/runtime/discriminator-variants.txt
 evolution	main/generation_platform/client/runtime/evolution.txt
 evolution-allow	main/generation_platform/client/runtime/evolution-allow.txt
 evolution-forbid	main/generation_platform/client/runtime/evolution-forbid.txt
 fields	main/generation_platform/client/runtime/fields.txt
 fields-optional-models	main/generation_platform/client/runtime/fields-optional-models.txt
+fields-strip	main/generation_platform/client/runtime/fields-strip.txt
+fields-strip-nullable	main/generation_platform/client/runtime/fields-strip-nullable.txt
 fields-structural	main/generation_platform/client/runtime/fields-structural.txt
 fields-unpack	main/generation_platform/client/runtime/fields-unpack.txt
 headers	main/generation_platform/client/runtime/headers.txt
+held-extras	main/generation_platform/client/runtime/held-extras.txt
+held-extras-allow	main/generation_platform/client/runtime/held-extras-allow.txt
+held-extras-forbid	main/generation_platform/client/runtime/held-extras-forbid.txt
 hooks	main/generation_platform/client/runtime/hooks.txt
+item-or-array	main/generation_platform/client/runtime/item-or-array.txt
+item-streams	main/generation_platform/client/runtime/item-streams.txt
 json-decode-errors-ndjson	main/generation_platform/client/runtime/json-decode-errors-ndjson.txt
 json-decode-errors-sse	main/generation_platform/client/runtime/json-decode-errors-sse.txt
 keywords	main/generation_platform/client/runtime/keywords.txt
@@ -56,6 +85,7 @@ mock-transport	main/generation_platform/client/runtime/mock-transport.txt
 modelless-bodies	main/generation_platform/client/runtime/modelless-bodies.txt
 multipart	main/generation_platform/client/runtime/multipart.txt
 multipart-kinds	main/generation_platform/client/runtime/multipart-kinds.txt
+multipart-media-text	main/generation_platform/client/runtime/multipart-media-text.txt
 multipart-replay	main/generation_platform/client/runtime/multipart-replay.txt
 multipart-split	main/generation_platform/client/runtime/multipart-split.txt
 multipart-split-all	main/generation_platform/client/runtime/multipart-split-all.txt
@@ -71,6 +101,7 @@ native-boundaries	main/generation_platform/client/runtime/native-boundaries.txt
 native-codec-backends	main/generation_platform/client/runtime/native-codec-backends.txt
 native-faults	main/generation_platform/client/runtime/native-faults.txt
 native-wire	main/generation_platform/client/runtime/native-wire.txt
+native-wire	main/generation_platform/client/runtime/native-wire.txt	@black=26,formatter=external,isort=8,platform=win32,python=3.14	= main/generation_platform/client/runtime/native-wire@black26-external-isort8-win32-python3.14.txt
 ndjson	main/generation_platform/client/runtime/ndjson.txt
 ndjson-backends	main/generation_platform/client/runtime/ndjson-backends.txt
 ndjson-split	main/generation_platform/client/runtime/ndjson-split.txt
@@ -106,6 +137,7 @@ polling-resume	main/generation_platform/client/runtime/polling-resume.txt
 protocol-contracts	main/generation_platform/client/runtime/protocol-contracts.txt
 protocol-errors	main/generation_platform/client/runtime/protocol-errors.txt
 query	main/generation_platform/client/runtime/query.txt
+query-free-objects	main/generation_platform/client/runtime/query-free-objects.txt
 querystring	main/generation_platform/client/runtime/querystring.txt
 raw	main/generation_platform/client/runtime/raw.txt
 redirect-head	main/generation_platform/client/runtime/redirect-head.txt

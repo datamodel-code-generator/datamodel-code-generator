@@ -40,6 +40,12 @@ class Pets(RootModel[list[Pet]]):
     root: list[Pet]
 ```
 
+A `oneOf` or `anyOf` whose branches each require one property with one value (a tag) but that declares no
+`discriminator` is a plain union, which Pydantic validates by trying every branch.
+[`--infer-union-discriminators`](cli-reference/field-customization.md#infer-union-discriminators) writes it as a
+discriminated union (`Field(discriminator=...)`), so an invalid payload reports the errors of the branch its tag
+names; see [Tagged unions without a discriminator keyword](jsonschema.md#tagged-unions-without-a-discriminator-keyword).
+
 ### When to use
 
 - New projects requiring data validation
@@ -406,6 +412,10 @@ class Pet(Struct):
     tag: str | UnsetType = UNSET
 ```
 
+`--untyped-value-type` has no effect on `msgspec.Struct` output: msgspec decodes neither `pydantic.JsonValue` nor a
+recursive alias, and decodes `Any` into JSON values already, so untyped values stay `Any`. The other output types write
+them as the given type (see [`--untyped-value-type`](cli-reference/typing-customization.md#untyped-value-type)).
+
 ### Discriminated unions
 
 msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field
@@ -437,6 +447,12 @@ The union then decodes, while `petType` is no longer a constructor argument or a
 its own accepts a payload without `petType`. When a variant cannot take exactly one tag for the union, or a base
 or derived struct of a variant keeps the property as a field, the union tags none of its variants, the ones with
 a `const` included, and a warning names the reason. A variant that another union tags keeps that tag.
+
+A union that declares no discriminator is tagged when every branch requires one property holding one string or
+integer value written on the branch or in the schema its `$ref` names. With
+[`--infer-union-discriminators`](cli-reference/field-customization.md#infer-union-discriminators) the tag is also read
+from the `allOf` members of a branch, and a `null` branch does not count, so those unions decode too; without it they
+are written untagged and warn that msgspec cannot decode them, as in 0.96.0.
 
 ### Enums that list null
 
@@ -477,6 +493,109 @@ without the alias.
 - High-performance JSON/MessagePack serialization
 - Memory-efficient data structures
 - APIs with strict performance requirements
+
+---
+
+## Enums that accept values they do not list
+
+APIs add enum values over time. A closed Enum class rejects a payload that carries a value the generated models do not
+know yet, so [`--open-enums`](cli-reference/typing-customization.md#open-enums) opens enums: `extensible` the enums
+whose schema marks them open (`x-extensible-enum: true`, or `x-ms-enum` with `modelAsString: true`), `all` every enum
+of two or more values except one whose schema closes it (`x-extensible-enum: false`, `modelAsString: false`).
+
+Without more options an open enum is written as `Literal[...]` joined with the type of its schema, where
+`--enum-field-as-literal all` would write the `Literal`:
+
+```python
+class JobStatus(RootModel[Literal["queued", "running", "done"] | str]):
+    root: Literal["queued", "running", "done"] | str
+```
+
+A listed value parses as itself, the same value the `Literal` gives, and any other value of the type is accepted, by
+the rules of that type (`int` takes what a `type: integer` field takes). Keywords beside the enum, such as `maxLength`,
+are kept on the type for Pydantic; msgspec takes them only on a whole field, so there a value the enum does not list is
+not checked against them. The JSON schema of the models says `anyOf: [{enum: [...]}, {type: string}]`. This form works for
+every output model type and needs no code of your own; code that read `.value` of a member or compared with
+`is JobStatus.queued` compares with the string instead. An option that asks for an Enum class
+(`--enum-field-as-literal none`, an `enum` entry of `--enum-field-as-literal-map`, `x-enum-field-as-literal: false`)
+does not close an open enum: it is still the `Literal` form. The dated presets from 20261113 set `open-enums =
+"extensible"`; `--open-enums none` turns it off.
+
+To keep the Enum classes, give the base classes: an open enum written as an Enum class takes the base
+[`--open-enum-base-class-map`](cli-reference/model-customization.md#open-enum-base-class-map) names for its class,
+`Enum`, `StrEnum` or `IntEnum`, and an open enum whose class has no entry is the `Literal` form. Each base is a
+member-less subclass of that class in your project whose `_missing_` keeps a value it does not list; the generator
+writes no runtime code of its own. For example:
+
+```python
+"""Open enum bases: an Enum that keeps a value it does not list as a member of its own."""
+
+from __future__ import annotations
+
+from enum import Enum, IntEnum, StrEnum
+
+
+class OpenStrEnum(StrEnum):
+    """A StrEnum that keeps a string it does not list."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> OpenStrEnum | None:
+        if not isinstance(value, str):
+            return None
+        member = str.__new__(cls, value)
+        member._name_ = value
+        member._value_ = value
+        return cls._value2member_map_.setdefault(value, member)
+
+
+class OpenIntEnum(IntEnum):
+    """An IntEnum that keeps an integer it does not list."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> OpenIntEnum | None:
+        if not isinstance(value, int) or isinstance(value, bool):
+            return None
+        member = int.__new__(cls, value)
+        member._name_ = f"VALUE_{value}"
+        member._value_ = value
+        return cls._value2member_map_.setdefault(value, member)
+
+
+class OpenEnum(Enum):
+    """An Enum that keeps a string it does not list; after a value type (str, int), a value of that type."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> OpenEnum | None:
+        member_type = cls._member_type_
+        if not isinstance(value, str if member_type is object else member_type) or isinstance(value, bool):
+            return None
+        member = object.__new__(cls) if member_type is object else member_type.__new__(cls, value)
+        member._name_ = str(value)
+        member._value_ = value
+        return cls._value2member_map_.setdefault(value, member)
+```
+
+with, in `pyproject.toml`:
+
+```toml
+[tool.datamodel-codegen]
+open-enums = "all"
+open-enum-base-class-map = {StrEnum = "myapi.open_enum.OpenStrEnum", IntEnum = "myapi.open_enum.OpenIntEnum", Enum = "myapi.open_enum.OpenEnum"}
+```
+
+`class JobStatus(StrEnum)` is then written as `class JobStatus(OpenStrEnum)`: `"queued"` still parses to
+`JobStatus.queued`, while `"paused"` parses to a member of its own that dumps as `"paused"`. `OpenEnum` is the entry
+for `Enum`, also under `--use-subclass-enum`, which writes `class JobStatus(str, OpenEnum)`; Python 3.10 has no
+`StrEnum`, so string enums of a 3.10 target use the `Enum` entry. Each entry must subclass its key class and add no data
+type of its own, or the class fails at import. The cache keeps one member per value; a server that receives arbitrary
+values may drop the `setdefault` and accept members that are not equal.
+
+What the class form validates depends on the output model type:
+
+- Pydantic v2 (models and dataclasses) validates through `_missing_`; the JSON schema of the models still lists only
+  the known values.
+- msgspec honours `_missing_` from msgspec 0.18.2 on; 0.18.0 and 0.18.1 reject the value.
+- dataclasses and TypedDict validate nothing; the class only lets you build `JobStatus("paused")` yourself.
 
 ---
 

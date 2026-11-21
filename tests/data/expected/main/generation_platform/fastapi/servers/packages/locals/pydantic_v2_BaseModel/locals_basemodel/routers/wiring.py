@@ -31,7 +31,15 @@ def _add_router(
     router_handler_1 = checked(
         wiring_2.router,
         'The wiring.router method of GET /router',
-        ('principal', 'wiring', 'router_handler', 'router_principal', 'router_authorize', 'api_key', 'parameters'),
+        (
+            'principal',
+            'wiring',
+            'router_handler',
+            'router_principal',
+            'router_authorize',
+            'api_key',
+            'parameters',
+        ),
     )
 
     router_authorize_1 = wiring_1.authorizer()
@@ -84,9 +92,7 @@ def _add_router(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('router', _add_router),
-)
+LITERAL_ROUTES: Final = (('router', _add_router),)
 TEMPLATED_ROUTES: Final = ()
 
 

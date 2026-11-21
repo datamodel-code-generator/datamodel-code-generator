@@ -1,0 +1,21 @@
+== extents
+Expr@1 lines 1
+Assign@3 lines 3
+Assign@3 lines 3
+FunctionDef@6 lines 6: function 6/6
+Return@6 lines 6
+code lines: 1,3,6
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: Assign@3; owner <module>#0; tokens <lambda>#0:body, <lambda>#0:header, <module>#0:body
+line 4: -; owner <module>#0; tokens -
+line 5: -; owner <module>#0; tokens -
+line 6: Return@6; owner f#0; tokens f#0:body, f#0:header, f.<locals>.<lambda>#0:body, f.<locals>.<lambda>#0:header
+header <lambda>: 3
+header f: 6
+header f.<locals>.<lambda>: 6
+source @1: """Owners and source text by characters on lines holding non-ASCII text (ast counts bytes, tokenize characters)."""
+source @3: LABEL = "名前"
+source @3: VALUE = (lambda 値: 値)("データ")
+source @6: return "é", lambda x: x
+== code objects: one per scope that compiles on this Python

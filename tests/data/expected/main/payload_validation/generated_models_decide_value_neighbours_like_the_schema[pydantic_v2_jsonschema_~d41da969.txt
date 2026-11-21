@@ -1,0 +1,16 @@
+[
+  "/wa enum null: invalid, model accepts",
+  "/wa_prop enum null: invalid, model accepts",
+  "/wb enum null: invalid, model accepts",
+  "/wb_items/0 enum \"a\": invalid, model accepts",
+  "/wb_prop enum \"a\": invalid, model accepts",
+  "/wb_prop enum null: invalid, model accepts",
+  "/wc enum null: invalid, model accepts",
+  "/wc_prop enum null: invalid, model accepts",
+  "/wd_items/0 maximum 11: invalid, model accepts",
+  "/wd_prop maximum 11: invalid, model accepts",
+  "/wg enum null: invalid, model accepts",
+  "/wg_prop enum null: invalid, model accepts",
+  "/wh enum null: invalid, model accepts",
+  "/wh_prop enum null: invalid, model accepts"
+]

@@ -12,6 +12,7 @@ from tests.api_generation.support.client_runtime import (
     json_response,
     raw_response,
     record,
+    request_body,
     run,
 )
 
@@ -64,3 +65,107 @@ async def _async_query(package: ModuleType, lines: list[str]) -> None:
 
         await arecord(lines, "async raw query", raw_call)
     await http.aclose()
+
+
+def item_or_array(package: ModuleType, lines: list[str]) -> None:
+    """Write a parameter that takes one item or an array of them as its style writes each: an item as a scalar."""
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for label, values in (
+            ("items", {"ids": 7, "cwes": "79,284", "has": "patch"}),
+            ("arrays", {"ids": [7, 8], "cwes": ["79", "284"], "has": ["patch", "deployment"]}),
+            ("one-item arrays", {"ids": [7], "cwes": ["79"], "has": ["patch"]}),
+            ("empty arrays", {"ids": [7], "cwes": [], "has": []}),
+        ):
+            arguments = {
+                name: argument(package, "listAdvisories", location, wire_name, values[wire_name])
+                for name, location, wire_name in (
+                    ("ids", "path", "ids"),
+                    ("cwes", "query", "cwes"),
+                    ("has", "query", "has"),
+                )
+            }
+            exchange.respond(raw_response(204))
+            record(lines, label, lambda arguments=arguments: api.default.list_advisories(**arguments))
+        record(lines, "empty path array", lambda: api.default.list_advisories(ids=[]))
+
+
+def free_objects(package: ModuleType, lines: list[str]) -> None:
+    """Write several exploded query objects that take other properties, each as the pairs of its members."""
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        arguments = {
+            name: argument(package, "listApps", "query", name, wire)
+            for name, wire in (
+                ("per_page", 2),
+                ("sort_by", {"name": "asc", "created": "desc"}),
+                ("filter", {"app_type": "sso", "owner": "files"}),
+            )
+        }
+        exchange.respond(raw_response(204), raw_response(204))
+        record(lines, "objects", lambda: api.default.list_apps(**arguments))
+        record(lines, "one object", lambda: api.default.list_apps(sort_by=arguments["sort_by"]))
+
+
+def bracketed(package: ModuleType, lines: list[str]) -> None:
+    """Write deepObject arrays as `name[]=value` for each item and scalars as `name=value`, objects as `name[key]`.
+
+    A value that is one item or an array of them is written as either, by the value a call gives. The members of a
+    URL-encoded form body are written as the query parameters are, such as an empty item that clears a list. Nested
+    objects are written as `name[key][key]`, arrays of objects as `name[index][key]`, and a value that is a scalar or
+    an object, such as a range or an empty string that clears metadata, by the value a call gives.
+    """
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        created = argument(package, "GetChargesCharge", "query", "created", {"gt": 5})
+        customer = request_body(
+            package,
+            "PostCustomers",
+            None,
+            {
+                "balance": 5,
+                "email": "a@b.c",
+                "expand": ["data.source", "tax"],
+                "metadata": {"plan": "pro"},
+                "tax_rates": ["txr_1", "txr_2"],
+            },
+        )
+        cleared = request_body(package, "PostCustomers", None, {"tax_rates": ""})
+        subscription = request_body(
+            package,
+            "PostSubscriptions",
+            None,
+            {
+                "customer": "cus_1",
+                "discounts": [{"coupon": "co_1"}],
+                "items": [{"price": "price_1", "quantity": 2, "metadata": {"seat": "a"}}, {"price": "price_2"}],
+                "metadata": {"order": "o_1"},
+                "off_session": True,
+                "payment_settings": {
+                    "payment_method_options": {"card": {"request_three_d_secure": "any"}},
+                    "payment_method_types": ["card", "sepa_debit"],
+                    "save_default_payment_method": "on_subscription",
+                },
+            },
+        )
+        unset = request_body(
+            package,
+            "PostSubscriptions",
+            None,
+            {"customer": "cus_1", "discounts": "", "metadata": "", "payment_settings": {"payment_method_types": ""}},
+        )
+        exchange.respond(*(raw_response(204) for _ in range(10)))
+        record(
+            lines,
+            "charge",
+            lambda: api.charges.get_charges_charge(charge="ch_1", expand=["a", "b"], limit=3, created=created),
+        )
+        record(lines, "created at", lambda: api.charges.get_charges_charge(charge="ch_1", created=5))
+        record(lines, "one item", lambda: api.customers.get_customers(expand=["data.source"]))
+        record(lines, "no items", lambda: api.customers.get_customers(expand=[]))
+        record(lines, "one id", lambda: api.customers.get_customers(ids="cus_1"))
+        record(lines, "ids", lambda: api.customers.get_customers(ids=["cus_1", "cus_2"]))
+        record(lines, "form", lambda: api.customers.post_customers(body=customer))
+        record(lines, "cleared", lambda: api.customers.post_customers(body=cleared))
+        record(lines, "nested", lambda: api.subscriptions.post_subscriptions(body=subscription))
+        record(lines, "unset", lambda: api.subscriptions.post_subscriptions(body=unset))

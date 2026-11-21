@@ -1,0 +1,20 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  json: import@8 [always]; origin json; re-export 'import X as X'
+  path: import@9 [always]; origin os.path
+  Counter: import-from@10 [always]; origin collections.Counter; re-export 'from M import X as X'
+  OrderedDict: import-from@11 [always]; origin collections.OrderedDict
+  sibling: import-from@12 [always]; origin pkg.sibling; re-export 'from . import X'
+  other: import-from@13 [always]; origin pkg.other; re-export 'from M import X as X'
+  alias: import-from@14 [always]; origin pkg.renamed
+  Thing: import-from@15 [always]; origin pkg.sub.Thing; re-export 'from M import X as X'
+== imports
+import@8 json as json from json in <module> [always]; unconditional
+import@9 os.path as path from os.path in <module> [always]; unconditional
+from@10 collections.Counter as Counter from collections in <module> [always]; unconditional
+from@11 collections.OrderedDict as OrderedDict from collections in <module> [always]; unconditional
+from@12 pkg.sibling as sibling from pkg in <module> [always]; level 1; unconditional
+from@13 pkg.other as other from pkg in <module> [always]; level 1; unconditional
+from@14 pkg.renamed as alias from pkg in <module> [always]; level 1; unconditional
+from@15 pkg.sub.Thing as Thing from pkg.sub in <module> [always]; level 1; unconditional
+== code objects: one per scope that compiles on this Python

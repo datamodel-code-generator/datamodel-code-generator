@@ -1,0 +1,22 @@
+# asyncapi-server-schemes
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'reports', which uses server protocols (AsyncAPI 2.0) that the client does not support: /channels/reports: it is served on no ws or wss server
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py

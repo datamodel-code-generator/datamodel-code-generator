@@ -1,0 +1,30 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+cast@src                                           0       1      +1
+filterwarnings-ignore@src                          0       1      +1
+getattr-private@src                                0       2      +2
+no-type-check@src                                  0       1      +1
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+cast@src rose by 1 (0 -> 1). Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().
+  src/pkg/c.py: 0 -> 1 (lines 12)
+
+filterwarnings-ignore@src rose by 1 (0 -> 1). Fix the warning's cause, or assert it with pytest.warns, instead of ignoring it.
+  src/pkg/c.py: 0 -> 1 (lines 11)
+
+getattr-private@src rose by 2 (0 -> 2). A private name read through getattr() hides it from SLF001: give its owner a method instead.
+  src/pkg/c.py: 0 -> 2 (lines 12, 12)
+
+no-type-check@src rose by 1 (0 -> 1). Fix the annotations instead of switching the type checker off for the function.
+  src/pkg/c.py: 0 -> 1 (lines 9)
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

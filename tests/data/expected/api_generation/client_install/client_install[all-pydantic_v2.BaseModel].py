@@ -77,7 +77,9 @@ class PetsPetIdHeadResponse200ETagHeader(RootModel[str]):
     root: str
 
 
-PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType(
+    "PetsPetIdPhotoPutPathPetIdParameter", int
+)
 
 
 class PetsPetIdPhotoPutRequest(RootModel[bytes]):
@@ -88,7 +90,9 @@ class PetsPetIdPhotoPutResponse(RootModel[bytes]):
     root: bytes
 
 
-PetsPetIdFilesPostPathPetIdParameter = TypeAliasType("PetsPetIdFilesPostPathPetIdParameter", int)
+PetsPetIdFilesPostPathPetIdParameter = TypeAliasType(
+    "PetsPetIdFilesPostPathPetIdParameter", int
+)
 
 
 class PetsPetIdFilesPostRequest(BaseModel):
@@ -100,7 +104,9 @@ class PetsPetIdFilesPostRequest(BaseModel):
     file: bytes
 
 
-PetsPetIdFilesGetPathPetIdParameter = TypeAliasType("PetsPetIdFilesGetPathPetIdParameter", int)
+PetsPetIdFilesGetPathPetIdParameter = TypeAliasType(
+    "PetsPetIdFilesGetPathPetIdParameter", int
+)
 
 
 class PetsPetIdFilesGetResponse(BaseModel):
@@ -112,7 +118,9 @@ class PetsPetIdFilesGetResponse(BaseModel):
     file: bytes
 
 
-PetsPagesGetQueryCursorParameter = TypeAliasType("PetsPagesGetQueryCursorParameter", str)
+PetsPagesGetQueryCursorParameter = TypeAliasType(
+    "PetsPagesGetQueryCursorParameter", str
+)
 
 
 JobsJobIdGetPathJobIdParameter = TypeAliasType("JobsJobIdGetPathJobIdParameter", str)
@@ -122,20 +130,28 @@ class PetsEventsGetResponse(RootModel[str]):
     root: str
 
 
-FilesPostHeaderUploadLengthParameter = TypeAliasType("FilesPostHeaderUploadLengthParameter", int)
+FilesPostHeaderUploadLengthParameter = TypeAliasType(
+    "FilesPostHeaderUploadLengthParameter", int
+)
 
 
-FilesFileIdHeadPathFileIdParameter = TypeAliasType("FilesFileIdHeadPathFileIdParameter", str)
+FilesFileIdHeadPathFileIdParameter = TypeAliasType(
+    "FilesFileIdHeadPathFileIdParameter", str
+)
 
 
 class FilesFileIdHeadResponse200UploadOffsetHeader(RootModel[int]):
     root: int
 
 
-FilesFileIdPatchPathFileIdParameter = TypeAliasType("FilesFileIdPatchPathFileIdParameter", str)
+FilesFileIdPatchPathFileIdParameter = TypeAliasType(
+    "FilesFileIdPatchPathFileIdParameter", str
+)
 
 
-FilesFileIdPatchHeaderUploadOffsetParameter = TypeAliasType("FilesFileIdPatchHeaderUploadOffsetParameter", int)
+FilesFileIdPatchHeaderUploadOffsetParameter = TypeAliasType(
+    "FilesFileIdPatchHeaderUploadOffsetParameter", int
+)
 
 
 class FilesFileIdPatchRequest(RootModel[bytes]):

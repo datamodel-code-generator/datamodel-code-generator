@@ -10,7 +10,12 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._generation import _absolute_generation_path
 from datamodel_code_generator.model._compiled_template_runtime import render as render_compiled
+from datamodel_code_generator.model.base import (
+    ALL_MODEL,
+    _build_environment,
+)
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -79,11 +84,8 @@ class TemplateOverlay:
         A relative directory resolves against the caller's working directory, as for the models, and overrides receive
         the `#all#` extra template data, as custom model templates do.
         """
-        from datamodel_code_generator import _absolute_generation_path  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-
         if (directory := _absolute_generation_path(model_config.custom_template_dir, cwd)) is None:
             return None
-        from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415
 
         return cls(directory, (model_config.extra_template_data or {}).get(ALL_MODEL, {}))
 
@@ -91,10 +93,6 @@ class TemplateOverlay:
     def environment(self) -> Environment:
         """Return the Jinja environment of the model templates, loading this directory before the builtin roles."""
         from jinja2 import ChoiceLoader, FileSystemLoader  # noqa: PLC0415
-
-        from datamodel_code_generator.model.base import (  # noqa: PLC0415
-            _build_environment,  # pyright: ignore[reportPrivateUsage]
-        )
 
         loader = ChoiceLoader([FileSystemLoader(str(self.directory)), FileSystemLoader(str(self.BUILTIN))])
         return _build_environment(loader, auto_reload=False)

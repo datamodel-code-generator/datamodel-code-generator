@@ -69,7 +69,7 @@ def test_skill_frontmatter_validates() -> None:
         "skill_files": {_relative_posix(path, SKILL_DIR): path.is_file() for path in SKILL_FILES},
     }
 
-    assert_output(dumps(summary, indent=2, sort_keys=True) + "\n", EXPECTED / "frontmatter.txt")
+    assert_output(dumps(summary, indent=2, sort_keys=True) + "\n")
 
 
 def test_skill_frontmatter_requires_yaml_header(tmp_path: Path) -> None:
@@ -115,7 +115,7 @@ def test_skill_documented_flags_exist_in_cli_help() -> None:
         if flag not in NON_DATAMODEL_FLAGS and flag not in help_text
     }
 
-    assert_output(dumps(unknown, indent=2, sort_keys=True) + "\n", EXPECTED / "documented_flag_drift.txt")
+    assert_output(dumps(unknown, indent=2, sort_keys=True) + "\n")
 
 
 def test_skill_documented_flags_reports_help_failure(monkeypatch: pytest.MonkeyPatch) -> None:

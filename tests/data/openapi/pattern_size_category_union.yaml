@@ -1,0 +1,8 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    TagValue:
+      type: string
+      pattern: '[\p{L}\p{N}_-]{1,256}'

@@ -1,0 +1,316 @@
+[30]
+values = [
+    item.name
+    for item in collection
+    if item.enabled
+    and item.visible
+]
+
+[88]
+def function_name(argument: int) -> tuple[
+    int,
+    str,
+]:
+    pass
+
+[30]
+value = prefix + function_name(
+    first_argument_value_long_name_here_ok
+)
+
+[3]
+import os
+
+[40]
+def function_name(
+    first_argument: int = 1,
+    *,
+    second_argument: str = 'x',
+) -> None:
+    pass
+
+[10]
+value = '''multi
+line'''
+
+[40]
+value = 'string literal that is quite long and overflows the limit for sure'.a().b()
+
+[30]
+class Model(Base):
+    values: list[int] = [
+        first_number,
+        second_number,
+        third_number,
+    ]
+
+[30]
+text = (
+    'first implicit part of a string '
+    'second implicit part of the string'
+)
+
+[40]
+value = [
+    first_item_long,
+    second_item_long,
+] + other_value_name
+
+[30]
+flag = (
+    candidate
+    in allowed_values
+    or other_value is None
+    or not enabled
+)
+
+[40]
+value = function_name(
+    first_argument,
+)[
+    index_value
+].method_name(other_argument)
+
+[30]
+@decorator_with_a_long_name(
+    first_argument_value,
+    second_argument_value,
+)
+def f():
+    pass
+
+[30]
+callback = (
+    lambda: compute_something(
+        first_argument,
+        second_argument,
+    )
+)
+
+[30]
+result_value_with_a_long_name = (
+    very_long_function_name_without_arguments()
+)
+
+[40]
+message = 'a long template string with {} placeholder text'.format(
+    value
+).strip()
+
+[30]
+value = (
+    f'{first_value}'
+    + f'{second_value!r:>10}'
+    + first_value_with_long_name
+)
+
+[40]
+value = (
+    prefix_value_with_a_much_longer_name_than_fits
+    + function_name(argument_one)
+)
+
+[30]
+pair = (
+    assigned := compute_value(
+        first_argument,
+        second_argument_value,
+    )
+)
+
+[40]
+first = second = (
+    third_value_with_a_very_long_name_that_overflows_the_limit
+)
+
+[40]
+def function_name(
+    argument: int,
+) -> Annotated[
+    VeryLongReturnTypeName,
+    Field(description='x'),
+]:
+    pass
+
+[30]
+empty_tuple_with_a_very_long_name_that_overflows = ()
+
+[30]
+value = not_a_call_but_a_very_long_name_that_cannot_be_split_anywhere_at_all
+
+[30]
+value: Annotated[
+    int,
+    Field(
+        description='some description text'
+    ),
+] = default
+
+[40]
+message = 'a long template string with {} placeholder text'.format
+
+[30]
+values[index_name] = (
+    function_name(
+        first_argument_value,
+        second_argument_value,
+    )
+)
+
+[40]
+class VeryLongClassNameForTesting(
+    FirstBaseClassName,
+    SecondBaseClassName,
+    metaclass=Meta,
+):
+    pass
+
+[30]
+value = (
+    first
+    for first in first_sequence_with_a_long_name
+    if first_condition
+)
+
+[40]
+value = (
+    [first_item_long, second_item_long]
+    + other_value_name_that_is_much_longer_than_the_line
+)
+
+[30]
+value = (
+    prefix_value
+    + function_name()
+)
+
+[30]
+value = (
+    first_choice
+    if some_condition_holds
+    else second_choice_value
+)
+
+[30]
+print(
+    first_argument_value,
+    second_argument_value,
+    third_argument_value_x,
+)
+
+[88]
+class A:
+    """Ends with "quote" """
+
+[88]
+class A:
+    """ "Quoted" start."""
+
+[88]
+class A:
+    """Path \\"""
+
+[88]
+class A:
+    """ """
+
+[88]
+class A:
+    """Title."""
+
+[88]
+class A:
+    """Title."""
+
+[88]
+class A:
+    r"""Path \ """
+
+[10]
+class A:
+    class B:
+        """Title.
+
+        Last line."""
+
+[88]
+class A:
+    """"""
+
+[40]
+value = [
+    first_item_long,
+    second_item_long,
+][index_value] + other_value_name
+
+[40]
+value = first_function(
+    argument_one
+) + second_function(argument_two_long)
+
+[40]
+values[
+    first_index,
+    second_index,
+] = function_name(
+    first_argument_value,
+    second_argument,
+)
+
+[49]
+class Model:
+    日本語の長いフィールド名日本語の長いフィールド名: (
+        str
+    ) = Field(
+        None
+    )
+
+[11]
+class Model:
+    value: Optional[
+        VeryLongGeneratedTypeName
+    ]() = None
+
+[30]
+value = (
+    (first_item + second_item)
+    * third_item_with_a_long_name
+)
+
+[40]
+def f() -> Optional[
+    GeneratedNameOfTheFirstModel,
+    GeneratedNameOfTheSecondModel,
+]:
+    pass
+
+[40]
+def f() -> (
+    'Forward[GeneratedNameOfTheFirstModel, GeneratedNameOfTheSecondModel]'
+):
+    pass
+
+[20]
+def f(
+    self,
+) -> tuple[
+    int,
+    str,
+] | (
+    FirstModel
+    | SecondModel
+):
+    pass
+
+[32]
+class Model:
+    value: (
+        yield first_value
+    ) = second_value_with_a_long_name
+
+[30]
+def function_name(
+    first_argument,
+    second_argument,
+) -> (yield):
+    pass

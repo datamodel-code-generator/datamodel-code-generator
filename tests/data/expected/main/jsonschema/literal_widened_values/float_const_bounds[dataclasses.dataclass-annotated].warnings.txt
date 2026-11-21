@@ -1,0 +1,10 @@
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; Ratio is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; A.k is generated without this constraint.
+a Literal of the output model cannot hold the value 2.5, so it is written as its type, which admits other values; B.k is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.exact is generated without this constraint.
+a Literal of the output model cannot hold the value 2.5, so it is written as its type, which admits other values; Model.typed is generated without this constraint.
+a Literal of the output model cannot hold the value 3.5, so it is written as its type, which admits other values; Model.bounded is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.stepped is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.items is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.values is generated without this constraint.
+a Literal of the output model cannot hold the value 4.5, so it is written as its type, which admits other values; Model.either is generated without this constraint.

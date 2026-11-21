@@ -10,7 +10,9 @@ from typing_extensions import TypeAliasType
 type UnconstrainedArrayTypeUnionSelfRef = str | list[UnconstrainedArrayTypeUnionSelfRef]
 
 
-type UnconstrainedObjectArraySelfRef = dict[str, Any] | list[UnconstrainedObjectArraySelfRef]
+type UnconstrainedObjectArraySelfRef = dict[str, Any] | list[
+    UnconstrainedObjectArraySelfRef
+]
 
 
 ArrayTypeUnionSelfRefArray = TypeAliasType(

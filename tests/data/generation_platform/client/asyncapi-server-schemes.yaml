@@ -1,0 +1,131 @@
+asyncapi: 3.0.0
+info:
+  title: Fleet
+  version: 1.0.0
+  description: Server-sent event channels told by their servers and bindings, and hosts written with schemes.
+servers:
+  api:
+    host: api.example.com
+    protocol: https
+  secure:
+    host: https://secure.example.com
+    pathname: /v1
+    protocol: http
+  live:
+    host: '{origin}'
+    protocol: sse
+    variables:
+      origin:
+        default: http://localhost:8090
+  socket:
+    host: wss://ws.example.com
+    protocol: ws
+  plain:
+    host: http://plain.example.com
+    protocol: https
+channels:
+  positions:
+    address: /positions
+    servers:
+      - $ref: '#/servers/api'
+      - $ref: '#/servers/secure'
+      - $ref: '#/servers/live'
+      - $ref: '#/servers/plain'
+    messages:
+      position:
+        $ref: '#/components/messages/position'
+  alerts:
+    address: /alerts
+    servers:
+      - $ref: '#/servers/api'
+    bindings:
+      http:
+        headers:
+          type: object
+          properties:
+            Content-Type:
+              type: string
+              enum: [text/event-stream]
+    messages:
+      alert:
+        $ref: '#/components/messages/alert'
+  trips:
+    address: /trips
+    servers:
+      - $ref: '#/servers/api'
+    messages:
+      position:
+        $ref: '#/components/messages/position'
+  reports:
+    address: /reports
+    servers:
+      - $ref: '#/servers/api'
+    bindings:
+      http:
+        headers:
+          type: object
+          properties:
+            Accept:
+              type: string
+              enum: [text/event-stream, application/json]
+    messages:
+      alert:
+        $ref: '#/components/messages/alert'
+  commands:
+    address: /commands
+    messages:
+      command:
+        $ref: '#/components/messages/alert'
+operations:
+  publishPositions:
+    action: send
+    channel:
+      $ref: '#/channels/positions'
+  publishAlerts:
+    action: send
+    channel:
+      $ref: '#/channels/alerts'
+  receiveTrips:
+    action: receive
+    channel:
+      $ref: '#/channels/trips'
+    bindings:
+      http:
+        method: GET
+        headers:
+          type: object
+          properties:
+            Accept:
+              type: string
+              const: text/event-stream; charset=utf-8
+  receiveReports:
+    action: receive
+    channel:
+      $ref: '#/channels/reports'
+  receiveCommands:
+    action: receive
+    channel:
+      $ref: '#/channels/commands'
+components:
+  messages:
+    position:
+      payload:
+        $ref: '#/components/schemas/Position'
+    alert:
+      payload:
+        $ref: '#/components/schemas/Alert'
+  schemas:
+    Position:
+      type: object
+      properties:
+        lat:
+          type: number
+        lon:
+          type: number
+      required: [lat, lon]
+    Alert:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]

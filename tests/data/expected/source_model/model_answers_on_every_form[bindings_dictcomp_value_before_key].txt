@@ -1,0 +1,29 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  f: def@4 [always]
+  g: def@8 [always]
+scope function f#0 'f': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  pairs: param@4 [function:body@4]
+scope comprehension f.<locals>.<dictcomp>#0 '<dictcomp>': code 3.11 only; first line 5
+  opened by a node evaluated in f#0
+  k: comprehension@5 [function:body@4|loop:body@5]
+  v: comprehension@5 [function:body@4|loop:body@5]
+scope lambda f.<locals>.<lambda>#0 '<lambda>': code yes; first line 5
+  opened by a node evaluated in f.<locals>.<dictcomp>#0
+scope comprehension f.<locals>.<genexpr>#0 '<genexpr>': code yes; first line 5
+  opened by a node evaluated in f.<locals>.<dictcomp>#0
+  c: comprehension@5 [function:body@4|loop:body@5|loop:body@5]
+scope function g#0 'g': code yes; first line 8
+  opened by a node evaluated in <module>#0
+  rows: param@8 [function:body@8]
+scope comprehension g.<locals>.<dictcomp>#0 '<dictcomp>': code 3.11 only; first line 9
+  opened by a node evaluated in g#0
+  _: comprehension@9 [function:body@8|loop:body@9]
+scope lambda g.<locals>.<lambda>#0 '<lambda>': code yes; first line 9
+  opened by a node evaluated in g.<locals>.<dictcomp>#0
+  b: param@9 [function:body@8|loop:body@9|function:body@9]
+scope lambda g.<locals>.<lambda>#1 '<lambda>': code yes; first line 9
+  opened by a node evaluated in g.<locals>.<dictcomp>#0
+  a: param@9 [function:body@8|loop:body@9|function:body@9]
+== code objects: one per scope that compiles on this Python

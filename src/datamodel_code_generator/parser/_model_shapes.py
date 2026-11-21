@@ -21,14 +21,14 @@ them too, so the models that were there before keep their names.
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import field
 from operator import is_
 from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, final
 
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 
 if TYPE_CHECKING:
     import re
@@ -295,7 +295,7 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class ModelShapes(Generic[ModelT, ReferenceT]):
     """The keys of models for one comparison pass of one user, with the shapes memoized for that pass."""
 
@@ -312,7 +312,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         """Return the rendered model with the tags of its discriminated unions when the row compares them.
 
         The model renders under its own class name or as ``M``, as the row says, and the parse's memo keeps the key
-        (:data:`STALE_DEDUP_KEYS`).
+        (:data:`STALE_DEDUP_KEYS`, row ``legacy-stale-dedup-keys``).
         """
         slot: KeySlot = (self.source.own_class_name(model), False) if self.row.own_class_name else (None, True)
         if self.row.key_cache == "rendered":

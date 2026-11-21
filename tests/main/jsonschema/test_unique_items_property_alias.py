@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator import AliasGenerator, DataModelType, Formatter, InputFileType, generate
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_generate_and_assert
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,7 +26,6 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_property_alias.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)
@@ -45,7 +43,6 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_property_alias_serialization.py",
         **serialization_kwargs,
     )
     generate(input_=schema, output=output_file, **serialization_kwargs)
@@ -63,7 +60,6 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_property_alias_population.py",
         **population_kwargs,
     )
     generate(input_=schema, output=output_file, **population_kwargs)
@@ -82,7 +78,6 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_property_alias_serialization_alias_generator.py",
         **serialization_generator_kwargs,
     )
     generate(input_=schema, output=output_file, **serialization_generator_kwargs)

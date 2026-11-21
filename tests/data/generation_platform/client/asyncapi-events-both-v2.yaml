@@ -1,0 +1,24 @@
+asyncapi: 2.6.0
+info:
+  title: Both ways
+  version: 1.0.0
+servers:
+  local:
+    url: http://localhost:8080/stream
+    protocol: sse
+channels:
+  /status:
+    publish:
+      message:
+        payload:
+          type: object
+          properties:
+            ping:
+              type: boolean
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            up:
+              type: boolean

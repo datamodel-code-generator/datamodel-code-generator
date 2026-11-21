@@ -1,0 +1,13 @@
+valid: accepted
+invalid {"code": "2x"}: rejected (int_parsing)
+invalid {"count": -1}: rejected (greater_than_equal)
+invalid {"ratio": 0.5}: rejected (greater_than)
+invalid {"share": 0}: rejected (greater_than)
+invalid {"price": 0.5}: rejected (greater_than_equal)
+invalid {"price": 1.234}: rejected (multiple_of)
+invalid {"label": "abcde"}: rejected (int_parsing)
+invalid {"tags": ["abcde"]}: rejected (int_parsing)
+invalid {"scores": {"a": 10}}: rejected (less_than_equal)
+invalid {"grid": [{"k": "b"}]}: rejected (float_parsing)
+invalid {"word": "xyz"}: rejected (int_parsing)
+invalid {"word": "abcde"}: rejected (int_parsing)

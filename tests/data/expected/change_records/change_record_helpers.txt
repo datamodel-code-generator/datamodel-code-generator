@@ -1,0 +1,128 @@
+=== no covers yet, labels ===
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "main/a.py",
+    "main/b \"quoted\".py",
+    "main/é/",
+]
+
+=== no covers yet, no labels ===
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+
+=== no newline at the end, labels ===
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "main/a.py",
+    "main/b \"quoted\".py",
+    "main/é/",
+]
+
+=== no newline at the end, no labels ===
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+
+=== covers replaced, labels ===
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "main/a.py",
+    "main/b \"quoted\".py",
+    "main/é/",
+]
+
+=== covers replaced, no labels ===
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+
+=== a sub-table, labels ===
+[[change]]
+id = "x"
+kind = "output-text"
+source = "run"
+covers = [
+    "main/a.py",
+    "main/b \"quoted\".py",
+    "main/é/",
+]
+
+[change.verify]
+schema = "{}"
+
+=== a sub-table, no labels ===
+[[change]]
+id = "x"
+kind = "output-text"
+source = "run"
+
+[change.verify]
+schema = "{}"
+
+=== a header-like line in a string, labels ===
+[[change]]
+covers = [
+    "main/a.py",
+    "main/b \"quoted\".py",
+    "main/é/",
+]
+id = "x"
+summary = """
+[not a table]
+"""
+
+=== a header-like line in a string, no labels ===
+[[change]]
+id = "x"
+summary = """
+[not a table]
+"""
+
+=== a comment first, labels ===
+# moved
+
+[[change]]
+id = "x"
+covers = [
+    "main/a.py",
+    "main/b \"quoted\".py",
+    "main/é/",
+]
+
+=== a comment first, no labels ===
+# moved
+
+[[change]]
+id = "x"
+
+=== covers in another form, labels ===
+ValueError: its covers are not written as declared_changes.py declare writes them
+
+=== covers in another form, no labels ===
+ValueError: its covers are not written as declared_changes.py declare writes them
+
+{
+ "listed": null,
+ "older tag": null,
+ "tag newer than every row": "stamp pending: 0.98.0 is tagged but docs/data/migration/releases.toml does not list it; run 'python scripts/build_migration_docs.py --stamp 0.98.0 --tag-tree <checkout of 0.98.0>'",
+ "no rows": "stamp pending: 0.1.0 is tagged but docs/data/migration/releases.toml does not list it; run 'python scripts/build_migration_docs.py --stamp 0.1.0 --tag-tree <checkout of 0.1.0>'"
+}

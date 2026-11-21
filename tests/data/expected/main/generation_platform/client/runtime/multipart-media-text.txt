@@ -1,0 +1,8 @@
+# multipart-media-text pydantic_v2.BaseModel, msgspec.Struct
+  > POST https://api.example.com/calls
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 302] b'--<boundary>\r\nContent-Disposition: form-data; name="sdp"\r\nContent-Type: application/sdp\r\n\r\nv=0\r\no=- 1 1 IN IP4 0.0.0.0\r\n--<boundary>\r\nContent-Disposition: form-data; name="session"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  call = None
+  > POST https://api.example.com/offers
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 570] b'--<boundary>\r\nContent-Disposition: form-data; name="offer"\r\nContent-Type: application/sdp; charset=iso-8859-1\r\n\r\nv=0 caf\xe9\r\n--<boundary>\r\nContent-Disposition: form-data; name="counts"\r\nContent-Type: application/octet-stream\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="counts"\r\nContent-Type: application/octet-stream\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="recording"\r\nContent-Type: application/octet-stream\r\n\r\n\x00\r\n--<boundary>--\r\n'
+  offer = None
+  offer outside the charset ! DecodeError: DecodeError(operation_id='sendOffer', reason='unencodable', location='body.offer') [operation_id='sendOffer', location=('body', 'offer'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] unencodable

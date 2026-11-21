@@ -87,6 +87,10 @@ class DataTypeView(Protocol):  # noqa: PLR0904
         """Whether the type is a tuple."""
 
     @property
+    def given_container(self) -> str | None:
+        """The container class an ``x-python-type`` gives the type, which it is written as."""
+
+    @property
     def tuple_item_count(self) -> int | None:
         """The item count of a fixed-length tuple."""
 
@@ -117,6 +121,14 @@ class DataTypeView(Protocol):  # noqa: PLR0904
     @property
     def admits_none(self) -> bool:
         """Whether the rendered type hint includes None."""
+
+    @property
+    def _writes_nothing_of_its_own(self) -> bool:
+        """Whether the type writes no text, names no model and is no container, so only its members write."""
+
+    @property
+    def _renders_none(self) -> bool:
+        """Whether the type writes ``None``: the type None, or a type whose one member writes it."""
 
 
 class FieldView(Protocol):
@@ -153,6 +165,10 @@ class FieldView(Protocol):
     @property
     def nullable(self) -> bool | None:
         """Whether the schema makes the field nullable."""
+
+    @property
+    def nullable_without_default(self) -> bool | None:
+        """The ``nullable`` of the field as one without its default (``--omit-incomplete-model-defaults``)."""
 
     @property
     def default(self) -> object:
@@ -233,6 +249,10 @@ class ModelView(Protocol):
     @property
     def reused_reference(self) -> ReferenceView | None:
         """The model whose duplicate the model is."""
+
+    @property
+    def effective_fields(self) -> Sequence[FieldView]:
+        """The named fields of an instance after C3 inheritance and overrides (``get_effective_fields``)."""
 
     @property
     def holds_null(self) -> bool:

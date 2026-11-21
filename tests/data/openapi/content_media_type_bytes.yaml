@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Raw binary content named by content media types
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Upload:
+      type: object
+      required: [image]
+      properties:
+        image: {type: string, contentMediaType: image/png}
+        limited: {type: string, contentMediaType: text/plain, maxLength: 8}
+        images: {type: array, items: {type: string, contentMediaType: image/png}}
+        nullable: {type: [string, "null"], contentMediaType: application/pdf}
+        picture: {$ref: "#/components/schemas/Picture"}
+        encoded: {type: string, contentMediaType: image/png, contentEncoding: base64}
+        email: {type: string, format: email, contentMediaType: text/plain}
+        text: {type: string}
+    Picture:
+      type: string
+      contentMediaType: image/jpeg

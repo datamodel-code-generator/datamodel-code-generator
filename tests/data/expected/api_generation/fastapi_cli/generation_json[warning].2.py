@@ -50,7 +50,9 @@ class SubscriptionsPostOnEventCallback1PostRequest(BaseModel):
     file: bytes | None = None
 
 
-SubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter = TypeAliasType("SubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter", str)
+SubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter = TypeAliasType(
+    "SubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter", str
+)
 
 
 class EventsGetResponse(RootModel[list[Event]]):

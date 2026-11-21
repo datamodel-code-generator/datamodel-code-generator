@@ -1,0 +1,24 @@
+interface Node {
+  id: ID!
+}
+
+"""
+A text match within a search result.
+"""
+type TextMatch implements Node {
+  id: ID!
+  fragment: String!
+  property: String
+}
+
+type Repository implements Node {
+  id: ID!
+  name: String!
+}
+
+union SearchResult = TextMatch | Repository
+
+type Query {
+  search: [SearchResult!]!
+  node: Node!
+}

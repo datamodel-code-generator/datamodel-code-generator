@@ -1,0 +1,4 @@
+[
+  "/kind enum null: invalid, model accepts",
+  "/level enum null: invalid, model accepts"
+]

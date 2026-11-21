@@ -31,9 +31,7 @@ from scripts.build_docs_examples import read_with_newest_preset
 from tests.conftest import (
     assert_directory_content,
     assert_output,
-    create_assert_file_content,
     freeze_time,
-    stored_expected,
 )
 from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import (
@@ -48,11 +46,6 @@ from tests.main.conftest import (
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "fastapi"
 CLI = SOURCE / "cli"
-EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi"
-PACKAGE = EXPECTED / "packages" / "pets" / "pydantic_v2_BaseModel"
-DEPENDENCIES = EXPECTED / "cli" / "dependencies.txt"
-REGENERATED = EXPECTED / "cli" / "dependencies-regenerated.txt"
-SHARED_DEPENDENCIES = EXPECTED / "cli" / "shared-models-dependencies.txt"
 PYTHON = ["--target-python-version", "3.11"]
 SCOPES = ["--openapi-scopes", "schemas", "api"]
 BACKEND = ["--output-model-type", "pydantic_v2.BaseModel"]
@@ -68,7 +61,6 @@ SENTINEL_TARGET = (
 )
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *SERVER]
 DOC_INPUT = "generation_platform/fastapi/cli/options.yaml"
-DOC_OUTPUT = "main/generation_platform/fastapi/cli/options"
 UNSUPPORTED = (
     "Error: --output-model-type: The fastapi target does not "
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
@@ -83,7 +75,6 @@ JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
 LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
 MODEL_DEPENDENCIES = json.loads((CLI / "model-dependencies.json").read_text(encoding="utf-8"))
-MODEL_DEPENDENCY_NOTICES = dict.fromkeys(("type-aliases", "additional-imports", "additional-modules"), "formats")
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -102,8 +93,6 @@ GENERATE_OPTIONS = {
     "formatters": [Formatter.BUILTIN],
     "disable_timestamp": True,
 }
-
-assert_file_content = create_assert_file_content(EXPECTED)
 
 
 def _server(*extra: str, output: str = "server") -> list[str]:
@@ -171,12 +160,10 @@ def test_fastapi_cli_generate(
         input_file_type="openapi",
         extra_args=_server(),
         copy_files=_inputs(tmp_path),
-        capsys=capsys,
-        expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
-        assert_func=assert_file_content,
-        expected_file=PACKAGE / "models.py",
+        name="model",
     )
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    assert_output(capsys.readouterr().err, name="notice")
+    assert_directory_content(tmp_path / "server", name="server")
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
@@ -203,7 +190,7 @@ def test_fastapi_cli_generate(
         extra_args=_server("--check"),
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check-model.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
     (tmp_path / "server" / "README.md").unlink()
@@ -214,7 +201,7 @@ def test_fastapi_cli_generate(
         extra_args=_server("--check"),
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
     run_main_and_assert(
@@ -222,12 +209,10 @@ def test_fastapi_cli_generate(
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(),
-        capsys=capsys,
-        expected_stderr_path=REGENERATED,
-        assert_func=assert_file_content,
-        expected_file=PACKAGE / "models.py",
+        name="model",
     )
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    assert_output(capsys.readouterr().err, name="regenerated")
+    assert_directory_content(tmp_path / "server", name="server")
 
 
 @pytest.mark.parametrize("case_name", MODEL_DEPENDENCIES)
@@ -240,19 +225,15 @@ def test_fastapi_cli_model_dependencies(
     compared, not run: they import optional libraries that a test environment need not hold.
     """
     monkeypatch.chdir(tmp_path)
-    expected = EXPECTED / "cli" / "model-dependencies"
     run_main_and_assert(
         input_path=Path("contacts.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
         copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
-        capsys=capsys,
-        expected_stderr_path=expected / f"{MODEL_DEPENDENCY_NOTICES.get(case_name, case_name)}.txt",
-        assert_func=assert_file_content,
-        expected_file=expected / f"{case_name}.py",
         skip_code_validation=True,
     )
+    assert_output(capsys.readouterr().err, name="stderr")
 
 
 def test_fastapi_cli_request_response_discriminated_enum(
@@ -271,7 +252,6 @@ def test_fastapi_cli_request_response_discriminated_enum(
         extra_args=_server("--read-only-write-only-model-type", "request-response"),
         copy_files=[(CLI / "request-response-discriminator.yaml", tmp_path / "pets.yaml")],
         capsys=capsys,
-        assert_func=assert_file_content,
         skip_code_validation=True,
     )
 
@@ -299,18 +279,14 @@ def test_fastapi_cli_check_read_only(
     server = case.get("server", "server")
     arguments = case.get("arguments", ())
     nested_package = bool(case.get("modular")) and bool({"model", "server"} & case.keys())
-    unchanged = case.get("unchanged", "unchanged.json")
     run_main_and_assert(
         input_path=source,
         input_file_type="openapi",
         output_path=output,
         extra_args=_server(*arguments, output=server),
-        capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)).read_text(
-            encoding="utf-8"
-        ),
         skip_code_validation=nested_package,
     )
+    assert_output(capsys.readouterr().err, name="stderr")
     roots = [root for root in (tmp_path / server, tmp_path / output) if root.is_dir()]
     directories = [*roots, *(path for root in roots for path in root.rglob("*") if path.is_dir())]
     for directory in directories:
@@ -325,7 +301,8 @@ def test_fastapi_cli_check_read_only(
             ),
             capsys=capsys,
             assert_no_stderr=True,
-            expected_stdout_path=EXPECTED / "cli" / "check" / (unchanged if structured else "unchanged.txt"),
+            derived_stdout=True,
+            stdout_suffix=".json" if structured else ".txt",
             skip_code_validation=nested_package,
         )
     finally:
@@ -356,8 +333,6 @@ def test_fastapi_cli_check_outputs(
     _copy(tmp_path)
     output = Path(case.get("model", "models" if case.get("modular") else "models.py"))
     server = case.get("server", "server")
-    notice = EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)
-    repeated = notice if case.get("fresh") else EXPECTED / "cli" / case.get("regenerated", REGENERATED.name)
     source = Path("pets.yaml")
     if case.get("modular") or case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
@@ -374,10 +349,9 @@ def test_fastapi_cli_check_outputs(
             input_file_type="openapi",
             output_path=output,
             extra_args=_server(*options, output=server),
-            capsys=capsys,
-            expected_stderr_path=notice,
             skip_code_validation=unvalidated,
         )
+        assert_output(capsys.readouterr().err, name="notice")
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
             shutil.rmtree(path)
@@ -402,14 +376,10 @@ def test_fastapi_cli_check_outputs(
                 input_file_type="openapi",
                 output_path=output,
                 extra_args=_server(*options, *case.get("options", ()), output=server),
-                capsys=capsys,
-                expected_stderr_path=repeated,
                 skip_code_validation=unvalidated,
             )
-    assert_output(
-        "\n".join(f"{item.category.__name__}: {item.message}" for item in regenerated),
-        EXPECTED / "cli" / case.get("warnings", "no-warning.txt"),
-    )
+            assert_output(capsys.readouterr().err, name="notice" if case.get("fresh") else "regenerated")
+    assert_output("\n".join(f"{item.category.__name__}: {item.message}" for item in regenerated), name="warnings")
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
         monkeypatch.chdir(tmp_path / "server")
@@ -434,17 +404,12 @@ def test_fastapi_cli_check_outputs(
             expected_exit=Exit.ERROR if "error" in case else Exit.DIFF if changed else Exit.OK,
             expected_stderr_contains=f"Error: {case['error']}" if "error" in case else None,
             assert_no_stderr="error" not in case,
-            expected_stdout_path=(
-                EXPECTED / "cli" / "check" / f"{case_name}.{'json' if structured else 'txt'}"
-                if "error" not in case
-                else None
-            ),
+            derived_stdout="error" not in case,
+            stdout_suffix=".json" if structured else ".txt",
             skip_code_validation=unvalidated,
         )
     after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
-    assert_output(
-        f"files unchanged {before == after}; warnings {len(recorded)}\n", EXPECTED / "cli" / "check-unchanged.txt"
-    )
+    assert_output(f"files unchanged {before == after}; warnings {len(recorded)}\n", name="unchanged")
 
 
 @pytest.mark.parametrize("case_name", JSON_CASES)
@@ -468,7 +433,6 @@ def test_fastapi_cli_generation_json(
     model = (tmp_path if "model" in absolute else Path()) / case.get("model", "models.py")
     server = (tmp_path if "server" in absolute else Path()) / case.get("server", "server")
     encoding = case.get("encoding", "utf-8")
-    notice = EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)
     unvalidated = encoding != "utf-8" or case.get("unvalidated", False)
     options = ["--output-format", "json", "--encoding", encoding, *case.get("options", ())]
     if case.get("templates"):
@@ -480,9 +444,8 @@ def test_fastapi_cli_generation_json(
             input_file_type="openapi",
             output_path=model,
             extra_args=_server("--encoding", encoding, output=str(server)),
-            capsys=capsys,
-            expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
         )
+        assert_output(capsys.readouterr().err, name="initial")
     for name, text in case.get("write", {}).items():
         (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding=encoding)
@@ -496,16 +459,16 @@ def test_fastapi_cli_generation_json(
             skip_code_validation=unvalidated,
         )
     captured = capsys.readouterr()
-    assert_output(captured.err, notice)
-    if payload := case.get("payload"):
-        assert_output(captured.out.replace(tmp_path.as_posix(), "<root>"), EXPECTED / "cli" / "json" / f"{payload}.txt")
+    assert_output(captured.err, name="notice")
+    if case.get("payload"):
+        assert_output(captured.out.replace(tmp_path.as_posix(), "<root>"), name="payload")
     if case.get("package"):
-        assert_file_content(tmp_path / model, PACKAGE / "models.py")
-        assert_directory_content(tmp_path / server, PACKAGE / "server")
-    for name in case.get("published", ()):
-        assert_file_content(tmp_path / name, EXPECTED / "cli" / "json" / "published" / f"{name}.txt")
+        assert_output((tmp_path / model).read_text(encoding="utf-8"), name="model", suffix=".py")
+        assert_directory_content(tmp_path / server, name="server")
+    for role, published in (("metadata", "metadata.json"), ("lock", "api.lock")):
+        if published in case.get("published", ()):
+            assert_output((tmp_path / published).read_text(encoding="utf-8"), name=role)
     stale = case.get("stale")
-    unchanged = case.get("unchanged", "unchanged.json")
     with warnings.catch_warnings(record=True) as checked:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
@@ -516,9 +479,8 @@ def test_fastapi_cli_generation_json(
             capsys=capsys,
             assert_no_stderr=True,
             expected_exit=Exit.DIFF if stale else Exit.OK,
-            expected_stdout_path=EXPECTED
-            / "cli"
-            / (Path("json", "check", f"{stale}.txt") if stale else Path("check", unchanged)),
+            derived_stdout=True,
+            stdout_suffix=".txt" if stale else ".json",
             skip_code_validation=unvalidated,
         )
     assert_output(
@@ -526,7 +488,7 @@ def test_fastapi_cli_generation_json(
             *(f"{item.category.__name__}: {item.message}" for item in recorded),
             *(f"check {item.category.__name__}: {item.message}" for item in checked),
         ]),
-        EXPECTED / "cli" / case.get("warnings", "no-warning.txt"),
+        name="warnings",
     )
     if removed := case.get("remove"):
         for name in removed:
@@ -542,10 +504,7 @@ def test_fastapi_cli_generation_json(
             expected_exit=Exit.DIFF,
             skip_code_validation=unvalidated,
         )
-        assert_output(
-            capsys.readouterr().out.replace(tmp_path.as_posix(), "<root>"),
-            EXPECTED / "cli" / "json" / "check" / f"{case['check']}.txt",
-        )
+        assert_output(capsys.readouterr().out.replace(tmp_path.as_posix(), "<root>"), name="removed")
 
 
 def test_fastapi_cli_pyproject(
@@ -554,9 +513,10 @@ def test_fastapi_cli_pyproject(
     """Write the same models and package from pyproject.toml alone as from the options, then check them."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-server.toml")
-    run_main_with_args([], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"))
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args([])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), suffix=".py")
+    assert_directory_content(tmp_path / "server")
     run_main_with_args(["--check"], capsys=capsys, assert_no_stderr=True)
 
 
@@ -571,7 +531,7 @@ def test_fastapi_cli_ignore_pyproject(tmp_path: Path, monkeypatch: pytest.Monkey
         copy_files=_inputs(tmp_path, "pyproject-server.toml"),
         file_should_not_exist=tmp_path / "server",
     )
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_fastapi_cli_unselected_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -589,29 +549,23 @@ def test_fastapi_cli_unselected_pyproject(tmp_path: Path, monkeypatch: pytest.Mo
         copy_files=_inputs(tmp_path),
         file_should_not_exist=tmp_path / "server",
     )
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments", "notice"),
+    "arguments",
     [
-        ("base", [], DEPENDENCIES.name),
-        ("profile", ["--profile", "async"], DEPENDENCIES.name),
-        ("cli-over-profile", ["--profile", "async", "--server-handler-mode", "sync"], DEPENDENCIES.name),
-        (
-            "cli-table",
-            ["--server-handler-modes", '{"/paths/~1store~1inventory/get": "async"}'],
-            DEPENDENCIES.name,
-        ),
-        ("cli-empty-table", ["--profile", "async", "--server-handler-modes", "{}"], DEPENDENCIES.name),
-        ("profile-output", ["--profile", "elsewhere"], "dependencies-elsewhere.txt"),
-        ("cli-output", ["--profile", "elsewhere", "--server-output", "service"], "dependencies-service.txt"),
+        pytest.param([], id="base"),
+        pytest.param(["--profile", "async"], id="profile"),
+        pytest.param(["--profile", "async", "--server-handler-mode", "sync"], id="cli-over-profile"),
+        pytest.param(["--server-handler-modes", '{"/paths/~1store~1inventory/get": "async"}'], id="cli-table"),
+        pytest.param(["--profile", "async", "--server-handler-modes", "{}"], id="cli-empty-table"),
+        pytest.param(["--profile", "elsewhere"], id="profile-output"),
+        pytest.param(["--profile", "elsewhere", "--server-output", "service"], id="cli-output"),
     ],
 )
 def test_fastapi_cli_precedence(
-    name: str,
     arguments: list[str],
-    notice: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -622,11 +576,10 @@ def test_fastapi_cli_precedence(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-precedence.toml")
-    run_main_with_args(arguments, capsys=capsys, expected_stderr_path=EXPECTED / "cli" / notice)
+    run_main_with_args(arguments)
+    assert_output(capsys.readouterr().err, name="stderr")
     report = "".join(_methods(path) for path in sorted(tmp_path.glob("*/services.py")))
-    assert_output(
-        f"$ datamodel-codegen {' '.join(arguments)}\n{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
-    )
+    assert_output(f"$ datamodel-codegen {' '.join(arguments)}\n{report}")
 
 
 def test_fastapi_cli_pyproject_paths(
@@ -644,18 +597,13 @@ def test_fastapi_cli_pyproject_paths(
     (work / "names.json").write_text('{"/paths/~1pets/get": "find_pets"}', encoding="utf-8")
     monkeypatch.chdir(work)
     run_main_with_args([], capsys=capsys)
-    assert_output(
-        capsys.readouterr().err.replace(project.as_posix(), "<project>"), EXPECTED / "cli" / "dependencies-project.txt"
-    )
-    run_main_with_args(
-        ["--server-output", "service", "--server-operation-names", "names.json"],
-        capsys=capsys,
-        expected_stderr_path=EXPECTED / "cli" / "dependencies-service.txt",
-    )
+    assert_output(capsys.readouterr().err.replace(project.as_posix(), "<project>"), name="notice")
+    run_main_with_args(["--server-output", "service", "--server-operation-names", "names.json"])
+    assert_output(capsys.readouterr().err, name="stderr")
     services = sorted(tmp_path.rglob("services.py"), key=lambda path: path.relative_to(tmp_path).as_posix())
     assert_output(
         "".join(f"# in {path.parent.parent.relative_to(tmp_path).as_posix()}\n{_methods(path)}" for path in services),
-        EXPECTED / "cli" / "pyproject-paths.txt",
+        name="methods",
     )
 
 
@@ -689,10 +637,8 @@ def test_fastapi_cli_json_file_documents(
         shutil.copy2(CLI / name, project / "pyproject.toml")
     monkeypatch.chdir(work)
     run_main_with_args(arguments, capsys=capsys)
-    assert_output(
-        capsys.readouterr().err.replace(project.as_posix(), "<project>"), EXPECTED / "cli" / "dependencies-project.txt"
-    )
-    assert_output(_methods(project / "server" / "services.py"), EXPECTED / "cli" / "json-file-documents.txt")
+    assert_output(capsys.readouterr().err.replace(project.as_posix(), "<project>"), name="notice")
+    assert_output(_methods(project / "server" / "services.py"), name="documents")
 
 
 def test_fastapi_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]) -> None:
@@ -700,7 +646,7 @@ def test_fastapi_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str
     run_main_with_args(
         ["--input", "pets.yaml", "--output", "models.py", *SERVER, *CONFIGURED, "--generate-pyproject-config"],
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "pyproject-config.txt",
+        derived_stdout=True,
     )
 
 
@@ -710,9 +656,7 @@ def test_fastapi_cli_generate_cli_command(
     """Print the server keys of pyproject.toml as command-line options, like model keys."""
     monkeypatch.chdir(tmp_path)
     shutil.copy2(CLI / "pyproject-configured.toml", tmp_path / "pyproject.toml")
-    run_main_with_args(
-        ["--generate-cli-command"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "cli-command.txt"
-    )
+    run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 @pytest.mark.parametrize(
@@ -734,12 +678,8 @@ def test_fastapi_cli_lockfile(
         input_file_type="openapi",
         extra_args=_server(*options),
         copy_files=_inputs(tmp_path),
-        assert_func=assert_file_content,
-        expected_file=PACKAGE / "models.py",
     )
-    assert_output(
-        (tmp_path / lockfile).read_text(encoding="utf-8"), DATA / "expected" / "http" / "remote_lock_empty.txt"
-    )
+    assert_output((tmp_path / lockfile).read_text(encoding="utf-8"), name="remote_lock_empty")
 
 
 def test_fastapi_cli_include_paths(
@@ -754,13 +694,11 @@ def test_fastapi_cli_include_paths(
         input_file_type="openapi",
         extra_args=_server(*include, output="service"),
         copy_files=_inputs(tmp_path),
-        capsys=capsys,
-        expected_stderr_path=EXPECTED / "cli" / "dependencies-include-paths.txt",
         file_should_not_exist=tmp_path / "server",
     )
+    assert_output(capsys.readouterr().err, name="stderr")
     assert_output(
         "\n".join(sorted(path.name for path in (tmp_path / "service" / "routers").iterdir())) + "\n",
-        EXPECTED / "cli" / "include-paths-routers.txt",
     )
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -781,11 +719,8 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(),
-        capsys=capsys,
-        expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
-        assert_func=assert_file_content,
-        expected_file="cli/stdin-models.py",
     )
+    assert_output(capsys.readouterr().err, name="stderr")
     run_main_and_assert(
         stdin_path=SOURCE / "pets.yaml",
         monkeypatch=monkeypatch,
@@ -897,7 +832,6 @@ def test_fastapi_cli_pyproject_input_file_type(
     )
     assert_output(
         f"written: {sorted(path.name for path in tmp_path.iterdir() if path.name != 'pyproject.toml')}\n",
-        EXPECTED.parent / "generate" / "nothing-written.txt",
     )
 
 
@@ -919,7 +853,6 @@ def test_fastapi_cli_removed_options(
     )
     assert_output(
         "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())),
-        EXPECTED / "cli" / "removed-options" / "files.txt",
     )
 
 
@@ -952,19 +885,19 @@ def test_fastapi_cli_information(
         input_file_type="openapi",
         extra_args=[*SERVER, "--list-experimental"],
         capsys=capsys,
-        expected_stdout_path=DATA / "expected" / "main" / "list_experimental.txt",
+        derived_stdout=True,
         file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
     )
 
 
 @pytest.mark.parametrize("server", [[], SERVER], ids=["models", "server"])
 @pytest.mark.parametrize(
-    ("options", "expected"),
-    [([], "cli/timestamp-models.py"), (["--disable-timestamp"], PACKAGE / "models.py")],
+    "options",
+    [([]), (["--disable-timestamp"])],
     ids=["timestamp", "no-timestamp"],
 )
 def test_fastapi_cli_models_as_given(
-    server: list[str], options: list[str], expected: str | Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    server: list[str], options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write the models a model-only run writes, with the generation timestamp exactly when the options keep it."""
     monkeypatch.chdir(tmp_path)
@@ -975,8 +908,6 @@ def test_fastapi_cli_models_as_given(
             input_file_type="openapi",
             extra_args=[*MODEL_OPTIONS, *options, *server],
             copy_files=_inputs(tmp_path),
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
 
 
@@ -1020,29 +951,29 @@ def test_fastapi_cli_check_after_generate(
 
 
 @pytest.mark.parametrize(
-    ("case", "options"),
+    "options",
     [
-        (
-            "header-quotes",
+        pytest.param(
             [
                 *("--custom-file-header-path", str(DATA / "custom_file_header.txt")),
                 *("--custom-file-header-mode", "prepend", "--enable-version-header", "--use-double-quotes"),
             ],
+            id="header-quotes",
         ),
-        ("encoding", ["--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]),
-        ("formatters", ["--formatters", "ruff-format", "--enable-command-header"]),
-        (
-            "ruff-latin-1",
+        pytest.param(
+            ["--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"], id="encoding"
+        ),
+        pytest.param(["--formatters", "ruff-format", "--enable-command-header"], id="formatters"),
+        pytest.param(
             [
                 *("--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"),
                 *("--formatters", "ruff-check", "ruff-format"),
             ],
+            id="ruff-latin-1",
         ),
     ],
 )
-def test_fastapi_cli_output_options(
-    case: str, options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fastapi_cli_output_options(options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Head, format, and encode the server files with the model output options, exactly like the models.
 
     Ruff reads only UTF-8, so the server files are formatted whatever encoding they are written in.
@@ -1061,7 +992,8 @@ def test_fastapi_cli_output_options(
     text = (tmp_path / "server" / "routers" / "store.py").read_bytes().decode(encoding)
     assert_output(
         text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
-        EXPECTED / "cli" / "output-options" / f"{case}.py",
+        name="router",
+        suffix=".py",
     )
 
 
@@ -1135,23 +1067,20 @@ def test_fastapi_cli_model_option_warning(
         input_file_type="openapi",
         extra_args=_server("--reuse-scope", "tree"),
         copy_files=_inputs(tmp_path),
-        capsys=capsys,
-        expected_stderr="Warning: --reuse-scope=tree has no effect without --reuse-model\n"
-        + stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
-        assert_func=assert_file_content,
-        expected_file=PACKAGE / "models.py",
     )
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    stderr = capsys.readouterr().err
+    notice = stderr.removeprefix("Warning: --reuse-scope=tree has no effect without --reuse-model\n")
+    assert_output(stderr.removesuffix(notice), name="warning")
+    assert_output(notice, name="stderr")
+    assert_directory_content(tmp_path / "server")
 
 
 @pytest.mark.parametrize(
-    ("options", "expected"),
-    [([], "warning.txt"), (["--disable-warnings"], "no_warning.txt")],
+    "options",
+    [([]), (["--disable-warnings"])],
     ids=["shown", "disabled"],
 )
-def test_fastapi_cli_disable_warnings(
-    options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fastapi_cli_disable_warnings(options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Silence the model warnings of a server run with --disable-warnings, as for a model-only run."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -1171,7 +1100,6 @@ def test_fastapi_cli_disable_warnings(
         )
     assert_output(
         "\n".join(str(item.message) for item in recorded if "Default formatters" in str(item.message)),
-        DATA / "expected" / "main" / "formatter_policy" / expected,
     )
 
 
@@ -1315,8 +1243,6 @@ def test_fastapi_cli_target_python_pyproject(tmp_path: Path, monkeypatch: pytest
         input_file_type="openapi",
         extra_args=[*SCOPES, *BACKEND, *FORMATTERS, "--disable-timestamp", *SERVER],
         copy_files=_inputs(tmp_path, "pyproject-target.toml"),
-        assert_func=assert_file_content,
-        expected_file=PACKAGE / "models.py",
     )
 
 
@@ -1365,22 +1291,20 @@ def test_fastapi_cli_conflicts(
     )
     assert_output(
         (tmp_path / "pyproject.toml").read_text(encoding="utf-8"),
-        EXPECTED / "cli" / "kept" / "pyproject-target.toml.txt",
     )
 
 
 @pytest.mark.parametrize(
-    ("case", "baseline", "expected_exit"),
+    ("baseline", "expected_exit"),
     [
-        ("unchanged", "pets.yaml", Exit.OK),
-        ("changed", "pets-baseline.yaml", Exit.DIFF),
-        ("form-baseline", "pets-form-baseline.yaml", Exit.DIFF),
+        ("pets.yaml", Exit.OK),
+        ("pets-baseline.yaml", Exit.DIFF),
+        ("pets-form-baseline.yaml", Exit.DIFF),
     ],
     ids=["unchanged", "changed", "form-baseline"],
 )
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_input_diff(
-    case: str,
     baseline: str,
     expected_exit: Exit,
     structured: bool,
@@ -1406,7 +1330,8 @@ def test_fastapi_cli_input_diff(
         expected_exit=expected_exit,
         capsys=capsys,
         assert_no_stderr=True,
-        expected_stdout_path=EXPECTED / "cli" / "input-diff" / f"{case}.{'json' if structured else 'txt'}",
+        derived_stdout=True,
+        stdout_suffix=".json" if structured else ".txt",
         file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
     )
 
@@ -1428,12 +1353,11 @@ def test_fastapi_cli_input_diff_model_name_map_warnings(
             expected_exit=Exit.DIFF,
             capsys=capsys,
             assert_no_stderr=True,
-            expected_stdout_path=EXPECTED / "cli" / "input-diff" / "changed.txt",
+            derived_stdout=True,
             file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
         )
     assert_output(
         "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
-        EXPECTED / "cli" / "input-diff" / "model-name-map-warnings.txt",
     )
 
 
@@ -1441,11 +1365,10 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     """Write the models and the package of a server job as a single run does, check them, then check a drift."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-jobs.toml")
-    run_main_with_args(
-        ["--job", "server"], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
-    )
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--job", "server"])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), suffix=".py")
+    assert_directory_content(tmp_path / "server")
     run_main_with_args(["--job", "server", "--check"], capsys=capsys, assert_no_stderr=True)
     (tmp_path / "models.py").write_text("# edited\n", encoding="utf-8")
     (tmp_path / "server" / "README.md").unlink()
@@ -1453,7 +1376,7 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
         ["--all-jobs", "--check"],
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -1479,7 +1402,6 @@ def test_fastapi_cli_models_package_onto_a_file(
         expected_exit=Exit.OK if compares else Exit.ERROR,
         capsys=capsys,
         expected_stderr=None if compares else "Error: Modular references require an output directory, not a file\n",
-        expected_output="kept = 1\n" if compares else None,
         assert_no_stderr=compares,
     )
     assert_output(
@@ -1512,7 +1434,7 @@ def test_fastapi_cli_layout_errors(
         output_should_not_exist=True,
     )
     written = sorted(path.name for path in tmp_path.iterdir() if path.name != source)
-    assert_output(f"{capsys.readouterr().err}written {written}\n", EXPECTED / "cli" / "layout-errors" / f"{name}.txt")
+    assert_output(f"{capsys.readouterr().err}written {written}\n")
 
 
 def test_fastapi_cli_model_and_form_dependencies(
@@ -1528,19 +1450,18 @@ def test_fastapi_cli_model_and_form_dependencies(
         copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
         skip_code_validation=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "model-dependencies.txt")
+    assert_output(capsys.readouterr().err)
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments"),
+    "arguments",
     [
-        ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
-        ("target-2.14", ["--target-pydantic-version", "2.14"]),
-        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", *MISSING]),
+        pytest.param(["--target-pydantic-version", "2.14", "--use-missing-sentinel"], id="target-2.14-missing"),
+        pytest.param(["--target-pydantic-version", "2.14"], id="target-2.14"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", *MISSING], id="dataclass-missing"),
     ],
 )
 def test_fastapi_cli_pydantic_dependency(
-    name: str,
     arguments: list[str],
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1561,22 +1482,20 @@ def test_fastapi_cli_pydantic_dependency(
         for line in Path("models.py").read_text(encoding="utf-8").splitlines(keepends=True)
         if "MISSING" in line and "import" in line
     ]
-    assert_output(
-        "".join((capsys.readouterr().err, *imports)), EXPECTED / "cli" / "pydantic-dependency" / f"{name}.txt"
-    )
+    assert_output("".join((capsys.readouterr().err, *imports)))
 
 
 @pytest.mark.parametrize("server", [[], SERVER], ids=["models", "server"])
 @pytest.mark.parametrize(
-    ("options", "expected"),
+    "options",
     [
-        ([], "cli/missing-sentinel-models.py"),
-        (["--output-model-type", "pydantic_v2.dataclass"], "cli/dataclass-missing-sentinel-models.py"),
+        [],
+        ["--output-model-type", "pydantic_v2.dataclass"],
     ],
     ids=["missing-sentinel", "dataclass-missing-sentinel"],
 )
 def test_fastapi_cli_missing_sentinel_models_as_given(
-    server: list[str], options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    server: list[str], options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write the models a model-only run writes when they use MISSING, which a server needs a 2.14 target for."""
     monkeypatch.chdir(tmp_path)
@@ -1586,8 +1505,6 @@ def test_fastapi_cli_missing_sentinel_models_as_given(
         input_file_type="openapi",
         extra_args=[*OPTIONS, *MISSING, *options, *server],
         copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
-        assert_func=assert_file_content,
-        expected_file=expected,
         skip_code_validation=True,
     )
 
@@ -1604,16 +1521,13 @@ def test_fastapi_cli_nested_models_example(
     arguments = json.loads(read_with_newest_preset(CLI / "nested-models-example.json"))
     run_main_with_args(
         arguments,
-        capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "run-commands" / "app-server.txt").read_text(
-            encoding="utf-8"
-        ),
         use_builtin_default_formatter=False,
     )
+    assert_output(capsys.readouterr().err, name="stderr")
     run_main_with_args(
         [*arguments, "--check"], capsys=capsys, assert_no_stderr=True, use_builtin_default_formatter=False
     )
-    assert_output(_methods(tmp_path / "app" / "server" / "services.py"), EXPECTED / "cli" / "nested-models-example.txt")
+    assert_output(_methods(tmp_path / "app" / "server" / "services.py"))
 
 
 def test_fastapi_cli_nested_job(
@@ -1622,17 +1536,16 @@ def test_fastapi_cli_nested_job(
     """Write the models of a server job inside its own package, as a single run can, then check both as one tree."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-nested-jobs.toml")
-    run_main_with_args(
-        ["--all-jobs"], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
-    )
-    assert_file_content(tmp_path / "server" / "models.py", PACKAGE / "models.py")
+    run_main_with_args(["--all-jobs"])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "server" / "models.py").read_text(encoding="utf-8"), suffix=".py")
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
     (tmp_path / "server" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
     run_main_with_args(
         ["--all-jobs", "--check"],
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check" / "extra-python.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -1666,7 +1579,7 @@ def test_fastapi_cli_leftover_files(
             for line in (captured.out + captured.err).splitlines()
             if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
         )
-    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 def test_fastapi_cli_naming_hint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1691,26 +1604,24 @@ def test_fastapi_cli_mixed_jobs(
     """Run a model-only job and a server job together; both write the models a model-only run writes."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-mixed-jobs.toml")
-    run_main_with_args(
-        ["--all-jobs"], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
-    )
-    assert_file_content(tmp_path / "schemas.py", PACKAGE / "models.py")
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--all-jobs"])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "schemas.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_directory_content(tmp_path / "server", name="server")
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
 
 
 @pytest.mark.parametrize(
-    ("case", "pyproject", "arguments", "packages", "check"),
+    ("pyproject", "arguments", "packages", "check"),
     [
-        ("target-module", [], ["--input", "pets.yaml", *DOC_OPTIONS], ["server/services"], Exit.DIFF),
-        ("models", [], ["--input", "pets.yaml", *DOC_OPTIONS], ["models"], Exit.OK),
-        ("mixed-jobs", ["pyproject-mixed-jobs.toml"], ["--all-jobs"], ["schemas", "models"], Exit.OK),
+        ([], ["--input", "pets.yaml", *DOC_OPTIONS], ["server/services"], Exit.DIFF),
+        ([], ["--input", "pets.yaml", *DOC_OPTIONS], ["models"], Exit.OK),
+        (["pyproject-mixed-jobs.toml"], ["--all-jobs"], ["schemas", "models"], Exit.OK),
     ],
     ids=["target-module", "models", "mixed-jobs"],
 )
 def test_fastapi_cli_shadowed_modules(
-    case: str,
     pyproject: list[str],
     arguments: list[str],
     packages: list[str],
@@ -1741,7 +1652,7 @@ def test_fastapi_cli_shadowed_modules(
         lines.extend(
             f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
         )
-    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-modules" / f"{case}.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 def test_fastapi_cli_jobs_json(
@@ -1778,10 +1689,8 @@ def test_fastapi_cli_jobs_json(
             lines.extend(f"difference {item['kind']} {item['path']}" for item in result["differences"])
         run_main_with_args(["--all-jobs", "--output-format", "json"])
     lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
-    assert_output(generated.err, DEPENDENCIES)
-    assert_output(
-        "\n".join(lines).replace(Path.cwd().as_posix(), "<root>") + "\n", EXPECTED / "cli" / "json" / "jobs.txt"
-    )
+    assert_output(generated.err, name="stderr")
+    assert_output("\n".join(lines).replace(Path.cwd().as_posix(), "<root>") + "\n")
 
 
 def test_fastapi_cli_jobs_json_paths(
@@ -1791,23 +1700,19 @@ def test_fastapi_cli_jobs_json_paths(
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-layout-jobs.toml")
     shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
-    run_main_with_args(
-        ["--all-jobs", "--output-format", "json"],
-        capsys=capsys,
-        expected_stderr_path=EXPECTED / "cli" / "dependencies-layout-jobs.txt",
-    )
+    run_main_with_args(["--all-jobs", "--output-format", "json"])
+    assert_output(capsys.readouterr().err, name="stderr")
     run_main_with_args(
         ["--all-jobs", "--check", "--output-format", "json"],
         capsys=capsys,
         assert_no_stderr=True,
-        expected_stdout_path=EXPECTED / "cli" / "json" / "check" / "jobs-unchanged.txt",
+        derived_stdout=True,
     )
     for name in ("nested/models.py", "nested/server/README.md", "modular/models/pets.py", "modular/server/services.py"):
         (tmp_path / name).unlink()
     run_main_with_args(["--all-jobs", "--check", "--output-format", "json"], expected_exit=Exit.DIFF)
     assert_output(
         capsys.readouterr().out.replace(tmp_path.as_posix(), "<root>"),
-        EXPECTED / "cli" / "json" / "check" / "jobs.txt",
     )
 
 
@@ -1820,27 +1725,27 @@ def test_fastapi_cli_shared_models_jobs(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-shared-models-jobs.toml")
-    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr_path=SHARED_DEPENDENCIES)
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
-    assert_directory_content(tmp_path / "server", PACKAGE / "server")
-    assert_output(_methods(tmp_path / "back" / "admin" / "services.py"), EXPECTED / "cli" / "shared-models.txt")
+    run_main_with_args(["--all-jobs"])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_directory_content(tmp_path / "server")
+    assert_output(_methods(tmp_path / "back" / "admin" / "services.py"))
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
 
 
 @pytest.mark.parametrize(
-    ("pyproject", "stub", "expected"),
+    ("pyproject", "stub"),
     [
-        ("pyproject-shared-parent-jobs.toml", False, "shared-parent-jobs.txt"),
-        ("pyproject-shared-parent-jobs.toml", True, "shared-parent-jobs-stub.txt"),
-        ("pyproject-shared-parent-documents.toml", False, "shared-parent-documents.txt"),
-        ("pyproject-shared-parent-tags.toml", False, "shared-parent-tags.txt"),
+        ("pyproject-shared-parent-jobs.toml", False),
+        ("pyproject-shared-parent-jobs.toml", True),
+        ("pyproject-shared-parent-documents.toml", False),
+        ("pyproject-shared-parent-tags.toml", False),
     ],
     ids=["same-document", "existing-stub", "other-document", "other-tags"],
 )
 def test_fastapi_cli_shared_parent_jobs(
     pyproject: str,
     stub: bool,
-    expected: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -1861,7 +1766,7 @@ def test_fastapi_cli_shared_parent_jobs(
         run_main_with_args(["--all-jobs", *mode], expected_exit=Exit.ERROR)
     captured = capsys.readouterr()
     written = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.py"))
-    assert_output(f"{captured.err}stdout:\n{captured.out}written: {written}\n", EXPECTED / "cli" / expected)
+    assert_output(f"{captured.err}stdout:\n{captured.out}written: {written}\n")
 
 
 def test_fastapi_cli_shared_parent_later_job(
@@ -1877,9 +1782,7 @@ def test_fastapi_cli_shared_parent_later_job(
     capsys.readouterr()
     run_main_with_args(["--job", "admin"], expected_exit=Exit.ERROR)
     written = (tmp_path / "admin").exists()
-    assert_output(
-        f"{capsys.readouterr().err}admin written: {written}\n", EXPECTED / "cli" / "shared-parent-later-job.txt"
-    )
+    assert_output(f"{capsys.readouterr().err}admin written: {written}\n")
 
 
 @pytest.mark.parametrize("package", ["server_a", "pkg.server_a"], ids=["top-level", "nested"])
@@ -1894,7 +1797,6 @@ def test_fastapi_cli_shared_parent_runs(
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     other = package.replace("server_a", "server_b")
-    expected = EXPECTED / "cli" / "shared-parent-runs"
 
     def run(name: str, *extra: str, expected_exit: Exit = Exit.OK) -> None:
         arguments = ["--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py", *extra]
@@ -1909,7 +1811,6 @@ def test_fastapi_cli_shared_parent_runs(
     run_generate_and_assert(
         input_=Path("pets.yaml"),
         expected_error=Error,
-        expected_file=expected / f"{package}-generate.txt",
         **GENERATE_OPTIONS,
         output=Path("models.py"),
         generate_server=ServerType.FastAPI,
@@ -1919,7 +1820,7 @@ def test_fastapi_cli_shared_parent_runs(
     )
     run(package)
     written = (tmp_path / other.replace(".", "/")).exists()
-    assert_output(f"{refused.err}stdout:\n{refused.out}{other} written: {written}\n", expected / f"{package}.txt")
+    assert_output(f"{refused.err}stdout:\n{refused.out}{other} written: {written}\n", name="report")
 
 
 @pytest.mark.parametrize(
@@ -1998,22 +1899,20 @@ def test_fastapi_cli_services_taken_over(
     run(other, second[1], second[2], output.replace(output.rpartition("/")[2], "other"), expected_exit=Exit.ERROR)
     assert_output(
         "\n".join(lines) + f"\n{generated.err}{written.decode().lstrip(chr(0xFEFF))}{capsys.readouterr().err}",
-        EXPECTED / "cli" / "services-taken-over" / f"{output.replace('/', '-')}.txt",
     )
 
 
 @pytest.mark.parametrize(
-    ("case", "server_output", "change"),
+    ("server_output", "change"),
     [
-        ("other-directory", "app/srv", None),
-        ("main-deleted", "app/server", "main.py"),
-        ("bom", "app/server", "bom"),
-        ("legacy-docstring", "app/server", "legacy-docstring"),
-        ("unknown-owner", "app/server", "unknown-owner"),
+        pytest.param("app/srv", None, id="other-directory"),
+        pytest.param("app/server", "main.py", id="main-deleted"),
+        pytest.param("app/server", "bom", id="bom"),
+        pytest.param("app/server", "legacy-docstring", id="legacy-docstring"),
+        pytest.param("app/server", "unknown-owner", id="unknown-owner"),
     ],
 )
 def test_fastapi_cli_services_owner_in_place(
-    case: str,
     server_output: str,
     change: str | None,
     tmp_path: Path,
@@ -2054,7 +1953,6 @@ def test_fastapi_cli_services_owner_in_place(
     written = (tmp_path / "app" / "server_b").exists()
     assert_output(
         f"{capsys.readouterr().err}app/server_b written: {written}\n",
-        EXPECTED / "cli" / "services-owner-in-place" / f"{case}.txt",
     )
 
 
@@ -2086,8 +1984,7 @@ def test_fastapi_cli_run_commands(
         *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", models),
         *_server("--server-package", package, "--server-model-package", model_package, output=output),
     ])
-    name = output.replace("/", "-").replace(" ", "_")
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "run-commands" / f"{name}.txt")
+    assert_output(capsys.readouterr().err)
 
 
 @pytest.mark.parametrize(
@@ -2133,9 +2030,7 @@ def test_fastapi_cli_services_module(
         ["--input", "pets.yaml", "--input-file-type", "openapi", *_server(), *arguments], expected_exit=Exit.ERROR
     )
     written = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.py"))
-    assert_output(
-        f"{capsys.readouterr().err}written: {written}\n", EXPECTED / "cli" / "services-module" / f"{name}.txt"
-    )
+    assert_output(f"{capsys.readouterr().err}written: {written}\n")
 
 
 def test_fastapi_cli_shared_models_timestamp(
@@ -2149,25 +2044,25 @@ def test_fastapi_cli_shared_models_timestamp(
     _copy(tmp_path, "pyproject-shared-timestamp-jobs.toml")
     with freeze_time(TIMESTAMP) as clock:
         monkeypatch.setattr(CodeFormatter, "clock", clock, raising=False)
-        run_main_with_args(
-            ["--all-jobs"],
-            capsys=capsys,
-            expected_stderr_path=SHARED_DEPENDENCIES,
-        )
-    assert_file_content(tmp_path / "models.py", "cli/timestamp-models.py")
-    assert_file_content(tmp_path / "back" / "admin" / "services.py", "cli/timestamp-services.py")
+        run_main_with_args(["--all-jobs"])
+        assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output(
+        (tmp_path / "back" / "admin" / "services.py").read_text(encoding="utf-8"), name="services", suffix=".py"
+    )
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments"),
+    "arguments",
     [
-        ("job", ["--job", "server"]),
-        ("cli-over-job", ["--job", "server", "--server-handler-mode", "async"]),
-        ("cli-table-over-job", ["--job", "server", "--server-handler-modes", '{"/paths/~1pets/get": "async"}']),
+        pytest.param(["--job", "server"], id="job"),
+        pytest.param(["--job", "server", "--server-handler-mode", "async"], id="cli-over-job"),
+        pytest.param(
+            ["--job", "server", "--server-handler-modes", '{"/paths/~1pets/get": "async"}'], id="cli-table-over-job"
+        ),
     ],
 )
 def test_fastapi_cli_job_precedence(
-    name: str,
     arguments: list[str],
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -2176,12 +2071,10 @@ def test_fastapi_cli_job_precedence(
     """Take each server setting of a job from the command line, then the job table, then its profile."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-mixed-jobs.toml")
-    run_main_with_args(
-        arguments, capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
-    )
+    run_main_with_args(arguments)
+    assert_output(capsys.readouterr().err, name="stderr")
     assert_output(
         f"$ datamodel-codegen {' '.join(arguments)}\n{_methods(tmp_path / 'server' / 'services.py')}",
-        EXPECTED / "cli" / "precedence" / f"{name}.txt",
     )
 
 
@@ -2190,10 +2083,9 @@ def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-jobs.toml")
     run_main_with_args(["--job", "server", "--update-lock"])
-    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
     assert_output(
         (tmp_path / "datamodel-codegen.lock").read_text(encoding="utf-8"),
-        DATA / "expected" / "http" / "remote_lock_empty.txt",
     )
 
 
@@ -2274,9 +2166,7 @@ def test_fastapi_cli_jobs(
             lock=root / "server" / "README.md",
         ),
     )
-    assert_output(
-        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"
-    )
+    assert_output("".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())))
 
 
 @pytest.mark.parametrize(
@@ -2379,7 +2269,6 @@ def test_fastapi_cli_config_values(form: str, tmp_path: Path, monkeypatch: pytes
     )
     assert_output(
         "".join(f"# {path.relative_to(tmp_path).as_posix()}\n{path.read_text(encoding='utf-8')}" for path in sources),
-        EXPECTED / "cli" / "configured.txt",
     )
 
 
@@ -2479,35 +2368,35 @@ def test_fastapi_cli_pyproject_json_error(
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments"),
+    "arguments",
     [
-        (
-            "values",
+        pytest.param(
             [
                 *("--server-operation-names", '{"/paths/~1pets/get": "class"}'),
                 *("--server-router-names", '{"tag:pets": "1pets"}'),
                 *("--server-parameter-names", '{"/paths/~1pets/get": {"limit": "page_size"}}'),
             ],
+            id="values",
         ),
-        (
-            "operations",
+        pytest.param(
             [
                 *("--server-handler-modes", '{"/paths/~1cats/get": "async"}'),
                 *("--server-body-modes", '{"other.yaml#/paths/~1pets/post": "request"}'),
             ],
+            id="operations",
         ),
-        (
-            "file-documents",
+        pytest.param(
             [
                 *("--server-handler-modes", "api/modes.json", "--server-body-modes", "api/body-modes.json"),
                 *("--server-operation-names", "api/names.json", "--server-parameter-names", "api/parameters.json"),
                 *("--server-primary-responses", "api/responses.json"),
             ],
+            id="file-documents",
         ),
     ],
 )
 def test_fastapi_cli_setting_errors(
-    name: str, arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Report every server setting the server cannot use, before any file is written.
 
@@ -2526,16 +2415,14 @@ def test_fastapi_cli_setting_errors(
     )
     assert_output(
         capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
-        EXPECTED / "cli" / "setting-errors" / f"{name}.txt",
     )
 
 
 @pytest.mark.parametrize(
-    ("arguments", "generated", "expected"),
+    ("arguments", "generated"),
     [
         pytest.param(
             [],
-            "services.py",
             "services.py",
             id="generate-server",
             marks=pytest.mark.cli_doc(
@@ -2549,12 +2436,11 @@ version of 3.11 or later. Like every server setting, it can also be set in `[too
 pyproject.toml, here as `generate-server = "fastapi"`.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/services.py",
+                golden_output="api_generation/fastapi_cli/options[generate-server].server.py",
             ),
         ),
         pytest.param(
             [],
-            "services.py",
             "services.py",
             id="server-output",
             marks=pytest.mark.cli_doc(
@@ -2566,12 +2452,11 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
 `--output`.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/services.py",
+                golden_output="api_generation/fastapi_cli/options[generate-server].server.py",
             ),
         ),
         pytest.param(
             [],
-            "services.py",
             "services.py",
             id="server-package",
             marks=pytest.mark.cli_doc(
@@ -2582,12 +2467,11 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
 generation prints name the package by it; the package imports its own modules relatively.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/services.py",
+                golden_output="api_generation/fastapi_cli/options[generate-server].server.py",
             ),
         ),
         pytest.param(
             [],
-            "services.py",
             "services.py",
             id="server-model-package",
             marks=pytest.mark.cli_doc(
@@ -2598,13 +2482,12 @@ generation prints name the package by it; the package imports its own modules re
 generates.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/services.py",
+                golden_output="api_generation/fastapi_cli/options[generate-server].server.py",
             ),
         ),
         pytest.param(
             ["--server-layout", "single"],
             "routes.py",
-            "layout/routes.py",
             id="server-layout",
             marks=pytest.mark.cli_doc(
                 options=["--server-layout"],
@@ -2614,13 +2497,12 @@ generates.""",
 `routes.py` module.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-layout", "single"],
-                golden_output=f"{DOC_OUTPUT}/layout/routes.py",
+                golden_output="api_generation/fastapi_cli/options[server-layout].server.py",
             ),
         ),
         pytest.param(
             ["--server-handler-mode", "async"],
             "services.py",
-            "handler-mode/services.py",
             id="server-handler-mode",
             marks=pytest.mark.cli_doc(
                 options=["--server-handler-mode"],
@@ -2630,13 +2512,12 @@ generates.""",
 methods. `--server-handler-modes` overrides it for single operations.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-handler-mode", "async"],
-                golden_output=f"{DOC_OUTPUT}/handler-mode/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-handler-mode].server.py",
             ),
         ),
         pytest.param(
             ["--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
             "services.py",
-            "handler-modes/services.py",
             id="server-handler-modes",
             marks=pytest.mark.cli_doc(
                 options=["--server-handler-modes"],
@@ -2649,13 +2530,12 @@ such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.
 table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
-                golden_output=f"{DOC_OUTPUT}/handler-modes/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-handler-modes].server.py",
             ),
         ),
         pytest.param(
             ["--server-include-request"],
             "services.py",
-            "include-request/services.py",
             id="server-include-request",
             marks=pytest.mark.cli_doc(
                 options=["--server-include-request"],
@@ -2665,13 +2545,12 @@ Each service method takes a `request` keyword argument as well as the operation'
 `--no-server-include-request` turns off a `server-include-request = true` of pyproject.toml.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-include-request"],
-                golden_output=f"{DOC_OUTPUT}/include-request/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-include-request].server.py",
             ),
         ),
         pytest.param(
             ["--server-body-mode", "request"],
             "services.py",
-            "body-mode/services.py",
             id="server-body-mode",
             marks=pytest.mark.cli_doc(
                 options=["--server-body-mode"],
@@ -2681,13 +2560,12 @@ Each service method takes a `request` keyword argument as well as the operation'
 for methods that read the body themselves. `--server-body-modes` overrides it for single operations.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-body-mode", "request"],
-                golden_output=f"{DOC_OUTPUT}/body-mode/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-body-mode].server.py",
             ),
         ),
         pytest.param(
             ["--server-body-modes", '{"/paths/~1pets~1{name}/put": "request"}'],
             "services.py",
-            "body-modes/services.py",
             id="server-body-modes",
             marks=pytest.mark.cli_doc(
                 options=["--server-body-modes"],
@@ -2697,13 +2575,12 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
 `--server-body-mode` for those operations. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-body-modes", '{"/paths/~1pets~1{name}/put": "request"}'],
-                golden_output=f"{DOC_OUTPUT}/body-modes/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-body-modes].server.py",
             ),
         ),
         pytest.param(
             ["--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
             "routers/pets.py",
-            "primary-responses/pets.py",
             id="server-primary-responses",
             marks=pytest.mark.cli_doc(
                 options=["--server-primary-responses"],
@@ -2717,13 +2594,12 @@ operation declares it, or else its lowest success status, or else its `2XX` or e
 {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
-                golden_output=f"{DOC_OUTPUT}/primary-responses/pets.py",
+                golden_output="api_generation/fastapi_cli/options[server-primary-responses].server.py",
             ),
         ),
         pytest.param(
             ["--server-operation-names", '{"/paths/~1pets/get": "list_all"}'],
             "services.py",
-            "operation-names/services.py",
             id="server-operation-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-operation-names"],
@@ -2733,13 +2609,12 @@ The JSON object, inline or in a file, maps operation references to method names.
 snake_case form of their operationId, or of their method and path. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-operation-names", '{"/paths/~1pets/get": "list_all"}'],
-                golden_output=f"{DOC_OUTPUT}/operation-names/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-operation-names].server.py",
             ),
         ),
         pytest.param(
             ["--server-router-names", '{"tag:pets": "animals"}'],
             "services.py",
-            "router-names/services.py",
             id="server-router-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-router-names"],
@@ -2749,13 +2624,12 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
 `pets`, to the name of the router module, the `create_app` argument, and the `<Name>Service` Protocol.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-router-names", '{"tag:pets": "animals"}'],
-                golden_output=f"{DOC_OUTPUT}/router-names/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-router-names].server.py",
             ),
         ),
         pytest.param(
             ["--server-parameter-names", '{"/paths/~1pets/get": {"query:limit": "page_size"}}'],
             "services.py",
-            "parameter-names/services.py",
             id="server-parameter-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-parameter-names"],
@@ -2769,13 +2643,13 @@ location and name such as `query:limit` or `header:X-Request-Id`, to the argumen
                     "--server-parameter-names",
                     '{"/paths/~1pets/get": {"query:limit": "page_size"}}',
                 ],
-                golden_output=f"{DOC_OUTPUT}/parameter-names/services.py",
+                golden_output="api_generation/fastapi_cli/options[server-parameter-names].server.py",
             ),
         ),
     ],
 )
 def test_fastapi_cli_options(
-    arguments: list[str], generated: str, expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    arguments: list[str], generated: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write the server file each server option changes."""
     monkeypatch.chdir(tmp_path)
@@ -2786,7 +2660,7 @@ def test_fastapi_cli_options(
         extra_args=[*OPTIONS, *SERVER, *arguments],
         copy_files=[(CLI / "options.yaml", tmp_path / "options.yaml")],
     )
-    assert_file_content(tmp_path / "server" / generated, f"cli/options/{expected}")
+    assert_output((tmp_path / "server" / generated).read_text(encoding="utf-8"), name="server", suffix=".py")
 
 
 def test_fastapi_cli_failures(
@@ -2807,8 +2681,8 @@ def test_fastapi_cli_failures(
         output_should_not_exist=True,
     )
     captured = capsys.readouterr()
-    assert_output(captured.err, EXPECTED / "cli" / "unresolved.txt")
-    assert_output(captured.out, EXPECTED / "cli" / "json" / "error-empty.txt")
+    assert_output(captured.err, name="stderr")
+    assert_output(captured.out, name="stdout")
 
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -2881,7 +2755,7 @@ def test_fastapi_cli_model_error_context(
         capsys=capsys,
         expected_stderr=stderr if case.startswith("class-name") else None,
         expected_stderr_contains=None if case.startswith("class-name") else stderr,
-        expected_stdout_path=EXPECTED / "cli" / "json" / "error-empty.txt" if structured else None,
+        derived_stdout=structured,
         output_should_not_exist=True,
     )
 
@@ -2897,9 +2771,8 @@ def test_fastapi_cli_implementation_stubs(
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     arguments = ["--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py", *_server()]
-    run_main_with_args(
-        arguments, capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
-    )
+    run_main_with_args(arguments)
+    assert_output(capsys.readouterr().err, name="stderr")
     services = tmp_path / "services"
     pets = services / "pets.py"
     pets.write_text("# edited\n", encoding="utf-8")
@@ -2926,7 +2799,7 @@ def test_fastapi_cli_implementation_stubs(
         f"generate over a pets package: services {sorted(path.name for path in services.iterdir())}",
         capsys.readouterr().err.rstrip(),
     ))
-    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "implementation-stubs.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 IMPLIED_MODEL_OPTIONS = ["--output-model-type", "pydantic_v2.BaseModel", *FORMATTERS, "--disable-timestamp"]
@@ -2964,7 +2837,6 @@ def test_fastapi_cli_implied_settings(
     arguments: list[str],
     pyproject: str | None,
     given: list[str],
-    request: pytest.FixtureRequest,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -2998,7 +2870,7 @@ def test_fastapi_cli_implied_settings(
     same = (tmp_path / "given.py").read_text(encoding="utf-8") == (tmp_path / "models.py").read_text(encoding="utf-8")
     lines.append(f"models equal those of a model-only run given {' '.join(given)}: {same}")
     capsys.readouterr()
-    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "implied" / f"{request.node.callspec.id}.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 IMPLIED_TARGET = (
@@ -3040,7 +2912,6 @@ def test_fastapi_cli_implied_notice(
     arguments: list[str],
     pyproject: str | None,
     work: str,
-    request: pytest.FixtureRequest,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -3059,7 +2930,7 @@ def test_fastapi_cli_implied_notice(
     run_main_with_args(arguments, use_builtin_default_formatter=False)
     captured = capsys.readouterr().err
     implied = captured.partition("Add the runtime dependencies")[0]
-    assert_output(implied, EXPECTED / "cli" / "implied" / f"notice-{request.node.callspec.id}.txt")
+    assert_output(implied)
 
 
 def test_fastapi_cli_implied_notice_stdin(
@@ -3075,7 +2946,7 @@ def test_fastapi_cli_implied_notice_stdin(
         extra_args=[*FORMATTERS, "--disable-timestamp", *SERVER],
     )
     implied = capsys.readouterr().err.partition("Add the runtime dependencies")[0]
-    assert_output(implied, EXPECTED / "cli" / "implied" / "notice-stdin.txt")
+    assert_output(implied)
 
 
 def test_fastapi_cli_implied_sentinel_target(

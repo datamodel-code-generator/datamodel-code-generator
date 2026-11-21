@@ -1,0 +1,1 @@
+raised ValidationError: Value error, --update-lock and --locked cannot be used together

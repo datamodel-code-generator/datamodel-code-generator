@@ -1,0 +1,22 @@
+[
+  "/overrides/0/rules/accessor-pairs enum null: invalid, model accepts",
+  "/overrides/0/rules/accessor-pairs enum true: invalid, model accepts",
+  "/overrides/0/rules/comma-dangle enum null: invalid, model accepts",
+  "/overrides/0/rules/comma-dangle enum true: invalid, model accepts",
+  "/overrides/0/rules/curly enum null: invalid, model accepts",
+  "/overrides/0/rules/curly enum true: invalid, model accepts",
+  "/overrides/0/rules/max-depth enum null: invalid, model accepts",
+  "/overrides/0/rules/max-depth enum true: invalid, model accepts",
+  "/overrides/0/rules/no-debugger enum null: invalid, model accepts",
+  "/overrides/0/rules/no-debugger enum true: invalid, model accepts",
+  "/rules/accessor-pairs enum null: invalid, model accepts",
+  "/rules/accessor-pairs enum true: invalid, model accepts",
+  "/rules/comma-dangle enum null: invalid, model accepts",
+  "/rules/comma-dangle enum true: invalid, model accepts",
+  "/rules/curly enum null: invalid, model accepts",
+  "/rules/curly enum true: invalid, model accepts",
+  "/rules/max-depth enum null: invalid, model accepts",
+  "/rules/max-depth enum true: invalid, model accepts",
+  "/rules/no-debugger enum null: invalid, model accepts",
+  "/rules/no-debugger enum true: invalid, model accepts"
+]

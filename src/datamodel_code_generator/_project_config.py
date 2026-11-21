@@ -6,7 +6,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeGuard, cast
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._config_fields import (
     PYPROJECT_API_PATH_FIELDS,
     PYPROJECT_PATH_FIELDS,
@@ -15,8 +14,11 @@ from datamodel_code_generator._config_fields import (
     option_path,
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
+from datamodel_code_generator._option_stages import _run_option_stages
 from datamodel_code_generator._paths import resolved
-from datamodel_code_generator.util import load_toml
+from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
     from datamodel_code_generator.config import GenerateConfig
@@ -29,6 +31,11 @@ def names_profile(name: str | None) -> TypeGuard[str]:
     an ``extends``.
     """
     return bool(name)
+
+
+def profile_table_keys(name: str | None) -> tuple[str, ...]:
+    """Return the keys of the table a profile selection names below the settings table: none if it names no profile."""
+    return ("profiles", name) if names_profile(name) else ()
 
 
 def _resolve_profile_extends(
@@ -87,12 +94,12 @@ def _find_datamodel_codegen_project_config_with_path(source: Path) -> tuple[Path
     while current_path != current_path.parent:
         pyproject_path = current_path / "pyproject.toml"
         if pyproject_path.is_file():
-            pyproject_toml = load_toml(pyproject_path)
+            pyproject_toml = _load_config_toml(pyproject_path)
             tool_config = pyproject_toml.get("tool", {}).get("datamodel-codegen")
             if isinstance(tool_config, Mapping):
                 return pyproject_path, tool_config
 
-        if (current_path / ".git").exists():  # pragma: no cover
+        if (current_path / ".git").exists():
             break
         current_path = current_path.parent
     return None
@@ -131,7 +138,7 @@ def _normalize_pyproject_config(config: Mapping[str, Any]) -> dict[str, Any]:
     """Convert TOML option spelling to Config field spelling."""
     normalized = {field_name(key): value for key, value in config.items()}
     for alias, field in FIELD_ALIASES.items():
-        if alias in normalized and field not in normalized:  # pragma: no cover
+        if alias in normalized and field not in normalized:
             normalized[field] = normalized.pop(alias)
     return normalized
 
@@ -216,28 +223,25 @@ def load_pyproject_config(
         return _loaded_from(GenerateConfig.model_validate(explicit), pyproject_path)
 
     from datamodel_code_generator._cli_config import (  # ruff: ignore[import-outside-top-level]
-        _apply_implicit_cli_config_values,
         _get_config_class,
-        _RawConfigValue,
         _template_data,
     )
+    from datamodel_code_generator._run_record import RunOptions  # ruff: ignore[import-outside-top-level]
 
     options = _resolve_pyproject_relative_paths(options, pyproject_path, PYPROJECT_API_PATH_FIELDS)
     config = _get_config_class().model_validate(options)
     if "output_model_type" in explicit:
-        from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
-
         config.output_model_type = DataModelType(explicit["output_model_type"])
     for field in ("use_annotated", "field_constraints"):
         if field in explicit:
             setattr(config, field, explicit[field])
-    _apply_implicit_cli_config_values(
-        config, cast("Mapping[str, _RawConfigValue]", options), cast("Mapping[str, _RawConfigValue]", explicit)
-    )
+    # The loader's row of `_run_option_stages`: the implied model settings alone, before any preset. Every setting
+    # the stage gave counts as set on the config that comes back, also one that kept its value.
+    config, record = _run_option_stages(config, RunOptions(pyproject=options, arguments=explicit), ("implied-model",))
     _template_data(config)
     values = {
         name: getattr(config, field)
-        for field in config.model_fields_set
+        for field in config.model_fields_set.union(record.staged)
         if (name := GENERATE_FIELD_NAMES.get(field, field)) in fields
     }
     values.update(explicit)

@@ -57,12 +57,12 @@ class PythonVersion(Enum):
         return python_target_meets(construct, self.version_key)
 
     @property
-    def has_union_operator(self) -> bool:  # pragma: no cover
+    def has_union_operator(self) -> bool:
         """Check if Python version supports the union operator (|)."""
         return self._meets("python.union_operator")
 
     @property
-    def has_type_alias(self) -> bool:  # pragma: no cover
+    def has_type_alias(self) -> bool:
         """Check if Python version supports TypeAlias.
 
         .. deprecated::
@@ -70,7 +70,7 @@ class PythonVersion(Enum):
         """
         from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
 
-        warn_deprecated("python-api.python-version-has-type-alias", stacklevel=2)
+        warn_deprecated("python-api.python-version-has-type-alias")
         return self._meets("python.type_alias_annotation")
 
     @property
@@ -139,6 +139,8 @@ EXTERNAL_FORMATTERS = frozenset({
     Formatter.RUFF_CHECK,
     Formatter.RUFF_FORMAT,
 })
+RUFF_FORMATTERS = frozenset({Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT})
+"""The formatters that run Ruff, which formats a written directory once."""
 DEFAULT_LINE_LENGTH = 88
 DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
 MAX_TOP_LEVEL_BLANK_LINES = 2
@@ -162,6 +164,7 @@ __all__ = [
     "MAX_SHORT_DEFAULT_OVERFLOW",
     "MAX_TOP_LEVEL_BLANK_LINES",
     "NEWEST_TARGET",
+    "RUFF_FORMATTERS",
     "STRING_PREFIX_PATTERN",
     "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
     "DateClassType",

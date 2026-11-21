@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator import util
 from datamodel_code_generator.util import _get_toml_loader, create_module_getattr, get_safe_loader, load_toml
 
 
@@ -81,3 +82,9 @@ def test_create_module_getattr_raises_attribute_error_for_unknown_attribute() ->
         module_getattr("Missing")
 
     assert str(exc_info.value) == "module 'example.module' has no attribute 'Missing'"
+
+
+@pytest.mark.allow_direct_assert("checks the identity of a lazily imported module attribute")
+def test_util_safe_loader_is_the_selected_safe_loader() -> None:
+    """The lazy ``util.SafeLoader`` name stays the loader get_safe_loader selects."""
+    assert util.SafeLoader is get_safe_loader()

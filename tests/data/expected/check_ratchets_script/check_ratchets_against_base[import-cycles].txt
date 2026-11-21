@@ -1,0 +1,39 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+import-cycle:largest-lazy@scripts                  0       2      +2
+import-cycle:largest-lazy@src                      0       2      +2
+import-cycle:lazy@scripts                          0       2      +2
+import-cycle:lazy@src                              0       2      +2
+import-cycle:module-level@src                      0       2      +2
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+import-cycle:largest-lazy@scripts rose by 2 (0 -> 2). The lines are each module's first import into its cycle. Move what the modules of the cycle share into a module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for the lazy keys, and only the module-level key ignores it.
+  scripts/guide.py: 0 -> 1 (lines 7)
+  scripts/report.py: 0 -> 1 (lines 3)
+
+import-cycle:largest-lazy@src rose by 2 (0 -> 2). The lines are each module's first import into its cycle. Move what the modules of the cycle share into a module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for the lazy keys, and only the module-level key ignores it.
+  src/datamodel_code_generator/base.py: 0 -> 1 (lines 3)
+  src/datamodel_code_generator/types.py: 0 -> 1 (lines 3)
+
+import-cycle:lazy@scripts rose by 2 (0 -> 2). The lines are each module's first import into its cycle. Move what the modules of the cycle share into a module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for the lazy keys, and only the module-level key ignores it.
+  scripts/guide.py: 0 -> 1 (lines 7)
+  scripts/report.py: 0 -> 1 (lines 3)
+
+import-cycle:lazy@src rose by 2 (0 -> 2). The lines are each module's first import into its cycle. Move what the modules of the cycle share into a module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for the lazy keys, and only the module-level key ignores it.
+  src/datamodel_code_generator/base.py: 0 -> 1 (lines 3)
+  src/datamodel_code_generator/types.py: 0 -> 1 (lines 3)
+
+import-cycle:module-level@src rose by 2 (0 -> 2). The lines are each module's first import into its cycle. Move what the modules of the cycle share into a module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for the lazy keys, and only the module-level key ignores it.
+  src/datamodel_code_generator/base.py: 0 -> 1 (lines 3)
+  src/datamodel_code_generator/types.py: 0 -> 1 (lines 3)
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

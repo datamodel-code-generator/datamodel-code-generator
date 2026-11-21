@@ -1,0 +1,35 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Annotated: import-from@6 [always]; origin typing.Annotated
+  top: annassign@8 [always]; value 1
+  Box: class@11 [always]
+  f: def@15 [always]
+scope class Box#0 'Box': code yes; first line 11
+  opened by a node evaluated in <module>#0
+  size: annotation-only@12 [always]
+  members: size
+scope function f#0 'f': code yes; first line 15
+  opened by a node evaluated in <module>#0
+  x: param@15 [function:body@15]
+  local: annassign@16 [function:body@15]; value ""
+scope lambda f.<locals>.<lambda>#0 '<lambda>': code no; first line 16; in never annotation
+  opened by a node evaluated in f#0
+== references
+8:0 top store in <module> -> local <module> @8
+8:5 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+12:4 size store in Box -> local Box @12, else unbound
+12:10 int load (evaluated annotation) in Box -> builtin; origin builtins.int
+15:9 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+15:17 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+16:4 local store in f -> local f @16
+16:11 Annotated load (never annotation) in f -> global <module> @6; origin typing.Annotated
+16:21 str load (never annotation) in f -> builtin; origin builtins.str
+17:11 local load in f -> local f @16
+uses of <module>:Annotated@6: read@16
+uses of f:local@16: read@17
+type positions @8: int
+type positions @15: str
+type positions @12: int
+type positions @16: Annotated, str
+type positions @15: int
+== code objects: one per scope that compiles on this Python

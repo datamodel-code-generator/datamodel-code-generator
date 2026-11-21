@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Skipped operations beside a document refusal
+  version: 1.0.0
+servers:
+  - url: /v1
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '204': {description: No pets.}
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      responses:
+        '200': {description: The pet.}

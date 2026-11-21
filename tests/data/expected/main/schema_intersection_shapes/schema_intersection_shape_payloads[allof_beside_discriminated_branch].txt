@@ -1,0 +1,150 @@
+pydantic_v2.BaseModel default owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel default owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel default owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel default owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel default nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel default nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel default based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel default based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel default field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel default field {"petType": "Dog"} accepted
+pydantic_v2.dataclass default owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.dataclass default owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.dataclass default owned {"petType": "Cat"} accepted
+pydantic_v2.dataclass default owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.dataclass default nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.dataclass default nested {"petType": "Cat"} rejected
+pydantic_v2.dataclass default based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.dataclass default based {"kind": "sq", "side": 1} accepted
+pydantic_v2.dataclass default field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.dataclass default field {"petType": "Dog"} accepted
+msgspec.Struct default owned {"petType": "Cat", "owner": "o"} import error
+msgspec.Struct default owned {"fins": 1, "owner": "o"} import error
+msgspec.Struct default owned {"petType": "Cat"} import error
+msgspec.Struct default owned {"petType": "Cat", "owner": "o", "meow": "abcd"} import error
+msgspec.Struct default nested {"petType": "Cat", "owner": "o"} import error
+msgspec.Struct default nested {"petType": "Cat"} import error
+msgspec.Struct default based {"id": "i", "kind": "sq", "side": 1} import error
+msgspec.Struct default based {"kind": "sq", "side": 1} import error
+msgspec.Struct default field {"petType": "Dog", "owner": "o"} import error
+msgspec.Struct default field {"petType": "Dog"} import error
+pydantic_v2.BaseModel --field-constraints owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --field-constraints owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --field-constraints owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --field-constraints owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --field-constraints nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --field-constraints nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --field-constraints based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --field-constraints based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --field-constraints field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --field-constraints field {"petType": "Dog"} accepted
+pydantic_v2.BaseModel --use-annotated owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --use-annotated owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --use-annotated owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --use-annotated owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --use-annotated nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --use-annotated nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --use-annotated based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --use-annotated based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --use-annotated field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --use-annotated field {"petType": "Dog"} accepted
+pydantic_v2.BaseModel --collapse-root-models owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --collapse-root-models owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --collapse-root-models owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --collapse-root-models owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --collapse-root-models nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --collapse-root-models nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --collapse-root-models based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --collapse-root-models field {"petType": "Dog"} accepted
+msgspec.Struct --collapse-root-models owned {"petType": "Cat", "owner": "o"} import error
+msgspec.Struct --collapse-root-models owned {"fins": 1, "owner": "o"} import error
+msgspec.Struct --collapse-root-models owned {"petType": "Cat"} import error
+msgspec.Struct --collapse-root-models owned {"petType": "Cat", "owner": "o", "meow": "abcd"} import error
+msgspec.Struct --collapse-root-models nested {"petType": "Cat", "owner": "o"} import error
+msgspec.Struct --collapse-root-models nested {"petType": "Cat"} import error
+msgspec.Struct --collapse-root-models based {"id": "i", "kind": "sq", "side": 1} import error
+msgspec.Struct --collapse-root-models based {"kind": "sq", "side": 1} import error
+msgspec.Struct --collapse-root-models field {"petType": "Dog", "owner": "o"} import error
+msgspec.Struct --collapse-root-models field {"petType": "Dog"} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs field {"petType": "Dog"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs owned {"petType": "Cat"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested {"petType": "Cat"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs based {"kind": "sq", "side": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs field {"petType": "Dog"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o"} import error
+msgspec.Struct --use-site-models-for-constrained-refs owned {"fins": 1, "owner": "o"} import error
+msgspec.Struct --use-site-models-for-constrained-refs owned {"petType": "Cat"} import error
+msgspec.Struct --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o", "meow": "abcd"} import error
+msgspec.Struct --use-site-models-for-constrained-refs nested {"petType": "Cat", "owner": "o"} import error
+msgspec.Struct --use-site-models-for-constrained-refs nested {"petType": "Cat"} import error
+msgspec.Struct --use-site-models-for-constrained-refs based {"id": "i", "kind": "sq", "side": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs based {"kind": "sq", "side": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs field {"petType": "Dog", "owner": "o"} import error
+msgspec.Struct --use-site-models-for-constrained-refs field {"petType": "Dog"} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs field {"petType": "Dog"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs field {"petType": "Dog"} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --openapi-scopes schemas paths nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --openapi-scopes schemas paths based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --openapi-scopes schemas paths field {"petType": "Dog"} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --name-allof-union-members-after-branches nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --name-allof-union-members-after-branches based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --name-allof-union-members-after-branches field {"petType": "Dog"} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all owned {"petType": "Cat", "owner": "o"} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all owned {"fins": 1, "owner": "o"} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all owned {"petType": "Cat"} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all owned {"petType": "Cat", "owner": "o", "meow": "abcd"} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all nested {"petType": "Cat", "owner": "o"} rejected
+pydantic_v2.BaseModel --read-only-write-only-model-type all nested {"petType": "Cat"} rejected
+pydantic_v2.BaseModel --read-only-write-only-model-type all based {"id": "i", "kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all based {"kind": "sq", "side": 1} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all field {"petType": "Dog", "owner": "o"} accepted
+pydantic_v2.BaseModel --read-only-write-only-model-type all field {"petType": "Dog"} accepted

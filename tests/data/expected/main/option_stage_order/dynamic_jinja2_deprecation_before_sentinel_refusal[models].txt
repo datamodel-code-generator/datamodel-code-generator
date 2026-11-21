@@ -1,0 +1,2 @@
+FutureWarning: Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.
+raised Error: `--use-missing-sentinel` requires `--target-pydantic-version 2.12` or later; got '2.11'

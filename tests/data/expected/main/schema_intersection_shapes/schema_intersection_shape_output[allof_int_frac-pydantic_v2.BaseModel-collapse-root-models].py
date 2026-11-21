@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Model(BaseModel):
-    frac: int | None = None
-    frac_prop: int | None = None
+    frac: int | None = Field(None, ge=1, le=9)
+    frac_prop: int | None = Field(None, ge=1, le=9)
     frac_items: list[int] | None = None
     frac_map: dict[str, int] | None = None

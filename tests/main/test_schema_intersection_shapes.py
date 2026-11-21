@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import warnings
 from typing import TYPE_CHECKING, Any
 
@@ -15,6 +14,7 @@ from jsonschema.validators import validator_for
 from pydantic import TypeAdapter, ValidationError
 
 from datamodel_code_generator import DataModelType
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -134,6 +134,13 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.PydanticV2BaseModel, ("--openapi-scopes", "schemas", "paths")),
         (DataModelType.PydanticV2BaseModel, ("--read-only-write-only-model-type", "all")),
     ),
+    "allof_beside_discriminated_branch": (
+        (DataModelType.PydanticV2BaseModel, ("--openapi-scopes", "schemas", "paths")),
+        (DataModelType.PydanticV2BaseModel, ("--name-allof-union-members-after-branches",)),
+        (DataModelType.PydanticV2BaseModel, ("--read-only-write-only-model-type", "all")),
+    ),
+    "allof_beside_site_discriminator": ((DataModelType.MsgspecStruct, ("--use-msgspec-tagged-unions",)),),
+    "ref_branches_beside_properties": ((DataModelType.MsgspecStruct, ("--use-msgspec-tagged-unions",)),),
 }
 VALIDATING_BACKENDS = {
     DataModelType.PydanticV2BaseModel,
@@ -189,6 +196,8 @@ DISTRIBUTE_OPTION_ARGS: tuple[str, ...] = ("--distribute-allof-over-unions",)
 DISTRIBUTE_DOCUMENTS: tuple[str, ...] = (
     "allof_beside_union",
     "allof_beside_union_oas31",
+    "allof_beside_discriminated_branch",
+    "allof_beside_site_discriminator",
     "union_ref_branch_values",
     "union_ref_branch_values_draft07",
     "allof_union_parts",
@@ -205,10 +214,7 @@ def _payload_params(stems: Iterable[str]) -> list[pytest.ParameterSet]:
         pytest.param(
             stem,
             id=stem,
-            marks=pytest.mark.skipif(
-                stem in TYPED_DICT_PAYLOAD_DOCUMENTS and sys.version_info < (3, 12),
-                reason="Pydantic validates typing.TypedDict from Python 3.12 on",
-            ),
+            marks=[needs("typed-dict-validation")] if stem in TYPED_DICT_PAYLOAD_DOCUMENTS else [],
         )
         for stem in stems
     ]
@@ -382,7 +388,6 @@ def test_schema_intersection_shape_payloads_with_distribute_option(tmp_path: Pat
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="The merged StrEnum imports only where enum.StrEnum exists")
 @pytest.mark.parametrize("with_options", [True, False], ids=["with-option", "without-option"])
 def test_schema_intersection_str_enum_payloads(tmp_path: Path, *, with_options: bool) -> None:
     """Record what the models accept where an allOf merges a string enum with an enum holding other values.

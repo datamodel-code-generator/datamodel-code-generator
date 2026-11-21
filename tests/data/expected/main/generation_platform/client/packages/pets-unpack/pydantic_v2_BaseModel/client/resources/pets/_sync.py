@@ -86,7 +86,12 @@ class PetsResource:
         KEYWORDS_0.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         ).data
@@ -225,7 +230,12 @@ class PetsWithResponse:
         KEYWORDS_0.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -364,7 +374,12 @@ class PetsWithRawResponse:
         KEYWORDS_0.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -488,7 +503,12 @@ class PetsWithStreamingResponse:
         KEYWORDS_0.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_0,
-            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
+            (
+                kwargs.get('limit', UNSET),
+                kwargs.get('labels', UNSET),
+                kwargs['X_Trace'],
+                kwargs.get('session', UNSET),
+            ),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )

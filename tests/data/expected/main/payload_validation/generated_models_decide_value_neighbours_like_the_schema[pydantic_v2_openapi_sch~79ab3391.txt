@@ -1,0 +1,8 @@
+[
+  "/bound minimum 1: invalid, model accepts",
+  "/bound minimum 2: invalid, model accepts",
+  "/bound minimum 4: invalid, model accepts",
+  "/own maximum 10: invalid, model accepts",
+  "/own maximum 19: invalid, model accepts",
+  "/own maximum 20: invalid, model accepts"
+]

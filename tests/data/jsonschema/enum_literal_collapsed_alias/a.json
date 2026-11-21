@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Foo": {"$ref": "b.json#/$defs/Kind"},
+    "Holder": {"type": "object", "properties": {"other": {"$ref": "#/$defs/Foo"}}},
+    "Cat": {"type": "object", "properties": {"kind": {"$ref": "#/$defs/Foo"}, "meow": {"type": "string"}}, "required": ["kind"]},
+    "Dog": {"type": "object", "properties": {"kind": {"$ref": "#/$defs/Foo"}, "bark": {"type": "string"}}, "required": ["kind"]},
+    "Pet": {
+      "type": "object",
+      "properties": {
+        "pet": {
+          "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}],
+          "discriminator": {"propertyName": "kind", "mapping": {"cat": "#/$defs/Cat", "dog": "#/$defs/Dog"}}
+        }
+      }
+    }
+  }
+}

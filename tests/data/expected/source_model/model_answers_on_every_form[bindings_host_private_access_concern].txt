@@ -1,0 +1,103 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  annotations: import-from@4 [always]; origin __future__.annotations
+  sys: import@6 [always]; origin sys
+  TYPE_CHECKING: import-from@7 [always]; origin typing.TYPE_CHECKING
+  Protocol: import-from@7 [always]; origin typing.Protocol
+  GraphBuilderHost: import-from@9 [always]; origin forms.bindings._passes._shared.GraphBuilderHost
+  _shared: import-from@12 [type-checking:body@11]; origin forms.bindings._passes._shared
+  FixtureBaseHost: class@15 [always]
+  FixtureHost: class@19 [always]
+  FixtureView: class@26 [always]
+  FixtureNotProtocolHost: class@30 [always]
+  FixtureParser: class@34 [always]
+  declared: def@45 [always]
+  undeclared: def@62 [always]
+  shadowed: def@81 [always]
+  declared_async: def@91 [always]
+  MODULE_STATE: assign@96 [always]; value FixtureParser()._state
+  other_annotations: def@99 [always]
+scope class FixtureBaseHost#0 'FixtureBaseHost': code yes; first line 15
+  opened by a node evaluated in <module>#0
+  _base_state: annotation-only@16 [always]
+  members: _base_state
+scope class FixtureHost#0 'FixtureHost': code yes; first line 19
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@20 [always]
+  _shared_state: assign@21 [always]; value 0
+  _method: def@23 [always]
+  members: _method, _shared_state, _state
+scope function FixtureHost._method#0 '_method': code yes; first line 23
+  opened by a node evaluated in FixtureHost#0
+  self: param@23 [function:body@23]
+  receiver: self@23
+scope class FixtureView#0 'FixtureView': code yes; first line 26
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@27 [always]
+  members: _state
+scope class FixtureNotProtocolHost#0 'FixtureNotProtocolHost': code yes; first line 30
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@31 [always]
+  members: _state
+scope class FixtureParser#0 'FixtureParser': code yes; first line 34
+  opened by a node evaluated in <module>#0
+  _state: assign@35 [always]; value 1
+  method: def@37 [always]
+  build: def@41 [always]
+  members: _state, build, method
+scope function FixtureParser.method#0 'method': code yes; first line 37
+  opened by a node evaluated in FixtureParser#0
+  self: param@37 [function:body@37]
+  other: param@37 [function:body@37]
+  receiver: self@37
+scope function FixtureParser.build#0 'build': code yes; first line 40
+  opened by a node evaluated in FixtureParser#0
+  cls: param@41 [function:body@41]
+  receiver: cls@41
+scope function declared#0 'declared': code yes; first line 45
+  opened by a node evaluated in <module>#0
+  parser: param@46 [function:body@45]
+  graph: param@47 [function:body@45]
+  dotted: param@48 [function:body@45]
+  quoted: param@49 [function:body@45]
+  nested: def@55 [function:body@45]
+  by_state: assign@58 [function:body@45]; value sorted([parser], key=lambda item: parser._state)
+scope function declared.<locals>.nested#0 'nested': code yes; first line 55
+  opened by a node evaluated in declared#0
+scope lambda declared.<locals>.<lambda>#0 '<lambda>': code yes; first line 58
+  opened by a node evaluated in declared#0
+  item: param@58 [function:body@45|function:body@58]
+scope function undeclared#0 'undeclared': code yes; first line 62
+  opened by a node evaluated in <module>#0
+  parser: param@63 [function:body@62]
+  graph: param@64 [function:body@62]
+  view: param@65 [function:body@62]
+  concrete: param@66 [function:body@62]
+  plain: param@67 [function:body@62]
+  alias: assign@69 [function:body@62]; value parser
+scope function shadowed#0 'shadowed': code yes; first line 81
+  opened by a node evaluated in <module>#0
+  parser: param@81 [function:body@81]
+  rebinds: def@82 [function:body@81]
+  by_parameter: assign@86 [function:body@81]; value lambda parser: parser._state
+scope function shadowed.<locals>.rebinds#0 'rebinds': code yes; first line 82
+  opened by a node evaluated in shadowed#0
+  parser: assign@83 [function:body@81|function:body@82]; value FixtureParser()
+scope lambda shadowed.<locals>.<lambda>#0 '<lambda>': code yes; first line 86
+  opened by a node evaluated in shadowed#0
+  parser: param@86 [function:body@81|function:body@86]
+scope function declared_async#0 'declared_async': code yes; first line 91
+  opened by a node evaluated in <module>#0
+  parser: param@91 [function:body@91]
+  fallback: param@91 [function:body@91]
+  by_default: assign@92 [function:body@91]; value lambda state=parser._state: state
+scope lambda declared_async.<locals>.<lambda>#0 '<lambda>': code yes; first line 92
+  opened by a node evaluated in declared_async#0
+  state: param@92 [function:body@91|function:body@92]
+scope function other_annotations#0 'other_annotations': code yes; first line 99
+  opened by a node evaluated in <module>#0
+  count: param@99 [function:body@99]
+  names: param@99 [function:body@99]
+  attribute: param@99 [function:body@99]
+  unnamed: param@99 [function:body@99]
+== code objects: one per scope that compiles on this Python

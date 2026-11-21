@@ -1,0 +1,3 @@
+[
+  "maxProperties {\"neighbour0\": \"a\", \"neighbour1\": \"a\"}: invalid, model accepts"
+]

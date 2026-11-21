@@ -1,0 +1,12 @@
+without the option:
+Base(name, ratio)
+Child(name, ratio)
+RequiredBase(ratio)
+Override(ratio, name)
+Model(child, override)
+with the option:
+Base(name, ratio)
+Child(name, ratio)
+RequiredBase(ratio)
+Override(ratio, name)
+Model(child, override)

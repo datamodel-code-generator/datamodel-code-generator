@@ -47,7 +47,7 @@ DEFAULT_GRAPHQL_SCALAR_TYPES: dict[str, str] = {
 class _DataTypeScalarBase(TypeAliasBase):
     """Base class for GraphQL scalar types with shared __init__ logic."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

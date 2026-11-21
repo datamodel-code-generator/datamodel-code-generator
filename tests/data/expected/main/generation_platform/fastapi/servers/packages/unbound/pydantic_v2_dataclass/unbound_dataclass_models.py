@@ -20,7 +20,11 @@ ValuesIdGetPathIdParameter = TypeAliasType(
 )
 
 
-ValuesIdGetQueryAtParameter = TypeAliasType("ValuesIdGetQueryAtParameter", AwareDatetime)
+ValuesIdGetQueryAtParameter = TypeAliasType(
+    "ValuesIdGetQueryAtParameter", AwareDatetime
+)
 
 
-ValuesIdGetQueryTagsParameter = TypeAliasType("ValuesIdGetQueryTagsParameter", list[str])
+ValuesIdGetQueryTagsParameter = TypeAliasType(
+    "ValuesIdGetQueryTagsParameter", list[str]
+)

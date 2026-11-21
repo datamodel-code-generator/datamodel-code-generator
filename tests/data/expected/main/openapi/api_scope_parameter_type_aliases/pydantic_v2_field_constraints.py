@@ -69,7 +69,9 @@ class ItemsItemIdGetQueryShadeParameter(Enum):
     dark = 'dark'
 
 
-ItemsItemIdGetQueryPinnedParameter = TypeAliasType("ItemsItemIdGetQueryPinnedParameter", Literal['on'])
+ItemsItemIdGetQueryPinnedParameter = TypeAliasType(
+    "ItemsItemIdGetQueryPinnedParameter", Literal['on']
+)
 
 
 ItemsItemIdGetQueryColorsParameter = TypeAliasType(
@@ -89,7 +91,10 @@ ItemsItemIdGetQueryCodesParameterItem = TypeAliasType(
 )
 
 
-ItemsItemIdGetQueryCodesParameter = TypeAliasType("ItemsItemIdGetQueryCodesParameter", ItemsItemIdGetQueryCodesParameter1 | list[ItemsItemIdGetQueryCodesParameterItem])
+ItemsItemIdGetQueryCodesParameter = TypeAliasType(
+    "ItemsItemIdGetQueryCodesParameter",
+    ItemsItemIdGetQueryCodesParameter1 | list[ItemsItemIdGetQueryCodesParameterItem],
+)
 
 
 ItemsItemIdGetQueryNullableParameter = TypeAliasType(
@@ -101,7 +106,9 @@ class ItemsItemIdGetQueryOwnerParameter(BaseModel):
     name: str | None = Field(None, max_length=3)
 
 
-ItemsItemIdGetQueryExtraParameter = TypeAliasType("ItemsItemIdGetQueryExtraParameter", dict[str, str])
+ItemsItemIdGetQueryExtraParameter = TypeAliasType(
+    "ItemsItemIdGetQueryExtraParameter", dict[str, str]
+)
 
 
 ItemsItemIdGetPathItemIdParameter = TypeAliasType(

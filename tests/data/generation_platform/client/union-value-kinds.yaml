@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: Union value kinds
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /settings:
+    get:
+      operationId: getSettings
+      responses:
+        "200":
+          description: The settings, whose unions hold enums and constants beside other types.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+components:
+  schemas:
+    Settings:
+      type: object
+      properties:
+        verify:
+          oneOf:
+            - type: string
+              enum: [install, warn, error]
+            - type: boolean
+              enum: [false]
+        ratio:
+          anyOf:
+            - enum: [1.5, 2.5]
+            - type: string
+        level:
+          anyOf:
+            - enum: [low, 1]
+            - $ref: "#/components/schemas/Box"
+        mode:
+          anyOf:
+            - const: auto
+            - $ref: "#/components/schemas/Box"
+    Box:
+      type: object
+      properties:
+        size:
+          type: integer

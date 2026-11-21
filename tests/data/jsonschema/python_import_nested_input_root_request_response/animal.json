@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Animal",
+  "type": "object",
+  "properties": {
+    "id": {"type": "integer", "readOnly": true},
+    "species": {"type": "string"}
+  },
+  "x-python-import": {"module": "shelter.animals", "name": "Animal"}
+}

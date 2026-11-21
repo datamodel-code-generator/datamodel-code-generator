@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: Discriminators whose values are no strings
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /levels:
+    post:
+      operationId: createLevel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Basic"
+                - $ref: "#/components/schemas/Expert"
+              discriminator:
+                propertyName: level
+      responses:
+        "204":
+          description: Created.
+    get:
+      operationId: getLevel
+      responses:
+        "200":
+          description: A level told apart by an integer constant.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Basic"
+                  - $ref: "#/components/schemas/Expert"
+                discriminator:
+                  propertyName: level
+  /ranks:
+    get:
+      operationId: getRank
+      responses:
+        "200":
+          description: A rank told apart by integers that only the mapping declares.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Junior"
+                  - $ref: "#/components/schemas/Senior"
+                discriminator:
+                  propertyName: rank
+                  mapping:
+                    "1": "#/components/schemas/Junior"
+                    "2": "#/components/schemas/Senior"
+  /switches:
+    get:
+      operationId: getSwitch
+      responses:
+        "200":
+          description: A switch told apart by a boolean constant.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/On"
+                  - $ref: "#/components/schemas/Off"
+                discriminator:
+                  propertyName: enabled
+  /animals:
+    get:
+      operationId: getAnimal
+      responses:
+        "200":
+          description: An animal told apart by the one member of its kind's enum.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Dog"
+                discriminator:
+                  propertyName: kind
+  /mixed:
+    get:
+      operationId: getMixed
+      responses:
+        "200":
+          description: A code told apart by an integer constant and a boolean constant.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Counted"
+                  - $ref: "#/components/schemas/Flagged"
+                discriminator:
+                  propertyName: code
+  /felines:
+    get:
+      operationId: getFeline
+      responses:
+        "200":
+          description: A feline told apart by the values its kind's enum admits, without a mapping.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Feline"
+                  - $ref: "#/components/schemas/Canine"
+                discriminator:
+                  propertyName: kind
+  /mapped-felines:
+    get:
+      operationId: getMappedFeline
+      responses:
+        "200":
+          description: A feline that a mapping names by one of the values its kind's enum admits.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MappedFeline"
+                  - $ref: "#/components/schemas/MappedCanine"
+                discriminator:
+                  propertyName: kind
+                  mapping:
+                    cat: "#/components/schemas/MappedFeline"
+                    dog: "#/components/schemas/MappedCanine"
+  /grades:
+    get:
+      operationId: getGrade
+      responses:
+        "200":
+          description: A grade told apart by a shared integer enum whose values the mapping keys name.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Pass"
+                  - $ref: "#/components/schemas/Fail"
+                discriminator:
+                  propertyName: grade
+                  mapping:
+                    "1": "#/components/schemas/Pass"
+                    "2": "#/components/schemas/Fail"
+  /odd:
+    get:
+      operationId: getOdd
+      responses:
+        "200":
+          description: A kind whose one variant holds an object constant, which tags nothing.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Plain"
+                  - $ref: "#/components/schemas/Odd"
+                discriminator:
+                  propertyName: kind
+components:
+  schemas:
+    Basic:
+      type: object
+      required: [level, since]
+      properties:
+        level:
+          type: integer
+          const: 1
+        since:
+          type: string
+          format: date
+    Expert:
+      type: object
+      required: [level, certified]
+      properties:
+        level:
+          type: integer
+          const: 2
+        certified:
+          type: string
+          format: date-time
+    Junior:
+      type: object
+      required: [rank, since]
+      properties:
+        rank:
+          type: integer
+        since:
+          type: string
+          format: date
+    Senior:
+      type: object
+      required: [rank, certified]
+      properties:
+        rank:
+          type: integer
+        certified:
+          type: string
+          format: date-time
+    "On":
+      type: object
+      required: [enabled, since]
+      properties:
+        enabled:
+          type: boolean
+          const: true
+        since:
+          type: string
+          format: date
+    "Off":
+      type: object
+      required: [enabled, until]
+      properties:
+        enabled:
+          type: boolean
+          const: false
+        until:
+          type: string
+          format: date-time
+    CatKind:
+      type: string
+      enum: [cat]
+    DogKind:
+      type: string
+      enum: [dog]
+    Cat:
+      type: object
+      required: [kind, born]
+      properties:
+        kind:
+          $ref: "#/components/schemas/CatKind"
+        born:
+          type: string
+          format: date
+    Dog:
+      type: object
+      required: [kind, fed]
+      properties:
+        kind:
+          $ref: "#/components/schemas/DogKind"
+        fed:
+          type: string
+          format: date-time
+    Feline:
+      type: object
+      required: [kind, born]
+      properties:
+        kind:
+          type: string
+          enum: [cat, kitty]
+        born:
+          type: string
+          format: date
+    Canine:
+      type: object
+      required: [kind, fed]
+      properties:
+        kind:
+          type: string
+          enum: [dog]
+        fed:
+          type: string
+          format: date-time
+    MappedFeline:
+      type: object
+      required: [kind, born]
+      properties:
+        kind:
+          type: string
+          enum: [cat, kitty]
+        born:
+          type: string
+          format: date
+    MappedCanine:
+      type: object
+      required: [kind, fed]
+      properties:
+        kind:
+          type: string
+          enum: [dog]
+        fed:
+          type: string
+          format: date-time
+    Grade:
+      type: integer
+      enum: [1, 2]
+    Pass:
+      type: object
+      required: [grade, since]
+      properties:
+        grade:
+          $ref: "#/components/schemas/Grade"
+        since:
+          type: string
+          format: date
+    Fail:
+      type: object
+      required: [grade, until]
+      properties:
+        grade:
+          $ref: "#/components/schemas/Grade"
+        until:
+          type: string
+          format: date-time
+    Counted:
+      type: object
+      required: [code, since]
+      properties:
+        code:
+          type: integer
+          const: 1
+        since:
+          type: string
+          format: date
+    Flagged:
+      type: object
+      required: [code, until]
+      properties:
+        code:
+          type: boolean
+          const: true
+        until:
+          type: string
+          format: date-time
+    Plain:
+      type: object
+      required: [kind, since]
+      properties:
+        kind:
+          type: string
+          const: plain
+        since:
+          type: string
+          format: date
+    Odd:
+      type: object
+      required: [kind, until]
+      properties:
+        kind:
+          type: object
+          const: {a: 1}
+        until:
+          type: string
+          format: date-time

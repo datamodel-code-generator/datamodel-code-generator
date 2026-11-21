@@ -35,7 +35,11 @@ SubmitPairsResponse: TypeAlias = FormData
 SubmitUploadResponse: TypeAlias = None
 
 
-ReadUploadResponse: TypeAlias = MultipartData[str | int | models.Address | models.Draft | bytes] | MultipartData[str | bytes] | MultipartData[bytes]
+ReadUploadResponse: TypeAlias = (
+    MultipartData[str | int | models.Address | models.Draft | bytes]
+    | MultipartData[str | bytes]
+    | MultipartData[bytes]
+)
 
 
 SubmitAvatarResponse: TypeAlias = None

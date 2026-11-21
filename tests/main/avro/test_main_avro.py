@@ -6,8 +6,7 @@ import json
 import operator
 from contextlib import nullcontext
 from decimal import Inexact, Rounded, localcontext
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -25,7 +24,6 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter, PythonVersion, is_supported_in_black
 from datamodel_code_generator.parser.avro import convert_avro_schema_data
 from tests.conftest import assert_inputs_not_mutated, assert_mutable_copy_is_isolated, assert_output
-from tests.main.avro.conftest import assert_file_content
 from tests.main.conftest import (
     AVRO_DATA_PATH,
     BACKEND_GOLDEN_CASES,
@@ -39,22 +37,14 @@ from tests.main.conftest import (
     run_main_and_assert,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 _CURRENT_PYTHON_VERSION = PythonVersion(CURRENT_PYTHON_VERSION)
 _SKIP_BLACK = pytest.mark.skipif(
     not is_supported_in_black(_CURRENT_PYTHON_VERSION),
     reason=f"Installed black doesn't support Python {CURRENT_PYTHON_VERSION}",
 )
-
-
-_EXPECTED_VERSION_DIR = (
-    "py314"
-    if _CURRENT_PYTHON_VERSION.has_native_deferred_annotations
-    else f"py{CURRENT_PYTHON_VERSION.replace('.', '')}"
-)
-
-
-def _expected_file(expected_file: str) -> str:
-    return f"{_EXPECTED_VERSION_DIR}/{expected_file}"
 
 
 def _append_mutation_marker(value: object) -> None:
@@ -104,8 +94,6 @@ def test_main_avro_constructs(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("constructs.py"),
         extra_args=get_current_version_args("--use-field-description"),
         force_exec_validation=True,
     )
@@ -117,8 +105,6 @@ def test_main_avro_fixed_reference_default(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "fixed_reference_default.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="fixed_reference_default.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -147,7 +133,6 @@ def test_avro_container_bytes_defaults(
     msgspec decodes no union of bytes and str, so msgspec output warns about it.
     """
     input_path = AVRO_DATA_PATH / "container_bytes_defaults.avsc"
-    expected_file = f"container_bytes_defaults_{backend}.py"
     with (
         pytest.warns(UserWarning, match=r"it holds the str-like members (bytes, str|str, bytes),")
         if output_model_type == DataModelType.MsgspecStruct
@@ -158,8 +143,6 @@ def test_avro_container_bytes_defaults(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="avro",
-                assert_func=assert_file_content,
-                expected_file=expected_file,
                 extra_args=[
                     "--target-python-version",
                     "3.10",
@@ -176,8 +159,6 @@ def test_avro_container_bytes_defaults(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.Avro,
-                assert_func=assert_file_content,
-                expected_file=expected_file,
                 output_model_type=output_model_type,
                 target_python_version=PythonVersion.PY_310,
                 disable_timestamp=True,
@@ -193,7 +174,7 @@ def test_avro_container_bytes_defaults(
         first.mapping["z"] = b"changed"
         first.nested[0]["z"].append(b"changed")
         rendered = repr(model())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/container_bytes_defaults_{backend}.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize("fixture_name", ["container_bytes_defaults.avsc", "bytes_default_controls.yaml"])
@@ -212,7 +193,7 @@ def test_avro_bytes_defaults_raw_input_unchanged(output_file: Path, fixture_name
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
         )
-    assert_file_content(output_file, f"{input_path.stem}_pydantic_v2.py")
+    assert_output(output_file.read_text(encoding="utf-8"), name="model", suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -239,7 +220,6 @@ def test_avro_temporal_defaults(
 ) -> None:
     """Preserve temporal units, timezone, precision, nested defaults and backend type policies."""
     input_path = AVRO_DATA_PATH / f"{fixture}.avsc"
-    expected_file = f"{fixture}_{backend}.py"
     # Keep the nested constructor regression independent of formatter layout differences.
     builtin = fixture == "temporal_defaults"
     if entrypoint == "cli":
@@ -247,8 +227,6 @@ def test_avro_temporal_defaults(
             input_path=input_path,
             output_path=output_file,
             input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--target-python-version",
                 "3.10",
@@ -265,8 +243,6 @@ def test_avro_temporal_defaults(
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.Avro,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             output_model_type=output_model_type,
             output_datetime_class=datetime_class,
             target_python_version=PythonVersion.PY_310,
@@ -277,13 +253,12 @@ def test_avro_temporal_defaults(
         )
     if output_model_type == DataModelType.TypingTypedDict:
         return
-    runtime_file = AVRO_DATA_PATH.parent / f"expected/main/avro/{fixture}_{backend}.txt"
     with _generated_model(output_file, f"generated_{fixture}_{backend}_{entrypoint}", "TemporalDefaults") as model:
-        assert_output(f"{model()!r}\n", runtime_file)
+        assert_output(f"{model()!r}\n", name="runtime")
         if output_model_type == DataModelType.PydanticV2BaseModel:
             model.model_config["validate_default"] = True
             model.model_rebuild(force=True)
-            assert_output(f"{model()!r}\n", runtime_file)
+            assert_output(f"{model()!r}\n", name="runtime")
 
 
 def test_avro_temporal_defaults_preserve_raw_input(output_file: Path) -> None:
@@ -300,9 +275,9 @@ def test_avro_temporal_defaults_preserve_raw_input(output_file: Path) -> None:
             formatters=[Formatter.BUILTIN],
         )
         converted = convert_avro_schema_data(raw_schema)
-    assert_file_content(output_file, "temporal_defaults_pydantic_v2.py")
+    assert_output(output_file.read_text(encoding="utf-8"), name="model", suffix=".py")
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / "expected/main/avro/temporal_defaults_converted.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize(
@@ -319,8 +294,6 @@ def test_avro_mapped_logical_defaults(output_file: Path, output_model_type: Data
         input_path=AVRO_DATA_PATH / "mapped_logical_defaults.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=f"mapped_logical_defaults_{backend}.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -340,13 +313,12 @@ def test_avro_mapped_logical_defaults(output_file: Path, output_model_type: Data
         ],
         force_exec_validation=True,
     )
-    runtime_file = AVRO_DATA_PATH.parent / "expected/main/avro/mapped_logical_defaults.txt"
     with _generated_model(output_file, f"mapped_defaults_{backend}", "MappedDefaults") as model:
-        assert_output(f"{model()!r}\n", runtime_file)
+        assert_output(f"{model()!r}\n", name="mapped_logical_defaults")
         if output_model_type == DataModelType.PydanticV2BaseModel:
             model.model_config["validate_default"] = True
             model.model_rebuild(force=True)
-            assert_output(f"{model()!r}\n", runtime_file)
+            assert_output(f"{model()!r}\n", name="mapped_logical_defaults")
 
 
 @pytest.mark.parametrize(
@@ -360,8 +332,6 @@ def test_avro_overridden_logical_defaults(output_file: Path, capsys: pytest.Capt
         input_path=AVRO_DATA_PATH / f"{case['fixture']}.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=f"overridden_logical_defaults_{case['name']}.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -378,20 +348,18 @@ def test_avro_overridden_logical_defaults(output_file: Path, capsys: pytest.Capt
         capsys=capsys,
         assert_no_stderr=True,
     )
-    for model_name in [case["model"], *case.get("auxiliary_models", [])]:
-        suffix = "" if model_name == case["model"] else f"_{model_name}"
-        runtime_file = (
-            AVRO_DATA_PATH.parent / f"expected/main/avro/overridden_logical_defaults_{case['name']}{suffix}.txt"
-        )
+    for role, model_name in zip(
+        ("runtime", "auxiliary"), [case["model"], *case.get("auxiliary_models", [])], strict=False
+    ):
         with _generated_model(output_file, f"overridden_logical_defaults_{case['name']}", model_name) as model:
             instance = model()
-            assert_output(f"{instance!r}\n{instance.model_dump(by_alias=True)!r}\n", runtime_file)
+            assert_output(f"{instance!r}\n{instance.model_dump(by_alias=True)!r}\n", name=role)
             instance = model.model_validate(instance.model_dump(by_alias=True))
-            assert_output(f"{instance!r}\n{instance.model_dump(by_alias=True)!r}\n", runtime_file)
+            assert_output(f"{instance!r}\n{instance.model_dump(by_alias=True)!r}\n", name=role)
             model.model_config["validate_default"] = True
             model.model_rebuild(force=True)
             instance = model()
-            assert_output(f"{instance!r}\n{instance.model_dump(by_alias=True)!r}\n", runtime_file)
+            assert_output(f"{instance!r}\n{instance.model_dump(by_alias=True)!r}\n", name=role)
 
 
 @pytest.mark.parametrize(
@@ -436,30 +404,18 @@ def test_avro_builtin_name_override_keeps_physical_default(
 
 
 @pytest.mark.parametrize(
-    ("mappings", "expected_file", "runtime_file"),
+    "mappings",
     [
-        (
-            ("date=date", "time=time"),
-            "temporal_defaults_simple_pydantic_v2.py",
-            "temporal_defaults_simple_pydantic_v2.txt",
-        ),
-        (
-            ("date=string", "time=string"),
-            "temporal_defaults_mapped_strings.py",
-            "temporal_defaults_simple_dataclass.txt",
-        ),
+        pytest.param(("date=date", "time=time"), id="date_time"),
+        pytest.param(("date=string", "time=string"), id="strings"),
     ],
 )
-def test_avro_mapped_temporal_strings(
-    output_file: Path, mappings: tuple[str, str], expected_file: str, runtime_file: str
-) -> None:
+def test_avro_mapped_temporal_strings(output_file: Path, mappings: tuple[str, str]) -> None:
     """Retain logical defaults for matching formats and explicit string output."""
     run_main_and_assert(
         input_path=AVRO_DATA_PATH / "temporal_defaults_simple.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -472,7 +428,7 @@ def test_avro_mapped_temporal_strings(
     with _generated_model(output_file, "mapped_temporal_defaults", "TemporalDefaults") as model:
         model.model_config["validate_default"] = True
         model.model_rebuild(force=True)
-        assert_output(f"{model()!r}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{runtime_file}")
+        assert_output(f"{model()!r}\n", name="runtime")
 
 
 def test_main_avro_temporal_default_controls(output_file: Path) -> None:
@@ -481,8 +437,6 @@ def test_main_avro_temporal_default_controls(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "temporal_default_controls.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="temporal_default_controls.py",
         extra_args=["--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
@@ -494,8 +448,6 @@ def test_main_avro_temporal_defaults_unused_by_typed_dict(output_file: Path) -> 
         input_path=AVRO_DATA_PATH / "invalid_temporal_default_nanos_precision.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="temporal_defaults_unused_typed_dict.py",
         extra_args=[
             "--output-model-type",
             DataModelType.TypingTypedDict.value,
@@ -569,7 +521,6 @@ def test_avro_decimal_defaults(
 ) -> None:
     """Preserve signed coefficients and scale despite restrictive decimal contexts."""
     input_path = AVRO_DATA_PATH / f"{fixture}.avsc"
-    expected_file = f"{fixture}_{backend}.py"
     builtin = fixture == "decimal_defaults"
     with localcontext() as context:
         context.prec = 2
@@ -581,8 +532,6 @@ def test_avro_decimal_defaults(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="avro",
-                assert_func=assert_file_content,
-                expected_file=expected_file,
                 extra_args=[
                     "--target-python-version",
                     "3.10",
@@ -599,8 +548,6 @@ def test_avro_decimal_defaults(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.Avro,
-                assert_func=assert_file_content,
-                expected_file=expected_file,
                 output_model_type=output_model_type,
                 target_python_version=PythonVersion.PY_310,
                 disable_timestamp=True,
@@ -612,11 +559,11 @@ def test_avro_decimal_defaults(
         if output_model_type == DataModelType.TypingTypedDict:
             return
         with _generated_model(output_file, f"generated_{fixture}_{backend}_{entrypoint}", "DecimalDefaults") as model:
-            assert_output(f"{model()!r}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{fixture}_{backend}.txt")
+            assert_output(f"{model()!r}\n", name="runtime")
             if output_model_type == DataModelType.PydanticV2BaseModel:
                 model.model_config["validate_default"] = True
                 model.model_rebuild(force=True)
-                assert_output(f"{model()!r}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{fixture}_{backend}.txt")
+                assert_output(f"{model()!r}\n", name="runtime")
 
 
 @pytest.mark.parametrize("fixture", ["decimal_defaults.avsc", "decimal_defaults_raw.yaml"])
@@ -637,11 +584,9 @@ def test_avro_decimal_defaults_preserve_raw_input(output_file: Path, fixture: st
             formatters=[Formatter.BUILTIN],
         )
         converted = convert_avro_schema_data(raw_schema)
-    assert_file_content(
-        output_file, "decimal_defaults_pydantic_v2.py" if fixture.endswith("avsc") else "decimal_defaults_raw.py"
-    )
+    assert_output(output_file.read_text(encoding="utf-8"), name="model", suffix=".py")
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize("collapse_args", [[], ["--collapse-root-models"]], ids=["named", "collapsed"])
@@ -651,7 +596,6 @@ def test_main_avro_fixed_type_overrides_keep_physical_defaults(output_file: Path
         input_path=AVRO_DATA_PATH / "fixed_type_overrides_defaults.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -667,18 +611,17 @@ def test_main_avro_fixed_type_overrides_keep_physical_defaults(output_file: Path
 
 
 @pytest.mark.parametrize(
-    ("fixture", "expected_file", "extra_args", "warning"),
+    ("fixture", "extra_args", "warning"),
     [
-        (
+        pytest.param(
             "decimal_default_controls",
-            "decimal_default_controls.py",
             [],
             "10 Decimal default values were emitted as serialized data",
+            id="decimal_default_controls",
         ),
         *(
-            (
+            pytest.param(
                 "decimal_defaults_simple",
-                "decimal_defaults_logical_override_mapping.py",
                 [
                     "--type-overrides",
                     '{"DecimalDefaults.positive":"decimal.Decimal"}',
@@ -689,13 +632,14 @@ def test_main_avro_fixed_type_overrides_keep_physical_defaults(output_file: Path
                 "1 Decimal default value could not be deserialized"
                 if deserialize
                 else "1 Decimal default value was emitted as serialized data",
+                id=f"logical_override_mapping-{'deserialized' if deserialize else 'serialized'}",
             )
             for deserialize in (False, True)
         ),
     ],
 )
 def test_main_avro_decimal_default_controls(
-    output_file: Path, fixture: str, expected_file: str, extra_args: list[str], warning: str
+    output_file: Path, fixture: str, extra_args: list[str], warning: str
 ) -> None:
     """Keep ordinary bytes, unsupported metadata and default-free logical schemas unchanged."""
     with pytest.warns(DefaultValueTypeWarning, match=warning):
@@ -703,8 +647,6 @@ def test_main_avro_decimal_default_controls(
             input_path=AVRO_DATA_PATH / f"{fixture}.avsc",
             output_path=output_file,
             input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--target-python-version",
                 "3.10",
@@ -723,8 +665,6 @@ def test_main_avro_decimal_defaults_unused_by_typed_dict(output_file: Path) -> N
         input_path=AVRO_DATA_PATH / "invalid_decimal_default_scale.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="invalid_decimal_default_scale.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -791,15 +731,12 @@ def test_avro_duration_defaults(
 ) -> None:
     """Preserve fixed milliseconds, named/container defaults and backend policies."""
     input_path = AVRO_DATA_PATH / f"{fixture}.avsc"
-    expected_file = f"{fixture}_{backend}.py"
     builtin = fixture == "duration_defaults"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--target-python-version",
                 "3.10",
@@ -816,8 +753,6 @@ def test_avro_duration_defaults(
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.Avro,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             output_model_type=output_model_type,
             target_python_version=PythonVersion.PY_310,
             disable_timestamp=True,
@@ -829,11 +764,11 @@ def test_avro_duration_defaults(
     if output_model_type == DataModelType.TypingTypedDict:
         return
     with _generated_model(output_file, f"generated_{fixture}_{backend}_{entrypoint}", "DurationDefaults") as model:
-        assert_output(f"{model()!r}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{fixture}_{backend}.txt")
+        assert_output(f"{model()!r}\n", name="runtime")
         if output_model_type == DataModelType.PydanticV2BaseModel:
             model.model_config["validate_default"] = True
             model.model_rebuild(force=True)
-            assert_output(f"{model()!r}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{fixture}_{backend}.txt")
+            assert_output(f"{model()!r}\n", name="runtime")
 
 
 @pytest.mark.parametrize("fixture", ["duration_defaults.avsc", "duration_defaults_raw.yaml"])
@@ -851,11 +786,9 @@ def test_avro_duration_defaults_preserve_raw_input(output_file: Path, fixture: s
             formatters=[Formatter.BUILTIN],
         )
         converted = convert_avro_schema_data(raw_schema)
-    assert_file_content(
-        output_file, "duration_defaults_pydantic_v2.py" if fixture.endswith("avsc") else "duration_defaults_raw.py"
-    )
+    assert_output(output_file.read_text(encoding="utf-8"), name="model", suffix=".py")
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
+    assert_output(f"{rendered}\n")
 
 
 def test_main_avro_duration_default_controls(output_file: Path) -> None:
@@ -864,8 +797,6 @@ def test_main_avro_duration_default_controls(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "duration_default_controls.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="duration_default_controls.py",
         extra_args=["--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
@@ -877,8 +808,6 @@ def test_main_avro_duration_defaults_unused_by_typed_dict(output_file: Path) -> 
         input_path=AVRO_DATA_PATH / "invalid_duration_default_months.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="invalid_duration_default_months.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -927,8 +856,6 @@ def test_main_avro_output_model_types(
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/constructs_{expected_name}.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--output-model-type",
@@ -953,8 +880,6 @@ def test_main_avro_infer_input_file_type(output_file: Path) -> None:
     run_main_and_assert(
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
-        assert_func=assert_file_content,
-        expected_file=_expected_file("constructs.py"),
         extra_args=get_current_version_args("--use-field-description"),
         force_exec_validation=True,
     )
@@ -967,8 +892,6 @@ def test_main_avro_namespace_collisions(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "namespace_collisions.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("namespace_collisions.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -978,14 +901,11 @@ def test_main_avro_namespace_collisions(output_file: Path) -> None:
 def test_avro_namespace_reference_precedence(output_file: Path, entrypoint: str) -> None:
     """Resolve local record, enum, fixed and recursive references before names in the null namespace."""
     input_path = AVRO_DATA_PATH / "namespace_reference_precedence.avsc"
-    expected_file = "namespace_reference_precedence.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--target-python-version",
                 "3.10",
@@ -1000,8 +920,6 @@ def test_avro_namespace_reference_precedence(output_file: Path, entrypoint: str)
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.Avro,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             output_model_type=DataModelType.PydanticV2BaseModel,
             target_python_version=PythonVersion.PY_310,
             disable_timestamp=True,
@@ -1016,7 +934,16 @@ def test_avro_namespace_reference_precedence(output_file: Path, entrypoint: str)
         expected_error_type="missing",
         expected_attribute_path=("chosen", "local_value"),
         expected_attribute_value=3,
-        expected_repr_path=AVRO_DATA_PATH.parent / "expected/main/avro/namespace_reference_precedence.txt",
+        expected_repr=(
+            "Container(local_record=NsThing(local_value=1, next=NsThing(local_value=2, next=None)), "
+            "chosen=NsThing(local_value=3, next=None), qualified_record=NsThing(local_value=4, next=None), "
+            "local_enum=<NsTone.LOCAL: 'LOCAL'>, enum_reference=<NsTone.SECOND: 'SECOND'>, "
+            "qualified_enum='SECOND', local_fixed=NsToken(root=b'A'), fixed_reference=NsToken(root=b'\\xff'), "
+            "qualified_fixed=NsToken(root=b'A'), fixed_array=[NsToken(root=b'\\xff'), NsToken(root=b'A')], "
+            "fixed_map={'z': NsToken(root=b'\\xff'), 'a': NsToken(root=b'A')}, "
+            "record_default=NsThing(local_value=7, next=None), record_array=[NsThing(local_value=8, "
+            "next=None)], mixed_definition=NsMixed(root=b'B'), mixed_reference=NsMixed(root=b'\\xff'))"
+        ),
     )
 
 
@@ -1027,8 +954,6 @@ def test_main_avro_official_spec_long_list(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "official_long_list.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("official_long_list.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -1041,8 +966,6 @@ def test_main_avro_single_value_enum_as_const_keeps_converted_enums(output_file:
         input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("spec_matrix.py"),
         extra_args=get_current_version_args("--use-field-description", "--use-single-value-enum-as-const"),
     )
 
@@ -1054,8 +977,6 @@ def test_main_avro_spec_matrix(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("spec_matrix.py"),
         extra_args=get_current_version_args("--use-field-description"),
         force_exec_validation=True,
     )
@@ -1092,7 +1013,7 @@ def test_main_avro_spec_matrix(output_file: Path) -> None:
             )
             if (value := getattr(second, name)) is not ...
         )
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / "expected/main/avro/default_values.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize(
@@ -1118,8 +1039,6 @@ def test_main_avro_schema_declaration_forms(output_file: Path, fixture_name: str
         input_path=AVRO_DATA_PATH / fixture_name,
         output_path=output_file,
         input_file_type="avro" if explicit_type else None,
-        assert_func=assert_file_content,
-        expected_file=_expected_file(f"schema_declaration_forms/{Path(fixture_name).stem}.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -1136,8 +1055,6 @@ def test_main_avro_official_c_schema_pass_corpus(output_file: Path, fixture_path
         input_path=fixture_path,
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file(f"official_schema_pass/{fixture_path.stem}.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -1308,4 +1225,65 @@ def test_main_avro_auto_detection_leaves_json_schema_shapes_as_json_schema(
         output_path=output_file,
         capsys=capsys,
         expected_stderr_contains="The input file type was determined to be:",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_avro_named_type_field_defaults(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the default and doc of a field typed by a named type under --ignore-ref-siblings-by-schema-version (#6394).
+
+    The converter writes them beside the ``$ref`` to the named type, as parts of the Avro field, so the option, which
+    ignores the keywords beside a draft 7 ``$ref``, keeps them.
+    """
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "named_type_field_defaults.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="avro_named_type_field_defaults",
+        model_name="Hand",
+        valid_json="{}",
+        invalid_json='{"suit": "SPADES"}',
+        expected_error_type="enum",
+        expected_attribute_path=("trump",),
+        expected_attribute_value="CLUBS",
+    )
+
+
+def test_main_avro_record_default_with_a_key_the_record_does_not_declare(tmp_path: Path, output_file: Path) -> None:
+    """Keep a record default as written when it holds a key that the record does not declare."""
+    input_path = tmp_path / "stale_default_key.avsc"
+    input_path.write_text(
+        json.dumps({
+            "type": "record",
+            "name": "Parent",
+            "fields": [
+                {
+                    "name": "child",
+                    "type": {"type": "record", "name": "Child", "fields": [{"name": "known", "type": "string"}]},
+                    "default": {"known": "ok", "legacy": "x"},
+                }
+            ],
+        }),
+        encoding="utf-8",
+    )
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="avro",
+        extra_args=["--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
     )

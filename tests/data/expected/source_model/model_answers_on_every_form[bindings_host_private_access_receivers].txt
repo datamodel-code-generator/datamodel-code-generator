@@ -1,0 +1,72 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  annotations: import-from@4 [always]; origin __future__.annotations
+  Protocol: import-from@6 [always]; origin typing.Protocol
+  FixtureHost: class@9 [always]
+  FixtureParser: class@13 [always]
+  module_function: def@44 [always]
+  module_function_on_a_host: def@48 [always]
+  TABLE: assign@52 [always]; value {"state": lambda self: self._state}
+scope class FixtureHost#0 'FixtureHost': code yes; first line 9
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@10 [always]
+  members: _state
+scope class FixtureParser#0 'FixtureParser': code yes; first line 13
+  opened by a node evaluated in <module>#0
+  _state: assign@14 [always]; value 1
+  method: def@16 [always]
+  build: def@24 [always]
+  __init_subclass__: def@27 [always]
+  static: def@31 [always]
+  rebinds: def@34 [always]
+  second: def@40 [always]
+  members: __init_subclass__, _state, build, method, rebinds, second, static
+scope function FixtureParser.method#0 'method': code yes; first line 16
+  opened by a node evaluated in FixtureParser#0
+  self: param@16 [function:body@16]
+  closure: def@17 [function:body@16]
+  by_lambda: assign@20 [function:body@16]; value lambda: self._state
+  receiver: self@16
+scope function FixtureParser.method.<locals>.closure#0 'closure': code yes; first line 17
+  opened by a node evaluated in FixtureParser.method#0
+scope lambda FixtureParser.method.<locals>.<lambda>#0 '<lambda>': code yes; first line 20
+  opened by a node evaluated in FixtureParser.method#0
+scope function FixtureParser.build#0 'build': code yes; first line 23
+  opened by a node evaluated in FixtureParser#0
+  cls: param@24 [function:body@24]
+  receiver: cls@24
+scope function FixtureParser.__init_subclass__#0 '__init_subclass__': code yes; first line 27
+  opened by a node evaluated in FixtureParser#0
+  cls: param@27 [function:body@27]
+  receiver: cls@27
+scope function FixtureParser.static#0 'static': code yes; first line 30
+  opened by a node evaluated in FixtureParser#0
+  self: param@31 [function:body@31]
+scope function FixtureParser.rebinds#0 'rebinds': code yes; first line 34
+  opened by a node evaluated in FixtureParser#0
+  self: param@34 [function:body@34]
+  models: param@34 [function:body@34]
+  takes_its_own: def@35 [function:body@34]
+  receiver: self@34
+scope function FixtureParser.rebinds.<locals>.takes_its_own#0 'takes_its_own': code yes; first line 35
+  opened by a node evaluated in FixtureParser.rebinds#0
+  self: param@35 [function:body@34|function:body@35]
+scope comprehension FixtureParser.rebinds.<locals>.<genexpr>#0 '<genexpr>': code yes; first line 38
+  opened by a node evaluated in FixtureParser.rebinds#0
+  self: comprehension@38 [function:body@34|loop:body@38]
+scope function FixtureParser.second#0 'second': code yes; first line 40
+  opened by a node evaluated in FixtureParser#0
+  other: param@40 [function:body@40]
+  self: param@40 [function:body@40]
+  receiver: other@40
+scope function module_function#0 'module_function': code yes; first line 44
+  opened by a node evaluated in <module>#0
+  self: param@44 [function:body@44]
+scope function module_function_on_a_host#0 'module_function_on_a_host': code yes; first line 48
+  opened by a node evaluated in <module>#0
+  self: param@48 [function:body@48]
+  cls: param@48 [function:body@48]
+scope lambda <lambda>#0 '<lambda>': code yes; first line 52
+  opened by a node evaluated in <module>#0
+  self: param@52 [function:body@52]
+== code objects: one per scope that compiles on this Python

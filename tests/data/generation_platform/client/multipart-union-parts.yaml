@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: Form-data bodies that are one of several objects
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /voices:
+    post:
+      operationId: createVoice
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/VoiceRequest'}
+      responses:
+        '204':
+          description: Created.
+  /settings:
+    patch:
+      operationId: updateSettings
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - {$ref: '#/components/schemas/Notifications'}
+                - {$ref: '#/components/schemas/Access'}
+      responses:
+        '204':
+          description: Updated.
+components:
+  schemas:
+    VoiceRequest:
+      oneOf:
+        - $ref: '#/components/schemas/FromSample'
+        - $ref: '#/components/schemas/FromPrompt'
+    FromSample:
+      type: object
+      required: [name, audio_sample]
+      properties:
+        type: {type: string, enum: [audio_sample]}
+        name: {type: string, maxLength: 16}
+        audio_sample: {type: string, format: binary}
+    FromPrompt:
+      type: object
+      required: [type, name, prompt]
+      properties:
+        type: {type: string, enum: [prompt]}
+        name: {type: string, maxLength: 16}
+        prompt: {type: string}
+    Notifications:
+      type: object
+      additionalProperties: false
+      properties:
+        email: {type: boolean}
+    Access:
+      oneOf:
+        - {$ref: '#/components/schemas/Security'}
+        - {$ref: '#/components/schemas/Sessions'}
+    Security:
+      type: object
+      additionalProperties: false
+      properties:
+        passcode: {type: string}
+    Sessions:
+      type: object
+      additionalProperties: false
+      properties:
+        limit: {type: integer}

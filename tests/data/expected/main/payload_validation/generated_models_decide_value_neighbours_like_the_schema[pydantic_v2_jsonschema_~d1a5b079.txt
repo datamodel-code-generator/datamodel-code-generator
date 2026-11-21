@@ -1,0 +1,10 @@
+[
+  "/lu/0 const true: invalid, model accepts",
+  "/lu/0 enum true: invalid, model accepts",
+  "/p const null: invalid, model accepts",
+  "/p enum null: invalid, model accepts",
+  "/u const null: invalid, model accepts",
+  "/u const true: invalid, model accepts",
+  "/u enum null: invalid, model accepts",
+  "/u enum true: invalid, model accepts"
+]

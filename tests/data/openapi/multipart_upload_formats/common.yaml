@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Shared owner
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Owner:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        homepage:
+          type: string
+          format: uri
+          maxLength: 200

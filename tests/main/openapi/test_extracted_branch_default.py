@@ -6,7 +6,6 @@ Only with --keep-field-defaults-off-branch-roots: without it the root takes the 
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -16,6 +15,7 @@ from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import TypeAdapter, ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, OPEN_API_DATA_PATH, _generated_model, run_main_and_assert
 
@@ -30,9 +30,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )

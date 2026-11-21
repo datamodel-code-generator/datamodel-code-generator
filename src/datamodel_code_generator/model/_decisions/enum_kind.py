@@ -7,17 +7,21 @@ from the live objects and build the class through ``model/enum.py:_enum_class``;
 The rows named ``legacy-*`` keep today's output where the kind does not follow from the member values; a fix of that
 output deletes its row.
 
-Not routed here yet: the enum branch of ``parser/jsonschema.py:JsonSchemaParser.parse_array_fields`` (a ``type`` list
-holding ``array``) writes an Enum class without asking ``enum_as_literal``, so ``--enum-field-as-literal all`` leaves
-that enum a class.
+The kind of a JSON value (``literal_value_kind``) and its JSON type (``json_type``) are those of ``_json_schema.py``,
+which the parser cores and the targets read too; this module keeps them under their names.
+
+``_enum_site_form`` of ``parser/jsonschema.py:JsonSchemaParser`` decides the form an enum site writes (its const, a
+``Literal`` or a class); its row ``legacy-array-enum-class-only`` keeps the enum branch of ``parse_array_fields`` (a
+``type`` list holding ``array``) an Enum class without asking ``enum_as_literal``, so ``--enum-field-as-literal all``
+leaves that enum a class.
 """
 
 from __future__ import annotations
 
-from decimal import Decimal
 from math import isnan
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
+from datamodel_code_generator._json_schema import LiteralValueKind, json_type, literal_value_kind
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
@@ -30,9 +34,12 @@ __all__ = [
     "EnumOrigin",
     "LiteralSetting",
     "LiteralValueKind",
+    "OpenEnumSetting",
     "decide_enum_kind",
     "enum_as_literal",
+    "enum_is_open",
     "enum_member_kinds",
+    "enum_open_marker",
     "holds_inherited_member_value",
     "holds_member_value",
     "is_literal_kind",
@@ -40,12 +47,13 @@ __all__ = [
     "json_type",
     "keeps_member_value",
     "literal_value_kind",
+    "open_enum_base",
     "values_no_literal_holds",
 ]
 
 EnumOrigin: TypeAlias = Literal["schema", "graphql", "merged"]
 """Where an enum comes from: a schema ``enum`` (JSON Schema, OpenAPI, AsyncAPI and the converted formats), a GraphQL
-enum type, or the enums an ``allOf`` lists, merged into one that replaces the field-less model of the ``allOf``.
+enum type, or the enums an ``allOf`` lists, merged into one that replaces the model of the ``allOf``.
 Schema and GraphQL enums follow the same rows."""
 
 EnumBase: TypeAlias = Literal["Enum", "IntEnum", "StrEnum"]
@@ -96,8 +104,8 @@ EnumKindRule: TypeAlias = Literal[
 LiteralSetting: TypeAlias = Literal["all", "one", "none"]
 """The ``--enum-field-as-literal`` values."""
 
-LiteralValueKind: TypeAlias = Literal["none", "bool", "int", "float", "str", "other"]
-"""The kind of a JSON value, named like the Python type of the value."""
+OpenEnumSetting: TypeAlias = Literal["none", "extensible", "all"]
+"""The ``--open-enums`` values."""
 
 
 @final
@@ -130,7 +138,7 @@ _INHERITED_SPECIALIZED = EnumKind(
 )
 
 
-def decide_enum_kind(  # noqa: PLR0913
+def decide_enum_kind(
     origin: EnumOrigin,
     /,
     *,
@@ -278,19 +286,48 @@ def enum_as_literal(
     return setting == "all" or (setting == "one" and member_count == 1)
 
 
-def literal_value_kind(value: object, /) -> LiteralValueKind:
-    """Return the kind of a JSON value; a bool is no int."""
-    if value is None:
-        return "none"
-    if isinstance(value, bool):
-        return "bool"
-    if isinstance(value, int):
-        return "int"
-    if isinstance(value, float):
-        return "float"
-    if isinstance(value, str):
-        return "str"
-    return "other"
+def enum_open_marker(extras: Mapping[str, Any], /) -> bool | None:
+    """Return whether the schema keywords beside an enum mark it open (True) or closed (False), or None for neither.
+
+    ``x-extensible-enum`` decides first, then the ``modelAsString`` of ``x-ms-enum``; each only as a bool, so the list
+    form of ``x-extensible-enum``, which lists the values in place of ``enum``, marks nothing.
+    """
+    if isinstance(extensible := extras.get("x-extensible-enum"), bool):
+        return extensible
+    if isinstance(ms_enum := extras.get("x-ms-enum"), dict) and isinstance(
+        model_as_string := ms_enum.get("modelAsString"), bool
+    ):
+        return model_as_string
+    return None
+
+
+_OPEN_MEMBER_MINIMUM: Final = 2
+"""The fewest values other than null an enum lists that ``--open-enums all`` opens: one value is a tag, not a set."""
+
+
+def enum_is_open(
+    *, setting: OpenEnumSetting | None, marker: bool | None, member_count: int, const_beside: bool
+) -> bool:
+    """Return whether an enum accepts the values of its type that it does not list (``--open-enums``).
+
+    Without the option (or ``none``) no enum is open. A const beside the enum narrows it to that const, so it stays
+    closed. Else the schema's marker decides (``enum_open_marker``), then ``all`` opens an enum of two or more values
+    other than null, and ``extensible`` none.
+    """
+    if setting in {None, "none"} or const_beside:
+        return False
+    if marker is not None:
+        return marker
+    return setting == "all" and member_count >= _OPEN_MEMBER_MINIMUM
+
+
+def open_enum_base(kind_base: EnumBase | None, base_map: Mapping[str, str] | None, /) -> str | None:
+    """Return the base an open enum written as an Enum class takes in place of its ``Enum``, ``StrEnum`` or ``IntEnum``.
+
+    It is the ``--open-enum-base-class-map`` entry of the class the enum is written on; None when there is none, so
+    the enum is written as ``Literal[...]`` joined with its type instead.
+    """
+    return None if kind_base is None or not base_map else base_map.get(kind_base)
 
 
 _WRITTEN_MEMBER_VALUES: Final[Mapping[LiteralValueKind, Callable[[Any], object]]] = {
@@ -321,25 +358,6 @@ def enum_member_kinds(values: Iterable[object], /, *, value_base: str | None) ->
             members[member] = None
             kinds.add(kind)
     return frozenset(kinds)
-
-
-_JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
-    "none": "null",
-    "bool": "boolean",
-    "int": "integer",
-    "float": "number",
-    "str": "string",
-}
-
-
-def json_type(value: object) -> str:
-    """Return the JSON type of an enum or const value by its literal kind.
-
-    Any other value is a number when it is a Decimal, an object when it is a dict, and an array otherwise.
-    """
-    if (found := _JSON_TYPES.get(literal_value_kind(value))) is not None:
-        return found
-    return "number" if isinstance(value, Decimal) else "object" if isinstance(value, dict) else "array"
 
 
 def is_literal_kind(kind: LiteralValueKind, /, *, bool_literals: bool = True) -> bool:

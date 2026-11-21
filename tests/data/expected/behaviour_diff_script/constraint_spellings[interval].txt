@@ -1,0 +1,3 @@
+runtime: same: Annotated[int, ge=0, le=9] | Annotated[int, ge=0, le=9]
+string: same: Annotated[int, ge=0, le=9] | Annotated[int, ge=0, le=9]
+model-field: same: Annotated[int, ge=0, le=9] | Annotated[int, ge=0, le=9]

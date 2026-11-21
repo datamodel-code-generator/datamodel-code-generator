@@ -1,0 +1,365 @@
+# Rules of the form "when X changes, also run Y" for `scripts/related_tests.py`.
+#
+# Each [[rule]] fires when a changed path matches one of `paths` (fnmatch globs; `*` also matches `/`) and no
+# `exclude` glob, only for the diff letters in `status` when given (A added, M modified, D deleted), and, when
+# `pattern` is given, only when an added or removed line of the matched files matches that regular expression.
+# `tests` lists the pytest node ids (file, directory or file::function) the rule selects.
+# `envs` lists the environments the rule asks for beyond the selected tests: a tox environment of tox.ini (a name the
+# `{a,b}` factors of a section expand to), or one of two lanes: `nightly-tier` (the nightly tier of
+# behaviour-diff.yaml) and `dispatch` (a workflow_dispatch run of test.yaml, which runs the lanes a pull request
+# skips). `python scripts/related_tests.py --base REF --envs` prints them, each with the rows that ask for it.
+# `incident` says what failed on hosted CI because no related test or environment ran; `prs` lists the pull requests
+# (a row with `envs` must name them, and every environment must exist: `--check` and the test of this file say so).
+#
+# The mirrors (a changed src/datamodel_code_generator/.../x.py selects tests/.../test_x.py; a changed scripts/x.py
+# selects tests/test_x_script.py) are not rows: the script derives them from the paths.
+
+[[rule]]
+id = "legacy-rows"
+prs = [6122]
+incident = "the architecture page's legacy- rows were checked by no selected test"
+paths = ["docs/architecture.md", "src/*"]
+pattern = "legacy-[a-z]"
+tests = ["tests/test_legacy_rows.py"]
+
+[[rule]]
+id = "fact-tables"
+prs = [6197]
+incident = "a new row in the fact tables failed the test that pins the row counts"
+paths = ["scripts/fact_tables.py", "scripts/generation_store_allowlist.toml"]
+tests = ["tests/parser/test_generation_store_usage.py"]
+
+[[rule]]
+id = "stored-python-output"
+prs = [6130]
+incident = "a new stored module failed the import-closure test that scans every stored module"
+paths = ["tests/data/expected/*.py"]
+status = "AM"
+tests = ["tests/test_generated_import_closure.py"]
+
+[[rule]]
+id = "pattern-writing"
+prs = [7095, 7098]
+incident = "a change to how patterns are written failed the pattern-conjunction and wire-plan tests on hosted CI"
+paths = ["src/*"]
+pattern = "(pattern|regex)"
+tests = [
+  "tests/main/test_schema_intersection_shapes.py",
+  "tests/model_codecs/test_wire_plan.py",
+  "tests/main/jsonschema/test_pydantic_accepted_forms.py::test_patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module",
+]
+
+[[rule]]
+id = "migration-fragments"
+prs = [7057]
+incident = "a fragment without its guide fields failed the migration guide's check on every shard"
+paths = ["docs/data/migration/*"]
+tests = ["tests/test_build_migration_docs_script.py"]
+
+[[rule]]
+id = "option-set-files"
+prs = [6225, 6298, 6456, 7080]
+incident = "option, preset and pass changes failed the tests that read the whole option set (recipe, help, preset docs, calibration) only on hosted CI"
+paths = [
+  "src/datamodel_code_generator/arguments.py",
+  "src/datamodel_code_generator/preset.py",
+  "src/datamodel_code_generator/cli_options.py",
+  "src/datamodel_code_generator/config.py",
+  "scripts/pass_decls.py",
+  "src/datamodel_code_generator/parser/_passes/*",
+  "src/datamodel_code_generator/_recommend/*",
+  "src/datamodel_code_generator/resources/*",
+]
+tests = [
+  "tests/test_input_model.py",
+  "tests/skills",
+  "tests/parser/test_pipeline.py",
+  "tests/checks/test_checks.py",
+  "tests/test_build_schema_docs_script.py",
+  "tests/test_build_llms_txt_script.py",
+  "tests/test_prompt.py",
+  "tests/main/test_preset_opt_in_options.py",
+  "tests/main/test_main_general.py::test_builtin_preset_formatter_selection",
+  "tests/test_main_kr.py",
+  "tests/main/test_main_general.py::test_show_help",
+  "tests/test_build_preset_docs_script.py",
+  "tests/test_recommender_calibrate_script.py",
+  "tests/test_behaviour_diff_script.py::test_gate_shards_judge_the_stale_entries_of_an_unsharded_run",
+]
+
+[[rule]]
+id = "src-architecture-boundaries"
+prs = [6456]
+incident = "a new decision module imported a backend and added a store writer that no selected test saw"
+paths = ["src/*"]
+tests = ["tests/test_architecture_boundaries.py", "tests/checks/test_checks.py::test_check_seams", "tests/test_legacy_rows.py"]
+
+[[rule]]
+id = "src-public-api"
+prs = [6990]
+incident = "a helper added to a module's __all__ failed the public-API baseline on 8 hosted shards"
+paths = ["src/*"]
+tests = ["tests/main/test_public_api_signature_baseline.py"]
+
+[[rule]]
+id = "src-schema-docs"
+prs = [6950]
+incident = "a step replaced match arms that the schema docs script parses; its tests ran only for option files"
+paths = ["src/*"]
+tests = ["tests/test_build_schema_docs_script.py"]
+
+[[rule]]
+id = "src-generation-observation"
+prs = [7037]
+incident = "stored internal call counts moved on every hosted shard; the related tests never ran the observation module"
+paths = ["src/*"]
+tests = ["tests/main/test_generation_observation.py"]
+
+[[rule]]
+id = "src-deep-chain"
+prs = [6368]
+incident = "a new per-alias recursion in a render rule failed the deep-chain tests only on hosted CI"
+paths = ["src/*"]
+tests = [
+  "tests/main/jsonschema/test_main_jsonschema.py::test_main_unique_items_as_set_long_alias_chain",
+  "tests/main/jsonschema/test_main_jsonschema.py::test_main_nesting_within_recursion_limit",
+]
+
+[[rule]]
+id = "parser-store-usage"
+incident = "lane G-33 sr5a: a new __dict__ marker write in a parser module failed the store-usage check on the stack top"
+paths = ["src/datamodel_code_generator/parser/*"]
+tests = ["tests/parser/test_generation_store_usage.py"]
+
+[[rule]]
+id = "check-runners"
+prs = [7190]
+incident = "a new pre-commit hook changed the stored list of where each check runs; no related test ran for .pre-commit-config.yaml"
+paths = [".pre-commit-config.yaml", "tox.ini", ".github/workflows/*"]
+tests = ["tests/test_checks_are_run.py"]
+
+[[rule]]
+id = "workflows"
+prs = [7043]
+incident = "a workflow change broke the workflow contract and gate simulation tests; no related test ran for .github"
+paths = [".github/workflows/*"]
+tests = ["tests/test_ci_workflow.py"]
+
+[[rule]]
+id = "added-inputs"
+prs = [6456]
+incident = "two lanes added the same input under client/ and fastapi/; and a $defs-only JSON input was inferred as plain JSON (lane z11)"
+paths = ["tests/data/*"]
+exclude = ["tests/data/expected/*"]
+status = "A"
+tests = ["tests/test_conftest_helpers.py::test_test_inputs_are_unique", "tests/test_infer_input_type.py"]
+
+[[rule]]
+id = "added-expected-outputs"
+prs = [6456]
+incident = "two lanes stored the same expected output and no check saw it until a later lane"
+paths = ["tests/data/expected/*"]
+status = "A"
+tests = ["tests/test_conftest_helpers.py::test_stored_expected_outputs_are_unique"]
+
+[[rule]]
+id = "tests-layout"
+prs = [6368]
+incident = "a new module under tests/data/python failed the test-layout check only on hosted CI"
+paths = ["tests/*"]
+exclude = ["tests/data/expected/*"]
+tests = ["tests/test_assert_helper_usage.py"]
+
+[[rule]]
+id = "behaviour-diff-helpers"
+prs = [7161]
+incident = "a change of the behaviour signature moved two stored classify_trees outputs that no selected test ran"
+paths = ["scripts/_behaviour_*.py"]
+tests = ["tests/test_behaviour_diff_script.py"]
+
+[[rule]]
+id = "cell-gate-oracle"
+incident = "a change to the change records or the comparison scripts left the oracle cases of the cell gate unrun until hosted CI"
+paths = [
+  "scripts/_change_records.py",
+  "scripts/declared_changes.py",
+  "scripts/compare_release.py",
+  "scripts/behaviour_diff.py",
+]
+tests = ["tests/test_behaviour_diff_script.py"]
+
+[[rule]]
+id = "source-model-importers"
+prs = [7170]
+incident = "a new importer of the source model failed the test that wants a rule for every importer only on hosted CI"
+paths = ["scripts/*", "tests/*"]
+exclude = ["tests/data/*"]
+pattern = "_source_model"
+tests = [
+  "tests/test_source_model.py::test_rules_declare_what_they_ask",
+  "tests/test_source_model.py::test_every_rule_states_its_verdicts",
+]
+
+[[rule]]
+id = "client-runtime-e2e"
+prs = [6600, 6636]
+incident = "the client runtime and plans ran only in client-e2e: a changed websocket line and new scenario calls were missed by the full suite"
+paths = [
+  "src/datamodel_code_generator/_runtime/*",
+  "src/datamodel_code_generator/_client/*",
+  "src/datamodel_code_generator/_openapi_codec_plan.py",
+  "src/datamodel_code_generator/_openapi_wire_plan.py",
+  "tests/api_generation/scenarios/client_*",
+  "tests/api_generation/support/client_scenarios.py",
+  "tests/data/generation_platform/client/*",
+]
+envs = ["client-e2e"]
+
+[[rule]]
+id = "server-runtime-e2e"
+prs = [6600, 6636]
+incident = "the server runtime and the cross client and server scenarios ran only in fastapi-e2e, which the full suite skips"
+paths = [
+  "src/datamodel_code_generator/_runtime/*",
+  "src/datamodel_code_generator/_fastapi/*",
+  "src/datamodel_code_generator/_openapi_codec_plan.py",
+  "src/datamodel_code_generator/_openapi_wire_plan.py",
+  "tests/data/generation_platform/cross/*",
+  "tests/data/generation_platform/fastapi/*",
+]
+envs = ["fastapi-e2e"]
+
+[[rule]]
+id = "generated-package-typing"
+prs = [6600]
+incident = "stored generated packages that only the typing environments compare moved, and all eight typing shards failed on hosted CI"
+paths = [
+  "src/datamodel_code_generator/_runtime/*",
+  "src/datamodel_code_generator/_client/*",
+  "src/datamodel_code_generator/_fastapi/*",
+  "src/datamodel_code_generator/_openapi_codec_plan.py",
+  "src/datamodel_code_generator/_openapi_wire_plan.py",
+]
+envs = ["typing-nocov-e2e", "typing-pydantic214-nocov-e2e"]
+
+[[rule]]
+id = "generated-layout-install-e2e"
+prs = [6626]
+incident = "a formatter change moved the layout of every generated package and failed only the install environment of the client"
+paths = [
+  "src/datamodel_code_generator/_builtin_formatter.py",
+  "src/datamodel_code_generator/_builtin_line_split.py",
+  "src/datamodel_code_generator/format.py",
+  "src/datamodel_code_generator/_client/templates/*",
+  "src/datamodel_code_generator/_fastapi/templates/*",
+  "src/datamodel_code_generator/model/template/*",
+  "src/datamodel_code_generator/_client/naming.py",
+  "src/datamodel_code_generator/_client/render.py",
+  "src/datamodel_code_generator/_registry_render.py",
+  "src/datamodel_code_generator/_target_format.py",
+  "src/datamodel_code_generator/_target_naming.py",
+  "src/datamodel_code_generator/_target_render.py",
+  "src/datamodel_code_generator/_target_templates.py",
+]
+envs = ["client-e2e", "fastapi-e2e", "client-install-nocov-e2e", "fastapi-install-nocov-e2e"]
+
+[[rule]]
+id = "builtin-formatter-old-black"
+prs = [6676, 6626]
+incident = "builtin formatter output compared with black ran on the old black lanes only on hosted CI (black 24 keeps '# type:int')"
+paths = [
+  "src/datamodel_code_generator/_builtin_formatter.py",
+  "src/datamodel_code_generator/_builtin_line_split.py",
+  "src/datamodel_code_generator/format.py",
+]
+envs = ["py312-black22-parallel", "py312-black24-nocov-parallel"]
+
+[[rule]]
+id = "black-comparing-tests"
+prs = [6676]
+incident = "a test that compares builtin formatter output with black.format_str at run time failed on the old black lanes"
+paths = ["tests/*.py"]
+pattern = "black\\.format_str"
+envs = ["py312-black22-parallel", "py312-black24-nocov-parallel"]
+
+[[rule]]
+id = "oldest-pydantic-features"
+prs = [5007]
+incident = "code that reads Pydantic internals or writes a feature with a version floor failed only on the oldest pinned Pydantic lanes"
+paths = ["src/datamodel_code_generator/*"]
+pattern = "(__pydantic_\\w+__|model_fields|object\\.__new__|union_mode|regex_engine)"
+envs = ["pydantic200", "pydantic20", "pydantic25"]
+
+[[rule]]
+id = "deleted-test-files"
+prs = [6716]
+incident = "a deleted test file was still listed by node id in a pinned Pydantic lane, which then collected nothing and failed"
+paths = ["tests/*.py"]
+status = "D"
+envs = ["pydantic200", "pydantic20", "pydantic25", "pydantic212", "pydantic213", "pydantic214"]
+
+[[rule]]
+id = "payload-runtime-lanes"
+prs = [7164]
+incident = "the payload suite changed and 15 cells failed in py311-payload-runtime-min, which only the scheduled workflow runs (its nightly run opened #7162)"
+paths = [
+  "tests/main/test_payload_validation.py",
+  "tests/main/test_payload_validation.refs",
+  "tests/main/test_exec_validation.py",
+  "tests/main/payload_validation/*",
+  "tests/data/payloads/*",
+  "tests/data/expected/main/payload_validation/*",
+]
+envs = [
+  "py311-payload-runtime-min",
+  "py311-payload-runtime-latest",
+  "py314-payload-runtime-min",
+  "py314-payload-runtime-latest",
+]
+
+[[rule]]
+id = "stored-model-output-nightly"
+prs = [7117]
+incident = "stored model output changed, the pull request tier passed and the nightly tier turned main red"
+paths = ["tests/data/expected/main/*.py"]
+exclude = ["tests/data/expected/main/generation_platform/*"]
+status = "M"
+envs = ["nightly-tier"]
+
+[[rule]]
+id = "behaviour-gate-nightly"
+prs = [7161, 7117]
+incident = "the behaviour signature and its allowlist are judged in full only by the nightly tier; a broad entry hid real value changes"
+paths = ["scripts/behaviour_diff_allowlist.toml", "scripts/behaviour_diff.py", "scripts/_behaviour_*.py"]
+envs = ["nightly-tier"]
+
+[[rule]]
+id = "platform-observations-windows"
+prs = [7037]
+incident = "stored call counts of a platform output changed and their Windows variants came only from a dispatch run"
+paths = ["tests/data/expected/main/generation_platform/*"]
+status = "M"
+envs = ["dispatch"]
+
+[[rule]]
+id = "ci-lane-changes"
+prs = [6694, 6695]
+incident = "moving a lane to another Python recorded its stored outputs under a new key, which only the lanes a pull request skips showed"
+paths = ["tox.ini", ".github/workflows/test.yaml"]
+pattern = "(base_python|python-version|tox_env|py3[0-9]+)"
+envs = ["dispatch"]
+
+[[rule]]
+id = "docs-examples-stored-outputs"
+prs = [7222, 7223]
+incident = "renaming stored outputs under main/ broke the docs examples that read them by name, which no selected test built"
+paths = ["tests/data/expected/main/*"]
+exclude = ["tests/data/expected/main/generation_platform/*"]
+tests = ["tests/test_build_docs_examples_script.py"]
+
+[[rule]]
+id = "where-reads-scripts"
+prs = [7221]
+incident = "a new module under scripts/ changed what `python -m scripts.where` prints; the stored answers failed only on hosted CI"
+paths = ["scripts/*.py"]
+tests = ["tests/test_where_script.py"]

@@ -81,6 +81,13 @@ class {{ name }}View:
 
         return {{ protocols }}(self._core)
 {%- endif %}
+{%- for item in channels %}
+
+    @{{ cached_property }}
+    def {{ item.name }}(self) -> {{ item.class_name }}:
+        """{{ item.docstring }}"""
+        return self.protocols.{{ item.name }}
+{%- endfor %}
 
 
 class {{ name }}({{ name }}View):

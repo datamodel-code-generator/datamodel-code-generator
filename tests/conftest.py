@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import difflib
-import hashlib
 import importlib
-import inspect
 import json
 import os
 import re
@@ -30,7 +28,8 @@ from urllib.parse import urlparse
 
 import pytest
 import time_machine
-from inline_snapshot._global_state import state as inline_snapshot_state
+from coverage.config import CoverageConfig
+from inline_snapshot._core._global_state import state as inline_snapshot_state
 from typing_extensions import Required
 
 from datamodel_code_generator import MIN_VERSION
@@ -50,7 +49,10 @@ from tests.units import (
     RefsIndex,
     UnsafeWriteError,
     apply_payload,
-    derived_name,
+    common_contents,
+    derived_directory,
+    derived_file_name,
+    derived_siblings,
     encode_payload,
     facts_fit,
     format_refs,
@@ -90,6 +92,7 @@ CHECK_RENDER_PLANS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
 CHECK_RENDER_MEMOS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS"
 CHECK_FACT_FINALITY_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
 CHECK_NAMING_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_NAMING"
+CHECK_TEMPLATE_ASSIGNMENTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS"
 CHECK_AREA_ENVS = (
     CHECK_SCHEMA_LOCATIONS_ENV,
     CHECK_MODEL_GRAPH_ENV,
@@ -99,11 +102,14 @@ CHECK_AREA_ENVS = (
     CHECK_RENDER_MEMOS_ENV,
     CHECK_FACT_FINALITY_ENV,
     CHECK_NAMING_ENV,
+    CHECK_TEMPLATE_ASSIGNMENTS_ENV,
 )
 """The variable of every debug check area (`Area` in `tests/checks/areas.py`) set to `1`."""
 CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
+CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
-"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep."""
+"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` and `CHECK_PASS_TRIGGERS_ENV` to `1`:
+one CI lane runs the sweep and the passes whose trigger is false, the others skip those passes as users do."""
 CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
 """The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
@@ -112,11 +118,11 @@ CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer")
 From Python 3.14 the default core, ``sysmon``, works out the branches of each code object the first time it runs, which
 costs a fresh process seconds before its first generation; ``ctrace`` measures the same lines and branches without that.
 A coverage without its C extension, such as the pure Python wheel a Python without a compiled one installs, keeps its
-default.
+default. Every other Python a test starts gets the same core through `CHILD_COVERAGE_CONFIG_ENV`.
 """
+CHILD_COVERAGE_CONFIG_ENV = "COVERAGE_PROCESS_CONFIG"
+"""The configuration that coverage's ``run.patch = ["subprocess"]`` hands every Python started by a measured process."""
 BUILTIN_FORMATTER_VALUE = "builtin"
-TARGET_PYTHON = (3, 11)
-TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
 _VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 _MOCK_PUBLIC_IP = "93.184.216.34"
 
@@ -284,13 +290,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
-    The finality sweep is turned on only from `SWEEP_PYTHON`.
+    The finality sweep and the trigger check are turned on only from `SWEEP_PYTHON`.
     """
     benchmarks = config.getoption("codspeed", default=False)
     for name in () if benchmarks else CHECK_AREA_ENVS:
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
+        os.environ.setdefault(CHECK_PASS_TRIGGERS_ENV, "1")
     if not benchmarks and CHECK_STORE_WRITES_ENV not in os.environ:
         config.pluginmanager.register(store_writes_check := StoreWritesCheck(), "store-writes-check")
         config.add_cleanup(store_writes_check.report.unlink)
@@ -304,10 +311,66 @@ def pytest_configure(config: pytest.Config) -> None:
         "Either golden_output, version_outputs, model_outputs, or expected_stdout is required. "
         "aliases: list of alternative option names (e.g., ['--capitalise-enum-members']).",
     )
-    config._cli_doc_items: list[dict[str, Any]] = []
+    config.stash[CLI_DOC_ITEMS] = []
     ledger = config.stash[_LEDGER] = _Ledger(config)
     config.pluginmanager.register(_LedgerPlugin(ledger), "expected-ledger")
     config.pluginmanager.register(SlowTestOrdering(), "slow-test-ordering")
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_sessionstart(session: pytest.Session) -> Generator[None, None, None]:
+    """Measure in a started Python what this process measures, and leave the xdist workers to pytest-cov.
+
+    ``run.patch = ["subprocess"]`` puts the configuration of each process that starts coverage into
+    `CHILD_COVERAGE_CONFIG_ENV`. The xdist controller sets it before it starts the workers, which pytest-cov measures
+    itself: a worker that inherited it would start a second coverage at startup. A worker's own coverage sets it again.
+    """
+    if session.config.pluginmanager.has_plugin("dsession"):
+        os.environ.pop(CHILD_COVERAGE_CONFIG_ENV, None)
+    yield
+    if (serialized := os.environ.get(CHILD_COVERAGE_CONFIG_ENV)) is not None:
+        os.environ[CHILD_COVERAGE_CONFIG_ENV] = _child_coverage_config(serialized)
+
+
+def _child_coverage_config(serialized: str) -> str:
+    """Resolve the coverage configuration `serialized` the way this process reads it, for a Python a test starts.
+
+    A started Python reads the configuration in its own working directory and on its own ``sys.path``: a relative omit
+    pattern or source directory would no longer match, and a module source such as ``scripts._source_model`` would
+    measure whatever module of that name the Python imports, such as the copies of the repository that tests run. So
+    each source becomes the directories it names in this process (`_source_directories`), a relative pattern is
+    anchored at this process's working directory as coverage anchors it here, and the core is the one of
+    `CHILD_COVERAGE_ENV`.
+
+    A test that puts the checkout's ``src`` on ``PYTHONPATH`` makes the Python import the package from there, not from
+    the installed copy the source names (the tox environments install one). ``paths.source`` declares both the same
+    files, so the directory of the same name under its first entry is measured too and combined into the same report.
+    """
+    config = CoverageConfig.deserialize(serialized)
+    sources = [directory for source in config.source or [] for directory in _source_directories(source)]
+    checkout = Path.cwd() / config.paths.get("source", ["src"])[0]
+    config.source = list(
+        dict.fromkeys([*sources, *(str(copy) for source in sources if (copy := checkout / Path(source).name).is_dir())])
+    )
+    config.run_omit = [
+        pattern if pattern.startswith(("*", "?")) else str(Path.cwd() / pattern) for pattern in config.run_omit
+    ]
+    config.core = CHILD_COVERAGE_ENV.get("COVERAGE_CORE", config.core)
+    return config.serialize()
+
+
+def _source_directories(source: str) -> list[str]:
+    """Return the directories a coverage ``--source`` entry names in this process.
+
+    Coverage reads an entry that is a directory relative to the working directory as that directory, and any other
+    entry as a module name: the CI shards pass ``--cov datamodel_code_generator --cov tests``, the tox commands absolute
+    directories. A package resolves to the directories it is imported from here; a single module, which a started Python
+    could import from a copy of the repository, names none.
+    """
+    if (directory := Path.cwd() / source).is_dir():
+        return [str(directory)]
+    spec = find_spec(source)
+    return [] if spec is None else list(spec.submodule_search_locations or [])
 
 
 def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  # noqa: ARG001, PLR0912, PLR0914  # pragma: no cover
@@ -611,18 +674,11 @@ def pytest_collection_modifyitems(
     config: pytest.Config,
     items: list[pytest.Item],
 ) -> None:
-    """Skip the target tests on Python 3.10 and collect CLI doc metadata from tests with cli_doc marker.
+    """Collect CLI doc metadata from tests with cli_doc marker.
 
-    The server and client targets need Python 3.11 or later, so their tests and those of the wire codecs they share
-    are skipped on older Pythons, including when a CI shard names their files. CLI doc metadata is always collected
-    for test_cli_doc_coverage.py; its markers are validated, and their expected paths resolved through the index, only
-    when --collect-cli-docs is used.
+    CLI doc metadata is always collected for test_cli_doc_coverage.py; its markers are validated, and their expected
+    paths resolved through the index, only when --collect-cli-docs is used.
     """
-    if sys.version_info < TARGET_PYTHON:
-        skip = pytest.mark.skip(reason="The server and client targets need Python 3.11 or later")
-        for item in items:
-            if any(item.path.is_relative_to(root) for root in TARGET_TEST_ROOTS):
-                item.add_marker(skip)
     collect_cli_docs = config.getoption("--collect-cli-docs", default=False)
     validation_errors: list[tuple[str, list[str]]] = []
 
@@ -640,7 +696,7 @@ def pytest_collection_modifyitems(
         # Get option_description from marker kwargs (required field)
         option_description = marker.kwargs.get("option_description", "")
 
-        config._cli_doc_items.append({
+        config.stash[CLI_DOC_ITEMS].append({
             "node_id": item.nodeid,
             "marker_kwargs": _stored_cli_doc_paths(config, item, marker.kwargs) if collect_cli_docs else marker.kwargs,
             "option_description": option_description,
@@ -667,7 +723,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:  # n
     if not config.getoption("--collect-cli-docs"):
         return
 
-    items = getattr(config, "_cli_doc_items", [])
+    items = config.stash.get(CLI_DOC_ITEMS, [])
 
     output = {
         "schema_version": CLI_DOC_SCHEMA_VERSION,
@@ -711,7 +767,7 @@ _validation_stats = CodeValidationStats()
 def pytest_terminal_summary(terminalreporter: Any, exitstatus: int, config: pytest.Config) -> None:  # noqa: ARG001  # pragma: no cover
     """Print code validation and CLI doc collection summary at the end of test run."""
     if config.getoption("--collect-cli-docs", default=False):
-        items = getattr(config, "_cli_doc_items", [])
+        items = config.stash.get(CLI_DOC_ITEMS, [])
         terminalreporter.write_sep("=", "CLI Documentation Collection")
         terminalreporter.write_line(f"Collected {len(items)} CLI doc items -> {CLI_DOC_COLLECTION_OUTPUT}")
 
@@ -834,6 +890,7 @@ SIBLING_RERUN_SECONDS = 5.0
 _REFS_ITEM = "expected_refs"
 _CURRENT_ITEMS: list[pytest.Item] = []
 _LEDGER = pytest.StashKey["_Ledger"]()
+CLI_DOC_ITEMS = pytest.StashKey[list[dict[str, Any]]]()
 _UPDATE_CATEGORIES = frozenset({"create", "fix", "fix-assert", "trim", "update"})
 _PLATFORMS = ("linux", "darwin", "win32")
 
@@ -848,6 +905,7 @@ def expected_environment_facts() -> dict[str, str]:
         "formatter": BUILTIN_FORMATTER_VALUE if builtin else "external",
         **{tool: next((found.version for found in distributions(name=tool)), "") for tool in ("black", "isort")},
         "platform": next((name for name in _PLATFORMS if sys.platform.startswith(name)), sys.platform),
+        "pydantic": next((found.version for found in distributions(name="pydantic")), ""),
     }
 
 
@@ -865,7 +923,7 @@ def _ci_environment() -> CiEnvironment:
     CI runs never create or fix expected output, even with an explicit ``--inline-snapshot=create`` or ``fix``, and
     their failures print the payload that applies CI's output locally. tox passes the variables on (``pass_env``).
     """
-    from inline_snapshot._snapshot_session import is_ci_run
+    from inline_snapshot._core._snapshot_session import is_ci_run
 
     github = bool(os.environ.get("GITHUB_ACTIONS"))
     return CiEnvironment(is_ci_run() or None, github, os.environ.get("GITHUB_RUN_ID") if github else None)
@@ -998,6 +1056,8 @@ class _Ledger:
         self.rerun: list[str] = []
         self.report: list[str] = []
         self.refused = False
+        self.held: dict[tuple[str, str], tuple[str, int]] = {}
+        self.as_base: set[tuple[str, str, str]] = set()
         self.check_apply()
 
     @property
@@ -1059,6 +1119,59 @@ class _Ledger:
         if problems:
             msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
             raise pytest.UsageError(msg)
+        self.hold_common_changes()
+
+    def hold_common_changes(self) -> None:
+        """Set aside the payloads of labels whose content lanes of different overrides sent alike, unless told how.
+
+        Such content is a change common to those lanes: ``common`` ``as-base`` stores it as the label's base line,
+        ``per-environment`` as one override per lane, and without it nothing is written for the label (nor for the
+        stale payloads of its test, which would change its lines) and the session fails, saying how to go on. Payloads
+        of this environment are refused or skipped before, so they neither count as a lane nor hide that refusal.
+        """
+        payloads = self.apply_data.get("payloads", [])
+        match self.apply_data.get("common"):
+            case "per-environment":
+                return
+            case "as-base":
+                self.as_base = {(*key, digest) for key, (digest, _) in common_contents(payloads, self.facts).items()}
+                return
+        if not (held := common_contents(payloads, self.facts)):
+            return
+        self.held = held
+        items = {item for item, _ in held}
+        self.apply_data["payloads"] = [
+            payload
+            for payload in payloads
+            if (payload["item"], payload.get("label")) not in held
+            and not (payload.get("stale") and payload["item"] in items)
+        ]
+
+    def common_change_message(self) -> list[str]:
+        """Say which labels lanes sent the same content for, what each way of storing it does, and what to check."""
+        items = sorted({item for item, _ in self.held})
+        selection = " ".join(_quote(item) for item in items)
+        listed = [f"  {item} {label} ({count} lanes)" for (item, label), (_, count) in sorted(self.held.items())]
+        return [
+            (
+                "expected: not applied: lanes of different overrides sent the same content for these labels, a change "
+                "common to them that belongs in the base file rather than in one override per lane:"
+            ),
+            *listed,
+            (
+                "Nothing was written for these labels or the stale payloads of their tests. Store the content as the "
+                "base file: regenerate it here, if this environment produces it too, with"
+            ),
+            f"  pytest {selection} --inline-snapshot=fix && {self.stage}",
+            (
+                "or rerun this command with --as-base, which writes the common content as the base file and removes "
+                "the overrides equal to it. Every environment without an override of its own then compares that "
+                "content: this one, and the lanes that sent no payload because they passed or did not run. Check this "
+                f"environment with: pytest {selection}; check those lanes with a dispatch run of the Test workflow on "
+                "your branch (gh workflow run test.yaml --ref <branch>), which also runs the lanes pull requests skip. "
+                "Keep one override per lane instead: rerun this command with --per-environment."
+            ),
+        ]
 
     def own_payload(self, payload: Mapping[str, Any]) -> str | None:
         """Refuse a payload no override predicate tells apart from this environment: only a local run changes it."""
@@ -1116,7 +1229,7 @@ class _Ledger:
     def start(self) -> None:
         state = inline_snapshot_state()
         if self.ci.variable is not None:
-            from inline_snapshot._flags import Flags
+            from inline_snapshot._core._flags import Flags
 
             state.update_flags = Flags()
             state.flags -= _UPDATE_CATEGORIES
@@ -1315,9 +1428,10 @@ class _Ledger:
             verb = "which no longer exists" if len(nodeids) == 1 else "which no longer exist"
             return f"{refs} has lines for {names}, {verb}.\nFix: {command}"
         encoded = [self.encode({"item": nodeid, "stale": True}) for nodeid in nodeids]
+        printable = [payload for payload in encoded if payload is not None]
         fix = (
             [f"Fix: {self.apply_command(encoded)}", "It keeps them for the environments that have them, or drops them."]
-            if None not in encoded and sum(map(len, encoded)) <= EXPECTED_PAYLOAD_LIMIT
+            if len(printable) == len(encoded) and sum(map(len, printable)) <= EXPECTED_PAYLOAD_LIMIT
             else [f"Fix, if they were renamed or deleted: {command}"]
         )
         return "\n".join([
@@ -1333,25 +1447,11 @@ class _Ledger:
         module, so the name never depends on which tests ran first.
         """
         module_path = item.path
-        stem = module_path.stem.removeprefix("test_")
         function, param = self.key(item)
-        owner, _, name = function.rpartition("::")
-        short = name.removeprefix("test_")
-        if short.startswith(f"{stem}_"):
-            stripped = short[len(stem) + 1 :]
-            siblings = {
-                test.rpartition("::")[2].removeprefix("test_")
-                for test in self.module_tests.get(module_path, set())
-                if test.rpartition("::")[0] == owner
-            }
-            short = short if stripped in siblings else stripped
-        base = f"{owner.replace('::', '.')}.{short}" if owner else short
-        identifier = param
-        if len(f"{base}[{identifier}]{role}{suffix}") > 120:
-            identifier = f"{param[:80]}~{hashlib.sha1(param.encode()).hexdigest()[:8]}"
-        file_name = derived_name(f"{base}[{identifier}]" if param else base) + role + suffix
-        directory = self.expected_root / module_path.parent.relative_to(self.tests_root) / stem
-        return directory / file_name
+        siblings = derived_siblings(function, self.module_tests.get(module_path, set()))
+        file_name = derived_file_name(module_path.stem.removeprefix("test_"), function, param, siblings, role, suffix)
+        module = PurePosixPath(module_path.relative_to(self.tests_root).as_posix())
+        return self.expected_root / derived_directory(module) / file_name
 
     def unnamed_output(self, item: pytest.Item) -> None:
         count = self.unnamed[item.nodeid] = self.unnamed.get(item.nodeid, 0) + 1
@@ -1689,7 +1789,9 @@ class _Ledger:
 
     def finish(self, session: pytest.Session) -> None:
         self.write_updates(session)
-        if self.refused:
+        if self.held:
+            self.report += self.common_change_message()
+        if self.refused or self.held:
             session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
     def write_updates(self, session: pytest.Session) -> None:
@@ -1797,7 +1899,8 @@ class _Ledger:
         """Merge observations from other environments or CI payloads into the lines of the items they name.
 
         With ``drop_uncollected``, the lines of recorded items that no observed environment collects, although one of
-        them collected their whole module, go too; ``merge`` false applies only that.
+        them collected their whole module, go too; ``merge`` false applies only that. The payloads ``as_base`` names
+        by item, label and digest also become their label's base line.
         """
         rootpath = self.config.rootpath
         local = {nodeid_key(rootpath, item.nodeid) for item in session.items}
@@ -1825,7 +1928,12 @@ class _Ledger:
                 else [Desired(line.label, line.conditional, line.predicate) for line in lines]
             )
             updates.setdefault(sidecar, {})[function, param] = apply_payload(
-                base, lines, payload, self.facts, exists=(sidecar, function, param) in local
+                base,
+                lines,
+                payload,
+                self.facts,
+                exists=(sidecar, function, param) in local,
+                as_base=(payload["item"], payload.get("label"), payload.get("digest")) in self.as_base,
             )
         return updates
 
@@ -1865,7 +1973,7 @@ def _load_observations(directory: Path) -> Observations:
     return cast("Observations", {"facts": facts, "collected": sorted(collected), "items": list(items.values())})
 
 
-def _unit_diff(stored: object | None, value: object, path: str) -> str:  # pragma: no cover
+def _unit_diff(stored: object | None, value: object, path: str) -> str:
     """Show how a value differs from a stored unit: file diffs, or a tree's missing, extra, and changed files."""
     if not isinstance(value, dict) or not isinstance(stored, (dict, type(None))):
         old = stored if isinstance(stored, str) else json.dumps(stored, indent=2, ensure_ascii=False)
@@ -2028,30 +2136,63 @@ def _own_storage(ledger: _Ledger, item: pytest.Item, name: str) -> str | None:
     return None
 
 
-@cache
-def _tests_index() -> RefsIndex:
-    """Return the index of this repository's tests, for expected files read outside a running test."""
-    return RefsIndex(Path(__file__).parent)
-
-
 def stored_expected(path: Path) -> Path:
     """Return the file that stores the expected output at a path below the expected root.
 
     Tests with equal output share one stored file, so a test that reads an expected file itself (as input, or to
     check another test's output) reads it through this. The running test's own ``.refs`` lines decide first, then
-    those of any test; a path the index does not name, or outside the expected root, is returned unchanged.
+    those of any test; a path the index does not name, or outside the expected root, is returned unchanged. It needs
+    a running test.
     """
     ledger = _ledger()
-    index = _tests_index() if ledger is None else ledger.index
+    assert ledger is not None, "stored_expected needs a running test"
+    index = ledger.index
     if not path.is_relative_to(index.expected_root):
         return path
     name = path.relative_to(index.expected_root).as_posix()
-    own = None if ledger is None else _own_storage(ledger, _CURRENT_ITEMS[-1], name)
-    storage = own or index.storage(name)
+    storage = _own_storage(ledger, _CURRENT_ITEMS[-1], name) or index.storage(name)
     return path if storage is None else index.expected_root / storage
 
 
 _OWN_FILE_HINT = "otherwise compare the second against its own expected file"
+_MIN_HOME_LENGTH = 6
+
+
+def home_directory_in(text: str, home: str) -> str | None:
+    """Return the spelling of ``home`` that ``text`` holds, or None; a short home or ``/`` never matches."""
+    if len(home) < _MIN_HOME_LENGTH:
+        return None
+    posix = home.replace("\\", "/")
+    return next((form for form in (home, posix, home.replace("\\", "\\\\")) if form in text), None)
+
+
+_SESSION_HOME = str(Path.home())
+
+
+def _strings_in(value: object) -> Generator[str]:
+    """Yield every string held by a value, walking nested dicts, lists and tuples."""
+    match value:
+        case str():
+            yield value
+        case dict():
+            for item in value.values():
+                yield from _strings_in(item)
+        case list() | tuple():
+            for item in value:
+                yield from _strings_in(item)
+
+
+def _refuse_home_directory(value: object) -> None:
+    """Fail the running test when stored output would hold the home directory the session started with."""
+    __tracebackhide__ = True
+    for text in _strings_in(value):
+        if (form := home_directory_in(text, _SESSION_HOME)) is not None:
+            pytest.fail(
+                f"Output to compare holds the home directory {form!r}: it would leak a developer's own path into the "
+                "repository. Normalize the path in the test (a placeholder), or set the variable with "
+                "`monkeypatch.setenv`.",
+                pytrace=False,
+            )
 
 
 def _compare_expected(
@@ -2066,6 +2207,7 @@ def _compare_expected(
     if pattern is not None and isinstance(value, dict):
         # The stored tree holds only the files the pattern selects; compare the same files of the output.
         value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
+    _refuse_home_directory(value)
     ledger = _ledger()
     label = ledger.label(expected_path, pattern) if ledger is not None else None
     if ledger is None or label is None:
@@ -2098,6 +2240,27 @@ def default_output_count(role: str = "") -> int:
     key = (_CURRENT_ITEMS[-1].nodeid, role)
     ledger.default_outputs[key] = count = ledger.default_outputs.get(key, 0) + 1
     return count
+
+
+def _derived_output_role(role: str = "", name: str | None = None) -> str:
+    """Return the role of the running test's next output of a kind: ``.<name><role>`` for a named one.
+
+    An unnamed output gets ``role``, then ``.2<role>``, ``.3<role>``, ... in the order the test compares them.
+    """
+    if name is not None:
+        return f".{name}{role}"
+    count = default_output_count(role)
+    return role if count == 1 else f".{count}{role}"
+
+
+def _compare_tree(tree: dict[str, str], expected_dir: Path | None, pattern: str, name: str | None) -> None:
+    """Compare the files of a tree a pattern selects with ``expected_dir``, or as the test's derived whole tree."""
+    __tracebackhide__ = True
+    if expected_dir is not None:
+        _compare_expected(expected_dir, tree, pattern=pattern)
+        return
+    selected = {path: text for path, text in tree.items() if PurePosixPath(path).match(pattern)}
+    _compare_derived(selected, role=_derived_output_role(name=name), tree=True)
 
 
 def _compare_direct(expected_path: Path, value: object, pattern: str | None) -> None:
@@ -2157,13 +2320,7 @@ def create_assert_file_content(
     ) -> None:
         """Assert that file content matches expected external file."""
         __tracebackhide__ = True
-        if expected_name is None:
-            frame = inspect.currentframe()
-            assert frame is not None
-            assert frame.f_back is not None
-            expected_name = _infer_expected_file(frame.f_back.f_code.co_name)
-            del frame
-
+        assert expected_name is not None, "name the stored file: pytest names it when no helper compares a file by path"
         content = output_file.read_text(encoding=encoding)
         if transform is not None:
             content = transform(content)
@@ -2177,21 +2334,24 @@ def assert_output(
     expected_path: Path | None = None,
     *,
     name: str | None = None,
+    suffix: str = ".txt",
 ) -> None:
     """Assert that output matches the expected output stored for it.
 
     Args:
-        output: The output string to compare (e.g., captured.out, parser.parse()), or a JSON value for a .json path.
+        output: The output string to compare (e.g., captured.out, parser.parse()), or a JSON value for a .json file.
         expected_path: Path to the expected file. Without it, pytest names the file after the test item.
         name: Distinguishes several outputs of one test that pass no path, e.g. ``name="warnings"``.
+        suffix: The suffix of the file pytest names, e.g. ``suffix=".py"``.
 
     Usage:
         assert_output(captured.out, EXPECTED_PATH / "output.py")
-        assert_output(parser.parse())
+        assert_output(parser.parse(), suffix=".py")
         assert_output(captured.err, name="warnings")
     """
     __tracebackhide__ = True
-    is_json_value = expected_path is not None and expected_path.suffix == ".json" and not isinstance(output, str)
+    stored_suffix = suffix if expected_path is None else expected_path.suffix
+    is_json_value = stored_suffix == ".json" and not isinstance(output, str)
     if not isinstance(output, str) and not is_json_value:  # pragma: no cover
         pytest.fail(f"Expected generated output to be str, got {type(output).__name__}")
     value = output if is_json_value else _normalize_line_endings(cast("str", output))
@@ -2203,7 +2363,7 @@ def assert_output(
     _compare_derived(
         value,
         role=f".{name}" if name else "",
-        suffix=".txt",
+        suffix=suffix,
         hint='otherwise name the second: assert_output(text, name="second")',
     )
 
@@ -2245,7 +2405,7 @@ def assert_inputs_not_mutated(inputs: Mapping[str, object] | None) -> Generator[
     snapshots = {label: deepcopy(value) for label, value in inputs.items() if _tracks_mutation(value)}
     yield
     for label, before in snapshots.items():
-        if (current := inputs[label]) != before:  # pragma: no cover - exercised by helper tests
+        if (current := inputs[label]) != before:
             pytest.fail(f"{label} was mutated: before={before!r}, after={current!r}")
 
 
@@ -2260,34 +2420,44 @@ def _output_tree(output_dir: Path, pattern: str, encoding: str = "utf-8") -> dic
 
 def assert_directory_content(
     output_dir: Path,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     pattern: str = "*.py",
     encoding: str = "utf-8",
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert all files in output_dir match expected files in expected_dir.
 
     Args:
         output_dir: Directory containing generated output files.
-        expected_dir: Directory containing expected files.
+        expected_dir: Directory containing expected files. Without it, pytest stores the selected files as a tree
+            named after the test item.
         pattern: Glob pattern for files to compare (default: "*.py").
         encoding: File encoding (default: "utf-8").
+        name: Distinguishes several trees of one test that pass no expected directory, e.g. ``name="client"``.
 
     Usage:
         assert_directory_content(tmp_path / "model", EXPECTED_PATH / "main_modular")
+        assert_directory_content(tmp_path / "model")
     """
     __tracebackhide__ = True
-    _compare_expected(expected_dir, _output_tree(output_dir, pattern, encoding), pattern=pattern)
+    _compare_tree(_output_tree(output_dir, pattern, encoding), expected_dir, pattern, name)
 
 
 def assert_exact_directory_content(
     output_dir: Path,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     pattern: str = "*.py",
     encoding: str = "utf-8",
+    *,
+    name: str | None = None,
 ) -> None:
-    """Assert all files in output_dir match expected_dir exactly, with no file missing or extra on either side."""
+    """Assert all files in output_dir match expected_dir exactly, with no file missing or extra on either side.
+
+    Without ``expected_dir`` the selected files are stored as the test's own tree, as `assert_directory_content` does.
+    """
     __tracebackhide__ = True
-    _compare_expected(expected_dir, _output_tree(output_dir, pattern, encoding), pattern=pattern)
+    _compare_tree(_output_tree(output_dir, pattern, encoding), expected_dir, pattern, name)
 
 
 def _get_full_body(result: object) -> str:
@@ -2299,15 +2469,18 @@ def _get_full_body(result: object) -> str:
 
 def assert_parser_results(
     results: dict,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     pattern: str = "*.py",
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert parser results match expected files.
 
     Args:
         results: Dictionary with string keys mapping to objects with .body attribute.
-        expected_dir: Directory containing expected files.
+        expected_dir: Directory containing expected files; without it, the test's own tree.
         pattern: Glob pattern for files to compare (default: "*.py").
+        name: Distinguishes several trees of one test that pass no expected directory.
 
     Usage:
         results = {delimiter.join(p): r for p, r in parser.parse().items()}
@@ -2315,43 +2488,50 @@ def assert_parser_results(
     """
     __tracebackhide__ = True
     tree = {Path(key).as_posix(): _normalize_line_endings(_get_full_body(result)) for key, result in results.items()}
-    _compare_expected(expected_dir, tree, pattern=pattern)
+    _compare_tree(tree, expected_dir, pattern, name)
 
 
 def assert_parser_modules(
     modules: dict,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert parser modules match expected files.
 
     Args:
         modules: Dictionary with tuple keys mapping to objects with .body attribute.
-        expected_dir: Directory containing expected files.
+        expected_dir: Directory containing expected files; without it, the test's own tree.
+        name: Distinguishes several trees of one test that pass no expected directory.
 
     Usage:
         modules = parser.parse()
         assert_parser_modules(modules, EXPECTED_PATH / "parser_modular")
+        assert_parser_modules(modules)
     """
     __tracebackhide__ = True
-    assert_generated_modules_output(modules, expected_dir)
+    assert_generated_modules_output(modules, expected_dir, name=name)
 
 
 def assert_generated_modules_output(
     modules: Mapping[tuple[str, ...], Any],
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     transform: Callable[[str], str] | None = None,
     pattern: str = "*.py",
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert generate(output=None) module output matches expected files exactly.
 
-    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree.
+    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree. Without ``expected_dir``
+    the selected modules are stored as the test's own tree; ``name`` tells several such trees of one test apart.
     """
     __tracebackhide__ = True
     tree = {}
     for paths, result in modules.items():
         content = _get_full_body(result)
         tree[Path(*paths).as_posix()] = _normalize_line_endings(transform(content) if transform else content)
-    _compare_expected(expected_dir, tree, pattern=pattern)
+    _compare_tree(tree, expected_dir, pattern, name)
 
 
 def write_generated_modules(output_dir: Path, modules: dict[tuple[str, ...], Any]) -> None:
@@ -2367,7 +2547,7 @@ def assert_runtime_result_model(output_dir: Path) -> None:
     sys.path.insert(0, str(output_dir.parent))
     importlib.invalidate_caches()
     try:
-        from model._internal import Result
+        from model._internal import Result  # ty: ignore[import-not-found]
 
         result = Result.model_validate({"event": {"id": "abc"}})
         assert result.event is not None
@@ -2378,20 +2558,24 @@ def assert_runtime_result_model(output_dir: Path) -> None:
             del sys.modules[name]
 
 
-def assert_runtime_import_package(output_dir: Path, expected_dir: Path) -> None:
+def assert_runtime_import_package(
+    output_dir: Path, expected_dir: Path | None = None, *, name: str | None = None
+) -> None:
     """Assert generated modular package matches expected files and imports correctly at runtime."""
-    assert_exact_directory_content(output_dir, expected_dir)
+    assert_exact_directory_content(output_dir, expected_dir, name=name)
     assert_runtime_result_model(output_dir)
 
 
 def assert_generated_runtime_package(
     output_dir: Path,
     modules: dict[tuple[str, ...], Any],
-    expected_dir: Path,
+    expected_dir: Path | None = None,
+    *,
+    name: str | None = None,
 ) -> None:
     """Write parser-generated modules, compare the package tree, and verify runtime imports."""
     write_generated_modules(output_dir, modules)
-    assert_runtime_import_package(output_dir, expected_dir)
+    assert_runtime_import_package(output_dir, expected_dir, name=name)
 
 
 def assert_error_message(
@@ -2520,7 +2704,7 @@ def mock_httpx_get(mocker: Any) -> HttpxGetMockFactory:
             return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (_MOCK_PUBLIC_IP, 0))]
 
         def _response_for_url(url: str, *_args: Any, **_kwargs: Any) -> Any:
-            if url not in queued_responses or not queued_responses[url]:  # pragma: no cover
+            if url not in queued_responses or not queued_responses[url]:
                 pytest.fail(
                     f"Unexpected HTTP client URL: {url!r}. Registered URLs: {sorted(queued_responses)}",
                     pytrace=False,

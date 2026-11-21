@@ -1,0 +1,3 @@
+runtime: differs: Union[Annotated[str, max_length=4, min_length=1], int] | Union[Annotated[str, max_length=4], int]
+string: differs: Union[Annotated[str, max_length=4, min_length=1], int] | Union[Annotated[str, max_length=4], int]
+model-field: differs: Union[Annotated[str, max_length=4, min_length=1], int] | Union[Annotated[str, max_length=4], int]

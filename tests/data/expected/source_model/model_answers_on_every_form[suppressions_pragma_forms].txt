@@ -1,0 +1,9 @@
+== suppressions
+comment @5: # pragma: no branch
+comment @7: # pragma: <3.12 cover
+comment @9: # pragma:   no   cover
+comment @11: # pragma: no py311 cover
+coverage no-branch @5 (every code): lines 5
+coverage conditional-cover @7 (every code): lines 7-8
+coverage no-cover @9 (every code): lines 9-10
+== code objects: one per scope that compiles on this Python

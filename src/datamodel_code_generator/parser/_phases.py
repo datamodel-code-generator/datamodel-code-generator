@@ -17,11 +17,13 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, cast
 
 from typing_extensions import ReadOnly, TypedDict, final
 
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.types import DataType
@@ -35,7 +37,12 @@ __all__ = [
     "DecisionWriter",
     "FinalFacts",
     "ModuleFacts",
+    "container_copy",
+    "live_model_of",
+    "live_models_by_key",
+    "rewrite_additional_properties",
     "rewrite_copied_type",
+    "rewrite_field_copy",
 ]
 
 W = TypeVar("W", bound="DecisionWriter")
@@ -64,7 +71,7 @@ class DecisionStore(Protocol):
     def set_field_constraints(self, field_: Any, constraints: Any) -> None:
         """Write a field's constraints."""
 
-    def mark_serialized_as_any(self, model: Any, wrapped: bool) -> None:  # noqa: FBT001
+    def mark_serialized_as_any(self, model: Any, *, wrapped: bool) -> None:
         """Record whether a type naming the model is wrapped in ``SerializeAsAny``."""
 
     def swap_data_type(self, data_type: Any, new_data_type: Any, *, refresh: Any = "now") -> None:
@@ -72,6 +79,9 @@ class DecisionStore(Protocol):
 
     def set_field_default(self, field_: Any, default: Any) -> None:
         """Write a field's default."""
+
+    def omit_field_default(self, field_: Any) -> None:
+        """Write a field without its default: the default None and the ``nullable`` it has without the default."""
 
     def replace_additional_properties_type(self, model: Any, data_type: Any) -> None:
         """Give a model the type of the additional properties its settings write (TypedDict ``extra_items``)."""
@@ -111,13 +121,31 @@ class FinalFacts:
     ``live_models`` are the models of every module that render, in module order; unused models, which leave their
     modules later, are not among them. ``member_keywords`` gives the type-dependent keywords the value of a union
     member takes in the output model, with the models a reference names (``DataTypeManager.member_constraint_keywords``
-    at the target Python version).
+    at the target Python version). ``constrained_member`` gives the type that holds keywords in place of a plain string
+    member, as the output writes a constrained string inside a type, or None for any other member
+    (``DataTypeManager.constrained_string_member``).
     """
 
     modules: tuple[ModuleFacts, ...]
     live_models: tuple[ModelView, ...]
     member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None]
+    constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None]
     options: DecisionOptions = DecisionOptions()
+
+
+def live_models_by_key(facts: FinalFacts) -> dict[ModelKey, ModelView]:
+    """Return the live models of ``facts`` by model key: the models a reference names."""
+    return {model_key_of(model.reference): model for model in facts.live_models}
+
+
+def live_model_of(facts: FinalFacts) -> Callable[[ReferenceView], ModelView | None]:
+    """Return the live model of ``facts`` a reference names, or None when it names no live model."""
+    models = live_models_by_key(facts)
+
+    def model_of(reference: ReferenceView) -> ModelView | None:
+        return models.get(model_key_of(reference))
+
+    return model_of
 
 
 @final
@@ -175,20 +203,32 @@ class _DecisionWriter:
         self._store.replace_field_type(field, copied)
         self._changed[id(model)] = cast("DataModel", model)
 
-    def drop_field_constraints(self, model: ModelView, field: FieldView, keywords: frozenset[str]) -> None:
-        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``UnionConstraintsWriter``)."""
+    def drop_field_constraints(
+        self,
+        model: ModelView,
+        field: FieldView,
+        keywords: frozenset[str],
+        members: Sequence[tuple[DataTypeView, object]],
+    ) -> None:
+        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``UnionConstraintsWriter``).
+
+        Each member of ``members``, a type of the field, is written as the type paired with it, which holds the
+        keywords in its place; the field takes a copy of its type tree with them (``rewrite_copied_type``), and the
+        nodes stay as the other fields see them.
+        """
+        if members:
+            rewrites = {id(member): lambda _target, written=written: written for member, written in members}
+            self._store.replace_field_type(
+                field, rewrite_copied_type(self._store, self._copy, field.data_type, rewrites)
+            )
         constraints: Any = field.constraints
-        values = {
-            key: value
-            for key, value in constraints.model_dump(by_alias=True).items()
-            if value is not None and key not in keywords
-        }
+        values = {key: value for key, value in constraints.set_values().items() if key not in keywords}
         self._store.set_field_constraints(field, type(constraints).model_validate(values))
         self._changed[id(model)] = cast("DataModel", model)
 
-    def mark_serialized_as_any(self, model: ModelView, wrapped: bool) -> None:  # noqa: FBT001
+    def mark_serialized_as_any(self, model: ModelView, *, wrapped: bool) -> None:
         """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` (``SerializeAsAnyWriter``)."""
-        self._store.mark_serialized_as_any(model, wrapped)
+        self._store.mark_serialized_as_any(model, wrapped=wrapped)
         self._changed[id(model)] = cast("DataModel", model)
 
     def write_sets(
@@ -199,13 +239,7 @@ class _DecisionWriter:
         Fields share type nodes, so the field gets a copy of its type tree, whose copies of the lists are then swapped
         for sets, inner ones first; the nodes stay as the other fields see them.
         """
-        planned = {id(data_type) for data_type in lists}
-        original: Any = field.data_type
-        copied = self._copy(original)
-        self._store.replace_field_type(field, copied)
-        for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
-            if id(source) in planned:
-                self._store.swap_data_type(target, _set_of(target))
+        rewrite_field_copy(self._store, self._copy, field, container_copy, ids={id(data_type) for data_type in lists})
         if default is not None:
             self._store.set_field_default(field, default)
         self._changed[id(model)] = cast("DataModel", model)
@@ -215,11 +249,12 @@ class _DecisionWriter:
 
         The model takes a copy of the type tree with the sets (``rewrite_copied_type``); the nodes stay as they are.
         """
-        original: Any = model.additional_properties_type
-        rewrites = dict.fromkeys(map(id, lists), _set_of)
-        self._store.replace_additional_properties_type(
-            model, rewrite_copied_type(self._store, self._copy, original, rewrites)
-        )
+        rewrite_additional_properties(self._store, self._copy, model, lists, container_copy)
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def omit_default(self, model: ModelView, field: FieldView) -> None:
+        """Write ``field`` of ``model`` without its default (``IncompleteDefaultsWriter``)."""
+        self._store.omit_field_default(field)
         self._changed[id(model)] = cast("DataModel", model)
 
     def merge_str_like_members(
@@ -271,12 +306,15 @@ def _rewritten_member(owner: Any, member: Any, copies: Mapping[int, Any]) -> Any
     return copies[id(member)]
 
 
-def _set_of(data_type: Any) -> Any:
-    """Return the set copy of a list type, which holds its items."""
-    set_type = data_type.model_copy(update={"is_list": False, "is_set": True})
-    for item in set_type.data_types:
-        item.parent = set_type
-    return set_type
+def container_copy(data_type: Any, *, is_set: bool = True) -> Any:
+    """Return the set copy of a list type, or with ``is_set`` false the list copy of a set type.
+
+    The copy holds the items of the type.
+    """
+    copied = data_type.model_copy(update={"is_list": not is_set, "is_set": is_set})
+    for item in copied.data_types:
+        item.parent = copied
+    return copied
 
 
 def rewrite_copied_type(
@@ -293,3 +331,44 @@ def rewrite_copied_type(
         if (rewrite := rewrites.get(id(source))) is not None:
             store.swap_data_type(target, rewrite(target))
     return copied
+
+
+def rewrite_field_copy(
+    store: DecisionStore,
+    copy: Callable[[Any], Any],
+    field: Any,
+    rewrite: Callable[[Any], Any],
+    *,
+    ids: Collection[int] = (),
+    paths: Iterable[tuple[int, ...]] = (),
+) -> None:
+    """Give ``field`` a copy of its type tree, whose copies of the chosen nodes are swapped for what ``rewrite`` makes.
+
+    Fields share type nodes, so the nodes stay as the other fields see them. The nodes are chosen by id (``ids``, inner
+    ones first) or by their paths of indexes from the root (``paths``, in their order): a node that the tree holds at
+    two paths is chosen at both by its id, and at the paths listed by its paths.
+    """
+    original = field.data_type
+    copied = copy(original)
+    store.replace_field_type(field, copied)
+    for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
+        if id(source) in ids:
+            store.swap_data_type(target, rewrite(target))
+    for path in paths:
+        target = copied
+        for index in path:
+            target = target.data_types[index]
+        store.swap_data_type(target, rewrite(target))
+
+
+def rewrite_additional_properties(
+    store: DecisionStore, copy: Callable[[Any], Any], model: Any, nodes: Iterable[Any], rewrite: Callable[[Any], Any]
+) -> None:
+    """Write the type of the additional properties of ``model`` with each of ``nodes`` as ``rewrite`` makes it.
+
+    The model takes a copy of the type tree with the rewrites (``rewrite_copied_type``); the nodes stay as they are.
+    """
+    rewrites = dict.fromkeys(map(id, nodes), rewrite)
+    store.replace_additional_properties_type(
+        model, rewrite_copied_type(store, copy, model.additional_properties_type, rewrites)
+    )

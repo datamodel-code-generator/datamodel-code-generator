@@ -1,0 +1,162 @@
+$ status --base base
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+5 stored outputs this change moves are not declared:
+  changed  help/help.txt  tests/test_help.py::test_show_help
+  changed  models/a.py  tests/test_models.py::test_model[a]
+  changed  models/b.py  tests/test_models.py::test_model[b]
+  changed  models/c.py  tests/test_models.py::test_model[c]
+  changed  models/w.warnings.txt  tests/test_models.py::test_warn
+Declare them:
+  python scripts/declared_changes.py declare fix-the-thing --category '<category>' --refs '#42' --refs '#41' --labels help/help.txt models/a.py models/b.py models/c.py --base base
+    <category>: one of experimental, crash-fix, output-text, default-fix, decided-change
+  python scripts/declared_changes.py declare fix-the-thing-2 --category '<category>' --refs '#42' --refs '#41' --labels models/w.warnings.txt --base base
+    <category>: one of experimental, crash-fix, decided-change, notice
+Categories: docs/development-contributing.md#declared-changes
+failed
+
+$ declare b-two --category output-text --title t --refs #42 --labels models/b* --base base
+exit 0
+docs/data/migration/unreleased/b-two.toml covers 1 more stored outputs
+
+$ declare b-two --tests *::test_model[[]a] --base base
+exit 0
+docs/data/migration/unreleased/b-two.toml covers 1 more stored outputs
+
+$ declare b-two --category notice --rest --base base
+exit 2
+scripts/declared_changes.py: docs/data/migration/unreleased/b-two.toml: it exists: edit its other fields by hand
+
+$ declare rest --rest --base base
+exit 2
+scripts/declared_changes.py: a new record needs --category, or --extends
+
+$ declare shipped --category harness --rest --base base
+exit 2
+scripts/declared_changes.py: shipped shipped in 0.1.0; declare a new record
+
+$ declare Not A Slug --category harness --rest --base base
+exit 2
+scripts/declared_changes.py: 'Not A Slug' is not a lower-case slug
+
+$ declare help --extends b-two --tests tests/test_help.py::* --base base
+exit 0
+docs/data/migration/unreleased/help.toml covers 1 more stored outputs
+
+$ declare rest --category notice --title t --summary s --decision #7 --surface=--x --rest --base base
+exit 0
+docs/data/migration/unreleased/rest.toml covers 2 more stored outputs
+  still needed: entry rest has no refs
+  still needed: entry rest: only category new-surface names surface items
+
+$ declare rest --rest --base base
+exit 2
+scripts/declared_changes.py: nothing to declare: no undeclared stored output matches
+
+$ check --base base --report-only
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+record problem: entry rest has no refs
+record problem: entry rest: only category new-surface names surface items
+record problem: unreleased/rest.toml: covers models/c.py, models output, which category notice does not cover: give it a record of its own
+failed
+
+--- b-two.toml ---
+[[change]]
+id = "b-two"
+category = "output-text"
+title = "t"
+refs = ["#42"]
+covers = [
+    "models/a.py",
+    "models/b.py",
+]
+--- help.toml ---
+[[change]]
+id = "help"
+extends = "b-two"
+covers = [
+    "help/help.txt",
+]
+--- lower.toml ---
+[[change]]
+id = "lower"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "models/w.txt",
+]
+--- rest.toml ---
+[[change]]
+id = "rest"
+category = "notice"
+title = "t"
+summary = "s"
+decision = ["#7"]
+surface = ["--x"]
+covers = [
+    "models/c.py",
+    "models/w.warnings.txt",
+]
+--- shipped.toml ---
+[[change]]
+id = "shipped"
+category = "harness"
+title = "t"
+summary = "s"
+
+$ prune --base base
+exit 0
+unreleased/b-two.toml: dropped models/a.py
+unreleased/lower.toml: dropped models/w.txt
+unreleased/rest.toml: dropped models/c.py
+
+$ check --base base
+exit 1
+declared changes: the working tree against base, release since 0.1.0
+record problem: entry rest has no refs
+record problem: entry rest: only category new-surface names surface items
+1 stored outputs returned to 0.1.0 and need no record:
+  models/w.txt (dropped from lower)
+failed
+
+--- b-two.toml ---
+[[change]]
+id = "b-two"
+category = "output-text"
+title = "t"
+refs = ["#42"]
+covers = [
+    "models/b.py",
+]
+--- help.toml ---
+[[change]]
+id = "help"
+extends = "b-two"
+covers = [
+    "help/help.txt",
+]
+--- lower.toml ---
+[[change]]
+id = "lower"
+category = "harness"
+title = "t"
+summary = "s"
+--- rest.toml ---
+[[change]]
+id = "rest"
+category = "notice"
+title = "t"
+summary = "s"
+decision = ["#7"]
+surface = ["--x"]
+covers = [
+    "models/w.warnings.txt",
+]
+--- shipped.toml ---
+[[change]]
+id = "shipped"
+category = "harness"
+title = "t"
+summary = "s"

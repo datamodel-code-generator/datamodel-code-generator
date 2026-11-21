@@ -1,0 +1,2 @@
+pull_request: scripts/compare_release.py
+push: scripts/compare_release.py

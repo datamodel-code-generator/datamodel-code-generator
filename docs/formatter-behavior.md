@@ -4,15 +4,18 @@
 
 `datamodel-codegen` formats generated Python code after model generation. The default formatter list is currently `black` and `isort`.
 
-!!! warning "Experimental"
-    The built-in formatter (`--formatters builtin`) is experimental and may change as generated-output coverage is
-    expanded.
+!!! note "Stability"
+    The built-in formatter (`--formatters builtin`) matches Black and isort for standard generated code, with the
+    differences listed below. From now on its output changes only to move closer to Black's output, and every such
+    change is announced in the release notes.
 
 This page is the reference for the built-in formatter's exact scope and precedence. For a formatter selection guide,
 see [Code Formatting](formatting.md).
 
-This default will change in a future release. The default formatter will become `builtin`, and external formatter
-dependencies will become opt-in so that generated output can be produced without installing formatter packages.
+This default changes no earlier than three months after 0.92.0 is released, after a transition period announced
+in the release notes. The default formatter will become `builtin`, and external formatter dependencies will become opt-in so that
+generated output can be produced without installing formatter packages. See the
+[migration guide](dependency-migration.md#how-to-migrate).
 
 ## Formatter selection
 
@@ -63,31 +66,61 @@ output with a custom template, please open an issue with a small reproducer.
 
 ## Built-in formatter scope
 
-The built-in formatter is intentionally small. It is not a general Python formatter and is not expected to produce byte-for-byte identical output to the latest Black, isort, or Ruff for arbitrary Python files.
+The built-in formatter is intentionally small. It is not a general Python formatter. For the code generated from
+the standard templates it writes what the current Black release writes in its stable style, with isort's default
+ordering, so that it can become the default formatter. It reads only the settings in
+[Line length](#line-length), [String normalization](#string-normalization), `[tool.isort].known_first_party` and
+`--wrap-string-literal`.
+It ignores other isort options (such as `profile` and `force_single_line`) and Black's `target-version`, `preview`
+and `skip-magic-trailing-comma`, and it does not follow the layout of older Black releases. Output differs from
+Black/isort where those settings or releases matter, and in the cases listed under "Known differences".
 
 It covers the generated-code patterns that matter for model modules:
 
-- Removes trailing whitespace and writes a final newline.
+- Removes trailing whitespace outside string literals and writes a final newline.
 - Parses the module with `ast`.
 - Sorts only the leading import block. It stops at the first non-import statement.
 - Splits `import a, b` into separate `import` lines.
 - Groups imports in this order: `__future__`, standard library, third-party, relative imports.
-- Sorts `from ... import ...` names and merges imports from the same module.
+- Sorts `from ... import ...` names and merges imports from the same module, relative ones too; aliased names get
+  their own lines in name order, like isort.
 - Wraps long `from ... import ...` statements with parentheses when they exceed the configured line length.
 - Leaves commented import lines in place instead of dropping comments while sorting imports.
-- Sorts imports inside a top-level `if TYPE_CHECKING:` block when that block contains only imports.
-- Keeps two blank lines before a top-level `class`, `def`, or `async def` after the import block.
-- Wraps generated model statements for common long `Field(...)`, `Annotated[...]`, and `ConfigDict(...)` lines.
-- Normalizes simple generated string quotes to double quotes when `--use-double-quotes` is passed or `[tool.black].skip-string-normalization = false`.
+- Sorts each run of imports inside function, class and compound statement bodies (such as `if TYPE_CHECKING:`)
+  the same way, wraps long ones at the width their indent leaves and puts a blank line after a run, like isort and
+  Black. A comment line between two imports ends a run.
+- Lays out simple statements at any depth, in classes, function bodies and compound statements (assignments,
+  annotated assignments, expression, `return`, `del`, `assert`, `raise` and `type` statements), decorators and the
+  headers of class and function definitions and of `if`, `elif`, `while`, `for`, `with`, `except`, `match` and
+  `case` clauses (also `async`) the way Black splits long lines: the right-hand split, splits at commas and
+  operators, optional parentheses around annotations, assigned values, returned values, conditions and conditional
+  expressions, and magic trailing commas.
+- Lays out docstrings the way Black does: re-indented, trailing whitespace removed and padded before the closing
+  quotes when needed. A docstring with a backslash at a line end stays as it is, as Black leaves it.
+- Keeps two blank lines around top-level `class`, `def`, or `async def` definitions, none after a function whose
+  body is `...` on its header line (a run of `@overload` stubs) and removes blank lines after a decorator.
+- Chooses string quotes as Black does when `--use-double-quotes` is passed or `[tool.black].skip-string-normalization = false`: double quotes unless they need more escapes, without the escapes the chosen quotes make unneeded.
 
 If the generated code cannot be parsed as Python, the built-in formatter only applies whitespace cleanup and returns the code.
 
-The built-in formatter does not currently format:
+Known differences from Black and isort:
 
-- General expressions inside classes or functions.
-- List, dict, tuple, or arbitrary call argument layout outside the generated model patterns listed above.
-- General quote style rewrites outside simple generated strings.
-- String wrapping outside supported generated call arguments.
+- A statement that holds a comment, a multi-line string, a backslash continuation, a slice, a `**` power operator
+  or a `lambda` with parameters is left as it is, and so are a statement that shares its line with another one
+  (after a `;` or after a clause header's `:`), `except*` headers and a `del` of several targets (Black's
+  parentheses around them delete the same names but parse as one tuple target, a different syntax tree).
+- A class or function whose body is only `...` on its own line keeps it there; Black moves it onto the header line.
+  Blank lines inside function bodies are kept as written.
+- Spacing inside a line that fits is kept as written (Black also normalizes spaces around operators and removes
+  redundant parentheses: doubled ones, empty ones after a class name and those around a walrus in an `if` or `while` header).
+- `global`, `nonlocal` and `import` statements outside the import runs above, and definitions with PEP 695 type
+  parameters (`def f[T]`), are not laid out.
+- Quote normalization leaves triple-quoted strings and string prefixes as written: Black also drops a `u`/`U` prefix
+  (`u'x'` -> `"x"`) and lowercases `F`/`B` (`F'x'` -> `f"x"`).
+- `--wrap-string-literal` lays out strings as Black's preview string processing does (the `string_processing` and
+  `wrap_long_dict_values_in_parens` features that the option turns on for Black) in the statements listed above,
+  except a string after a conditional expression's `else`, which is not put on its own line. With
+  `--use-double-quotes` too, implicitly joined strings written with different quotes can be split at other spaces.
 - Comment placement beyond preserving commented import lines.
 - Import section rules beyond the simple groups listed above.
 
@@ -101,8 +134,9 @@ The built-in formatter is not run before external formatters.
 
 ## Line length
 
-The built-in formatter uses line length for wrapping `from ... import ...` statements and the generated model
-statements listed above.
+The built-in formatter uses line length for wrapping `from ... import ...` statements, docstrings and the
+statements listed above. It measures a line in display columns, as Black does: a wide East Asian character counts as
+two.
 
 Set it in `pyproject.toml`:
 
@@ -126,7 +160,7 @@ installed.
 
 ## String normalization
 
-The built-in formatter keeps single quotes by default. It normalizes simple generated string literals to double quotes when either condition is true:
+The built-in formatter keeps single quotes by default. It chooses the quotes of string literals as Black does when either condition is true:
 
 1. `--use-double-quotes` is passed.
 2. `[tool.black].skip-string-normalization = false` is set in `pyproject.toml`.

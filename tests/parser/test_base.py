@@ -39,7 +39,6 @@ from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBa
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
     _get_discriminator_field_value,
-    _get_enum_from_base,
     _restore_inherited_field_names_for_unique_aliases,
     exact_import,
     is_ancestor_package_reference,
@@ -302,6 +301,9 @@ def test_sort_data_models() -> None:
 
     _, _, seeded_require_update_action_models = sort_data_models(reference, require_update_action_models=[keys["B"]])
     assert seeded_require_update_action_models == [keys["B"], keys["A"]]
+
+    _, seeded_resolved, _ = sort_data_models([reference[0]], OrderedDict(list(expected.items())[:2]))
+    assert seeded_resolved == expected
 
 
 def test_sort_data_models_unresolved() -> None:
@@ -684,33 +686,6 @@ def test_dataclass_metadata_assignment_without_default_stays_positional(parser_f
 
     assert str(metadata_field) == "field(repr=False)"
     assert child_field.extras == {}
-
-
-def test_get_enum_from_base_skips_models_without_inherited_enum_capability() -> None:
-    """Do not inherit discriminator enums from output models that opt out."""
-    from datamodel_code_generator.model.enum import Enum
-
-    enum_reference = _reference("Kind")
-    Enum(fields=[], reference=enum_reference)
-    base_reference = _reference("Base")
-    base_model = PydanticDataclassModel(
-        fields=[
-            PydanticDataclassField(
-                name="kind",
-                original_name="kind",
-                data_type=DataType(reference=enum_reference),
-            )
-        ],
-        reference=base_reference,
-    )
-    child_model = BaseModel(
-        fields=[],
-        base_classes=[base_reference],
-        reference=_reference("Child"),
-    )
-
-    assert not base_model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM
-    assert _get_enum_from_base(child_model, "kind") is None
 
 
 def _create_override_required_models(
@@ -1648,7 +1623,7 @@ def test_compute_internal_module_path(
 
 
 def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
-    """Test module_dependency_cycles when reference path is not in path_to_module."""
+    """Test the merges of import cycles when reference path is not in path_to_module."""
     missing_reference = Reference(path="nonexistent.Model", original_name="Missing", name="Missing")
     model1 = BaseModel(
         fields=[DataModelField(data_type=DataType(reference=missing_reference))],
@@ -1660,7 +1635,7 @@ def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
         (("pkg",), [model1]),
     ]
 
-    assert structure.module_dependency_cycles(parser_fixture, module_models_list) == []
+    assert structure._module_merges(parser_fixture, module_models_list, None)[1] == []
 
 
 def test_collapse_root_models_preserves_root_model_used_by_other_modules() -> None:
@@ -1848,10 +1823,10 @@ def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:
         {collapsed_root: (("output.py",), models)},
         {("output.py",): imports},
         (),
-        True,
-        ParseConfig(True, True, None, None, None, None),
-        set(),
-        {},
+        with_import=True,
+        config=ParseConfig(True, True, None, None, None, None),
+        internal_modules=set(),
+        model_path_to_module_name={},
     )
 
     assert models == [surviving_model]

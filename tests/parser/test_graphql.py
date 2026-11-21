@@ -11,26 +11,19 @@ from datamodel_code_generator.config import GenerateConfig, GraphQLParserConfig
 from datamodel_code_generator.model.dataclass import DataClass
 from datamodel_code_generator.parser.graphql import GraphQLParser
 from datamodel_code_generator.reference import Reference
-from tests.conftest import create_assert_file_content
-from tests.main.conftest import GRAPHQL_DATA_PATH, run_main_and_assert
-from tests.main.test_main_general import DATA_PATH
+from tests.conftest import assert_output
+from tests.main.conftest import GRAPHQL_DATA_PATH, run_main_and_assert, run_main_with_args
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-EXPECTED_GRAPHQL_PATH: Path = DATA_PATH / "expected" / "parser" / "graphql"
-
-assert_file_content = create_assert_file_content(EXPECTED_GRAPHQL_PATH)
 
 GRAPHQL_COLLECTION_OPTIONS_PATH = GRAPHQL_DATA_PATH / "collection-options.graphql"
-GRAPHQL_COLLECTION_OPTIONS_EXPECTED = "collection_options.py"
-GRAPHQL_COLLECTION_OPTIONS_GENERATE_EXPECTED = "collection_options_generate.py"
 
 
-def _assert_collection_options_output(output_file: Path, output: object) -> None:
+def _assert_collection_options_output(output: object) -> None:
     assert isinstance(output, str)
-    output_file.write_text(output, encoding="utf-8")
-    assert_file_content(output_file, GRAPHQL_COLLECTION_OPTIONS_EXPECTED)
+    assert_output(output, suffix=".py")
 
 
 def test_graphql_field_enum(output_file: Path) -> None:
@@ -39,8 +32,6 @@ def test_graphql_field_enum(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "field-default-enum.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="field-default-enum.py",
         extra_args=["--set-default-enum-member"],
     )
 
@@ -51,8 +42,6 @@ def test_graphql_union_aliased_bug(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "union-aliased-bug.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="union-aliased-bug.py",
     )
 
 
@@ -62,8 +51,6 @@ def test_graphql_union_commented(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "union-commented.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="union-commented.py",
     )
 
 
@@ -73,13 +60,11 @@ def test_graphql_union_with_prefix(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "union.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="union_with_prefix.py",
         extra_args=["--class-name-prefix", "Foo"],
     )
 
 
-def test_graphql_parser_options_path_collection_options_parse(output_file: Path) -> None:
+def test_graphql_parser_options_path_collection_options_parse() -> None:
     """Exercise direct GraphQLParser options that are consumed while parsing."""
     parser = GraphQLParser(
         source=GRAPHQL_COLLECTION_OPTIONS_PATH,
@@ -91,10 +76,10 @@ def test_graphql_parser_options_path_collection_options_parse(output_file: Path)
 
     assert parser.use_standard_collections is True
     assert parser.use_union_operator is True
-    _assert_collection_options_output(output_file, output)
+    _assert_collection_options_output(output)
 
 
-def test_graphql_parser_text_collection_options_parse(output_file: Path) -> None:
+def test_graphql_parser_text_collection_options_parse() -> None:
     """Exercise in-memory GraphQL input without changing generated output."""
     parser = GraphQLParser(
         source=GRAPHQL_COLLECTION_OPTIONS_PATH.read_text(encoding="utf-8"),
@@ -104,10 +89,10 @@ def test_graphql_parser_text_collection_options_parse(output_file: Path) -> None
 
     output = parser.parse()
 
-    _assert_collection_options_output(output_file, output)
+    _assert_collection_options_output(output)
 
 
-def test_graphql_parser_config_path_collection_options_parse(output_file: Path) -> None:
+def test_graphql_parser_config_path_collection_options_parse() -> None:
     """Exercise GraphQLParser config object options that are consumed while parsing."""
     parser = GraphQLParser(
         source=GRAPHQL_COLLECTION_OPTIONS_PATH,
@@ -123,7 +108,7 @@ def test_graphql_parser_config_path_collection_options_parse(output_file: Path) 
     assert parser.config.use_union_operator is True
     assert parser.use_standard_collections is True
     assert parser.use_union_operator is True
-    _assert_collection_options_output(output_file, output)
+    _assert_collection_options_output(output)
 
 
 def test_graphql_generate_config_path_collection_options_parse(output_file: Path) -> None:
@@ -137,7 +122,7 @@ def test_graphql_generate_config_path_collection_options_parse(output_file: Path
 
     generate(GRAPHQL_COLLECTION_OPTIONS_PATH, config=config)
     # generate() emits the file-output variant with the header and TypeAliasType aliases.
-    assert_file_content(output_file, GRAPHQL_COLLECTION_OPTIONS_GENERATE_EXPECTED)
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -197,27 +182,23 @@ def test_graphql_no_typename(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "no-typename.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="no_typename.py",
         extra_args=["--graphql-no-typename"],
     )
 
 
 def test_graphql_typename_included_by_default(output_file: Path) -> None:
     """Regression test: typename__ field is included by default."""
-
-    def assert_typename_present(output_path: Path, _: str | None, **_kwargs: object) -> None:
-        content = output_path.read_text(encoding="utf-8")
-        assert "typename__" in content, "typename__ field should be present by default"
-        assert "__typename" in content, "__typename alias should be present by default"
-
-    run_main_and_assert(
-        input_path=GRAPHQL_DATA_PATH / "no-typename.graphql",
-        output_path=output_file,
-        input_file_type="graphql",
-        assert_func=assert_typename_present,
-        expected_file=None,
-    )
+    run_main_with_args([
+        "--input",
+        str(GRAPHQL_DATA_PATH / "no-typename.graphql"),
+        "--output",
+        str(output_file),
+        "--input-file-type",
+        "graphql",
+    ])
+    content = output_file.read_text(encoding="utf-8")
+    assert "typename__" in content, "typename__ field should be present by default"
+    assert "__typename" in content, "__typename alias should be present by default"
 
 
 def test_graphql_schema_features() -> None:
@@ -241,6 +222,7 @@ def test_graphql_schema_features() -> None:
             boolean_schemas=True,
             id_field="$id",
             definitions_key="$defs",
+            contains_counts=True,
             exclusive_as_number=True,
             read_only_write_only=True,
             anchor=True,

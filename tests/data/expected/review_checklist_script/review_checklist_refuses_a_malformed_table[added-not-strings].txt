@@ -1,0 +1,3 @@
+exit status 2
+table.toml is invalid:
+  shaped: a trigger's added must be a list of strings

@@ -1,0 +1,8 @@
+[
+  "/combined_items/0 maximum 10: invalid, model accepts",
+  "/combined_items/0 maximum 6: invalid, model accepts",
+  "/combined_items/0 minimum 1: invalid, model accepts",
+  "/combined_items/0 minimum 6: invalid, model accepts",
+  "/narrowed_items/0 maximum 10: invalid, model accepts",
+  "/narrowed_items/0 minimum 1: invalid, model accepts"
+]

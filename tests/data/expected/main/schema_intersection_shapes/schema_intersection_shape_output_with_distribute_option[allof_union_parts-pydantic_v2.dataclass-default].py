@@ -201,7 +201,9 @@ class Hierarchy5(A, B, Hierarchy1):
     pass
 
 
-Hierarchy = TypeAliasType("Hierarchy", Hierarchy2 | Hierarchy3 | Hierarchy4 | Hierarchy5)
+Hierarchy = TypeAliasType(
+    "Hierarchy", Hierarchy2 | Hierarchy3 | Hierarchy4 | Hierarchy5
+)
 
 
 @dataclass
@@ -400,7 +402,25 @@ class Many33(Many16, Many17):
     pass
 
 
-Many = TypeAliasType("Many", Many18 | Many19 | Many20 | Many21 | Many22 | Many23 | Many24 | Many25 | Many26 | Many27 | Many28 | Many29 | Many30 | Many31 | Many32 | Many33)
+Many = TypeAliasType(
+    "Many",
+    Many18
+    | Many19
+    | Many20
+    | Many21
+    | Many22
+    | Many23
+    | Many24
+    | Many25
+    | Many26
+    | Many27
+    | Many28
+    | Many29
+    | Many30
+    | Many31
+    | Many32
+    | Many33,
+)
 
 
 @dataclass

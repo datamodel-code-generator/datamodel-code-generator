@@ -1,0 +1,3 @@
+prefix_items_positions_unchecked.json#/properties/closed: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position. --use-tuple-for-closed-arrays writes it as a tuple of 2 positions, whose length the bounds of the schema fix.
+prefix_items_positions_unchecked.json#/properties/head: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+prefix_items_positions_unchecked.json#/properties/schema_tail: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.

@@ -1,0 +1,8 @@
+{
+  "root_class": "Doc",
+  "models_by_source_ref": {
+    "#/$defs/User": "User",
+    "#/$defs/Address": "Address",
+    "#": "Doc"
+  }
+}

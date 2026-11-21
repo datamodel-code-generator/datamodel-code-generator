@@ -1,0 +1,13 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  first: assign@3 [always]
+  second: assign@3 [always]
+  rest: assign@3 [always]
+  left: assign@4 [always]
+  right: assign@4 [always]
+  top: assign@5 [always]; value 0
+  middle: assign@5 [always]; value 0
+  bottom: assign@5 [always]; value 0
+  pairs: assign@6 [always]; value {}
+  value: assign@7 [always]
+== code objects: one per scope that compiles on this Python

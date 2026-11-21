@@ -32,7 +32,7 @@ class Cat(Pet):
 
 @dataclass
 class Dog(Pet):
-    petType: Literal['Dog']
+    petType: Literal['dog']
 
 
 @dataclass

@@ -1,0 +1,29 @@
+== references
+8:9 Literal load (deferred annotation) in <module> -> local <module> @5; origin typing.Literal
+8:28 Annotated load (deferred annotation) in <module> -> local <module> @5; origin typing.Annotated
+8:38 int load (deferred annotation) in <module> -> builtin; origin builtins.int
+8:64 list load (deferred annotation) in <module> -> builtin; origin builtins.list
+8:101 Any load (deferred annotation) in <module> -> local <module> @5; origin typing.Any
+9:11 a load in f -> local f @8
+9:14 b load in f -> local f @8
+9:17 c load in f -> local f @8
+9:20 d load in f -> local f @8
+9:23 e load in f -> local f @8
+8:54 Any load (string annotation) in <module> -> local <module> @5; origin typing.Any
+8:69 Any load (string annotation) in <module> -> local <module> @5; origin typing.Any
+8:80 Literal load (string annotation) in <module> -> local <module> @5; origin typing.Literal
+uses of <module>:Annotated@5: read@8
+uses of <module>:Any@5: read@8, read@8, read@8
+uses of <module>:Literal@5: read@8, read@8
+uses of f:a@8: read@9
+uses of f:b@8: read@9
+uses of f:c@8: read@9
+uses of f:d@8: read@9
+uses of f:e@8: read@9
+type positions @8: Any
+type positions @8: Literal
+type positions @8: Annotated, int
+type positions @8: Any
+type positions @8: list, Any
+type positions @8: Literal
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,2 @@
+Reading the $ref document external_definitions.json is refused under --untrusted-input.
+Reason: --untrusted-input reads only the input, so a $ref must name a location in the input, not another file or a URL.

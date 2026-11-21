@@ -28,11 +28,19 @@ class Mutation:
     self: Mutation | None = None
     typename__: Literal['Mutation'] | None = Field('Mutation', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Mutation'] | None:
+        return self.typename__
+
 
 @dataclass
 class Other:
     value: String
     typename__: Literal['Other'] | None = Field('Other', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
 
 
 Choice = TypeAliasType(
@@ -50,3 +58,7 @@ class Holder:
     query: Any | None = None
     subscription: Any | None = None
     typename__: Literal['Holder'] | None = Field('Holder', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__

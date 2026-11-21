@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "O": {"type": "object", "properties": {"a": {"type": "integer"}}},
+    "S": {"type": "string"},
+    "R": {"anyOf": [{"$ref": "#/$defs/O"}, {"$ref": "#/$defs/S"}], "maxLength": 3}
+  },
+  "properties": {"r": {"$ref": "#/$defs/R"}}
+}

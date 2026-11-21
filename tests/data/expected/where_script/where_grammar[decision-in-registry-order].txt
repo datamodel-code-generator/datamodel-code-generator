@@ -1,0 +1,11 @@
+exit status 0
+pass omit_untaken_union_constraints
+  Drops the keywords beside a union that a member cannot take when every member keeps the check without them, or writes them on a plain string member that wo...
+  DECIDE, scope global, transform; condition: --field-constraints
+  reads: bases, constraints, field_types, model_kind
+  writes: constraints, field_types
+  neighbours: runs after serialize_as_any_for_every_subclass, before write_unique_items_as_sets
+  order edges (2):
+    after omit_held_null: reads the member types after the None omission rewrote them
+    after serialize_as_any_for_every_subclass: copies the field types after the subclass marking
+  defined: no definition found

@@ -1,0 +1,8 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Title:
+      type: string
+      pattern: '^[\w\s-]{1,255}$'

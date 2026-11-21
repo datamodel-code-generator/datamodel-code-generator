@@ -48,6 +48,19 @@ def _stated_floor(recorded: list[warnings.WarningMessage]) -> str | None:
     )
 
 
+def _stated_msgspec_limit(recorded: list[warnings.WarningMessage], backend: PayloadBackend) -> str | None:
+    """Return the first warning of a msgspec generation that states what msgspec cannot decode or check, or None.
+
+    Those warnings start with "msgspec" ("msgspec cannot decode", "msgspec.Meta does not take", ...); the tests of those
+    limits decode the models, and a payload test of the case would fail on the stated limit. Other warnings of the
+    generation do not skip the case.
+    """
+    if backend is not PayloadBackend.MSGSPEC:
+        return None
+    messages = (str(record.message) for record in recorded if issubclass(record.category, UserWarning))
+    return next((message for message in messages if message.startswith("msgspec")), None)
+
+
 def _safe_filename(case_id: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", case_id)
 
@@ -65,6 +78,10 @@ def _write_input_schema(case: SchemaCase, directory: Path) -> Path:
 
 class PayloadAdapterError(Exception):
     """Raised when a generated payload adapter cannot be created."""
+
+
+class PayloadModelError(Exception):
+    """Raised when a generated model raises an error that is no rejection of the payload; it holds the error's type."""
 
 
 @dataclass(frozen=True)
@@ -103,16 +120,20 @@ class PayloadRuntime:
 
         return False
 
-    def assert_rejects_python(self, payload: Any) -> None:
-        """Assert the backend rejects a Python payload."""
+    def accepts_python(self, payload: object) -> bool:
+        """Return whether the backend accepts a Python payload; an exception that is no rejection raises its type."""
         try:
             self.validate_python(payload)
         except Exception as exception:
             if self.is_rejection_exception(exception):
-                return
-            raise
+                return False
+            raise PayloadModelError(type(exception).__name__) from exception
+        return True
 
-        pytest.fail(f"{self.backend.value} runtime accepted an invalid payload")
+    def assert_rejects_python(self, payload: Any) -> None:
+        """Assert the backend rejects a Python payload."""
+        if self.accepts_python(payload):
+            pytest.fail(f"{self.backend.value} runtime accepted an invalid payload")
 
     def validate_python(self, payload: Any) -> Any:
         """Validate or construct the payload using the generated backend."""
@@ -239,6 +260,11 @@ def _assert_codegen_warnings(messages: list[str], warning_file: str) -> None:
     )
 
 
+def _cache_key(case: SchemaCase, backend: PayloadBackend) -> tuple[str, ...]:
+    """Name a generation by its backend, its case and the arguments the case adds for that backend."""
+    return (backend.value, case.id, *case.backend_extra_args.get(backend, ()))
+
+
 def generate_payload_runtime(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
@@ -249,15 +275,18 @@ def generate_payload_runtime(
     The generation's statement of the Pydantic release that the models need above the payload target is kept for
     ``runtime_below_stated_floor``, not raised.
     """
-    runtimes: dict[tuple[str, str], PayloadRuntime] = generated_model_cache["adapters"]
-    cache_key = (backend.value, case.id)
+    runtimes: dict[tuple[str, ...], PayloadRuntime] = generated_model_cache["adapters"]
+    cache_key = _cache_key(case, backend)
     warning_file = PAYLOAD_CODEGEN_WARNING_FILES.get(case.id)
     if (runtime := runtimes.get(cache_key)) is not None:
         if warning_file:
             _assert_codegen_warnings(generated_model_cache["warnings"][cache_key], warning_file)
         return runtime
 
-    case_dir = generated_model_cache["base"] / _safe_filename(backend.value) / _safe_filename(case.id)
+    module_digest = hashlib.sha256("\0".join(cache_key).encode()).hexdigest()
+    case_dir = (
+        generated_model_cache["base"] / _safe_filename(backend.value) / _safe_filename(case.id) / module_digest[:12]
+    )
     case_dir.mkdir(parents=True, exist_ok=True)
     input_path = _write_input_schema(case, case_dir)
     output_path = case_dir / "model.py"
@@ -265,10 +294,13 @@ def generate_payload_runtime(
         if warning_file:
             warnings.simplefilter("always", UserWarning)
         else:
+            if backend is PayloadBackend.MSGSPEC:
+                warnings.simplefilter("always", UserWarning)
             warnings.filterwarnings("ignore", r"The schema at .* admits (only its const|no value)", UserWarning)
         warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
         return_code = _run_payload_codegen(_payload_codegen_args(case, input_path, output_path, backend))
     generated_model_cache.setdefault("floors", {})[cache_key] = _stated_floor(captured)
+    generated_model_cache.setdefault("limits", {})[cache_key] = _stated_msgspec_limit(captured, backend)
     if warning_file:
         messages = [str(record.message) for record in captured]
         generated_model_cache.setdefault("warnings", {})[cache_key] = messages
@@ -276,7 +308,6 @@ def generate_payload_runtime(
     if return_code != Exit.OK:
         msg = f"Generation failed with exit code {return_code!r}"
         raise PayloadAdapterError(msg)
-    module_digest = hashlib.sha256("\0".join(cache_key).encode()).hexdigest()
     module_name = f"payload_validation_{module_digest}"
     payload_type = _load_payload_type(module_name, output_path)
     runtime = _payload_runtime(payload_type, backend)
@@ -299,7 +330,7 @@ def runtime_below_stated_floor(
     case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend
 ) -> str | None:
     """Return the release that the case's generation stated its models need when the installed Pydantic is older."""
-    floor = generated_model_cache.get("floors", {}).get((backend.value, case.id))
+    floor = generated_model_cache.get("floors", {}).get(_cache_key(case, backend))
     return floor if floor is not None and Version(PYDANTIC_VERSION) < Version(floor) else None
 
 
@@ -310,6 +341,14 @@ def stated_pydantic_floor(case: SchemaCase, directory: Path, backend: PayloadBac
         warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
         _run_payload_codegen([*_payload_codegen_args(case, input_path, directory / "model.py", backend), *args])
     return _stated_floor(captured)
+
+
+def _skip_stated_msgspec_limit(
+    case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend
+) -> None:
+    """Skip a case whose generation warns about what its msgspec models cannot decode or check."""
+    if (limit := generated_model_cache.get("limits", {}).get(_cache_key(case, backend))) is not None:
+        pytest.skip(f"{case.id} [{backend.value}]: generation states a msgspec limit: {limit}")
 
 
 def _skip_below_stated_floor(case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend) -> None:
@@ -331,6 +370,7 @@ def load_generated_payload_runtime(
         pytest.fail(f"{case.id} [{backend.value}]: {exc}")
         raise AssertionError from exc
     _skip_below_stated_floor(case, generated_model_cache, backend)
+    _skip_stated_msgspec_limit(case, generated_model_cache, backend)
     return runtime
 
 

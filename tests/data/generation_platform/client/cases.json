@@ -823,6 +823,68 @@
     "model": {"duplicate_name_suffix": {"model": "Variant"}},
     "modules": [["client", "types", "default", "_operations.py"]]
   },
+  "method-collisions-parent-prefixed": {
+    "input": "method-collisions.yaml",
+    "model": {"naming_strategy": "parent-prefixed"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
+  "method-collisions-parent-scoped": {
+    "input": "method-collisions.yaml",
+    "model": {"parent_scoped_naming": true, "naming_strategy": "numbered"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
+  "method-collisions-parent-scoped-full-path": {
+    "input": "method-collisions.yaml",
+    "model": {"parent_scoped_naming": true, "naming_strategy": "full-path"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
+  "applied-config": {
+    "input": "applied-config.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {
+      "allow_population_by_field_name": true,
+      "extra_template_data": {"Person": {"config": {"populate_by_name": false, "validate_by_name": false}}}
+    },
+    "modules": [["models.py"], ["client", "_operations.py"], ["client", "_generated", "model_bindings.py"]]
+  },
+  "held-extras": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "held-extras-forbid": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"extra_fields": "forbid"},
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "held-extras-allow": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"extra_fields": "allow"},
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "name-repeats": {
+    "input": "name-repeats.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1items/get",
+          "parameter_names": [
+            {"in_": "query", "name": "p1", "python_name": "b"},
+            {"in_": "query", "name": "p2", "python_name": "a"},
+            {"in_": "query", "name": "p3", "python_name": "b"},
+            {"in_": "query", "name": "p4", "python_name": "a"},
+            {"in_": "query", "name": "p5", "python_name": "b"},
+            {"in_": "query", "name": "p6", "python_name": "self"}
+          ]
+        },
+        {"ref": "/paths/~1a/get", "name": "m"},
+        {"ref": "/paths/~1b/get", "name": "m"},
+        {"ref": "/paths/~1c/get", "name": "m"}
+      ]
+    }
+  },
   "child-collision": {
     "input": "names.yaml",
     "config": {
@@ -842,7 +904,8 @@
     "input": "media-errors.yaml"
   },
   "form-name-errors": {
-    "input": "form-name-errors.yaml"
+    "input": "form-name-errors.yaml",
+    "modules": false
   },
   "form-name-kept": {
     "input": "form-name-errors.yaml",
@@ -867,7 +930,8 @@
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
-    ]
+    ],
+    "modules": false
   },
   "binary-text": {
     "input": "binary-text.yaml",
@@ -875,6 +939,39 @@
       "pydantic_v2.BaseModel",
       "dataclasses.dataclass"
     ]
+  },
+  "item-streams": {
+    "input": "item-streams.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ]
+  },
+  "item-streams-declared": {
+    "input": "item-streams.yaml",
+    "references": [
+      "protocols/item-streams.json"
+    ],
+    "config": {
+      "protocols": "protocols/item-streams.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "item-streams-collision": {
+    "input": "item-streams.yaml",
+    "references": [
+      "protocols/item-streams-collision.json"
+    ],
+    "config": {
+      "protocols": "protocols/item-streams-collision.json"
+    },
+    "modules": false
   },
   "binary-allowed": {
     "input": "binary-allowed.yaml",
@@ -1231,6 +1328,35 @@
     "backends": [
       "dataclasses.dataclass"
     ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
+  },
+  "union-value-kinds": {
+    "input": "union-value-kinds.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
+  },
+  "union-value-kinds-literals": {
+    "input": "union-value-kinds.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "enum_field_as_literal": "all"
+    },
     "modules": [
       [
         "client",
@@ -2481,7 +2607,8 @@
     ]
   },
   "auth-roles-30": {
-    "input": "auth-roles-30.yaml"
+    "input": "auth-roles-30.yaml",
+    "modules": false
   },
   "version-per-document": {
     "input": "version-per-document.yaml",
@@ -2499,7 +2626,136 @@
     "modules": [["client", "_generated", "security.py"]]
   },
   "auth-wire-conflicts": {
-    "input": "auth-wire-conflicts.yaml"
+    "input": "auth-wire-conflicts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "auth-parameters": {
+    "input": "auth-parameters.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-media-text": {
+    "input": "multipart-media-text.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parameter-item-or-array": {
+    "input": "parameter-item-or-array.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parameter-item-or-array-errors": {
+    "input": "parameter-item-or-array-errors.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-union-parts": {
+    "input": "multipart-union-parts.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-union-parts-errors": {
+    "input": "multipart-union-parts-errors.yaml"
+  },
+  "query-free-objects": {
+    "input": "query-free-objects.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "deep-object-brackets-errors": {
+    "input": "deep-object-brackets-errors.yaml",
+    "config": {
+      "deep_object_brackets": true
+    },
+    "modules": false
+  },
+  "deep-object-brackets": {
+    "input": "deep-object-brackets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "deep_object_brackets": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "binary-json-bodies": {
+    "input": "binary-json-bodies.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "auth-shared-wire": {
+    "input": "auth-shared-wire.yaml",
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
   },
   "credential-name-errors": {
     "input": "credential-name-errors.yaml",
@@ -5083,6 +5339,37 @@
   "nullable-parameters": {
     "input": "nullable-parameters.yaml"
   },
+  "nullable-required-parameters": {
+    "input": "nullable-required-parameters.yaml",
+    "model": {
+      "strict_nullable": true
+    }
+  },
+  "nullable-required-parameters-31": {
+    "input": "nullable-required-parameters-31.yaml"
+  },
+  "nullable-required-parameters-unpack": {
+    "input": "nullable-required-parameters.yaml",
+    "model": {
+      "strict_nullable": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "client_arguments.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ],
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
   "parameter-kinds": {
     "input": "parameter-kinds.yaml"
   },
@@ -5610,6 +5897,51 @@
       "reuse_model": true
     }
   },
+  "discriminator-values": {
+    "input": "discriminator-values.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "output_datetime_class": "datetime",
+      "use_enum_values_in_discriminator": true
+    },
+    "config": {}
+  },
+  "discriminator-values-unmapped": {
+    "input": "discriminator-values.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "output_datetime_class": "datetime",
+      "use_unmapped_variant_tag_values": true
+    },
+    "config": {}
+  },
+  "discriminator-shared-tags": {
+    "input": "discriminator-shared-tags.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "modules": false
+  },
   "discriminator-forms": {
     "input": "discriminator-forms.yaml",
     "backends": [
@@ -5792,6 +6124,55 @@
       ]
     ]
   },
+  "type-spellings-containers": {
+    "input": "type-spellings-containers.yaml",
+    "references": [
+      "protocols/type-spellings-containers.json"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "use_x_python_type_as_written": true
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-containers.json"
+    },
+    "modules": {
+      "pydantic_v2.BaseModel": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "client",
+          "protocols",
+          "_plans.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_sync.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "dataclasses.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    }
+  },
   "typeddict-target-keys": {
     "input": "typeddict-target-keys.yaml",
     "backends": [
@@ -5973,5 +6354,399 @@
         "_operations.py"
       ]
     ]
+  },
+  "skip-operations": {
+    "input": "skip-operations.yaml"
+  },
+  "skip-operations-resources": {
+    "input": "skip-operations.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "owners",
+          "namespace": "owners"
+        }
+      ]
+    },
+    "modules": false
+  },
+  "skip-operations-document-errors": {
+    "input": "skip-operations-document-errors.yaml"
+  },
+  "skip-operations-every": {
+    "input": "skip-operations-every.yaml"
+  },
+  "skip-operations-features": {
+    "input": "skip-operations-features.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "skip-operations-helper": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-helper.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-helper.json"
+    }
+  },
+  "skip-operations-helper-disabled": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-disabled.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-disabled.json"
+    }
+  },
+  "skip-operations-helper-later": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-later.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-later.json"
+    }
+  },
+  "asyncapi-market-v3": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": {
+      "pydantic_v2.BaseModel": true,
+      "pydantic_v2.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "dataclasses.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "typing.TypedDict": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "msgspec.Struct": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
+    }
+  },
+  "asyncapi-market-v2": {
+    "input": "asyncapi-market-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "_operations.py"],
+      ["client", "protocols", "_plans.py"],
+      ["client", "protocols", "_helpers.py"]
+    ]
+  },
+  "asyncapi-perspective": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {
+      "asyncapi_perspective": "client",
+      "operations": [
+        {
+          "ref": "/channels/market",
+          "resource": "trades",
+          "parameter_names": [{"in_": "path", "name": "pair", "python_name": "symbol"}]
+        }
+      ]
+    },
+    "modules": [["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"]]
+  },
+  "asyncapi-handshake": {
+    "input": "asyncapi-handshake.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "msgspec.Struct"],
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "_operations.py"],
+      ["client", "_generated", "security.py"],
+      ["client", "protocols", "_helpers.py"],
+      ["client", "protocols", "_plans.py"]
+    ]
+  },
+  "asyncapi-handshake-v2": {
+    "input": "asyncapi-handshake-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "_operations.py"],
+      ["client", "_generated", "security.py"],
+      ["client", "protocols", "_helpers.py"]
+    ]
+  },
+  "asyncapi-skips": {
+    "input": "asyncapi-skips.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-skips-v2": {
+    "input": "asyncapi-skips-v2.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"], ["client", "protocols", "_plans.py"]]
+    },
+  "asyncapi-unloaded-references": {
+    "input": "asyncapi-unloaded-references.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "external_ref_mapping": {"asyncapi-other.yaml": "shared.models"}
+    },
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-unloaded-references-v2": {
+    "input": "asyncapi-unloaded-references-v2.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-reference-cycles": {
+    "input": "asyncapi-reference-cycles.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-reference-cycles-operations": {
+    "input": "asyncapi-reference-cycles-operations.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-imported-entries": {
+    "input": "asyncapi-imported-entries.yaml",
+    "references": ["asyncapi-imported-entries-shared.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"], ["client", "_generated", "security.py"], ["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-schema-formats": {
+    "input": "asyncapi-schema-formats.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-message-codecs": {
+    "input": "asyncapi-message-codecs.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-handshake-models": {
+    "input": "asyncapi-handshake-models.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_helpers.py"], ["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-handshake-siblings-v2": {
+    "input": "asyncapi-handshake-siblings-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-siblings-v2-ignored": {
+    "input": "asyncapi-handshake-siblings-v2.yaml",
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "ignore_ref_siblings_by_schema_version": true
+    },
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-relative-v2": {
+    "input": "asyncapi-relative-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"]]
+  },
+  "asyncapi-serverless": {
+    "input": "asyncapi-serverless.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {"default_base_url": "https://lobby.example.com/ws"},
+    "modules": [["client", "_operations.py"]]
+  },
+  "asyncapi-unopened": {
+    "input": "asyncapi-unopened.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-setting-errors": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {
+      "operations": [
+        {"ref": "/channels/market", "resource": "market.feed"},
+        {"ref": "/channels/ticker", "resource": "feed"},
+        {"ref": "/channels/audio", "resource": "feed"},
+        {"ref": "/channels/status", "resource": "feed"},
+        {"ref": "/channels/nope", "resource": "nope"}
+      ]
+    }
+  },
+  "asyncapi-class-clash": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {
+      "operations": [
+        {"ref": "/channels/market", "resource": "live_feed"},
+        {"ref": "/channels/ticker", "resource": "live__feed"}
+      ]
+    }
+  },
+  "asyncapi-foreign-operations": {
+    "input": "asyncapi-foreign-operations.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-escaped-channel-ref": {
+    "input": "asyncapi-escaped-channel-ref.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-mapped-payloads": {
+    "input": "asyncapi-mapped-payloads.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "external_ref_mapping": {"asyncapi-other.yaml": "shared.models"}
+    },
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-messages": {
+    "input": "asyncapi-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": {
+      "pydantic_v2.BaseModel": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"], ["models.py"]],
+      "pydantic_v2.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "dataclasses.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "typing.TypedDict": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "msgspec.Struct": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
+    }
+  },
+  "asyncapi-messages-aliases": {
+    "input": "asyncapi-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "use_type_alias": true, "read_const_beside_enum": true},
+    "modules": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-messages-enums": {
+    "input": "asyncapi-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "enum_field_as_literal": "none", "use_specialized_enum": false}
+  },
+  "asyncapi-connections": {
+    "input": "asyncapi-connections.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "typing.TypedDict"],
+    "modules": {
+      "pydantic_v2.BaseModel": [["client", "_client.py"], ["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"]],
+      "typing.TypedDict": [["client", "protocols", "_plans.py"]]
+    }
+  },
+  "asyncapi-events": {
+    "input": "asyncapi-events.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "modules": {
+      "pydantic_v2.BaseModel": true,
+      "pydantic_v2.dataclass": [["client", "protocols", "_plans.py"]],
+      "dataclasses.dataclass": [["client", "protocols", "_plans.py"]],
+      "typing.TypedDict": [["client", "protocols", "_plans.py"]],
+      "msgspec.Struct": [["client", "protocols", "_plans.py"]]
+    }
+  },
+  "asyncapi-events-v2": {
+    "input": "asyncapi-events-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_client.py"], ["client", "_operations.py"], ["client", "protocols", "_helpers.py"], ["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-events-skips": {
+    "input": "asyncapi-events-skips.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_client.py"]]
+  },
+  "asyncapi-events-client": {
+    "input": "asyncapi-events-skips.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {"asyncapi_perspective": "client"},
+    "modules": [["client", "protocols", "_helpers.py"]]
+  },
+  "asyncapi-server-schemes": {
+    "input": "asyncapi-server-schemes.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_client.py"], ["client", "_operations.py"]]
+  },
+  "asyncapi-server-schemes-v2": {
+    "input": "asyncapi-server-schemes-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"]]
+  },
+  "fields-strip": {
+    "input": "fields-strip.yaml",
+    "references": ["protocols/fields-strip.json"],
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass"],
+    "model": {"strip_default_none": true},
+    "config": {"body_arguments": "both", "protocols": "protocols/fields-strip.json"},
+    "modules": [
+      ["client", "_operations.py"],
+      ["client", "protocols", "_plans.py"],
+      ["client", "resources", "default", "_sync.py"],
+      ["models.py"]
+    ]
+  },
+  "fields-strip-nullable": {
+    "input": "fields-strip-nullable.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"strip_default_none": true, "field_include_all_keys": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "_operations.py"], ["models.py"]]
+  },
+  "asyncapi-optional-tags": {
+    "input": "asyncapi-optional-tags.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "strip_default_none": true},
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass"],
+    "modules": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-events-both-v2": {
+    "input": "asyncapi-events-both-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-schema-version-v2": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "schema_version": "2.0"}
+  },
+  "asyncapi-payload-siblings": {
+    "input": "asyncapi-payload-siblings.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-nested-messages-v2": {
+    "input": "asyncapi-nested-messages-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-missing-messages": {
+    "input": "asyncapi-missing-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-missing-messages-v2": {
+    "input": "asyncapi-missing-messages-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": false
+  },
+  "asyncapi-missing-messages-external": {
+    "input": "asyncapi-missing-messages-external.yaml",
+    "references": ["asyncapi-missing-messages-library.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
   }
 }

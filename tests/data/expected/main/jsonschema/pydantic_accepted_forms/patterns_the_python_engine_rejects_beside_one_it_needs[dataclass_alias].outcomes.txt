@@ -1,0 +1,7 @@
+Python's regex engine, which the config building it selects, does not compile pattern='^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$'; TagKey is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern='^\\P{C}*$'; FieldMapping.indexFieldName is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern='^[\\p{L}\\p{M}\\p{Z}\\p{S}\\p{N}\\p{P}]*$'; FieldMapping.description is generated without this constraint.
+valid: valid
+space before the date format: string_pattern_mismatch
+control character in the name: valid
+value: 'Déjà vu' ['k']

@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Orders
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        status:
+          $ref: components.yaml#/components/schemas/Status

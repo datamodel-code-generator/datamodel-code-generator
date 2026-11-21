@@ -1,0 +1,20 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+allowlist:JUSTIFIED_VIOLATIONS                     1       3      +2
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+allowlist:JUSTIFIED_VIOLATIONS rose by 2 (1 -> 3). Allowlist entries only shrink: fix the violation instead of listing it.
+  tests/assert_helper_allowlists.py: 1 -> 3 (lines 1, 1, 1)
+
+allowlist:JUSTIFIED_VIOLATIONS: scripts/ratchet_approvals.toml approves up to 2 for #7172 only; this run judges #7172 and counts 3.
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

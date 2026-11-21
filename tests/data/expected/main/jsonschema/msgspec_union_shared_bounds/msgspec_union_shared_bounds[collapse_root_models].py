@@ -110,9 +110,6 @@ Parted1: TypeAlias = Annotated[str, Meta(max_length=3, min_length=2)]
 Parted2: TypeAlias = Annotated[str, Meta(max_length=3, pattern='^a')]
 
 
-Parted: TypeAlias = Annotated[str, Meta(max_length=3)]
-
-
 Longer: TypeAlias = Annotated[str, Meta(min_length=3)]
 
 

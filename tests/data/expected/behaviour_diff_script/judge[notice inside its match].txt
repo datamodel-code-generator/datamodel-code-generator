@@ -1,0 +1,9 @@
+{
+ "cls": "accepted",
+ "notes": [
+  "covered by notice"
+ ],
+ "accepted_by": [
+  "notice"
+ ]
+}

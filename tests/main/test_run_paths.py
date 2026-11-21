@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from contextlib import contextmanager
 from itertools import count
 from pathlib import Path
@@ -13,15 +12,15 @@ import pytest
 
 from datamodel_code_generator import Error, InputFileType, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import TARGET_PYTHON, assert_output
+from tests.capabilities import needs
+from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 PERSON = DATA_PATH / "jsonschema" / "person.json"
-SYMLINKS = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
-TARGET_RUN = pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The client target needs Python 3.11 or later")
+SYMLINKS = needs("symlinks")
 
 
 def _rooted(text: str, root: Path) -> str:
@@ -72,7 +71,7 @@ def test_lockfile_symlink_loop(
 
 
 @contextmanager
-def _stdin_pipe(data: bytes) -> Iterator[None]:
+def _stdin_pipe(data: bytes) -> Generator[None, None, None]:
     """Make the process's standard input a pipe that holds ``data``, as a shell pipeline does."""
     read_end, write_end = os.pipe()
     os.write(write_end, data)
@@ -87,7 +86,7 @@ def _stdin_pipe(data: bytes) -> Iterator[None]:
         os.close(saved)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="/dev/stdin is a POSIX path")
+@needs("posix")
 @pytest.mark.parametrize("output_exists", [False, True], ids=["new-output", "existing-output"])
 def test_input_dev_stdin_reads_a_pipe(output_exists: bool, tmp_path: Path) -> None:
     """`--input /dev/stdin` reads the schema piped to the command, whether its output exists or not (#5378).
@@ -145,7 +144,7 @@ _SPELLED_LOCK_RUNS = {
 @SYMLINKS
 @pytest.mark.parametrize(
     "run",
-    [pytest.param(run, marks=TARGET_RUN) if run == "target" else run for run in (*_SPELLED_LOCK_RUNS, "generate")],
+    [*_SPELLED_LOCK_RUNS, "generate"],
 )
 def test_lockfile_through_a_directory_symlink_and_parent(
     run: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -200,9 +199,7 @@ _MISSING_ROOT_RUNS = {
 
 
 @pytest.mark.abnormal_path("only Windows has a root that does not exist, a missing drive or share")
-@pytest.mark.parametrize(
-    "run", [pytest.param(run, marks=TARGET_RUN) if run == "target" else run for run in _MISSING_ROOT_RUNS]
-)
+@pytest.mark.parametrize("run", [*_MISSING_ROOT_RUNS])
 def test_output_on_a_missing_root(
     run: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -287,7 +284,7 @@ def test_missing_staged_model_metadata_publishes_nothing(
 ) -> None:
     """A staged model metadata file that is gone when the run publishes fails the publication of every file (#5620)."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("datamodel_code_generator._write_model_metadata", lambda *_args: None)
+    monkeypatch.setattr("datamodel_code_generator._generation._write_model_metadata", lambda *_args: None)
     if run == "generate":
         with pytest.raises(FileNotFoundError):
             generate(
@@ -333,3 +330,33 @@ def test_interrupted_publication_restores_every_output(tmp_path: Path, monkeypat
             update_lock=True,
         )
     assert_output("".join(f"{path.name}: {path.read_text(encoding='utf-8')}" for path in sorted(tmp_path.iterdir())))
+
+
+@pytest.mark.abnormal_path(
+    "only another process retargets an output directory between planning the jobs and checking them"
+)
+def test_batch_preflight_checks_the_planned_output_roots(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The batch preflight checks the output roots the jobs were planned with, which publication writes to."""
+    monkeypatch.chdir(tmp_path)
+    Path("pyproject.toml").write_text(
+        "[tool.datamodel-codegen.jobs.first]\n"
+        f"input = '{PERSON.as_posix()}'\ninput-file-type = 'jsonschema'\noutput = 'first.py'\n"
+        "[tool.datamodel-codegen.jobs.second]\n"
+        f"input = '{PERSON.as_posix()}'\ninput-file-type = 'jsonschema'\noutput = 'second.py'\n",
+        encoding="utf-8",
+    )
+
+    def retargeted(output: Path | None, _metadata: Path | None) -> Any:
+        root = (Path("second.py") if output and output.name == "first.py" else output).resolve()
+        return root, root.parent, None, None
+
+    monkeypatch.setattr("datamodel_code_generator._publication.artifact_roots", retargeted)
+    run_main_with_args(
+        ["--all-jobs", "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="overlapping output paths",
+    )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")

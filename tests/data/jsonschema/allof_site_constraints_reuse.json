@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Tags": {"type": "array", "items": {"type": "string"}},
+    "Other": {"type": "array", "items": {"type": "string"}},
+    "Extended": {"allOf": [{"$ref": "#/$defs/Other"}], "minItems": 1}
+  },
+  "properties": {
+    "e": {"$ref": "#/$defs/Extended"},
+    "t": {"$ref": "#/$defs/Tags"}
+  }
+}

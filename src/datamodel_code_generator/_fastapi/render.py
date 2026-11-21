@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
-from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -30,6 +29,7 @@ from datamodel_code_generator._fastapi.packages import (
 )
 from datamodel_code_generator._fastapi.plan import (
     Default,
+    FilePartSpec,
     JsonPartSpec,
     MemberDefault,
     ParameterDefault,
@@ -64,7 +64,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import coded_use, described, tags
+from datamodel_code_generator._target_operations import SERVER, coded_use, operation_docstring, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -72,9 +72,9 @@ from datamodel_code_generator._target_render import (
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import admits_none, container_slot
+from datamodel_code_generator._target_types import admits_none, styled_without_none
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
+from datamodel_code_generator.model.pydantic_v2.types import annotated_constraint_metadata
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -95,11 +95,8 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import (
-        GeneratedTypeContractBatch,
-        Requirement,
-        TypeView,
-    )
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, TypeView
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
@@ -254,7 +251,7 @@ class Module(TargetModule):
             case ConstructorType() if value.hint is None and value.base is not None:
                 return self.hint(value.base)
             case UnionType() | GenericType() if value.hint is None:
-                return self.composed(value, static=True)
+                return self.composed(value, self.static)
             case _:
                 pass
         return self.hint(value)
@@ -277,26 +274,10 @@ class Module(TargetModule):
             case ConstructorType() if value.base is not None:
                 return self.annotation(value)
             case UnionType() | GenericType() if value.hint is None or _constrained(value):
-                return self.composed(value, static=False)
+                return self.composed(value, self.validating)
             case _:
                 pass
         return self.hint(value, static=False)
-
-    def composed(self, value: UnionType | GenericType, *, static: bool) -> str:
-        """Return a union or container of spelled parts, as the model generator writes one.
-
-        A generic of no container, such as the `SerializeAsAny` of a model type, is its class of the spelled parts.
-        """
-        spell = self.static if static else self.validating
-        if isinstance(value, UnionType):
-            return self.union(*map(spell, value.members))
-        arguments = [spell(item) for item in value.arguments]
-        if (slot := container_slot(value)) is None:
-            return subscript_text(self.hint(value.base), arguments)
-        flag = CONTAINER_FLAGS[slot]
-        if flag in MAPPINGS.flags:
-            return self.container(flag, arguments[-1], key=arguments[0])
-        return self.container(flag, arguments[0])
 
     def constraints(self, value: ConstructorType, base: BuiltinType | ImportedType) -> tuple[str, ...]:
         """Return the metadata of a constrained scalar's keywords, split as the model generator splits them."""
@@ -532,7 +513,7 @@ class Owned:
 class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     """Render every module of one server package from its plan, codec plan, and wire plan."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(
         self,
         *,
         config: FastAPIConfig,
@@ -915,7 +896,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             module.local("_runtime.server.application", "checked"),
             spec.python_name,
             stable_repr(label),
-            tuple_display(stable_repr(argument.name) for argument in spec.arguments),
+            stable_repr(tuple(argument.name for argument in spec.arguments)),
             asynchronous,
         )
         parameters = [
@@ -984,7 +965,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authorize=authorize,
             authenticate=authenticate,
             parameters=tuple(parameters),
-            requirements=tuple_display(_requirement(item) for item in requirements),
+            requirements=stable_repr(requirements),
             credentials=dict_display((stable_repr(scheme), names[scheme]) for scheme in scopes),
             challenge=stable_repr(challenge),
         )
@@ -1011,7 +992,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
             return Parameter("principal", subscript_text(annotated, ("object", f"{depends}({principal})")))
         if argument.native is not None:
-            return _native(module, argument.name, argument.native)
+            assert argument.parameter is not None
+            return _native(module, argument.name, argument.native, argument.parameter.plan)
         body = spec.body
         assert body is not None
         annotated = module.name("typing", "Annotated")
@@ -1090,15 +1072,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             parameters=tuple(self.parameters(module, spec, principal)),
             returns=_chain(module, self.results(module, spec)),
             docstring=format_docstring(
-                self.docstring(spec), 8, use_single_line_docstring=self.use_single_line_docstring
+                operation_docstring(spec.contract, schema=self.use_schema_description, verb=SERVER.verb),
+                8,
+                use_single_line_docstring=self.use_single_line_docstring,
             ),
         )
-
-    def docstring(self, spec: OperationSpec) -> str:
-        """Return an operation's docstring text: its summary and description, as the models document, or its route."""
-        if self.use_schema_description and (text := described(spec.contract)):
-            return text
-        return f"Handle {_label(spec.contract)}."
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Parameter]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""
@@ -1256,7 +1234,7 @@ def _credential(scheme: SchemeSpec) -> str:
     return f"an API key in the `{scheme.parameter}` {place}"
 
 
-def _native(module: Module, name: str, field: NativeField) -> Parameter:
+def _native(module: Module, name: str, field: NativeField, plan: ParameterPlan | None) -> Parameter:
     keywords = [f"alias={stable_repr(field.alias)}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
@@ -1265,7 +1243,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"
     else:
-        base, metadata = module.parts(field.type)
+        base, metadata = module.parts(styled_without_none(field.type, plan) or field.type)
         parts = (base, *metadata)
         default = _default_value(module, field.default) or ""
     declaration = call_text(module.name("fastapi", field.api), keywords)
@@ -1328,10 +1306,13 @@ def _default_value(module: Module, default: ParameterDefault) -> str | None:
 
 
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
-    """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent."""
+    """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent.
+
+    A required parameter written by its style receives its type without None (`styled_without_none`).
+    """
     assert parameter is not None
     if parameter.type is not None:
-        text = module.static(parameter.type)
+        text = module.static(styled_without_none(parameter.type, parameter.plan) or parameter.type)
     elif parameter.plan is not None and media_kind(parameter.plan.content_media_type or "text/plain") == "text":
         text = "str"
     else:
@@ -1375,6 +1356,12 @@ def _json_part(module: Module, part: JsonPartSpec) -> str:
     )
 
 
+def _file_part(module: Module, part: FilePartSpec) -> str:
+    """Return the FilePart constructor of one multipart member holding files, whose parts are read as their octets."""
+    repeated = (keyword_argument("repeated", "True"),) if part.repeated else ()
+    return call_text(module.local("_runtime.server.requests", "FilePart"), (stable_repr(part.name), *repeated))
+
+
 def _body_media(module: Module, body: BodySpec) -> str:
     """Return the BodyMedia constructors of an adapter body, as one tuple."""
     media: list[str] = []
@@ -1386,12 +1373,16 @@ def _body_media(module: Module, body: BodySpec) -> str:
             entries.append(f"fields={tuple_display(member_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
             entries.append(f"json_parts={tuple_display(_json_part(module, part) for part in parts)}")
+        if files := item.file_parts:
+            entries.append(f"file_parts={tuple_display(_file_part(module, part) for part in files)}")
         if (additional := item.additional) is not None:
-            plan = (
-                _json_part(module, additional)
-                if isinstance(additional, JsonPartSpec)
-                else member_plan(module.local, additional)
-            )
+            match additional:
+                case JsonPartSpec():
+                    plan = _json_part(module, additional)
+                case FilePartSpec():
+                    plan = _file_part(module, additional)
+                case _:
+                    plan = member_plan(module.local, additional)
             entries.append(f"additional={plan}")
         if (checked := item.checked) is not None:
             type_adapter = module.name("pydantic", "TypeAdapter")
@@ -1484,7 +1475,7 @@ def _services(services: list[str]) -> str:
     return dict_display((stable_repr(service), service) for service in services)
 
 
-def _builder(  # ruff: ignore[too-many-arguments]
+def _builder(
     module: Module,
     name: str,
     returns: str,
@@ -1559,7 +1550,3 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
     )
     keywords.extend((Keyword("scheme_name", stable_repr(scheme.name)), Keyword("auto_error", "False")))
     return Scheme(name, scheme.name, cls, tuple(keywords))
-
-
-def _requirement(requirement: Requirement) -> str:
-    return tuple_display(f"({stable_repr(name)}, {stable_repr(scopes)})" for name, scopes in requirement)

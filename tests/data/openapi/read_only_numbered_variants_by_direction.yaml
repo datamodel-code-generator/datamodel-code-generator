@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        page:
+          type: object
+          properties:
+            cursor: {type: string, readOnly: true}
+            size: {type: integer}
+            secret: {type: string, writeOnly: true}
+    Page:
+      type: object
+      properties:
+        cursor: {type: string, readOnly: true}
+        size: {type: integer}
+        secret: {type: string, writeOnly: true}
+    Other:
+      type: object
+      properties:
+        page:
+          type: object
+          properties:
+            cursor: {type: integer, readOnly: true}
+            size: {type: integer}
+            secret: {type: string, writeOnly: true}

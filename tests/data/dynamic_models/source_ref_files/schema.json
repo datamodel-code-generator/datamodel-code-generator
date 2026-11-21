@@ -1,0 +1,8 @@
+{
+  "title": "Top",
+  "type": "object",
+  "properties": {
+    "x": {"$ref": "sub/other.json#/$defs/X"},
+    "w": {"$ref": "whole.json"}
+  }
+}

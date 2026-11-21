@@ -1,0 +1,2 @@
+-    | _REGISTERED.setdefault('Loaded', Served)
++    | _REGISTERED.setdefault('Loaded', Other)

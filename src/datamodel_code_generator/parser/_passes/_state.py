@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 from contextvars import ContextVar
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Generic, NamedTuple, TypeAlias
 from weakref import WeakKeyDictionary
 
@@ -17,18 +16,20 @@ from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, fina
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._model_keys import ModelKey, keyed_or_path, model_key_of
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._warning_control import shown_once
 from datamodel_code_generator.model.base import DataModel
+from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._phases import DecisionOutcome
+from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Iterable, Mapping, Sequence
     from pathlib import Path
 
-    from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator._requirements import PydanticFloor
     from datamodel_code_generator._warning_control import ShownWarning
+    from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.imports import Import, Imports
     from datamodel_code_generator.model._decisions.collapse_eligibility import LaterHolderFacts
@@ -57,6 +58,7 @@ __all__ = [
     "parse_warnings_reported",
     "parse_warnings_shown_once",
     "pydantic_floors_recorded",
+    "report_unmatched_type_override_keys",
     "settle_diagnostics_reported_once",
     "settle_diagnostics_suppressed",
 ]
@@ -86,7 +88,23 @@ class Forwarder:
 ForwarderMap: TypeAlias = dict[ModulePath, Forwarder]
 
 
-class ModuleContextView(Protocol):
+class ModuleImportsView(Protocol):
+    """What naming the models of other modules in a module reads of it: its imports and the names it binds."""
+
+    @property
+    def is_init(self) -> bool:
+        """Whether the module is a package ``__init__``."""
+
+    @property
+    def imports(self) -> Imports:
+        """The imports of the module."""
+
+    @property
+    def scoped_model_resolver(self) -> ModelResolver:
+        """The resolver of the names the module binds."""
+
+
+class ModuleContextView(ModuleImportsView, Protocol):
     """What the passes read of a processed module: ``parser/base.py:ModuleContext``, whose module is public."""
 
     @property
@@ -100,18 +118,6 @@ class ModuleContextView(Protocol):
     @property
     def models(self) -> list[DataModel]:
         """The models the module writes."""
-
-    @property
-    def is_init(self) -> bool:
-        """Whether the module is a package ``__init__``."""
-
-    @property
-    def imports(self) -> Imports:
-        """The imports of the module."""
-
-    @property
-    def scoped_model_resolver(self) -> ModelResolver:
-        """The resolver of the names the module binds."""
 
     def _replace(self, *, module: ModulePath) -> Self:
         """Return the context with another file path."""
@@ -161,6 +167,7 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
         """Drop the entries by key of models that moved to another path, whose entries by path name them no more.
 
         The models that import cycles merge into an internal module move there after their module names were given.
+        Row ``legacy-module-follows-path``: their entries by path stay behind.
         """
         for model in models:
             self.by_key.pop(model_key_of(model.reference), None)
@@ -287,7 +294,7 @@ class StructuredRun(SettleRun[ConfigT], Protocol[ConfigT]):
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _StructureState:
     """The state of one ``_build_module_structure`` call."""
 
@@ -297,30 +304,62 @@ class _StructureState:
     module_models: ModuleModels = dataclasses.field(init=False)
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = dataclasses.field(init=False)
     model_path_to_module_name: _ModuleNames = dataclasses.field(init=False)
-    internal_modules: set[ModulePath] = dataclasses.field(init=False)
-    forwarder_map: ForwarderMap = dataclasses.field(init=False)
+    internal_modules: set[ModulePath] = dataclasses.field(default_factory=set)
+    forwarder_map: ForwarderMap = dataclasses.field(default_factory=dict)
 
 
 @final
 class PydanticFloors:
-    """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's."""
+    """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's.
 
-    __slots__ = ("_floors",)
+    Each parse also records the owners of the ``bytes`` patterns that Pydantic 2.14 refuses at import (#6673), and
+    the warning about its ``--type-overrides`` keys that matched nothing, which the generation emits for the parse it
+    keeps.
+    """
+
+    __slots__ = ("_floors", "_refused_bytes_patterns", "_unmatched_type_override_keys")
 
     def __init__(self) -> None:
         """Start with no parse recorded."""
         self._floors: WeakKeyDictionary[object, PydanticFloor] = WeakKeyDictionary()
+        self._refused_bytes_patterns: WeakKeyDictionary[object, tuple[str, ...]] = WeakKeyDictionary()
+        self._unmatched_type_override_keys: WeakKeyDictionary[object, str] = WeakKeyDictionary()
 
-    def record(self, parser: object, floor: PydanticFloor | None) -> None:
+    def record_unmatched_type_override_keys(self, parser: object, message: str) -> None:
+        """Record the warning about the ``--type-overrides`` keys of ``parser`` that matched nothing."""
+        self._unmatched_type_override_keys[parser] = message
+
+    def unmatched_type_override_keys_of(self, parser: object) -> str | None:
+        """Return the warning about the ``--type-overrides`` keys that ``parser`` recorded, None when it has none."""
+        return self._unmatched_type_override_keys.get(parser)
+
+    @staticmethod
+    def report_unmatched_type_override_keys(message: str | None) -> None:
+        """Emit the warning that the kept parse recorded, if it recorded one, once its parsers are disposed."""
+        if message is not None:
+            report_unmatched_type_override_keys(message)
+
+    def record(self, parser: object, floor: PydanticFloor | None, refused_bytes_patterns: tuple[str, ...]) -> None:
         """Record the floor of the models that ``parser`` emitted, None when they need nothing above the target."""
         if floor is None:
             self._floors.pop(parser, None)
         else:
             self._floors[parser] = floor
+        self._refused_bytes_patterns[parser] = refused_bytes_patterns
 
     def of(self, parser: object) -> PydanticFloor | None:
         """Return the floor that ``parser`` recorded, or None."""
         return self._floors.get(parser)
+
+    def refused_bytes_patterns_of(self, parser: object) -> tuple[str, ...]:
+        """Return the owners of the ``bytes`` patterns Pydantic 2.14 refuses that ``parser`` recorded."""
+        return self._refused_bytes_patterns.get(parser, ())
+
+
+def report_unmatched_type_override_keys(message: str) -> None:
+    """Emit the warning about the ``--type-overrides`` keys that matched nothing, unless a comparison leaves it out."""
+    if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get():
+        warn_as_parser_base(message, UserWarning, stacklevel=2)
 
 
 _PYDANTIC_FLOORS: ContextVar[PydanticFloors | None] = ContextVar("pydantic_floors", default=None)
@@ -338,7 +377,7 @@ def pydantic_floors_recorded() -> Generator[PydanticFloors]:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _SettleDiagnostics:
     """Whether a parse of the generation run reported the settle diagnostics, and the warnings of its L0 and L1.
 
@@ -365,7 +404,7 @@ def settle_diagnostics_reported_once() -> Generator[None]:
         yield
 
 
-def settle_diagnostics_suppressed(suppress_parse_warnings: bool) -> bool:  # noqa: FBT001
+def settle_diagnostics_suppressed(*, suppress_parse_warnings: bool) -> bool:
     """Return whether a parse leaves out the settle diagnostics: a parse again does after one that reported them.
 
     A parse again outside a generation run (``settle_diagnostics_reported_once``) always leaves them out.
@@ -403,7 +442,7 @@ _NO_DECISIONS: Final = DecisionOutcome(())
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
     """The state of one ``Parser.parse()`` call, filled segment by segment; a value read before it is set raises.
 
@@ -454,7 +493,7 @@ class FinishRun(ProcessingRun[ConfigT, ContextT, ResultT], Protocol[ConfigT, Con
 
 
 @final
-@dataclass(slots=True, kw_only=True)
+@mutable_record(slots=True, kw_only=True)
 class _ModuleState(Generic[ConfigT]):
     """The state of one ``_process_single_module`` call.
 
@@ -478,7 +517,7 @@ class _ModuleState(Generic[ConfigT]):
 
 
 @final
-@dataclass(slots=True, kw_only=True)
+@mutable_record(slots=True, kw_only=True)
 class _PreparedModule(Generic[ConfigT]):
     """One output module as ``_process_single_module`` left it, for its render preparation after the decision phase.
 
@@ -505,7 +544,7 @@ class _PreparedModule(Generic[ConfigT]):
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _FinalizeState(Generic[ContextT]):
     """The state of one ``_finalize_modules`` call.
 

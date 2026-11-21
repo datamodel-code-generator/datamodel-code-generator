@@ -9,6 +9,7 @@ from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
+from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, TargetPydanticVersion, _pydantic_version_key
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -18,7 +19,6 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
     from datamodel_code_generator._runtime.client.parts import PartPlan
-    from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
 TYPING_EXTENSIONS: Final = "typing-extensions>=4.16"
@@ -68,11 +68,17 @@ class Plan:
 def member_plan(local: Callable[[str, str], str], plan: FieldPlan | PartPlan) -> str:
     """Return the constructor of a member's plan: a form or object member's, or a form-data member's read as a part.
 
-    The member's name and kind are passed by position, ``repeated=True`` only when it repeats; the class is named
-    through `local` from the module of the package's runtime copy that defines it.
+    The member's name and kind are passed by position, ``repeated=True`` only when it repeats, and the plans of the
+    members of a member written in the bracket form by keyword; the class is named through `local` from the module of
+    the package's runtime copy that defines it.
     """
-    repeated = (keyword_argument("repeated", "True"),) if plan.repeated else ()
-    return call_text(_record_class(local, plan), (stable_repr(plan.name), stable_repr(plan.kind), *repeated))
+    keywords = [keyword_argument("repeated", "True")] if plan.repeated else []
+    if isinstance(plan, FieldPlan):
+        if plan.fields:
+            keywords.append(keyword_argument("fields", tuple_display(member_plan(local, item) for item in plan.fields)))
+        if plan.additional is not None:
+            keywords.append(keyword_argument("additional", member_plan(local, plan.additional)))
+    return call_text(_record_class(local, plan), (stable_repr(plan.name), stable_repr(plan.kind), *keywords))
 
 
 def runtime_record(

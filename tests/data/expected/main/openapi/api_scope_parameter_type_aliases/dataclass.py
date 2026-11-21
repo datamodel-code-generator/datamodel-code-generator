@@ -41,7 +41,9 @@ ItemsItemIdGetQueryTagsParameter: TypeAlias = Annotated[
 ItemsItemIdGetQueryLabelsParameterItem: TypeAlias = str
 
 
-ItemsItemIdGetQueryLabelsParameter: TypeAlias = list[ItemsItemIdGetQueryLabelsParameterItem]
+ItemsItemIdGetQueryLabelsParameter: TypeAlias = list[
+    ItemsItemIdGetQueryLabelsParameterItem
+]
 
 
 class ItemsItemIdGetQueryShadeParameter(Enum):

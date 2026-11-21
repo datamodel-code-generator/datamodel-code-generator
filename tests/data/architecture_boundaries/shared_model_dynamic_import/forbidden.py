@@ -35,3 +35,15 @@ else:
 
 def inspect_conditional_provider() -> None:
     conditional_provider.import_module(CONCRETE_BACKEND)
+
+
+import importlib as rebound_provider
+
+
+class ReboundImporter:
+    def import_module(self, module: str) -> None:
+        pass
+
+
+rebound_provider = ReboundImporter()
+rebound_provider.import_module(CONCRETE_BACKEND)

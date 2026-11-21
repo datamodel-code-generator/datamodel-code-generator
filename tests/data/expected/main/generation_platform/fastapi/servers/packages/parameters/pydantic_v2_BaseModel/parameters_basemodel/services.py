@@ -131,7 +131,10 @@ class DefaultService(Protocol):
         X_Flag: Literal[True] | None,
         kind: parameters_basemodel_models.ItemsLevelGetQueryKindParameter | None,
         tier: parameters_basemodel_models.ItemsLevelGetQueryTierParameter1 | None,
-        levels: list[parameters_basemodel_models.ItemsLevelGetQueryLevelsParameterEnum] | None,
+        levels: (
+            list[parameters_basemodel_models.ItemsLevelGetQueryLevelsParameterEnum]
+            | None
+        ),
     ) -> None | HTTPResult[None] | Response:
         """
         Handle GET /items/{level}.

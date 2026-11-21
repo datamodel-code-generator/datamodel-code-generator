@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info: {title: Stripped nullable defaults, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Pet'}
+      responses:
+        '200':
+          description: The created pet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, ns]
+      properties:
+        id: {type: integer}
+        ns: {type: string, x-is-classvar: true}
+        dn: {type: string, nullable: true, default: null}

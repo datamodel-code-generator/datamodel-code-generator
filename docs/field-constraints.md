@@ -2,7 +2,9 @@
 
 # 🔒 Field Constraints
 
-The `--field-constraints` option converts all `con*` annotations (like `conint`, `constr`) to `Field` constraint options.
+The `--field-constraints` option converts the `con*` annotations (like `conint`, `constr`) of fields to `Field`
+constraint options. A member of a union that takes its own constraints, such as the `string` of `type: [integer,
+string]` with a `pattern`, stays a `con*` call; `--use-annotated` writes it as `Annotated[str, Field(pattern=...)]`.
 
 ## 🤔 Why use this?
 

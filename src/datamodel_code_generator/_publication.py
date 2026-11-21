@@ -9,6 +9,7 @@ replaced staging parent or publish independently from generated artifacts.
 
 from __future__ import annotations
 
+import errno
 import os
 import shutil
 import stat
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
 _unlink = os.unlink
 _replace = os.replace
 _rmdir = os.rmdir
+_DESCRIPTOR_LIMIT_ERRORS = frozenset({errno.EMFILE, errno.ENFILE})
 
 
 class PublicationAnchor(NamedTuple):
@@ -106,35 +108,48 @@ def _directory_open_flags() -> int:
     return os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
 
 
-def _open_target_directory(
-    path: Path, created_directories: list[_CreatedDirectoryAt], *, create_missing: bool = True
-) -> int:
-    """Open a concrete directory without following components, creating missing ones safely."""
+def _open_target_directory(path: Path) -> int:
+    """Open an existing concrete directory without following components."""
     if not path.is_absolute():  # pragma: no cover - all callers pre-resolve destinations
         raise OSError(f"publication destination is not absolute: {path}")
     flags = _directory_open_flags()
     directory_fd = os.open(path.anchor, flags)
-    current_path = Path(path.anchor)
     try:
         for part in path.parts[1:]:
-            current_path /= part
-            try:
-                next_fd = os.open(part, flags, dir_fd=directory_fd)
-            except FileNotFoundError:
-                if not create_missing:
-                    raise
-                try:
-                    os.mkdir(part, dir_fd=directory_fd)
-                except FileExistsError:  # pragma: no cover - concurrent creation is re-opened and checked
-                    pass
-                else:
-                    created_directories.append(_CreatedDirectoryAt(os.dup(directory_fd), part, current_path))
-                next_fd = os.open(part, flags, dir_fd=directory_fd)
+            next_fd = os.open(part, flags, dir_fd=directory_fd)
             os.close(directory_fd)
             directory_fd = next_fd
     except BaseException:
         os.close(directory_fd)
         raise
+    return directory_fd
+
+
+def _pinned_directory(path: Path, pins: dict[Path, int], created_directories: list[_CreatedDirectoryAt]) -> int:
+    """Return the descriptor a publication pins for a concrete directory, opening it and its ancestors as needed.
+
+    A directory not pinned yet is opened, without following components, through its parent's pin, and a missing one is
+    created there first. Every file published into a directory, and every directory created in it, shares its one
+    pin, so a publication holds one descriptor per directory it touches, however many files it publishes.
+    """
+    if (directory_fd := pins.get(path)) is not None:
+        return directory_fd
+    flags = _directory_open_flags()
+    if path.parent == path:
+        directory_fd = os.open(path, flags)
+    else:
+        parent_fd = _pinned_directory(path.parent, pins, created_directories)
+        try:
+            directory_fd = os.open(path.name, flags, dir_fd=parent_fd)
+        except FileNotFoundError:
+            try:
+                os.mkdir(path.name, dir_fd=parent_fd)
+            except FileExistsError:  # pragma: no cover - concurrent creation is re-opened and checked
+                pass
+            else:
+                created_directories.append(_CreatedDirectoryAt(parent_fd, path.name, path))
+            directory_fd = os.open(path.name, flags, dir_fd=parent_fd)
+    pins[path] = directory_fd
     return directory_fd
 
 
@@ -144,7 +159,7 @@ def publication_anchor(path: Path) -> PublicationAnchor:
     if os.name == "nt":  # pragma: no cover - Windows uses checked path fallback
         path_stat = path.stat()
         return PublicationAnchor(path, (path_stat.st_dev, path_stat.st_ino), None)
-    directory_fd = _open_target_directory(path, [], create_missing=False)
+    directory_fd = _open_target_directory(path)
     path_stat = os.fstat(directory_fd)
     return PublicationAnchor(path, (path_stat.st_dev, path_stat.st_ino), directory_fd)
 
@@ -186,6 +201,12 @@ def staging_directory_for(
     return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=creation_root(location.parent))
 
 
+STAGED_OUTPUT_NAME = "output"
+"""The name an output without a name of its own is staged under."""
+STAGED_METADATA_NAME = "model-metadata.json"
+"""The name a model metadata file without a name of its own is staged under."""
+
+
 def staged_artifact_path(directory: Path, target: Path, default_name: str, *, make_directory: bool) -> Path:
     """Return where an artifact is staged in a private staging directory, created as an empty directory if asked.
 
@@ -197,7 +218,7 @@ def staged_artifact_path(directory: Path, target: Path, default_name: str, *, ma
     return staged
 
 
-def stage_artifact(  # noqa: PLR0913
+def stage_artifact(
     target: Path,
     default_name: str,
     anchor_path: Path,
@@ -307,7 +328,7 @@ def stage_outputs(
         is_directory = output.is_dir()
         staged, anchor = stage_artifact(
             output,
-            "output",
+            STAGED_OUTPUT_NAME,
             root if is_directory else parent,
             contexts,
             anchors,
@@ -316,7 +337,7 @@ def stage_outputs(
         staged_output = StagedArtifact(staged, output, root, parent, anchor)
     if metadata is not None:
         parent = cast("Path", metadata_parent)
-        staged, anchor = stage_artifact(metadata, "model-metadata.json", parent, contexts, anchors)
+        staged, anchor = stage_artifact(metadata, STAGED_METADATA_NAME, parent, contexts, anchors)
         staged_metadata = StagedArtifact(staged, metadata, parent, parent, anchor)
     return StagedOutputs(staged_output, staged_metadata)
 
@@ -342,7 +363,7 @@ class StagingDirectory:
     @classmethod
     def create(cls, anchor: PublicationAnchor, *, prefix: str) -> StagingDirectory:
         """Reserve and open a private child of an already-pinned publication anchor."""
-        if anchor.directory_fd is None:  # pragma: no cover - Windows uses the checked fallback path
+        if anchor.directory_fd is None:
             _validate_anchor_path(anchor)
             path = type(anchor.path)(tempfile.mkdtemp(prefix=prefix, dir=anchor.path))
             try:
@@ -357,7 +378,7 @@ class StagingDirectory:
                         anchor.identity,
                     ),
                 )
-            except BaseException:
+            except BaseException:  # pragma: no cover - cleanup after a failure of the Windows fallback staging
                 with suppress(OSError):
                     _rmdir(path)
                 raise
@@ -393,13 +414,13 @@ class StagingDirectory:
             if parent_fd is not None:
                 os.close(parent_fd)
 
-    def _validate_path_fallback(self) -> None:  # pragma: no cover - Windows lexical fallback
+    def _validate_path_fallback(self) -> None:
         """Fail closed if a Windows lexical staging location no longer names the reserved directory."""
         fallback = cast("_StagingFallback", self._fallback)
         try:
             path_stat = self.path.stat()
             anchor_stat = self.path.parent.stat()
-        except OSError as exc:
+        except OSError as exc:  # pragma: no cover - the staging directory vanished under the Windows fallback
             raise OSError(f"private staging directory changed: {self.path}") from exc
         if (path_stat.st_dev, path_stat.st_ino) != fallback.path_identity or (
             anchor_stat.st_dev,
@@ -449,7 +470,7 @@ class StagingDirectory:
             return
         cleanup_error: OSError | None = None
         try:
-            if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
+            if self.directory_fd is None:
                 self._validate_path_fallback()
             cleanup_error = self._discard_files()
             directory_error = self._remove_directory()
@@ -480,7 +501,7 @@ class StagingDirectory:
     def _remove_directory(self) -> OSError | None:
         """Remove the owned empty staging directory through its pinned parent when available."""
         try:
-            if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
+            if self.directory_fd is None:
                 _rmdir(self.path)
             else:
                 _rmdir(self.name, dir_fd=cast("int", self._parent_fd))
@@ -508,11 +529,11 @@ def _chmod_backup_at(backup: str | Path, backup_fd: int, mode: int, directory_fd
     """Apply destination mode bits through the safest handle supported by the platform."""
     if (fchmod := getattr(os, "fchmod", None)) is not None:
         fchmod(backup_fd, mode)
-    elif os.chmod in os.supports_fd:  # pragma: no cover - platform-specific fallback
+    elif os.chmod in os.supports_fd:
         os.chmod(backup_fd, mode)
-    elif directory_fd is not None:  # pragma: no cover - POSIX exposes fchmod
+    elif directory_fd is not None:  # pragma: no cover - not proven unreachable
         os.chmod(backup, mode, dir_fd=directory_fd, follow_symlinks=False)
-    elif os.chmod in os.supports_follow_symlinks:  # pragma: no cover - platform-specific fallback
+    elif os.chmod in os.supports_follow_symlinks:  # pragma: no cover - not proven unreachable
         Path(backup).chmod(mode, follow_symlinks=False)
     else:  # pragma: no cover - Windows lacks fd/no-follow chmod
         Path(backup).chmod(mode)
@@ -528,9 +549,9 @@ def _set_backup_times_at(
     timestamps = (target_stat.st_atime_ns, target_stat.st_mtime_ns)
     if os.utime in os.supports_fd:
         os.utime(backup_fd, ns=timestamps)
-    elif directory_fd is not None:  # pragma: no cover - POSIX exposes fd-based utime
+    elif directory_fd is not None:  # pragma: no cover - not proven unreachable
         os.utime(backup, ns=timestamps, dir_fd=directory_fd, follow_symlinks=False)
-    elif os.utime in os.supports_follow_symlinks:  # pragma: no cover - platform-specific fallback
+    elif os.utime in os.supports_follow_symlinks:  # pragma: no cover - not proven unreachable
         os.utime(backup, ns=timestamps, follow_symlinks=False)
     else:  # pragma: no cover - legacy Windows fallback
         os.utime(backup, ns=timestamps)
@@ -576,7 +597,7 @@ def _backup_existing_target(target: Path) -> Path:
     for backup_name in _backup_names(target.name):
         backup = target.parent / backup_name
         try:
-            if stat.S_ISLNK(target_stat.st_mode):  # pragma: no cover - Windows fallback
+            if stat.S_ISLNK(target_stat.st_mode):
                 backup.symlink_to(target.readlink(), target_is_directory=target.is_dir())
             else:
                 try:
@@ -635,6 +656,13 @@ def _restore_backup(backup: Path, target: Path) -> None:
     _replace(backup, target)
 
 
+def _raise_rollback_failure(publish_error: BaseException, failures: list[Path]) -> None:
+    """Raise the OSError a batch publication failed with, naming the paths ``failures`` that it did not roll back."""
+    if failures and isinstance(publish_error, OSError):
+        paths = ", ".join(path.as_posix() for path in failures)
+        raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+
+
 def _rollback_published_file(published_file: _PublishedFile) -> list[Path]:
     try:
         if published_file.backup is not None:
@@ -666,9 +694,15 @@ def _validate_planned_target(file: StagedFile) -> None:  # pragma: no cover - Wi
 
 
 def _directory_fd_matches_path(directory_fd: int, path: Path) -> bool:
+    """Return whether ``path`` still names the directory of ``directory_fd``; one the process cannot open does not.
+
+    A process that may open no more files cannot tell, so that error is raised, naming the limit instead of a change.
+    """
     try:
-        check_fd = _open_target_directory(path, [], create_missing=False)
-    except OSError:
+        check_fd = _open_target_directory(path)
+    except OSError as exc:
+        if exc.errno in _DESCRIPTOR_LIMIT_ERRORS:
+            raise
         return False
     try:
         return os.path.samestat(os.fstat(directory_fd), os.fstat(check_fd))
@@ -796,34 +830,29 @@ def _replace_source(file: StagedFile, destination_name: str | Path, destination_
 def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0912
     journal: list[_BoundPublishedFile] = []
     created_directories: list[_CreatedDirectoryAt] = []
+    pins: dict[Path, int] = {}
     try:
         for file in files:
             _validate_publication_anchor(file)
-            directory_fd = _open_target_directory(file.resolved_target.parent, created_directories)
-            journaled = False
+            directory_fd = _pinned_directory(file.resolved_target.parent, pins, created_directories)
             try:
-                try:
-                    target_stat = os.stat(file.resolved_target.name, dir_fd=directory_fd, follow_symlinks=False)
-                except FileNotFoundError:
-                    target_stat = None
-                if target_stat is not None and stat.S_ISDIR(target_stat.st_mode):
-                    raise IsADirectoryError(f"[Errno 21] Is a directory: '{file.target}'")
-                backup_name = (
-                    _backup_existing_target_at(directory_fd, file.resolved_target.name, target_stat)
-                    if target_stat is not None
-                    else None
-                )
-                journal.append(_BoundPublishedFile(file.target, directory_fd, file.resolved_target.name, backup_name))
-                journaled = True
-                if target_stat is not None and stat.S_ISREG(target_stat.st_mode):
-                    _set_staged_mode(file, stat.S_IMODE(target_stat.st_mode))
-                _replace_source(file, file.resolved_target.name, directory_fd)
-                _validate_publication_anchor(file)
-                if not _directory_fd_matches_path(directory_fd, file.resolved_target.parent):
-                    raise OSError(f"batch output destination changed during publication: {file.target}")
-            finally:
-                if not journaled:
-                    os.close(directory_fd)
+                target_stat = os.stat(file.resolved_target.name, dir_fd=directory_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                target_stat = None
+            if target_stat is not None and stat.S_ISDIR(target_stat.st_mode):
+                raise IsADirectoryError(f"[Errno 21] Is a directory: '{file.target}'")
+            backup_name = (
+                _backup_existing_target_at(directory_fd, file.resolved_target.name, target_stat)
+                if target_stat is not None
+                else None
+            )
+            journal.append(_BoundPublishedFile(file.target, directory_fd, file.resolved_target.name, backup_name))
+            if target_stat is not None and stat.S_ISREG(target_stat.st_mode):
+                _set_staged_mode(file, stat.S_IMODE(target_stat.st_mode))
+            _replace_source(file, file.resolved_target.name, directory_fd)
+            _validate_publication_anchor(file)
+            if not _directory_fd_matches_path(directory_fd, file.resolved_target.parent):
+                raise OSError(f"batch output destination changed during publication: {file.target}")
     except BaseException as publish_error:
         failures: list[Path] = []
         for published_file in reversed(journal):
@@ -833,9 +862,7 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
                 _rmdir(directory.name, dir_fd=directory.parent_fd)
             except OSError:
                 failures.append(directory.path)
-        if failures and isinstance(publish_error, OSError):
-            paths = ", ".join(path.as_posix() for path in failures)
-            raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+        _raise_rollback_failure(publish_error, failures)
         raise
     else:
         for published_file in journal:
@@ -843,10 +870,8 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
                 with suppress(OSError):
                     _unlink(published_file.backup_name, dir_fd=published_file.directory_fd)
     finally:
-        for published_file in journal:
-            os.close(published_file.directory_fd)
-        for directory in created_directories:
-            os.close(directory.parent_fd)
+        for directory_fd in pins.values():
+            os.close(directory_fd)
 
 
 def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragma: no cover - Windows fallback
@@ -876,9 +901,7 @@ def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragm
             failures.extend(_rollback_published_file(published_file))
         for directory in reversed(created_directories):
             failures.extend(_remove_created_directory(directory))
-        if failures and isinstance(publish_error, OSError):
-            paths = ", ".join(path.as_posix() for path in failures)
-            raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+        _raise_rollback_failure(publish_error, failures)
         raise
     for published_file in journal:
         if published_file.backup is not None:

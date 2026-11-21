@@ -1,0 +1,5 @@
+[
+  "/ints discriminator {\"k\": 1.0}: valid, model rejects",
+  "/ints/k const 1.0: valid, model rejects",
+  "/ints/k const 2.0: valid, model rejects"
+]

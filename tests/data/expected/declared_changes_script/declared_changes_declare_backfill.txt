@@ -1,0 +1,44 @@
+$ declare backfill-b --category harness --title t --summary s --labels models/b.py --base base
+exit 0
+docs/data/migration/unreleased/backfill-b.toml covers 1 more stored outputs
+
+$ declare backfill-a --category harness --title t --summary s --tests *::test_model[[]a] --base base
+exit 0
+docs/data/migration/unreleased/backfill-a.toml covers 1 more stored outputs
+
+$ declare backfill-d --category harness --title t --summary s --rest --base base
+exit 2
+scripts/declared_changes.py: nothing to declare: no undeclared stored output matches
+
+$ check --base base
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+2 stored outputs moved since 0.1.0 with no record before this change
+ok
+
+$ check --base base --main
+exit 1
+declared changes: the working tree against base, release since 0.1.0
+2 stored outputs moved since 0.1.0 and have no unreleased record:
+  models/c.py
+  models/d.json
+failed
+
+--- backfill-a.toml ---
+[[change]]
+id = "backfill-a"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "models/a.py",
+]
+--- backfill-b.toml ---
+[[change]]
+id = "backfill-b"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "models/b.py",
+]

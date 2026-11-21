@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: Discriminator values two variants share
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: A pet whose variants both take the tag cat.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Lion"
+                discriminator:
+                  propertyName: kind
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: cat
+        lives:
+          type: integer
+    Lion:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: cat
+        mane:
+          type: boolean

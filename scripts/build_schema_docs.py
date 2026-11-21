@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from datamodel_code_generator import RAW_DATA_TYPES
+from datamodel_code_generator import _INPUT_TYPES, RAW_DATA_TYPES  # ruff: ignore[import-private-name]
 from datamodel_code_generator.enums import (
     AsyncAPIVersion,
     InputFileType,
@@ -33,6 +33,7 @@ from datamodel_code_generator.enums import (
 from datamodel_code_generator.format import DatetimeClassType
 from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager as PydanticV2DataTypeManager
 from datamodel_code_generator.parser.schema_version import (
+    AsyncAPIClientFeatures,
     DataFormatMapping,
     FeatureMetadata,
     JsonSchemaFeatures,
@@ -48,7 +49,6 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).parent.parent
 SRC = ROOT / "src"
-INIT_PATH = SRC / "datamodel_code_generator" / "__init__.py"
 AVRO_PARSER_PATH = SRC / "datamodel_code_generator" / "parser" / "avro.py"
 GRAPHQL_PARSER_PATH = SRC / "datamodel_code_generator" / "parser" / "graphql.py"
 SUPPORTED_FORMATS_DOCS_PATH = ROOT / "docs" / "supported_formats.md"
@@ -205,37 +205,52 @@ def get_feature_metadata(cls: type) -> list[tuple[str, FeatureMetadata]]:
                 description=f.metadata.get("description", ""),
                 status=f.metadata.get("status", "supported"),
             )
+            if client_status := f.metadata.get("client_status"):
+                meta["client_status"] = client_status
             result.append((f.name, meta))
     return result
+
+
+def _status_label(status: str | None) -> str:
+    """Return a status with its emoji, or a dash for a feature without one."""
+    if status is None:
+        return "—"
+    return f"{STATUS_EMOJI.get(status, '')} {status.replace('_', ' ').title()}"
 
 
 def generate_feature_table(
     features: list[tuple[str, FeatureMetadata]],
     *,
+    include_client: bool = False,
     include_status: bool = True,
 ) -> str:
     """Generate a Markdown table from feature metadata.
 
     Args:
         features: List of (field_name, metadata) tuples.
-        include_status: Whether to include the Status column.
+        include_client: Whether to include the Client column (the Python client's support, a dash where the
+            client does not plan the feature itself).
+        include_status: Whether to include the Status column (the model generation's support), which a table of
+            client-only features leaves out.
 
     Returns:
         Markdown table string.
     """
-    if include_status:
-        lines = ["| Feature | Introduced | Status | Description |"]
-        lines.append("|---------|------------|--------|-------------|")
-        for _name, meta in features:
-            emoji = STATUS_EMOJI.get(meta["status"], "")
-            status_text = f"{emoji} {meta['status'].replace('_', ' ').title()}"
-            lines.append(f"| `{meta['doc_name']}` | {meta['introduced']} | {status_text} | {meta['description']} |")
-    else:
-        lines = ["| Feature | Introduced | Description |"]
-        lines.append("|---------|------------|-------------|")
-        for _name, meta in features:
-            lines.append(f"| `{meta['doc_name']}` | {meta['introduced']} | {meta['description']} |")
-
+    status_header = ("Status",) if include_status else ()
+    client_header = ("Client",) if include_client else ()
+    rows = (
+        (
+            f"`{meta['doc_name']}`",
+            meta["introduced"],
+            *((_status_label(meta["status"]),) if include_status else ()),
+            *((_status_label(meta.get("client_status")),) if include_client else ()),
+            meta["description"],
+        )
+        for _name, meta in features
+    )
+    headers = ("Feature", "Introduced", *status_header, *client_header, "Description")
+    lines = [f"| {' | '.join(headers)} |", f"|{'|'.join('-' * (len(header) + 2) for header in headers)}|"]
+    lines.extend(f"| {' | '.join(row)} |" for row in rows)
     return "\n".join(lines)
 
 
@@ -328,62 +343,12 @@ def enum_values_label(enum_type: type[Enum]) -> str:
     return code_list_label(item.value for item in enum_type)
 
 
-def _name_from_expr(node: ast.AST) -> str | None:
-    """Return the visible name represented by a simple expression."""
-    match node:
-        case ast.Name(id=name):
-            return name
-        case ast.Attribute(attr=name):
-            return name
-        case ast.Subscript(value=value):
-            return _name_from_expr(value)
-    return None
-
-
-def _input_file_type_name(pattern: ast.pattern) -> str | None:
-    """Return the InputFileType member name matched by a pattern."""
-    match pattern:
-        case ast.MatchValue(value=ast.Attribute(value=ast.Name(id="InputFileType"), attr=input_type_name)):
-            return input_type_name
-    return None
-
-
-def _returned_parser_name(case: ast.match_case) -> str | None:
-    """Return the parser class name returned by a match case."""
-    for node in ast.walk(ast.Module(body=case.body, type_ignores=[])):
-        if isinstance(node, ast.Return) and isinstance(node.value, ast.Call):
-            return _name_from_expr(node.value.func)
-    return None
-
-
 def parser_routes_from_source() -> dict[InputFileType, str]:
-    """Read _build_parser() and infer InputFileType to parser routes."""
-    tree = ast.parse(INIT_PATH.read_text(encoding="utf-8"))
-    direct_routes: dict[InputFileType, str] = {}
-    default_route = "JsonSchemaParser"
-    found_build_parser = False
-
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef) or node.name != "_build_parser":
-            continue
-        found_build_parser = True
-        for child in ast.walk(node):
-            if not isinstance(child, ast.Match):
-                continue
-            for case in child.cases:
-                if (parser_name := _returned_parser_name(case)) is None:
-                    continue
-                if (input_type_name := _input_file_type_name(case.pattern)) is None:
-                    default_route = parser_name
-                    continue
-                direct_routes[InputFileType[input_type_name]] = parser_name
-
-    if not found_build_parser or not direct_routes:
-        msg = "Could not infer parser routes from _build_parser()"
-        raise RuntimeError(msg)
-
+    """Read the parser class of each InputFileType from its row of `_INPUT_TYPES`."""
     return {
-        input_file_type: PARSER_ROUTE_OVERRIDES.get(input_file_type, direct_routes.get(input_file_type, default_route))
+        input_file_type: PARSER_ROUTE_OVERRIDES.get(
+            input_file_type, _INPUT_TYPES[input_file_type].parser.rpartition(".")[2]
+        )
         for input_file_type in InputFileType
     }
 
@@ -790,7 +755,25 @@ def generate_supported_features_content(
         heading(heading_level + 1, "OpenAPI-Specific Features"),
         "",
     ]
-    lines.extend((generate_feature_table(get_openapi_specific_feature_metadata()), ""))
+    lines.extend((
+        (
+            "Client: whether the generated Python client (`--generate-client`) supports the feature; an operation "
+            "that uses an unsupported one is skipped with a warning. A dash means the client follows the models."
+        ),
+        "",
+        generate_feature_table(get_openapi_specific_feature_metadata(), include_client=True),
+        "",
+        heading(heading_level + 1, "AsyncAPI Client Features"),
+        "",
+        (
+            "The AsyncAPI features the generated Python client plans itself; a channel that uses an unsupported "
+            "one is left out of the client with a warning, and its models are generated as usual. Message headers "
+            "leave no channel out."
+        ),
+        "",
+        generate_feature_table(get_feature_metadata(AsyncAPIClientFeatures), include_client=True, include_status=False),
+        "",
+    ))
 
     return "\n".join(lines)
 

@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from functools import partial
 from itertools import chain
 from math import isfinite, isnan
+from operator import itemgetter
 from pprint import PrettyPrinter
-from typing import IO, TYPE_CHECKING, Any, ClassVar, Final, Protocol, cast
+from typing import IO, TYPE_CHECKING, Any, ClassVar, Final, Literal, Protocol, TypeAlias, TypeGuard, cast
 
 from typing_extensions import Self, Sentinel, override
 
@@ -288,10 +289,11 @@ def _make_referencing_type_expression(source: _TypeHintSource) -> _InternalTypeE
     return _InternalTypeExpression(source.type_hint, _INTERNAL_TYPE_EXPRESSION_TOKEN, source=source)
 
 
-def _normalized_safe_python_name(value: object, target: PythonVersion, *, dotted: bool = False) -> str | None:
+def _normalized_safe_python_name(value: object, target: PythonVersion | None, *, dotted: bool = False) -> str | None:
     """Return untrusted data as a plain string when it is a Python name, or Python names joined by dots with ``dotted``.
 
-    Only a ``str`` counts, read without its subclass's overrides, and its names are names of the target Python.
+    Only a ``str`` counts, read without its subclass's overrides, and its names are names of the target Python, the
+    newest when ``target`` is None.
     Template keys, option names and the simple type names of built-in templates (``str``, ``datetime.date``) take this
     form; more expressive type syntax belongs to the parser-owned boundary above, since accepting it here would parse
     source at runtime and make this public extension point an execution sink.
@@ -300,12 +302,12 @@ def _normalized_safe_python_name(value: object, target: PythonVersion, *, dotted
         return None
     normalized_value = _normalize_string(value)
     is_name = is_dotted_python_name if dotted else is_python_name
-    return normalized_value if is_name(normalized_value, target) else None
+    return normalized_value if is_name(normalized_value, NEWEST_TARGET if target is None else target) else None
 
 
 def is_safe_public_type_name(value: object, *, target: PythonVersion | None = None) -> bool:
     """Return whether public data is a bare or dotted Python identifier of the target Python, the newest by default."""
-    return _normalized_safe_python_name(value, NEWEST_TARGET if target is None else target, dotted=True) is not None
+    return _normalized_safe_python_name(value, target, dotted=True) is not None
 
 
 def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | None = None) -> str:
@@ -314,20 +316,20 @@ def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | 
     A name of the target Python, the newest by default, is written as a name, and any other text as a string.
     """
     if isinstance(value, str):
-        if normalized_value := _normalized_safe_python_name(
-            value, NEWEST_TARGET if target is None else target, dotted=True
-        ):
+        if normalized_value := _normalized_safe_python_name(value, target, dotted=True):
             return normalized_value
         return represent_untrusted_python_value(_normalize_string(value))
     return represent_untrusted_python_value(value)
 
 
-def _represent_container(value: object, render: Callable[[Any], str], *, sort_sets_by_repr: bool) -> str | None:
-    """Render a dict, list, tuple or set with ``render`` for its items; None for any other value.
+_SetOrder: TypeAlias = Literal["iteration", "repr", "text"]
+"""The order of the items of a set display: ``iteration`` as the set yields them, as ``repr()`` writes a set
+(``stable_repr``); else by type name, then by the ``repr()`` of each item (``repr``, a string by its rendered text:
+``represent_python_value``) or by its rendered text (``text``: ``represent_untrusted_python_value``)."""
 
-    Set items are ordered by type name, then by their ``repr`` or their rendered text; a string's ``repr`` is its
-    rendered text, as ``stable_repr`` writes it.
-    """
+
+def _represent_container(value: object, render: Callable[[Any], str], *, set_order: _SetOrder) -> str | None:
+    """Render a dict, list, tuple or set with ``render`` for its items, a set's in ``set_order``; None otherwise."""
     match value:
         case dict():
             return dict_display((render(key), render(item)) for key, item in value.items())
@@ -336,16 +338,20 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
         case tuple():
             return tuple_display(map(render, value))
         case set():
-            from operator import itemgetter  # noqa: PLC0415
-
             rows = [
-                (type(item).__name__, repr(item) if sort_sets_by_repr and type(item) is not str else text, text)
+                (type(item).__name__, repr(item) if set_order == "repr" and type(item) is not str else text, text)
                 for item in value
                 for text in (render(item),)
             ]
-            rows.sort(key=itemgetter(0, 1))
+            if set_order != "iteration":
+                rows.sort(key=itemgetter(0, 1))
             return set_display(text for _, _, text in rows)
     return None
+
+
+def _has_str_repr(value: object) -> TypeGuard[str]:
+    """Return whether ``repr()`` writes a value as it writes a ``str``: a ``str``, or a subclass that keeps it."""
+    return isinstance(value, str) and type(value).__repr__ is str.__repr__
 
 
 def stable_repr(value: object) -> str:
@@ -362,28 +368,22 @@ def stable_repr(value: object) -> str:
 
 def _stable_repr(value: object, active: set[int]) -> str:
     """Return ``stable_repr`` of a value inside the containers whose ids ``active`` holds."""
-    if isinstance(value, str) and type(value).__repr__ is str.__repr__:
+    if _has_str_repr(value):
         return string_repr(_normalize_string(value), NEWEST_TARGET)
-    if (display := _CONTAINER_REPRS.get(type(value))) is None:
+    if (recursive := _RECURSIVE_REPRS.get(type(value))) is None:
         return repr(value)
     if (key := id(value)) in active:
-        return _RECURSIVE_REPRS[type(value)]
+        return recursive
     active.add(key)
     try:
-        return display(value, partial(_stable_repr, active=active))
+        return cast("str", _represent_container(value, partial(_stable_repr, active=active), set_order="iteration"))
     finally:
         active.discard(key)
 
 
-_CONTAINER_REPRS: Final[dict[type, Callable[[Any, Callable[[object], str]], str]]] = {
-    tuple: lambda value, item: tuple_display(map(item, value)),
-    list: lambda value, item: list_display(map(item, value)),
-    set: lambda value, item: set_display(map(item, value)),
-    dict: lambda value, item: dict_display((item(key), item(entry)) for key, entry in value.items()),
-}
-"""How ``stable_repr`` writes each container whose ``repr()`` holds the ``repr()`` of its items, as ``repr()`` does."""
 _RECURSIVE_REPRS: Final[dict[type, str]] = {tuple: "(...)", list: "[...]", set: "set(...)", dict: "{...}"}
-"""What ``repr()`` writes for a container inside itself."""
+"""The containers whose ``repr()`` holds the ``repr()`` of their items, which ``stable_repr`` writes as ``repr()``
+does, and what ``repr()`` writes for one inside itself."""
 
 
 class _StablePrettyPrinter(PrettyPrinter):
@@ -392,7 +392,7 @@ class _StablePrettyPrinter(PrettyPrinter):
     @override
     def format(self, object: object, context: dict[int, int], maxlevels: int, level: int) -> tuple[str, bool, bool]:
         """Write a string as ``stable_repr`` does; any other value as ``pprint`` does, its strings so too."""
-        if isinstance(object, str) and type(object).__repr__ is str.__repr__:
+        if _has_str_repr(object):
             return stable_repr(object), True, False
         return super().format(object, context, maxlevels, level)
 
@@ -455,18 +455,21 @@ def message_repr(value: object) -> str:
 
 
 def represent_python_value(value: Any) -> str:
-    """Render a value as a Python expression safe for generated source."""
+    """Render a value as a Python expression safe for generated source.
+
+    It is written as ``stable_repr`` writes it, a non-finite float as the call that builds it, a container's subclass
+    as the container and a ``str`` subclass by its ``repr()`` (``PythonCode`` as its code): row
+    ``legacy-str-subclass-host-repr``, the running interpreter's for one that keeps the ``repr()`` of ``str``.
+    """
     match value:
-        case PythonRuntimeExpression() | PythonCode():
-            return value.code
-        case str() if type(value) is str:
-            return string_repr(value, NEWEST_TARGET)
         case float() if isnan(value):
             return "float('nan')"
         case float() if not isfinite(value):
             return "float('inf')" if value > 0 else "float('-inf')"
-    rendered = _represent_container(value, represent_python_value, sort_sets_by_repr=True)
-    return repr(value) if rendered is None else rendered
+        case str() if type(value) is not str:
+            return repr(value)
+    rendered = _represent_container(value, represent_python_value, set_order="repr")
+    return stable_repr(value) if rendered is None else rendered
 
 
 def represent_untrusted_python_value(value: Any) -> str:
@@ -484,6 +487,6 @@ def represent_untrusted_python_value(value: Any) -> str:
         return represent_python_value(float.__float__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
     if isinstance(value, str):
         return stable_repr(_normalize_string(value))
-    if (rendered := _represent_container(value, represent_untrusted_python_value, sort_sets_by_repr=False)) is not None:
+    if (rendered := _represent_container(value, represent_untrusted_python_value, set_order="text")) is not None:
         return rendered
     return stable_repr(_normalize_string(str(value)))

@@ -1,0 +1,16 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+scripts/ratchet_approvals.toml is not valid TOML: Expected ']]' at the end of an array declaration (at line 1, column 11).
+
+No key rose, but scripts/ratchet_approvals.toml needs the changes above. Exit status 0 unless --enforce is given.

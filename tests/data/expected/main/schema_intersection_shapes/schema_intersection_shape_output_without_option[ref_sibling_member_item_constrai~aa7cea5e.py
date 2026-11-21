@@ -7,7 +7,7 @@ from typing import Annotated, Any, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
-NarrowedItem: TypeAlias = Annotated[int, Meta(ge=2)]
+NarrowedItem: TypeAlias = Annotated[int, Meta(ge=2, le=9)]
 
 
 RedundantItem: TypeAlias = Annotated[int, Meta(ge=1)]

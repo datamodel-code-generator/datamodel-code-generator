@@ -1,0 +1,7 @@
+[
+  "/kind const null: invalid, model accepts",
+  "/kind enum null: invalid, model accepts",
+  "/single const null: invalid, model accepts",
+  "/single enum null: invalid, model accepts",
+  "/written const null: invalid, model accepts"
+]

@@ -1,0 +1,93 @@
+asyncapi: 2.6.0
+info:
+  title: Market feed
+  version: 1.0.0
+servers:
+  production:
+    url: wss://feed.example.com/ws
+    protocol: wss
+  sandbox:
+    url: '{region}.sandbox.example.com'
+    protocol: ws
+    variables:
+      region:
+        default: eu
+        enum: [eu, us]
+  broker:
+    url: kafka.example.com
+    protocol: kafka
+channels:
+  /v1/market/{pair}:
+    servers: [production, sandbox]
+    parameters:
+      pair:
+        description: The trading pair.
+        schema:
+          type: string
+          pattern: '^[A-Z]+-[A-Z]+$'
+    publish:
+      message:
+        $ref: '#/components/messages/subscribe'
+    subscribe:
+      message:
+        $ref: '#/components/messages/trade'
+  /v1/ticker:
+    servers: [production]
+    subscribe:
+      message:
+        contentType: text/plain
+        payload:
+          type: string
+  /:
+    subscribe:
+      message:
+        payload:
+          type: integer
+  /v1/audio:
+    servers: [production]
+    publish:
+      message:
+        contentType: application/octet-stream
+        payload:
+          type: string
+          format: binary
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            level:
+              type: integer
+          required: [level]
+components:
+  messages:
+    subscribe:
+      payload:
+        $ref: '#/components/schemas/Subscribe'
+    trade:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/Trade'
+  schemas:
+    Subscribe:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [subscribe]
+        channels:
+          type: array
+          items:
+            type: string
+      required: [event, channels]
+    Trade:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [trade]
+        price:
+          type: number
+        volume:
+          type: number
+      required: [event, price]

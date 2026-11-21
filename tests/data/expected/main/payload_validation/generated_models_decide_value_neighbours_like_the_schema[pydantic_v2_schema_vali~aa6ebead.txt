@@ -1,0 +1,7 @@
+[
+  "/enabled enum null: invalid, model accepts",
+  "/level enum \"1\": invalid, model accepts",
+  "/level enum \"2\": invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/status enum null: invalid, model accepts"
+]

@@ -12,13 +12,16 @@ from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, get_args
 
+from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._module_paths import relative_level
 from datamodel_code_generator._openapi_codec_plan import artifact_module
-from datamodel_code_generator._python_syntax import aliased, from_import, module_import
+from datamodel_code_generator._python_syntax import aliased, from_import, module_import, subscript_text
 from datamodel_code_generator._target_contract import (
     BuiltinName,
     BuiltinType,
     GeneratedSymbolType,
+    GenericType,
     ImportedExpression,
     ImportedType,
     LiteralScalar,
@@ -27,11 +30,12 @@ from datamodel_code_generator._target_contract import (
     SourceExpression,
     UnionType,
 )
+from datamodel_code_generator._target_types import container_slot
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping
 
     from typing_extensions import Self
 
@@ -79,6 +83,15 @@ def _written(hint_type: type[DataType]) -> tuple[Import, ...]:
         composer.compose(base="T", key="K", is_mapping=True),
     )
     return tuple(item for _, found in written for item in found)
+
+
+def _composed_members(value: UnionType) -> Iterator[TypeView]:
+    """Yield the members of a union a target composed, with the unions it composed among them opened."""
+    for member in value.members:
+        if isinstance(member, UnionType) and member.hint is None:
+            yield from _composed_members(member)
+        else:
+            yield member
 
 
 class TypeComposer:
@@ -200,7 +213,7 @@ class TypeNames:
         override = self.overrides.get(name) if module != "__future__" else None
         if override is None or not override.startswith("."):
             return override or module, name
-        level = len(override) - len(rest := override.lstrip("."))
+        level, rest = relative_level(override)
         parts = self.package.split(".") if self.package else []
         if not parts or level > len(parts):
             return override, name
@@ -320,7 +333,8 @@ class TargetModule:
     def hint(self, value: TypeView | ModelHint, *, static: bool = True) -> str:
         """Return the spelling of a model type in this module, statically or as the annotation that validates it.
 
-        A union a target composed of model types, which has no hint, is composed as the model generator writes unions.
+        A union or container a target composed of model types, which has no hint, is composed as the model generator
+        writes them.
         """
         match value:
             case GeneratedSymbolType():
@@ -333,8 +347,8 @@ class TargetModule:
                 return ".".join((self.imported(value.import_), *value.qualified_suffix))
             case ModelHint():
                 hint: ModelHint | None = value
-            case UnionType() if value.hint is None:
-                return self.union(*(self.hint(member, static=static) for member in value.members))
+            case UnionType() | GenericType() if value.hint is None:
+                return self.composed(value, lambda part: self.hint(part, static=static))
             case _:
                 hint = value.hint
         assert hint is not None, "a type view without a hint is a union a target composed"
@@ -353,18 +367,21 @@ class TargetModule:
             )
         return found
 
-    def _composed(self, kind: str, *parts: str, key: str | None = None) -> str:
+    def _composed(self, kind: str, *parts: str, key: str | None = None, given: str | None = None) -> str:
         """Return a composite of spelled types this module writes, importing the names its text writes once.
 
-        A union is of its parts, and any other kind is the type flag of a container of its one part.
+        A union is of its parts, and any other kind is the type flag of a container of its one part, written as the
+        container class ``given`` where an ``x-python-type`` gives it one.
         """
-        if (found := self.spelled.get(cache := (kind, key, *parts))) is None:
+        if (found := self.spelled.get(cache := (kind, key, given, *parts))) is None:
             composer = self.names.composer
             match kind:
                 case "union":
                     text, imports = composer.compose(members=parts, preserve_union_member_order=True)
                 case _:
                     flags: dict[str, Any] = {kind: True}
+                    if given is not None:
+                        flags["given_container"] = given
                     text, imports = composer.compose(base=parts[0], key=key, **flags)
             if not self.qualified:
                 for item in imports:
@@ -377,6 +394,24 @@ class TargetModule:
         members = tuple(dict.fromkeys(parts))
         return "".join(members) if len(members) < 2 else self._composed("union", *members)  # noqa: PLR2004
 
+    def composed(self, value: UnionType | GenericType, spell: Callable[[TypeView], str]) -> str:
+        """Return a union or container of parts spelled by ``spell``, as the model generator writes one."""
+        if isinstance(value, UnionType):
+            return self.union(*map(spell, _composed_members(value)))
+        return self.generic(value, list(map(spell, value.arguments)))
+
+    def generic(self, value: GenericType, arguments: list[str]) -> str:
+        """Return a container of spelled arguments, as the model generator writes one.
+
+        A generic of no container, such as the `SerializeAsAny` of a model type, is its class of the arguments.
+        """
+        if (slot := container_slot(value)) is None:
+            return subscript_text(self.hint(value.base), arguments)
+        flag = CONTAINER_FLAGS[slot]
+        if flag in MAPPINGS.flags:
+            return self.container(flag, arguments[-1], key=arguments[0], given=value.given)
+        return self.container(flag, arguments[0], given=value.given)
+
     def optional(self, part: str) -> str:
         """Return a spelled type or None, as the model generator writes an optional type."""
         return self._composed("is_optional", part)
@@ -385,9 +420,12 @@ class TargetModule:
         """Return a read-only sequence of a spelled type, as the model generator writes one."""
         return self._composed("is_sequence", part)
 
-    def container(self, flag: str, part: str, *, key: str | None = None) -> str:
-        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type."""
-        return self._composed(flag, part, key=key)
+    def container(self, flag: str, part: str, *, key: str | None = None, given: str | None = None) -> str:
+        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type.
+
+        ``given`` is the container class an ``x-python-type`` gives it (``GenericType.given``), which it is written as.
+        """
+        return self._composed(flag, part, key=key, given=given)
 
     def imports(self) -> str:
         """Return the module's import statements: whole modules in path order, then names by module."""

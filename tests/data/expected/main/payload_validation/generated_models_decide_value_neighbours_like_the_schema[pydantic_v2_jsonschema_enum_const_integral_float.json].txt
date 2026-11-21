@@ -1,0 +1,5 @@
+[
+  "/counts/0 const true: invalid, model accepts",
+  "/counts/0 enum true: invalid, model accepts",
+  "/ratios/0 enum 2.5: invalid, model accepts"
+]

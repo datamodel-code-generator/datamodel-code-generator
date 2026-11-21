@@ -1,0 +1,7 @@
+[
+  "seed: valid",
+  "/x minimum 0: invalid",
+  "/x minimum 0.9: invalid",
+  "/x minimum 1.1: invalid",
+  "/x minimum 2: valid"
+]

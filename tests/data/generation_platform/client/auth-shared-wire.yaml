@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Schemes sharing one credential position
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /flows:
+    get:
+      operationId: flows
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - implicit:
+            - read
+          code:
+            - read
+            - write
+  /keyed-flows:
+    get:
+      operationId: keyedFlows
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - implicit: []
+          key: []
+          code:
+            - write
+  /keys:
+    get:
+      operationId: keys
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - key: []
+          key_lower: []
+        - {}
+components:
+  securitySchemes:
+    implicit:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://auth.example.com/authorize
+          scopes:
+            read: Read access
+            write: Write access
+    code:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/authorize
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read: Read access
+            write: Write access
+    key:
+      type: apiKey
+      in: header
+      name: X-Key
+    key_lower:
+      type: apiKey
+      in: header
+      name: x-key

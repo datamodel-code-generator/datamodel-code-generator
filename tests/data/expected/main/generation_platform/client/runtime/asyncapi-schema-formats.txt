@@ -1,0 +1,6 @@
+# asyncapi-schema-formats pydantic_v2.BaseModel
+    readings 1 text ReadingsSubscribePayload{'sensor': 't1', 'value': 21.5} raw=b'{"sensor": "t1", "value": 21.5}'
+    server GET /readings [] | closed 1000 ''
+    notes 1 text NotesSubscribePayload{'text': 'calibrated'} raw=b'{"text": "calibrated"}'
+  notes without text ! DecodeError: DecodeError(status_code=101, reason='value', location='message.2') [location=('message', 2), body_bytes=b'{}', truncated=False, cause=ValidationError] value
+    server GET /notes [] | closed 1002 ''

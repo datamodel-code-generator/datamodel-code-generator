@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info: {title: nested variant below two tagged ancestors in a union used as array items of another module, version: "1"}
+paths: {}
+components:
+  schemas:
+    pets.Animal:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+    pets.Cat:
+      allOf:
+        - $ref: '#/components/schemas/pets.Animal'
+        - type: object
+          properties:
+            meow: {type: string}
+    pets.Kitten:
+      allOf:
+        - $ref: '#/components/schemas/pets.Cat'
+        - type: object
+          properties:
+            tiny: {type: boolean}
+    pets.Young:
+      oneOf:
+        - $ref: '#/components/schemas/pets.Kitten'
+    pets.Registry:
+      type: object
+      properties:
+        any:
+          oneOf:
+            - $ref: '#/components/schemas/pets.Animal'
+            - $ref: '#/components/schemas/pets.Cat'
+          discriminator:
+            propertyName: kind
+    pets.Guest:
+      oneOf:
+        - $ref: '#/components/schemas/pets.Young'
+        - $ref: '#/components/schemas/pets.Cat'
+      discriminator:
+        propertyName: kind
+    api.Shelter:
+      type: object
+      properties:
+        guests:
+          type: array
+          items: {$ref: '#/components/schemas/pets.Guest'}

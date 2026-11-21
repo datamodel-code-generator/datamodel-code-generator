@@ -10,13 +10,12 @@ methods that tests call or that other parts of the parser call stay on the parse
 from __future__ import annotations
 
 import json
-from functools import partial, reduce
-from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
+from functools import cached_property, partial, reduce
+from itertools import chain, islice
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
-from typing_extensions import Protocol
+from typing_extensions import Protocol, final
 
-from datamodel_code_generator import AllOfClassHierarchy, AllOfMergeMode, SchemaParseError
 from datamodel_code_generator._constraint_applicability import all_of_root_keyword_kinds
 from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
@@ -27,9 +26,12 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY
 from datamodel_code_generator._regex_syntax import is_portable_pattern
+from datamodel_code_generator._shared_types import SchemaParseError
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.enums import AllOfClassHierarchy, AllOfMergeMode
 from datamodel_code_generator.model._decisions.enum_kind import holds_inherited_member_value, holds_member_value
 from datamodel_code_generator.model.enum import Enum, enum_value_base
+from datamodel_code_generator.parser import _lightweight_types, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._intersection import (
     BRANCH_COMBINATION_LIMIT,
     all_of_member_row,
@@ -41,7 +43,8 @@ from datamodel_code_generator.parser._intersection import (
     intersects_all_of_constraints,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
-from datamodel_code_generator.parser._null_facts import dump_null_sources, null_schema
+from datamodel_code_generator.parser._lightweight_types import LightweightTypesHost
+from datamodel_code_generator.parser._null_facts import null_schema, null_sources
 from datamodel_code_generator.parser._schema_object import (
     _MODELED_POSITIONS,
     JsonSchemaObject,
@@ -53,41 +56,37 @@ from datamodel_code_generator.parser._schema_reading import (
     _LIGHTWEIGHT_MAX_DEPTH,
     _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     _AllOfItemGroups,
+    _declares_key_keywords,
     _enum_without_positions,
-    _intersect_dumps,
+    _intersect_parts,
     _is_object_only_type,
     _merges_ref_siblings,
     _numeric_type_domain,
     _schema_dump,
+    _with_ref_siblings,
 )
 from datamodel_code_generator.reference import Reference, _is_special_path
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
-    from datamodel_code_generator._format_types import PythonVersion
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.config import JSONSchemaParserConfig
-    from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.model import DataModel, DataModelFieldBase
-    from datamodel_code_generator.model.output import OutputModelContext
-    from datamodel_code_generator.parser._intersection import KeywordIntersection
-    from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
-    from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder, _TargetNode
+    from datamodel_code_generator.model import DataModel
+    from datamodel_code_generator.parser._null_facts import NullMode
+    from datamodel_code_generator.parser._schema_graph import _TargetNode
+    from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType, Types
 
 __all__ = [
     "AllOfValuesHost",
-    "SchemaRefReader",
+    "ValueSite",
     "all_of_enum_site_schema",
     "all_of_pattern_conjunction",
     "all_of_reference_value_schema",
     "all_of_root_value_schema",
     "all_of_site_schema",
-    "all_of_value_parts",
     "all_of_value_row",
     "all_of_value_union_site",
     "all_of_value_variants",
@@ -130,6 +129,9 @@ __all__ = [
 ]
 
 _DERIVED_FROM_REF_KEY = "_derived_from_ref"
+_SITE_CONSTRAINTS_SCHEMA_KEY = "_site_constraints"
+"""The constraints an allOf site adds to its one ``$ref`` target (``reference_site_constraints``), kept on the bare
+reference ``merge_all_of_root_schema`` rewrites the site to, which the root type that names the target records."""
 _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS = frozenset({
     *schema_positions("applicator", without=(*_MODELED_POSITIONS, "dependencies", "extends")),
     "dependentRequired",
@@ -230,10 +232,9 @@ _PATTERN_SCAN_SKIPPED_KEYWORDS: Final = INSTANCE_DATA_KEYWORDS | {"patternProper
 """The keywords whose values hold no subschema a type carries; ``patternProperties`` counts by its keys and values."""
 
 
-class AllOfValuesHost(Protocol):
+class AllOfValuesHost(LightweightTypesHost, Protocol):
     """The options, run state and hooks of the parser that the allOf value merging reads."""
 
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _all_of_root_value_ref_stack: set[tuple[_TargetNode, ...]] | None
 
     @property
@@ -241,71 +242,20 @@ class AllOfValuesHost(Protocol):
         """How allOf members become base classes (``--allof-class-hierarchy``)."""
 
     @property
-    def allof_merge_mode(self) -> AllOfMergeMode:
-        """How the constraints of allOf members merge (``--allof-merge-mode``)."""
-
-    @property
     def collapse_root_models(self) -> bool:
         """Whether root models are collapsed into their users."""
-
-    @property
-    def config(self) -> JSONSchemaParserConfig:
-        """The configuration of the parser."""
-
-    @property
-    def data_model_field_type(self) -> type[DataModelFieldBase]:
-        """The field type of the output."""
 
     @property
     def data_model_root_type(self) -> type[DataModel]:
         """The root model type of the output."""
 
     @property
-    def field_constraints(self) -> bool:
-        """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def generate_schema_validators(self) -> bool:
-        """Whether the models validate the schema rules their fields cannot express."""
-
-    @property
-    def ignore_enum_constraints(self) -> bool:
-        """Whether an enum leaves its constraints out (``--ignore-enum-constraints``)."""
-
-    @property
-    def target_pydantic_version(self) -> TargetPydanticVersion | None:
-        """The Pydantic version the output targets, if configured."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
-
-    @property
-    def type_mappings(self) -> dict[tuple[str, str], str]:
-        """The ``--type-mappings`` entries."""
-
-    @property
-    def _data_formats(self) -> dict[str, dict[str, Types]]:
-        """The data format mappings of this parser type."""
-
-    @property
-    def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each of its options that is off."""
-
-    @property
     def _null_mode(self) -> NullMode:
         """The options that change how parse sites read null (``parser/_null_facts.py``)."""
 
     @property
-    def _output_model_context(self) -> OutputModelContext:
-        """The capabilities of the output model types."""
-
-    @property
-    def _schema_graph(self) -> SchemaGraphBuilder | None:
-        """The schema graph of the parse, once it is built."""
-
-    def get_ref_data_type(self, ref: str) -> DataType:
-        """Return the data type a reference names."""
+    def _root_validates_literals(self) -> bool:
+        """Whether the root model class validates the literal values of a root (``add_literal_validation``)."""
 
     def parse_root_type(
         self,
@@ -314,20 +264,6 @@ class AllOfValuesHost(Protocol):
         path: list[str],
     ) -> DataType:
         """Parse a root-level type into a root model."""
-
-    def should_parse_enum_as_literal(
-        self,
-        obj: JsonSchemaObject,
-        property_name: str | None = None,
-        property_obj: JsonSchemaObject | None = None,
-    ) -> bool:
-        """Determine if an enum should be parsed as a literal type (``enum_as_literal``)."""
-
-    def _allof_lightweight_items(self, schema: JsonSchemaObject) -> Sequence[JsonSchemaObject | bool]:
-        """Return the members ``_build_allof_type`` builds a type from: own keywords first, then allOf."""
-
-    def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
-        """Return the conjoined pattern, warning about the patterns it leaves out."""
 
     def _drop_incompatible_inherited_constraints(
         self,
@@ -341,17 +277,11 @@ class AllOfValuesHost(Protocol):
     ) -> tuple[frozenset[str], bool, dict[str, Any], dict[str, Any]]:
         """Return what a value schema enforces: its types, null, the constraints its type takes and other keywords."""
 
+    def _enum_site_form(self, obj: JsonSchemaObject, name: str | None) -> Literal["const", "literal", "class"]:
+        """Return the form a site writes an enum it reads in: its const, a Literal or an Enum class."""
+
     def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
         """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
-
-    def _get_array_item_schemas(
-        self,
-        obj: JsonSchemaObject,
-        *,
-        include_true_tail_schema: bool = False,
-        force_prefix_items: bool = False,
-    ) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
-        """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
 
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
         """Return the enum model class and the schema type whose value type it also subclasses, else None."""
@@ -359,17 +289,14 @@ class AllOfValuesHost(Protocol):
     def _get_enum_type(self, obj: JsonSchemaObject) -> Types | None:
         """Return the type an enum class of the schema may specialize or subclass."""
 
-    def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
-        """Return the length of an opted-in homogeneous fixed-length tuple."""
-
     def _get_inherited_property_map(
         self,
         base_classes: list[Reference],
-    ) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
-        """Build the effective raw property map once in inherited C3 order."""
+    ) -> Mapping[str, tuple[JsonSchemaObject | bool, str]]:
+        """Return the effective raw property map in inherited C3 order, read-only."""
 
-    def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
-        """Get the Types enum for a given type and format, applying custom type mappings."""
+    def _get_schema_type(self, obj: JsonSchemaObject, type_: str, format_: str) -> Types:
+        """Get the Types enum for a type and format of ``obj``, applying custom type mappings."""
 
     def _group_allof_items(
         self,
@@ -387,64 +314,24 @@ class AllOfValuesHost(Protocol):
     def _inherited_override_row(self, parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
         """Return ``parser/_intersection.py:inherited_override_row`` under the merge mode of this parse."""
 
-    def _is_all_of_mapping_item(self, schema: JsonSchemaObject) -> bool:
-        """Return whether an allOf item is an object map, which a mapping-shaped allOf merges into one root map."""
-
-    def _is_root_model_schema(self, obj: JsonSchemaObject) -> bool:
-        """Check if schema represents a root model (primitive type with constraints)."""
-
     def _iter_schema_validation_sources(
         self,
         obj: JsonSchemaObject,
         visited_refs: frozenset[_TargetNode] = frozenset(),
         *,
         include_references: bool = True,
+        sibling_yield: Literal["ref-less-copy", "applicator-copy"] = "ref-less-copy",
     ) -> Iterator[JsonSchemaObject]:
         """Yield the schema and its allOf sources, without the document each was read from."""
-
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
-        """Load and cache a schema used only for inherited field inspection."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Return the schema object a reference names."""
 
     def _merge_all_of_root_validation_keywords(self, merged: dict[str, Any], sources: list[JsonSchemaObject]) -> None:
         """Preserve literal and item intersections while materializing a value reference."""
 
-    def _merge_primitive_schemas(self, items: list[JsonSchemaObject]) -> JsonSchemaObject:
-        """Merge primitive schemas into the intersection of their constraints."""
-
     def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Return the one primitive schema the parts of an allOf merge into, if they merge."""
 
-    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
-        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
-
-    def _merge_schema_constraints(
-        self,
-        base_dict: dict[str, Any],
-        items: list[JsonSchemaObject],
-        *,
-        intersect: bool,
-    ) -> None:
-        """Merge the constraints of ``items`` into ``base_dict``, intersecting them when ``intersect`` is set."""
-
     def _merge_value_schemas(self, schemas: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Merge schemas that constrain one value, unless their types, formats or literals disagree."""
-
-    def _null_facts(
-        self,
-        obj: JsonSchemaObject,
-        site: NullSite,
-        *,
-        required: bool = False,
-        has_default: bool = False,
-        parts: Sequence[NullSources] = (),
-    ) -> NullFacts:
-        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
 
     def _other_keys_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the additionalProperties schema typing the keys no pattern matches (``parser/_object_maps.py``)."""
@@ -452,40 +339,16 @@ class AllOfValuesHost(Protocol):
     def _parse_all_of_root_value(self, name: str, merged_root: JsonSchemaObject, path: list[str]) -> DataType:
         """Keep literal membership alongside the existing scalar or container representation."""
 
-    def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
-        """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf."""
-
-    def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
-        """Return whether --use-single-value-enum-as-const reads an enum admitting the const beside it as that const."""
-
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
     def _ref_siblings_apply_to(
         self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
     ) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
 
-    def _satisfiable_all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
+    def _satisfiable_all_of_value_parts(self, site: ValueSite) -> list[JsonSchemaObject] | None:
         """Return the parts of an allOf site whose members each describe one value, references resolved, else None."""
-
-    def _schema_has_own_value_keywords(self, schema: JsonSchemaObject) -> bool:
-        """Return whether a schema has value keywords of its own."""
 
     def _schema_literal_values(self, obj: JsonSchemaObject) -> tuple[object, ...] | None:
         """Return direct const/enum values after their JSON Schema intersection."""
-
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw schema into a schema object."""
-
-    def _schema_requires_model_type(
-        self,
-        item: JsonSchemaObject,
-        *,
-        resolve_ref: bool = False,
-        visited_refs: frozenset[_TargetNode] | None = None,
-    ) -> bool:
-        """Return whether a schema describes a model-shaped object."""
 
     def _temporarily_enable_field_constraints(self) -> AbstractContextManager[None]:
         """Render an internal annotated alias with Field constraints without bypassing parser hooks."""
@@ -495,24 +358,6 @@ class AllOfValuesHost(Protocol):
 
     def _typed_nullable_map_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the value schema of a nullable map when this run types its values (``parser/_object_maps.py``)."""
-
-    def _unvisited_ref_target(
-        self, ref: str, visited_refs: frozenset[_TargetNode]
-    ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-        """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-
-    def _validate_schema_object(
-        self,
-        raw: dict[str, YamlValue] | YamlValue,
-        path: list[str],
-    ) -> JsonSchemaObject:
-        """Validate raw data as JsonSchemaObject with path context in errors; a too deep nesting stops the parse."""
-
-    def _warn_intersection(self, where: str, intersection: KeywordIntersection, *parts: str) -> None:
-        """Warn about the keywords of an intersection whose parts have no value in common, and its untaken patterns."""
-
-    def _without_allof_keywords(self, schema: JsonSchemaObject) -> JsonSchemaObject:
-        """Return a schema without its allOf."""
 
 
 def schema_requires_model_type(
@@ -524,9 +369,12 @@ def schema_requires_model_type(
 ) -> bool:
     """Return whether a schema describes a model-shaped object."""
     if item.ref:
-        if not resolve_ref or (target := parser._unvisited_ref_target(item.ref, visited_refs or frozenset())) is None:  # noqa: SLF001
+        if (
+            not resolve_ref
+            or (target := _schema_refs.unvisited_ref_target(parser, item.ref, visited_refs or frozenset())) is None
+        ):
             return True
-        return parser._schema_requires_model_type(target[0], resolve_ref=True, visited_refs=target[1])  # noqa: SLF001
+        return schema_requires_model_type(parser, target[0], resolve_ref=True, visited_refs=target[1])
     return bool(
         item.properties is not None
         or item.patternProperties is not None
@@ -551,7 +399,7 @@ def allof_requires_model_type(
     return any(
         isinstance(item, JsonSchemaObject)
         and (
-            parser._schema_requires_model_type(item, resolve_ref=resolve_ref, visited_refs=visited_refs)  # noqa: SLF001
+            schema_requires_model_type(parser, item, resolve_ref=resolve_ref, visited_refs=visited_refs)
             or any(
                 members and allof_requires_model_type(parser, members, resolve_ref=True, visited_refs=visited_refs)
                 for members in (item.allOf, item.anyOf, item.oneOf)
@@ -568,7 +416,7 @@ def schema_has_own_value_keywords(parser: AllOfValuesHost, schema: JsonSchemaObj
 def without_allof_keywords(parser: AllOfValuesHost, schema: JsonSchemaObject) -> JsonSchemaObject:
     schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
     schema_dict.pop("allOf", None)
-    return parser._schema_object(schema_dict)  # noqa: SLF001
+    return parser._schema_object(schema_dict)
 
 
 def is_all_of_value_part(parser: AllOfValuesHost, schema: JsonSchemaObject) -> bool:
@@ -586,7 +434,7 @@ def is_all_of_value_part(parser: AllOfValuesHost, schema: JsonSchemaObject) -> b
         or schema.dynamicRef
         or schema.custom_type_path
         or _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS.intersection(schema.extras)
-        or parser._schema_requires_model_type(schema)  # noqa: SLF001
+        or schema_requires_model_type(parser, schema)
         or (schema.pattern is not None and not is_portable_pattern(schema.pattern))
     )
 
@@ -606,9 +454,7 @@ def collect_all_of_value_parts(
         if not isinstance(item, JsonSchemaObject):
             return False
         member = (
-            parser._merge_ref_with_schema(  # noqa: SLF001
-                item, named_location(schema.schema_location, "allOf")
-            )
+            parser._merge_ref_with_schema(item, named_location(schema.schema_location, "allOf"))
             if resolve_refs
             else item
         )
@@ -619,13 +465,17 @@ def collect_all_of_value_parts(
                 return False
         else:
             parts.append(member)
-    if parser._schema_has_own_value_keywords(schema) or any(  # noqa: SLF001
-        getattr(schema, keyword) is not None for keyword in _ALL_OF_VALUE_ITEM_KEYWORDS
-    ):
-        if not is_all_of_value_part(parser, own := parser._without_allof_keywords(schema)):  # noqa: SLF001
+    if _writes_value_part(parser, schema):
+        if not is_all_of_value_part(parser, own := without_allof_keywords(parser, schema)):
             return False
         parts.append(own)
     return True
+
+
+def _writes_value_part(parser: AllOfValuesHost, schema: JsonSchemaObject) -> bool:
+    """Return whether the own keywords of an allOf schema are one of its parts: a value keyword or an item schema."""
+    item_schemas = (getattr(schema, keyword) for keyword in _ALL_OF_VALUE_ITEM_KEYWORDS)
+    return schema_has_own_value_keywords(parser, schema) or any(item is not None for item in item_schemas)
 
 
 def all_of_value_row(parser: AllOfValuesHost, obj: JsonSchemaObject) -> dict[str, Any]:
@@ -635,16 +485,16 @@ def all_of_value_row(parser: AllOfValuesHost, obj: JsonSchemaObject) -> dict[str
     ``_collect_all_of_value_parts``): the first typed member with every member's constraints intersected, and
     nothing when it writes no type.
     """
-    items = [item for item in parser._allof_lightweight_items(obj) if isinstance(item, JsonSchemaObject)]  # noqa: SLF001
+    items = [item for item in allof_lightweight_items(parser, obj) if isinstance(item, JsonSchemaObject)]
     if len(items) == 1:
         return items[0].model_dump(exclude_unset=True, by_alias=True)
     if (
-        groups := parser._group_allof_items(  # noqa: SLF001
+        groups := parser._group_allof_items(
             items, 0, frozenset(), _LIGHTWEIGHT_MAX_DEPTH, _LIGHTWEIGHT_MAX_UNION_ELEMENTS
         )
     ) is None or not groups.primitives:
         return {}
-    return parser._merge_primitive_schemas([*groups.primitives, *groups.constraint_only]).model_dump(  # noqa: SLF001
+    return _lightweight_types.merge_primitive_schemas(parser, [*groups.primitives, *groups.constraint_only]).model_dump(
         exclude_unset=True, by_alias=True
     )
 
@@ -685,14 +535,8 @@ def intersect_all_of_value_parts(
         const_part := next((dump for dump in dumps if "const" in dump.get(extras_key, {})), None)
     ):
         row_extras["const"] = added["const"] = const_part[extras_key]["const"]
-    intersection = _intersect_dumps(
-        dumps,
-        row,
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
-    )
+    intersection = _intersect_parts(parser, dumps, row, where=where, parts=(_ALL_OF_PARTS,))
     keywords = intersection.keywords
-    if where is not None:
-        parser._warn_intersection(where, intersection, _ALL_OF_PARTS)  # noqa: SLF001
     dropped = set(intersection.unsatisfiable)
     if "array" not in declared_types(keywords.get("type")):
         dropped.update(_ALL_OF_VALUE_ITEM_KEYWORDS)
@@ -701,10 +545,10 @@ def intersect_all_of_value_parts(
             keywords[extras_key] = {key: value for key, value in keywords[extras_key].items() if key != "const"}
         else:
             keywords.pop(keyword)
-    return parser._schema_object(keywords)  # noqa: SLF001
+    return parser._schema_object(keywords)
 
 
-def legacy_site_keywords(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+def legacy_site_keywords(parser: AllOfValuesHost, site: ValueSite) -> JsonSchemaObject | None:
     """Return the keywords that the root field of an allOf value site writes where the site keeps its earlier form.
 
     Under ``legacy-all-of-site-form`` the site is typed by the form it is written in, built from the site schema, which
@@ -716,17 +560,17 @@ def legacy_site_keywords(parser: AllOfValuesHost, obj: JsonSchemaObject) -> Json
     ``legacy-lookahead-patterns`` no engine is checked to run: it writes the site's own pattern then, if any, as it did
     up to 0.89.0. None for every other site, whose root writes none.
     """
-    parts: list[JsonSchemaObject] = []
+    obj, parts = site.obj, []
     if (
-        "legacy-all-of-site-form" not in parser._legacy_intersection  # noqa: SLF001
+        "legacy-all-of-site-form" not in parser._legacy_intersection
         or not collect_all_of_value_parts(parser, obj, parts)
-        or parser._satisfiable_all_of_value_parts(obj) is None  # noqa: SLF001
+        or parser._satisfiable_all_of_value_parts(site) is None
         or not intersects_value_parts(parser, parts, literals=False)
     ):
         return None
     lookaheads = len({part.pattern for part in parts if part.pattern is not None}) > 1
     keywords = intersect_all_of_value_parts(parser, parts, all_of_value_row(parser, obj), None)
-    return parser._schema_object(  # noqa: SLF001
+    return parser._schema_object(
         {
             keyword: value
             for keyword, value in keywords.model_dump(exclude_unset=True, by_alias=True).items()
@@ -743,7 +587,7 @@ def intersect_typed_value_parts(
     return intersect_all_of_value_parts(
         parser,
         parts,
-        parser._merge_primitive_schemas(parts).model_dump(exclude_unset=True, by_alias=True),  # noqa: SLF001
+        _lightweight_types.merge_primitive_schemas(parser, parts).model_dump(exclude_unset=True, by_alias=True),
         where,
     )
 
@@ -755,7 +599,7 @@ def reference_value_parts(parser: AllOfValuesHost, ref: str) -> list[JsonSchemaO
         parts
         if collect_all_of_value_parts(
             parser,
-            parser._schema_object({"allOf": [{"$ref": ref}]}),  # noqa: SLF001
+            parser._schema_object({"allOf": [{"$ref": ref}]}),
             parts,
             resolve_refs=True,
         )
@@ -771,8 +615,8 @@ def output_enforced_value_keywords(
     Types, null, formats, literals and item schemas count in every output (``_enforced_value_keywords``). The
     constraints beside an ``enum`` or ``const`` count in none: its literals are those that meet them.
     """
-    types, null, constraints, written = parser._enforced_value_keywords(schema)  # noqa: SLF001
-    checked = parser._output_model_context.checks_constraints and not (schema.enum or "const" in schema.extras)  # noqa: SLF001
+    types, null, constraints, written = parser._enforced_value_keywords(schema)
+    checked = parser._output_model_context.checks_constraints and not (schema.enum or "const" in schema.extras)
     return types, null, constraints if checked else {}, written
 
 
@@ -783,15 +627,29 @@ def layers_on_reference(parser: AllOfValuesHost, target: JsonSchemaObject, keys:
     takes only the others.
     """
     return parser.data_model_root_type.IS_ALIAS and (
-        parser._output_model_context.layers_repeated_constraints  # noqa: SLF001
+        parser._output_model_context.layers_repeated_constraints
         or not any(
             getattr(target, keyword) is not None for keyword in target.__constraint_field_order__ if keyword in keys
         )
     )
 
 
+def _site_intersection(
+    parser: AllOfValuesHost, obj: JsonSchemaObject, parts: list[JsonSchemaObject]
+) -> JsonSchemaObject:
+    """Return the intersection of the value parts of an allOf site, warned about at the site, its enum narrowed.
+
+    The enum is narrowed to the const of each part without one (``_enum_narrowed_by_part_consts``).
+    """
+    return _enum_narrowed_by_part_consts(
+        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
+        parts,
+        const_support=parser._features_at(obj).const_support,
+    )
+
+
 def reference_site_value(
-    parser: AllOfValuesHost, obj: JsonSchemaObject, *, layered: bool
+    parser: AllOfValuesHost, site: ValueSite, *, layered: bool
 ) -> tuple[list[JsonSchemaObject], dict[str, Any]] | None:
     """Return the parts and the value of an allOf site whose earlier form leaves out what its parts enforce.
 
@@ -808,21 +666,18 @@ def reference_site_value(
     schema, the reference with the intersection's other constraints layered on it where the output writes field
     constraints and takes them exactly, else the intersection.
     """
+    obj = site.obj
     if (
         not (refs := _bare_ref_members(obj))
-        or (parts := all_of_value_parts(parser, obj)) is None
+        or (parts := site.parts) is None
         or not intersects_value_parts(parser, parts)
-        or (target_parts := reference_value_parts(parser, refs[0])) is None
+        or (target_parts := site.target_parts) is None
     ):
         return None
-    satisfiable = parser._satisfiable_all_of_value_parts(obj) is not None  # noqa: SLF001
-    written = parser._temporary_constraint_values(obj, parser.get_ref_data_type(refs[0])) if layered else {}  # noqa: SLF001
+    satisfiable = parser._satisfiable_all_of_value_parts(site) is not None
+    written = parser._temporary_constraint_values(obj, parser.get_ref_data_type(refs[0])) if layered else {}
     target = intersect_typed_value_parts(parser, target_parts, None)
-    intersection = _enum_narrowed_by_part_consts(
-        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
-        parts,
-        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
-    )
+    intersection = _site_intersection(parser, obj, parts)
     target_dump = target.model_dump(exclude_unset=True, by_alias=True)
     fails = bool(written) and not (parser.collapse_root_models or layers_on_reference(parser, target, written))
     if not fails and (
@@ -832,16 +687,12 @@ def reference_site_value(
         == output_enforced_value_keywords(parser, intersection)
     ):
         return None
-    enforced = parser._enforced_value_keywords(intersection)  # noqa: SLF001
-    target_enforced = parser._enforced_value_keywords(target)  # noqa: SLF001
+    enforced = parser._enforced_value_keywords(intersection)
+    target_enforced = parser._enforced_value_keywords(target)
     if len(refs) == 1 and enforced == target_enforced:
         return parts, {"$ref": refs[0]}
     value = intersection.model_dump(exclude_unset=True, by_alias=True)
-    added = {
-        keyword: value[keyword]
-        for keyword in intersection.__constraint_field_order__
-        if keyword in value and value[keyword] != target_dump.get(keyword)
-    }
+    added = _added_constraints(intersection, target_dump)
     if (
         parser.field_constraints
         and len(refs) == 1
@@ -852,7 +703,74 @@ def reference_site_value(
     return parts, value
 
 
-def all_of_reference_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+def _added_constraints(intersection: JsonSchemaObject, target: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the constraint keywords of ``intersection`` whose value differs from that of the dump ``target``."""
+    value = intersection.model_dump(exclude_unset=True, by_alias=True)
+    return {
+        keyword: value[keyword]
+        for keyword in intersection.__constraint_field_order__
+        if keyword in value and value[keyword] != target.get(keyword)
+    }
+
+
+def reference_site_constraints(parser: AllOfValuesHost, site: ValueSite) -> dict[str, Any]:
+    """Return the constraint keywords an allOf site adds to the schema its first ``$ref`` member names, by keyword.
+
+    They are those of the intersection of its parts (that schema, the siblings of its ``$ref``, the inline members
+    and the site's own keywords) whose value differs from that schema's own; beside a map (an object of additional
+    properties alone), the property counts, keyed as a map field writes them (``minItems``, ``maxItems``). Empty where
+    the parts are no value schemas or are not intersected here (``intersects_value_parts``), where no value meets them
+    all, where the intersection is a set of literals, whose constraints count in no output, and where the site adds
+    nothing. The site has a ``$ref`` member: each caller passes only such a site.
+    """
+    members = [item for item in site.obj.allOf if isinstance(item, JsonSchemaObject)]
+    ref = cast("str", next(member.ref for member in members if member.ref))
+    if is_all_of_mapping_item(parser, target := parser._load_ref_schema_object(ref)):
+        return _added_map_counts(parser, site.obj, members, target)
+    if (
+        (parts := site.parts) is None
+        or not intersects_value_parts(parser, parts)
+        or (target_parts := site.target_parts) is None
+        or parser._satisfiable_all_of_value_parts(site) is None
+    ):
+        return {}
+    intersection = intersect_typed_value_parts(parser, parts, None)
+    if intersection.enum or "const" in intersection.extras:
+        return {}
+    target_value = intersect_typed_value_parts(parser, target_parts, None)
+    return _added_constraints(intersection, target_value.model_dump(exclude_unset=True, by_alias=True))
+
+
+def _reference_root(obj: JsonSchemaObject, ref: str, constraints: dict[str, Any]) -> JsonSchemaObject:
+    """Return the allOf site ``obj`` of one ``$ref`` member as a bare ``ref`` beside the site's own keywords.
+
+    It keeps the ``constraints`` the site adds to that target (``reference_site_constraints``,
+    ``_SITE_CONSTRAINTS_SCHEMA_KEY``).
+    """
+    root = obj.model_copy(update={"ref": ref, "allOf": []})
+    if constraints:
+        root.__dict__[_SITE_CONSTRAINTS_SCHEMA_KEY] = constraints
+    return root
+
+
+def _added_map_counts(
+    parser: AllOfValuesHost, obj: JsonSchemaObject, members: Sequence[JsonSchemaObject], target: JsonSchemaObject
+) -> dict[str, Any]:
+    """Return the property counts an allOf site adds to the map its first ``$ref`` names, as ``minItems``/``maxItems``.
+
+    The counts of the site's own keywords and of its members, each ``$ref`` merged with its siblings, are intersected
+    with the map's own: the largest ``minProperties`` and the smallest ``maxProperties``.
+    """
+    sources = [obj, *(parser._merge_ref_with_schema(member) for member in members)]
+    added: dict[str, Any] = {}
+    for keyword, written, pick in (("minProperties", "minItems", max), ("maxProperties", "maxItems", min)):
+        values = [value for source in sources if (value := getattr(source, keyword)) is not None]
+        if values and (count := pick(values)) != getattr(target, keyword):
+            added[written] = count
+    return added
+
+
+def all_of_reference_value_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSchemaObject | None:
     """Return the value schema of an allOf site whose earlier form writes its own constraints beside a reference.
 
     That form is the type of the first ``$ref`` member with the site's own constraints. Under
@@ -864,35 +782,35 @@ def all_of_reference_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject
     nested combinators. Under ``legacy-all-of-site-form`` a site leaves its earlier form only where that form
     fails, so it keeps it under ``--collapse-root-models``, whose holders merge the constraints.
     """
+    obj = site.obj
     members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject)]
     refs = [member.ref for member in members if member.ref]
-    if not refs or not (constraints := parser._temporary_constraint_values(obj, parser.get_ref_data_type(refs[0]))):  # noqa: SLF001
+    if not refs or not (constraints := parser._temporary_constraint_values(obj, parser.get_ref_data_type(refs[0]))):
         return None
     if parser.config.use_site_models_for_constrained_refs and _bare_ref_members(obj):
-        site = reference_site_value(parser, obj, layered=True)
-        return None if site is None else _derived_site(parser.SCHEMA_OBJECT_TYPE.model_validate(site[1]), refs)
-    parts: list[JsonSchemaObject] = []
+        value = reference_site_value(parser, site, layered=True)
+        return None if value is None else _derived_site(parser.SCHEMA_OBJECT_TYPE.model_validate(value[1]), refs)
     if (
-        (parser.collapse_root_models and "legacy-all-of-site-form" in parser._legacy_intersection)  # noqa: SLF001
+        (parser.collapse_root_models and "legacy-all-of-site-form" in parser._legacy_intersection)
         or any(member.allOf or member.anyOf or member.oneOf for member in members)
-        or (target_parts := reference_value_parts(parser, refs[0])) is None
-        or not collect_all_of_value_parts(parser, obj, parts, resolve_refs=True)
+        or (target_parts := site.target_parts) is None
+        or (parts := site.parts) is None
     ):
         return None
     target = intersect_typed_value_parts(parser, target_parts, None)
     if layers_on_reference(parser, target, constraints):
         return None
     intersection = intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf"))
-    if len(refs) == 1 and parser._enforced_value_keywords(intersection) == parser._enforced_value_keywords(target):  # noqa: SLF001
-        return parser._schema_object({"$ref": refs[0]})  # noqa: SLF001
+    if len(refs) == 1 and parser._enforced_value_keywords(intersection) == parser._enforced_value_keywords(target):
+        return parser._schema_object({"$ref": refs[0]})
     return intersection
 
 
 def allof_lightweight_items(parser: AllOfValuesHost, schema: JsonSchemaObject) -> Sequence[JsonSchemaObject | bool]:
     """Return the members ``_build_allof_type`` builds a type from: own keywords first, then allOf."""
     allof_items: Sequence[JsonSchemaObject | bool] = schema.allOf or []
-    if parser._schema_has_own_value_keywords(schema):  # noqa: SLF001
-        return [parser._without_allof_keywords(schema), *allof_items]  # noqa: SLF001
+    if schema_has_own_value_keywords(parser, schema):
+        return [without_allof_keywords(parser, schema), *allof_items]
     return allof_items
 
 
@@ -928,10 +846,9 @@ def is_root_model_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> bool
         or obj.oneOf
         or obj.anyOf
         or obj.properties
-        or obj.patternProperties
-        or obj.propertyNames is not None
+        or _declares_key_keywords(obj)
         or obj.type == "object"
-    ) and (not obj.enum or parser.ignore_enum_constraints)
+    ) and not parser._reads_enum(obj)
 
 
 def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
@@ -947,7 +864,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
     Only applies to named schema definitions, not inline properties.
     """
     if any(_is_special_path(path_element) for path_element in path):
-        return None  # pragma: no cover
+        return None
 
     ref_items = [item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]
 
@@ -956,16 +873,16 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
 
     ref_item = ref_items[0]
     if _merges_ref_siblings(ref_item):
-        ref_schema = parser._merge_ref_with_schema(ref_item)  # noqa: SLF001
+        ref_schema = parser._merge_ref_with_schema(ref_item)
     else:
-        ref_schema = parser._load_ref_schema_object(cast("str", ref_item.ref))  # noqa: SLF001
+        ref_schema = parser._load_ref_schema_object(cast("str", ref_item.ref))
 
-    if not parser._is_root_model_schema(ref_schema):  # noqa: SLF001
+    if not is_root_model_schema(parser, ref_schema):
         return None
 
     constraint_items: list[JsonSchemaObject] = []
     for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):  # pragma: no cover
+        if not isinstance(item, JsonSchemaObject):  # pragma: no cover - not proven unreachable
             continue
         if item.ref:
             continue
@@ -989,28 +906,28 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
                 site_types = None
 
     all_items = [ref_schema, *constraint_items]
-    merged_schema = parser._merge_primitive_schemas_for_allof(all_items)  # noqa: SLF001
+    merged_schema = parser._merge_primitive_schemas_for_allof(all_items)
     if merged_schema is None:
         return None
     if site_types:
-        merged_schema = parser._schema_object({  # noqa: SLF001
+        merged_schema = parser._schema_object({
             **merged_schema.model_dump(exclude_unset=True, by_alias=True),
             "type": site_types[0] if len(site_types) == 1 else list(site_types),
         })
 
     has_literals = (
         parser.generate_schema_validators
-        and hasattr(parser.data_model_root_type, "add_literal_validation")
+        and parser._root_validates_literals
         and ("enum" in obj.model_fields_set or "const" in obj.extras)
     )
     if obj.has_constraint or obj.description or obj.format or has_literals or parser.field_constraints:
         merged_dict = merged_schema.model_dump(exclude_unset=True, by_alias=True)
         if obj.has_constraint:
-            parser._merge_schema_constraints(merged_dict, [obj], intersect=True)  # noqa: SLF001
+            parser._merge_schema_constraints(merged_dict, [obj], intersect=True)
         if obj.format and not merged_schema.format:
             merged_dict["format"] = obj.format
         if has_literals:
-            parser._merge_all_of_root_validation_keywords(merged_dict, [*all_items, obj])  # noqa: SLF001
+            parser._merge_all_of_root_validation_keywords(merged_dict, [*all_items, obj])
         if obj.description:
             merged_dict["description"] = obj.description
         if isinstance(schema_type := merged_schema.type, list) and not merged_schema.has_multiple_types:
@@ -1020,26 +937,26 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
             if (
                 (format_ := merged_dict.get("format"))
                 and (
-                    format_ in parser._data_formats.get(schema_type, {})  # noqa: SLF001
+                    format_ in parser._data_formats.get(schema_type, {})
                     or (schema_type, format_) in parser.type_mappings
                 )
                 and (
                     kinds := all_of_root_keyword_kinds(
                         schema_type,
-                        parser._get_type_with_mappings(schema_type, format_).name,  # noqa: SLF001
+                        parser._get_schema_type(merged_schema, schema_type, format_).name,
                     )
                 )
                 is not None
             ):
                 constraint_types = kinds
-            merged_dict = parser._drop_incompatible_inherited_constraints(merged_dict, constraint_types)  # noqa: SLF001
-        merged_schema = parser._schema_object(merged_dict)  # noqa: SLF001
+            merged_dict = parser._drop_incompatible_inherited_constraints(merged_dict, constraint_types)
+        merged_schema = parser._schema_object(merged_dict)
 
     merged_schema = merged_schema.with_schema_location(obj.schema_location)
     if has_literals or (obj.format and merged_schema.has_constraint):
-        with parser._temporarily_enable_field_constraints():  # noqa: SLF001
+        with parser._temporarily_enable_field_constraints():
             if has_literals:
-                return parser._parse_all_of_root_value(name, merged_schema, path)  # noqa: SLF001
+                return parser._parse_all_of_root_value(name, merged_schema, path)
             return parser.parse_root_type(name, merged_schema, path)
     return parser.parse_root_type(name, merged_schema, path)
 
@@ -1048,9 +965,13 @@ def all_of_pattern_conjunction(parser: AllOfValuesHost) -> Callable[[Sequence[st
     """Return how ``all_of_member_row`` conjoins two patterns, or None under ``legacy-lookahead-patterns``."""
     return (
         None
-        if "legacy-lookahead-patterns" in parser._legacy_intersection  # noqa: SLF001
-        else partial(parser._conjoined_pattern, where="allOf")  # noqa: SLF001
+        if "legacy-lookahead-patterns" in parser._legacy_intersection
+        else partial(parser._conjoined_pattern, where="allOf")
     )
+
+
+_UNNAMED_PROPERTY_APPLICATORS: Final = frozenset(schema_positions("in-place")) - {"allOf", "anyOf", "oneOf", "not"}
+"""The in-place applicators kept in a schema object's extras that may evaluate properties no ``properties`` names."""
 
 
 def _closes_properties(source: JsonSchemaObject) -> bool:
@@ -1058,12 +979,66 @@ def _closes_properties(source: JsonSchemaObject) -> bool:
     return source.additionalProperties is False and not source.patternProperties
 
 
+def _evaluates_unnamed_properties(source: JsonSchemaObject) -> bool:
+    """Return whether ``source`` may evaluate a property no ``properties`` of the object names.
+
+    patternProperties, an additionalProperties or unevaluatedProperties but false, an anyOf, a oneOf, a dynamic
+    reference or another in-place applicator (``if``, ``dependentSchemas``) may.
+    """
+    return bool(
+        source.patternProperties
+        or (source.additionalProperties is not None and source.additionalProperties is not False)
+        or (source.unevaluatedProperties is not None and source.unevaluatedProperties is not False)
+        or source.anyOf
+        or source.oneOf
+        or source.dynamicRef
+        or source.recursiveRef
+        or not _UNNAMED_PROPERTY_APPLICATORS.isdisjoint(source.extras)
+    )
+
+
+def _closes_unevaluated_properties(parser: AllOfValuesHost, member: JsonSchemaObject) -> bool:
+    """Return whether ``member`` admits no property but those it evaluates, which are the fields of its object.
+
+    It says so with unevaluatedProperties false and no additionalProperties, beside a ``$ref`` only where the keywords
+    beside it apply, and the schemas it evaluates, the one its ``$ref`` names among them, evaluate no property that no
+    ``properties`` names (``_evaluates_unnamed_properties``). The allOf ``$ref`` members it evaluates are read as the
+    schema validators read them; without ``--read-ref-siblings-in-closed-allof-members`` (row
+    ``legacy-closing-ref-siblings-with-applicators``) the keywords beside such a ``$ref`` are read only where the member
+    has an applicator, ``if`` or a map keyword.
+    """
+    if member.unevaluatedProperties is not False or member.additionalProperties is not None:
+        return False
+    held = parser.SCHEMA_OBJECT_TYPE.model_construct(allOf=[member])
+    sibling_yield = "ref-less-copy" if parser.config.read_ref_siblings_in_closed_allof_members else "applicator-copy"
+    return next(
+        islice(parser._iter_schema_validation_sources(held, include_references=False), 1, None),
+        None,
+    ) is not None and not any(
+        _evaluates_unnamed_properties(source)
+        for source in parser._iter_schema_validation_sources(held, sibling_yield=sibling_yield)
+    )
+
+
 def inline_sources_close(parser: AllOfValuesHost, schemas: Iterable[JsonSchemaObject]) -> bool:
-    """Return whether a schema of ``schemas`` or one of their inline allOf sources closes the object they combine."""
-    return any(
-        _closes_properties(source)
+    """Return whether a schema of ``schemas`` or one of their inline allOf members closes the object they combine.
+
+    A member closes it with additionalProperties false and no patternProperties, or with unevaluatedProperties false
+    where it evaluates no property but those its ``properties`` and the schemas it applies name
+    (``_closes_unevaluated_properties``).
+    """
+    schemas = tuple(schemas)
+    inline_sources = tuple(
+        source
         for schema in schemas
-        for source in parser._iter_schema_validation_sources(schema, include_references=False)  # noqa: SLF001
+        for source in parser._iter_schema_validation_sources(schema, include_references=False)
+    )
+    return any(_closes_properties(source) for source in inline_sources) or any(
+        _closes_unevaluated_properties(parser, member)
+        for member in chain(
+            schemas,
+            (item for source in inline_sources for item in source.allOf if isinstance(item, JsonSchemaObject)),
+        )
     )
 
 
@@ -1085,9 +1060,9 @@ def merge_all_of_object(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonS
     resolved_items: list[JsonSchemaObject] = []
     property_signatures: dict[str, set[str | bool]] = {}
     for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):  # pragma: no cover
+        if not isinstance(item, JsonSchemaObject):
             continue
-        resolved_item = parser._load_ref_schema_object(item.ref) if item.ref else item  # noqa: SLF001
+        resolved_item = parser._load_ref_schema_object(item.ref) if item.ref else item
         if resolved_item.is_boolean_schema_false:
             raise_unsatisfiable_schema(parser, obj, [], "allOf")
         resolved_items.append(resolved_item)
@@ -1113,7 +1088,7 @@ def merge_all_of_object(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonS
         merged_schema["required"] = list(dict.fromkeys(merged_schema["required"]))
 
     merged_schema.pop("allOf", None)
-    return parser._schema_object(merged_schema)  # noqa: SLF001
+    return parser._schema_object(merged_schema)
 
 
 def merge_all_of_root_value_nodes(
@@ -1126,21 +1101,21 @@ def merge_all_of_root_value_nodes(
     if False in nodes:
         return False
     references = tuple(
-        parser._key_node(parser._ref_path(node.ref))  # noqa: SLF001
+        _schema_refs.key_node(parser, _schema_refs.ref_path(parser, node.ref))
         for node in nodes
         if isinstance(node, JsonSchemaObject) and node.ref
     )
     if not references:
         return merge_all_of_root_value_children(parser, nodes)
-    if parser._all_of_root_value_ref_stack is None:  # noqa: SLF001
-        parser._all_of_root_value_ref_stack = set()  # noqa: SLF001
-    if references in parser._all_of_root_value_ref_stack:  # noqa: SLF001
+    if parser._all_of_root_value_ref_stack is None:
+        parser._all_of_root_value_ref_stack = set()
+    if references in parser._all_of_root_value_ref_stack:
         return {"allOf": [_schema_dump(node) for node in nodes]}
-    parser._all_of_root_value_ref_stack.add(references)  # noqa: SLF001
+    parser._all_of_root_value_ref_stack.add(references)
     try:
         return merge_all_of_root_value_children(parser, nodes)
     finally:
-        parser._all_of_root_value_ref_stack.remove(references)  # noqa: SLF001
+        parser._all_of_root_value_ref_stack.remove(references)
 
 
 def merge_all_of_root_value_children(  # noqa: PLR0912
@@ -1156,8 +1131,8 @@ def merge_all_of_root_value_children(  # noqa: PLR0912
             continue
         child_schema = child
         if child.ref:
-            resolved = parser._load_ref_schema_object(child.ref).model_dump(exclude_unset=True, by_alias=True)  # noqa: SLF001
-            children.append(parser._schema_object(resolved))  # noqa: SLF001
+            resolved = parser._load_ref_schema_object(child.ref).model_dump(exclude_unset=True, by_alias=True)
+            children.append(parser._schema_object(resolved))
             child_schema = child.model_copy(update={"ref": None})
         children.append(child_schema)
     merged: dict[str, Any] = {}
@@ -1167,10 +1142,10 @@ def merge_all_of_root_value_children(  # noqa: PLR0912
         if not (allowed_types := reduce(common_types, typed, typed[0])):
             return False
         merged["type"] = allowed_types[0] if len(allowed_types) == 1 else sorted(allowed_types)
-    parser._merge_schema_constraints(  # noqa: SLF001
+    parser._merge_schema_constraints(
         merged, children, intersect=intersects_all_of_constraints(parser.allof_merge_mode.value)
     )
-    parser._merge_all_of_root_validation_keywords(merged, children)  # noqa: SLF001
+    parser._merge_all_of_root_validation_keywords(merged, children)
     for keyword in ("properties", "patternProperties"):
         properties: dict[str, list[JsonSchemaObject | bool]] = {}
         for source in children:
@@ -1197,30 +1172,30 @@ def is_all_of_mapping_item(parser: AllOfValuesHost, schema: JsonSchemaObject) ->
     """Return whether an allOf item is an object map, which a mapping-shaped allOf merges into one root map."""
     return not (
         schema.properties
-        or schema.patternProperties
-        or schema.propertyNames is not None
+        or _declares_key_keywords(schema)
         or not _is_object_only_type(
-            _non_null_types(schema.type) if parser._null_mode.type_excludes_member_null else schema.type  # noqa: SLF001
+            _non_null_types(schema.type) if parser._null_mode.type_excludes_member_null else schema.type
         )
         or not isinstance(schema.additionalProperties, JsonSchemaObject)
     )
 
 
-def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:  # noqa: PLR0912
+def merge_all_of_root_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSchemaObject | None:  # noqa: PLR0912
     """Unwrap one value schema or merge mapping-shaped allOf items into a root schema."""
-    if obj.properties or obj.patternProperties or obj.propertyNames is not None:
+    obj = site.obj
+    if obj.properties or _declares_key_keywords(obj):
         return None
 
-    supports_literal_validation = hasattr(parser.data_model_root_type, "add_literal_validation")
-    single_value = len(obj.allOf) == 1 and not parser._schema_requires_model_type(obj)  # noqa: SLF001
+    supports_literal_validation = parser._root_validates_literals
+    single_value = len(obj.allOf) == 1 and not schema_requires_model_type(parser, obj)
     mapping_schemas: list[JsonSchemaObject] = []
     sibling_types: list[str | list[str]] = []
     for item in obj.allOf:
         match item:
             case JsonSchemaObject() as schema:
                 if ref := schema.ref:
-                    schema = parser._load_ref_schema_object(ref)  # noqa: SLF001
-                    if item.type and parser._ref_siblings_apply_to(item, legacy="first-read"):  # noqa: SLF001
+                    schema = parser._load_ref_schema_object(ref)
+                    if item.type and parser._ref_siblings_apply_to(item, legacy="first-read"):
                         sibling_types.append(item.type)
             case _:
                 return None
@@ -1234,7 +1209,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
         materialize_siblings = bool(
             ref
             and len(item.model_fields_set) > 1
-            and parser._ref_siblings_apply_to(item, legacy="first-read")  # noqa: SLF001
+            and parser._ref_siblings_apply_to(item, legacy="first-read")
             and (
                 item.has_ref_with_schema_keywords
                 if supports_literal_validation
@@ -1250,56 +1225,53 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
             single_value
             and scalar_or_array
             and not (schema.allOf or schema.anyOf or schema.oneOf)
-            and not parser._schema_requires_model_type(schema)  # noqa: SLF001
+            and not schema_requires_model_type(parser, schema)
         ):
             merged_root: JsonSchemaObject | None = None
             if materialize_siblings:
                 merged = schema.model_dump(exclude_unset=True, by_alias=True)
-                referenced_schema = parser._schema_object(merged)  # noqa: SLF001
+                referenced_schema = parser._schema_object(merged)
                 merged.update(item.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
                 merged.update(obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True))
-                parser._merge_schema_constraints(  # noqa: SLF001
+                parser._merge_schema_constraints(
                     merged, [schema, item, obj], intersect=intersects_all_of_constraints(parser.allof_merge_mode.value)
                 )
                 if supports_literal_validation or narrows_literals:
-                    parser._merge_all_of_root_validation_keywords(merged, [referenced_schema, item, obj])  # noqa: SLF001
-                merged_root = parser._schema_object(merged)  # noqa: SLF001
+                    parser._merge_all_of_root_validation_keywords(merged, [referenced_schema, item, obj])
+                merged_root = parser._schema_object(merged)
             if not merged_root and ref:
-                merged_root = reference_site_schema(parser, obj, layered=parser.field_constraints)
+                merged_root = reference_site_schema(parser, site, layered=parser.field_constraints)
             return merged_root or (
-                obj.model_copy(update={"ref": ref, "allOf": []})
+                _reference_root(obj, ref, reference_site_constraints(parser, site))
                 if ref
-                else parser._schema_object({  # noqa: SLF001
+                else parser._schema_object({
                     **schema.model_dump(exclude_unset=True, by_alias=True),
                     **obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True),
                 })
             )
-        if not parser._is_all_of_mapping_item(schema):  # noqa: SLF001
+        if not is_all_of_mapping_item(parser, schema):
             return None
         mapping_schemas.append(schema)
 
-    if not mapping_schemas:
-        return None
-
     merged: dict[str, Any] = {}
     for schema in mapping_schemas:
-        merged = parser._inherited_override_row(merged, schema.model_dump(exclude_unset=True, by_alias=True))  # noqa: SLF001
-    merged = parser._inherited_override_row(  # noqa: SLF001
+        merged = parser._inherited_override_row(merged, schema.model_dump(exclude_unset=True, by_alias=True))
+    merged = parser._inherited_override_row(
         merged, obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True)
     )
     typed = [
-        dump_null_sources({"type": type_})
+        null_sources(type_)
         for type_ in (*sibling_types, *(schema.type for schema in (*mapping_schemas, obj) if schema.type))
     ]
-    if parser._null_mode.type_excludes_member_null and any(part.type_lists_null for part in typed):  # noqa: SLF001
+    if parser._null_mode.type_excludes_member_null and any(part.type_lists_null for part in typed):
         merged["type"] = (
-            ["object", "null"] if parser._null_facts(obj, "all-of-map", parts=typed).admits_null else "object"  # noqa: SLF001
+            ["object", "null"] if parser._null_facts(obj, "all-of-map", parts=typed).admits_null else "object"
         )
     elif merged.get("type") == ["object"]:
         merged["type"] = "object"
     else:
         merged.setdefault("type", "object")
-    return parser._schema_object(merged)  # noqa: SLF001
+    return parser._schema_object(merged)
 
 
 def merge_all_of_value_schema(
@@ -1309,11 +1281,11 @@ def merge_all_of_value_schema(
     if (
         any(_is_special_path(element) for element in path)
         or any(
-            not (target := parser._load_inherited_schema_object(base.path)).ref  # noqa: SLF001
-            and parser._schema_requires_model_type(target)  # noqa: SLF001
+            not (target := parser._load_inherited_schema_object(base.path)).ref
+            and schema_requires_model_type(parser, target)
             for base in base_classes
         )
-        or (base_classes and parser._get_inherited_property_map(base_classes))  # noqa: SLF001
+        or (base_classes and parser._get_inherited_property_map(base_classes))
     ):
         return None
     own_schemas: list[JsonSchemaObject] = []
@@ -1324,21 +1296,21 @@ def merge_all_of_value_schema(
         if schema.ref:
             if not referenced:
                 own_schemas.append(schema)
-            schema, referenced = parser._merge_ref_with_schema(schema), True  # noqa: SLF001
+            schema, referenced = parser._merge_ref_with_schema(schema), True
         if schema.allOf:
             pending.append((schema.model_copy(update={"allOf": []}), referenced))
             pending.extend(
                 (
-                    item if isinstance(item, JsonSchemaObject) else parser._validate_schema_object(item, path),  # noqa: SLF001
+                    item if isinstance(item, JsonSchemaObject) else parser._validate_schema_object(item, path),
                     referenced,
                 )
                 for item in reversed(schema.allOf)
             )
             continue
         if (
-            parser._schema_requires_model_type(schema)  # noqa: SLF001
+            schema_requires_model_type(parser, schema)
             or any((schema.is_boolean_schema_false, schema.is_array, schema.anyOf, schema.oneOf))
-            or (referenced and parser._schema_literal_values(schema) is not None)  # noqa: SLF001
+            or (referenced and parser._schema_literal_values(schema) is not None)
         ):
             return None
         schemas.append(schema)
@@ -1347,28 +1319,53 @@ def merge_all_of_value_schema(
     if (
         sum("pattern" in schema.model_fields_set for schema in schemas) > 1
         or (not any(schema.type for schema in schemas) and any(schema.has_constraint for schema in schemas))
-        or (merged := parser._merge_value_schemas(schemas)) is None  # noqa: SLF001
+        or (merged := parser._merge_value_schemas(schemas)) is None
     ):
         return None
     if (
         sum(bool(schema.ref) for schema in own_schemas) == 1
-        and (reference := parser._merge_value_schemas(own_schemas))  # noqa: SLF001
+        and (reference := parser._merge_value_schemas(own_schemas))
         and not _merges_ref_siblings(reference)
     ):
         return reference
     return merged
 
 
-def all_of_value_parts(parser: AllOfValuesHost, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
-    """Return the parts of an allOf site whose members each describe one value, references resolved, else None."""
-    parts: list[JsonSchemaObject] = []
-    if (
-        parser._schema_requires_model_type(obj)  # noqa: SLF001
-        or allof_requires_model_type(parser, obj.allOf, resolve_ref=True)
-        or not collect_all_of_value_parts(parser, obj, parts, resolve_refs=True)
-    ):
-        return None
-    return parts
+@final
+class ValueSite:
+    """The value parts of the allOf site ``obj`` as one parse of the site reads them, each field at its first read.
+
+    The parse of a site builds the record and hands it to every reader of its parts (the gates of this module and
+    ``JsonSchemaParser._satisfiable_all_of_value_parts``), which read its fields in their own orders: a field is
+    computed where a reader first asks for it, with the warnings and loads of its ``$ref`` merges, and the record is
+    dropped with the call. ``parts`` are those of a site whose members each describe one value, references resolved
+    (``collect_all_of_value_parts``), else None; ``target_parts`` the parts of the schema the first ``$ref`` member
+    names (``reference_value_parts``); ``unsatisfiable`` the keywords of ``parts`` that no value meets in common.
+    """
+
+    def __init__(self, parser: AllOfValuesHost, obj: JsonSchemaObject) -> None:
+        self.parser = parser
+        self.obj = obj
+
+    @cached_property
+    def parts(self) -> list[JsonSchemaObject] | None:
+        parts: list[JsonSchemaObject] = []
+        if (
+            schema_requires_model_type(self.parser, self.obj)
+            or allof_requires_model_type(self.parser, self.obj.allOf, resolve_ref=True)
+            or not collect_all_of_value_parts(self.parser, self.obj, parts, resolve_refs=True)
+        ):
+            return None
+        return parts
+
+    @cached_property
+    def target_parts(self) -> list[JsonSchemaObject] | None:
+        members = (member for member in self.obj.allOf if isinstance(member, JsonSchemaObject) and member.ref)
+        return reference_value_parts(self.parser, cast("str", next(members).ref))
+
+    @cached_property
+    def unsatisfiable(self) -> tuple[str, ...]:
+        return unsatisfiable_value_keywords(self.parser, self.parts or ())
 
 
 def intersects_value_parts(
@@ -1380,7 +1377,7 @@ def intersects_value_parts(
     and, unless ``literals``, a part with an ``enum`` or ``const``.
     """
     return (
-        any(parser._schema_has_own_value_keywords(part) for part in parts)  # noqa: SLF001
+        any(schema_has_own_value_keywords(parser, part) for part in parts)
         and (literals or not any(part.enum or "const" in part.extras for part in parts))
         and sum(part.items is not None for part in parts) <= 1
         and len({part.format for part in parts if part.format}) <= 1
@@ -1405,17 +1402,17 @@ def all_of_site_schema(
     for part in reversed(parts):
         annotations.update(part.model_dump(include=_ALL_OF_MEMBER_ANNOTATIONS, exclude_unset=True, by_alias=True))
     own = obj.model_dump(exclude={"allOf", *_ALL_OF_VALUE_KEYWORDS}, exclude_unset=True, by_alias=True)
-    if value.pop("nullable", False) or parser._null_facts(obj, "all-of-value").admits_null:  # noqa: SLF001
+    if value.pop("nullable", False) or parser._null_facts(obj, "all-of-value").admits_null:
         if (type_ := value.get("type")) is not None:
             value["type"] = [*non_null_types(declared_types(type_)), "null"]
         elif null_member:
             value = {"anyOf": [value, null_schema()]}
         else:
             value["nullable"] = True
-    return parser._schema_object({**value, **annotations, **own})  # noqa: SLF001
+    return parser._schema_object({**value, **annotations, **own})
 
 
-def all_of_root_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+def all_of_root_value_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSchemaObject | None:
     """Return the schema of an allOf site of values that would get a model without fields: its parts intersected.
 
     A single ``$ref`` member stays the type when the intersection enforces nothing beyond the referenced schema.
@@ -1429,10 +1426,10 @@ def all_of_root_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
     the models that use its type (``_patterns_need_holder_engine``): that engine would apply to their other
     patterns.
     """
-    legacy = "legacy-all-of-site-form" in parser._legacy_intersection  # noqa: SLF001
+    obj, legacy = site.obj, "legacy-all-of-site-form" in parser._legacy_intersection
     if (
         (obj.is_array and legacy)
-        or (parts := parser._satisfiable_all_of_value_parts(obj)) is None  # noqa: SLF001
+        or (parts := parser._satisfiable_all_of_value_parts(site)) is None
         or not intersects_value_parts(parser, parts, literals=False)
         or not (
             _excludes_objects((intersection := intersect_typed_value_parts(parser, parts, None)).type) or not legacy
@@ -1442,10 +1439,10 @@ def all_of_root_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
     if legacy and patterns_need_holder_engine(parser, intersection):
         return None
     refs = tuple(item.ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref)
-    site = all_of_site_schema(parser, obj, parts, _value_or_reference(parser, intersection, refs), null_member=legacy)
+    value = all_of_site_schema(parser, obj, parts, _value_or_reference(parser, intersection, refs), null_member=legacy)
     if legacy:
-        site.__dict__[FIELDLESS_SITE_KEY] = True
-    return site
+        value.__dict__[FIELDLESS_SITE_KEY] = True
+    return value
 
 
 def _value_or_reference(parser: AllOfValuesHost, intersection: JsonSchemaObject, refs: Sequence[str]) -> dict[str, Any]:
@@ -1453,8 +1450,8 @@ def _value_or_reference(parser: AllOfValuesHost, intersection: JsonSchemaObject,
     if (
         len(refs) == 1
         and (target_parts := reference_value_parts(parser, refs[0])) is not None
-        and parser._enforced_value_keywords(intersection)  # noqa: SLF001
-        == parser._enforced_value_keywords(intersect_typed_value_parts(parser, target_parts, None))  # noqa: SLF001
+        and parser._enforced_value_keywords(intersection)
+        == parser._enforced_value_keywords(intersect_typed_value_parts(parser, target_parts, None))
     ):
         return {"$ref": refs[0]}
     return intersection.model_dump(exclude_unset=True, by_alias=True)
@@ -1466,24 +1463,10 @@ def unsatisfiable_value_keywords(parser: AllOfValuesHost, parts: Sequence[JsonSc
         return ()
     dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
     row = {keyword: value for dump in dumps for keyword, value in dump.items()}
-    return _intersect_dumps(
-        dumps,
-        row,
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
-    ).unsatisfiable
+    return _intersect_parts(parser, dumps, row).unsatisfiable
 
 
-class SchemaRefReader(Protocol):
-    """The reads of a ``$ref`` that ``holds_union_member`` makes: its reference key and the schema it names."""
-
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load the schema a reference names."""
-
-
-def holds_union_member(parser: SchemaRefReader, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
+def holds_union_member(parser: SchemaRefsHost, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
     """Return whether an allOf member of ``schema`` holds an ``anyOf`` or ``oneOf``, also through its allOf members.
 
     A ``$ref`` member holds what the schema it names holds; a reference the walk has passed holds nothing.
@@ -1493,14 +1476,14 @@ def holds_union_member(parser: SchemaRefReader, schema: JsonSchemaObject, seen: 
         while isinstance(target, JsonSchemaObject):
             if target.anyOf or target.oneOf or holds_union_member(parser, target, seen):
                 return True
-            if not target.ref or (path := parser._ref_path(target.ref)) in seen:  # noqa: SLF001
+            if not target.ref or (path := _schema_refs.ref_path(parser, target.ref)) in seen:
                 break
             seen |= {path}
-            target = parser._load_ref_schema_object(target.ref)  # noqa: SLF001
+            target = parser._load_ref_schema_object(target.ref)
     return False
 
 
-def _member_conjunctions(  # noqa: PLR0913
+def _member_conjunctions(
     parser: AllOfValuesHost,
     item: JsonSchemaObject | bool,  # noqa: FBT001
     where: str,
@@ -1520,9 +1503,9 @@ def _member_conjunctions(  # noqa: PLR0913
         return [((), ())] if item else []
     refs: tuple[str, ...] = ()
     if item.ref:
-        refs, item = (item.ref,), parser._merge_ref_with_schema(item, where)  # noqa: SLF001
+        refs, item = (item.ref,), parser._merge_ref_with_schema(item, where)
     if skips_objects and not (branch or in_branch) and _OBJECT_KEYWORDS.intersection(item.model_fields_set):
-        item = parser._schema_object(item.model_dump(exclude=_OBJECT_KEYWORDS, exclude_unset=True, by_alias=True))  # noqa: SLF001
+        item = parser._schema_object(item.model_dump(exclude=_OBJECT_KEYWORDS, exclude_unset=True, by_alias=True))
     if not (item.allOf or item.anyOf or item.oneOf):
         conjunctions: list[_ValueConjunction] | None = [((item,), refs)] if is_all_of_value_part(parser, item) else None
     elif (
@@ -1546,15 +1529,15 @@ def _value_conjunctions(
 
     Each allOf member, ``anyOf`` and ``oneOf`` of ``schema`` gives conjunctions of its own (a union those of its
     branches), and the combinations take one of each in document order, the first varying slowest; the own keywords
-    are a part of each where they write a value keyword or an item schema, as ``collect_all_of_value_parts`` reads
-    them. None where a part is no schema of one value (``is_all_of_value_part``) or there are more combinations than
-    ``BRANCH_COMBINATION_LIMIT``. With ``skips_objects`` the own keywords that constrain objects only are no part
-    outside the branches (not ``in_branch``), as an allOf member's (``_member_conjunctions``).
+    are a part of each where they write a value keyword or an item schema, as in ``collect_all_of_value_parts``
+    (``_writes_value_part``). None where a part is no schema of one value (``is_all_of_value_part``) or there are more
+    combinations than ``BRANCH_COMBINATION_LIMIT``. With ``skips_objects`` the own keywords that constrain objects
+    only are no part outside the branches (not ``in_branch``), as an allOf member's (``_member_conjunctions``).
     """
     excluded = _COMBINATORS | _OBJECT_KEYWORDS if skips_objects and not in_branch else _COMBINATORS
     if not is_all_of_value_part(
         parser,
-        own := parser._schema_object(schema.model_dump(exclude=excluded, exclude_unset=True, by_alias=True)),  # noqa: SLF001
+        own := parser._schema_object(schema.model_dump(exclude=excluded, exclude_unset=True, by_alias=True)),
     ):
         return None
     slots: list[list[_ValueConjunction]] = []
@@ -1576,9 +1559,7 @@ def _value_conjunctions(
                     return None
                 union.extend(choices)
             slots.append(union)
-    if parser._schema_has_own_value_keywords(own) or any(  # noqa: SLF001
-        getattr(own, keyword) is not None for keyword in _ALL_OF_VALUE_ITEM_KEYWORDS
-    ):
+    if _writes_value_part(parser, own):
         slots.append([((own,), ())])
     if (combinations := branch_combinations(slots, BRANCH_COMBINATION_LIMIT)) is None:
         return None
@@ -1605,7 +1586,7 @@ def _value_variants(
     ``legacy-all-of-site-form`` where a pattern needs a regex engine of the models that use its type
     (``patterns_need_holder_engine``).
     """
-    legacy = "legacy-all-of-site-form" in parser._legacy_intersection  # noqa: SLF001
+    legacy = "legacy-all-of-site-form" in parser._legacy_intersection
     variants: list[dict[str, Any]] = []
     excludes_objects = True
     for parts, refs in conjunctions:
@@ -1660,7 +1641,7 @@ def all_of_value_union_site(
     JSON Schema null, and marked as a model without fields (``FIELDLESS_SITE_KEY``) where no combination admits an
     object.
     """
-    legacy = "legacy-all-of-site-form" in parser._legacy_intersection  # noqa: SLF001
+    legacy = "legacy-all-of-site-form" in parser._legacy_intersection
     if (obj.is_array and legacy) or obj.anyOf or obj.oneOf or not holds_union_member(parser, obj):
         return None
     if (
@@ -1707,7 +1688,7 @@ def patterns_need_holder_engine(parser: AllOfValuesHost, schema: JsonSchemaObjec
                 if isinstance(ref := value.get("$ref"), str) and ref not in named:
                     named.add(ref)
                     pending.append(
-                        parser._merge_ref_with_schema(parser._schema_object({"$ref": ref}), "allOf").model_dump(  # noqa: SLF001
+                        parser._merge_ref_with_schema(parser._schema_object({"$ref": ref}), "allOf").model_dump(
                             exclude_unset=True, by_alias=True
                         )
                     )
@@ -1717,18 +1698,18 @@ def patterns_need_holder_engine(parser: AllOfValuesHost, schema: JsonSchemaObjec
 
 
 def reference_site_schema(
-    parser: AllOfValuesHost, obj: JsonSchemaObject, *, layered: bool = False
+    parser: AllOfValuesHost, site: ValueSite, *, layered: bool = False
 ) -> JsonSchemaObject | None:
     """Return the schema of an allOf site whose earlier form, the type of its first ``$ref`` member, it leaves.
 
     ``_reference_site_value`` decides; the site's own annotations win, the parts' fill (``_all_of_site_schema``).
     """
-    if (site := reference_site_value(parser, obj, layered=layered)) is None:
+    if (value := reference_site_value(parser, site, layered=layered)) is None:
         return None
-    return _derived_site(all_of_site_schema(parser, obj, *site), _bare_ref_members(obj))
+    return _derived_site(all_of_site_schema(parser, site.obj, *value), _bare_ref_members(site.obj))
 
 
-def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+def all_of_enum_site_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSchemaObject | None:
     """Return the schema of an allOf site of enum references whose merged enum leaves out what its parts enforce.
 
     Such a site gets a model without fields that ``extract_inherited_enum`` writes as one enum of the members of
@@ -1738,9 +1719,10 @@ def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> J
     stays where its class holds every member, else the site takes its first part. Elsewhere, under
     ``--use-site-models-for-constrained-refs``, the site is the intersection of its parts.
     """
+    obj = site.obj
     if (
         not (refs := _bare_ref_members(obj))
-        or (parts := all_of_value_parts(parser, obj)) is None
+        or (parts := site.parts) is None
         or not intersects_value_parts(parser, parts)
     ):
         return None
@@ -1751,7 +1733,7 @@ def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> J
     ]
     if not (enums := [target for target in targets if target.enum]):
         return None
-    if parser._satisfiable_all_of_value_parts(obj) is None:  # noqa: SLF001
+    if parser._satisfiable_all_of_value_parts(site) is None:
         return (
             all_of_site_schema(parser, obj, parts, parts[0].model_dump(exclude_unset=True, by_alias=True))
             if merged_enum_fails(parser, enums)
@@ -1759,11 +1741,7 @@ def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> J
         )
     if not parser.config.use_site_models_for_constrained_refs:
         return None
-    intersection = _enum_narrowed_by_part_consts(
-        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
-        parts,
-        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
-    )
+    intersection = _site_intersection(parser, obj, parts)
     literals = intersection.enum
     if all(
         len(intersect_enum_values(target.enum, literals)) == len(target.enum)
@@ -1788,13 +1766,13 @@ def merged_enum_fails(parser: AllOfValuesHost, enums: Sequence[JsonSchemaObject]
     output that writes the first enum as a ``Literal`` or as its const merges no enum class.
     """
     first = enums[0]
-    if parser.should_parse_enum_as_literal(first) or parser._reads_enum_as_const(first):  # noqa: SLF001
+    if parser._enum_site_form(first, None) != "class":
         return False
-    enum_class = parser._get_enum_model_class(parser._get_enum_type(first), first.enum)[0]  # noqa: SLF001
+    enum_class = parser._get_enum_model_class(parser._get_enum_type(first), first.enum)[0]
     value_type = enum_value_base(enum_class, row="legacy-merged-enum-specialized-only")
     keep = parser.config.keep_enum_member_values
     return value_type is not None and any(
-        parser._null_mode.type_excludes_member_null  # noqa: SLF001
+        parser._null_mode.type_excludes_member_null
         if value is None
         else not (
             holds_inherited_member_value(value_type, value)
@@ -1816,7 +1794,7 @@ def read_false_all_of_values(
     where no patternProperties validator owns them, and a type array of object under
     --use-typed-nullable-map-values (``_typed_nullable_map_value_schema``). It is also the items of an array,
     unless the array is a tuple of no items under --use-tuple-for-fixed-length-arrays
-    (``_get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
+    (``_value_keywords.get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
     (``_is_false_all_of``), the site is read as the same site with ``false``: the map admits no key it types and the
     array no item past its prefixItems. Where no value is typed with it, it keeps its output. The positions of an
     array (``_read_false_all_of_array_positions``) and the patternProperties and propertyNames of a map
@@ -1825,20 +1803,20 @@ def read_false_all_of_values(
     none of them while no loaded document holds an ``allOf`` that lists ``false``
     (``SchemaGraphBuilder.holds_false_all_of``).
     """
-    if (graph := parser._schema_graph) is None or not graph.holds_false_all_of:  # noqa: SLF001
+    if (graph := parser._schema_graph) is None or not graph.holds_false_all_of:
         return obj
     update: dict[str, object] = {}
     if (
         _is_false_all_of(obj.additionalProperties)
         and not obj.properties
         and (
-            not parser._has_pattern_properties_validator(obj) and parser._other_keys_schema(obj) is not None  # noqa: SLF001
+            not parser._has_pattern_properties_validator(obj) and parser._other_keys_schema(obj) is not None
             if obj.patternProperties
-            else obj.is_object or parser._typed_nullable_map_value_schema(obj) is not None  # noqa: SLF001
+            else obj.is_object or parser._typed_nullable_map_value_schema(obj) is not None
         )
     ):
         update["additionalProperties"] = False
-    if _is_false_all_of(obj.items) and parser._get_fixed_length_homogeneous_tuple_length(obj) != 0:  # noqa: SLF001
+    if _is_false_all_of(obj.items) and _value_keywords.get_fixed_length_homogeneous_tuple_length(parser, obj) != 0:
         update["items"] = False
     update |= read_false_all_of_array_positions(parser, obj, lightweight=lightweight) | read_false_all_of_map_schemas(
         parser, obj
@@ -1851,9 +1829,9 @@ def read_false_all_of_array_positions(
 ) -> dict[str, object]:
     """Return the array keywords of ``obj`` whose false allOf the array parse types, with ``false`` in its place.
 
-    Those are the entries of a tuple ``items`` and of ``prefixItems`` that array parsing types, the schemas before
-    the first false (``_get_array_item_schemas``), and the ``additionalItems`` or ``unevaluatedItems`` that types
-    the items past them. A position it leaves untyped keeps its output. The lightweight type of ``lightweight``
+    Those are the entries of a tuple ``items`` and of ``prefixItems`` that array parsing types, the schemas before the
+    first false (``_value_keywords.get_array_item_schemas``), and the ``additionalItems`` or ``unevaluatedItems`` that
+    types the items past them. A position it leaves untyped keeps its output. The lightweight type of ``lightweight``
     types the prefixItems and the true tail as well.
     """
     if not obj.is_array or obj.ref:
@@ -1864,8 +1842,11 @@ def read_false_all_of_array_positions(
         return {}
     typed = {
         id(item)
-        for item in parser._get_array_item_schemas(  # noqa: SLF001
-            obj, include_true_tail_schema=lightweight, force_prefix_items=lightweight
+        for item in _value_keywords.get_array_item_schemas(
+            parser,
+            obj,
+            include_true_tail_schema=lightweight,
+            force_prefix_items=lightweight,
         )[0]
     }
 
@@ -1909,7 +1890,7 @@ def array_all_of_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
     The site is then one value schema, as a site of another type is in ``parse_all_of``, instead of its own array
     beside a model of its members. It keeps its form where the root rule (``_all_of_root_value_schema``) does.
     """
-    if not (obj.allOf and obj.is_array) or (value := all_of_root_value_schema(parser, obj)) is None:
+    if not (obj.allOf and obj.is_array) or (value := all_of_root_value_schema(parser, ValueSite(parser, obj))) is None:
         return obj
     return value.with_schema_location(obj.schema_location)
 
@@ -1922,9 +1903,9 @@ def site_schema(
     With ``merge_ref_siblings``, a ``$ref`` whose sibling keywords are parts of it is merged with them first.
     """
     site = array_all_of_site_schema(parser, obj)
-    if merge_ref_siblings and _merges_ref_siblings(site):
-        site = parser._merge_ref_with_schema(site)  # noqa: SLF001
-    return parser._read_false_all_of_values(site)  # noqa: SLF001
+    if merge_ref_siblings:
+        site = _with_ref_siblings(parser, site)
+    return read_false_all_of_values(parser, site)
 
 
 def ref_member_narrows_literals(
@@ -1936,15 +1917,13 @@ def ref_member_narrows_literals(
     siblings that admit none keep the reference.
     """
     if not (
-        "legacy-all-of-site-form" not in parser._legacy_intersection  # noqa: SLF001
-        and parser._ref_siblings_apply_to(member, legacy="first-read")  # noqa: SLF001
+        "legacy-all-of-site-form" not in parser._legacy_intersection
+        and parser._ref_siblings_apply_to(member, legacy="first-read")
         and (member.enum or "const" in member.extras)
     ):
         return False
-    merged = parser._schema_literal_values(  # noqa: SLF001
-        parser._merge_ref_with_schema(  # noqa: SLF001
-            member, named_location(site.schema_location, "allOf")
-        )
+    merged = parser._schema_literal_values(
+        parser._merge_ref_with_schema(member, named_location(site.schema_location, "allOf"))
     )
     return (
         isinstance(target_literals, list)

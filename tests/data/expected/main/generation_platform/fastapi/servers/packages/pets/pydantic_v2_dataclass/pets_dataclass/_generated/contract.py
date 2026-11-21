@@ -31,7 +31,15 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=pets_dataclass_models.PetsGetResponse), 'default': Declared(media_type='application/json', model=pets_dataclass_models.Error)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=pets_dataclass_models.PetsGetResponse,
+            ),
+            'default': Declared(
+                media_type='application/json', model=pets_dataclass_models.Error
+            ),
+        },
     )
 
 
@@ -39,7 +47,11 @@ class CreatePet:
     """Plans of the create_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'201': Declared(media_type='application/json', model=pets_dataclass_models.Pet)},
+        responses={
+            '201': Declared(
+                media_type='application/json', model=pets_dataclass_models.Pet
+            )
+        },
     )
 
 
@@ -47,7 +59,12 @@ class ListMyPets:
     """Plans of the list_my_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=pets_dataclass_models.PetsMineGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=pets_dataclass_models.PetsMineGetResponse,
+            )
+        },
     )
 
 
@@ -55,7 +72,14 @@ class GetPet:
     """Plans of the get_pet operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=pets_dataclass_models.Pet), '404': Declared(media_type='application/json', model=pets_dataclass_models.Error)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=pets_dataclass_models.Pet
+            ),
+            '404': Declared(
+                media_type='application/json', model=pets_dataclass_models.Error
+            ),
+        },
     )
 
 
@@ -72,5 +96,10 @@ class GetInventory:
     """Plans of the get_inventory operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=pets_dataclass_models.StoreInventoryGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=pets_dataclass_models.StoreInventoryGetResponse,
+            )
+        },
     )

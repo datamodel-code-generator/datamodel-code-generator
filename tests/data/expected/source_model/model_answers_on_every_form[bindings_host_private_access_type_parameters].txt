@@ -1,0 +1,50 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  annotations: import-from@5 [always]; origin __future__.annotations
+  Protocol: import-from@7 [always]; origin typing.Protocol
+  FixtureHost: class@10 [always]
+  type_parameters: def@14 [always]
+  type_statement: def@31 [always]
+scope class FixtureHost#0 'FixtureHost': code yes; first line 10
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@11 [always]
+  members: _state
+scope function type_parameters#0 'type_parameters': code yes; first line 14
+  opened by a node evaluated in <module>#0
+  parser: param@14 [function:body@14]
+  generic: def@15 [function:body@14]
+  Generic: class@18 [function:body@14]
+  Plain: class@24 [function:body@14]
+scope type-params type_parameters.<locals>.<generic parameters of generic>#0 '<generic parameters of generic>': code yes; first line 15
+  parser: type-param@15 [function:body@14]
+scope function type_parameters.<locals>.generic#0 'generic': code yes; first line 15
+  opened by a node evaluated in type_parameters#0
+scope type-params type_parameters.<locals>.<generic parameters of Generic>#0 '<generic parameters of Generic>': code yes; first line 18
+  parser: type-param@18 [function:body@14]
+scope class type_parameters.<locals>.Generic#0 'Generic': code yes; first line 18
+  opened by a node evaluated in type_parameters#0
+  state: assign@19 [function:body@14]; value parser._state
+  method: def@21 [function:body@14]
+  members: method, state
+scope function type_parameters.<locals>.Generic.method#0 'method': code yes; first line 21
+  opened by a node evaluated in type_parameters.<locals>.Generic#0
+  self: param@21 [function:body@14|function:body@21]
+  receiver: self@21
+scope class type_parameters.<locals>.Plain#0 'Plain': code yes; first line 24
+  opened by a node evaluated in type_parameters#0
+  method: def@25 [function:body@14]
+  members: method
+scope function type_parameters.<locals>.Plain.method#0 'method': code yes; first line 25
+  opened by a node evaluated in type_parameters.<locals>.Plain#0
+  self: param@25 [function:body@14|function:body@25]
+  receiver: self@25
+scope function type_statement#0 'type_statement': code yes; first line 31
+  opened by a node evaluated in <module>#0
+  parser: param@31 [function:body@31]
+  declares: def@32 [function:body@31]
+scope function type_statement.<locals>.declares#0 'declares': code yes; first line 32
+  opened by a node evaluated in type_statement#0
+  parser: type-alias@33 [function:body@31|function:body@32]
+scope type-alias type_statement.<locals>.declares.<locals>.parser#0 'parser': code yes; first line 33
+  opened by a node evaluated in type_statement.<locals>.declares#0
+== code objects: one per scope that compiles on this Python

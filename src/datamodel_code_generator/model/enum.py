@@ -5,12 +5,13 @@ Provides Enum, StrEnum, and specialized enum classes for code generation.
 
 from __future__ import annotations
 
-from functools import lru_cache
-from math import isnan
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeAlias
+from ast import literal_eval
+from functools import lru_cache, partial
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
 
-from typing_extensions import Sentinel, override
+from typing_extensions import override
 
+from datamodel_code_generator._json_schema import json_value_key
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
 from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES
@@ -42,8 +43,8 @@ _INT: str = "int"
 _FLOAT: str = "float"
 _BYTES: str = "bytes"
 _STR: str = "str"
-_JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
-_JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
+_member_key: Final = partial(json_value_key, exact_types=True, python_items=True)
+"""The key that finds an enum member by a value: ``json_value_key`` with the rows of enum member lookups."""
 
 escape_characters = SINGLE_QUOTED_ESCAPES
 
@@ -94,8 +95,6 @@ NULL_ENUM_MEMBER_VALUE = _NullEnumMemberValue()
 @lru_cache(maxsize=4096)
 def _get_legacy_raw_enum_member_value(default: str) -> Any:
     """Decode a rendered default supplied by a third-party parser subclass."""
-    from ast import literal_eval  # noqa: PLC0415
-
     try:
         return literal_eval(default)
     except (SyntaxError, ValueError):
@@ -110,19 +109,6 @@ def get_raw_enum_member_value(default: Any) -> Any:
         case str():
             return _get_legacy_raw_enum_member_value(default)
     return default
-
-
-def _json_value_key(value: Any) -> tuple[object, Any] | None:
-    """Build a hash key with the same bool/number/type distinctions as JSON comparison."""
-    if isinstance(value, bool):
-        return bool, value
-    if isinstance(value, (int, float)):
-        return _JSON_NUMBER_KEY, _JSON_NAN_KEY if isinstance(value, float) and isnan(value) else value
-    try:
-        hash(value)
-    except TypeError:
-        return None
-    return type(value), value
 
 
 SUBCLASS_BASE_CLASSES: dict[Types, str] = {
@@ -145,7 +131,7 @@ EnumValueBaseRow: TypeAlias = Literal["value-base", "legacy-merged-enum-speciali
 * ``value-base``: the class of an ``IntEnum`` or a ``StrEnum``, whose members are ``int`` and ``str``, else the first
   base that is a value type, the ``str``, ``int``, ``float`` or ``bytes`` that ``--use-subclass-enum`` writes before
   ``Enum`` (``Enum.value_base``).
-* ``legacy-merged-enum-specialized-only``: the class alone, so where the first of the enums that a field-less model
+* ``legacy-merged-enum-specialized-only``: the class alone, so where the first of the enums that a model
   inherits is a ``(T, Enum)``, the merged enum keeps the members ``T`` cannot hold, as it does for a plain ``Enum``
   (``parser/_passes/modules.py:extract_inherited_enum``, row ``legacy-inherited-first-base-class`` of
   ``decide_enum_kind``; ``parser/_all_of_values.py:merged_enum_fails`` predicts it).
@@ -189,7 +175,7 @@ class Enum(DataModel):
         """
         return self._compared_class_hash(frozen=True)
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,
@@ -231,6 +217,11 @@ class Enum(DataModel):
                 *self.base_classes,
             ]
 
+    @override
+    def _default_imports(self) -> tuple[Import, ...]:
+        """Return the import of the enum class, left out where a configured base (an open enum's) replaces it."""
+        return self.DEFAULT_IMPORTS if self.custom_base_class is None else ()
+
     @classmethod
     def get_data_type(cls, types: Types, **kwargs: Any) -> DataType:
         """Get data type for enum (not implemented)."""
@@ -263,8 +254,8 @@ class Enum(DataModel):
         return Member(self, field)
 
     @property
-    def _member_index(self) -> dict[tuple[object, Any], DataModelFieldBase]:
-        """Build the exact-value index only when member lookup is used; the parse's memo keeps it."""
+    def _member_index(self) -> dict[object, DataModelFieldBase]:
+        """Build the index of the members by their key only when member lookup is used; the parse's memo keeps it."""
         return memoized(MemoTable.ENUM_MEMBER_INDEX, model_key_of(self.reference), self, None, self._index_members)
 
     def _valued_members(self) -> Iterator[tuple[DataModelFieldBase, Any]]:
@@ -273,11 +264,11 @@ class Enum(DataModel):
             if field.default is not None:
                 yield field, get_raw_enum_member_value(field.default)
 
-    def _index_members(self) -> dict[tuple[object, Any], DataModelFieldBase]:
-        exact: dict[tuple[object, Any], DataModelFieldBase] = {}
+    def _index_members(self) -> dict[object, DataModelFieldBase]:
+        """Return the first member of each key (``_member_key``)."""
+        exact: dict[object, DataModelFieldBase] = {}
         for field, member_value in self._valued_members():
-            if (key := _json_value_key(member_value)) is not None:
-                exact.setdefault(key, field)
+            exact.setdefault(_member_key(member_value), field)
         return exact
 
     @property
@@ -303,13 +294,7 @@ class Enum(DataModel):
         """
         if coerce_strings and isinstance(value, str):
             return self.get_member(field) if (field := self._coerced_member_index.get(value)) is not None else None
-        if (key := _json_value_key(value)) is not None:
-            return self.get_member(field) if (field := self._member_index.get(key)) is not None else None
-
-        for field, member_value in self._valued_members():
-            if type(member_value) is type(value) and member_value == value:
-                return self.get_member(field)
-        return None
+        return self.get_member(field) if (field := self._member_index.get(_member_key(value))) is not None else None
 
     @override
     def invalidate_render_caches(self) -> None:
@@ -370,6 +355,13 @@ def _enum_class(kind: EnumKind, first_merged: type[Enum] = Enum) -> type[Enum]:
     return first_merged if kind.base is None else _ENUM_CLASSES[kind.base]
 
 
+def enum_class_base(enum_class: type[Enum]) -> EnumBase:
+    """Return the stdlib class an enum model class is written on: ``IntEnum``, ``StrEnum`` or ``Enum``."""
+    if issubclass(enum_class, IntEnum):
+        return "IntEnum"
+    return "StrEnum" if issubclass(enum_class, StrEnum) else "Enum"
+
+
 class Member:
     """Represents an enum member with its parent enum and field."""
 
@@ -377,7 +369,7 @@ class Member:
         """Initialize enum member."""
         self.enum: Enum = enum
         self.field: DataModelFieldBase = field
-        self.alias: Optional[str] = None  # noqa: UP045
+        self.alias: str | None = None
 
     @override
     def __repr__(self) -> str:

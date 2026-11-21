@@ -1,0 +1,4 @@
+Pet {"kind": "cat"}: schema accepts, model rejects
+Pet {"kind": "kitty"}: schema accepts, model rejects
+Pet {"kind": "Cat"}: schema rejects, model accepts
+Pet {"kind": "dog"}: schema accepts, model accepts

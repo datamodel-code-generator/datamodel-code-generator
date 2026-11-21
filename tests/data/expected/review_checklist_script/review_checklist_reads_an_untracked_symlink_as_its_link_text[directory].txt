@@ -1,0 +1,9 @@
+exit status 0
+Review checklist against base: 1 of 1 items.
+
+1. Shaped [shaped]
+   Rule (AGENTS.md): Instructions for coding agents
+   Ask: ?
+   Triggered by:
+     notes/link:1 adds `folder`
+   Pull requests: #1, #2

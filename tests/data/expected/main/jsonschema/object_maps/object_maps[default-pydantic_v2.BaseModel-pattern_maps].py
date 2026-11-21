@@ -72,9 +72,9 @@ class Model(BaseModel):
     mClosedTwo: dict[str, dict[constr(pattern=r'^a|^b'), int | str]] | None = None
     iOpenTwo: list[dict[constr(pattern=r'^a|^b'), int | str]] | None = None
     mOpenTwo: dict[str, dict[constr(pattern=r'^a|^b'), int | str]] | None = None
-    iOverlap: list[dict[constr(pattern=r'^a|b$'), conint(ge=0) | conint(le=9)]] | None = (
-        None
-    )
+    iOverlap: (
+        list[dict[constr(pattern=r'^a|b$'), conint(ge=0) | conint(le=9)]] | None
+    ) = None
     mOverlap: (
         dict[str, dict[constr(pattern=r'^a|b$'), conint(ge=0) | conint(le=9)]] | None
     ) = None
@@ -87,6 +87,6 @@ class Model(BaseModel):
     iNamesTwo: list[dict[constr(pattern=r'^a|^b', max_length=3), int | str]] | None = (
         None
     )
-    mNamesTwo: dict[str, dict[constr(pattern=r'^a|^b', max_length=3), int | str]] | None = (
-        None
-    )
+    mNamesTwo: (
+        dict[str, dict[constr(pattern=r'^a|^b', max_length=3), int | str]] | None
+    ) = None

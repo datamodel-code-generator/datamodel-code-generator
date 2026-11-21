@@ -2,20 +2,35 @@
 
 from __future__ import annotations
 
+import re
 import runpy
 import subprocess
 import sys
+from fnmatch import fnmatchcase
 from pathlib import Path
 from shutil import copyfile
 
 import pytest
+import tomllib
 
 from scripts import check_architecture_boundaries
+from scripts._import_cycles import import_cycles
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[1]
 FIXTURE_ROOT = Path(__file__).parent / "data" / "architecture_boundaries"
 EXPECTED_ROOT = Path(__file__).parent / "data" / "expected" / "architecture_boundaries"
+CHECKER_FILES = ("check_architecture_boundaries.py", "_import_cycles.py", "_source_model.py")
+"""The guard and the modules it reads imports with, as a copy of the guard in a tree needs them."""
+
+
+def _copy_checker(root: Path) -> Path:
+    """Copy the guard and its modules into ``root/scripts`` and return the copied guard."""
+    (root / "scripts").mkdir()
+    for name in CHECKER_FILES:
+        copyfile(ROOT / "scripts" / name, root / "scripts" / name)
+    return root / "scripts" / "check_architecture_boundaries.py"
 
 
 def test_source_tree_respects_architecture_boundaries() -> None:
@@ -24,7 +39,6 @@ def test_source_tree_respects_architecture_boundaries() -> None:
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "clean.txt",
     )
 
 
@@ -47,12 +61,12 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
         (FIXTURE_ROOT / "requirements" / "forbidden.py", "requirements"),
         (FIXTURE_ROOT / "constraints" / "forbidden.py", "constraints"),
         (FIXTURE_ROOT / "regex" / "forbidden.py", "regex"),
+        (FIXTURE_ROOT / "runtime" / "forbidden.py", "runtime"),
     ]
     violations = check_architecture_boundaries.check_files(files, allowlist={})
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "violations.txt",
     )
 
 
@@ -77,6 +91,49 @@ def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(
         check_architecture_boundaries.format_report(violations),
         expected,
     )
+
+
+def test_architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read(tmp_path: Path) -> None:
+    """Report an import that leaves the top-level package and a module the source model refuses, as violations."""
+    stored = [FIXTURE_ROOT / "unreadable" / "import.py.txt", FIXTURE_ROOT / "unreadable" / "source.py.txt"]
+    files: list[tuple[Path, check_architecture_boundaries.Layer]] = []
+    for path in stored:
+        copied = tmp_path / path.name.removesuffix(".txt")
+        copyfile(path, copied)
+        files.append((copied, "shared"))
+    report = check_architecture_boundaries.format_report(check_architecture_boundaries.check_files(files, allowlist={}))
+
+    assert_output(report.replace(tmp_path.as_posix(), "tests/data/architecture_boundaries/unreadable"))
+
+
+def test_architecture_boundary_detector_reports_a_dependency_the_source_model_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report a module of the package that a file's names lead to and the source model refuses, not skip it."""
+    package = tmp_path / "src" / "datamodel_code_generator"
+    package.mkdir(parents=True)
+    copyfile(FIXTURE_ROOT / "unreadable" / "source.py.txt", package / "dependency.py")
+    checked = tmp_path / "config.py"
+    checked.write_text("from datamodel_code_generator.dependency import Backend\n\nBackend.run()\n", encoding="utf-8")
+    monkeypatch.setattr(check_architecture_boundaries, "SOURCE_ROOT", package)
+    report = check_architecture_boundaries.format_report(
+        check_architecture_boundaries.check_files([(checked, "config")], allowlist={})
+    )
+
+    assert_output(report.replace(tmp_path.resolve().as_posix(), "TMP").replace(tmp_path.as_posix(), "TMP"))
+
+
+def test_architecture_boundary_detector_rejects_root_and_main_imports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail each read of a root name or of __main__ below the root, in every import form and attribute read.
+
+    Submodules read through the root pass, and so do the root's own re-exports and __main__ reading the root; a root
+    binding that shadows a submodule, a name its ``__getattr__`` serves and the root reading __main__ fail.
+    """
+    package = FIXTURE_ROOT / "root_import" / "datamodel_code_generator"
+    monkeypatch.setattr(check_architecture_boundaries, "SOURCE_ROOT", package)
+    violations = check_architecture_boundaries.check_paths([package], allowlist={})
+
+    assert_output(check_architecture_boundaries.format_report(violations))
 
 
 def test_architecture_boundary_source_classification() -> None:
@@ -111,13 +168,149 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "_constraint_applicability.py",
         source_root / "_regex_syntax.py",
         source_root / "types.py",
+        source_root / "_runtime" / "client" / "client.py",
     )
     classification = "".join(
         f"{path.relative_to(source_root).as_posix()}: {check_architecture_boundaries._classify_source_path(path)}\n"
         for path in paths
     )
 
-    assert_output(classification, EXPECTED_ROOT / "classifications.txt")
+    assert_output(classification)
+
+
+def test_host_private_access_allows_only_declared_host_members() -> None:
+    """Pass self, cls and Host parameters that declare the member; fail other receivers, aliases and members."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "concern.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+def test_host_private_access_follows_the_binding_rules() -> None:
+    """Report a private read through a name an inner scope or a comprehension rebinds, not the Host read beside it."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "bindings.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+@needs("type-statements")
+def test_host_private_access_follows_type_parameter_scopes(tmp_path: Path) -> None:
+    """Hide a Host parameter behind a type parameter or a type statement of the same name."""
+    stored = FIXTURE_ROOT / "host_private_access" / "type_parameters.py.txt"
+    fixture = tmp_path / "type_parameters.py"
+    copyfile(stored, fixture)
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+    report = check_architecture_boundaries.format_report(violations)
+
+    assert_output(report.replace(fixture.as_posix(), stored.relative_to(ROOT).as_posix().removesuffix(".txt")))
+
+
+def test_host_private_access_exempts_only_method_receivers() -> None:
+    """Exempt self and cls of a method and its closures; treat them elsewhere as ordinary parameters."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "receivers.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+def test_host_private_access_scope_equals_the_slf001_ignores() -> None:
+    """Check with the host rule exactly the files where the ruff per-file ignores turn SLF001 off."""
+    ignores = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["ruff"]["lint"][
+        "per-file-ignores"
+    ]
+    globs = [glob for glob, rules in ignores.items() if glob.startswith("src/") and "private-member-access" in rules]
+    source_root = ROOT / "src" / "datamodel_code_generator"
+    named = [
+        source_root.joinpath(*relative.split("/"))
+        for relative in (
+            "parser/_new/x.py",
+            "parser/_new/sub/y.py",
+            "parser/_passes/sub/z.py",
+            "parser/base.py",
+            "parser/jsonschema.py",
+            "model/_field_imports.py",
+            "model/base.py",
+        )
+    ]
+
+    def scopes(path: Path) -> tuple[bool, bool]:
+        relative = path.relative_to(ROOT).as_posix()
+        return any(fnmatchcase(relative, glob) for glob in globs), check_architecture_boundaries._in_host_scope(path)
+
+    differing = [
+        path.relative_to(ROOT).as_posix() for path in sorted((ROOT / "src").rglob("*.py")) if len(set(scopes(path))) > 1
+    ]
+    lines = [f"{path.relative_to(source_root).as_posix()}: ignored, checked = {scopes(path)}" for path in named]
+
+    assert_output("\n".join([*globs, *lines, f"src files where they differ: {differing}", ""]))
+
+
+def test_host_private_access_baseline_only_shrinks(tmp_path: Path) -> None:
+    """Allow exactly the accesses the baseline counts and report the entries the code no longer has."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "concern.py"
+    baseline = tmp_path / "baseline.toml"
+    baseline.write_text(
+        check_architecture_boundaries.format_host_baseline(
+            check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+        ),
+        encoding="utf-8",
+    )
+    allowlist = check_architecture_boundaries.load_host_baseline(baseline)
+    grown = {
+        key: check_architecture_boundaries.AllowlistEntry(entry.reason, entry.count + 1)
+        for key, entry in allowlist.items()
+        if key.target == "sys._getframe"
+    }
+    reports = [
+        check_architecture_boundaries.format_report(
+            check_architecture_boundaries.check_files([], allowlist=entries, host_files=[fixture])
+        )
+        for entries in (allowlist, {**allowlist, **grown})
+    ]
+    missing = check_architecture_boundaries.load_host_baseline(tmp_path / "missing.toml")
+
+    assert_output(
+        f"{baseline.read_text(encoding='utf-8')}baseline: {reports[0]}grown: {reports[1]}missing: {missing}\n"
+    )
+
+
+def test_host_private_access_cli_writes_the_baseline(tmp_path: Path) -> None:
+    """Write the baseline of a source tree from the executable guard, after which the tree checks clean."""
+    script_path = _copy_checker(tmp_path)
+    source_path = tmp_path / "src" / "datamodel_code_generator" / "parser" / "_concern.py"
+    source_path.parent.mkdir(parents=True)
+    copyfile(FIXTURE_ROOT / "host_private_access" / "concern.py", source_path)
+
+    completed = subprocess.run(
+        [sys.executable, str(script_path), "--write-host-baseline"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert_output(
+        f"exit: {completed.returncode}\nstderr: {completed.stderr!r}\n"
+        f"{(script_path.parent / 'host_private_access_baseline.toml').read_text(encoding='utf-8')}"
+    )
+
+
+def test_import_cycles_count_the_imports_that_close_them() -> None:
+    """Each kind of import back raises the import-cycle keys it can close; the fixture's package says why.
+
+    Imports that run when their module is imported close ``module-level`` cycles, which the guard also rejects;
+    function-local and ``TYPE_CHECKING`` imports close ``lazy`` ones only.
+    """
+    lines = []
+    for fixture in sorted((FIXTURE_ROOT / "import_cycles").iterdir()):
+        lines.append(f"== {fixture.name}")
+        for key, found in import_cycles(fixture).items():
+            lines += [f"{key}: {', '.join(f'{path}:{line}' for path, line in cycle)}" for cycle in found]
+        lines.append(
+            check_architecture_boundaries.format_report(check_architecture_boundaries.import_cycle_violations(fixture))
+        )
+    assert_output("\n".join(lines))
 
 
 def test_architecture_boundary_detector_allows_shared_and_composition_model_dependencies() -> None:
@@ -130,7 +323,6 @@ def test_architecture_boundary_detector_allows_shared_and_composition_model_depe
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "clean.txt",
     )
 
 
@@ -152,7 +344,6 @@ def test_architecture_boundary_detector_reports_stale_allowlist_entries() -> Non
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "stale_allowlist.txt",
     )
 
 
@@ -174,7 +365,6 @@ def test_reference_allowlist_is_symbol_specific() -> None:
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "reference_allowlist.txt",
     )
 
 
@@ -204,14 +394,18 @@ def test_architecture_boundary_allowlist_contract_and_file_discovery(tmp_path: P
         ),
     )
 
-    assert_output("\n".join(messages) + "\n", EXPECTED_ROOT / "allowlist_contract.txt")
+    assert_output("\n".join(messages) + "\n")
 
 
 def test_architecture_boundary_cli_reports_actionable_failures(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Exercise the clean CLI, an abnormal dependency, and the executable entry point."""
+    """Exercise the clean CLI, an abnormal dependency, and the executable entry point.
+
+    The failure in a source file is stored by its file and symbol (the ``in`` part), not by its line and column, so
+    an edit above it in that file leaves the stored output as it is.
+    """
     success_code = check_architecture_boundaries.main([str(ROOT / "src" / "datamodel_code_generator")])
     clean_output = capsys.readouterr()
 
@@ -223,7 +417,7 @@ def test_architecture_boundary_cli_reports_actionable_failures(
     )
     monkeypatch.delitem(check_architecture_boundaries.DEFAULT_ALLOWLIST, legacy_key)
     failure_code = check_architecture_boundaries.main([str(ROOT / "src" / "datamodel_code_generator" / "reference.py")])
-    failure_output = capsys.readouterr()
+    failure_by_symbol = re.sub(r"^(src/[^:]+):\d+:\d+:", r"\1:", capsys.readouterr().err, flags=re.MULTILINE)
     monkeypatch.undo()
 
     monkeypatch.setattr(sys, "argv", [str(ROOT / "scripts" / "check_architecture_boundaries.py")])
@@ -237,12 +431,11 @@ def test_architecture_boundary_cli_reports_actionable_failures(
             f"clean stdout: {clean_output.out!r}\n"
             f"clean stderr: {clean_output.err!r}\n"
             f"failure exit: {failure_code}\n"
-            f"{failure_output.err}"
+            f"{failure_by_symbol}"
             f"entrypoint exit: {exit_info.value.code}\n"
             f"entrypoint stdout: {entrypoint_output.out!r}\n"
             f"entrypoint stderr: {entrypoint_output.err!r}\n"
         ),
-        EXPECTED_ROOT / "cli.txt",
     )
 
 
@@ -258,7 +451,6 @@ def test_architecture_boundary_cli_checks_the_full_source_tree() -> None:
 
     assert_output(
         f"exit: {completed.returncode}\nstdout: {completed.stdout!r}\nstderr:\n{completed.stderr}",
-        EXPECTED_ROOT / "cli_subprocess.txt",
     )
 
 
@@ -278,11 +470,9 @@ def test_architecture_boundary_cli_reports_shared_model_backend_access(
     expected: Path,
 ) -> None:
     """Run the executable guard against isolated shared-model backend access fixtures."""
-    script_path = tmp_path / "scripts" / "check_architecture_boundaries.py"
+    script_path = _copy_checker(tmp_path)
     source_path = tmp_path / "src" / "datamodel_code_generator" / "model" / "base.py"
-    script_path.parent.mkdir()
     source_path.parent.mkdir(parents=True)
-    copyfile(ROOT / "scripts" / "check_architecture_boundaries.py", script_path)
     copyfile(fixture, source_path)
 
     completed = subprocess.run(

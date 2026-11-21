@@ -1,0 +1,3 @@
+runtime: same: Union[Annotated[str, min_length=1, pattern='^a'], None, int] | Union[Annotated[str, min_length=1, pattern='^a'], None, int]
+string: same: Union[Annotated[str, min_length=1, pattern='^a'], None, int] | Union[Annotated[str, min_length=1, pattern='^a'], None, int]
+model-field: same: Union[Annotated[str, min_length=1, pattern='^a'], None, int] | Union[Annotated[str, min_length=1, pattern='^a'], None, int]

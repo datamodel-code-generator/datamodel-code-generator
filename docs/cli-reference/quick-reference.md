@@ -29,8 +29,12 @@ datamodel-codegen [OPTIONS]
 | [`--preset`](base-options.md#preset) | Apply an immutable built-in option preset. |
 | [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order) | Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name in document or... |
 | [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers) | Read the escapes of a `$ref` JSON pointer as the characters they encode. |
+| [`--read-ids-with-empty-fragment`](base-options.md#read-ids-with-empty-fragment) | Read an `$id` that ends with an empty fragment as the document that declares it. |
 | [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias) | Read the fields of a Pydantic dataclass by their aliases with --input-model. |
+| [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members) | Read every keyword beside a `$ref` that a closed allOf member evaluates. |
 | [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document) | Read each document by the schema version it declares. |
+| [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents) | Read the target of an allOf of one `$ref` in the document that holds the schema. |
+| [`--read-yaml-1-1-numbers-as-text`](base-options.md#read-yaml-1-1-numbers-as-text) | Read the unquoted YAML values that only YAML 1.1 reads as numbers as their text. |
 | [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type) | Reach the types to reuse through every model kind and write no copy of an import... |
 | [`--schema-version`](base-options.md#schema-version) | Schema version to use for parsing. |
 | [`--schema-version-mode`](base-options.md#schema-version-mode) | Schema version validation mode. |
@@ -56,16 +60,23 @@ datamodel-codegen [OPTIONS]
 | [`--no-use-specialized-enum`](typing-customization.md#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code generation. |
 | [`--no-use-standard-collections`](typing-customization.md#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for container types. |
 | [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operator. |
+| [`--open-enums`](typing-customization.md#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
 | [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema does. |
+| [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order) | Give a required inherited property the schema its allOf parents declare. |
+| [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
+| [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they name. |
 | [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
 | [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the field's whole type. |
+| [`--untyped-value-type`](typing-customization.md#untyped-value-type) | Write each value the schema leaves untyped as one type instead of `Any`. |
 | [`--use-annotated`](typing-customization.md#use-annotated) | Use typing.Annotated for Field() with constraints. |
+| [`--use-bytes-for-content-media-type`](typing-customization.md#use-bytes-for-content-media-type) | Type an OpenAPI string with a `contentMediaType` and no `contentEncoding` as `by... |
 | [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict) | Generate TypedDict with PEP 728 closed/extra_items (default: enabled). |
 | [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint. |
 | [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field forms too. |
@@ -81,6 +92,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Generate StrEnum/IntEnum for string/integer enums (Python 3.11+). |
 | [`--use-standard-collections`](typing-customization.md#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
+| [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64) | Make a `format: byte` string strict under `--strict-types str`. |
 | [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict) | Generate TypedDict declarations with `total=False`. |
 | [`--use-tuple-for-closed-arrays`](typing-customization.md#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other item can follow. |
 | [`--use-tuple-for-fixed-items`](typing-customization.md#use-tuple-for-fixed-items) | Generate tuple types for arrays with items array syntax. |
@@ -92,7 +104,9 @@ datamodel-codegen [OPTIONS]
 | [`--use-union-operator`](typing-customization.md#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by value. |
-| [`--use-x-python-type-unions`](typing-customization.md#use-x-python-type-unions) | Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`... |
+| [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) | Validate the default of a field that names a root model written as an alias. |
+| [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref) | Type every reference to a schema with `x-python-import` by the class it imports. |
+| [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every spelling and container... |
 
 ### 🏷️ Field Customization
 
@@ -110,6 +124,7 @@ datamodel-codegen [OPTIONS]
 | [`--field-extra-keys-without-x-prefix`](field-customization.md#field-extra-keys-without-x-prefix) | Include schema extension keys in Field() without requiring 'x-' prefix. |
 | [`--field-include-all-keys`](field-customization.md#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydantic v2 only). |
+| [`--infer-union-discriminators`](field-customization.md#infer-union-discriminators) | Write a oneOf or anyOf whose branches each pin a tag as a discriminated union. |
 | [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` ... |
 | [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags) | Give a variant that discriminated unions tag differently every tag they give it. |
 | [`--name-allof-union-members-after-branches`](field-customization.md#name-allof-union-members-after-branches) | Name the classes an allOf gives the branches of a oneOf or anyOf it holds after ... |
@@ -119,12 +134,14 @@ datamodel-codegen [OPTIONS]
 | [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Specify delimiter for original field names when using snake-case conversion. |
 | [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type) | Read the string and the array keywords for their own kind only, as JSON Schema d... |
 | [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly) | Decide the bounds of the int member of a msgspec union on the bounds the schema ... |
+| [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type) | Read the keywords that constrain objects only beside an `anyOf` or `oneOf` for i... |
 | [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) | Remove the special prefix from field names. |
 | [`--serialization-aliases`](field-customization.md#serialization-aliases) | Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file pa... |
 | [`--set-default-enum-member`](field-customization.md#set-default-enum-member) | Use the legacy flag for deserializing enum defaults. |
 | [`--snake-case-field`](field-customization.md#snake-case-field) | Convert field names to snake_case format. |
 | [`--special-field-name-prefix`](field-customization.md#special-field-name-prefix) | Prefix to add to special field names (like reserved keywords). |
 | [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings) | Generate field descriptions as attribute docstrings instead of Field description... |
+| [`--use-bounds-for-float-const`](field-customization.md#use-bounds-for-float-const) | Type a finite float `const` as a float whose minimum and maximum both equal it. |
 | [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator) | Use enum values in discriminator mappings for union types. |
 | [`--use-field-description`](field-customization.md#use-field-description) | Include schema descriptions as Field docstrings. |
 | [`--use-field-description-example`](field-customization.md#use-field-description-example) | Add field examples to docstrings. |
@@ -136,6 +153,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs) | Give an allOf of `$ref` members whose other parts add assertions its own model. |
 | [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what `--infer-union-varia... |
 | [`--use-title-as-name`](field-customization.md#use-title-as-name) | Use schema title as the generated class name. |
+| [`--use-unmapped-variant-tag-values`](field-customization.md#use-unmapped-variant-tag-values) | Give a mapped variant the unmapped values of its tag property. |
 
 ### 🏗️ Model Customization
 
@@ -145,12 +163,14 @@ datamodel-codegen [OPTIONS]
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Allow extra fields in generated Pydantic models (extra='allow'). |
 | [`--allow-leading-underscore-class-name`](model-customization.md#allow-leading-underscore-class-name) | Allow an explicitly specified root class name to start with an underscore. |
 | [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) | Allow Pydantic model population by field name (not just alias). |
+| [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) | Give the fields that leave out some field options the ones others take. |
 | [`--base-class`](model-customization.md#base-class) | Specify a custom base class for generated models. |
 | [`--base-class-map`](model-customization.md#base-class-map) | Specify different base classes for specific models via JSON mapping. |
 | [`--class-name`](model-customization.md#class-name) | Override the auto-generated class name with a custom name. |
 | [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) | Control which classes receive the prefix/suffix. |
 | [`--class-name-prefix`](model-customization.md#class-name-prefix) | Add a prefix to all generated class names. |
 | [`--class-name-suffix`](model-customization.md#class-name-suffix) | Add a suffix to all generated class names. |
+| [`--collapse-constrained-root-models-as-annotated`](model-customization.md#collapse-constrained-root-models-as-annotated) | Inline a constrained string root model into a union or a container as `Annotated... |
 | [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models) | Collapse duplicate models by replacing references instead of inheritance. |
 | [`--collapse-root-models`](model-customization.md#collapse-root-models) | Inline root model definitions instead of creating separate wrapper classes. |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Select which name to keep when collapsing root models with object references. |
@@ -161,25 +181,32 @@ datamodel-codegen [OPTIONS]
 | [`--force-optional`](model-customization.md#force-optional) | Force all fields to be Optional regardless of required status. |
 | [`--frozen-dataclasses`](model-customization.md#frozen-dataclasses) | Generate frozen dataclasses with optional keyword-only fields. |
 | [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container) | Keep constrained root models named in every container of a holder. |
+| [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields) | Keep under `--use-default` the default of a property only an inherited schema ma... |
 | [`--keep-enum-literal-aliases`](model-customization.md#keep-enum-literal-aliases) | Keep a named enum written as a Literal type alias named under collapse. |
 | [`--keep-false-dataclass-arguments`](model-customization.md#keep-false-dataclass-arguments) | Write every dataclass decorator argument set to false. |
 | [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots) | Leave a property's default off the root models extracted from its `anyOf` or `on... |
 | [`--keep-model-order`](model-customization.md#keep-model-order) | Keep generated model order deterministic while respecting dependency constraints... |
 | [`--keep-reference-null-on-collapsed-root-models`](model-customization.md#keep-reference-null-on-collapsed-root-models) | Keep the null of a root model that admits null where `--collapse-root-models` in... |
 | [`--keep-reference-null-on-merged-models`](model-customization.md#keep-reference-null-on-merged-models) | Keep the null a reference's schema admits when its model is merged. |
+| [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items) | Keep the items of an array whose items name the array itself. |
+| [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models) | Keep each member of a root type that collapse inlined at several sites at every ... |
 | [`--keyword-only`](model-customization.md#keyword-only) | Generate dataclasses with keyword-only fields (Python 3.10+). |
+| [`--merge-message-trait-headers`](model-customization.md#merge-message-trait-headers) | Give an AsyncAPI message the headers of all its traits, merged in order, and the... |
 | [`--merge-msgspec-str-like-union-members`](model-customization.md#merge-msgspec-str-like-union-members) | Write one str in place of the str-like members of a msgspec union that holds mor... |
 | [`--model-extra-keys`](model-customization.md#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_extra. |
 | [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add to ConfigDict json_sc... |
 | [`--model-name-map`](model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
 | [`--name-converted-payloads-by-message`](model-customization.md#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after its message. |
 | [`--naming-strategy`](model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
+| [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults) | Write a property whose object default lacks required fields of its model without... |
 | [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds null itself. |
+| [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) | Open the Enum classes of open enums on your own base classes. |
 | [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by) | Order constructor fields by final names or by written defaults. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
 | [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator) | Decide a field's alias by the alias generator its model applies. |
 | [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list) | Write the null that `nullable: true` declares beside a `type` list into the root... |
+| [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides) | Remove the unused models from a module that a model-level `--type-overrides` key... |
 | [`--reuse-model`](model-customization.md#reuse-model) | Reuse identical model definitions instead of generating duplicates. |
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Scope for model reuse detection (root or tree). |
 | [`--singularize-last-word-of-item-names`](model-customization.md#singularize-last-word-of-item-names) | Name the item model of an array by singularizing only the last word of its name. |
@@ -246,6 +273,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--dedupe-numbered-request-response-variants`](openapi-only-options.md#dedupe-numbered-request-response-variants) | Deduplicate a Request or Response variant of a numbered model like the model. |
 | [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) | Decide Request/Response variants from the schema graph and build each inline mod... |
 | [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
 | [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs) | Type a parameter whose content media schema is a `$ref` by the model the `$ref` ... |
@@ -256,6 +284,7 @@ datamodel-codegen [OPTIONS]
 | [`--openapi-scopes`](openapi-only-options.md#openapi-scopes) | Specify OpenAPI scopes to generate (schemas, paths, parameters). |
 | [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) | Generate separate request and response models for readOnly/writeOnly fields. |
 | [`--skip-path-extension-keys`](openapi-only-options.md#skip-path-extension-keys) | Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does. |
+| [`--use-enum-field-as-literal-in-operations`](openapi-only-options.md#use-enum-field-as-literal-in-operations) | Write an operation body or response enum as a Literal root model as a definition... |
 | [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name) | Use OpenAPI operationId as the generated function/class name. |
 | [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name) | Include HTTP status code in response model names. |
 | [`--validation`](openapi-only-options.md#validation) | Enable validation constraints (deprecated, use --field-constraints). |
@@ -289,9 +318,11 @@ datamodel-codegen [OPTIONS]
 | [`--locked`](general-options.md#locked) | Require an existing remote lock and validate each fetched resource against it (e... |
 | [`--lockfile`](general-options.md#lockfile) | Select the remote reference integrity lock file (experimental). |
 | [`--module-split-mode`](general-options.md#module-split-mode) | Split generated models into separate files, one per model class. |
+| [`--read-implied-options-from-merged-values`](general-options.md#read-implied-options-from-merged-values) | Read the options that another option turns on from the arguments and pyproject.t... |
 | [`--recommend-options`](general-options.md#recommend-options) | Recommend options for the input schema on top of the latest dated preset (experi... |
 | [`--shared-module-name`](general-options.md#shared-module-name) | Customize the name of the shared module for deduplicated models. |
 | [`--strict-refs`](general-options.md#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
+| [`--untrusted-input`](general-options.md#untrusted-input) | Treat the input as a schema from an untrusted source. |
 | [`--update-lock`](general-options.md#update-lock) | Create or atomically update the selected remote lock after generation (experimen... |
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
@@ -300,7 +331,9 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Read an AsyncAPI document as its server's or its client's (experimental). |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental). |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Name the import path of the models the client package imports (experimental). |
 | [`--client-operations`](target-generation-options.md#client-operations) | Set the client settings of single operations (experimental). |
@@ -365,6 +398,7 @@ All options sorted alphabetically:
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) - Allow Pydantic model population by field name (not just alia...
 - [`--allow-private-network`](general-options.md#allow-private-network) - Allow HTTP requests to private network schema endpoints.
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs) - Enable fetching of `$ref` targets over HTTP/HTTPS.
+- [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) - Give the fields that leave out some field options the ones o...
 - [`--base-class`](model-customization.md#base-class) - Specify a custom base class for generated models.
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members) - Capitalize enum member names to UPPER_CASE format.
@@ -376,7 +410,9 @@ All options sorted alphabetically:
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) - Control which classes receive the prefix/suffix.
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
+- [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) - Read an AsyncAPI document as its server's or its client's (e...
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (...
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...
 - [`--client-model-package`](target-generation-options.md#client-model-package) - Name the import path of the models the client package import...
 - [`--client-operations`](target-generation-options.md#client-operations) - Set the client settings of single operations (experimental).
@@ -386,6 +422,7 @@ All options sorted alphabetically:
 - [`--client-resource-names`](target-generation-options.md#client-resource-names) - Name the resources of tags (experimental).
 - [`--client-server-base-url`](target-generation-options.md#client-server-base-url) - Resolve relative server URLs against this base URL (experime...
 - [`--client-signature-style`](target-generation-options.md#client-signature-style) - Declare the arguments of the operation methods (experimental...
+- [`--collapse-constrained-root-models-as-annotated`](model-customization.md#collapse-constrained-root-models-as-annotated) - Inline a constrained string root model into a union or a con...
 - [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models) - Collapse duplicate models by replacing references instead of...
 - [`--collapse-root-models`](model-customization.md#collapse-root-models) - Inline root model definitions instead of creating separate w...
 - [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) - Select which name to keep when collapsing root models with o...
@@ -398,6 +435,7 @@ All options sorted alphabetically:
 - [`--custom-template-dir`](template-customization.md#custom-template-dir) - Use custom Jinja2 templates for model generation.
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments) - Customize dataclass decorator arguments via JSON dictionary.
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
+- [`--dedupe-numbered-request-response-variants`](openapi-only-options.md#dedupe-numbered-request-response-variants) - Deduplicate a Request or Response variant of a numbered mode...
 - [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) - Decide Request/Response variants from the schema graph and b...
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
@@ -449,6 +487,7 @@ All options sorted alphabetically:
 - [`--ignore-ref-siblings-by-schema-version`](base-options.md#ignore-ref-siblings-by-schema-version) - Read a `$ref` as its target alone where the schema version i...
 - [`--import-overrides`](typing-customization.md#import-overrides) - Override modules for generated imports by symbol name.
 - [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) - Include OpenAPI path parameters in generated parameter model...
+- [`--infer-union-discriminators`](field-customization.md#infer-union-discriminators) - Write a oneOf or anyOf whose branches each pin a tag as a di...
 - [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names) - Name inline oneOf/anyOf branch models after the value of the...
 - [`--input`](base-options.md#input) - Specify the input schema file path.
 - [`--input-file-type`](base-options.md#input-file-type) - Specify the input file type for code generation.
@@ -460,6 +499,7 @@ All options sorted alphabetically:
 - [`--job`](utility-options.md#job) - Run a named generation job from pyproject.toml (experimental)
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container) - Keep constrained root models named in every container of a h...
 - [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs) - Type a parameter whose content media schema is a `$ref` by t...
+- [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields) - Keep under `--use-default` the default of a property only an...
 - [`--keep-enum-literal-aliases`](model-customization.md#keep-enum-literal-aliases) - Keep a named enum written as a Literal type alias named unde...
 - [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values) - Give an enum class a value base only when it keeps every mem...
 - [`--keep-false-dataclass-arguments`](model-customization.md#keep-false-dataclass-arguments) - Write every dataclass decorator argument set to false.
@@ -468,11 +508,14 @@ All options sorted alphabetically:
 - [`--keep-model-order`](model-customization.md#keep-model-order) - Keep generated model order deterministic while respecting de...
 - [`--keep-reference-null-on-collapsed-root-models`](model-customization.md#keep-reference-null-on-collapsed-root-models) - Keep the null of a root model that admits null where `--coll...
 - [`--keep-reference-null-on-merged-models`](model-customization.md#keep-reference-null-on-merged-models) - Keep the null a reference's schema admits when its model is ...
+- [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items) - Keep the items of an array whose items name the array itself...
+- [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models) - Keep each member of a root type that collapse inlined at sev...
 - [`--keyword-only`](model-customization.md#keyword-only) - Generate dataclasses with keyword-only fields (Python 3.10+)...
 - [`--list-deprecations`](utility-options.md#list-deprecations) - List registered deprecations and scheduled breaking changes
 - [`--list-experimental`](utility-options.md#list-experimental) - List registered experimental features
 - [`--locked`](general-options.md#locked) - Require an existing remote lock and validate each fetched re...
 - [`--lockfile`](general-options.md#lockfile) - Select the remote reference integrity lock file (experimenta...
+- [`--merge-message-trait-headers`](model-customization.md#merge-message-trait-headers) - Give an AsyncAPI message the headers of all its traits, merg...
 - [`--merge-msgspec-str-like-union-members`](model-customization.md#merge-msgspec-str-like-union-members) - Write one str in place of the str-like members of a msgspec ...
 - [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags) - Give a variant that discriminated unions tag differently eve...
 - [`--model-extra-keys`](model-customization.md#model-extra-keys) - Add model-level schema extensions to ConfigDict json_schema_...
@@ -492,8 +535,11 @@ All options sorted alphabetically:
 - [`--no-use-standard-collections`](typing-customization.md#no-use-standard-collections) - Use typing.Dict/List instead of built-in dict/list for conta...
 - [`--no-use-type-checking-imports`](template-customization.md#no-use-type-checking-imports) - Keep generated model imports available at runtime when using...
 - [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) - Use Union[X, Y] / Optional[X] instead of X | Y union operato...
+- [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults) - Write a property whose object default lacks required fields ...
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints) - Do not write a constraint again beside a type that already e...
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) - Do not write None again at a reference to a model that holds...
+- [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) - Open the Enum classes of open enums on your own base classes...
+- [`--open-enums`](typing-customization.md#open-enums) - Accept the values an enum does not list.
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions) - Give OpenAPI paths bodies or ref components the models their...
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) - Emit OpenAPI info.version as a generated constant.
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) - Filter OpenAPI paths to include in model generation.
@@ -515,15 +561,26 @@ All options sorted alphabetically:
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) - Read a `const` beside an `enum` as JSON Schema does.
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order) - Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its...
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers) - Read the escapes of a `$ref` JSON pointer as the characters ...
+- [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation) - Read the format of a schema as an annotation, as JSON Schema...
+- [`--read-ids-with-empty-fragment`](base-options.md#read-ids-with-empty-fragment) - Read an `$id` that ends with an empty fragment as the docume...
+- [`--read-implied-options-from-merged-values`](general-options.md#read-implied-options-from-merged-values) - Read the options that another option turns on from the argum...
+- [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order) - Give a required inherited property the schema its allOf pare...
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias) - Read the fields of a Pydantic dataclass by their aliases wit...
+- [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) - Read the Kubernetes schema extensions as the keywords they s...
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type) - Read the string and the array keywords for their own kind on...
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly) - Decide the bounds of the int member of a msgspec union on th...
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list) - Write the null that `nullable: true` declares beside a `type...
+- [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type) - Read the keywords that constrain objects only beside an `any...
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) - Generate separate request and response models for readOnly/w...
+- [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members) - Read every keyword beside a `$ref` that a closed allOf membe...
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document) - Read each document by the schema version it declares.
+- [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents) - Read the target of an allOf of one `$ref` in the document th...
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) - Read a schema-valued `unevaluatedProperties` as `additionalP...
+- [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats) - Read the string formats uuid6, uuid7 and uuid8 as the UUID v...
+- [`--read-yaml-1-1-numbers-as-text`](base-options.md#read-yaml-1-1-numbers-as-text) - Read the unquoted YAML values that only YAML 1.1 reads as nu...
 - [`--recommend-options`](general-options.md#recommend-options) - Recommend options for the input schema on top of the latest ...
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) - Remove the special prefix from field names.
+- [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides) - Remove the unused models from a module that a model-level `-...
 - [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes) - Rename a submodule named like a class of its package.
 - [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type) - Reach the types to reuse through every model kind and write ...
 - [`--reuse-model`](model-customization.md#reuse-model) - Reuse identical model definitions instead of generating dupl...
@@ -567,10 +624,14 @@ All options sorted alphabetically:
 - [`--type-overrides`](typing-customization.md#type-overrides) - Replace schema model types with custom Python types via JSON...
 - [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) - Make every `--type-overrides` value of a field replace the f...
 - [`--union-mode`](model-customization.md#union-mode) - Union mode for combining anyOf/oneOf schemas (smart or left_...
+- [`--untrusted-input`](general-options.md#untrusted-input) - Treat the input as a schema from an untrusted source.
+- [`--untyped-value-type`](typing-customization.md#untyped-value-type) - Write each value the schema leaves untyped as one type inste...
 - [`--update-lock`](general-options.md#update-lock) - Create or atomically update the selected remote lock after g...
 - [`--url`](base-options.md#url) - Fetch a schema from a URL with custom HTTP headers.
 - [`--use-annotated`](typing-customization.md#use-annotated) - Use typing.Annotated for Field() with constraints.
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings) - Generate field descriptions as attribute docstrings instead ...
+- [`--use-bounds-for-float-const`](field-customization.md#use-bounds-for-float-const) - Type a finite float `const` as a float whose minimum and max...
+- [`--use-bytes-for-content-media-type`](typing-customization.md#use-bytes-for-content-media-type) - Type an OpenAPI string with a `contentMediaType` and no `con...
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict) - Generate TypedDict with PEP 728 closed/extra_items (default:...
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of) - Generate Decimal types for fields with multipleOf constraint...
 - [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms) - Write `Decimal` for a number with `multipleOf` in the field ...
@@ -580,6 +641,7 @@ All options sorted alphabetically:
 - [`--use-double-quotes`](template-customization.md#use-double-quotes) - Use double quotes for string literals in generated code.
 - [`--use-duplicate-name-suffix-for-every-collision`](model-customization.md#use-duplicate-name-suffix-for-every-collision) - Give the `--duplicate-name-suffix` suffix to every model ren...
 - [`--use-encoded-str-for-constrained-base64`](typing-customization.md#use-encoded-str-for-constrained-base64) - Check the constraints of a `format: byte` string on its base...
+- [`--use-enum-field-as-literal-in-operations`](openapi-only-options.md#use-enum-field-as-literal-in-operations) - Write an operation body or response enum as a Literal root m...
 - [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator) - Use enum values in discriminator mappings for union types.
 - [`--use-exact-imports`](template-customization.md#use-exact-imports) - Import exact types instead of modules.
 - [`--use-field-description`](field-customization.md#use-field-description) - Include schema descriptions as Field docstrings.
@@ -614,6 +676,7 @@ All options sorted alphabetically:
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections) - Use built-in dict/list instead of typing.Dict/List.
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) - Use Python standard library types for string formats instead...
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name) - Include HTTP status code in response model names.
+- [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64) - Make a `format: byte` string strict under `--strict-types st...
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum) - Generate typed Enum subclasses for enums with specific field...
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name) - Name inline oneOf/anyOf branch models after their tag: what ...
 - [`--use-title-as-name`](field-customization.md#use-title-as-name) - Use schema title as the generated class name.
@@ -629,7 +692,10 @@ All options sorted alphabetically:
 - [`--use-union-operator`](typing-customization.md#use-union-operator) - Use | operator for Union types (PEP 604).
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) - Generate set types for arrays with uniqueItems constraint.
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) - Write a uniqueItems set only where its final items hash by v...
-- [`--use-x-python-type-unions`](typing-customization.md#use-x-python-type-unions) - Type a field by an `x-python-type` union spelled `Optional[....
+- [`--use-unmapped-variant-tag-values`](field-customization.md#use-unmapped-variant-tag-values) - Give a mapped variant the unmapped values of its tag propert...
+- [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) - Validate the default of a field that names a root model writ...
+- [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref) - Type every reference to a schema with `x-python-import` by t...
+- [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) - Write a field's `x-python-type` as given: unions of every sp...
 - [`--validation`](openapi-only-options.md#validation) - Enable validation constraints (deprecated, use --field-const...
 - [`--validators`](template-customization.md#validators) - Add custom field validators to generated Pydantic v2 models.
 - [`--version`](utility-options.md#version) - Show program version and exit

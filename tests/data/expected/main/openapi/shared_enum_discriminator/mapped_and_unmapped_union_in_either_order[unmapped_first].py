@@ -21,12 +21,12 @@ class Animal(BaseModel):
 
 class Cat(Animal):
     meow: str | None = None
-    kind: Literal[Kind.cat]
+    kind: Literal[Kind.cat, 'cat']
 
 
 class Dog(Animal):
     bark: str | None = None
-    kind: Literal[Kind.dog_breed]
+    kind: Literal[Kind.dog_breed, 'dog-breed']
 
 
 class Unmapped(RootModel[Cat | Dog]):

@@ -1,0 +1,10 @@
+[[change]]
+id = "error-family-leaf-modules"
+category = "internal"
+title = "Import the shared names of the root and __main__ from leaf modules"
+summary = "The errors, warnings and the command-line names other modules import move to leaf modules under their public names; the boundary check's stored report names a line of reference.py one lower, and the where script's example of a definition in a conditional block names a type alias the root still defines. The package writes the same output."
+refs = ["#7245"]
+covers = [
+    "architecture_boundaries/architecture_boundary_cli_reports_actionable_failures.txt",
+    "where_script/where_grammar[definition-in-a-conditional-block].txt",
+]

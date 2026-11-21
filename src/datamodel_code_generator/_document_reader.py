@@ -3,11 +3,13 @@
 A YAML key such as ``1`` or ``200`` loads as a number. A key that names a component, path, webhook, callback, method,
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
 must give each response once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
-path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
-JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
-the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format
-(``is_multi_format_schema_object``), the reference a discriminator mapping value names (``discriminator_mapping_ref``)
-and the error a read of nested schemas ends in when it exceeds the Python recursion limit (``nesting_limit``).
+path its error names, which only the reader can locate, as a function called when the error is raised. The walk of JSON
+pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member, the
+fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format and the
+schema and format it holds (``is_multi_format_schema_object``, ``held_schema``), the order an AsyncAPI operation or
+message and its traits apply in (``trait_layers``), the reference a discriminator mapping value names
+(``discriminator_mapping_ref``), the error a read of nested schemas ends in when it exceeds the Python recursion limit
+(``nesting_limit``) and the size limits of a document under --untrusted-input (``refuse_oversized_document``).
 """
 
 from __future__ import annotations
@@ -19,8 +21,8 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._json_pointer import is_array_index
+from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -31,6 +33,8 @@ if TYPE_CHECKING:
 __all__ = [
     "CHANNEL_OPERATIONS",
     "MISSING",
+    "UNTRUSTED_MAX_DEPTH",
+    "UNTRUSTED_MAX_NODES",
     "ArrayIndexOutOfRangeError",
     "MemberRow",
     "MergedRefSiteRecursionError",
@@ -38,20 +42,27 @@ __all__ = [
     "descend",
     "discriminator_mapping_ref",
     "document_statuses",
+    "held_schema",
     "is_multi_format_schema_object",
     "member",
     "member_key",
     "nesting_limit",
+    "refuse_oversized_document",
     "schema_format_media_type",
     "string_key",
     "string_keyed",
     "string_keys",
+    "trait_layers",
 ]
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
 CHANNEL_OPERATIONS: Final = ("publish", "subscribe")
 """The fields of an AsyncAPI 2 channel that each hold an operation, in the order generation and the recommender read
 them (the public ``parser.asyncapi.OPERATION_NAMES``)."""
+UNTRUSTED_MAX_DEPTH: Final = 100
+"""The most levels of nested objects and arrays a document may have under --untrusted-input (the root is level 1)."""
+UNTRUSTED_MAX_NODES: Final = 2_000_000
+"""The most objects and arrays a document may hold under --untrusted-input, a YAML alias counted at each use."""
 _T = TypeVar("_T")
 
 MemberRow: TypeAlias = Literal["canonical", "refusing"]
@@ -85,7 +96,7 @@ def _array_item(value: list[YamlValue], token: str) -> YamlValue:
 
 def as_mapping(value: object) -> dict[str, YamlValue]:
     """Return a loaded value that is a mapping, or an empty mapping for any other value."""
-    return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
+    return value if isinstance(value, dict) else {}
 
 
 def member_key(value: YamlValue, token: str) -> str | int:
@@ -168,6 +179,40 @@ def nesting_limit() -> Generator[None]:
         raise Error(msg) from None
 
 
+def refuse_oversized_document(document: dict[Any, Any]) -> None:
+    """Refuse, under --untrusted-input, a document past ``UNTRUSTED_MAX_DEPTH`` levels or ``UNTRUSTED_MAX_NODES`` nodes.
+
+    The nodes are the objects and arrays of the document (dicts, lists and tuples), visited without recursion as
+    often as the document holds them, as its readers visit them: a YAML alias counts at each use. A node is counted
+    when it is queued and the depth is checked when it is reached, so the queue never holds more than the node limit
+    and an alias cycle stops at the first limit it passes.
+    """
+    nodes = 1
+    pending: list[tuple[Any, int]] = [(document, 1)]
+    while pending:
+        node, depth = pending.pop()
+        if depth > UNTRUSTED_MAX_DEPTH:
+            msg = (
+                f"The schema nests objects and arrays more than {UNTRUSTED_MAX_DEPTH} levels deep and is refused "
+                f"under --untrusted-input, which reads at most {UNTRUSTED_MAX_DEPTH} levels. Flatten the schema, or "
+                "generate without --untrusted-input when the schema is trusted."
+            )
+            raise Error(msg)
+        children = [
+            child
+            for child in (node.values() if isinstance(node, dict) else node)
+            if isinstance(child, (dict, list, tuple))
+        ]
+        if (nodes := nodes + len(children)) > UNTRUSTED_MAX_NODES:
+            msg = (
+                f"The schema holds more than {UNTRUSTED_MAX_NODES:,} objects and arrays (a YAML alias counts at each "
+                f"use) and is refused under --untrusted-input, which reads at most {UNTRUSTED_MAX_NODES:,}. Split the "
+                "schema, or generate without --untrusted-input when the schema is trusted."
+            )
+            raise Error(msg)
+        pending.extend((child, depth + 1) for child in children)
+
+
 def string_key(key: object, kind: str, error_path: Callable[[object], list[str]]) -> str:
     """Return ``key``, which names a ``kind``; a key that is no string is an error at ``error_path(key)``."""
     if isinstance(key, str):
@@ -206,8 +251,28 @@ def is_multi_format_schema_object(value: object) -> bool:
     }
 
 
+def held_schema(value: object, inherited: object = None) -> tuple[YamlValue, object] | None:
+    """Return the schema a Multi Format Schema Object holds and the ``schemaFormat`` it is read in, else None.
+
+    The format is the object's own, else the one it inherits: a message's, for its payload.
+    """
+    if not is_multi_format_schema_object(value):
+        return None
+    wrapper = as_mapping(value)
+    return wrapper.get("schema"), wrapper.get("schemaFormat") or inherited
+
+
+def trait_layers(own: _T, traits: Iterable[_T], *, own_wins: bool) -> list[_T]:
+    """Return an AsyncAPI operation or message and its traits in the order they apply, the strongest last.
+
+    The traits apply in their order. AsyncAPI 3 then applies the object, whose own fields win (`own_wins`); AsyncAPI 2
+    merges each trait into the object by JSON Merge Patch, so a trait's field wins over the object's.
+    """
+    return [*traits, own] if own_wins else [own, *traits]
+
+
 def schema_format_media_type(schema_format: str) -> str:
-    """Return the media type an AsyncAPI ``schemaFormat`` names: its text before any parameter, lowercased."""
+    """Return the media type an AsyncAPI ``schemaFormat`` or ``contentType`` names: its essence, lowercased."""
     return schema_format.split(";", maxsplit=1)[0].strip().lower()
 
 

@@ -158,3 +158,12 @@ class DefaultBox(Box[T], Generic[T]):
         if value == 5:
             raise ValueError('must not be five')
         return value
+
+
+Minimum = Annotated[int, Field(ge=1)]
+class NativePathsInner(BaseModel):
+    inner: Box[Minimum]
+class NativePathsRoot(BaseModel):
+    both: tuple[Box[Positive], Box[Positive]]
+    nested: NativePathsInner
+    own: Box[Minimum]

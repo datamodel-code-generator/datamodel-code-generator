@@ -4,25 +4,27 @@ A token is escaped ``~`` as ``~0``, then ``/`` as ``~1``, and unescaped in the r
 part of a pointer but of the URI fragment that writes one, and ``reference_tokens`` reads the fragment of a ``$ref``
 the way the parser does: it splits at each ``/`` first, then decodes each token, strictly or leniently. A caller whose
 text is already decoded hands it to ``fragment_tokens``. Whether a fragment opens a pointer or is a plain name, which
-names an anchor, is told here too (``is_pointer_fragment``, ``pointer_opening``). The generated runtime (``_runtime/``)
-keeps its own copy, as it never imports the generator. This module imports only the standard library, so every layer
-may use it.
+names an anchor, is told here too (``is_pointer_fragment``, ``pointer_opening``), and so is the document part of a
+reference key (``document_part``) and the entry of a map of declared URIs an absolute URI names (``uri_entry``).
+The generated runtime (``_runtime/``) keeps its own copy, as it never imports the generator. This module imports only
+the standard library, so every layer may use it.
 """
 
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 from urllib.parse import unquote
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
 __all__ = [
     "NONCANONICAL_ESCAPE",
     "NONCANONICAL_PERCENT",
     "OpeningRow",
     "decode_token",
+    "document_part",
     "escape_token",
     "fragment_pointer",
     "fragment_tokens",
@@ -33,7 +35,10 @@ __all__ = [
     "pointer_tokens",
     "reference_tokens",
     "unescape_token",
+    "uri_entry",
 ]
+
+_T = TypeVar("_T")
 
 NONCANONICAL_PERCENT: Final = re.compile(r"%(?![0-9a-fA-F]{2})")
 """A ``%`` that starts no percent-encoded octet."""
@@ -94,6 +99,20 @@ def is_pointer_fragment(fragment: str, /, *, row: OpeningRow = "uri-fragment") -
     return not fragment or pointer_opening(fragment, row=row) is not None
 
 
+def uri_entry(declared: Mapping[str, _T], absolute: str, /) -> tuple[_T, str] | None:
+    """Return the entry of a map of declared URIs that an absolute URI names, with the pointer fragment below it.
+
+    A URI that a schema declares (an identifier, an `$anchor` or a `$dynamicAnchor`) names its own entry, with no
+    fragment; any other URI whose fragment is a JSON pointer names that pointer below the entry of its document part.
+    """
+    if (entry := declared.get(absolute)) is not None:
+        return entry, ""
+    resource, _, fragment = absolute.partition("#")
+    if is_pointer_fragment(fragment) and (entry := declared.get(resource)) is not None:
+        return entry, fragment
+    return None
+
+
 def fragment_tokens(fragment: str, /) -> tuple[str, ...] | None:
     """Return the reference tokens of a decoded URI fragment: none when empty, None when it is a plain name."""
     if not is_pointer_fragment(fragment, row="decoded"):
@@ -120,6 +139,11 @@ def reference_tokens(fragment: str, /, *, strict: bool = False) -> tuple[str, ..
     if strict and any(NONCANONICAL_ESCAPE.search(token) for token in tokens):
         raise ValueError(fragment)
     return tuple(map(unescape_token, tokens))
+
+
+def document_part(key: str, /) -> str:
+    """Return the document a reference key, location or URI names: its text before the first ``#``."""
+    return key.partition("#")[0]
 
 
 def is_array_index(token: str, /) -> bool:

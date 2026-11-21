@@ -7,7 +7,8 @@ Usage:
 The architecture page is intentionally not fully generated. This script only
 syncs the code-sourced inventory that tends to drift during releases: parser
 routes, parser inheritance, output backends, config model sizes, and formatter
-names, and the pass table that ``scripts/pass_decls.py`` declares.
+names, the pass table that ``scripts/pass_decls.py`` declares, the table of decision homes that
+``scripts/decision_homes.py`` declares, and the table of legacy rows that ``scripts/legacy_rows.py`` declares.
 """
 
 from __future__ import annotations
@@ -22,14 +23,17 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 DOCS_PATH = ROOT / "docs" / "architecture.md"
-INIT_PATH = SRC / "datamodel_code_generator" / "__init__.py"
 PARSER_DIR = SRC / "datamodel_code_generator" / "parser"
 
 for path in (SRC, ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from datamodel_code_generator import DataModelType, InputFileType  # noqa: E402
+from datamodel_code_generator import (  # noqa: E402
+    _INPUT_TYPES,  # ruff: ignore[import-private-name]
+    DataModelType,
+    InputFileType,
+)
 from datamodel_code_generator.config import (  # noqa: E402
     AsyncAPIParserConfig,
     AvroParserConfig,
@@ -44,13 +48,17 @@ from datamodel_code_generator.config import (  # noqa: E402
 )
 from datamodel_code_generator.format import DEFAULT_FORMATTERS, Formatter, PythonVersionMin  # noqa: E402
 from datamodel_code_generator.model import get_data_model_types  # noqa: E402
-from scripts.fact_tables import Fact  # noqa: E402
+from scripts import decision_homes, fact_tables, legacy_rows  # noqa: E402
 from scripts.pass_decls import PASS_DECLS, PassDecl  # noqa: E402
 
 BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED ARCHITECTURE INVENTORY -->"
 END_MARKER = "<!-- END AUTO-GENERATED ARCHITECTURE INVENTORY -->"
 PASS_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED PASS DECLARATIONS -->"
 PASS_END_MARKER = "<!-- END AUTO-GENERATED PASS DECLARATIONS -->"
+DECISION_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED DECISION HOMES -->"
+DECISION_END_MARKER = "<!-- END AUTO-GENERATED DECISION HOMES -->"
+LEGACY_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED LEGACY ROWS -->"
+LEGACY_END_MARKER = "<!-- END AUTO-GENERATED LEGACY ROWS -->"
 
 PARSER_ROUTE_NOTES: dict[InputFileType, str] = {
     InputFileType.Auto: "Resolved before parser selection by content inference.",
@@ -95,53 +103,14 @@ def _name_from_expr(node: ast.AST) -> str | None:
     return None
 
 
-def _input_file_type_name(pattern: ast.pattern) -> str | None:
-    match pattern:
-        case ast.MatchValue(value=ast.Attribute(value=ast.Name(id="InputFileType"), attr=input_type_name)):
-            return input_type_name
-    return None
-
-
-def _returned_parser_name(case: ast.match_case) -> str | None:
-    for node in ast.walk(ast.Module(body=case.body, type_ignores=[])):
-        if isinstance(node, ast.Return) and isinstance(node.value, ast.Call):
-            return _name_from_expr(node.value.func)
-    return None
-
-
 def parser_routes_from_source() -> dict[InputFileType, str]:
-    """Read _build_parser() and infer direct InputFileType -> Parser routes."""
-    tree = ast.parse(INIT_PATH.read_text(encoding="utf-8"))
-    direct_routes: dict[InputFileType, str] = {}
-    default_route = "JsonSchemaParser"
-
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef) or node.name != "_build_parser":
-            continue
-        for child in ast.walk(node):
-            if not isinstance(child, ast.Match):
-                continue
-            for case in child.cases:
-                parser_name = _returned_parser_name(case)
-                if parser_name is None:
-                    continue
-                input_type_name = _input_file_type_name(case.pattern)
-                if input_type_name is None:
-                    default_route = parser_name
-                    continue
-                direct_routes[InputFileType[input_type_name]] = parser_name
-
-    routes: dict[InputFileType, str] = {}
-    for input_file_type in InputFileType:
-        if input_file_type in PARSER_ROUTE_OVERRIDES:
-            routes[input_file_type] = PARSER_ROUTE_OVERRIDES[input_file_type]
-        elif input_file_type in direct_routes:
-            routes[input_file_type] = direct_routes[input_file_type]
-        elif input_file_type in PARSER_ROUTE_NOTES:
-            routes[input_file_type] = default_route
-        else:
-            routes[input_file_type] = default_route
-    return routes
+    """Read the parser class of each InputFileType from its row of `_INPUT_TYPES`."""
+    return {
+        input_file_type: PARSER_ROUTE_OVERRIDES.get(
+            input_file_type, _INPUT_TYPES[input_file_type].parser.rpartition(".")[2]
+        )
+        for input_file_type in InputFileType
+    }
 
 
 def parser_inheritance_edges() -> list[tuple[str, str]]:
@@ -277,14 +246,18 @@ def generate_architecture_inventory() -> str:
 
 def _facts_cell(facts: frozenset[Any]) -> str:
     """List the facts of a declaration, with ``every Fact`` for all members of ``Fact``."""
-    names = sorted(fact.name for fact in facts if not isinstance(fact, Fact) or not set(Fact) <= facts)
-    return ", ".join(["every Fact"] * (set(Fact) <= facts) + names) or "-"
+    names = sorted(
+        fact.name for fact in facts if not isinstance(fact, fact_tables.Fact) or not set(fact_tables.Fact) <= facts
+    )
+    return ", ".join(["every Fact"] * (set(fact_tables.Fact) <= facts) + names) or "-"
 
 
 def _pass_notes(decl: PassDecl) -> str:
     notes = [decl.summary] if decl.summary else []
     if decl.condition:
         notes.append(f"Runs when: {decl.condition}.")
+    if decl.trigger is not None:
+        notes.append(f"Skipped unless: {decl.trigger.text}.")
     if decl.target is not None:
         notes.append(f"Moves to {decl.target.name}.")
     if decl.removed_by:
@@ -323,9 +296,28 @@ def generate_pass_table() -> str:
     return "\n".join(lines) + "\n"
 
 
+def generate_decision_table() -> str:
+    """Generate the table of decision homes, in the order ``scripts/decision_homes.py`` lists them."""
+    lines = ["", "| Decision | Pure core | Adapters |", "| --- | --- | --- |"]
+    lines.extend(f"| {row.decision} | {row.core} | {row.adapters} |" for row in decision_homes.DECISION_HOMES)
+    return "\n".join(lines) + "\n"
+
+
+def generate_legacy_table() -> str:
+    """Generate the table of legacy rows, in the order ``scripts/legacy_rows.py`` lists them."""
+    lines = ["", "| Row | Keeps | Fix |", "| --- | --- | --- |"]
+    lines.extend(
+        f"| `{row.name}` | {row.keeps} | {row.fix if row.fix == legacy_rows.KEEP else f'#{row.fix}'} |"
+        for row in legacy_rows.LEGACY_ROWS
+    )
+    return "\n".join(lines) + "\n"
+
+
 GENERATED_BLOCKS = (
     (BEGIN_MARKER, END_MARKER, generate_architecture_inventory),
     (PASS_BEGIN_MARKER, PASS_END_MARKER, generate_pass_table),
+    (DECISION_BEGIN_MARKER, DECISION_END_MARKER, generate_decision_table),
+    (LEGACY_BEGIN_MARKER, LEGACY_END_MARKER, generate_legacy_table),
 )
 """Each generated block of docs/architecture.md: its markers and the function that writes it."""
 

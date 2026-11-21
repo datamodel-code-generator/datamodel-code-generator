@@ -1,0 +1,3 @@
+# name-repeats
+render pydantic_v2.BaseModel
+  Error: /paths/~1items/get/parameters/5: The query parameter 'p6' of GET /items cannot take the name 'self'; /paths/~1items/get: The arguments of GET /items take 'a' twice; /paths/~1items/get: The arguments of GET /items take 'b' twice; The resource 'default' takes the name 'm' twice

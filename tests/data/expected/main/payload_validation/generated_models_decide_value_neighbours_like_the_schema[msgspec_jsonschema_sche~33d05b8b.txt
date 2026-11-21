@@ -1,0 +1,3 @@
+[
+  "/level maximum 6: valid, model rejects"
+]

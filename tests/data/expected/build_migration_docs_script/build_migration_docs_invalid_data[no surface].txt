@@ -1,0 +1,4 @@
+exit 1
+Invalid migration data:
+- surface.json: No such file or directory
+written: []

@@ -1,0 +1,10 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    18_24:
+      type: object
+      properties:
+        value:
+          type: integer

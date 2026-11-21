@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: allOf members beside keywords that name a schema an import types, under request-response
+  version: '1'
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      parameters:
+        - name: owner
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Pet'
+              - description: The pet of the owner.
+      responses:
+        '200':
+          description: The orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Orders'
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        pet:
+          allOf:
+            - $ref: '#/components/schemas/Pet'
+            - description: The pet.
+        toy:
+          allOf:
+            - $ref: 'toys.yaml#/components/schemas/Toy'
+            - description: The toy.
+    Basket:
+      type: object
+      properties:
+        pets:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Pet'
+              - description: A pet in the basket.
+    Orders:
+      type: array
+      items:
+        allOf:
+          - $ref: '#/components/schemas/Pet'
+          - description: A pet of an order.
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            bark:
+              type: boolean
+    Pet:
+      type: object
+      x-python-import:
+        module: pets
+        name: Pet
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string

@@ -16,14 +16,16 @@ modules import from it. The module reads data types and references through the p
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeVar
 
+from datamodel_code_generator._container_kinds import container_shape
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._internal_utils import to_hashable
-from datamodel_code_generator._target_unicode import host_identifiers
+from datamodel_code_generator._records import mutable_record
+from datamodel_code_generator._target_unicode import lent_text
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_OPTIONAL, IMPORT_UNION, Import
-from datamodel_code_generator.model._decisions.nullability import field_renders_none
+from datamodel_code_generator.model._decisions.nullability import field_renders_none, takes_member_null
 from datamodel_code_generator.model._rendered_names import _names_of
 
 if TYPE_CHECKING:
@@ -35,7 +37,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
 
 _ANY: Final = "Any"
-_NONE: Final = "None"
 _TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
     IMPORT_ANNOTATED.import_,
     IMPORT_OPTIONAL.import_,
@@ -43,7 +44,7 @@ _TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
 })
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _TypingImportNames:
     """The typing imports a field's type hint needs, collected over its type tree into one value."""
 
@@ -93,7 +94,7 @@ def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
         return frozenset()
 
     try:
-        tree = ast.parse(lent.source if (lent := host_identifiers(annotation)) else annotation, mode="eval")
+        tree = ast.parse(lent_text(annotation)[0], mode="eval")
     except SyntaxError:
         return frozenset()
 
@@ -121,7 +122,7 @@ class _PythonTypeView(Protocol):
 
 
 class _DataTypeView(Protocol):  # noqa: PLR0904
-    """A data type as import collection reads it: ``DataType``. ``_ANY`` and ``_NONE`` are its ``ANY`` and ``NONE``."""
+    """A data type as import collection reads it: ``DataType``. ``_ANY`` is its ``ANY``."""
 
     @property
     def type(self) -> str | None:
@@ -238,6 +239,10 @@ class _DataTypeView(Protocol):  # noqa: PLR0904
     @property
     def is_tuple(self) -> bool:
         """Whether the type is a tuple."""
+
+    @property
+    def given_container(self) -> str | None:
+        """The container class an ``x-python-type`` gives the type, which it is written as."""
 
     @property
     def tuple_item_count(self) -> int | None:
@@ -432,9 +437,9 @@ def collect_field_imports(
     ``needs_annotated`` is passed in so subclasses can precompute it.
     """
     data_type = data_type or field.data_type
-    if field._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):  # noqa: SLF001
-        return field._collect_field_imports_without_type_hint(data_type=data_type)  # noqa: SLF001
-    requirements = field._typing_import_requirements(needs_annotated=needs_annotated, data_type=data_type)  # noqa: SLF001
+    if field._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
+        return field._collect_field_imports_without_type_hint(data_type=data_type)
+    requirements = field._typing_import_requirements(needs_annotated=needs_annotated, data_type=data_type)
     imports = tuple(data_type.all_imports)
     if requirements.any_ and IMPORT_ANY not in imports:
         imports = (*requirements.leading_imports, *imports)
@@ -447,8 +452,8 @@ def collect_field_imports(
 
 
 def collect_field_imports_without_type_hint(field: FieldImportsHost[_D], *, data_type: _D) -> tuple[Import, ...]:
-    needs_optional = field._needs_optional_import_without_type_hint(data_type=data_type)  # noqa: SLF001
-    if field._can_skip_data_type_imports(data_type=data_type):  # noqa: SLF001
+    needs_optional = field._needs_optional_import_without_type_hint(data_type=data_type)
+    if field._can_skip_data_type_imports(data_type=data_type):
         return (IMPORT_OPTIONAL,) if needs_optional else ()
 
     imports = tuple(data_type.all_imports)
@@ -459,13 +464,13 @@ def collect_field_imports_without_type_hint(field: FieldImportsHost[_D], *, data
 
 def import_state_data_type(field: FieldImportsHost[_D]) -> _D | None:
     """Return the data type ``imports`` collects from, or None when it collects without a type hint."""
-    return field._import_state_target(  # noqa: SLF001
+    return field._import_state_target(
         needs_annotated=field.use_annotated and field.needs_annotated_import, data_type=field.data_type
     )
 
 
 def import_state_target(field: FieldImportsHost[_D], *, needs_annotated: bool, data_type: _D) -> _D | None:
-    if field._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):  # noqa: SLF001
+    if field._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
         return None
     return data_type
 
@@ -473,17 +478,19 @@ def import_state_target(field: FieldImportsHost[_D], *, needs_annotated: bool, d
 def write_pre_render_nullability(field: FieldImportsHost[_D], data_type: _D) -> None:
     """Write the None of the nullable models the type names and of bare None union members, as L3 imports did."""
     if data_type.reference:
-        data_type._materialize_render_state("reference-null")  # noqa: SLF001
+        data_type._materialize_render_state("reference-null")
 
-    for child in data_type.data_types:
-        field._write_pre_render_nullability(child)  # noqa: SLF001
-    if data_type.dict_key:
-        field._write_pre_render_nullability(data_type.dict_key)  # noqa: SLF001
+    for child in type_children(data_type):
+        field._write_pre_render_nullability(child)
 
-    if not data_type.is_union or data_type.preserve_union_member_order or data_type._is_container:  # noqa: SLF001
+    if not takes_member_null(
+        is_container=data_type._is_container,
+        keeps_member_order=data_type.preserve_union_member_order,
+        member_count=len(data_type.data_types),
+    ):
         return
-    if any(field._data_type_renders_none(child) for child in data_type.data_types):  # noqa: SLF001
-        data_type._materialize_render_state("member-null")  # noqa: SLF001
+    if any(field._data_type_renders_none(child) for child in data_type.data_types):
+        data_type._materialize_render_state("member-null")
 
 
 def import_key(import_: Import | None) -> tuple[str, str | None, str | None, str | None] | None:
@@ -515,7 +522,7 @@ def can_collect_imports_without_type_hint(
     if data_type.use_serialize_as_any:
         return False
 
-    if field._has_explicit_typing_import_requirements(data_type):  # noqa: SLF001
+    if field._has_explicit_typing_import_requirements(data_type):
         return False
 
     return not (
@@ -540,31 +547,31 @@ def typing_import_requirements(
 ) -> _TypingImportNames:
     data_type = data_type or field.data_type
     names = _TypingImportNames()
-    field._add_typing_import_names(data_type, names)  # noqa: SLF001
+    field._add_typing_import_names(data_type, names)
     if needs_annotated:
         names.add(IMPORT_ANNOTATED.import_)
-    if not names.optional and field._needs_field_optional_import_from_structure(data_type=data_type):  # noqa: SLF001
+    if not names.optional and field._needs_field_optional_import_from_structure(data_type=data_type):
         names.add(IMPORT_OPTIONAL.import_)
     return names
 
 
 def add_typing_import_names(field: FieldImportsHost[_D], data_type: _D, names: _TypingImportNames) -> None:
     """Add the typing imports the hint of ``data_type`` needs to ``names``."""
-    field._add_explicit_typing_import_names(data_type, names)  # noqa: SLF001
+    field._add_explicit_typing_import_names(data_type, names)
 
     if data_type.is_union:
-        field._add_union_typing_import_names(data_type, names)  # noqa: SLF001
+        field._add_union_typing_import_names(data_type, names)
     elif len(data_type.data_types) == 1:
-        field._add_typing_import_names(data_type.data_types[0], names)  # noqa: SLF001
+        field._add_typing_import_names(data_type.data_types[0], names)
 
     if data_type.dict_key:
-        field._add_typing_import_names(data_type.dict_key, names)  # noqa: SLF001
-        if not field._mapping_writes_value(data_type):  # noqa: SLF001
+        field._add_typing_import_names(data_type.dict_key, names)
+        if not field._mapping_writes_value(data_type):
             names.any_ = True
 
     if data_type.discriminator:
         names.add(IMPORT_ANNOTATED.import_)
-    if field._data_type_needs_optional_import(data_type):  # noqa: SLF001
+    if field._data_type_needs_optional_import(data_type):
         names.add(IMPORT_OPTIONAL.import_)
 
 
@@ -574,12 +581,12 @@ def add_union_typing_import_names(field: FieldImportsHost[_D], data_type: _D, na
     has_none = False
     writes_member = False
     for child in data_type.data_types:
-        field._add_typing_import_names(child, names)  # noqa: SLF001
-        if field._data_type_renders_none(child):  # noqa: SLF001
+        field._add_typing_import_names(child, names)
+        if field._data_type_renders_none(child):
             has_none = True
             continue
-        branch_keys.add(field._data_type_import_key(child))  # noqa: SLF001
-        writes_member = writes_member or field._data_type_writes_hint(child)  # noqa: SLF001
+        branch_keys.add(field._data_type_import_key(child))
+        writes_member = writes_member or field._data_type_writes_hint(child)
 
     if has_none and not data_type.preserve_union_member_order and not data_type.use_union_operator:
         names.add(IMPORT_OPTIONAL.import_)
@@ -598,7 +605,7 @@ def add_explicit_typing_import_names(data_type: _DataTypeView, names: _TypingImp
 
         for name in iter_python_type_expr_names(data_type.python_type.expression):
             names.add(name)
-    for annotation in data_type._annotation_texts:  # noqa: SLF001
+    for annotation in data_type._annotation_texts:
         if not annotation:
             continue
         for name in _annotation_typing_import_names(annotation):
@@ -608,37 +615,34 @@ def add_explicit_typing_import_names(data_type: _DataTypeView, names: _TypingImp
 def data_type_needs_optional_import(field: FieldImportsHost[_D], data_type: _D) -> bool:
     if data_type.use_union_operator or data_type.type == _ANY:
         return False
-    return data_type.admits_none and field._data_type_renders_importable_hint(data_type)  # noqa: SLF001
+    return data_type.admits_none and field._data_type_renders_importable_hint(data_type)
 
 
 def needs_field_optional_import_from_structure(field: FieldImportsHost[_D], *, data_type: _D | None = None) -> bool:
     data_type = data_type or field.data_type
-    if field._use_union_operator or not field._data_type_renders_importable_hint(data_type):  # noqa: SLF001
+    if field._use_union_operator or not field._data_type_renders_importable_hint(data_type):
         return False
-    return field._field_null_source(data_type) is not None  # noqa: SLF001
+    return field._field_null_source(data_type) is not None
 
 
 def data_type_renders_importable_hint(field: FieldImportsHost[_D], data_type: _D) -> bool:
-    if field._data_type_renders_none(data_type):  # noqa: SLF001
+    if field._data_type_renders_none(data_type):
         return False
-    return field._data_type_has_renderable_structure(data_type)  # noqa: SLF001
+    return field._data_type_has_renderable_structure(data_type)
 
 
 def data_type_writes_hint(field_type: type[FieldImportsHost[_D]], data_type: _D) -> bool:
     """Return whether a data type writes a hint: a renderable structure or a hint of its own."""
-    return field_type._data_type_has_renderable_structure(data_type) or bool(data_type.type_hint)  # noqa: SLF001
+    return field_type._data_type_has_renderable_structure(data_type) or bool(data_type.type_hint)
 
 
 def mapping_writes_value(field_type: type[FieldImportsHost[_D]], data_type: _D) -> bool:
     """Return whether a mapping writes a value type of its own; one with a key type writes ``Any`` otherwise."""
-    return bool(data_type._own_text) or any(  # noqa: SLF001
-        field_type._data_type_writes_hint(child)  # noqa: SLF001
-        for child in data_type.data_types
-    )
+    return bool(data_type._own_text) or any(field_type._data_type_writes_hint(child) for child in data_type.data_types)
 
 
 def data_type_has_renderable_structure(data_type: _DataTypeView) -> bool:
-    if not data_type._writes_nothing_of_its_own:  # noqa: SLF001
+    if not data_type._writes_nothing_of_its_own:
         return True
     return bool(data_type.data_types or data_type.dict_key or data_type.literals or data_type.enum_member_literals)
 
@@ -668,19 +672,9 @@ def field_admits_none(field: FieldImportsHost[_D]) -> bool:
     data_type = field.data_type
     return (
         data_type.admits_none
-        or field._data_type_renders_none(data_type)  # noqa: SLF001
+        or field._data_type_renders_none(data_type)
         or field_none_source(field, hint_has_none=False) is not None
     )
-
-
-def data_type_renders_none(field: FieldImportsHost[_D], data_type: _D) -> bool:
-    if data_type._is_container:  # noqa: SLF001
-        return False
-    if data_type.alias or data_type.reference or data_type.literals or data_type.enum_member_literals:
-        return False
-    if data_type.type == _NONE:
-        return not data_type.data_types
-    return len(data_type.data_types) == 1 and field._data_type_renders_none(data_type.data_types[0])  # noqa: SLF001
 
 
 def data_type_import_key(field: FieldImportsHost[_D], data_type: _D) -> tuple[Any, ...]:
@@ -689,11 +683,11 @@ def data_type_import_key(field: FieldImportsHost[_D], data_type: _D) -> tuple[An
         data_type.alias,
         data_type.type,
         data_type.python_type,
-        field._import_key(data_type.import_),  # noqa: SLF001
+        field._import_key(data_type.import_),
         data_type.reference.path if data_type.reference else None,
-        field._reference_source_import_key(data_type.reference),  # noqa: SLF001
-        tuple(field._data_type_import_key(child) for child in data_type.data_types),  # noqa: SLF001
-        field._data_type_import_key(data_type.dict_key) if data_type.dict_key else None,  # noqa: SLF001
+        field._reference_source_import_key(data_type.reference),
+        tuple(field._data_type_import_key(child) for child in data_type.data_types),
+        field._data_type_import_key(data_type.dict_key) if data_type.dict_key else None,
         tuple(data_type.literals),
         tuple(data_type.enum_member_literals),
         to_hashable(data_type.kwargs),
@@ -701,14 +695,7 @@ def data_type_import_key(field: FieldImportsHost[_D], data_type: _D) -> tuple[An
         data_type.is_custom_type,
         data_type.admits_none,
         data_type.is_func,
-        data_type.is_dict,
-        data_type.is_list,
-        data_type.is_set,
-        data_type.is_frozen_set,
-        data_type.is_mapping,
-        data_type.is_sequence,
-        data_type.is_tuple,
-        data_type.tuple_item_count,
+        *container_shape(data_type),
         data_type.use_standard_collections,
         data_type.use_generic_container,
         data_type.use_union_operator,
@@ -726,7 +713,7 @@ def can_skip_data_type_imports(field: FieldImportsHost[_D], *, data_type: _D | N
         or data_type.python_type
         or data_type.kwargs
         or data_type.is_optional
-        or data_type._is_container  # noqa: SLF001
+        or data_type._is_container
         or data_type.use_generic_container
     )
 
@@ -737,12 +724,12 @@ def needs_optional_import_without_type_hint(field: FieldImportsHost[_D], *, data
     No hint is rendered here, so the None of a nullable model that the type names is not written yet.
     """
     data_type = data_type or field.data_type
-    if field._use_union_operator or not field._has_renderable_data_type_without_type_hint(data_type=data_type):  # noqa: SLF001
+    if field._use_union_operator or not field._has_renderable_data_type_without_type_hint(data_type=data_type):
         return False
-    return field._field_null_source(data_type, pending_reference_null=data_type.names_nullable_model) is not None  # noqa: SLF001
+    return field._field_null_source(data_type, pending_reference_null=data_type.names_nullable_model) is not None
 
 
 def has_renderable_data_type_without_type_hint(field: FieldImportsHost[_D], *, data_type: _D | None = None) -> bool:
     """Return whether this simple DataType renders to something other than None."""
     data_type = data_type or field.data_type
-    return not data_type._writes_nothing_of_its_own  # noqa: SLF001
+    return not data_type._writes_nothing_of_its_own

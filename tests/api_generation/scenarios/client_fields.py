@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import importlib
 from typing import TYPE_CHECKING, Any
 
+from tests.api_generation.scenarios.client_pagination import drained
 from tests.api_generation.support.client_runtime import Exchange, arecord, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
@@ -62,7 +63,7 @@ class _Fields:
 
     def birth(self) -> object:
         """Return a birth date as the backend's field takes it: a date for Pydantic, its string otherwise."""
-        return datetime.date(2020, 1, 2) if hasattr(self.models.NewPet, "__pydantic_fields__") else "2020-01-02"
+        return dt.date(2020, 1, 2) if hasattr(self.models.NewPet, "__pydantic_fields__") else "2020-01-02"
 
 
 def fields(package: ModuleType, lines: list[str]) -> None:
@@ -291,4 +292,43 @@ def optional_models(package: ModuleType, lines: list[str]) -> None:
             lambda: pets.create_pet(name="Mimi", kind=kind, media_type=_JSON),
             json_response(201, _CREATED),
         )
+    http.close()
+
+
+def stripped_fields(package: ModuleType, lines: list[str]) -> None:
+    """Send bodies by the fields the class requires under ``--strip-default-none``; read pages of an optional object.
+
+    A property the schema leaves optional is required where the class gives it no default; a null wrap of a page,
+    which the class accepts, holds no items.
+    """
+    exchange = Exchange(lines)
+    http = exchange.client()
+    with package.Client(http_client=http) as api:
+        for label, call in (
+            ("create from the fields the class requires", lambda: api.default.create_pet(id=1, tag="t")),
+            ("create without the tag the class requires", lambda: api.default.create_pet(id=1)),
+            ("create with a null note", lambda: api.default.create_pet(id=1, tag="t", note=None)),
+        ):
+            _exchanged(exchange, lines, label, call, json_response(200, {"id": 1, "tag": "t", "note": None}))
+        exchange.respond(json_response(200, {"wrap": None, "next": None}))
+        drained(lines, "pages of a null wrap", api.protocols.pages.all.iterate())
+        exchange.respond(json_response(200, {"wrap": {"data": [{"id": 2, "tag": "u", "note": None}]}, "next": None}))
+        drained(lines, "pages of a wrap", api.protocols.pages.all.iterate())
+    http.close()
+
+
+def stripped_nullable(package: ModuleType, lines: list[str]) -> None:
+    """Send bodies of an OpenAPI 3.0 ``nullable`` property with a ``null`` default under ``--strip-default-none``.
+
+    The class writes the property without a default, so the call has to name it.
+    """
+    exchange = Exchange(lines)
+    http = exchange.client()
+    with package.Client(http_client=http) as api:
+        for label, call in (
+            ("create without the nullable property", lambda: api.default.create_pet(id=1)),
+            ("create with a null nullable property", lambda: api.default.create_pet(id=1, dn=None)),
+            ("create with a nullable property", lambda: api.default.create_pet(id=1, dn="d")),
+        ):
+            _exchanged(exchange, lines, label, call, json_response(200, {"id": 1, "dn": None}))
     http.close()

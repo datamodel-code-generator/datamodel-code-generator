@@ -25,6 +25,3 @@ NeutralImporter().import_module(CONCRETE_BACKEND)
 def use_shadowed_provider(import_provider: NeutralImporter) -> None:
     import_provider.import_module(CONCRETE_BACKEND)
 
-
-import_provider = NeutralImporter()
-import_provider.import_module(CONCRETE_BACKEND)

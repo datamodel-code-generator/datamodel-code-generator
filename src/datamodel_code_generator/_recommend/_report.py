@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json
 from datamodel_code_generator._message_text import counted, wrapped_lines
 from datamodel_code_generator._option_names import hyphenated, option_flag
-from datamodel_code_generator._recommend._rules import format_text, values_arguments
+from datamodel_code_generator._recommend._rules import format_text
 from datamodel_code_generator._recommend._signals import Signals
 
 if TYPE_CHECKING:
@@ -313,13 +313,14 @@ def _candidate_payload(outcome: CandidateOutcome) -> RecommendCandidatePayload:
         RecommendNameMetricsPayload,
         RecommendNameStabilityPayload,
     )
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
 
     candidate, metrics, stability = outcome.candidate, outcome.metrics, outcome.stability
     return RecommendCandidatePayload(
         label=candidate.label,
         preset=candidate.preset,
         set=dict(candidate.options),
-        arguments=values_arguments(candidate.options),
+        arguments=_values_arguments(candidate.options.items()),
         selectable=candidate.selectable,
         error=outcome.error,
         dropped_constraint_warnings=outcome.dropped_constraints,

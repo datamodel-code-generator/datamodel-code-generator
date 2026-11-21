@@ -1,0 +1,14 @@
+# query-free-objects pydantic_v2.BaseModel
+  > GET https://api.example.com/apps?per_page=2&name=asc&created=desc&app_type=sso&owner=files
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  objects = None
+  > GET https://api.example.com/apps?name=asc&created=desc
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  one object = None
+# query-free-objects msgspec.Struct
+  > GET https://api.example.com/apps?per_page=2&name=asc&created=desc&app_type=sso
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  objects = None
+  > GET https://api.example.com/apps?name=asc&created=desc
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  one object = None

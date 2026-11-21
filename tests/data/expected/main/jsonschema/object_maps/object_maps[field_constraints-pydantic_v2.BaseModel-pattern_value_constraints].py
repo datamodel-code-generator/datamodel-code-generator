@@ -91,7 +91,8 @@ class Model(BaseModel):
     pRefSib: dict[constr(pattern=r'^r'), PRefSibPatternProperty] | None = None
     pNull: dict[constr(pattern=r'^z'), PNullPatternProperty] | None = None
     pSame: (
-        dict[constr(pattern=r'^a|^b'), PSamePatternProperty | PSamePatternProperty1] | None
+        dict[constr(pattern=r'^a|^b'), PSamePatternProperty | PSamePatternProperty1]
+        | None
     ) = None
     pItems: dict[constr(pattern=r'^i'), PItemsPatternProperty] | None = None
     pObjCount: dict[constr(pattern=r'^o'), PObjCountPatternProperty] | None = None

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 DOCUMENT = "cross/form-encodings.yaml"
 _FORM = {"Content-Type": "application/x-www-form-urlencoded"}
+_IMAGE_PART = '--b\r\nContent-Disposition: form-data; name="image"\r\n\r\nx\r\n--b--\r\n'
 
 
 def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[str, object]:
@@ -31,10 +32,10 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
     return {"default": service(server.services.DefaultService, record)}
 
 
-def _raw(kit: Kit, path: str, content: str) -> object:
-    """Post URL-encoded text the client never writes, and return the status with the records' types and locations."""
+def _raw(kit: Kit, path: str, content: str, content_type: str = _FORM["Content-Type"]) -> object:
+    """Post a body the client never writes, URL-encoded by default: return the status, records' types and locations."""
     return kit.then(
-        kit.http.post(f"https://encodings.example.com{path}", content=content, headers=_FORM),
+        kit.http.post(f"https://encodings.example.com{path}", content=content, headers={"Content-Type": content_type}),
         lambda response: (
             response.status_code,
             [(record["type"], record["loc"]) for record in response.json()["detail"]]
@@ -129,6 +130,35 @@ def calls(kit: Kit) -> Calls:
             ),
         ),
         ("post_images", lambda: api.post_images(body=images)),
+        (
+            "post_images without filenames",
+            lambda: api.post_images(
+                body=multipart((
+                    bodies.FilePart("image", b"\xff\xd8", content_type="image/png"),
+                    bodies.FilePart("thumbnails", b"\x80", content_type="image/png"),
+                    bodies.FilePart("thumbnails", b"caf\xc3\xa9", content_type="image/png"),
+                ))
+            ),
+        ),
+        (
+            "post_attachments without filenames",
+            lambda: api.post_attachments(
+                body=multipart((
+                    bodies.FieldPart("title", "t"),
+                    bodies.FilePart("a", b"\xff"),
+                    bodies.FilePart("b", b"\x00\xfe", filename="b.bin"),
+                ))
+            ),
+        ),
+        (
+            "/images text part not UTF-8",
+            lambda: _raw_parts(kit, "/images", {"image": (None, b"\xfe"), "caption": (None, b"\xff")}),
+        ),
+        (
+            "/images media type in capitals",
+            lambda: _raw(kit, "/images", _IMAGE_PART, "Multipart/Form-Data; boundary=b"),
+        ),
+        ("/images without a boundary", lambda: _raw(kit, "/images", _IMAGE_PART, "multipart/form-data")),
         ("post_styled_parts", lambda: api.post_styled_parts(body=parts)),
         (
             "post_styled_parts comma in a comma-delimited value",

@@ -1,0 +1,27 @@
+# deep-object-brackets-errors
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /v1/search (operationId 'GetSearch'), which uses Structured style values (OAS 3.0) that the client does not support: /components/schemas/Filter/properties/or: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /v1/matrix (operationId 'GetMatrix'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1v1~1matrix/get/parameters/0/schema/items: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /v1/labels (operationId 'GetLabels'), which the client cannot generate: /paths/~1v1~1labels/get/parameters/0/schema: Pattern properties have no builtin parameter encoding
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /v1/owners (operationId 'GetOwners'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1v1~1owners/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /v1/amounts (operationId 'GetAmounts'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1v1~1amounts/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

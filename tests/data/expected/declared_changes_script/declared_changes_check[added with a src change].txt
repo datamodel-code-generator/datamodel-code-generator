@@ -1,0 +1,9 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs this change moves are not declared:
+  added    models/new.py  tests/test_models.py::test_new (src/ changed: a record until a replay tells)
+Declare them:
+  python scripts/declared_changes.py declare fix-the-thing --category '<category>' --refs '#42' --refs '#41' --rest --base base
+    <category>: one of new-surface, experimental, crash-fix, output-text, default-fix, decided-change
+Categories: docs/development-contributing.md#declared-changes
+failed

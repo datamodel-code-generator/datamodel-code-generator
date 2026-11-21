@@ -1,0 +1,4 @@
+{"tags":["a","b"],"count":10,"pets":[{"name":"rex"}],"tagLists":[["x"]],"tagMap":{"k":["v"]},"tagsOrText":["a"],"plain":["p"],"pet":{"name":"rex"}}
+['RootModel[list[str]]', 'RootModel[int]', 'RootModel[list[Pet]]', 'list', 'dict', 'RootModel[list[str]]', 'list', 'Pet']
+equal to the validated defaults: True
+warnings: []

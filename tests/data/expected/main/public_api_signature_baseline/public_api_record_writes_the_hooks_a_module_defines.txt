@@ -1,0 +1,26 @@
+# The public API of package, written from its source by tests/main/public_api_record.py.
+
+[package]
+submodules: cyclic, plain
+def __getattr__(name: str) -> object
+    | _REGISTERED.setdefault(name, Served)
+    | if name in _SERVED:
+    |     return Served
+    | return _lazy_getattr(name)
+    uses _REGISTERED = {}
+    uses _SERVED = frozenset({'Legacy'})
+    uses _lazy_getattr = module_hooks(__name__, _LAZY)
+Loaded = lazy _load_loaded()  [lazy]
+    | _REGISTERED.setdefault('Loaded', Served)
+    | from ._table import Served as Loaded
+    | return Loaded
+class Pair  [lazy]
+    # identity package._table.Served
+
+[package.cyclic]
+def public(factory=_a)
+    uses _a = lambda: _b
+    uses _b = lambda: _a
+
+[package.plain]
+VALUE = 1

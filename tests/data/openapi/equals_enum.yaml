@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Search clauses
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Clause:
+      type: object
+      properties:
+        field:
+          type: string
+        operator:
+          type: string
+          enum:
+            - =
+            - '!='
+            - '>'
+            - in

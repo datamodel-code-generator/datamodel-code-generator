@@ -103,9 +103,7 @@ class MemberOther:
 
 MemberBoth = TypeAliasType(
     "MemberBoth",
-    Annotated[
-        MemberShared | MemberOther, Field(..., discriminator='type')
-    ],
+    Annotated[MemberShared | MemberOther, Field(..., discriminator='type')],
 )
 
 

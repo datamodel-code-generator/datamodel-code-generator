@@ -1,0 +1,3 @@
+[
+  "/value minLength \"aa\": invalid, model accepts"
+]

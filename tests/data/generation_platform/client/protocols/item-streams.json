@@ -1,0 +1,9 @@
+{
+  "events.watch": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/LogEntry"},
+    "completion": {"kind": "eof"}
+  }
+}

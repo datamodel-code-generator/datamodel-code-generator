@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from textwrap import fill  # noqa: F401  # Preserve the established experimental export.
+from textwrap import fill as fill
 from typing import Literal
 
 from datamodel_code_generator._message_text import extra_requirement
@@ -20,6 +20,7 @@ ExperimentalFeatureKind = Literal["input-format", "formatter", "cli-option", "py
 ExperimentalFeatureFormat = Literal["table", "json", "markdown"]
 _COLUMNS = ("ID", "Kind", "Target", "Since", "Tracking")
 ExperimentalFeatureId = Literal[
+    "behavior.asyncapi-client",
     "behavior.batch-generation-jobs",
     "behavior.naming-hint",
     "behavior.remote-reference-lock",
@@ -29,6 +30,7 @@ ExperimentalFeatureId = Literal[
     "cli-option.install-skill",
     "cli-option.recommend-options",
     "cli-option.schema-validator-type",
+    "cli-option.untrusted-input",
     "cli-option.use-missing-sentinel",
     "cli-option.use-type-alias",
     "cli-option.use-type-alias-type",
@@ -38,7 +40,7 @@ ExperimentalFeatureId = Literal[
     "input-format.mcp-tools",
     "input-format.protobuf",
     "input-format.xmlschema",
-    "formatter.builtin",
+    "python-api.generate-dynamic-module",
 ]
 
 
@@ -56,6 +58,25 @@ class ExperimentalFeature:
 
 
 EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
+    "behavior.asyncapi-client": ExperimentalFeature(
+        id="behavior.asyncapi-client",
+        kind="behavior",
+        target="--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective",
+        message=(
+            "HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated "
+            "package may change."
+        ),
+        since_version="0.92.0",
+        note=(
+            "Each channel of an AsyncAPI 2 or 3 document that a `ws` or `wss` server serves becomes an attribute of "
+            "the client, `client.<channel>.connect(...)`, which opens the channel's WebSocket and sends and receives "
+            "its messages through the generated models, and each server-sent event channel of an `http`, `https` or "
+            "`sse` server, `client.<channel>.open(...)`, which receives its events. `--client-asyncapi-perspective` "
+            "says whether the document describes the server (the default), whose sends the client receives on a "
+            "WebSocket, or the client. A channel that uses "
+            "a feature the client does not support is left out with a warning."
+        ),
+    ),
     "behavior.batch-generation-jobs": ExperimentalFeature(
         id="behavior.batch-generation-jobs",
         kind="behavior",
@@ -111,7 +132,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         kind="extra",
         target=extra_requirement("httpx2"),
         message="The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
-        since_version="0.71.1",
+        since_version="0.72.0",
         note=(
             f"`{extra_requirement('http')}` remains the stable HTTPX backend and is not deprecated; "
             f"`{extra_requirement('httpx2')}` is experimental. The default HTTP backend policy is auto: stable "
@@ -238,6 +259,23 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "Pydantic v2 validator behavior."
         ),
     ),
+    "cli-option.untrusted-input": ExperimentalFeature(
+        id="cli-option.untrusted-input",
+        kind="cli-option",
+        target="--untrusted-input",
+        message=(
+            "The untrusted input switch is experimental; the references and schema keywords it refuses may grow as "
+            "new ways for a schema to read files or write code are found."
+        ),
+        since_version="0.92.0",
+        note=(
+            "With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic "
+            "API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath "
+            "and customBasePath, Protocol Buffers input, --validation and a schema nested more than 100 levels deep "
+            "or holding more than 2,000,000 objects and arrays, and implies --no-allow-remote-refs. It does not "
+            "sandbox the generated code."
+        ),
+    ),
     "cli-option.use-missing-sentinel": ExperimentalFeature(
         id="cli-option.use-missing-sentinel",
         kind="cli-option",
@@ -269,7 +307,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         kind="cli-option",
         target="--use-type-alias-type",
         message="Runtime TypeAliasType output is experimental and may change as Python typing support evolves.",
-        since_version="0.71.1",
+        since_version="0.72.1",
         note=(
             "The option implies --use-type-alias and selects TypeAliasType for Python 3.10 and 3.11. "
             "Python 3.12 and newer continue to use native type statements."
@@ -321,13 +359,23 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         since_version="0.59.0",
         note="The parser focuses on model generation from XSD documents, not full XML instance validation.",
     ),
-    "formatter.builtin": ExperimentalFeature(
-        id="formatter.builtin",
-        kind="formatter",
-        target="--formatters builtin",
-        message="The internal formatter is experimental and may change as generated-output coverage is expanded.",
-        since_version="0.59.0",
-        note="The formatter is designed for generated model modules and is not a general-purpose Python formatter.",
+    "python-api.generate-dynamic-module": ExperimentalFeature(
+        id="python-api.generate-dynamic-module",
+        kind="python-api",
+        target="generate_dynamic_module(), DynamicModule, and register_module=True",
+        message=(
+            "Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema "
+            "locations it keys classes by, and the module registration rules may change."
+        ),
+        since_version="0.92.0",
+        note=(
+            "generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the "
+            "class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and "
+            "the class of each schema location that becomes a class (a location written as a type alias or merged "
+            "into another class has no entry). With register_module=True, it "
+            "keeps the module of the classes registered in sys.modules, so that the classes and their instances "
+            "pickle. generate_dynamic_models() is not experimental."
+        ),
     ),
 }
 
@@ -388,15 +436,16 @@ def render_experimental_features(format_: ExperimentalFeatureFormat) -> str:
     return _render_registry(iter_experimental_features(), _PAGE, format_)
 
 
+def _release_note_line(feature: ExperimentalFeature) -> str:
+    """Return the release-note line of an experimental feature in the release that introduces it."""
+    return f"`{feature.target}` is experimental. {feature.message}"
+
+
 def render_release_note_experimental_features(version: str) -> str:
     """Render release-note text for experimental features introduced in a version."""
     return _render_release_notes((
         (
             "Experimental Features",
-            (
-                f"`{item.target}` is experimental. {item.message}"
-                for item in iter_experimental_features()
-                if item.since_version == version
-            ),
+            (_release_note_line(item) for item in iter_experimental_features() if item.since_version == version),
         ),
     ))

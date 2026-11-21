@@ -14,7 +14,9 @@ NullablePatterns: TypeAlias = dict[str, int] | None
 NullableNames: TypeAlias = dict[str, int] | None
 
 
-NullableCount: TypeAlias = Annotated[dict[str, int], Meta(max_length=3, min_length=1)] | None
+NullableCount: TypeAlias = (
+    Annotated[dict[str, int], Meta(max_length=3, min_length=1)] | None
+)
 
 
 NullableOpenCount: TypeAlias = Annotated[dict[str, Any], Meta(min_length=1)] | None

@@ -74,8 +74,24 @@ errors	main/generation_platform/fastapi/servers/errors.txt
 errors	main/generation_platform/fastapi/servers/packages/errors/
 forms	main/generation_platform/fastapi/servers/forms.txt
 forms	main/generation_platform/fastapi/servers/packages/forms/
+forms-by-alias	main/generation_platform/fastapi/servers/forms-by-alias.txt
+forms-by-alias	main/generation_platform/fastapi/servers/packages/forms-by-alias/
 forms-by-name	main/generation_platform/fastapi/servers/forms-by-name.txt
 forms-by-name	main/generation_platform/fastapi/servers/packages/forms-by-name/
+held-bases	main/generation_platform/fastapi/servers/held-bases.txt
+held-bases	main/generation_platform/fastapi/servers/packages/held-bases/
+held-extras	main/generation_platform/fastapi/servers/held-extras.txt
+held-extras	main/generation_platform/fastapi/servers/packages/held-extras/
+held-extras-allow	main/generation_platform/fastapi/servers/held-extras-allow.txt
+held-extras-allow	main/generation_platform/fastapi/servers/packages/held-extras-allow/
+held-extras-base	main/generation_platform/fastapi/servers/held-extras-base.txt
+held-extras-base	main/generation_platform/fastapi/servers/packages/held-extras-base/
+held-extras-base-dataclass	main/generation_platform/fastapi/servers/held-extras-base-dataclass.txt
+held-extras-base-dataclass	main/generation_platform/fastapi/servers/packages/held-extras-base-dataclass/
+held-extras-forbid	main/generation_platform/fastapi/servers/held-extras-forbid.txt
+held-extras-forbid	main/generation_platform/fastapi/servers/packages/held-extras-forbid/
+held-extras-ignore	main/generation_platform/fastapi/servers/held-extras-ignore.txt
+held-extras-ignore	main/generation_platform/fastapi/servers/packages/held-extras-ignore/
 kinds	main/generation_platform/fastapi/servers/kinds.txt
 kinds	main/generation_platform/fastapi/servers/packages/kinds/
 kinds-annotated	main/generation_platform/fastapi/servers/kinds-annotated.txt
@@ -108,6 +124,10 @@ nullable-alias	main/generation_platform/fastapi/servers/nullable-alias.txt
 nullable-alias	main/generation_platform/fastapi/servers/packages/nullable-alias/
 nullable-force-optional	main/generation_platform/fastapi/servers/nullable-force-optional.txt
 nullable-force-optional	main/generation_platform/fastapi/servers/packages/nullable-force-optional/
+nullable-parameters	main/generation_platform/fastapi/servers/nullable-parameters.txt
+nullable-parameters	main/generation_platform/fastapi/servers/packages/nullable-parameters/
+nullable-parameters-31	main/generation_platform/fastapi/servers/nullable-parameters-31.txt
+nullable-parameters-31	main/generation_platform/fastapi/servers/packages/nullable-parameters-31/
 nullable-results	main/generation_platform/fastapi/servers/nullable-results.txt
 nullable-results	main/generation_platform/fastapi/servers/packages/nullable-results/
 nullable-results-3-0	main/generation_platform/fastapi/servers/nullable-results-3-0.txt
@@ -165,11 +185,14 @@ variants-reuse	main/generation_platform/fastapi/servers/variants-reuse.txt
 [test_fastapi_upstream]
 	main/generation_platform/fastapi/servers/uploads.txt
 [test_generated_client]
+binary_json	main/generation_platform/cross/binary_json.txt
 bodies	main/generation_platform/cross/bodies.txt
 bound_parts	main/generation_platform/cross/bound_parts.txt
 bound_parts_variants	main/generation_platform/cross/bound_parts_variants.txt
 bound_texts	main/generation_platform/cross/bound_texts.txt
 bound_texts_reuse	main/generation_platform/cross/bound_texts_reuse.txt
+content_media_type	main/generation_platform/cross/content_media_type.txt
+content_media_type_bytes	main/generation_platform/cross/content_media_type_bytes.txt
 extras	main/generation_platform/cross/extras.txt
 forms	main/generation_platform/cross/forms.txt
 forms_30	main/generation_platform/cross/forms_30.txt
@@ -194,6 +217,7 @@ security	main/generation_platform/cross/security.txt
 streams	main/generation_platform/cross/streams.txt
 styles	main/generation_platform/cross/styles.txt
 tag_forms	main/generation_platform/cross/tag_forms.txt
+union_parts	main/generation_platform/cross/union_parts.txt
 upper_alike	main/generation_platform/cross/upper_alike.txt
 variants	main/generation_platform/cross/variants.txt
 [test_pydantic_codec_startup]

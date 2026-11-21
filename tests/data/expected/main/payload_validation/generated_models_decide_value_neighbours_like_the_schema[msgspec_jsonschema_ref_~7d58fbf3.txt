@@ -1,0 +1,17 @@
+[
+  "/combined_items/0 maximum 10: invalid, model accepts",
+  "/combined_items/0 maximum 4.9: invalid, model accepts",
+  "/combined_items/0 maximum 5.1: invalid, model accepts",
+  "/combined_items/0 maximum 6: invalid, model accepts",
+  "/combined_items/0 maximum 8.9: invalid, model accepts",
+  "/combined_items/0 maximum 9.1: invalid, model accepts",
+  "/combined_items/0 minimum 0: invalid, model accepts",
+  "/combined_items/0 minimum 0.9: invalid, model accepts",
+  "/combined_items/0 minimum 1: invalid, model accepts",
+  "/combined_items/0 minimum 1.1: invalid, model accepts",
+  "/combined_items/0 minimum 1.9: invalid, model accepts",
+  "/combined_items/0 minimum 2.1: invalid, model accepts",
+  "/combined_items/0 minimum 6: invalid, model accepts",
+  "/combined_items/0 minimum 6.9: invalid, model accepts",
+  "/combined_items/0 minimum 7.1: invalid, model accepts"
+]

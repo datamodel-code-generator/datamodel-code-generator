@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import gc
+import hashlib
 import importlib
 import importlib.util
 import inspect
@@ -40,11 +42,13 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.__main__ import Exit, main
 from datamodel_code_generator.arguments import arg_parser
-from datamodel_code_generator.format import Formatter, PythonVersion, is_supported_in_black
+from datamodel_code_generator.format import Formatter, PythonVersion, PythonVersionMin, is_supported_in_black
 from tests.conftest import (
+    _CURRENT_ITEMS,
     AssertFileContent,
     _compare_derived,
     _compare_expected,
+    _derived_output_role,
     _infer_expected_file,
     _normalize_line_endings,
     _output_tree,
@@ -54,7 +58,6 @@ from tests.conftest import (
     assert_inputs_not_mutated,
     assert_output,
     assert_warnings_contain,
-    default_output_count,
     expected_root,
     freeze_time,
     validate_generated_code,
@@ -115,6 +118,7 @@ _pin_hypothesis_without_local_constants()
 
 _TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 _BUILTIN_FORMATTER_VALUE = "builtin"
+_EXPORT_OLDER_TARGET_OUTPUTS = "DATAMODEL_CODE_GENERATOR_EXPORT_OLDER_TARGET_OUTPUTS"
 _BUILTIN_FORMATTER_LINE_LENGTH = 88
 _BUILTIN_FORMATTER_CONFIG = "[tool.datamodel-codegen]\nbuiltin-format-line-length = 88\n"
 _CLI_FORMATTER_RELATED_OPTIONS = frozenset({
@@ -211,11 +215,6 @@ def target_pydantic_args(target_pydantic_version: str | None) -> list[str]:
     return [] if target_pydantic_version is None else ["--target-pydantic-version", target_pydantic_version]
 
 
-def target_pydantic_expected_suffix(target_pydantic_version: str | None) -> str:
-    """Name the expected output for a target; an unset target shares the newest target's output."""
-    return "target_2" if target_pydantic_version == "2" else "target_2_12"
-
-
 UNSET_TARGET_PYDANTIC_VERSION = TargetPydanticVersion.V2_12.value
 """The oldest Pydantic an unset target runs on: the newest forms, but MISSING keeps its experimental import."""
 
@@ -253,7 +252,6 @@ EXPECTED_JSON_SCHEMA_PATH: Path = EXPECTED_MAIN_PATH / "jsonschema"
 EXPECTED_GRAPHQL_PATH: Path = EXPECTED_MAIN_PATH / "graphql"
 EXPECTED_XML_SCHEMA_PATH: Path = EXPECTED_MAIN_PATH / "xmlschema"
 EXPECTED_PROTOBUF_PATH: Path = EXPECTED_MAIN_PATH / "protobuf"
-EXPECTED_AVRO_PATH: Path = EXPECTED_MAIN_PATH / "avro"
 EXPECTED_JSON_PATH: Path = EXPECTED_MAIN_PATH / "json"
 EXPECTED_CSV_PATH: Path = EXPECTED_MAIN_PATH / "csv"
 
@@ -275,6 +273,22 @@ def auto_freeze_time() -> Generator[None, None, None]:
     """Auto-freeze time for all tests in main/ directory."""
     with freeze_time(DEFAULT_FREEZE_TIME):
         yield
+
+
+@pytest.fixture
+def warnings_on_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Show every warning, as ``<category>: <message>`` on stderr, in the order the run shows it.
+
+    Garbage that earlier tests of the worker left is collected first, so the warnings its collection raises (such as
+    ``ResourceWarning`` of a file an earlier test left open) are not shown as the run's own.
+    """
+    gc.collect()
+    warnings.simplefilter("always")
+
+    def show(message: Warning | str, category: type[Warning], *_: object, **__: object) -> None:
+        sys.stderr.write(f"{category.__name__}: {message}\n")
+
+    monkeypatch.setattr(warnings, "showwarning", show)
 
 
 @pytest.fixture
@@ -353,15 +367,15 @@ def _assert_captured_output(
     *,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
-    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
+    stdout_suffix: str = ".txt",
+    name: str | None = None,
 ) -> None:
     if not any((
         expected_stdout_path is not None,
         expected_stderr is not None,
-        expected_stderr_path is not None,
         expected_stderr_contains is not None,
         assert_no_stderr,
         derived_stdout,
@@ -373,11 +387,11 @@ def _assert_captured_output(
     if expected_stdout_path is not None:
         assert_output(captured.out, expected_stdout_path)
     if derived_stdout:
-        _compare_derived(_normalize_line_endings(captured.out), role=_derived_output_role(".stdout"), suffix=".txt")
+        _compare_derived(
+            _normalize_line_endings(captured.out), role=_derived_output_role(".stdout", name), suffix=stdout_suffix
+        )
     if expected_stderr is not None and captured.err != expected_stderr:  # pragma: no cover
         pytest.fail(f"Expected stderr:\n{expected_stderr}\n\nActual stderr:\n{captured.err}")
-    if expected_stderr_path is not None:
-        assert_output(captured.err, expected_stderr_path)
     if expected_stderr_contains is not None and expected_stderr_contains not in captured.err:  # pragma: no cover
         pytest.fail(f"Expected stderr to contain: {expected_stderr_contains!r}\n\nActual stderr:\n{captured.err}")
     if assert_no_stderr and captured.err:  # pragma: no cover
@@ -716,10 +730,10 @@ def run_main_with_args(
     capsys: pytest.CaptureFixture[str] | None = None,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
-    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
+    stdout_suffix: str = ".txt",
     use_parsed_source_cache: bool = True,
     use_builtin_default_formatter: bool = True,
     isolate_model_template_cache: bool = False,
@@ -732,10 +746,10 @@ def run_main_with_args(
         capsys: pytest capsys fixture for capturing output assertions
         expected_stdout_path: Path to file with expected stdout content
         expected_stderr: Exact expected stderr
-        expected_stderr_path: Path to file with expected stderr content
         expected_stderr_contains: Expected stderr substring
         assert_no_stderr: Assert stderr is empty
         derived_stdout: Compare stdout with the output pytest stores for the test
+        stdout_suffix: Suffix of the stored stdout for derived_stdout (default: ".txt")
         use_parsed_source_cache: Enable the process-local parsed source cache for generation-style commands
         use_builtin_default_formatter: Add the test-suite builtin formatter default when applicable
         isolate_model_template_cache: Clear cached Jinja model templates before and after execution
@@ -763,10 +777,10 @@ def run_main_with_args(
         capsys,
         expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
-        expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
         derived_stdout=derived_stdout,
+        stdout_suffix=stdout_suffix,
     )
     return return_code
 
@@ -862,9 +876,14 @@ def run_generate_file_and_assert(
     transform: Callable[[str], str] | None = None,
     expected_warnings: Sequence[str] | None = None,
     unchanged_inputs: Mapping[str, object] | None = None,
+    name: str | None = None,
     **generate_kwargs: Any,
 ) -> None:
-    """Execute generate() for a path input and assert file or directory output."""
+    """Execute generate() for a path input and assert file or directory output.
+
+    ``name`` names the output pytest stores when no expected file or directory is passed; two runs under one name
+    must write equal output.
+    """
     __tracebackhide__ = True
 
     input_: Path = input_path
@@ -901,14 +920,8 @@ def run_generate_file_and_assert(
     if expected_directory is not None:
         assert_directory_content(output_path, expected_directory)
     elif assert_func is None:
-        _compare_output(output_path, expected_file, transform)
+        _compare_output(output_path, expected_file, transform, name=name)
     else:
-        if expected_file is None:
-            frame = inspect.currentframe()
-            assert frame is not None
-            assert frame.f_back is not None
-            expected_file = _infer_expected_file(frame.f_back.f_code.co_name)
-            del frame
         assert_func(output_path, expected_file, transform=transform)
     with _enable_test_parsed_source_cache(), assert_inputs_not_mutated(unchanged_inputs):
         _assert_builtin_generate_formatter_parity(
@@ -927,9 +940,14 @@ def run_generate_and_assert(
     expected_error_match: str | None = None,
     assert_input_unchanged: bool = False,
     unchanged_inputs: Mapping[str, object] | None = None,
+    name: str | None = None,
     **generate_kwargs: Any,
 ) -> None:
-    """Execute generate() and assert returned text, written text, or an expected error."""
+    """Execute generate() and assert returned text, written text, or an expected error.
+
+    An expected error without ``expected_error_match`` or ``expected_file`` compares the error text with the output
+    pytest stores for the test. ``name`` names a stored output; two runs under one name must give equal output.
+    """
     __tracebackhide__ = True
 
     guarded_inputs = dict(unchanged_inputs or {})
@@ -943,6 +961,10 @@ def run_generate_and_assert(
                 generate(input_=input_, **options)
             if expected_file is not None:
                 assert_output(f"{error.value}\n", expected_file)
+            elif expected_error_match is None:
+                _compare_derived(
+                    _normalize_line_endings(f"{error.value}\n"), role=_derived_output_role(name=name), suffix=".txt"
+                )
             return
         result = generate(input_=input_, **options)
     if isinstance(config := generate_kwargs.get("config"), GenerateConfig):
@@ -955,7 +977,7 @@ def run_generate_and_assert(
     if not isinstance(result, str):  # pragma: no cover
         pytest.fail(f"Expected generate() to return str, got {type(result).__name__}")
     if expected_file is None:
-        _compare_derived(_normalize_line_endings(result), role=_derived_output_role(), suffix=".py")
+        _compare_derived(_normalize_line_endings(result), role=_derived_output_role(name=name), suffix=".py")
         return
     assert_output(result, expected_file)
 
@@ -965,18 +987,20 @@ def _compare_output(
     expected_file: str | Path | None,
     transform: Callable[[str], str] | None,
     encoding: str = "utf-8",
+    *,
+    name: str | None = None,
 ) -> None:
     """Compare a generated file or directory with ``expected_file``, or with the output stored under the test's name.
 
     A relative ``expected_file`` is relative to tests/data/expected; a directory output compares the whole tree.
-    Without ``expected_file``, a test's second and later outputs are stored as ``<name>.2<suffix>`` and so on, and a
-    path generation did not write is not compared.
+    Without ``expected_file``, a test's second and later outputs are stored as ``<name>.2<suffix>`` and so on (an
+    output given ``name="x"`` as ``<name>.x<suffix>``), and a path generation did not write is not compared.
     """
     __tracebackhide__ = True
     expected = None if expected_file is None else expected_root() / expected_file
     if expected is None and not output_path.exists():
         return
-    role = "" if expected is not None else _derived_output_role()
+    role = "" if expected is not None else _derived_output_role(name=name)
     if output_path.is_dir():
         tree = {
             relative: _normalize_line_endings(transform(text)) if transform else text
@@ -995,12 +1019,6 @@ def _compare_output(
         _compare_expected(expected, value)
 
 
-def _derived_output_role(role: str = "") -> str:
-    """Return the role of the running test's next unnamed output of a kind: ``role``, then ``.2<role>``, ..."""
-    count = default_output_count(role)
-    return role if count == 1 else f".{count}{role}"
-
-
 def run_main_and_assert(  # noqa: PLR0912
     *,
     input_path: Path | None = None,
@@ -1017,15 +1035,17 @@ def run_main_and_assert(  # noqa: PLR0912
     file_should_not_exist: Path | Sequence[Path] | None = None,
     output_should_not_exist: bool = False,
     # Verification options
-    ignore_whitespace: bool = False,
     transform: Callable[[str], str] | None = None,
     # Capture options
     capsys: pytest.CaptureFixture[str] | None = None,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
-    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
+    derived_stdout: bool = False,
+    stdout_suffix: str = ".txt",
+    # Name of the outputs pytest stores for the test
+    name: str | None = None,
     # Other options
     copy_files: CopyFilesMapping | None = None,
     # stdin options
@@ -1068,16 +1088,21 @@ def run_main_and_assert(  # noqa: PLR0912
         output_should_not_exist: Assert output_path does NOT exist
 
     Verification modifiers:
-        ignore_whitespace: Ignore whitespace when comparing (for expected_output)
         transform: Transform output before comparison
 
     Capture verification:
         capsys: pytest capsys fixture
         expected_stdout_path: Compare stdout with file
         expected_stderr: Assert exact stderr match
-        expected_stderr_path: Compare stderr with file
         expected_stderr_contains: Assert stderr contains string
         assert_no_stderr: Assert stderr is empty
+        derived_stdout: Compare stdout with the output pytest stores for the test, also when output_path is set
+            (a stdout-only run without another stdout or output check always does)
+        stdout_suffix: Suffix of the stored stdout (default: ".txt")
+
+    Stored output names:
+        name: Names the outputs pytest stores for this run (``<test>.<name><suffix>``) instead of numbering them;
+            two runs of one test under one name must give equal output
 
     Code validation options:
         skip_code_validation: Skip all code validation (compile and exec)
@@ -1102,7 +1127,7 @@ def run_main_and_assert(  # noqa: PLR0912
         file_should_not_exist is not None,
         output_should_not_exist,
     ))
-    derived_stdout = (
+    compare_stdout = derived_stdout or (
         output_path is None
         and expected_exit == Exit.OK
         and expected_stdout_path is None
@@ -1157,7 +1182,7 @@ def run_main_and_assert(  # noqa: PLR0912
         with (
             _enable_test_parsed_source_cache(),
             _builtin_default_formatter_config(output_path, enabled=use_builtin_default),
-            redirect_stdout(io.StringIO()) if derived_stdout and capsys is None else nullcontext() as stdout,
+            redirect_stdout(io.StringIO()) if compare_stdout and capsys is None else nullcontext() as stdout,
         ):
             return_code = main(args)
     # Standard file input
@@ -1169,17 +1194,18 @@ def run_main_and_assert(  # noqa: PLR0912
     _assert_exit_code(return_code, expected_exit, f"Input: {input_path}")
     if stdout is not None:
         _compare_derived(
-            _normalize_line_endings(stdout.getvalue()), role=_derived_output_role(".stdout"), suffix=".txt"
+            _normalize_line_endings(stdout.getvalue()), role=_derived_output_role(".stdout", name), suffix=stdout_suffix
         )
 
     _assert_captured_output(
         capsys,
         expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
-        expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
-        derived_stdout=derived_stdout and capsys is not None,
+        derived_stdout=(compare_stdout and capsys is not None) or (derived_stdout and stdout is None),
+        stdout_suffix=stdout_suffix,
+        name=name,
     )
 
     output_verification_modes = (
@@ -1212,7 +1238,7 @@ def run_main_and_assert(  # noqa: PLR0912
     # Skip output verification if expected_exit is not OK
     if expected_exit != Exit.OK:
         return
-    if output_should_not_exist or file_should_not_exist is not None:  # pragma: no cover
+    if output_should_not_exist or file_should_not_exist is not None:
         return
 
     # Output verification
@@ -1231,12 +1257,7 @@ def run_main_and_assert(  # noqa: PLR0912
         if output_path is None:  # pragma: no cover
             pytest.fail("output_path is required when using expected_output")
         actual_output = output_path.read_text(encoding="utf-8")
-        if ignore_whitespace:
-            if "".join(actual_output.split()) != "".join(expected_output.split()):  # pragma: no cover
-                pytest.fail(
-                    f"Output mismatch (ignoring whitespace)\nExpected:\n{expected_output}\n\nActual:\n{actual_output}"
-                )
-        elif actual_output != expected_output:  # pragma: no cover
+        if actual_output != expected_output:  # pragma: no cover
             pytest.fail(f"Output mismatch\nExpected:\n{expected_output}\n\nActual:\n{actual_output}")
     elif assert_func is not None:
         if output_path is None:  # pragma: no cover
@@ -1249,7 +1270,13 @@ def run_main_and_assert(  # noqa: PLR0912
             del frame
         assert_func(output_path, expected_file, transform=transform)
     elif output_path is not None:
-        _compare_output(output_path, expected_file, transform, _get_argument_value(extra_args, "--encoding") or "utf-8")
+        _compare_output(
+            output_path,
+            expected_file,
+            transform,
+            _get_argument_value(extra_args, "--encoding") or "utf-8",
+            name=name,
+        )
 
     with _enable_test_parsed_source_cache():
         _assert_builtin_cli_formatter_parity(
@@ -1320,7 +1347,9 @@ def _should_skip_compile(extra_arguments: Sequence[str] | None) -> bool:
     return target_version > sys.version_info[:2]
 
 
-def _should_skip_exec(extra_arguments: Sequence[str] | None, *, force_exec: bool = False) -> bool:
+def _should_skip_exec(
+    extra_arguments: Sequence[str] | None, *, force_exec: bool = False, runtime: tuple[int, int] | None = None
+) -> bool:
     """Check if exec should be skipped based on model type and Python version.
 
     Args:
@@ -1328,8 +1357,9 @@ def _should_skip_exec(extra_arguments: Sequence[str] | None, *, force_exec: bool
         force_exec: If True, import the output whenever the target is not newer than the runtime.
             An unset target is the generator's default, the oldest supported version.
             When target > runtime, compile will be skipped entirely regardless of this flag.
+        runtime: The Python that would run the output, by default this one.
     """
-    if not force_exec and _parse_target_version(extra_arguments) != sys.version_info[:2]:
+    if not force_exec and _parse_target_version(extra_arguments) != (runtime or sys.version_info[:2]):
         return True
     return _get_argument_value(extra_arguments, "--base-class") is not None
 
@@ -1354,6 +1384,7 @@ def _validate_output_files(
         return
     should_exec = not _should_skip_exec(extra_arguments, force_exec=force_exec_validation)
     if output_path.is_file() and output_path.suffix == ".py":
+        _export_older_target_output(output_path, [output_path], extra_arguments, force_exec=force_exec_validation)
         validate_generated_code(
             output_path.read_text(encoding="utf-8"),
             str(output_path),
@@ -1363,23 +1394,55 @@ def _validate_output_files(
             _import_generated_output(output_path)
         return
 
-    if not output_path.is_dir():  # pragma: no cover
+    if not output_path.is_dir():
         return
-    for python_file in output_path.rglob("*.py"):
+    python_files = sorted(output_path.rglob("*.py"))
+    _export_older_target_output(output_path, python_files, extra_arguments, force_exec=force_exec_validation)
+    for python_file in python_files:
         validate_generated_code(python_file.read_text(encoding="utf-8"), str(python_file), do_exec=False)
     if should_exec:
         _import_generated_output(output_path)
 
 
-def _generated_output_import_code(output_path: Path) -> str:
-    return textwrap.dedent(
-        f"""
+def _export_older_target_output(
+    output_path: Path, python_files: Sequence[Path], extra_arguments: Sequence[str] | None, *, force_exec: bool
+) -> None:
+    """Copy an output for a Python older than this one, for ``scripts/import_exported_outputs.py`` on that Python.
+
+    With ``DATAMODEL_CODE_GENERATOR_EXPORT_OLDER_TARGET_OUTPUTS`` naming a directory, each output whose target (the
+    generator's default when unset) is older than the runtime goes to a folder named by its contents, with the
+    modules beside it that it can import and a ``case.json``: the test, the target, the target Pydantic version, and
+    whether a run on the target's Python imports the output or only compiles it.
+    """
+    if (export_root := os.environ.get(_EXPORT_OLDER_TARGET_OUTPUTS)) is None:
+        return
+    target = _parse_target_version(extra_arguments) or PythonVersionMin.version_key
+    if target >= sys.version_info[:2]:
+        return
+    item = _CURRENT_ITEMS[-1]
+    imports = item.get_closest_marker("imports_from_newer_python") is None and not _should_skip_exec(
+        extra_arguments, force_exec=force_exec, runtime=target
+    )
+    pydantic = _get_argument_value(extra_arguments, "--target-pydantic-version") or UNSET_TARGET_PYDANTIC_VERSION
+    files = [*python_files, *(path for path in output_path.parent.glob("*.py") if path != output_path)]
+    digest = hashlib.sha256(repr((target, imports, pydantic)).encode())
+    for python_file in files:
+        digest.update(python_file.relative_to(output_path.parent).as_posix().encode() + python_file.read_bytes())
+    case = Path(export_root) / digest.hexdigest()[:20]
+    for python_file in files:
+        (copy := case / python_file.relative_to(output_path.parent)).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(python_file, copy)
+    case_data = {"node": item.nodeid, "target": target, "imports": imports, "pydantic": pydantic}
+    (case / "case.json").write_text(json.dumps({**case_data, "output": output_path.name}), encoding="utf-8")
+    (Path(export_root) / "import_code.py").write_text(_GENERATED_OUTPUT_IMPORT_CODE, encoding="utf-8")
+
+
+_GENERATED_OUTPUT_IMPORT_CODE = textwrap.dedent(
+    """
         import importlib.util
         import sys
         import warnings
         from pathlib import Path
-
-        imported_packages = []
 
 
         def _import_file(path, module_name):
@@ -1388,7 +1451,7 @@ def _generated_output_import_code(output_path: Path) -> str:
             try:
                 spec = importlib.util.spec_from_file_location(module_name, path)
                 if spec is None or spec.loader is None:
-                    raise ImportError(f"Unable to load generated module from {{path}}")
+                    raise ImportError(f"Unable to load generated module from {path}")
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[module_name] = module
                 spec.loader.exec_module(module)
@@ -1401,8 +1464,6 @@ def _generated_output_import_code(output_path: Path) -> str:
         def _import_package(parent_directory, package_name):
             package_path = parent_directory / package_name
             parent_directory_value = str(parent_directory)
-            imported_modules = []
-            imported_packages.append(package_name)
             sys.path.insert(0, parent_directory_value)
             try:
                 spec = importlib.util.spec_from_file_location(
@@ -1411,32 +1472,29 @@ def _generated_output_import_code(output_path: Path) -> str:
                     submodule_search_locations=[str(package_path)],
                 )
                 if spec is None or spec.loader is None:
-                    raise ImportError(f"Unable to load generated package {{package_path}}")
+                    raise ImportError(f"Unable to load generated package {package_path}")
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[package_name] = module
-                imported_modules.append(package_name)
                 spec.loader.exec_module(module)
 
                 for python_file in package_path.rglob("*.py"):
                     if python_file.name == "__init__.py":
                         continue
                     relative_path = python_file.relative_to(package_path)
-                    module_name = f"{{package_name}}.{{'.'.join(relative_path.with_suffix('').parts)}}"
+                    module_name = f"{package_name}.{'.'.join(relative_path.with_suffix('').parts)}"
                     submodule_spec = importlib.util.spec_from_file_location(module_name, python_file)
                     if submodule_spec is None or submodule_spec.loader is None:
-                        raise ImportError(f"Unable to load generated module from {{python_file}}")
+                        raise ImportError(f"Unable to load generated module from {python_file}")
                     submodule = importlib.util.module_from_spec(submodule_spec)
                     sys.modules[module_name] = submodule
-                    imported_modules.append(module_name)
                     submodule_spec.loader.exec_module(submodule)
             finally:
                 if parent_directory_value in sys.path:
                     sys.path.remove(parent_directory_value)
-                for module_name in reversed(imported_modules):
-                    sys.modules.pop(module_name, None)
+                for module_name in [name for name in sys.modules if name.partition(".")[0] == package_name]:
+                    sys.modules.pop(module_name)
 
 
-        output_path = Path({str(output_path.absolute())!r})
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", "Field name .* shadows an attribute in parent", UserWarning)
             warnings.filterwarnings("ignore", "Field .* conflicts with protected namespace", UserWarning)
@@ -1450,7 +1508,13 @@ def _generated_output_import_code(output_path: Path) -> str:
                     if directory.is_dir() and (directory / "__init__.py").exists():
                         _import_package(output_path, directory.name)
         """
-    )
+)
+"""Code that imports the generated file or packages at ``output_path``, a name the namespace running it defines."""
+
+
+def _generated_output_import_code(output_path: Path) -> str:
+    prefix = f"from pathlib import Path\noutput_path = Path({str(output_path.absolute())!r})\n"
+    return prefix + _GENERATED_OUTPUT_IMPORT_CODE
 
 
 def _get_concurrent_interpreters_module() -> Any | None:
@@ -1506,12 +1570,7 @@ def _import_generated_output(output_path: Path) -> None:
     start_time = time.perf_counter()
     try:
         if not _try_import_generated_output_in_subinterpreter(output_path):
-            namespace: dict[str, Any] = {}
-            try:
-                exec(_generated_output_import_code(output_path), namespace)
-            finally:
-                for package_name in namespace.get("imported_packages", ()):
-                    _forget_generated_package(package_name)
+            exec(_generated_output_import_code(output_path), {})
         _validation_stats.record_exec(time.perf_counter() - start_time)
     except Exception as exception:  # pragma: no cover
         _validation_stats.record_error(str(output_path), f"{type(exception).__name__}: {exception}")
@@ -1591,12 +1650,11 @@ def assert_generated_model_json_validation(
     expected_attribute_value: Any = None,
     expected_keyword_only_fields: Collection[str] | None = None,
     expected_repr: str | None = None,
-    expected_repr_path: Path | None = None,
     invalid_keyword_arguments: Sequence[tuple[Mapping[str, Any], str]] = (),
 ) -> None:
     """Import a generated module and validate JSON data through a generated Pydantic model or dataclass.
 
-    The repr of the parsed value equals ``expected_repr``, or the expected file ``expected_repr_path`` as one line.
+    The repr of the parsed value equals ``expected_repr``.
     """
     with _generated_model(output_path, module_name, model_name) as model:
         validate_json = _model_json_validator(model)
@@ -1636,8 +1694,6 @@ def assert_generated_model_json_validation(
 
         if expected_repr is not None and repr(parsed) != expected_repr:  # pragma: no cover
             pytest.fail(f"Expected repr {expected_repr!r}, got {parsed!r}", pytrace=False)
-        if expected_repr_path is not None:
-            assert_output(f"{parsed!r}\n", expected_repr_path)
 
         _assert_model_json_invalid(validate_json, invalid_json, expected_error_type)
         for keyword_arguments, keyword_error_type in invalid_keyword_arguments:
@@ -1662,11 +1718,11 @@ def run_main_url_and_assert(
     url: str,
     output_path: Path,
     input_file_type: InputFileTypeLiteral | None,
-    assert_func: AssertFileContent,
-    expected_file: str | Path,
+    expected_file: str | Path | None = None,
     extra_args: Sequence[str] | None = None,
     transform: Callable[[str], str] | None = None,
     force_exec_validation: bool = False,
+    name: str | None = None,
 ) -> None:
     """Execute main() with URL input and assert output.
 
@@ -1674,16 +1730,22 @@ def run_main_url_and_assert(
         url: URL to fetch schema from
         output_path: Path to output file
         input_file_type: Type of input file (openapi, jsonschema, graphql, etc.)
-        assert_func: The assert_file_content function to use for verification
-        expected_file: Expected output filename
+        expected_file: Expected output filename; without it, pytest names the stored output after the test
         extra_args: Additional CLI arguments
         transform: Optional function to transform output before comparison
         force_exec_validation: Run exec() even when target Python version differs from
             the test environment (only effective when target <= runtime).
+        name: Names the output pytest stores (``<test>.<name><suffix>``) instead of numbering it
     """
     __tracebackhide__ = True
     return_code = _run_main_url(url, output_path, input_file_type, extra_args=extra_args)
     _assert_exit_code(return_code, Exit.OK, f"URL: {url}")
-    assert_func(output_path, expected_file, transform=transform)
+    _compare_output(
+        output_path,
+        expected_file,
+        transform,
+        _get_argument_value(extra_args, "--encoding") or "utf-8",
+        name=name,
+    )
 
     _validate_output_files(output_path, extra_args, force_exec_validation=force_exec_validation)

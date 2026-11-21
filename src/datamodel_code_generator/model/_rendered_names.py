@@ -1,20 +1,22 @@
 """The names a model's rendered text loads, and their rewriting through the bindings of its module.
 
-``DataModel.render`` writes a field annotation or default that names an import its module binds under another name
-through that name (``_bind_field_expressions``), and ``DataModel._render`` and the module rendering write every bare
-load of a builtin the module imports under an alias through the alias (``_bind_builtin_names``); the pass that aliases
-those builtins asks which of them a text loads bare (``_bare_loads_of``), and so does the pass that aliases the module
-imports named like a builtin, by its own row. Each parses the rendered text as the target writes it
-(``host_parsable``, ``_parsed``); the two binders rewrite name nodes at the offsets the parse gives. A model's own
-fields are the annotated statements of the class body of its name (``_class_bodies``), and the names an expression
-names its name nodes (``_names_of``). Nothing here reads a model.
+``DataModel._render`` and the module rendering write every bare load of a name the module binds under an alias
+alone, a builtin a submodule hides or an import a field name hides, through the alias (``_bind_bare_loads``);
+``DataModel.render`` writes a field annotation or default, or a method decorator, that names a name the module binds
+beside its alias, a builtin or an import a type alias keeps, which a field name hides, through the alias
+(``_bind_field_expressions``;
+``FieldNameBindings`` holds both kinds). The pass that aliases the builtins a submodule hides asks which of them a text
+loads bare (``_bare_loads_of``), and so does the pass that aliases the module imports named like a builtin, by its own
+row. Each parses the rendered text as the target writes it (``host_parsable``, ``_parsed``); the two binders rewrite
+name nodes at the offsets the parse gives. A model's own fields are the annotated statements of the class body of its
+name (``_class_bodies``), and the names an expression names its name nodes (``_names_of``). Nothing here reads a model.
 """
 
 from __future__ import annotations
 
 import ast
 from itertools import accumulate
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator._target_unicode import host_parsable
 
@@ -39,6 +41,31 @@ def _class_bodies(tree: ast.Module, restore_name: Callable[[str], str], class_na
         for statement in tree.body
         if isinstance(statement, ast.ClassDef) and restore_name(statement.name) == class_name
     )
+
+
+def _class_body_expressions(statement: ast.stmt) -> tuple[ast.expr, ...]:
+    """Return the expressions a class body evaluates for ``statement``.
+
+    A field's annotation and default, a method's decorators.
+    """
+    match statement:
+        case ast.AnnAssign():
+            return (statement.annotation,) if statement.value is None else (statement.annotation, statement.value)
+        case ast.FunctionDef():
+            return tuple(statement.decorator_list)
+    return ()
+
+
+class FieldNameBindings(NamedTuple):
+    """The aliases of the names the field names of a module hide, by how far a model writes them.
+
+    ``expressions``: names the module binds beside the alias (a builtin, an import a type alias keeps), written through
+    the alias in the field annotations and defaults and the method decorators of a model's class. ``loads``: imports
+    the module binds under the alias alone, written through it in every bare load of every model.
+    """
+
+    expressions: Mapping[str, str]
+    loads: Mapping[str, str]
 
 
 def _names_of(tree: ast.AST, *, loads_only: bool = False) -> Iterator[ast.Name]:
@@ -73,7 +100,7 @@ def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) 
 
 
 def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects.
+    """Bind names in field annotations and defaults and in method decorators without changing template objects.
 
     The rendered text is parsed at its own offsets (`_parsed`), so the name nodes rewrite in place.
     """
@@ -83,9 +110,8 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
         [
             (node, alias)
             for body in _class_bodies(tree, restore_name, class_name)
-            for field in body
-            if isinstance(field, ast.AnnAssign)
-            for expression in ((field.annotation,) if field.value is None else (field.annotation, field.value))
+            for statement in body
+            for expression in _class_body_expressions(statement)
             for node in _names_of(expression, loads_only=True)
             if (alias := bindings.get(restore_name(node.id))) is not None
         ],
@@ -135,7 +161,7 @@ _BareLoadRule: TypeAlias = Literal["scoped", "legacy-flat-bare-loads"]
 """Which names of a text `_bare_loads_of` counts.
 
 `scoped` the names it loads that no function, lambda or comprehension of it binds itself, the loads
-`_bind_builtin_names` rewrites; `legacy-flat-bare-loads` every name node, the stores and the names a function of a
+`_bind_bare_loads` rewrites; `legacy-flat-bare-loads` every name node, the stores and the names a function of a
 custom template binds included, as the check of module imports named like a builtin counts them since 0.87.0.
 """
 
@@ -153,8 +179,8 @@ def _bare_loads_of(rendered: str, names: Collection[str], *, rule: _BareLoadRule
     return {name for node in nodes if (name := restore_name(node.id)) in names}
 
 
-def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:
-    """Write every bare load of a bound builtin in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
+def _bind_bare_loads(rendered: str, bindings: Mapping[str, str]) -> str:
+    """Write every bare load of a bound name in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
     tree, restore_name = _parsed(rendered)
     return _rewrite_names(
         rendered,

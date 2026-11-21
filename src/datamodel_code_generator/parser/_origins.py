@@ -10,9 +10,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator.reference import (
+    BINARY_CONTENT_KEY,
     ENUM_LITERAL_KEY,
     FIELD_ORIGIN_KEY,
+    SUBTYPE_REF_KEY,
     TYPE_ORIGIN_KEY,
     UNIQUE_ITEMS_KEY,
     FieldOrigin,
@@ -23,7 +26,14 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import FieldOriginKind, SchemaLocation
     from datamodel_code_generator.types import DataType
 
-__all__ = ["with_enum_literal", "with_field_origin", "with_type_origin", "with_unique_items"]
+__all__ = [
+    "with_binary_content",
+    "with_enum_literal",
+    "with_field_origin",
+    "with_subtype_ref",
+    "with_type_origin",
+    "with_unique_items",
+]
 
 
 def with_field_origin(
@@ -46,9 +56,13 @@ def with_type_origin(data_type: DataType, location: SchemaLocation | None) -> Da
         if TYPE_ORIGIN_KEY in (node := pending.pop()).__dict__:
             continue
         node.__dict__[TYPE_ORIGIN_KEY] = location
-        pending.extend(node.data_types)
-        if node.dict_key is not None:
-            pending.append(node.dict_key)
+        pending.extend(type_children(node))
+    return data_type
+
+
+def with_binary_content(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that the parser reads the string it is built for as raw octets (BINARY_CONTENT)."""
+    data_type.__dict__[BINARY_CONTENT_KEY] = True
     return data_type
 
 
@@ -58,7 +72,13 @@ def with_enum_literal(data_type: DataType) -> DataType:
     return data_type
 
 
-def with_unique_items(data_type: DataType, unique_items: bool | None) -> DataType:  # noqa: FBT001
+def with_subtype_ref(data_type: DataType, ref: str) -> DataType:
+    """Record on ``data_type`` the ``$ref`` of the subtype it stands for, which --distribute-allof-over-unions reads."""
+    data_type.__dict__[SUBTYPE_REF_KEY] = ref
+    return data_type
+
+
+def with_unique_items(data_type: DataType, *, unique_items: bool | None) -> DataType:
     """Record on ``data_type`` that the schema it is built from declares ``uniqueItems: true`` (``unique_items``)."""
     if unique_items is True:
         data_type.__dict__[UNIQUE_ITEMS_KEY] = True

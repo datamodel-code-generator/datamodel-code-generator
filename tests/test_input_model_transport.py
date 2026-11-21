@@ -113,7 +113,7 @@ def test_load_model_schema_public_contract_keeps_rendered_json_types() -> None:
     if "<datamodel-code-generator-python-type:" in rendered:  # pragma: no cover
         pytest.fail("Private Python type token leaked through load_model_schema()")
 
-    assert_output(rendered, EXPECTED_INPUT_MODEL_PATH / "structured_annotations_schema.txt")
+    assert_output(rendered)
 
 
 def test_load_model_schema_public_dict_contract_stays_json_compatible() -> None:
@@ -125,7 +125,6 @@ def test_load_model_schema_public_dict_contract_stays_json_compatible() -> None:
 
     assert_output(
         f"{json.dumps(schema, indent=2, sort_keys=True)}\n",
-        EXPECTED_INPUT_MODEL_PATH / "dict_public_schema.txt",
     )
 
 
@@ -177,11 +176,6 @@ def test_input_model_transport_property_names_survives_schema_copy() -> None:
         },
         {token: PythonTypeName("int")},
     )
-    JsonSchemaParser("")._object_map_key_type(
-        JsonSchemaObject.model_validate({"x-python-type": PythonTypeSchemaAnnotation(PythonTypeName("int"))}),
-        "extra-field",
-    )
-
     for source in (loaded, legacy_loaded):
         generated = generate(source, input_file_type=InputFileType.JsonSchema, disable_timestamp=True, formatters=[])
         if not isinstance(generated, str):  # pragma: no cover

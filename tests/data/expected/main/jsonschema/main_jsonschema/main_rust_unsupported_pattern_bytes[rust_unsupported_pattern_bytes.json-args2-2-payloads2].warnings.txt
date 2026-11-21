@@ -1,0 +1,2 @@
+The generated models need pydantic>=2.14, newer than the target Pydantic version 2: a pattern on bytes needs 2.14 (Model.blob).
+Pydantic 2.14 compiles patterns on bytes with its Rust regex engine, which rejects the pattern of Model.blob, so the generated models fail to import on Pydantic 2.14; pass --target-pydantic-version 2.14 to select Python's regex engine for it.

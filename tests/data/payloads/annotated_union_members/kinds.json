@@ -1,0 +1,28 @@
+{
+  "valid": {
+    "code": "200",
+    "count": 1,
+    "ratio": "any",
+    "share": 0.5,
+    "price": 1.25,
+    "label": "abcd",
+    "tags": [12345, "ab"],
+    "scores": {"a": 9, "b": "many"},
+    "grid": [{"k": "abc", "n": 1.5}],
+    "word": "abc"
+  },
+  "invalid": [
+    {"code": "2x"},
+    {"count": -1},
+    {"ratio": 0.5},
+    {"share": 0},
+    {"price": 0.5},
+    {"price": 1.234},
+    {"label": "abcde"},
+    {"tags": ["abcde"]},
+    {"scores": {"a": 10}},
+    {"grid": [{"k": "b"}]},
+    {"word": "xyz"},
+    {"word": "abcde"}
+  ]
+}

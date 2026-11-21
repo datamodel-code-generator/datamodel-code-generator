@@ -1,0 +1,5 @@
+UserWarning: --intersect-allof-keywords was turned off but stays on: --intersect-combined-schema-keywords, given as well, turns it on; --no-intersect-combined-schema-keywords turns both off
+exit: OK
+resolved:
+  a: Annotated[int | None, Field(le=5)] = None
+  class A(RootModel[int]):

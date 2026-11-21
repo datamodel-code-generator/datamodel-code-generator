@@ -4,7 +4,9 @@
 
 | Option | Description |
 |--------|-------------|
+| [`--client-asyncapi-perspective`](#client-asyncapi-perspective) | Read an AsyncAPI document as its server's or its client's (e... |
 | [`--client-body-arguments`](#client-body-arguments) | Choose how operation methods take request bodies (experiment... |
+| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (... |
 | [`--client-default-base-url`](#client-default-base-url) | Set the server URL of operations that declare no servers (ex... |
 | [`--client-model-package`](#client-model-package) | Name the import path of the models the client package import... |
 | [`--client-operations`](#client-operations) | Set the client settings of single operations (experimental). |
@@ -29,6 +31,240 @@
 | [`--server-parameter-names`](#server-parameter-names) | Name the method arguments of single operations (experimental... |
 | [`--server-primary-responses`](#server-primary-responses) | Choose the response a bare return value of an operation take... |
 | [`--server-router-names`](#server-router-names) | Name router groups (experimental). |
+
+---
+
+## `--client-asyncapi-perspective` {#client-asyncapi-perspective}
+
+Read an AsyncAPI document as its server's or its client's (experimental).
+
+With `--input-file-type asyncapi`, `--generate-client` opens each channel of a `ws` or `wss` server as
+`client.<channel>.connect(...)`, a WebSocket session that sends one message type and receives another. `server` (the
+default) reads the document as the server's, as the AsyncAPI operations define it: the client sends what the server
+receives (AsyncAPI 2 `publish`, AsyncAPI 3 `action: receive`) and receives what it sends (`subscribe`,
+`action: send`). `client` reads the document as the client's and swaps the two. A server-sent event channel, which
+`client.<channel>.open(...)` opens, flows from the server only, so the client receives each of its messages whichever
+the option says. Other input types refuse the option.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-client`](target-generation-options.md#generate-client) - `--client-asyncapi-perspective` requires `--generate-client httpx2`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input asyncapi-market-v3.yaml --input-file-type asyncapi --output models.py --target-python-version 3.11 --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-asyncapi-perspective client # (1)!
+    ```
+
+    1. :material-arrow-left: `--client-asyncapi-perspective` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    asyncapi: 3.0.0
+    info:
+      title: Market feed
+      version: 1.0.0
+    servers:
+      production:
+        host: feed.example.com
+        pathname: /ws
+        protocol: wss
+      sandbox:
+        host: '{region}.sandbox.example.com'
+        protocol: ws
+        variables:
+          region:
+            default: eu
+            enum: [eu, us]
+      broker:
+        host: kafka.example.com
+        protocol: kafka
+    channels:
+      market:
+        address: /v1/market/{pair}
+        servers:
+          - $ref: '#/servers/production'
+          - $ref: '#/servers/sandbox'
+        parameters:
+          pair:
+            description: The trading pair.
+        messages:
+          subscribe:
+            $ref: '#/components/messages/subscribe'
+          trade:
+            $ref: '#/components/messages/trade'
+      ticker:
+        address: /v1/ticker
+        servers:
+          - $ref: '#/servers/production'
+        messages:
+          tick:
+            contentType: text/plain
+            payload:
+              type: string
+      audio:
+        address: /v1/audio
+        servers:
+          - $ref: '#/servers/production'
+        messages:
+          frame:
+            contentType: application/octet-stream
+            payload:
+              type: string
+              format: binary
+          status:
+            payload:
+              type: object
+              properties:
+                level:
+                  type: integer
+              required: [level]
+      status:
+        address: /v1/status
+        messages:
+          update:
+            payload:
+              $ref: '#/components/schemas/Status'
+    operations:
+      onSubscribe:
+        action: receive
+        channel:
+          $ref: '#/channels/market'
+        messages:
+          - $ref: '#/channels/market/messages/subscribe'
+      publishTrade:
+        action: send
+        channel:
+          $ref: '#/channels/market'
+        messages:
+          - $ref: '#/channels/market/messages/trade'
+      publishTick:
+        action: send
+        channel:
+          $ref: '#/channels/ticker'
+      onFrame:
+        action: receive
+        channel:
+          $ref: '#/channels/audio'
+        messages:
+          - $ref: '#/channels/audio/messages/frame'
+      publishStatus:
+        action: send
+        channel:
+          $ref: '#/channels/audio'
+        messages:
+          - $ref: '#/channels/audio/messages/status'
+      publishStatusUpdate:
+        action: send
+        channel:
+          $ref: '#/channels/status'
+    components:
+      messages:
+        subscribe:
+          payload:
+            $ref: '#/components/schemas/Subscribe'
+        trade:
+          contentType: application/json
+          payload:
+            $ref: '#/components/schemas/Trade'
+      schemas:
+        Subscribe:
+          type: object
+          properties:
+            event:
+              type: string
+              const: subscribe
+            channels:
+              type: array
+              items:
+                type: string
+          required: [event, channels]
+        Trade:
+          type: object
+          properties:
+            event:
+              type: string
+              const: trade
+            price:
+              type: number
+            volume:
+              type: number
+          required: [event, price]
+        Status:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [online, maintenance]
+          required: [state]
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  asyncapi.yaml
+
+    """The plans of this package's WebSocket helpers; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from typing import Final, Never
+
+    import models
+
+    from .. import _operations
+    from .._generated import model_bindings
+    from .._runtime.protocols.references import OperationRef
+    from .._runtime.protocols.websocket import ChannelPlan
+
+    SOCKET_0: Final[ChannelPlan[models.Trade, models.Subscribe]] = ChannelPlan(
+        helper_id='market',
+        operation=OperationRef(pointer='/channels/market'),
+        call=_operations.OPERATION_0,
+        fingerprint='cab2f78a5d2490691e4c3dc1aa01e0e9d49f86d7743eb26c4c3c22a5b9f94aac',
+        encoder=model_bindings.codec_1,
+        decoder=model_bindings.codec_2,
+    )
+
+
+    SOCKET_1: Final[ChannelPlan[str, Never]] = ChannelPlan(
+        helper_id='ticker',
+        operation=OperationRef(pointer='/channels/ticker'),
+        call=_operations.OPERATION_1,
+        fingerprint='1f1c1a8a5c1eacfa751f7539271b43e84cfa608417dac548f70b8286076c4316',
+        send_codec='utf8',
+        receive_codec='none',
+    )
+
+
+    SOCKET_2: Final[ChannelPlan[models.AudioStatusPayload, bytes]] = ChannelPlan(
+        helper_id='audio',
+        operation=OperationRef(pointer='/channels/audio'),
+        call=_operations.OPERATION_2,
+        fingerprint='dd024ec23cc2efc79cac6778b3b14563fd39a7973685078a5ef7b1f077563a46',
+        encoder=model_bindings.codec_3,
+        receive_codec='bytes',
+        receive_frame='binary',
+    )
+
+
+    SOCKET_3: Final[ChannelPlan[models.Status, Never]] = ChannelPlan(
+        helper_id='status',
+        operation=OperationRef(pointer='/channels/status'),
+        call=_operations.OPERATION_3,
+        fingerprint='1b8010c9f550b24a09e72e1f84b1fbcbcdf186ad031338a61795437e1469f1b9',
+        encoder=model_bindings.codec_4,
+        receive_codec='none',
+    )
+    ```
+
+    <!-- fmt: on -->
 
 ---
 
@@ -450,6 +686,159 @@ overrides it for that operation.
 
 ---
 
+## `--client-deep-object-brackets` {#client-deep-object-brackets}
+
+Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
+
+OpenAPI defines `style: deepObject` for objects of scalars alone, so an operation whose deepObject query parameter, or
+member of an `application/x-www-form-urlencoded` body, takes an array, a scalar, a nested object or a union of a
+scalar and an object is left out with a warning. With this option the client writes such values in the bracket form:
+an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, a scalar as `name=value`, the
+members of objects as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, and an array of objects
+by index, such as `items[0][price]=p_1`, with the brackets percent-encoded as those of an object's `name[key]` pairs
+are. A value that may be a scalar or an object or array is written as the one a call gives: `created=5` or
+`created[gt]=5`, and an empty string as `metadata=`. Arrays of arrays, recursive values, and unions whose members a
+value does not tell apart stay left out. `--no-client-deep-object-brackets` turns off the
+`client-deep-object-brackets` key of pyproject.toml.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-client`](target-generation-options.md#generate-client) - `--client-deep-object-brackets` requires `--generate-client httpx2`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input options-deep-object.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-deep-object-brackets # (1)!
+    ```
+
+    1. :material-arrow-left: `--client-deep-object-brackets` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info:
+      title: Charges
+      version: 1.0.0
+    servers:
+      - url: https://api.example.com
+    paths:
+      /v1/charges/{charge}:
+        get:
+          operationId: GetChargesCharge
+          tags: [charges]
+          parameters:
+            - {name: charge, in: path, required: true, schema: {type: string}}
+            - name: expand
+              in: query
+              style: deepObject
+              explode: true
+              schema:
+                type: array
+                items: {type: string}
+            - name: limit
+              in: query
+              style: deepObject
+              explode: true
+              schema: {type: integer}
+            - name: created
+              in: query
+              style: deepObject
+              explode: true
+              schema:
+                type: object
+                properties:
+                  gt: {type: integer}
+          responses:
+            '204':
+              description: The charge.
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options-deep-object.yaml
+
+    """The operation registry of this package; regenerate it instead of editing."""
+
+    from __future__ import annotations
+
+    from typing import Final
+
+    from ._generated import model_bindings
+    from ._runtime.client.operations import (
+        OperationPlan,
+        ParameterSpec,
+        ResponseDecoder,
+        ServerPlan,
+        empty_branch,
+    )
+    from ._runtime.model_codecs.media import FieldPlan
+    from ._runtime.model_codecs.parameters import ParameterPlan
+    from .types.charges import GetChargesChargeResponse
+
+    _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
+
+    OPERATION_0: Final[OperationPlan[GetChargesChargeResponse]] = OperationPlan(
+        operation_id='GetChargesCharge',
+        method='GET',
+        path='/v1/charges/{charge}',
+        servers=_SERVERS_0,
+        responses=ResponseDecoder((empty_branch('204'),), ()),
+        parameters=(
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='path', name='charge', style='simple', required=True
+                ),
+                codec=model_bindings.codec_0,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='expand',
+                    style='deepObject',
+                    explode=True,
+                    shape='array',
+                    brackets=True,
+                ),
+                codec=model_bindings.codec_1,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='deepObject',
+                    explode=True,
+                    kind='integer',
+                    brackets=True,
+                ),
+                codec=model_bindings.codec_2,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='created',
+                    style='deepObject',
+                    explode=True,
+                    shape='object',
+                    fields=(FieldPlan('gt', 'integer'),),
+                    brackets=True,
+                ),
+                codec=model_bindings.codec_3,
+            ),
+        ),
+    )
+    ```
+
+    <!-- fmt: on -->
+
+---
+
 ## `--client-default-base-url` {#client-default-base-url}
 
 Set the server URL of operations that declare no servers (experimental).
@@ -571,8 +960,27 @@ servers keep them.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
+        responses=ResponseDecoder(
+            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()
+        ),
+        parameters=(
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                ),
+                codec=model_bindings.codec_0,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query', name='cursor', style='form', explode=True
+                ),
+                codec=model_bindings.codec_1,
+            ),
+        ),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -580,8 +988,18 @@ servers keep them.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
-        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
+        responses=ResponseDecoder(
+            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()
+        ),
+        body=RequestBody(
+            media=(
+                BodyMedia(
+                    media_type='application/json', kind='json', codec=model_bindings.codec_3
+                ),
+            ),
+            default='application/json',
+            required=True,
+        ),
     )
     ```
 
@@ -2540,8 +2958,27 @@ against the document's URL when it is read from one.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
+        responses=ResponseDecoder(
+            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()
+        ),
+        parameters=(
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                ),
+                codec=model_bindings.codec_0,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query', name='cursor', style='form', explode=True
+                ),
+                codec=model_bindings.codec_1,
+            ),
+        ),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -2549,8 +2986,18 @@ against the document's URL when it is read from one.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
-        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
+        responses=ResponseDecoder(
+            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()
+        ),
+        body=RequestBody(
+            media=(
+                BodyMedia(
+                    media_type='application/json', kind='json', codec=model_bindings.codec_3
+                ),
+            ),
+            default='application/json',
+            required=True,
+        ),
     )
     ```
 
@@ -2871,7 +3318,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 - **Requires:** [`--client-output`](target-generation-options.md#client-output) - `--generate-client` requires `--client-output`.
 - **Requires:** [`--client-package`](target-generation-options.md#client-package) - `--generate-client` requires `--client-package`.
 - **Requires:** [`--client-model-package`](target-generation-options.md#client-model-package) - `--generate-client` requires `--client-model-package`.
-- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-client` requires `--input-file-type openapi`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) - `--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.
 - **Conflicts:** [`--generate-server`](target-generation-options.md#generate-server) - `--generate-client` can not be used with `--generate-server`.
 
 !!! tip "Usage"
@@ -4258,9 +4705,7 @@ Choose how the server package lays out its routes (experimental).
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (
-        ('replace_pet', _add_replace_pet),
-    )
+    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
     def build_router(
@@ -5212,9 +5657,7 @@ without a file against the working directory, and against the pyproject.toml dir
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (
-        ('replace_pet', _add_replace_pet),
-    )
+    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
     def build_router(

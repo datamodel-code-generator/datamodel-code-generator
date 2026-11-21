@@ -1,0 +1,119 @@
+# The changes of 0.99.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "annotated-constrained-union-members"
+category = "output-text"
+kind = "output-text"
+action = "none"
+title = "`--use-annotated` writes the constrained members of unions as `Annotated`"
+summary = "Under `--use-annotated`, a union member that takes its own constraints, such as the `string` of `type: [integer, string]` with a `pattern` or the `integer` of a type list with a `minimum`, in a field, a list item, a dict value or a root model, was written as a `con*()` call, which mypy and pyright refuse in an annotation. It is now written as `Annotated[<type>, Field(...)]` (a `Decimal` `multipleOf` as `MultipleOf(...)`), as a type alias body already wrote it. The models accept and reject the same values; without `--use-annotated` nothing changes."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"], options = ["--use-annotated"] }
+before = "code: int | constr(pattern=r'^[0-9]+$')"
+after = "code: int | Annotated[str, Field(pattern=r'^[0-9]+$')]"
+refs = ["#7109"]
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-messages-walked-by-parser"
+category = "experimental"
+refs = ["#7163"]
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients carry the messages the models are generated for"
+summary = "With `--generate-client` and AsyncAPI input, a channel carries the messages the parser's walk generates models for: a message value stands for each message its `$ref` and `oneOf` lead to at any depth, so an AsyncAPI 2 `message` whose `oneOf` names a message with its own `oneOf` opens its channel instead of leaving it out with \"declares no payload\". A payload that is a `$ref` beside annotations only (such as a `description`) is typed by the model of the schema it names, as an OpenAPI body is, instead of the payload's own wrapper model. A message `$ref` that loops is read as the message it is written in (\"declares no payload\" instead of \"a message of it references another document\"), and a channel whose messages the walk never reached (a reply channel in another document that no channel lists) is left out with \"the messages at ... were not read\"."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "SOCKET_0: Final[ChannelPlan[models.FeedTradePayload | models.Quote, Never]]"
+after = "SOCKET_0: Final[ChannelPlan[models.Trade | models.Quote, Never]]"
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-reads-models-version"
+category = "experimental"
+refs = ["#7163"]
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients read channels by the version the models are read by"
+summary = "With `--generate-client` and AsyncAPI input, the channels are read by the AsyncAPI version the models are read by: `--schema-version 2.0` or `3.0` where it is given, else the document's `asyncapi` field, which alone was read before. The `publish` operation of an AsyncAPI 2 channel is read before its `subscribe` operation, as the models read them, so the skip reasons of a channel and the union of the events of a stream that carries both list the `publish` ones first."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "EventPlan[models.StatusSubscribePayload | models.StatusPublishPayload]"
+after = "EventPlan[models.StatusPublishPayload | models.StatusSubscribePayload]"
+source = "release-note"
+
+[[change]]
+id = "connection-reader-through-parser"
+category = "experimental"
+refs = ["#7136"]
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients follow references into the other loaded documents"
+summary = "With `--generate-client` and AsyncAPI input, a channel, operation, message, trait, binding, parameter, reply, server or security scheme written in another loaded document is read where the parser resolves its `$ref`, so its connection is generated instead of skipped with \"... references another document\" (an operation in another document no longer leaves every channel out). A `#/...` reference inside such a declaration names its own document, and a reference to a server or security scheme names the entry of the root document that leads to the same object (such as `#/servers/socket` in a document whose `socket` server the root imports by `$ref`). A reference to nothing in another loaded document reads as one in the same document does (`it has no address`, `declares no payload`, an empty reply or scheme). A reference into a document the generation did not load (such as a security scheme, the channel of a reply, a trait of an AsyncAPI 2 operation, or a schema `--external-ref-mapping` maps) or one that loops still leaves the channel out."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "Skipping channel 'notes', which the client cannot generate: /channels/notes: a message of it references another document"
+after = "SOCKET_2: Final[ChannelPlan[models.NotePayload, Never]] = ChannelPlan(helper_id='notes', ...)"
+source = "release-note"
+
+[[change]]
+id = "lazy-public-names-in-dir"
+category = "api"
+title = "dir() lists every public name a module exports lazily, once"
+summary = "Each module with lazy exports answers dir() from the table its __getattr__ reads: the package root, types, util, parser.avro, parser.asyncapi, parser.base, parser.jsonschema and __main__ now list their lazily exported public names, and datamodel_code_generator.reference lists a name read before dir() or __all__ once instead of twice. The plain imports create_module_getattr of types and parser.asyncapi, which only the old hooks used, are gone; import it from datamodel_code_generator.util; star imports of those two modules no longer bind it. inspect.getmembers(), help() and completion on a module with lazy exports now import the modules its lazy names come from."
+refs = ["#7154", "#7152"]
+decision = ["#7154"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["dir()", "datamodel_code_generator.types.create_module_getattr", "datamodel_code_generator.parser.asyncapi.create_module_getattr"] }
+before = "'StrictTypes' in dir(datamodel_code_generator.types)  # False"
+after = "'StrictTypes' in dir(datamodel_code_generator.types)  # True"
+source = "release-note"
+
+[[change]]
+id = "recommender-rule-texts-without-numbers"
+category = "experimental"
+refs = ["#7192"]
+decision = ["#7192"]
+kind = "experimental"
+action = "none"
+title = "Recommender rule texts no longer cite issue numbers"
+summary = "The measured lines of two rules of --recommend-options no longer start with or contain an issue number; the sentences are otherwise unchanged."
+affects = { experimental = ["cli-option.recommend-options"] }
+before = "measured: #5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat)"
+after = "measured: Cat listed by ByName (tag Cat) and ByKey (mapping key cat)"
+source = "release-note"
+
+[[change]]
+id = "release-surface-records-on-main"
+category = "experimental"
+title = "Name the recommender rules revision of the 0.99.0 surface"
+summary = "The rules revision printed by --recommend-options is now 2026-11-19, the date the rule evidence texts last changed."
+kind = "experimental"
+action = "review"
+refs = ["#7209"]
+decision = ["#7209"]
+affects = { experimental = ["cli-option.recommend-options"] }
+source = "release-note"
+
+[[change]]
+id = "served-document-reads-the-record"
+category = "experimental"
+title = "The served document of a generated FastAPI server resolves references by the names the models read"
+refs = ["#7178"]
+summary = "With `--generate-server fastapi`, the served OpenAPI document resolves a `$ref` through the `$id`, `$anchor` and `$dynamicAnchor` names the parser registers for the models, instead of an index of its own. Three references that the models already resolve, and that the served document kept as written with \"The served document keeps ..., which names nothing the generation loaded\", now name the schema the models use: a plain name of an anchor in a namespace of definitions (`$defs: {v1: {Label: {$anchor: label}}}`, named `#label`), a reference by the root `$id` of a referenced JSON Schema document into that document (`https://example.com/schemas/pet#/$defs/Name`, bundled as a component), and, under OpenAPI 3.0, a reference by the `$id` of a component schema (`https://example.com/owner.json`, with `--no-allow-remote-refs`). Two other references follow the models too: a plain name whose anchor a `schema` beside a Reference Object (which OpenAPI ignores) also declares now names the anchored property the models read instead of that ignored schema, and a JSON pointer below the `$id` of a parameter document first loaded by a pointer (`#/properties/size`), which the models keep as a dangling reference, is kept as written with the same message instead of being bundled (with `--strict-refs` both resolve it), and so is a JSON pointer below the `$id` of a schema written inline in `paths` (`#/$defs/Title`), which the models also keep as a dangling reference, instead of naming that inline schema's `$defs` entry. The models do not change."
+kind = "experimental"
+action = "none"
+affects = { experimental = ["cli-option.generate-server"] }
+before = '"label": {"$ref": "#label"}'
+after = '"label": {"$ref": "#/components/schemas/Pet/$defs/v1/Label"}'
+source = "release-note"
+
+[[change]]
+id = "typeddict-members-follow-model-base-order"
+category = "experimental"
+refs = ["#4300"]
+kind = "experimental"
+action = "review"
+title = "Generated clients bind the keys of a TypedDict whose bases Python cannot order"
+summary = "With `--generate-client` and the `typing.TypedDict` output, a TypedDict whose bases have conflicting orders (`E: allOf [C, D]` with `C: allOf [A, B]` and `D: allOf [B, A]`), which Python creates because a TypedDict has no method resolution order of its own, was bound without keys: its codec listed no fields (`Model(())`) and a body of it took no field arguments under `--client-body-arguments both`. Its keys are now bound in the order the models give its bases, the order every other class already takes: the codec lists them, decoded objects hold them in that order, and the call that sends such a body takes them as field arguments. The Pydantic and dataclass outputs refuse such a class at generation; msgspec writes no generated bases."
+affects = { experimental = ["cli-option.generate-client"], output_model_types = ["typing.TypedDict"] }
+before = "models.E: Model(()),"
+after = "models.E: Model((Field('b', 'b'), Field('a', 'a'), Field('d', 'd'), Field('c', 'c'), Field('e', 'e'))),"
+source = "release-note"

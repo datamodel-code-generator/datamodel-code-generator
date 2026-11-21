@@ -1,0 +1,11 @@
+[
+  "seed: valid",
+  "exclusiveMinimum 1: invalid",
+  "exclusiveMinimum 1.99989: invalid",
+  "exclusiveMinimum 1.9999: invalid",
+  "exclusiveMinimum 1.99991: invalid",
+  "maximum 1: invalid",
+  "maximum 1.9: invalid",
+  "maximum 2.1: invalid",
+  "maximum 3: invalid"
+]

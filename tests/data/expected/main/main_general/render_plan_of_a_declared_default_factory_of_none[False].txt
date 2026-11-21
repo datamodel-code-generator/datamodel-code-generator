@@ -26,8 +26,16 @@ class Inner(BaseModel):
     x: Optional[Int] = None
     typename__: Optional[Literal['Inner']] = Field('Inner', alias='__typename')
 
+    @property
+    def __typename(self) -> Optional[Literal['Inner']]:
+        return self.typename__
+
 
 class Outer(BaseModel):
     inner: Optional[Inner] = None
     name: Optional[String] = None
     typename__: Optional[Literal['Outer']] = Field('Outer', alias='__typename')
+
+    @property
+    def __typename(self) -> Optional[Literal['Outer']]:
+        return self.typename__

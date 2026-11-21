@@ -1,0 +1,4 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+stamp pending: 0.1.0 is tagged but docs/data/migration/releases.toml does not list it; run 'python scripts/build_migration_docs.py --stamp 0.1.0 --tag-tree <checkout of 0.1.0>'
+failed

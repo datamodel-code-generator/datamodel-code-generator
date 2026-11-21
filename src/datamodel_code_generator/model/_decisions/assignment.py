@@ -64,7 +64,8 @@ AssignmentRow: TypeAlias = Literal["model", "dataclass", "pydantic-dataclass", "
 """The output model whose template writes the class body.
 
 * ``model``: Pydantic models, TypedDict and the neutral model: the field's call outside ``Annotated``, or its default
-  unless it is required or strips its ``None``; every field takes part in the constructor.
+  unless it is required or strips its ``None`` (a Pydantic model keeps it for a type rendered with None,
+  ``ModelWritten.keeps_none``); every field but a ``ClassVar`` takes part in the constructor.
 * ``dataclass``: stdlib dataclasses: the ``model`` rule (row ``legacy-stdlib-annotated``); an ``init=False`` field
   takes no part in the constructor.
 * ``pydantic-dataclass``: Pydantic dataclasses: the template keeps a stripped ``None`` default when the rendered type
@@ -98,12 +99,14 @@ class ModelWritten:
     """The written assignment of a neutral or Pydantic model field.
 
     ``text`` tells that the field's call renders (``bool(field.field)``), ``declared_factory`` that the field declares
-    a ``default_factory``.
+    a ``default_factory``, ``keeps_none`` that the class body keeps the ``None`` default ``--strip-default-none``
+    strips, as a Pydantic model does for a type rendered with None.
     """
 
     text: bool
     declared_factory: bool
     default: DefaultState
+    keeps_none: bool = False
 
 
 @final
@@ -276,7 +279,7 @@ def participates_in_constructor(row: AssignmentRow, *, init_excluded: bool, clas
     """Return whether a field takes part in its model's constructor."""
     if row == "dataclass":
         return not init_excluded
-    return not class_var if row == "pydantic-dataclass" else True
+    return not class_var if row in {"model", "pydantic-dataclass"} else True
 
 
 def excluded_from_init(field: FieldView) -> bool:
@@ -315,10 +318,16 @@ def struct_construction_assigned(*, required: bool, keeps_stripped_place: bool) 
     return struct_assigned(required=required) and not keeps_stripped_place
 
 
+def _strips_none(inputs: AssignmentInputs) -> bool:
+    """Return whether the class body leaves out the field's ``None`` default that ``--strip-default-none`` strips."""
+    written = inputs.written
+    return inputs.strips_none and not (isinstance(written, ModelWritten) and written.keeps_none)
+
+
 def _model_assignment(inputs: AssignmentInputs, *, text: bool) -> tuple[bool, AssignmentRule]:
     if text and not inputs.annotated:
         return True, "field-call"
-    if not (inputs.required or inputs.strips_none):
+    if not (inputs.required or _strips_none(inputs)):
         return True, "default"
     return False, "unassigned"
 
@@ -354,7 +363,7 @@ def _constructor_default(inputs: AssignmentInputs, *, text: bool, model_assigned
         return "none"
     written = inputs.written
     if isinstance(written, ModelWritten):
-        return _declared_default(written, strips_none=inputs.strips_none) if model_assigned else "none"
+        return _declared_default(written, strips_none=_strips_none(inputs)) if model_assigned else "none"
     if isinstance(written, DataclassWritten):
         data = written.data
         writes = (data.any or not written.forced) and (

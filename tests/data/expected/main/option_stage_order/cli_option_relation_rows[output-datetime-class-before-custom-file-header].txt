@@ -1,0 +1,4 @@
+`--output-datetime-class` only allows "datetime" for `--output-model-type` dataclasses.dataclass
+exit: ERROR
+written:
+  header.txt

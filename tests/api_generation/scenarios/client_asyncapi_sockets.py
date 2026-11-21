@@ -1,0 +1,573 @@
+"""Open the channels of AsyncAPI documents through generated clients against a local WebSocket server."""
+
+from __future__ import annotations
+
+import importlib
+import json
+from typing import TYPE_CHECKING, Any, cast, is_typeddict
+
+import httpx2
+
+from tests.api_generation.scenarios.client_sockets import _data, _described, _message, _sending, record
+from tests.api_generation.support.client_runtime import run
+from tests.api_generation.support.fixture_websocket import Play, SocketServer, client_context
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import ModuleType
+
+    from websockets.http11 import Request
+    from websockets.sync.server import ServerConnection
+
+
+def _trade(connection: ServerConnection) -> None:
+    """Answer a subscription with a trade, then send a message no model decodes."""
+    subscribed = json.loads(connection.recv())
+    connection.send(json.dumps({"event": "trade", "price": 1.5, "volume": len(subscribed["channels"])}))
+    connection.send(json.dumps({"event": "trade"}))
+
+
+def _ticks(connection: ServerConnection) -> None:
+    """Send a text tick, then a binary frame the channel does not carry."""
+    connection.send("tick 1")
+    connection.send(b"\x00")
+
+
+def _audio(connection: ServerConnection) -> None:
+    """Report the size of a binary frame as a status, and close normally."""
+    connection.send(json.dumps({"level": len(connection.recv())}))
+    connection.close(1000, "done")
+
+
+def _subscriber(connection: ServerConnection) -> None:
+    """As the server of a client-perspective document, send a subscription and read the trade the client answers."""
+    connection.send(json.dumps({"event": "subscribe", "channels": ["trades"]}))
+    connection.recv()
+    connection.close(1000, "done")
+
+
+def _models(package: ModuleType) -> ModuleType:
+    return importlib.import_module(f"{package.__name__}_models")
+
+
+def asyncapi_sockets(package: ModuleType, lines: list[str]) -> None:
+    """Open each channel of a server's document through the synchronous and asyncio clients of a generated package."""
+    models = _models(package)
+    server = SocketServer()
+    try:
+        market, ticker, audio = server.play(Play(talk=_trade), Play(talk=_ticks), Play(talk=_audio))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+        ):
+            lines.append(f"  channels {client.market is client.protocols.market} {type(client.ticker).__name__}")
+            with client.market.connect(pair="XBT-USD") as session:
+                session.send(models.Subscribe(event="subscribe", channels=["trades", "book"]))
+                lines.append(f"    market {_message(session.receive())}")
+                record(lines, "market undecodable", session.receive)
+            lines.append(market.report())
+            with client.ticker.connect() as session:
+                lines.append(f"    ticker {_message(session.receive())}")
+                record(lines, "ticker send", lambda: session.send("never"))
+                record(lines, "ticker binary", session.receive)
+            lines.append(ticker.report())
+            with client.audio.connect() as session:
+                session.send(b"\x01\x02\x03")
+                lines.extend(f"    audio {_message(message)}" for message in session)
+            lines.append(audio.report())
+        (opened,) = server.play(Play(talk=_trade))
+        run(lambda: _async_market(package, models, server.url, lines))
+        lines.append(opened.report())
+    finally:
+        server.stop()
+
+
+async def _async_market(package: ModuleType, models: ModuleType, url: str, lines: list[str]) -> None:
+    """Send a subscription and read the trade through the asyncio client."""
+    async with (
+        httpx2.AsyncClient(verify=client_context()) as http,
+        package.AsyncClient(base_url=url, http_client=http) as client,
+        client.market.connect(pair="A-B") as session,
+    ):
+        await session.send(models.Subscribe(event="subscribe", channels=["trades"]))
+        message: Any = await session.receive()
+        lines.append(f"    async market {type(message.data).__name__}{_data(message.data)!r}")
+
+
+def asyncapi_perspective(package: ModuleType, lines: list[str]) -> None:
+    """Receive what the document's client receives and send what it sends, under the client perspective."""
+    models = _models(package)
+    server = SocketServer()
+    try:
+        (played,) = server.play(Play(talk=_subscriber))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.trades.connect(symbol="XBT-USD") as session,
+        ):
+            lines.append(f"    trades {_message(session.receive())}")
+            session.send(models.Trade(event="trade", price=2.0))
+            lines.extend(f"    trades {_message(message)}" for message in session)
+        lines.extend((played.report(), f"  closed {_described(session)}"))
+    finally:
+        server.stop()
+
+
+def _lobby(connection: ServerConnection) -> None:
+    """Echo a line of a chat room, and close normally."""
+    connection.send(f"echo {connection.recv()}")
+    connection.close(1000, "done")
+
+
+def _notices(connection: ServerConnection) -> None:
+    """Read a notice, and send a frame on the channel the client only sends on."""
+    connection.send(f"read {connection.recv()}")
+
+
+def asyncapi_serverless(package: ModuleType, lines: list[str]) -> None:
+    """Open a channel whose address has no leading slash, of a document without servers, under the given base URL.
+
+    A frame on a channel the client only sends on is a DecodeError, which closes the connection with 1002.
+    """
+    server = SocketServer()
+    try:
+        lobby, notices = server.play(Play(talk=_lobby), Play(talk=_notices))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=f"{server.url}/ws", http_client=http) as client,
+        ):
+            with client.rooms.connect(room="lobby") as session:
+                session.send("hello")
+                lines.extend(f"    rooms {_message(message)}" for message in session)
+            lines.append(lobby.report())
+            with client.notices.connect() as session:
+                session.send("closing")
+                record(lines, "notices receive", session.receive)
+            lines.append(notices.report())
+    finally:
+        server.stop()
+
+
+def asyncapi_schema_formats(package: ModuleType, lines: list[str]) -> None:
+    """Receive messages whose payload schema is in an OpenAPI format, or a JSON Schema format a trait spells in caps."""
+    server = SocketServer()
+    try:
+        readings, notes = server.play(
+            Play(talk=_sending(json.dumps({"sensor": "t1", "value": 21.5}), code=1000)),
+            Play(talk=_sending(json.dumps({"text": "calibrated"}), json.dumps({}), code=1000)),
+        )
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+        ):
+            with client.readings.connect() as session:
+                lines.extend(f"    readings {_message(message)}" for message in session)
+            lines.append(readings.report())
+            with client.notes.connect() as session:
+                lines.append(f"    notes {_message(session.receive())}")
+                record(lines, "notes without text", session.receive)
+            lines.append(notes.report())
+    finally:
+        server.stop()
+
+
+def asyncapi_message_codecs(package: ModuleType, lines: list[str]) -> None:
+    """Receive text of an enum and of CSV and a msgpack frame, and send JSON and multipart binary strings as bytes."""
+    server = SocketServer()
+    seen: list[str] = []
+    uploaded: list[str] = []
+    try:
+        states, tables, packs, blobs, uploads = server.play(
+            Play(talk=_sending("running", code=1000)),
+            Play(talk=_sending("line,count\n1,2\n", code=1000)),
+            Play(talk=_sending(b"\x81\xa4line\x01", "text", code=1000)),
+            Play(talk=_collecting(seen, 1)),
+            Play(talk=_collecting(uploaded, 1)),
+        )
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+        ):
+            for name, played in (("states", states), ("tables", tables)):
+                with getattr(client, name).connect() as session:
+                    lines.extend(f"    {name} {_message(message)}" for message in session)
+                lines.append(played.report())
+            with client.packs.connect() as session:
+                lines.append(f"    packs {_message(session.receive())}")
+                record(lines, "packs text", session.receive)
+            lines.append(packs.report())
+            with client.blobs.connect() as session:
+                session.send(b"\x00\x01")
+                record(lines, "blobs text", lambda: session.send("text"))
+            report = blobs.report()
+            lines.extend((f"    blobs server saw {', '.join(seen)}", report))
+            with client.uploads.connect() as session:
+                session.send(b"--b\r\n\r\nfile\r\n--b--\r\n")
+            report = uploads.report()
+            lines.extend((f"    uploads server saw {', '.join(uploaded)}", report))
+    finally:
+        server.stop()
+
+
+def _collecting(seen: list[str], count: int, *replies: str | bytes) -> Callable[[ServerConnection], None]:
+    """Return a talk that keeps the client's first messages as received, sends replies, and waits for the client."""
+
+    def talk(connection: ServerConnection) -> None:
+        seen.extend(repr(connection.recv()) for _ in range(count))
+        for reply in replies:
+            connection.send(reply)
+
+    return talk
+
+
+def _value(models: ModuleType, name: str, **fields: object) -> object:
+    """Return a value of a model by its fields: a dict for a TypedDict, else an instance."""
+    model = getattr(models, name)
+    return dict(fields) if is_typeddict(model) else model(**fields)
+
+
+def _feed(package: ModuleType, models: ModuleType, server: SocketServer, lines: list[str]) -> None:
+    """Send each kind of message on the feed and receive its tagged, binary, unknown and malformed messages."""
+    seen: list[str] = []
+    trade = json.dumps({"event": "trade", "price": 2.5})
+    beat = json.dumps({"event": "heartbeat", "at": 7})
+    played = server.play(
+        Play(talk=_collecting(seen, 4, trade, beat, b"\x09", json.dumps({"event": "quote"}))),
+        *(Play(talk=_sending(item)) for item in ('{"price": 1}', '{"event": 1}', "not json")),
+    )
+    unsubscribe = models.Unsubscribe
+    if hasattr(unsubscribe, "model_dump"):
+        unsubscribe = type("Mine", (unsubscribe,), {})
+    with (
+        httpx2.Client(verify=client_context()) as http,
+        package.Client(base_url=server.url, http_client=http) as client,
+    ):
+        with client.feed.connect() as session:
+            session.send(_value(models, "Subscribe", op="subscribe", channels=["a"]))
+            session.send(
+                _value(models, "Unsubscribe", op="unsubscribe", channels=["b"])
+                if unsubscribe is models.Unsubscribe
+                else unsubscribe(op="unsubscribe", channels=["b"])
+            )
+            session.send("ping")
+            session.send(bytearray(b"\x01"))
+            record(lines, "feed int", lambda: session.send(5))
+            record(lines, "feed unknown op", lambda: session.send({"op": "other"}))
+            lines.extend(f"    feed {_message(session.receive())}" for _ in range(3))
+            record(lines, "feed unknown event", session.receive)
+        for label in ("missing", "number", "malformed"):
+            with client.feed.connect() as session:
+                record(lines, f"feed {label} event", session.receive)
+    lines.append(f"    feed server saw {', '.join(seen)}")
+    lines.extend(play.report() for play in played)
+
+
+def _chat(package: ModuleType, server: SocketServer, lines: list[str]) -> None:
+    """Receive the untagged chat messages as their union, and refuse what no member decodes or a binary frame."""
+    played = server.play(
+        Play(talk=_sending(json.dumps({"text": "hi"}), json.dumps({"level": 2}), b"\x00")),
+        Play(talk=_sending(json.dumps({"bogus": 1}))),
+    )
+    with (
+        httpx2.Client(verify=client_context()) as http,
+        package.Client(base_url=server.url, http_client=http) as client,
+    ):
+        with client.chat.connect() as session:
+            lines.extend(f"    chat {_message(session.receive())}" for _ in range(2))
+            record(lines, "chat binary", session.receive)
+        with client.chat.connect() as session:
+            record(lines, "chat undecodable", session.receive)
+    lines.extend(play.report() for play in played)
+
+
+def _orders(package: ModuleType, models: ModuleType, server: SocketServer, lines: list[str]) -> None:
+    """Send an order and its cancellation, each by its class, and read the acknowledgement."""
+    seen: list[str] = []
+    (played,) = server.play(Play(talk=_collecting(seen, 2, json.dumps({"id": "o-1"}))))
+    with (
+        httpx2.Client(verify=client_context()) as http,
+        package.Client(base_url=server.url, http_client=http) as client,
+        client.orders.connect() as session,
+    ):
+        session.send(_value(models, "Place", symbol="XBT", size=1.0))
+        session.send(_value(models, "Cancel", id="o-1"))
+        lines.append(f"    orders {_message(session.receive())}")
+    report = played.report()
+    lines.extend((f"    orders server saw {', '.join(seen)}", report))
+
+
+def _drafts(package: ModuleType, models: ModuleType, server: SocketServer, lines: list[str]) -> None:
+    """Send an item on the channel one of whose messages wraps its payload schema, by the item's encoder."""
+    seen: list[str] = []
+    (played,) = server.play(Play(talk=_collecting(seen, 1)))
+    with (
+        httpx2.Client(verify=client_context()) as http,
+        package.Client(base_url=server.url, http_client=http) as client,
+        client.drafts.connect() as session,
+    ):
+        session.send(models.Item(name="x"))
+    report = played.report()
+    lines.extend((f"    drafts server saw {', '.join(seen)}", report))
+
+
+def _alerts(package: ModuleType, server: SocketServer, lines: list[str]) -> None:
+    """Receive a null alert and a raised one, which admit null and so are decoded as their union, not by their tag."""
+    (played,) = server.play(Play(talk=_sending("null", json.dumps({"kind": "raised"}))))
+    with (
+        httpx2.Client(verify=client_context()) as http,
+        package.Client(base_url=server.url, http_client=http) as client,
+        client.alerts.connect() as session,
+    ):
+        lines.extend(f"    alerts {_message(session.receive())}" for _ in range(2))
+    lines.append(played.report())
+
+
+def asyncapi_messages(package: ModuleType, lines: list[str]) -> None:
+    """Open each channel of several messages per direction that the package's backend can tell apart."""
+    models = _models(package)
+    server = SocketServer()
+    try:
+        _feed(package, models, server, lines)
+        if hasattr(package.Client, "chat"):
+            _chat(package, server, lines)
+        if hasattr(package.Client, "orders"):
+            _orders(package, models, server, lines)
+        _drafts(package, models, server, lines)
+        if hasattr(package.Client, "alerts"):
+            _alerts(package, server, lines)
+    finally:
+        server.stop()
+
+
+def asyncapi_optional_tags(package: ModuleType, lines: list[str]) -> None:
+    """Receive the messages of a channel told apart by an optional constant property, and one without it."""
+    server = SocketServer()
+    sent = ({"kind": "join", "who": "ann"}, {"kind": "leave", "who": "bob"}, {"who": "cid"})
+    try:
+        (played,) = server.play(Play(talk=_sending(*map(json.dumps, sent))))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.room.connect() as session,
+        ):
+            lines.extend(f"    room {_message(session.receive())}" for _ in range(2))
+            record(lines, "room without a kind", session.receive)
+        lines.append(played.report())
+    finally:
+        server.stop()
+
+
+def asyncapi_union_sends(package: ModuleType, lines: list[str]) -> None:
+    """Send items and a note on a channel whose JSON messages the Pydantic models encode as one union."""
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 3)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.batch.connect() as session,
+        ):
+            session.send(models.Item(name="a"))
+            session.send([models.Item(name="b")])
+            session.send("note")
+        report = played.report()
+        lines.extend((f"    batch server saw {', '.join(seen)}", report))
+    finally:
+        server.stop()
+
+
+def asyncapi_subclass_sends(package: ModuleType, lines: list[str]) -> None:
+    """Send an edit, a revision and a value of a subclass of the revision, each with its nearest class's encoder."""
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    mine = type("Mine", (models.Revision,), {})
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 3)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.edits.connect() as session,
+        ):
+            session.send(models.Edit(text="a"))
+            session.send(models.Revision(text="b", number=2))
+            session.send(mine(text="c", number=3))
+        report = played.report()
+        lines.extend((f"    edits server saw {', '.join(seen)}", report))
+    finally:
+        server.stop()
+
+
+def asyncapi_enum_tag_sends(package: ModuleType, lines: list[str]) -> None:
+    """Send dicts on the feed whose tag is a plain enum member, each told apart by the member's value."""
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 2)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.feed.connect() as session,
+        ):
+            session.send({"op": "subscribe", "channels": ["a"]})
+            session.send({"op": models.Op.unsubscribe, "channels": ["b"]})
+        report = played.report()
+        lines.extend((f"    feed server saw {', '.join(seen)}", report))
+    finally:
+        server.stop()
+
+
+def asyncapi_connections(package: ModuleType, lines: list[str]) -> None:
+    """Send and receive the messages of three channels at one address, and the replies of two, on one connection.
+
+    The server keeps the messages it got on the one handshake, and answers with a quote, the reply to the subscription
+    that the quotes channel carries and the reply to the order that the receipts channel carries.
+    """
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    replies = (
+        json.dumps({"kind": "quote", "symbol": "XBT", "bid": 1.5}),
+        json.dumps({"kind": "ack", "symbols": 1}),
+        json.dumps({"kind": "receipt", "id": "r-1"}),
+    )
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 2, *replies)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.v1_desk_region.connect(region="eu") as session,
+        ):
+            session.send(_value(models, "SubscribePayload", kind="subscribe", symbols=["XBT"]))
+            session.send(_value(models, "OrderPayload", kind="order", symbol="XBT", size=2.0))
+            lines.extend(f"    desk {_message(session.receive())}" for _ in replies)
+        report = played.report()
+        lines.extend((f"    desk server saw {', '.join(seen)}", report))
+    finally:
+        server.stop()
+
+
+def _handshakes(seen: list[str], *replies: str) -> Callable[[ServerConnection], None]:
+    """Return a talk that keeps the path, query, credentials and headers of the handshake it got, then sends replies."""
+
+    def talk(connection: ServerConnection) -> None:
+        request: Request = cast("Request", connection.request)
+        headers = ", ".join(
+            f"{name}: {request.headers[name]}" for name in _HANDSHAKE_HEADERS if name in request.headers
+        )
+        seen.append(f"    server got {request.path} [{headers}]")
+        for reply in replies:
+            connection.send(reply)
+
+    return talk
+
+
+_HANDSHAKE_HEADERS = ("authorization", "cookie", "sec-websocket-protocol", "x-api-key", "x-region", "x-trace")
+_QUOTE = json.dumps({"symbol": "XBT", "bid": 1.5})
+_ORDER = json.dumps({"id": "o-1", "size": 2.0})
+
+
+def asyncapi_handshake(package: ModuleType, lines: list[str]) -> None:
+    """Send each channel's query and header parameters and the credentials its security asks for on its handshake.
+
+    The server keeps what each handshake carried: the query string, the API key in the query, a header or a cookie,
+    the bearer token, a header parameter that takes the place of the API key or the bearer token whose position it
+    fills, a query parameter's default and the subprotocols a header's enum offers, of which the server selects one.
+    A handshake that no given credential satisfies is refused before it is sent.
+    """
+    models = _models(package)
+    seen: list[str] = []
+    server = SocketServer()
+    try:
+        replies = (_QUOTE, _QUOTE, _ORDER, _ORDER, _QUOTE, _QUOTE)
+        server.play(*(Play(talk=_handshakes(seen, reply)) for reply in replies))
+        server.play(Play(subprotocol="quotes.bin.v1", talk=_handshakes(seen, _QUOTE)))
+        with httpx2.Client(verify=client_context()) as http:
+            with (
+                package.Client(token="t-1", base_url=server.url, http_client=http) as client,
+                client.quotes.connect(symbol="XBT", depth=5, fields=["bid", "ask"], X_Trace="trace-1") as session,
+            ):
+                lines.append(f"    quotes {_message(session.receive())}")
+            with (
+                package.Client(bearer="b-1", base_url=server.url, http_client=http) as client,
+                client.quotes.connect(symbol="ETH", depth=1, snapshot=True) as session,
+            ):
+                lines.append(f"    quotes {_message(session.receive())}")
+            with (
+                package.Client(token="t-2", session="s-2", key="k-2", base_url=server.url, http_client=http) as client,
+                client.orders.connect() as session,
+            ):
+                session.send(_value(models, "Order", id="o-1", size=2.0))
+                lines.append(f"    orders {_message(session.receive())}")
+            with (
+                package.Client(token="t-3", session="s-3", base_url=server.url, http_client=http) as client,
+                client.orders.connect(X_Api_Key="from-parameter") as session,
+            ):
+                lines.append(f"    orders {_message(session.receive())}")
+            with package.Client(token="t-4", key="k-4", base_url=server.url, http_client=http) as client:
+                record(lines, "orders without a session", client.orders.connect)
+            for credentials, arguments in (
+                ({"bearer": "b-5"}, {}),
+                ({}, {"Authorization": "Bearer from-parameter", "limit": 3}),
+                ({"bearer": "b-6"}, {"Authorization": "Bearer from-parameter"}),
+            ):
+                with (
+                    package.Client(**credentials, base_url=server.url, http_client=http) as client,
+                    client.sessions.connect(**arguments) as session,
+                ):
+                    lines.append(f"    sessions {session.subprotocol} {_message(session.receive())}")
+            with package.Client(base_url=server.url, http_client=http) as client:
+                record(lines, "sessions without a bearer token", client.sessions.connect)
+        server.play(Play(talk=_handshakes(seen, _QUOTE)))
+        run(lambda: _async_partners(package, server.url, lines))
+        lines.extend(seen)
+    finally:
+        server.stop()
+
+
+def asyncapi_handshake_models(package: ModuleType, lines: list[str]) -> None:
+    """Send the query and header parameters the models give a binding's objects, and offer the subprotocols they fix.
+
+    The rooms query is an `allOf` of a referenced object and its own properties, and its headers object carries
+    keywords and other properties beside its properties, which give no parameter; the subprotocols are the constants
+    of a `oneOf`, of which the server selects one. The feeds query is a mapping, which gives no parameter. The lobby
+    subprotocols are the constants of the `oneOf` a referenced schema, a root model, holds.
+    """
+    server = SocketServer()
+    try:
+        rooms, feeds, lobby = server.play(
+            Play(subprotocol="chat.v2", talk=_sending()),
+            Play(talk=_sending()),
+            Play(subprotocol="lobby.v1", talk=_sending()),
+        )
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+        ):
+            with client.rooms.connect(room="lobby", limit=5, X_Trace="trace-1") as session:
+                session.send("hello")
+                lines.append(f"    rooms {session.subprotocol}")
+            lines.append(rooms.report())
+            with client.feeds.connect() as session:
+                session.send("item")
+            lines.append(feeds.report())
+            with client.lobby.connect() as session:
+                session.send("hi")
+                lines.append(f"    lobby {session.subprotocol}")
+            lines.append(lobby.report())
+    finally:
+        server.stop()
+
+
+async def _async_partners(package: ModuleType, url: str, lines: list[str]) -> None:
+    """Open the partners channel with an OAuth access token through the asyncio client."""
+    async with (
+        httpx2.AsyncClient(verify=client_context()) as http,
+        package.AsyncClient(oauth="o-1", base_url=url, http_client=http) as client,
+        client.partners.connect() as session,
+    ):
+        message: Any = await session.receive()
+        lines.append(f"    async partners {type(message.data).__name__}{_data(message.data)!r}")

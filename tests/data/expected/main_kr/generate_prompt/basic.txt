@@ -21,15 +21,23 @@
 - `--no-ignore-ref-siblings-by-schema-version`
 - `--no-read-dynamic-anchors-in-document-order`
 - `--no-read-escaped-ref-pointers`
+- `--no-read-ids-with-empty-fragment`
 - `--no-read-input-model-dataclass-fields-by-alias`
+- `--no-read-ref-siblings-in-closed-allof-members`
 - `--no-read-schema-version-per-document`
+- `--no-read-single-allof-refs-in-their-documents`
+- `--no-read-yaml-1-1-numbers-as-text`
 - `--no-reuse-every-reached-input-model-type`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
 - `--read-dynamic-anchors-in-document-order`: Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name ...
 - `--read-escaped-ref-pointers`: Read the escapes of a `$ref` JSON pointer as the characters they encode.
+- `--read-ids-with-empty-fragment`: Read an `$id` that ends with an empty fragment as the document that declares...
 - `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
+- `--read-ref-siblings-in-closed-allof-members`: Read every keyword beside a `$ref` that a closed allOf member e...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
+- `--read-single-allof-refs-in-their-documents`: Read the target of an allOf of one `$ref` in the document that ...
+- `--read-yaml-1-1-numbers-as-text`: Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...
 - `--reuse-every-reached-input-model-type`: Reach the types to reuse through every model kind and write no copy ...
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
@@ -55,9 +63,14 @@
 - `--no-keep-enum-member-values`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
+- `--no-read-format-as-annotation`
+- `--no-read-inherited-property-schemas-in-mro-order`
+- `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
+- `--no-read-uuid6-uuid7-uuid8-formats`
 - `--no-type-overrides-replace-whole-type`
 - `--no-use-annotated`
+- `--no-use-bytes-for-content-media-type`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
 - `--no-use-decimal-in-field-forms`
 - `--no-use-encoded-str-for-constrained-base64`
@@ -68,6 +81,7 @@
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
 - `--no-use-standard-collections`: Use typing.Dict/List instead of built-in dict/list for container types.
 - `--no-use-standard-primitive-types`
+- `--no-use-strict-str-for-base64`
 - `--no-use-tuple-for-closed-arrays`
 - `--no-use-tuple-for-fixed-items`
 - `--no-use-typed-map-values-beside-other-types`
@@ -75,17 +89,26 @@
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--no-use-unique-items-as-set`
 - `--no-use-unique-items-as-set-by-value`
-- `--no-use-x-python-type-unions`
+- `--no-use-validate-default-for-root-model-type-aliases`
+- `--no-use-x-python-import-for-every-ref`
+- `--no-use-x-python-type-as-written`
+- `--open-enums`: Accept the values an enum does not list.
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
+- `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
+- `--read-inherited-property-schemas-in-mro-order`: Give a required inherited property the schema its allOf pare...
+- `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
+- `--read-uuid6-uuid7-uuid8-formats`: Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.
 - `--type-overrides-replace-whole-type`: Make every `--type-overrides` value of a field replace the field's whol...
+- `--untyped-value-type`: Write each value the schema leaves untyped as one type instead of `Any`.
 - `--use-annotated`: Use typing.Annotated for Field() with constraints.
+- `--use-bytes-for-content-media-type`: Type an OpenAPI string with a `contentMediaType` and no `contentEncoding...
 - `--use-closed-typed-dict`: Generate TypedDict with PEP 728 closed/extra_items (default: enabled).
 - `--use-decimal-for-multiple-of`: Generate Decimal types for fields with multipleOf constraint.
 - `--use-decimal-in-field-forms`: Write `Decimal` for a number with `multipleOf` in the field forms too.
@@ -101,6 +124,7 @@
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
+- `--use-strict-str-for-base64`: Make a `format: byte` string strict under `--strict-types str`.
 - `--use-total-false-for-typed-dict`: Generate TypedDict declarations with `total=False`.
 - `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow.
 - `--use-tuple-for-fixed-items`: Generate tuple types for arrays with items array syntax.
@@ -112,7 +136,9 @@
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 - `--use-unique-items-as-set-by-value`: Write a uniqueItems set only where its final items hash by value.
-- `--use-x-python-type-unions`: Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
+- `--use-validate-default-for-root-model-type-aliases`: Validate the default of a field that names a root model ...
+- `--use-x-python-import-for-every-ref`: Type every reference to a schema with `x-python-import` by the class it...
+- `--use-x-python-type-as-written`: Write a field's `x-python-type` as given: unions of every spelling and conta...
 
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
@@ -127,18 +153,22 @@
 - `--field-extra-keys-without-x-prefix`: Include schema extension keys in Field() without requiring 'x-' prefix.
 - `--field-include-all-keys`: Include all schema keys in Field() json_schema_extra.
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
+- `--infer-union-discriminators`: Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--name-allof-union-members-after-branches`: Name the classes an allOf gives the branches of a oneOf or anyOf ...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
+- `--no-infer-union-discriminators`
 - `--no-merge-shared-variant-tags`
 - `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
 - `--no-read-length-keywords-by-type`
 - `--no-read-msgspec-union-bounds-exactly`
+- `--no-read-object-keywords-by-type`
 - `--no-snake-case-field`
+- `--no-use-bounds-for-float-const`
 - `--no-use-field-description`
 - `--no-use-field-description-example`
 - `--no-use-one-model-per-ref-site`
@@ -146,16 +176,19 @@
 - `--no-use-single-line-docstring`
 - `--no-use-site-models-for-constrained-refs`
 - `--no-use-title-as-name`
+- `--no-use-unmapped-variant-tag-values`
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
 - `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
+- `--read-object-keywords-by-type`: Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 - `--set-default-enum-member`: Use the legacy flag for deserializing enum defaults.
 - `--snake-case-field`: Convert field names to snake_case format.
 - `--special-field-name-prefix`: Prefix to add to special field names (like reserved keywords).
 - `--use-attribute-docstrings`: Generate field descriptions as attribute docstrings instead of Field descriptions.
+- `--use-bounds-for-float-const`: Type a finite float `const` as a float whose minimum and maximum both equal it.
 - `--use-enum-values-in-discriminator`: Use enum values in discriminator mappings for union types.
 - `--use-field-description`: Include schema descriptions as Field docstrings.
 - `--use-field-description-example`: Add field examples to docstrings.
@@ -167,18 +200,21 @@
 - `--use-site-models-for-constrained-refs`: Give an allOf of `$ref` members whose other parts add assertions its...
 - `--use-tag-as-union-variant-name`: Name inline oneOf/anyOf branch models after their tag: what `--infer-union-...
 - `--use-title-as-name`: Use schema title as the generated class name.
+- `--use-unmapped-variant-tag-values`: Give a mapped variant the unmapped values of its tag property.
 
 ### Model Customization
 - `--alias-generator`: Use a Pydantic v2 alias generator in model_config.
 - `--allow-extra-fields`: Allow extra fields in generated Pydantic models (extra='allow').
 - `--allow-leading-underscore-class-name`: Allow an explicitly specified root class name to start with an unders...
 - `--allow-population-by-field-name`: Allow Pydantic model population by field name (not just alias).
+- `--apply-field-options-to-every-field`: Give the fields that leave out some field options the ones others take.
 - `--base-class`: Specify a custom base class for generated models.
 - `--base-class-map`: Specify different base classes for specific models via JSON mapping.
 - `--class-name`: Override the auto-generated class name with a custom name.
 - `--class-name-affix-scope`: Control which classes receive the prefix/suffix.
 - `--class-name-prefix`: Add a prefix to all generated class names.
 - `--class-name-suffix`: Add a suffix to all generated class names.
+- `--collapse-constrained-root-models-as-annotated`: Inline a constrained string root model into a union or a co...
 - `--collapse-reuse-models`: Collapse duplicate models by replacing references instead of inheritance.
 - `--collapse-root-models`: Inline root model definitions instead of creating separate wrapper classes.
 - `--collapse-root-models-name-strategy`: Select which name to keep when collapsing root models with object refe...
@@ -189,13 +225,17 @@
 - `--force-optional`: Force all fields to be Optional regardless of required status.
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
 - `--keep-constrained-root-models-in-every-container`: Keep constrained root models named in every container of ...
+- `--keep-defaults-of-inherited-required-fields`: Keep under `--use-default` the default of a property only an i...
 - `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
 - `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
+- `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
+- `--keep-shared-members-on-collapsed-root-models`: Keep each member of a root type that collapse inlined at sev...
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
+- `--merge-message-trait-headers`: Give an AsyncAPI message the headers of all its traits, merged in order, and ...
 - `--merge-msgspec-str-like-union-members`: Write one str in place of the str-like members of a msgspec union th...
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
@@ -203,20 +243,28 @@
 - `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
+- `--no-apply-field-options-to-every-field`
+- `--no-collapse-constrained-root-models-as-annotated`
 - `--no-collapse-reuse-models`
 - `--no-collapse-root-models`
 - `--no-collapse-shared-parent-wrappers`
 - `--no-keep-constrained-root-models-in-every-container`
+- `--no-keep-defaults-of-inherited-required-fields`
 - `--no-keep-enum-literal-aliases`
 - `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
+- `--no-keep-self-referencing-array-items`
+- `--no-keep-shared-members-on-collapsed-root-models`
+- `--no-merge-message-trait-headers`
 - `--no-merge-msgspec-str-like-union-members`
 - `--no-name-converted-payloads-by-message`
+- `--no-omit-incomplete-model-defaults`
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`
 - `--no-read-nullable-beside-type-list`
+- `--no-remove-unused-models-beside-type-overrides`
 - `--no-reuse-model`
 - `--no-singularize-last-word-of-item-names`
 - `--no-strict-nullable`
@@ -228,12 +276,15 @@
 - `--no-use-msgspec-meta-for-map-keys`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
+- `--omit-incomplete-model-defaults`: Write a property whose object default lacks required fields of its model w...
 - `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
+- `--open-enum-base-class-map`: Open the Enum classes of open enums on your own base classes.
 - `--order-constructor-fields-by`: Order constructor fields by final names or by written defaults.
 - `--output-model-type`: Generate models from GraphQL with different output model types.
 - `--parent-scoped-naming`: Namespace models by their parent scope to avoid naming conflicts.
 - `--pin-aliases-with-alias-generator`: Decide a field's alias by the alias generator its model applies.
 - `--read-nullable-beside-type-list`: Write the null that `nullable: true` declares beside a `type` list into th...
+- `--remove-unused-models-beside-type-overrides`: Remove the unused models from a module that a model-level `--t...
 - `--reuse-model`: Reuse identical model definitions instead of generating duplicates.
 - `--reuse-scope`: Scope for model reuse detection (root or tree).
 - `--singularize-last-word-of-item-names`: Name the item model of an array by singularizing only the last word o...
@@ -297,20 +348,24 @@
 - `--wrap-string-literal`: Wrap long string literals across multiple lines.
 
 ### OpenAPI-only Options
+- `--dedupe-numbered-request-response-variants`: Deduplicate a Request or Response variant of a numbered model l...
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--keep-content-parameter-refs`: Type a parameter whose content media schema is a `$ref` by the model the `$re...
 - `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation m...
+- `--no-dedupe-numbered-request-response-variants`
 - `--no-dedupe-request-response-variants`
 - `--no-keep-content-parameter-refs`
 - `--no-keep-first-character-of-path-keys`
 - `--no-skip-path-extension-keys`
+- `--no-use-enum-field-as-literal-in-operations`
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
 - `--openapi-scopes`: Specify OpenAPI scopes to generate (schemas, paths, parameters).
 - `--read-only-write-only-model-type`: Generate separate request and response models for readOnly/writeOnly fields.
 - `--skip-path-extension-keys`: Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does.
+- `--use-enum-field-as-literal-in-operations`: Write an operation body or response enum as a Literal root model ...
 - `--use-operation-id-as-name`: Use OpenAPI operationId as the generated function/class name.
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names.
 - `--validation`: Enable validation constraints (deprecated, use --field-constraints).
@@ -340,15 +395,21 @@
 - `--module-split-mode`: Split generated models into separate files, one per model class.
 - `--no-allow-private-network`
 - `--no-allow-remote-refs`
+- `--no-read-implied-options-from-merged-values`
+- `--no-untrusted-input`
+- `--read-implied-options-from-merged-values`: Read the options that another option turns on from the arguments ...
 - `--recommend-options`: Recommend options for the input schema on top of the latest dated preset (experimental).
 - `--shared-module-name`: Customize the name of the shared module for deduplicated models.
 - `--strict-refs`: Treat unresolved local `$ref` JSON pointers as errors.
+- `--untrusted-input`: Treat the input as a schema from an untrusted source.
 - `--update-lock`: Create or atomically update the selected remote lock after generation (experimental).
 - `--watch`: Watch input file(s) for changes and regenerate output automatically.
 - `--watch-delay`: Set debounce delay in seconds for watch mode.
 
 ### Target Generation Options
+- `--client-asyncapi-perspective`: Read an AsyncAPI document as its server's or its client's (experimental).
 - `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
+- `--client-deep-object-brackets`: Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
 - `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
 - `--client-model-package`: Name the import path of the models the client package imports (experimental).
 - `--client-operations`: Set the client settings of single operations (experimental).
@@ -360,6 +421,7 @@
 - `--client-signature-style`: Declare the arguments of the operation methods (experimental).
 - `--generate-client`: Generate an HTTPX2 client package for the models (experimental).
 - `--generate-server`: Generate a FastAPI server package for the models (experimental).
+- `--no-client-deep-object-brackets`
 - `--no-server-include-request`
 - `--server-body-mode`: Choose how service methods receive request bodies (experimental).
 - `--server-body-modes`: Set the body mode of single operations (experimental).
@@ -478,14 +540,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         the keywords beside such a $ref overlay its target, as
                         in 0.88.0. The version is the one --read-schema-
                         version-per-document reads, else that of the document
-                        parsed.
+                        parsed. A schema converted from Avro, XML Schema or
+                        Protocol Buffers keeps the keywords its converter
+                        writes beside a $ref, such as the default of a field
+                        typed by a named type.
   --input INPUT         Input file/directory (default: stdin)
   --input-file-type {auto,openapi,asyncapi,jsonschema,mcp-tools,xmlschema,protobuf,avro,json,yaml,dict,csv,graphql}
                         Input file type (default: auto). Use 'jsonschema',
                         'openapi', 'asyncapi', 'graphql', 'mcp-tools',
                         'xmlschema', 'protobuf', or 'avro' for schema
                         definitions. Use 'json', 'yaml', or 'csv' for raw
-                        sample data to infer a schema automatically.
+                        sample data to infer a schema automatically; Genson
+                        infers it and will become optional: declare the genson
+                        extra.
   --input-model MODULE_OR_PATH:NAME
                         Python import path or file path to a Pydantic v2 model
                         or schema dict (e.g., 'mypackage.module:ClassName',
@@ -516,7 +583,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111,standard-py310-20261112,standard-py311-20261112,standard-py312-20261112,standard-py313-20261112,standard-py314-20261112,standard-py315-20261112,practical-py310-20261112,practical-py311-20261112,practical-py312-20261112,practical-py313-20261112,practical-py314-20261112,practical-py315-20261112,standard-py310-20261113,standard-py311-20261113,standard-py312-20261113,standard-py313-20261113,standard-py314-20261113,standard-py315-20261113,practical-py310-20261113,practical-py311-20261113,practical-py312-20261113,practical-py313-20261113,practical-py314-20261113,practical-py315-20261113,standard-py310-20261118,standard-py311-20261118,standard-py312-20261118,standard-py313-20261118,standard-py314-20261118,standard-py315-20261118,practical-py310-20261118,practical-py311-20261118,practical-py312-20261118,practical-py313-20261118,practical-py314-20261118,practical-py315-20261118,standard-py310-20261120,standard-py311-20261120,standard-py312-20261120,standard-py313-20261120,standard-py314-20261120,standard-py315-20261120,practical-py310-20261120,practical-py311-20261120,practical-py312-20261120,practical-py313-20261120,practical-py314-20261120,practical-py315-20261120}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
@@ -539,6 +606,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         definitions a/b and Foo Bar; without it such a
                         reference gets a copy of its target named after the
                         escaped text (A1b, Foo20Bar), as in 0.89.0.
+  --read-ids-with-empty-fragment, --no-read-ids-with-empty-fragment
+                        Read an $id that ends with an empty fragment, such as
+                        https://example.com/item.json#, as the URI without it,
+                        which names the same resource, so a $ref to
+                        https://example.com/item.json# or
+                        https://example.com/item.json#/definitions/Tag in the
+                        document that declares it resolves inside that
+                        document; without it such a $ref loads the document at
+                        that URL, from the network, as in 0.96.0.
   --read-input-model-dataclass-fields-by-alias, --no-read-input-model-dataclass-fields-by-alias
                         With --input-model, read the fields of a Pydantic
                         dataclass by their aliases, as those of a model, so a
@@ -546,6 +622,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         frozenset[str], ...) like one without; without it an
                         aliased field of a Pydantic dataclass takes the type
                         its JSON Schema spells (list[int]), as in 0.89.0
+  --read-ref-siblings-in-closed-allof-members, --no-read-ref-siblings-in-closed-allof-members
+                        Read every keyword beside a $ref of the allOf members
+                        an unevaluatedProperties: false allOf member evaluates
+                        where the schema version applies them, as the schema
+                        validators read them, so a dependentSchemas or
+                        $dynamicRef beside such a $ref, which may evaluate
+                        more properties, keeps the member from closing the
+                        model and a payload with those properties validates;
+                        without it they are read only where the $ref member
+                        holds an applicator, if, patternProperties,
+                        additionalProperties or unevaluatedProperties, and the
+                        model forbids those properties, as in 0.97.0.
   --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a
@@ -564,6 +652,29 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         gives every document its version; the schema
                         validators then read an OpenAPI or AsyncAPI document
                         by it only with the option, else as draft 7.
+  --read-single-allof-refs-in-their-documents, --no-read-single-allof-refs-in-their-documents
+                        Read the target of the one $ref of an allOf as every
+                        other $ref is read: in the document that holds the
+                        schema, a plain-name anchor such as #code included.
+                        The target decides whether the schema is typed as the
+                        referenced enum, as a root model over it, or refused,
+                        so a schema of a referenced file takes the form the
+                        same schemas take in one file; without it the target
+                        is read at the same pointer of the input document,
+                        where a plain-name anchor names nothing, so such a
+                        schema can be written as a copy of the enum or
+                        refused, as in 0.96.0.
+  --read-yaml-1-1-numbers-as-text, --no-read-yaml-1-1-numbers-as-text
+                        Read an unquoted YAML value with _ or : that YAML 1.1
+                        reads as a number, such as 16:9 (969 in base 60),
+                        18_24 or 1_000, as its text, as YAML 1.2, which
+                        OpenAPI names, and the ryaml reader read it, also in
+                        enum, default, const, examples, extensions and YAML
+                        data input. Without it such a value is the number YAML
+                        1.1 reads, as in 0.96.0, except where a string is
+                        required in a document that the number makes invalid
+                        (a pattern, a format, a description, a component or
+                        property name), where it is its text.
   --reuse-every-reached-input-model-type, --no-reuse-every-reached-input-model-type
                         With --input-model-ref-strategy reuse-all or reuse-
                         foreign, reach the types to reuse through the fields
@@ -588,6 +699,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         warn on features outside declared/detected version.
   --strict-refs         Treat unresolved local $ref JSON pointers as errors
                         instead of generating fallback Any models.
+  --untrusted-input, --no-untrusted-input
+                        Treat the input as a schema from an untrusted source
+                        (experimental): read no file or URL but the input, so
+                        every $ref and XML Schema include must name a location
+                        in the input; refuse the schema keywords whose values
+                        the generated module imports or evaluates as Python
+                        code (x-python-type, x-python-import, customTypePath,
+                        customBasePath), Protocol Buffers input, --validation
+                        and a schema nested more than 100 levels deep or
+                        holding more than 2,000,000 objects and arrays.
+                        Implies --no-allow-remote-refs. Pass --no-untrusted-
+                        input to override a configuration file that enables
+                        it.
   --update-lock         Create or atomically update the selected remote lock
                         after generation (experimental).
   --url URL             Input file URL. `--input` is ignored when `--url` is
@@ -720,6 +844,30 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         such as NonNegativeInt, and the length and number
                         constraints a const or enum Literal meets by its
                         values
+  --open-enum-base-class-map OPEN_ENUM_BASE_CLASS_MAP
+                        Base classes that open the Enum classes of open enums
+                        (--open-enums), by the class the enum is written on
+                        (JSON or JSON file path). Keys: Enum, StrEnum,
+                        IntEnum. Example: '{"StrEnum": "mypkg.OpenStrEnum",
+                        "IntEnum": "mypkg.OpenIntEnum"}'. Each is your member-
+                        less subclass of that class whose _missing_ keeps a
+                        value it does not list; a value type before Enum
+                        (--use-subclass-enum) stays: (str, mypkg.OpenEnum). An
+                        open enum whose class has no entry, or that is written
+                        as a Literal, is written as Literal[...] joined with
+                        its type
+  --open-enums {none,extensible,all}
+                        Accept values an enum does not list. extensible: the
+                        enums whose schema marks them open (x-extensible-enum:
+                        true, or x-ms-enum with modelAsString: true); all:
+                        every enum of two or more values, except one whose
+                        schema closes it (x-extensible-enum: false,
+                        modelAsString: false); none: no enum, as without the
+                        option. An open enum is written as its Enum class on
+                        the base --open-enum-base-class-map names for that
+                        class, else as Literal[...] joined with its type
+                        (Literal['red', 'green'] | str), whatever the options
+                        say about Literals
   --read-allof-parents-in-mro-order, --no-read-allof-parents-in-mro-order
                         Read the allOf parents of every inherited schema in
                         the order of the class bases (the MRO), so a property
@@ -739,6 +887,41 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         value-enum-as-const an `enum` that admits its `const`
                         is read as that `const` instead of an Enum, except one
                         with `nullable: true` and a value other than null
+  --read-format-as-annotation, --no-read-format-as-annotation
+                        Read the format of a schema as an annotation, as JSON
+                        Schema does: a string, integer or number schema takes
+                        the type its type keyword gives (str, int, float),
+                        with its own length, pattern and bound keywords, so
+                        every value the schema accepts validates, a string or
+                        integer dumps as written (a number as the float it
+                        parses to, as without a format), and an unknown format
+                        gives no warning; a format that a --type-mappings
+                        entry names for the schema's type keeps that mapping,
+                        and format: binary stays bytes. Without it each known
+                        format selects a type (EmailStr, AwareDatetime, UUID,
+                        Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+  --read-inherited-property-schemas-in-mro-order, --no-read-inherited-property-schemas-in-mro-order
+                        With --intersect-combined-schema-keywords, give a
+                        property that a model only makes required the schema
+                        its allOf parents declare, read in the order of the
+                        class bases from the allOf members the model's own
+                        fields are read from (an alias member followed to the
+                        schema it names, the keywords beside a $ref member
+                        read with it), so a model written before its parents
+                        takes the field it takes when written after them;
+                        without it the declaration is looked up in the allOf
+                        members as written, and under --intersect-combined-
+                        schema-keywords such a field can lose its description
+                        or its constraints or become Any, as in 0.96.0
+  --read-kubernetes-extensions, --no-read-kubernetes-extensions
+                        Read the Kubernetes schema extensions as the keywords
+                        they stand for: x-kubernetes-int-or-string (and the
+                        int-or-string format) as an integer or a string,
+                        x-kubernetes-preserve-unknown-fields beside properties
+                        as additionalProperties true, and an x-kubernetes-
+                        group-version-kind as the const and default of the
+                        apiVersion and kind it names; without it they are
+                        ignored, as in 0.96.0
   --read-length-keywords-by-type, --no-read-length-keywords-by-type
                         Read minLength, maxLength and pattern for strings only
                         and minItems, maxItems and uniqueItems for arrays
@@ -756,11 +939,32 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         as the float it is written as, so the int member can
                         keep a bound that rejects an integer the number member
                         accepts, as in 0.88.0
+  --read-object-keywords-by-type, --no-read-object-keywords-by-type
+                        Read the keywords that constrain objects only
+                        (properties, patternProperties, additionalProperties,
+                        propertyNames, unevaluatedProperties, required,
+                        minProperties, maxProperties) beside an `anyOf` or
+                        `oneOf` as JSON Schema does: a branch that admits no
+                        object, such as a string `type`, a `const`, an `enum`
+                        or an `allOf` of such parts, does not take them, so it
+                        stays that type instead of becoming a map or a model,
+                        and under --generate-schema-validators a site with
+                        such a branch is a union rather than one object model;
+                        without it every branch takes them, as in 0.93.0
   --read-unevaluated-properties, --no-read-unevaluated-properties
                         Read a schema-valued unevaluatedProperties as
                         additionalProperties where no applicator evaluates the
                         object in place, so it types the extra keys of a model
                         and makes an object without properties a map
+  --read-uuid6-uuid7-uuid8-formats, --no-read-uuid6-uuid7-uuid8-formats
+                        Read the string formats uuid6, uuid7 and uuid8 (RFC
+                        9562) as the UUID versions they name, as format uuid4
+                        is read: Pydantic output types them as UUID6, UUID7
+                        and UUID8 (uuid.UUID for a --target-pydantic-version
+                        before 2.11, which lacks them), and the other outputs
+                        as uuid.UUID under --use-standard-primitive-types,
+                        else str; without it each is an unknown format, which
+                        gives a warning and str, as in 0.99.0
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.
@@ -790,10 +994,39 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         a warning otherwise; without it a class path keeps the
                         dict of a map around the class and every override
                         keeps those counts whatever its type, as in 0.89.0
+  --untyped-value-type TYPE
+                        Write each value the schema leaves untyped ({}, true,
+                        a schema whose keywords give it no type, the values of
+                        an object without properties and the items of an array
+                        without items) as this type instead of Any:
+                        pydantic.JsonValue (Pydantic 2.5 or later), object,
+                        Any or the dotted import path of a type of your own,
+                        which the models import; the structure is as without
+                        the option. --type-overrides, x-python-type and
+                        x-python-import keep their types, and msgspec.Struct
+                        output keeps Any, which msgspec decodes into JSON
+                        values. Without it untyped values are Any, and object
+                        in containers under --use-object-type, as in 0.96.0
   --use-annotated, --no-use-annotated
                         Use typing.Annotated for Field(). Also, `--field-
                         constraints` option will be enabled. Will become
                         default for Pydantic v2 in a future version.
+  --use-bounds-for-float-const, --no-use-bounds-for-float-const
+                        Type a finite float const, which no Literal holds, as
+                        a float whose minimum and maximum both equal it,
+                        written as the output writes number bounds (confloat,
+                        Field() or Annotated for Pydantic, Meta for msgspec),
+                        so other numbers are rejected; output that checks no
+                        bounds, such as dataclasses and TypedDict, keeps float
+                        with a warning; without it the const is typed float,
+                        which accepts any number, as in 0.93.0
+  --use-bytes-for-content-media-type, --no-use-bytes-for-content-media-type
+                        Type a string of an OpenAPI document that has a
+                        contentMediaType and no contentEncoding as bytes, as a
+                        format: binary string is: OpenAPI 3.1 writes raw
+                        binary content so, and the generated clients and
+                        servers already send and receive it as a file; without
+                        it the string is str, as in 0.90.0
   --use-closed-typed-dict, --no-use-closed-typed-dict
                         Generate TypedDict with PEP 728
                         closed=True/extra_items for additionalProperties
@@ -894,6 +1127,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-standard-collections, --no-use-standard-collections
                         Use standard collections for type hinting (list,
                         dict). Default: enabled
+  --use-strict-str-for-base64, --no-use-strict-str-for-base64
+                        Under --strict-types str, write a format: byte string
+                        as the StrictStr that EncodedStr decodes
+                        (Annotated[StrictStr,
+                        EncodedStr(encoder=Base64Encoder)]), so Pydantic 2.10
+                        or later refuses bytes for it as for any other strict
+                        string; without it the string is Base64Str, or the str
+                        of --use-encoded-str-for-constrained-base64, which
+                        accept bytes, as in 0.90.0 (Pydantic v2 only)
   --use-subclass-enum, --no-use-subclass-enum
                         Define generic Enum class as subclass with field type
                         when enum has type (int, float, bytes, str)
@@ -948,15 +1190,59 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         sets are decided before root models collapse, set item
                         models hash by identity and such models merge, as in
                         0.89.0
-  --use-x-python-type-unions, --no-use-x-python-type-unions
-                        Type a field by its x-python-type when that is a union
+  --use-unmapped-variant-tag-values, --no-use-unmapped-variant-tag-values
+                        Give a variant of a discriminated union that a mapping
+                        names, and whose tag property admits several values
+                        (an enum or a Literal), also the values no mapping key
+                        and no other variant claim, beside its mapping keys,
+                        so the union decodes the documents of the variant that
+                        carry them (a value another variant also admits stays
+                        refused); without it the variant takes only its
+                        mapping keys and the union refuses the other values
+                        (as in 0.97.0). A msgspec Struct keeps its one tag.
+  --use-validate-default-for-root-model-type-aliases, --no-use-validate-default-for-root-model-type-aliases
+                        Under --use-root-model-type-alias, write the default
+                        of a field whose type names a root model written as an
+                        alias (`Tags = RootModel[list[str]]`) with
+                        validate_default=True, as for a root model class, so
+                        Pydantic validates it into the root model; without it
+                        the default stays the raw value, such as a list
+                        instead of a `Tags`, as in 0.97.0 (Pydantic v2 only)
+  --use-x-python-import-for-every-ref, --no-use-x-python-import-for-every-ref
+                        Type every reference to a schema with x-python-import
+                        by the class it imports, as a $ref to it at a field
+                        is: also an allOf of it beside keywords that add no
+                        field where a JSON pointer into another document or a
+                        whole-document $ref names it, and under --read-only-
+                        write-only-model-type request-response a model does
+                        not split for the readOnly or writeOnly properties of
+                        such a schema, nor for those its allOf bases reach
+                        through one; without it such a reference keeps the
+                        model of its schema and those models split, as in
+                        0.96.0
+  --use-x-python-type-as-written, --no-use-x-python-type-as-written
+                        Write a field's x-python-type as given: a union
                         spelled Optional[...] or Union[...], such as
-                        Optional[Literal['a', 'b']], as one spelled X | Y
-                        already is; without it such a union is ignored where
-                        the schema declares one type, and the field takes the
-                        schema's type, as in 0.89.0
+                        Optional[Literal['a', 'b']], types the field as one
+                        spelled X | Y already does, and a container class
+                        compatible with the schema, such as tuple,
+                        MutableSequence or MutableMapping, is written around
+                        the schema's item, key and value types; without it
+                        such a union is ignored where the schema declares one
+                        type, and the field takes the schema's type, and such
+                        a container is written as list, Sequence, set,
+                        frozenset or Mapping, as in 0.90.0
 
 [36;1mField customization[0m:
+  --apply-field-options-to-every-field, --no-apply-field-options-to-every-field
+                        Apply the field options to every kind of field: a
+                        GraphQL field, a property whose schema is `true` or
+                        `false`, a required name without a property and the
+                        tag field a discriminator appends take the field
+                        options the other fields take, such as --use-default-
+                        kwarg, --use-annotated and --use-default-factory-for-
+                        optional-nested-models; without it they leave them
+                        out, as in 0.90.0
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
   --capitalise-numbered-enum-members, --no-capitalise-numbered-enum-members, --capitalize-numbered-enum-members, --no-capitalize-numbered-enum-members
@@ -981,6 +1267,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         type': rename type class with suffix to preserve field
                         name.
   --force-optional      Force optional for required fields
+  --keep-defaults-of-inherited-required-fields, --no-keep-defaults-of-inherited-required-fields
+                        With --use-default, keep the default a schema gives a
+                        property that only a schema it inherits from (allOf)
+                        lists as required, as --use-default keeps that of a
+                        property the schema lists itself (`a: str = 'x'`);
+                        without it the field is written without its default,
+                        as in 0.90.0
   --keep-field-defaults-off-branch-roots, --no-keep-field-defaults-off-branch-roots
                         Leave the default of a property off the root models
                         extracted from the branches of its `anyOf` or `oneOf`,
@@ -1005,6 +1298,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --no-alias            Do not add a field alias. E.g., if --snake-case-field
                         is used along with a base class, which has an
                         alias_generator
+  --omit-incomplete-model-defaults, --no-omit-incomplete-model-defaults
+                        Write a property whose object default lacks required
+                        fields of its model (`default: {}`) without that
+                        default (`spec: PodSpec | None = None`), so input that
+                        leaves the property out is valid; without it the
+                        default is written and validated, which rejects such
+                        input, as in 0.90.0
   --omit-redundant-reference-null, --no-omit-redundant-reference-null
                         Do not write None again where a field, item or member
                         references a model that holds null itself (a root
@@ -1120,6 +1420,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Suffix to add to generated class names (e.g., 'Schema'
                         produces 'UserSchema'). Does not apply to root model
                         when --class-name is specified.
+  --collapse-constrained-root-models-as-annotated, --no-collapse-constrained-root-models-as-annotated
+                        Under --collapse-root-models with --use-annotated,
+                        inline a root model of a string with constraints into
+                        the union, list, dict or other container of its holder
+                        as `Annotated[str, Field(...)]`, which keeps the
+                        constraints on that member; without it such a root
+                        model stays named there, as in 0.90.0
   --collapse-reuse-models, --no-collapse-reuse-models
                         When used with --reuse-model, collapse duplicate
                         models by replacing references instead of creating
@@ -1171,6 +1478,26 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         extra fields.
   --frozen-dataclasses  Generate frozen dataclasses (dataclass(frozen=True)).
                         Only applies to dataclass output.
+  --infer-union-discriminators, --no-infer-union-discriminators
+                        Write a oneOf or anyOf that declares no discriminator
+                        as a discriminated union (Pydantic
+                        Field(discriminator=...), msgspec tagged structs) when
+                        every branch that is not null requires one property
+                        holding one string or integer value (a const or a one-
+                        value enum, also through allOf members and local
+                        $refs), with no value shared; in Pydantic output a
+                        union with a discriminator keyword keeps it. Valid
+                        payloads parse the same, except that a tag typed as a
+                        one-value enum class becomes its Literal value; with
+                        --use-one-literal-as-default a payload without the
+                        tag, which the schema requires, is rejected. An
+                        invalid payload reports the errors of the branch its
+                        tag names, or one tag error. Not applied to
+                        dataclasses.dataclass and typing.TypedDict output.
+                        Without it these unions are smart unions in Pydantic
+                        output, and msgspec output tags only the unions whose
+                        tags are written on the branches themselves, as in
+                        0.96.0
   --infer-union-variant-names
                         Name inline oneOf/anyOf branch models after the value
                         of their tag field (Pet + type: "cat" -> PetCat)
@@ -1204,8 +1531,34 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         `nullable: true` root: `list[str] | None`), as the
                         root model admits it; without it the inlined type
                         rejects null, as in 0.89.0
+  --keep-self-referencing-array-items, --no-keep-self-referencing-array-items
+                        Keep the items of an array whose items name the array
+                        itself (`Node = array of Node | Leaf`:
+                        `RootModel[list[Node | Leaf]]`), and serialize the
+                        root of a type list that lists such an array as any
+                        subclass under --use-serialize-as-any; msgspec output,
+                        which cannot decode such a type alias, keeps the bare
+                        `list`; without it the array is written as a bare
+                        `list`, as in 0.90.0
+  --keep-shared-members-on-collapsed-root-models, --no-keep-shared-members-on-collapsed-root-models
+                        Under --collapse-root-models, keep each member of a
+                        root type that collapse inlined at several sites at
+                        every site when a root model that member names is
+                        collapsed later, as a recursive union reaches its
+                        plain member (`dict[str, Union["Entry", str]]`);
+                        without it those sites write the union without that
+                        member, or `Any` where no member is left, as in 0.90.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
+  --merge-message-trait-headers, --no-merge-message-trait-headers
+                        AsyncAPI only: give a message the headers of all its
+                        traits, merged in order as AsyncAPI 2 and 3 apply
+                        traits (a JSON Merge Patch each, a trait that is a
+                        $ref read as its target), and then its own headers,
+                        which win; without it the message's own headers, else
+                        those of its one inline trait that defines them, are
+                        its headers, and a second inline trait with headers is
+                        an error, as in 0.90.0
   --merge-msgspec-str-like-union-members, --no-merge-msgspec-str-like-union-members
                         msgspec.Struct output only: write one str in place of
                         the str-like members of a union (str, UUID, the dates
@@ -1328,6 +1681,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         dataclass whose config names an alias generator.
                         Without it a field keeps the alias it has without the
                         generator, which the config then replaces.
+  --remove-unused-models-beside-type-overrides, --no-remove-unused-models-beside-type-overrides
+                        Remove the models that nothing uses, such as a root
+                        model --collapse-root-models inlined, also from a
+                        module a model-level --type-overrides key takes a
+                        model out of, as from every other module; without it
+                        they stay written there, as in 0.90.0
   --rename-submodules-hidden-by-classes, --no-rename-submodules-hidden-by-classes
                         Rename a submodule named like a class of its package,
                         such as pkg/Warn.py beside the class Warn of
@@ -1412,11 +1771,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         forbid_unknown_fields=True on a Struct whose schema
                         admits no property but its own (additionalProperties:
                         false without patternProperties beside it, also in an
-                        inline allOf member), so msgspec rejects the unknown
-                        fields the schema rejects, as Pydantic output does
-                        with extra='forbid'; --extra-fields allow or ignore
-                        and --allow-extra-fields keep it open. Without it such
-                        a Struct ignores unknown fields, as in 0.89.0
+                        inline allOf member, or unevaluatedProperties: false
+                        in an inline allOf member), so msgspec rejects the
+                        unknown fields the schema rejects, as Pydantic output
+                        does with extra='forbid'; --extra-fields forbid writes
+                        it on every Struct, also without --use-generic-base-
+                        class, and --extra-fields allow or ignore and --allow-
+                        extra-fields keep it open. Without it such a Struct
+                        ignores unknown fields, as in 0.89.0
   --use-msgspec-meta-for-map-keys, --no-use-msgspec-meta-for-map-keys
                         msgspec.Struct output only: write the keys of a map
                         whose keys propertyNames or patternProperties
@@ -1491,7 +1853,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Custom formatter kwargs as inline JSON or a JSON file
                         path.
   --custom-template-dir CUSTOM_TEMPLATE_DIR
-                        Custom template directory
+                        Custom template directory. Jinja2 renders custom
+                        templates and will become optional: declare the jinja2
+                        extra.
   --default-values DEFAULT_VALUES
                         Default value overrides as inline JSON or a JSON file
                         path. Supports hierarchical formats: Flat: {'field':
@@ -1549,6 +1913,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         later)
 
 [36;1mOpenAPI-only options[0m:
+  --dedupe-numbered-request-response-variants, --no-dedupe-numbered-request-response-variants
+                        Deduplicate a Request or Response variant of a
+                        numbered model (Page1Request of an inline copy Page1
+                        of Page) by the variant name of the name its model was
+                        numbered from, so it merges into PageRequest where it
+                        renders the same; without it such a variant stays a
+                        class of its own, as in 0.90.0
   --dedupe-request-response-variants, --no-dedupe-request-response-variants
                         Decide Request/Response variants from the schema graph
                         and build each inline model once, without the
@@ -1605,6 +1976,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         as the api scope does; without it such a key that
                         holds an object is read as a path and its operations
                         get models, as in 0.89.0
+  --use-enum-field-as-literal-in-operations, --no-use-enum-field-as-literal-in-operations
+                        Write the enum of an operation's request body or
+                        response as a root model of a Literal where x-enum-
+                        field-as-literal, --enum-field-as-literal-map or
+                        --enum-field-as-literal would write a definition's
+                        enum so; without it such an enum stays an Enum class,
+                        as in 0.90.0
   --use-operation-id-as-name
                         use operation id of OpenAPI as class names of models
   --use-status-code-in-response-name
@@ -1679,6 +2057,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         with --install-skill.
   --profile PROFILE     Use a named profile from pyproject.toml
                         [tool.datamodel-codegen.profiles.<name>]
+  --read-implied-options-from-merged-values, --no-read-implied-options-from-merged-values
+                        Read the options that another option turns on (--use-
+                        annotated turns on --field-constraints) from the
+                        arguments and pyproject.toml together, so --no-use-
+                        annotated over use-annotated = true in pyproject.toml
+                        also leaves --field-constraints off where
+                        pyproject.toml gives it false, as use-annotated =
+                        false there does; without it --field-constraints stays
+                        on, as in 0.96.0.
   --recommend-options   Analyse the input schema and print the options to add
                         on top of the latest dated preset, with the reasons,
                         as a command and a pyproject.toml block, then exit
@@ -1700,9 +2087,22 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   -h, --help            show this help message and exit
 
 [36;1mTarget generation options (experimental)[0m:
+  --client-asyncapi-perspective {server,client}
+                        Read an AsyncAPI document as the server's (default),
+                        whose sends the client receives, or as the client's,
+                        for its WebSocket channels; the client receives every
+                        message of a server-sent event channel (experimental).
   --client-body-arguments {body,both}
                         Take request bodies as one body argument (default) or
                         also as field arguments (experimental).
+  --client-deep-object-brackets, --no-client-deep-object-brackets
+                        Write a deepObject query parameter or URL-encoded form
+                        member in the bracket form Stripe documents: an array
+                        as name[]=value for each item, a scalar as name=value,
+                        nested objects as name[key][key]=value, an array of
+                        objects as name[index][key]=value, and a value that
+                        may be a scalar or an object as the one a call gives,
+                        instead of leaving its operation out (experimental).
   --client-default-base-url CLIENT_DEFAULT_BASE_URL
                         Server URL of the operations that declare no servers
                         (experimental).

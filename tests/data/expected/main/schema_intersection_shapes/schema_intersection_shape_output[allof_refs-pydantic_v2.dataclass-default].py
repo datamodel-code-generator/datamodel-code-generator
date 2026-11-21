@@ -76,7 +76,7 @@ class Level2(IntEnum):
     integer_3 = 3
 
 
-Number5 = TypeAliasType("Number5", Number)
+Number5 = TypeAliasType("Number5", Annotated[Number, Field(..., ge=5)])
 
 
 NonNegative = TypeAliasType("NonNegative", Annotated[float, Field(ge=0.0)])
@@ -88,7 +88,7 @@ TwoRefs = TypeAliasType("TwoRefs", Annotated[int, Field(ge=3, le=5)])
 StampLen = TypeAliasType("StampLen", Stamp)
 
 
-AllOfRoot = TypeAliasType("AllOfRoot", Quantity)
+AllOfRoot = TypeAliasType("AllOfRoot", Annotated[Quantity, Field(..., le=10)])
 
 
 AllOfRoot2 = TypeAliasType("AllOfRoot2", Annotated[int, Field(ge=1, le=10)])
@@ -109,11 +109,11 @@ class Model:
     level2_items: list[Level] | None = None
     level2_map: dict[str, Level] | None = None
     number5: Number5 | None = None
-    number5_prop: Number | None = None
+    number5_prop: Annotated[Number | None, Field(ge=5)] = None
     number5_items: list[Number] | None = None
     number5_map: dict[str, Number] | None = None
     non_negative: NonNegative | None = None
-    non_negative_prop: Real | None = None
+    non_negative_prop: Annotated[Real | None, Field(ge=0.0)] = None
     non_negative_items: list[Real] | None = None
     non_negative_map: dict[str, Real] | None = None
     two_refs: TwoRefs | None = None
@@ -126,11 +126,11 @@ class Model:
     stamp_len_map: dict[str, Stamp] | None = None
     quantity: Quantity | None = None
     q_allof: AllOfRoot | None = None
-    q_allof_prop: Quantity | None = None
+    q_allof_prop: Annotated[Quantity | None, Field(le=10)] = None
     q_allof_items: list[Quantity] | None = None
     q_allof_map: dict[str, Quantity] | None = None
     q_allof2: AllOfRoot2 | None = None
-    q_allof2_prop: Quantity | None = None
+    q_allof2_prop: Annotated[Quantity | None, Field(le=10)] = None
     q_allof2_items: list[Quantity] | None = None
     q_allof2_map: dict[str, Quantity] | None = None
     xpt_a: Q | None = None

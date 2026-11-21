@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    H:
+      type: object
+      properties:
+        x: {type: integer}
+    G:
+      $ref: '#/components/schemas/H'
+      properties:
+        g: {type: string}
+    C:
+      allOf:
+        - $ref: '#/components/schemas/P'
+      required: [x]
+      properties:
+        y: {type: integer}
+    P:
+      allOf:
+        - $ref: '#/components/schemas/G'

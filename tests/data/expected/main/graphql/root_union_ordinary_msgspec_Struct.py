@@ -28,10 +28,18 @@ class Holder(Struct):
         name='__typename', default='Holder'
     )
 
+    @property
+    def __typename(self) -> Literal['Holder'] | UnsetType:
+        return self.typename__
+
 
 class Other(Struct):
     value: String
     typename__: Literal['Other'] | UnsetType = field(name='__typename', default='Other')
+
+    @property
+    def __typename(self) -> Literal['Other'] | UnsetType:
+        return self.typename__
 
 
 class Second(Struct):
@@ -40,6 +48,10 @@ class Second(Struct):
     typename__: Literal['Second'] | UnsetType = field(
         name='__typename', default='Second'
     )
+
+    @property
+    def __typename(self) -> Literal['Second'] | UnsetType:
+        return self.typename__
 
 
 Choice: TypeAlias = Union[

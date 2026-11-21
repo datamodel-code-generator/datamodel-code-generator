@@ -757,3 +757,25 @@ def text_files(package: ModuleType, lines: list[str]) -> None:
         stamp = request_body(package, "sendStamp", None, {"taken": "2026-11-04T01:02:03Z"})
         record(lines, "stamp", lambda: api.default.send_stamp(body=stamp))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
+
+
+def media_text_parts(package: ModuleType, lines: list[str]) -> None:
+    """Send form-data members holding no files as text in the media type their encoding declares."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        exchange.respond(raw_response(204), raw_response(204))
+        call = request_body(package, "createCall", None, {"sdp": "v=0\r\no=- 1 1 IN IP4 0.0.0.0", "session": {}})
+        record(lines, "call", lambda: api.default.create_call(body=call))
+        offer = bodies.MultipartBody((
+            bodies.FieldPart("offer", form_part(package, "sendOffer", "offer", "v=0 café")),
+            bodies.FieldPart("counts", form_part(package, "sendOffer", "counts", [1, 2])),
+            bodies.FilePart("recording", b"\x00"),
+        ))
+        record(lines, "offer", lambda: api.default.send_offer(body=offer))
+        unencodable = bodies.MultipartBody((
+            bodies.FieldPart("offer", form_part(package, "sendOffer", "offer", "€")),
+            bodies.FilePart("recording", b"\x00"),
+        ))
+        record(lines, "offer outside the charset", lambda: api.default.send_offer(body=unencodable))
+    lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]

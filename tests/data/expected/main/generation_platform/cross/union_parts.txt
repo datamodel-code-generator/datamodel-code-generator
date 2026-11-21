@@ -1,0 +1,38 @@
+models shared True
+client msgspec_Struct warning UserWarning: msgspec cannot decode the union VoiceRequest: its Struct types FromSample, FromPrompt are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+client msgspec_Struct warning UserWarning: msgspec cannot decode the union Access: its Struct types Security, Sessions are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+# union_parts in-process sync, in-process async, in-process msgspec_Struct sync, in-process msgspec_Struct async
+create_voice sample
+  > POST /voices [multipart/form-data; boundary=<boundary>]
+  create_voice(body=VoiceRequest(root=FromSample(type=None, name='calm', audio_sample=b'\xff\x00')))
+  < 204 -
+  = None
+create_voice sample without a filename
+  > POST /voices [multipart/form-data; boundary=<boundary>]
+  create_voice(body=VoiceRequest(root=FromSample(type=None, name='calm', audio_sample=b'\xff')))
+  < 204 -
+  = None
+create_voice prompt
+  > POST /voices [multipart/form-data; boundary=<boundary>]
+  create_voice(body=VoiceRequest(root=FromPrompt(type=Type1.prompt, name='calm', prompt='low')))
+  < 204 -
+  = None
+update_settings email
+  > PATCH /settings [multipart/form-data; boundary=<boundary>]
+  update_settings(body=SettingsPatchRequest(root=Notifications(email=True)))
+  < 204 -
+  = None
+update_settings passcode
+  > PATCH /settings [multipart/form-data; boundary=<boundary>]
+  update_settings(body=SettingsPatchRequest(root=Access(root=Security(passcode='0000'))))
+  < 204 -
+  = None
+update_settings limit
+  > PATCH /settings [multipart/form-data; boundary=<boundary>]
+  update_settings(body=SettingsPatchRequest(root=Access(root=Sessions(limit=3))))
+  < 204 -
+  = None
+update_settings undeclared part
+  > PATCH /settings [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  = 422

@@ -62,7 +62,9 @@ class PetsPetIdHeadResponse200ETagHeader(RootModel[str]):
     root: str
 
 
-PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType(
+    "PetsPetIdPhotoPutPathPetIdParameter", int
+)
 
 
 class PetsPetIdPhotoPutRequest(RootModel[bytes]):
@@ -73,7 +75,9 @@ class PetsPetIdPhotoPutResponse(RootModel[bytes]):
     root: bytes
 
 
-PetsPetIdFilesPostPathPetIdParameter = TypeAliasType("PetsPetIdFilesPostPathPetIdParameter", int)
+PetsPetIdFilesPostPathPetIdParameter = TypeAliasType(
+    "PetsPetIdFilesPostPathPetIdParameter", int
+)
 
 
 class PetsPetIdFilesPostRequest(BaseModel):
@@ -85,7 +89,9 @@ class PetsPetIdFilesPostRequest(BaseModel):
     file: bytes
 
 
-PetsPetIdFilesGetPathPetIdParameter = TypeAliasType("PetsPetIdFilesGetPathPetIdParameter", int)
+PetsPetIdFilesGetPathPetIdParameter = TypeAliasType(
+    "PetsPetIdFilesGetPathPetIdParameter", int
+)
 
 
 class PetsPetIdFilesGetResponse(BaseModel):

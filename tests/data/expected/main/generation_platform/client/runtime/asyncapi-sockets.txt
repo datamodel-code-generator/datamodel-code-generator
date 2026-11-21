@@ -1,0 +1,26 @@
+# asyncapi-market-v3 pydantic_v2.BaseModel
+  channels True TickerWebsocket
+    market 1 text Trade{'event': 'trade', 'price': 1.5, 'volume': 2.0} raw=b'{"event": "trade", "price": 1.5, "volume": 2}'
+  market undecodable ! DecodeError: DecodeError(status_code=101, reason='value', location='message.2') [location=('message', 2), body_bytes=b'{"event": "trade"}', truncated=False, cause=ValidationError] value
+    server GET /v1/market/XBT-USD [] | closed 1002 ''
+    ticker 1 text str'tick 1' raw=b'tick 1'
+  ticker send ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+  ticker binary ! DecodeError: DecodeError(status_code=101, reason='type', location='message.2') [location=('message', 2), body_bytes=b'\x00', truncated=False] type
+    server GET /v1/ticker [] | closed 1002 ''
+    audio 1 text AudioStatusPayload{'level': 3} raw=b'{"level": 3}'
+    server GET /v1/audio [] | closed 1000 'done'
+    async market Trade{'event': 'trade', 'price': 1.5, 'volume': 1.0}
+    server GET /v1/market/A-B [] | closed 1000 ''
+# asyncapi-market-v3 dataclasses.dataclass
+  channels True TickerWebsocket
+    market 1 text Trade{'event': 'trade', 'price': 1.5, 'volume': 2} raw=b'{"event": "trade", "price": 1.5, "volume": 2}'
+  market undecodable ! DecodeError: DecodeError(status_code=101, reason='value', location='message.2') [location=('message', 2), body_bytes=b'{"event": "trade"}', truncated=False, cause=TypeError] value
+    server GET /v1/market/XBT-USD [] | closed 1002 ''
+    ticker 1 text str'tick 1' raw=b'tick 1'
+  ticker send ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+  ticker binary ! DecodeError: DecodeError(status_code=101, reason='type', location='message.2') [location=('message', 2), body_bytes=b'\x00', truncated=False] type
+    server GET /v1/ticker [] | closed 1002 ''
+    audio 1 text AudioStatusPayload{'level': 3} raw=b'{"level": 3}'
+    server GET /v1/audio [] | closed 1000 'done'
+    async market Trade{'event': 'trade', 'price': 1.5, 'volume': 1}
+    server GET /v1/market/A-B [] | closed 1000 ''

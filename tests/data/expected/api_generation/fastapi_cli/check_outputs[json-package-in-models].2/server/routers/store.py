@@ -48,9 +48,7 @@ def _add_list_orders(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('list_orders', _add_list_orders),
-)
+LITERAL_ROUTES: Final = (('list_orders', _add_list_orders),)
 TEMPLATED_ROUTES: Final = ()
 
 

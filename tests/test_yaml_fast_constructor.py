@@ -14,15 +14,13 @@ import yaml
 from yaml.constructor import BaseConstructor
 
 from datamodel_code_generator._source import load_yaml
-from datamodel_code_generator.util import _fast_construct_document, get_safe_loader
+from datamodel_code_generator.util import _fast_construct_document, get_pure_safe_loader, get_safe_loader
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 _DATA_PATH = Path(__file__).parent / "data" / "yaml_fast_constructor"
-_EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "yaml_fast_constructor"
-_PARITY_OUTPUT = _EXPECTED_PATH / "parity.txt"
 _CASES: dict[str, str] = json.loads((_DATA_PATH / "cases.json").read_text(encoding="utf-8"))
 _SCHEMA_PATHS = tuple(sorted((Path(__file__).parent / "data" / "openapi").rglob("*.yaml"))) + tuple(
     sorted((Path(__file__).parent / "data" / "asyncapi").rglob("*.yaml"))
@@ -150,7 +148,7 @@ def _parity_report(
 def _assert_parity(text: str, loader_class: type) -> None:
     standard = _construct(text, loader_class, standard=True)
     fast = _construct(text, loader_class, standard=False)
-    assert_output(_parity_report(standard, fast), _PARITY_OUTPUT)
+    assert_output(_parity_report(standard, fast))
 
 
 def test_strict_equal_handles_non_equivalent_values() -> None:
@@ -162,7 +160,6 @@ def test_strict_equal_handles_non_equivalent_values() -> None:
             f"nan_equal={_strict_equal(float('nan'), float('nan'))}",
             "",
         )),
-        _EXPECTED_PATH / "strict_equal.txt",
     )
 
 
@@ -190,7 +187,7 @@ def test_yaml_loader_rejects_unknown_implementation() -> None:
     with pytest.raises(AssertionError) as exception_info:
         _select_yaml_loader("unknown")
 
-    assert_output(f"{type(exception_info.value).__name__}\n", _EXPECTED_PATH / "invalid_loader.txt")
+    assert_output(f"{type(exception_info.value).__name__}\n")
 
 
 @pytest.mark.parametrize("text", _CASES.values(), ids=_CASES)
@@ -205,13 +202,12 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
 
 
 @pytest.mark.parametrize(
-    ("constructor_form", "custom_tags", "input_path", "expected_path", "error_path"),
+    ("constructor_form", "custom_tags", "input_path", "error_path"),
     [
         pytest.param(
             "return",
             ("map",),
             _DATA_PATH / "custom_return.yaml",
-            _EXPECTED_PATH / "custom_return_map.txt",
             _DATA_PATH / "custom_error.yaml",
             id="return-map",
         ),
@@ -219,7 +215,6 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "return",
             ("seq",),
             _DATA_PATH / "custom_return.yaml",
-            _EXPECTED_PATH / "custom_return_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="return-seq",
         ),
@@ -227,7 +222,6 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "return",
             ("map", "seq"),
             _DATA_PATH / "custom_return.yaml",
-            _EXPECTED_PATH / "custom_return_map_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="return-map-seq",
         ),
@@ -235,7 +229,6 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "generator",
             ("map",),
             _DATA_PATH / "custom_generator.yaml",
-            _EXPECTED_PATH / "custom_generator_map.txt",
             _DATA_PATH / "custom_error.yaml",
             id="generator-map",
         ),
@@ -243,7 +236,6 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "generator",
             ("seq",),
             _DATA_PATH / "custom_generator.yaml",
-            _EXPECTED_PATH / "custom_generator_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="generator-seq",
         ),
@@ -251,7 +243,6 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "generator",
             ("map", "seq"),
             _DATA_PATH / "custom_generator.yaml",
-            _EXPECTED_PATH / "custom_generator_map_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="generator-map-seq",
         ),
@@ -261,7 +252,6 @@ def test_fast_constructor_preserves_custom_map_seq_constructors(  # noqa: PLR091
     constructor_form: str,
     custom_tags: tuple[str, ...],
     input_path: Path,
-    expected_path: Path,
     error_path: Path,
 ) -> None:
     """Delegate map and sequence extensions to PyYAML without changing their behavior."""
@@ -414,7 +404,6 @@ def test_fast_constructor_preserves_custom_map_seq_constructors(  # noqa: PLR091
             f"error_public_callback_order={standard_error_callbacks == public_error_callbacks}",
             "",
         )),
-        expected_path,
     )
 
 
@@ -424,6 +413,38 @@ def test_fast_constructor_preserves_custom_map_seq_constructors(  # noqa: PLR091
 def test_fast_constructor_matches_schema_fixtures(path: Path) -> None:
     """Keep the optimized C-loader path identical for every OpenAPI and AsyncAPI YAML fixture."""
     _assert_parity(path.read_text(encoding="utf-8"), get_safe_loader())
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("a: x\ty\n", id="plain_words"),
+        pytest.param("\ufeffa: x\ty\n", id="byte_order_mark"),
+        pytest.param("a: x\t\n", id="plain_trailing"),
+        pytest.param("a: x\t# c\n", id="plain_comment"),
+        pytest.param("a: x\n  \ty\n", id="continuation"),
+        pytest.param("a:\n    x\n  \ty\n", id="continuation_left_of_text"),
+        pytest.param("a: x\n \t\n  y\n", id="blank_line"),
+        pytest.param("a: x\u2029  y\n", id="paragraph_separator"),
+        pytest.param("a: x\n...\n", id="document_end"),
+        pytest.param("a: x\n\n---\nb: y\n", id="document_start_after_blank_line"),
+        pytest.param("a:\n  b: c\n  \td: e\n", id="tab_left_of_indentation"),
+        pytest.param("a: [x\ty, z\t]\n", id="flow"),
+        pytest.param("a:\tb\n", id="value_separator"),
+        pytest.param('a: "x"\t\n', id="quoted_trailing"),
+        pytest.param("a: &x\tb\nc: *x\t\n", id="anchor_alias"),
+        pytest.param("? x\ty\n: 1\n", id="explicit_key"),
+        pytest.param("- x\ty\n", id="sequence"),
+    ],
+)
+def test_pure_loader_reads_tabs_as_libyaml(text: str) -> None:
+    """PyYAML's own scanner reads tabs as libyaml does, so an install without libyaml reads the same data (#6592)."""
+    pure = _construct(text, get_pure_safe_loader(), standard=False)
+    data, error, _ = pure
+    assert_output(
+        _parity_report(_construct(text, get_safe_loader(), standard=False), pure)
+        + (f"error={error}\n" if error is not None else f"data={data!r}\n")
+    )
 
 
 def _fuzz_value(random_: random.Random, depth: int = 0) -> Any:
@@ -511,11 +532,9 @@ def _fuzz_documents() -> Iterator[str]:
         yield _render_fuzz_document(random_, value)
 
 
-def test_fast_constructor_fuzz_parity(tmp_path: Path) -> None:
+def test_fast_constructor_fuzz_parity() -> None:
     """Exercise generated scalars, aliases, cycles, and explicit tags with a fixed seed."""
-    expected = tmp_path / "parity.txt"
     documents = tuple(_fuzz_documents())
-    expected.write_text((_DATA_PATH / "parity.txt").read_text(encoding="utf-8") * len(documents), encoding="utf-8")
     result = "".join(
         _parity_report(
             _construct(text, get_safe_loader(), standard=True),
@@ -523,7 +542,8 @@ def test_fast_constructor_fuzz_parity(tmp_path: Path) -> None:
         )
         for text in documents
     )
-    assert_output(result, expected)
+    assert_output(result, name="parity")
+    assert_output((_DATA_PATH / "parity.txt").read_text(encoding="utf-8") * len(documents), name="parity")
 
 
 def test_load_yaml_uses_fast_constructor() -> None:
@@ -531,4 +551,4 @@ def test_load_yaml_uses_fast_constructor() -> None:
     text = (_DATA_PATH / "load_yaml.yaml").read_text(encoding="utf-8")
     standard = _construct(text, get_safe_loader(), standard=True)
     fast = (load_yaml(text), None, [])
-    assert_output(_parity_report(standard, fast), _PARITY_OUTPUT)
+    assert_output(_parity_report(standard, fast))

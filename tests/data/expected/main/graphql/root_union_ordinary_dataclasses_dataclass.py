@@ -26,11 +26,19 @@ class Holder:
     subscription: Any | None = None
     typename__: Literal['Holder'] | None = 'Holder'
 
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__
+
 
 @dataclass
 class Other:
     value: String
     typename__: Literal['Other'] | None = 'Other'
+
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
 
 
 @dataclass
@@ -38,6 +46,10 @@ class Second:
     value: String
     self: Second | None = None
     typename__: Literal['Second'] | None = 'Second'
+
+    @property
+    def __typename(self) -> Literal['Second'] | None:
+        return self.typename__
 
 
 Choice: TypeAlias = Union[

@@ -26,16 +26,18 @@ from datamodel_code_generator._fastapi.routes import (
 )
 from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import (
+    FORMS,
     NO_SCALAR_KIND,
     body_kind,
     content_types,
     form_extras,
     form_members,
     form_styled,
-    member_encodings,
+    media_encodings,
     parameter_plans,
     part_json,
-    plan_wire,
+    plan_styles,
+    single_media,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
     JSON_MEDIA_TYPE,
@@ -46,21 +48,20 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     declaring,
     essence,
     media_kind,
-    media_range,
     normalized,
 )
 from datamodel_code_generator._target_contract import (
-    WRAPPER_KINDS,
+    OAUTH_SCHEMES,
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
     GenericType,
     ImportedType,
-    KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     LiteralType,
+    PartSchema,
     Requirement,
     UnionType,
     api_key_place,
@@ -71,17 +72,13 @@ from datamodel_code_generator._target_contract import (
     is_required,
     label,
     literal_text,
-    members_by_consumer,
     operation_schemes,
     parameter_place,
     range_start,
-    scheme_catalogues,
     scope_problem,
     security_requirements,
-    symbols_by_id,
     type_uses,
     unresolved_reference,
-    uses_by_id,
     wrapped_facts,
 )
 from datamodel_code_generator._target_naming import NameScope, fold_key, windows_device
@@ -92,6 +89,7 @@ from datamodel_code_generator._target_operations import (
     alias,
     argument_names,
     binding_problem,
+    claim,
     declared_by,
     declared_in,
     declared_media_type,
@@ -106,7 +104,7 @@ from datamodel_code_generator._target_operations import (
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present, sole_present
+from datamodel_code_generator._target_types import is_alias, present, sole_present
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType, OpenAPIVersion
 from datamodel_code_generator.imports import Import
@@ -166,8 +164,6 @@ _STRICT_BYTES: Final = ("pydantic", "StrictBytes")
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _NULL: Final = LiteralScalar("none", None)
-_TRUE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=True))
-_BY_NAME: Final = frozenset({"populate_by_name", "validate_by_name"})
 _LITERAL_KINDS: Final = frozenset({"bool", "int", "float", "str"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
@@ -195,7 +191,6 @@ _CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str, BuiltinType | None]
 _PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
 _CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
-_FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _INFO: Final = (
     ("info", "title", "title", "text"),
     ("info", "summary", "summary", "text"),
@@ -259,12 +254,14 @@ class MediaSpec:
     """One declared media type of a body or response, with its type use when the content has a schema.
 
     A form an adapter reads comes with the plans of its members: a member is read as text in its field's kind, or,
-    as a multipart member without one, as JSON. A URL-encoded member whose encoding gives it a style or content is
+    as a multipart member without one, as JSON, and a multipart member holding files the models keep as bytes as its
+    parts' octets. A URL-encoded member whose encoding gives it a style or content is
     read by its query parameter plan in `encoded`, and its JSON content then as a JSON part. `additional` reads the
     properties the form's schema types without declaring them, when that is not as the text they come as, which any
     other member is, and `checked` is their type when they are text that the model keeps without one, as a dataclass
     does. `extras` says JSON whose type reaches a Pydantic dataclass that allows extra members, which a response writes
-    through the runtime's serializer, as Pydantic's own writes none.
+    through the runtime's serializer, as Pydantic's own writes none. `encodings` are those the media declares for the
+    members its model has in the request (`media_encodings`).
     """
 
     media_type: str
@@ -273,10 +270,12 @@ class MediaSpec:
     declaration: WireDeclaration
     fields: tuple[FieldPlan, ...] = ()
     json_parts: tuple[JsonPartSpec, ...] = ()
-    additional: FieldPlan | JsonPartSpec | None = None
+    file_parts: tuple[FilePartSpec, ...] = ()
+    additional: FieldPlan | JsonPartSpec | FilePartSpec | None = None
     checked: TypeView | None = None
     encoded: tuple[ParameterPlan, ...] = ()
     extras: bool = False
+    encodings: tuple[WireDeclaration, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -310,6 +309,23 @@ class JsonPartSpec:
     repeated: bool = False
     field: tuple[GeneratedSymbolType, str] | None = None
     untyped: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class FilePartSpec:
+    """One multipart member holding files the models keep as bytes: its wire name and its repeats.
+
+    Its parts are read as their octets, whether or not they name a filename. The one that reads a form's other
+    properties has no name.
+    """
+
+    name: str
+    repeated: bool = False
+
+
+def _octets(schema: PartSchema | str | None) -> TypeIs[PartSchema]:
+    """Return whether a multipart member holds files the models keep as bytes rather than as text (`PartSchema`)."""
+    return isinstance(schema, PartSchema) and schema.file and not schema.text
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -493,16 +509,9 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
     return tuple(problems)
 
 
-def _single_media(encoding: WireDeclaration) -> str | None:
-    """Return the one contentType of an encoding, or None when it names several media types or a range."""
-    if (found := content_types(encoding)) is None or len(found) != 1 or media_range(found[0]):
-        return None
-    return found[0]
-
-
 def _json_type(encoding: WireDeclaration) -> bool:
     """Return whether an encoding's contentType names one JSON media type, rather than several or a range."""
-    return (single := _single_media(encoding)) is not None and media_kind(single) == "json"
+    return (single := single_media(encoding)) is not None and media_kind(single) == "json"
 
 
 def _part_text(encoding: WireDeclaration) -> bool:
@@ -511,15 +520,10 @@ def _part_text(encoding: WireDeclaration) -> bool:
     Starlette reads a field part as UTF-8, whatever media type the part names.
     """
     return (
-        (single := _single_media(encoding)) is not None
+        (single := single_media(encoding)) is not None
         and media_kind(single) == "text"
         and charset(single, as_written=True).lower() in _PART_CHARSETS
     )
-
-
-def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
-    """Return the encodings a media declares for the members its model has in the request (`member_encodings`)."""
-    return member_encodings(media.use, children_of(media.declaration, "encoding"))
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -539,7 +543,7 @@ def _json_members(media: MediaSpec, versions: OpenAPIVersions) -> frozenset[str 
     texts = {name for name, part in parts.members if not part.file}
     return frozenset(
         child.name
-        for child in _encodings(media)
+        for child in media.encodings
         if child.name in texts and _json_type(child) and not form_styled(child, versions, multipart=True)
     )
 
@@ -555,7 +559,7 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, versions: OpenAPIVersi
     scalars = {member.name for member in form_members(kinds, media.use) if member.kind is not None}
     return _json_members(media, versions) | {
         child.name
-        for child in _encodings(media)
+        for child in media.encodings
         if (
             (child.name in files and content_types(child) is not None)
             or (child.name in scalars and child.name not in files and _part_text(child))
@@ -576,7 +580,7 @@ def _encoded(media: MediaSpec, kinds: LexicalKinds, versions: OpenAPIVersions) -
     return next(
         (
             child
-            for child in _encodings(media)
+            for child in media.encodings
             if child.children
             or (child.name in files if form_styled(child, versions, multipart=True) else _untyped(child, typed))
         ),
@@ -633,12 +637,13 @@ class Planner:  # noqa: PLR0904
         self.wire = wire
         self.types = types
         self.unspelled: set[TypeUseId] = set()
-        self.uses = uses_by_id(request.batch)
-        self.symbols = symbols_by_id(request.batch)
-        self.members = members_by_consumer(request.batch)
+        self.uses = wire.tables.uses
+        self.tables = wire.kinds.tables
+        self.symbols = self.tables.symbols
+        self.members = self.tables.members
         self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
-        self.scheme_catalogues = scheme_catalogues(request.batch)
+        self.scheme_catalogues = wire.tables.schemes
         self.schemes: dict[str, SchemeSpec] = {}
         assert request.batch.names is not None
         self.target_names = request.batch.names
@@ -704,28 +709,19 @@ class Planner:  # noqa: PLR0904
 
     def operation_names(self, operations: tuple[OperationContract, ...]) -> list[str]:
         """Name each operation's handler: explicit names first, which must differ, then derived ones suffixed apart."""
-        explicit = [name for operation in operations if (name := self.names.get(operation.id.use_site.pointer))]
+        names, taken = claim(
+            self.target_names,
+            NameScope(),
+            [
+                self.names.get(operation.id.use_site.pointer)
+                or (derived_name(self.target_names, operation), local(operation), (self.group_name(operation),))
+                for operation in operations
+            ],
+        )
         self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several operation names become {stable_repr(name)}")
-            for name, count in sorted(Counter(explicit).items())
-            if count > 1
+            _problem("F_NAME_CONFLICT", f"Several operation names become {stable_repr(name)}") for name in taken
         )
-        derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
-        bases = [derived_name(self.target_names, operation) for operation in derived]
-        claimed = dict(
-            zip(
-                (operation.id for operation in derived),
-                self.target_names.claim(
-                    NameScope(explicit),
-                    [
-                        (base, local(operation), (self.group_name(operation),))
-                        for operation, base in zip(derived, bases, strict=True)
-                    ],
-                ),
-                strict=True,
-            )
-        )
-        return [self.names.get(operation.id.use_site.pointer) or claimed[operation.id] for operation in operations]
+        return names
 
     def groups(self, specs: tuple[OperationSpec, ...]) -> tuple[GroupSpec, ...]:
         """Group operations by first tag in first-occurrence order, naming router files and services apart.
@@ -737,27 +733,22 @@ class Planner:  # noqa: PLR0904
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        scope = NameScope(
-            (*BUILDER_NAMES, *EXPORTED_NAMES), folded=True, target_python_version=self.target_names.python_version
+        version = self.target_names.python_version
+        claimed, taken = claim(
+            self.target_names,
+            NameScope((*BUILDER_NAMES, *EXPORTED_NAMES), folded=True, target_python_version=version),
+            [
+                self.config.router_names.get(key)
+                or (self.target_names.function(group_basis(key)), local(members[key][0].contract), ())
+                for key in members
+            ],
+            refused={name for name in self.config.router_names.values() if _file_stem_conflict(name, version)},
         )
-        conflicts = {
-            name
-            for key in members
-            if (name := self.config.router_names.get(key)) is not None
-            and (_file_stem_conflict(name, self.target_names.python_version) or not scope.take(name))
-        }
-        derived = [key for key in members if key not in self.config.router_names]
-        bases = [self.target_names.function(group_basis(key)) for key in derived]
-        claimed = self.target_names.claim(
-            scope, [(base, local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
-        )
-        stems = {
-            key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
-        }
-        conflicts.update(stem for stem in stems.values() if _file_stem_conflict(stem, self.target_names.python_version))
+        stems = dict(zip(members, claimed, strict=True))
+        taken.extend(stem for stem in claimed if _file_stem_conflict(stem, version))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stable_repr(stem)}")
-            for stem in sorted(conflicts)
+            for stem in sorted(set(taken))
         )
         named = [key for key in members if stems[key] != "service"]
         services = dict(
@@ -993,9 +984,7 @@ class Planner:  # noqa: PLR0904
         factory: TypeView | None = None
         while (
             isinstance(value, GeneratedSymbolType)
-            and value.symbol not in seen
-            and self.symbols[value.symbol].kind in WRAPPER_KINDS
-            and (facts := wrapped_facts(self.members, value.symbol)) is not None
+            and (facts := self.tables.wrapped(value, seen)) is not None
             and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
             seen.add(value.symbol)
@@ -1058,12 +1047,9 @@ class Planner:  # noqa: PLR0904
         A tuple keeps its members, as FastAPI reads none natively.
         """
         match value:
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind == "alias"
-                and (facts := wrapped_facts(self.members, value.symbol)) is not None
-                and (plain := self.plain(value.symbol, facts, seen)) is not None
-            ):
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen, is_alias)) is not None and (
+                plain := self.plain(value.symbol, facts, seen)
+            ) is not None:
                 return plain
             case GenericType():
                 fixed = value.tuple_form == "fixed"
@@ -1109,11 +1095,7 @@ class Planner:  # noqa: PLR0904
                 return any(self.strict_bytes(item, seen) for item in value.arguments)
             case ImportedType():
                 return (value.import_.from_, value.import_.import_) == _STRICT_BYTES
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and (facts := wrapped_facts(self.members, value.symbol)) is not None
-            ):
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen)) is not None:
                 return self.strict_bytes(facts.type, seen | {value.symbol})
             case _:
                 pass
@@ -1211,6 +1193,7 @@ class Planner:  # noqa: PLR0904
             kind=kind,
             use=use,
             declaration=declaration,
+            encodings=tuple(media_encodings(use, declaration)),
             extras=kind == "json"
             and use is not None
             and use.type is not None
@@ -1220,7 +1203,8 @@ class Planner:  # noqa: PLR0904
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
         """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model.
 
-        A multipart body of a union of several schemas declares no members its parts could be read by.
+        A multipart body of a union of several schemas declares no members its parts could be read by, unless they are
+        objects that agree on the parts of each property (`PartFacts.object`).
         """
         if (
             (use := media.use) is None
@@ -1257,14 +1241,21 @@ class Planner:  # noqa: PLR0904
         members = tuple(form_members(self.wire.kinds, media.use))
         encoded = self.encoded(media, members)
         json_members = _json_members(media, self.wire.versions)
-        encodings = {encoding.name or "": encoding for encoding in _encodings(media)}
+        encodings = {encoding.name or "": encoding for encoding in media.encodings}
         multipart = media.kind == "multipart"
+        parts = media.use.parts if multipart else None
+        files = {
+            name: FilePartSpec(name, repeated=schema.repeated)
+            for name, schema in (() if parts is None else parts.members)
+            if _octets(schema)
+        }
         read = [
             (
                 member,
                 _content_part(member, encoded[member.name])
                 if member.name in encoded
-                else self.form_plan(
+                else files.get(member.name)
+                or self.form_plan(
                     media,
                     member,
                     json=multipart
@@ -1272,7 +1263,7 @@ class Planner:  # noqa: PLR0904
                         member.name in json_members
                         or part_json(self.wire.kinds, member.type, encodings.get(member.name), self.wire.versions)
                     ),
-                    untyped=multipart and self.wire.kinds.untyped(member.leaf),
+                    untyped=multipart and self.wire.kinds.tables.untyped(member.leaf),
                 ),
             )
             for member in members
@@ -1287,15 +1278,18 @@ class Planner:  # noqa: PLR0904
             and field.slot is not None
             and member.name not in encoded
             and (name := field.slot.name) not in names
-            and self.by_name(field.consumer)
+            and self.symbols[field.consumer].by_name
         )
-        additional: FieldPlan | JsonPartSpec | None = None
-        if (extras := form_extras(self.wire.kinds, media.use)) is not None:
+        additional: FieldPlan | JsonPartSpec | FilePartSpec | None = None
+        extras = form_extras(self.wire.kinds, media.use)
+        if parts is not None and _octets(extra := parts.extra):
+            additional = FilePartSpec("", repeated=extra.repeated)
+        elif extras is not None:
             additional = self.form_plan(
                 media,
                 extras,
                 json=multipart and part_json(self.wire.kinds, extras.type, None, self.wire.versions),
-                untyped=multipart and self.wire.kinds.untyped(extras.leaf),
+                untyped=multipart and self.wire.kinds.tables.untyped(extras.leaf),
             )
         elif multipart and (media.use.parts is None or media.use.parts.extra is None):
             additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
@@ -1306,19 +1300,12 @@ class Planner:  # noqa: PLR0904
             media,
             fields=tuple(plan for plan in plans if isinstance(plan, FieldPlan)),
             json_parts=tuple(plan for plan in plans if isinstance(plan, JsonPartSpec)),
+            file_parts=tuple(plan for plan in plans if isinstance(plan, FilePartSpec)),
             additional=None if additional == _TEXT else additional,
             checked=extras.type
             if extras is not None and isinstance(additional, FieldPlan) and self.wire.kinds.kept(media.use) is None
             else None,
             encoded=tuple(plan for plan in encoded.values() if plan is not None),
-        )
-
-    def by_name(self, symbol: SymbolId) -> bool:
-        """Return whether a model, by its own configuration or one it inherits, validates its fields by name too."""
-        declared = self.symbols[symbol]
-        settings = () if declared.facts is None else declared.facts.configuration
-        return any(setting.name in _BY_NAME and setting.value == _TRUE for setting in settings) or any(
-            self.by_name(base) for base in declared.bases
         )
 
     def encoded(self, media: MediaSpec, members: tuple[FormMember, ...]) -> dict[str, ParameterPlan | None]:
@@ -1335,13 +1322,13 @@ class Planner:  # noqa: PLR0904
         textless = frozenset(member.name for member in members if member.kind is None)
         multipart = media.kind == "multipart"
         encodings = tuple(
-            child for child in _encodings(media) if _planned(child, self.wire.versions, textless, multipart=multipart)
+            child for child in media.encodings if _planned(child, self.wire.versions, textless, multipart=multipart)
         )
         if not encodings:
             return {}
-        wire = plan_wire(self.request.batch, (), operations=frozenset(), styles={media.use.id: encodings})
-        self.problems.extend(_problem(item.code, item.message, item.source) for item in wire.diagnostics)
-        plans = {plan.name: plan for _, planned in wire.styles for plan in planned}
+        planned, diagnostics = plan_styles(self.wire.tables, media.use, encodings)
+        self.problems.extend(_problem(item.code, item.message, item.source) for item in diagnostics)
+        plans = {plan.name: plan for plan in planned}
         return {child.name or "": plans.get(child.name or "") for child in encodings}
 
     def form_plan(
@@ -1378,7 +1365,7 @@ class Planner:  # noqa: PLR0904
             and all(
                 (facts := member.model_facts) is not None
                 and self.kind(facts.type) is not None
-                and not (self.textless(facts.type) and self.wire.kinds.member(facts.type)[0] != "string")
+                and not (self.textless(facts.type) and self.wire.kinds.tables.member_kind(facts.type)[0] != "string")
                 for member in self.members.get(value.symbol, ())
             )
         )
@@ -1396,7 +1383,7 @@ class Planner:  # noqa: PLR0904
                 item.declaration.use_site,
             )
             for item in media
-            if item.kind in {"form", "multipart"}
+            if item.kind in FORMS
         )
         status = declaration.name or ""
         spec = ResponseSpec(
@@ -1406,7 +1393,7 @@ class Planner:  # noqa: PLR0904
 
     def json_null(self, media: MediaSpec | None) -> bool:
         """Return whether a media is JSON of a type that accepts null, so its response sends None as `null`."""
-        return media is not None and json_null(media.kind, media.use, self.symbols, self.members)
+        return media is not None and json_null(media.kind, media.use, self.tables)
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
         """Choose the primary response and decide whether FastAPI's response_model sends bare values.
@@ -1450,7 +1437,7 @@ class Planner:  # noqa: PLR0904
             return None
         return _primary(operation, choice.status_code, response, media, null=self.json_null(media))
 
-    def arguments(  # noqa: PLR0913
+    def arguments(
         self,
         operation: OperationContract,
         parameters: tuple[ParameterSpec, ...],
@@ -1507,20 +1494,15 @@ class Planner:  # noqa: PLR0904
             support.append(Argument(name="body", kind="body", location="body"))
             if len(body.media) > 1:
                 support.append(Argument(name="media_type", kind="media_type", location="media_type"))
-        self.problems.extend(
-            _problem(
-                "F_NAME_CONFLICT",
-                f"The arguments of {label(operation)} take {stable_repr(name)} twice",
-                operation.id.use_site,
-            )
-            for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
-            if count > 1
-        )
         python_names = argument_names(
+            SERVER,
             self.target_names,
-            NameScope((*RESERVED, *filter(None, given))),
+            operation,
             [(parameter.wire_name, name, parameter.local) for parameter, name in zip(ordered, given, strict=True)],
             scopes,
+            held=("self", *(item.name for item in support)),
+            reserved=RESERVED,
+            problems=self.problems,
         )
         arguments = [
             Argument(
@@ -1546,8 +1528,8 @@ def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
             return SchemeSpec(name=name, kind=_HTTP_SCHEMES.get(scheme, "custom"), declaration=declaration)
         case "mutualTLS", _:
             return SchemeSpec(name=name, kind="custom", declaration=declaration)
-        case kind, _ if kind in _FLOWS:
-            return SchemeSpec(name=name, kind=_FLOWS[kind], declaration=declaration)
+        case kind, _ if kind in OAUTH_SCHEMES:
+            return SchemeSpec(name=name, kind=OAUTH_SCHEMES[kind], declaration=declaration)
         case _:
             pass
     return None
@@ -1592,12 +1574,16 @@ def _member(source: object, key: str) -> JSONValue | None:
 def _primary(
     operation: OperationContract, status: int, response: ResponseSpec, media: MediaSpec | None, *, null: bool
 ) -> PrimarySpec:
-    """Return the primary response, deciding whether a bare value goes to FastAPI's response_model or the codecs."""
+    """Return the primary response, deciding whether a bare value goes to FastAPI's response_model or the codecs.
+
+    A JSON media whose body is its raw octets (`body_kind`) is sent by the codecs, as the bytes they are.
+    """
     bodyless = response_bodyless(operation, str(status))
     native = (
         not bodyless
         and media is not None
         and media.media_type == JSON_MEDIA_TYPE
+        and media.kind == "json"
         and (use := media.use) is not None
         and use.type is not None
     )

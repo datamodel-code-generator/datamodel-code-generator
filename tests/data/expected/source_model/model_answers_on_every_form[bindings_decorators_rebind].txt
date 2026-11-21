@@ -1,0 +1,23 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  functools: import@3 [always]; origin functools
+  C: class@6 [always]
+  g: def@17 [always]
+  g: assign@21 [always]; value functools.wraps(g)(g)
+scope class C#0 'C': code yes; first line 6
+  opened by a node evaluated in <module>#0
+  x: def@8 [always]
+  x: def@12 [always]
+  members: x
+scope function C.x#0 'x': code yes; first line 7
+  opened by a node evaluated in C#0
+  self: param@8 [function:body@8]
+  receiver: self@8
+scope function C.x#1 'x': code yes; first line 11
+  opened by a node evaluated in C#0
+  self: param@12 [function:body@12]
+  value: param@12 [function:body@12]
+  receiver: self@12
+scope function g#0 'g': code yes; first line 16
+  opened by a node evaluated in <module>#0
+== code objects: one per scope that compiles on this Python

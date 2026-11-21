@@ -1,0 +1,3 @@
+[
+  "/value enum true: invalid, model accepts"
+]

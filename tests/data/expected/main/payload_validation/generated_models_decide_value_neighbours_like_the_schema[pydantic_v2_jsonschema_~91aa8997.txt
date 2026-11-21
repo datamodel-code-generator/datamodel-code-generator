@@ -1,0 +1,5 @@
+[
+  "/c const \"0.3\": invalid, model accepts",
+  "/c const true: invalid, model accepts",
+  "/c multipleOf 0.31: invalid, model accepts"
+]

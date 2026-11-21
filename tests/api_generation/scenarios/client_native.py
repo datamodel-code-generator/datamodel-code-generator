@@ -22,7 +22,7 @@ from tests.api_generation.support.client_runtime import Stop, arecord, argument,
 from tests.api_generation.support.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Iterator
+    from collections.abc import Awaitable, Callable, Generator
     from types import ModuleType
 
 
@@ -87,7 +87,7 @@ def _url(server: NativeFixture) -> str:
 
 
 @contextmanager
-def _trusted(server: NativeFixture) -> Iterator[None]:
+def _trusted(server: NativeFixture) -> Generator[None, None, None]:
     """Let an HTTP client the SDK creates trust the fixture through the environment HTTPX2 reads, without proxies."""
     with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
         for key in tuple(os.environ):

@@ -1,0 +1,13 @@
+valid {"account": "acct_123"}: accepted
+valid {"account": {"id": "a"}}: accepted
+valid {"tags": ["abc"], "labels": ["a"], "codes": {"k": "ab"}}: accepted
+valid {"slug": "abc"}: accepted
+valid {"slug": 0}: accepted
+valid {"notes": [null, "abcd"]}: accepted
+invalid {"account": "acct_1234"}: rejected
+invalid {"tags": ["abcd"]}: rejected
+invalid {"labels": [""]}: accepted
+invalid {"codes": {"k": "abc"}}: rejected
+invalid {"slug": "xab"}: rejected
+invalid {"slug": -1}: rejected
+invalid {"notes": ["abcde"]}: rejected

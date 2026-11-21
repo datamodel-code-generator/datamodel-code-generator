@@ -1,0 +1,24 @@
+platform>=win32: 'platform>=win32' orders a fact that is not a version, or by a value that is not a release
+python>=3.x: 'python>=3.x' is not <fact><op><value> with a fact of python, formatter, black, isort, platform, pydantic
+node==20: 'node==20' is not <fact><op><value> with a fact of python, formatter, black, isort, platform, pydantic
+python=3.12: 'python=3.12' is not <fact><op><value> with a fact of python, formatter, black, isort, platform, pydantic
+platform==beos: 'platform==beos' is not <fact><op><value> with a fact of python, formatter, black, isort, platform, pydantic
+black>=24|formatter=builtin: 'formatter=builtin' is not <fact><op><value> with a fact of python, formatter, black, isort, platform, pydantic
+platform!=win32: None
+platform==win32: None
+python>=3.12: None
+python<3.12: None
+python>3.11: None
+python<=3.11: None
+black>=24: None
+black>=24.2: None
+black==24: None
+black==22: None
+black!=22: None
+pydantic>=2.5: None
+pydantic==2.0: None
+isort>=6: None
+isort==6: None
+isort!=6: None
+formatter==builtin|black>=24: None
+formatter==builtin|black<24: None

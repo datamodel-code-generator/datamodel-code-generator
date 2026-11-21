@@ -92,6 +92,12 @@ For example:
 MCP `inputSchema` and `outputSchema` entries are converted into JSON Schema definitions before generation. Local
 `$defs` and `definitions` entries inside a tool schema are hoisted and prefixed to avoid collisions between tools.
 
+A tool schema's `format` selects a type by default (`email` is `EmailStr`, `date-time` is `AwareDatetime`, `uri` is
+`AnyUrl`), so the models reject or change arguments the tool schema accepts. Models that take tool arguments as the
+schema accepts them are generated with
+[`--read-format-as-annotation`](cli-reference/typing-customization.md#read-format-as-annotation), which types each value by its `type`
+keyword.
+
 ## Supported MCP Features
 
 | Feature | Generation behavior |

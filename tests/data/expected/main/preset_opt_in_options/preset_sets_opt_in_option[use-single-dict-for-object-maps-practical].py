@@ -9,6 +9,8 @@ from pydantic import RootModel, StringConstraints
 
 
 class Model(
-    RootModel[dict[Annotated[str, StringConstraints(pattern=r'^i-|^t-|^n-')], str | int]]
+    RootModel[
+        dict[Annotated[str, StringConstraints(pattern=r'^i-|^t-|^n-')], str | int]
+    ]
 ):
     root: dict[Annotated[str, StringConstraints(pattern=r'^i-|^t-|^n-')], str | int]

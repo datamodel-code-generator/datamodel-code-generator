@@ -1,0 +1,2 @@
+`--custom-file-header-path` can not be used with `--custom-file-header`.
+exit: ERROR

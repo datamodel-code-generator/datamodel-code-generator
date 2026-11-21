@@ -1,0 +1,4 @@
+valid {}: accepted
+valid {"e": ["a"], "t": []}: accepted
+invalid {"e": []}: rejected
+invalid {"e": [1]}: rejected

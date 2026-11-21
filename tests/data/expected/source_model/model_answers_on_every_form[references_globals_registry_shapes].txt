@@ -1,0 +1,35 @@
+== references
+9:4 key store in <module> -> local <module> @9
+9:11 globals load in <module> -> builtin; origin builtins.globals
+11:0 ITEMS store in <module> -> local <module> @11
+11:10 builtins load in <module> -> local <module> @6; origin builtins
+12:0 SPREAD store in <module> -> local <module> @12
+12:12 namespace load in <module> -> local <module> @7; origin builtins.globals
+13:0 KEYS store in <module> -> local <module> @13
+13:7 sorted load in <module> -> builtin; origin builtins.sorted
+13:14 namespace load in <module> -> local <module> @7; origin builtins.globals
+14:0 LOOKUP store in <module> -> local <module> @14
+14:9 globals load in <module> -> builtin; origin builtins.globals
+15:0 globals load in <module> -> builtin; origin builtins.globals
+16:0 COUNT store in <module> -> local <module> @16
+16:8 len load in <module> -> builtin; origin builtins.len
+16:12 globals load in <module> -> builtin; origin builtins.globals
+20:29 globals load in __getattr__ -> builtin; origin builtins.globals
+20:21 item store in __getattr__.<locals>.<listcomp> -> local __getattr__.<locals>.<listcomp> @20
+20:50 item load in __getattr__.<locals>.<listcomp> -> local __getattr__.<locals>.<listcomp> @20
+20:61 name load in __getattr__.<locals>.<listcomp> -> enclosing __getattr__ @19
+20:12 item load in __getattr__.<locals>.<listcomp> -> local __getattr__.<locals>.<listcomp> @20
+24:11 list load in __dir__ -> builtin; origin builtins.list
+24:16 globals load in __dir__ -> builtin; origin builtins.globals
+28:11 list load in shadowed -> builtin; origin builtins.list
+28:16 globals load in shadowed -> local shadowed @27
+33:15 dict load in method_in_hook.<locals>.helper -> builtin; origin builtins.dict
+33:20 globals load in method_in_hook.<locals>.helper -> builtin; origin builtins.globals
+35:11 helper load in method_in_hook -> local method_in_hook @32
+uses of <module>:builtins@6: call:globals@11
+uses of <module>:namespace@7: call@12, call@13
+uses of __getattr__:name@19: read@20
+uses of __getattr__.<locals>.<listcomp>:item@20: read@20, read@20
+uses of shadowed:globals@27: call@28
+uses of method_in_hook:helper@32: read@35
+== code objects: one per scope that compiles on this Python

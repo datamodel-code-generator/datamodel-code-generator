@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounds",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "value": {
+      "type": "integer"
+    },
+    "flagged": {
+      "$ref": "#/$defs/Flagged"
+    },
+    "readings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Reading"
+      }
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    },
+    "combo": {
+      "$ref": "#/$defs/Combo"
+    },
+    "derived": {
+      "$ref": "#/$defs/Derived"
+    },
+    "gate": {
+      "$ref": "#/$defs/Gate"
+    },
+    "diamond": {
+      "$ref": "#/$defs/Diamond"
+    }
+  },
+  "required": [
+    "kind",
+    "value"
+  ],
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "a"
+      }
+    },
+    "required": [
+      "kind"
+    ]
+  },
+  "then": {
+    "properties": {
+      "value": {
+        "minimum": 10
+      },
+      "kind": true
+    }
+  },
+  "else": {
+    "properties": {
+      "value": {
+        "maximum": 5
+      }
+    }
+  },
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "flag": {},
+        "size": {
+          "type": "number"
+        }
+      },
+      "if": {
+        "properties": {
+          "flag": {
+            "const": true
+          }
+        },
+        "required": [
+          "flag"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/Large"
+      }
+    },
+    "Large": {
+      "properties": {
+        "size": {
+          "exclusiveMinimum": 10
+        }
+      }
+    },
+    "Reading": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "enum": [
+            "c",
+            "f"
+          ]
+        },
+        "temp": {
+          "type": "number"
+        }
+      },
+      "if": {
+        "properties": {
+          "unit": {
+            "const": "c"
+          }
+        },
+        "required": [
+          "unit"
+        ]
+      },
+      "then": {
+        "properties": {
+          "temp": {
+            "exclusiveMaximum": 100
+          }
+        }
+      }
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "few"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "count": {
+            "maximum": 3
+          }
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "limit": {
+              "type": "integer"
+            }
+          },
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "many"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "limit": {
+                "minimum": 100
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Combo": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "t": {
+          "type": "string"
+        },
+        "n": {
+          "type": "number"
+        }
+      },
+      "if": {
+        "properties": {
+          "t": {
+            "const": "x"
+          }
+        },
+        "required": [
+          "t"
+        ]
+      },
+      "then": {
+        "required": [
+          "n"
+        ],
+        "properties": {
+          "n": {
+            "$ref": "#/$defs/AtMostThree"
+          }
+        }
+      }
+    },
+    "AtMostThree": {
+      "maximum": 3
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {
+        "p": {
+          "type": "integer"
+        }
+      }
+    },
+    "Derived": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Plain"
+        },
+        {
+          "if": {
+            "properties": {
+              "p": {
+                "const": 0
+              }
+            },
+            "required": [
+              "p"
+            ]
+          },
+          "else": {
+            "properties": {
+              "p": {
+                "minimum": 5
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Gate": {
+      "type": "object",
+      "properties": {
+        "open": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "open": {
+            "const": true
+          }
+        },
+        "required": [
+          "open"
+        ]
+      },
+      "then": {
+        "required": [
+          "key"
+        ]
+      }
+    },
+    "Diamond": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "$ref": "#/$defs/Child"
+        }
+      ]
+    }
+  }
+}

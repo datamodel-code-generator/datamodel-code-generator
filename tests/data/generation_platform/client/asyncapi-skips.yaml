@@ -1,0 +1,655 @@
+asyncapi: 3.1.0
+info:
+  title: Skipped channels
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+  shared:
+    $ref: '#/components/servers/shared'
+  remote:
+    $ref: 'asyncapi-other.yaml#/servers/remote'
+  secured:
+    host: secure.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/user'
+  broker:
+    host: kafka.example.com
+    protocol: kafka
+channels:
+  orders:
+    address: orders
+    servers:
+      - $ref: '#/servers/broker'
+    messages:
+      order:
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+  posted:
+    address: /posted
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        method: POST
+        query:
+          type: object
+          properties:
+            token:
+              type: string
+    messages:
+      note:
+        payload:
+          type: string
+  packed:
+    address: /packed
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      blob:
+        contentType: application/x-msgpack
+        payload:
+          type: object
+  private:
+    address: /private
+    servers:
+      - $ref: '#/servers/secured'
+    messages:
+      secret:
+        payload:
+          type: string
+  dynamic:
+    address: null
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      ping:
+        payload:
+          type: string
+  rpc:
+    address: /rpc
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      call:
+        payload:
+          type: object
+          properties:
+            method:
+              type: string
+      result:
+        payload:
+          type: object
+          properties:
+            value:
+              type: number
+      error:
+        payload:
+          type: object
+          properties:
+            code:
+              type: integer
+  alerts:
+    $ref: 'asyncapi-other.yaml#/channels/alerts'
+  notes:
+    address: /notes/{region}
+    servers:
+      - $ref: '#/servers/shared'
+    parameters:
+      region:
+        $ref: 'asyncapi-other.yaml#/components/parameters/region'
+    messages:
+      note:
+        $ref: 'asyncapi-other.yaml#/components/messages/note'
+  documents:
+    address: /documents
+    servers:
+      - $ref: '#/servers/shared'
+    messages:
+      document:
+        payload:
+          schemaFormat: application/schema+json;version=draft-07
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+            required: [title]
+  reports:
+    address: /reports
+    servers:
+      - $ref: '#/servers/shared'
+    messages:
+      report:
+        payload:
+          $ref: 'asyncapi-other.yaml#/components/schemas/Report'
+  audited:
+    address: /audited
+    servers:
+      - $ref: '#/servers/shared'
+    messages:
+      entry:
+        contentType: text/plain
+        payload:
+          type: string
+  echo:
+    address: /echo
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      text:
+        contentType: text/plain
+        payload:
+          type: string
+  framed:
+    address: /framed
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      $ref: '#/components/channelBindings/posted'
+    messages:
+      frame:
+        payload:
+          type: string
+  traited:
+    address: /traited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+          - contentType: text/plain
+        payload:
+          type: string
+  owned:
+    address: /owned
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: string
+  inherited:
+    address: /inherited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      blob:
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: object
+  foreign:
+    address: /foreign
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      $ref: 'asyncapi-other.yaml#/components/channelBindings/posted'
+    messages:
+      blob:
+        traits:
+          - $ref: 'asyncapi-other.yaml#/components/messageTraits/packed'
+        payload:
+          type: object
+  borrowed:
+    address: /borrowed
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        $ref: 'asyncapi-other.yaml#/components/channelBindings/posted/ws'
+    messages:
+      note:
+        payload:
+          type: string
+  queried:
+    address: /queried
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        query:
+          $ref: 'asyncapi-other.yaml#/components/schemas/Report'
+    messages:
+      note:
+        payload:
+          type: string
+  guarded:
+    address: /guarded
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+  delegated:
+    address: /delegated
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+  encoded:
+    address: /encoded
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      chunk:
+        contentType: text/plain
+        payload:
+          type: string
+          contentEncoding: base64
+  upgraded:
+    address: /upgraded
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            Upgrade:
+              type: string
+            Connection:
+              type: string
+            Sec-WebSocket-Protocol:
+              type: string
+              enum: [chat.v1, chat v2]
+          required: [Upgrade, Sec-WebSocket-Protocol]
+    messages:
+      line:
+        payload:
+          type: string
+  digested:
+    address: /digested
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  listed:
+    address: /listed
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          $ref: '#/components/schemas/Line/allOf/0'
+  delegatedAuth:
+    address: /delegated-auth
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  partnered:
+    address: /partnered
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  crowded:
+    address: /crowded
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  localIds:
+    address: /ids
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            X-Id:
+              $ref: '#/components/schemas/Id'
+    messages:
+      line:
+        payload:
+          type: string
+  sharedIds:
+    address: /ids
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        headers:
+          allOf:
+            - $ref: 'asyncapi-other.yaml#/components/schemas/IdHeaders'
+    messages:
+      line:
+        payload:
+          type: string
+operations:
+  receiveLocalIds:
+    action: receive
+    channel:
+      $ref: '#/channels/localIds'
+  receiveSharedIds:
+    action: receive
+    channel:
+      $ref: '#/channels/sharedIds'
+  receiveGuarded:
+    action: receive
+    channel:
+      $ref: '#/channels/guarded'
+    traits:
+      - $ref: '#/components/operationTraits/secured'
+  receiveDelegated:
+    action: receive
+    channel:
+      $ref: '#/channels/delegated'
+    traits:
+      - $ref: 'asyncapi-other.yaml#/components/operationTraits/audited'
+  receiveEncoded:
+    action: receive
+    channel:
+      $ref: '#/channels/encoded'
+  receiveUpgraded:
+    action: receive
+    channel:
+      $ref: '#/channels/upgraded'
+    security:
+      - user: []
+  receiveDigested:
+    action: receive
+    channel:
+      $ref: '#/channels/digested'
+    security:
+      - $ref: '#/components/securitySchemes/digest'
+  receiveListed:
+    action: receive
+    channel:
+      $ref: '#/channels/listed'
+  receiveFrame:
+    action: receive
+    channel:
+      $ref: '#/channels/framed'
+  receiveLine:
+    action: receive
+    channel:
+      $ref: '#/channels/traited'
+  receiveOwned:
+    action: receive
+    channel:
+      $ref: '#/channels/owned'
+  receiveInherited:
+    action: receive
+    channel:
+      $ref: '#/channels/inherited'
+  receiveForeign:
+    action: receive
+    channel:
+      $ref: '#/channels/foreign'
+  receiveOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+  receiveNote:
+    action: receive
+    channel:
+      $ref: '#/channels/posted'
+  receiveBlob:
+    action: receive
+    channel:
+      $ref: '#/channels/packed'
+  receiveSecret:
+    action: receive
+    channel:
+      $ref: '#/channels/private'
+  receivePing:
+    action: receive
+    channel:
+      $ref: '#/channels/dynamic'
+  call:
+    action: receive
+    channel:
+      $ref: '#/channels/rpc'
+    messages:
+      - $ref: '#/channels/rpc/messages/call'
+    reply:
+      channel:
+        $ref: '#/channels/rpc'
+      messages:
+        - $ref: '#/channels/rpc/messages/result'
+  answer:
+    action: send
+    channel:
+      $ref: '#/channels/rpc'
+    messages:
+      - $ref: '#/channels/rpc/messages/result'
+      - $ref: '#/channels/rpc/messages/error'
+  echo:
+    action: receive
+    channel:
+      $ref: '#/channels/echo'
+  shout:
+    action: send
+    channel:
+      $ref: '#/channels/echo'
+  readNotes:
+    action: receive
+    channel:
+      $ref: '#/channels/notes'
+  publishReports:
+    action: send
+    channel:
+      $ref: '#/channels/reports'
+  readDocuments:
+    action: receive
+    channel:
+      $ref: '#/channels/documents'
+  audit:
+    action: receive
+    channel:
+      $ref: '#/channels/audited'
+    security:
+      - $ref: '#/components/securitySchemes/user'
+  legacy:
+    action: publish
+    channel:
+      $ref: '#/channels/audited'
+  unbound:
+    action: send
+    channel:
+      address: /inline
+  receiveDelegatedAuth:
+    action: receive
+    channel:
+      $ref: '#/channels/delegatedAuth'
+    security:
+      - $ref: '#/components/securitySchemes/partner'
+      - $ref: '#/components/securitySchemes/bearer'
+  receivePartnered:
+    action: receive
+    channel:
+      $ref: '#/channels/partnered'
+    security:
+      - $ref: '#/components/securitySchemes/partner'
+  crowd1:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: &either
+      - $ref: '#/components/securitySchemes/bearer'
+      - $ref: '#/components/securitySchemes/key'
+  crowd2:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd3:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd4:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd5:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd6:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd7:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd8:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd9:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd10:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd11:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd12:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd13:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd14:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd15:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd16:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd17:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd18:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd19:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd20:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd21:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd22:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd23:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd24:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd25:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+components:
+  schemas:
+    Id:
+      type: string
+    Line:
+      allOf:
+        - type: string
+          maxLength: 80
+  operationTraits:
+    secured:
+      security:
+        - $ref: '#/components/securitySchemes/user'
+  servers:
+    shared:
+      host: shared.example.com
+      pathname: /v3
+      protocol: ws
+  securitySchemes:
+    user:
+      type: userPassword
+    digest:
+      type: http
+      scheme: digest
+    bearer:
+      type: http
+      scheme: bearer
+    key:
+      type: httpApiKey
+      in: query
+      name: key
+    partner:
+      $ref: 'asyncapi-other.yaml#/components/securitySchemes/partner'
+  channelBindings:
+    posted:
+      ws:
+        method: POST
+  messageTraits:
+    packed:
+      contentType: application/x-msgpack

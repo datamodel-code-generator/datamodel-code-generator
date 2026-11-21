@@ -38,7 +38,7 @@ defaults and serialization aliases, the forward schemas of allOf, ``Parser._appl
 
 A class key of the options read at L1 (``ConstructionKeys``) also names the model whose name in the output it is,
 where a rename after L2 (``GenerationStore.renames``) gave the model that name: L6 ``translate_final_name_keys``
-records the name by the path the model had at L2, ``__init__.py:_parse_generation_run`` parses the input once more,
+records the name by the path the model had at L2, ``_generation.py:_parse_generation_run`` parses the input once more,
 and every lookup of the model at that path compares the class part with that name after the name of its row
 (``ClassScope``, ``ModelResolver.class_scope``); the template data of the name joins that of the path, before the
 entry of the name of its row.
@@ -48,7 +48,7 @@ after names are final):
 
 * ``legacy-reparse-for-final-names`` (``ConstructionKeys``): the L1 rows read the name a model is created under, but a
   yielding name settles at L2. When a yielding name changed and a key of an L1 row names the created or the final
-  name, ``__init__.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
+  name, ``_generation.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
 * ``type-overrides-first-dot``: the class part of a ``--type-overrides`` key is what precedes its first dot
   (``type_override_classes``), while a ``Class.field`` key of the other options names a class at each of its dots
@@ -57,8 +57,13 @@ after names are final):
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
+from dataclasses import field
+from difflib import get_close_matches
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar, cast
+
+from typing_extensions import override
+
+from datamodel_code_generator._records import mutable_record, record
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -71,12 +76,15 @@ __all__ = [
     "ModelNameKeys",
     "ModelNameRecord",
     "ModelNames",
+    "RecordedOverrides",
     "ScopedKeyRow",
+    "TypeOverrideLookups",
     "TypeOverrideRow",
     "class_field_key",
     "class_key",
     "class_name_keys",
     "class_scope",
+    "closest_type_override_key",
     "field_keys",
     "first_given",
     "first_present",
@@ -84,6 +92,7 @@ __all__ = [
     "model_level_type_override",
     "model_name_path_keys",
     "model_type_override",
+    "record_written_as",
     "scoped_key",
     "template_data_keys",
     "translate_class_keys",
@@ -136,7 +145,7 @@ def class_key(row: ClassKeyRow, model: ModelNames | str) -> str:
     return model.name
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ClassScope:
     """The names of one model that the class part of a key is compared with, in order.
 
@@ -231,7 +240,12 @@ def model_type_override(
     models built from it and the base layouts read one name. Row ``predicted-class-name`` compares them with the class
     name a parser gives before the resolver allocates it, passed as ``model`` (the Avro fixed types).
     """
-    return overrides.get(class_key(_TYPE_OVERRIDE_CLASS_KEYS[row], model))
+    if not overrides:
+        return None
+    key = class_key(_TYPE_OVERRIDE_CLASS_KEYS[row], model)
+    if not isinstance(model, str):
+        record_written_as(overrides, model.original_name, key)
+    return overrides.get(key)
 
 
 def type_override_classes(type_overrides: Iterable[str]) -> frozenset[str]:
@@ -239,7 +253,71 @@ def type_override_classes(type_overrides: Iterable[str]) -> frozenset[str]:
     return frozenset(class_name for key in type_overrides for class_name, _ in scoped_key(key, row="first-dot"))
 
 
-@dataclass(frozen=True, slots=True)
+@mutable_record(slots=True)
+class TypeOverrideLookups:
+    """The ``--type-overrides`` lookups of one parse, which tell the keys that matched nothing and the closest names."""
+
+    probed: set[str] = field(default_factory=set)
+    """Every key a lookup compared with the keys: the names that a key would have matched."""
+    found: set[str] = field(default_factory=set)
+    """The keys a lookup found."""
+    written_as: dict[str, set[str]] = field(default_factory=dict)
+    """The keys a lookup compared, by the same key written with the original (schema) name of the model."""
+
+
+class RecordedOverrides(dict[str, _ValueT]):  # ruff: ignore[subclass-builtin]
+    """The ``--type-overrides`` keys of a parse, as a dict that records each lookup in its ``TypeOverrideLookups``.
+
+    A lookup by key (``get``, ``in``) is a match attempt: it records the key it compares, and the key as found when
+    the dict holds it. Every lookup returns what the plain dict returns; ``[]``, iteration, ``.values()``, truthiness
+    and equality are those of the dict and record nothing (no lookup site uses ``[]``), so code that only asks whether
+    the option names a key iterates instead of looking it up. A copy (``copy.copy``) shares the record; ``dict(...)``
+    is a plain dict.
+    """
+
+    __slots__ = ("lookups",)
+
+    def __init__(self, items: Mapping[str, _ValueT], lookups: TypeOverrideLookups) -> None:
+        """Hold ``items`` and record their lookups in ``lookups``."""
+        super().__init__(items)
+        self.lookups = lookups
+
+    def _record(self, key: str) -> None:
+        self.lookups.probed.add(key)
+        if super().__contains__(key):
+            self.lookups.found.add(key)
+
+    @override
+    def __contains__(self, key: object) -> bool:
+        self._record(cast("str", key))
+        return super().__contains__(key)
+
+    @override
+    def get(self, key: object, default: object = None, /) -> object:  # ty: ignore[invalid-method-override]
+        self._record(cast("str", key))
+        return super().get(key, default)
+
+
+def record_written_as(overrides: Mapping[str, object], written: str, key: str) -> None:
+    """Record that a lookup compared ``key``, which ``written`` writes with the original name of its model."""
+    if isinstance(overrides, RecordedOverrides) and written != key:
+        overrides.lookups.written_as.setdefault(written, set()).add(key)
+
+
+def closest_type_override_key(key: str, lookups: TypeOverrideLookups) -> str | None:
+    """Return the key that would have matched where ``key`` matched nothing, or None.
+
+    The key written with the class name of a model whose original (schema) name ``key`` writes comes first, the
+    shortest; then the closest key a lookup compared, of the same form (with or without a class part).
+    """
+    if written := lookups.written_as.get(key):
+        return min(written, key=lambda name: (len(name), name))
+    scoped = _SCOPE_SEPARATOR in key
+    candidates = sorted(name for name in lookups.probed if (_SCOPE_SEPARATOR in name) == scoped)
+    return next(iter(get_close_matches(key, candidates, n=1, cutoff=0.7)), None)
+
+
+@record
 class ConstructionKeys:
     """The class names the L1 rows key, for row ``legacy-reparse-for-final-names``."""
 
@@ -279,7 +357,7 @@ def class_name_keys(model_name_map: Mapping[str, str] | None) -> dict[str, str]:
     return {key: value for key, value in (model_name_map or {}).items() if _PATH_KEY_MARKER not in key}
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class ModelNameRecord:
     """What a run without the class-name keys of ``--model-name-map`` named, by schema path, for the translation."""
 
@@ -296,7 +374,7 @@ class ModelNameRecord:
     """The name of every generated model at the end of the run."""
 
 
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class ModelNameKeys:
     """The ``--model-name-map`` a run applies, with the user's key behind each of its keys and the reserved names.
 

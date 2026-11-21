@@ -11,35 +11,36 @@ import re
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import replace
-from functools import partial
 from itertools import chain
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, cast
 from warnings import warn
 
 from pydantic import Field, ValidationError, field_validator, model_validator
 from typing_extensions import override
 
-from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
-from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
+from datamodel_code_generator._container_kinds import CONTAINERS, UNHASHABLE_CONTAINERS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
-from datamodel_code_generator._python_syntax import call_text
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY as FIELDLESS_SITE_KEY
+from datamodel_code_generator._model_keys import (
+    is_fieldless_site,
+)
+from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate
+from datamodel_code_generator._reference_graph import EdgeKind
 from datamodel_code_generator._regex_syntax import (
-    has_lone_surrogate,
     pattern_engine,
     selects_python_engine,
 )
-from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
-from datamodel_code_generator.enums import AliasGenerator
+from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, form_path
+from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator.enums import AliasGenerator, DataModelType
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -50,7 +51,7 @@ from datamodel_code_generator.imports import (
     _import_bindings,
     _import_key,
 )
-from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace, get_data_model_types
 from datamodel_code_generator.model._decisions.hashability import (
     HashClassFacts,
     ValueHashFacts,
@@ -58,10 +59,8 @@ from datamodel_code_generator.model._decisions.hashability import (
 )
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
-    DEFAULT_VALUE,
-    MISSING_DEFAULT,
+    RENDER_READY,
     CallPlan,
-    FieldDefault,
     FieldRenderPlan,
     Kwarg,
     Omitted,
@@ -76,18 +75,22 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
+    _base_walk,
     _builtin_renderer,
     _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
-    _model_key_of_model,
+    _has_opaque_custom_base,
+    _model_written,
     _ModelKeys,
     _uses_original_template_loader,
+    _written_name,
     overrides_builtin_templates,
 )
 from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
 from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
 from datamodel_code_generator.model.pydantic_base import (
+    PYTHON_ENGINE_BUILDS_KEY,
     BaseModelBase,
     _constraint_arguments,
     _FieldArguments,
@@ -95,10 +98,6 @@ from datamodel_code_generator.model.pydantic_base import (
 from datamodel_code_generator.model.pydantic_base import Constraints as _Constraints
 from datamodel_code_generator.model.pydantic_base import (
     DataModelField as _PydanticBaseDataModelField,
-)
-from datamodel_code_generator.model.pydantic_v2._annotated_types import (
-    AnnotatedConstraintDataType,
-    annotated_constraint_metadata,
 )
 from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
@@ -114,32 +113,35 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_ALIAS_GENERATOR_TO_PASCAL,
     IMPORT_ALIAS_GENERATOR_TO_SNAKE,
     IMPORT_BASE_MODEL,
-    IMPORT_CONBYTES,
-    IMPORT_CONDECIMAL,
     IMPORT_CONFIG_DICT,
-    IMPORT_CONFLOAT,
-    IMPORT_CONINT,
     IMPORT_CONSTR,
     IMPORT_FIELD,
     IMPORT_FIELD_VALIDATOR,
     IMPORT_MISSING,
     IMPORT_MODEL_VALIDATOR,
-    IMPORT_MULTIPLE_OF,
     IMPORT_PYDANTIC_MISSING,
     IMPORT_STRING_CONSTRAINTS,
     IMPORT_TYPE_ADAPTER,
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
-from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager, EncodedTextDataType
+from datamodel_code_generator.model.pydantic_v2.types import (
+    AnnotatedConstraintDataType,
+    DataTypeManager,
+    EncodedTextDataType,
+    PydanticV2DataType,
+    constrained_base,
+)
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
     SchemaRuntimeValidation,
+    _counted_engine,
     _counts_every_pattern,
     _is_internal_schema_runtime_validation,
     alias_keeps_string_pattern,
+    alias_pattern_counter,
     conditional_value_uses_json_equality,
     unique_items_path_uses_regex,
 )
@@ -148,15 +150,14 @@ from datamodel_code_generator.python_literal import (
     _normalize_string,
     _normalized_safe_python_name,
     _text_constructor_expression,
-    represent_python_value,
     represent_untrusted_python_value,
     stable_repr,
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType, keep_node_records
-from datamodel_code_generator.types import _is_value_literal, chain_as_tuple
+from datamodel_code_generator.types import NONE, _is_value_literal, chain_as_tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from jinja2 import Template
     from typing_extensions import TypedDict, Unpack
@@ -166,7 +167,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._regex_syntax import PatternEngine
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports, _ImportKey
+    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model._decisions.assignment import WrittenAssignment
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
         SchemaRuntimeValidationModulePlan,
     )
@@ -176,13 +178,20 @@ if TYPE_CHECKING:
 
 
 _CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
-_ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
-    _import_key(IMPORT_CONSTR): "str",
-    _import_key(IMPORT_CONINT): "int",
-    _import_key(IMPORT_CONFLOAT): "float",
-    _import_key(IMPORT_CONDECIMAL): "Decimal",
-    _import_key(IMPORT_CONBYTES): "bytes",
-}
+_IMPORT_JSON_VALUE = Import.from_full_path(form_path("pydantic.json_value"))
+
+
+def _constraint_base(data_type: DataType, *, annotated_string: bool = False, encoded: bool = False) -> str | None:
+    """Return the name of the scalar a constrained scalar constrains, or None for any other type.
+
+    With ``annotated_string``, an annotated string constrains ``str``; with ``encoded``, a value decoded from base64
+    text with constraints constrains the type its decoding writes.
+    """
+    if annotated_string and getattr(data_type, "annotated_string", False):
+        return "str"
+    if encoded and (base := getattr(data_type, "encoded_base", None)):
+        return base
+    return constrained_base(data_type)
 
 
 class _RawRepr:
@@ -280,13 +289,13 @@ class Constraints(_Constraints):
     """Pydantic v2 field constraints with pattern support."""
 
     # To override existing pattern alias
-    regex: Optional[str] = Field(None, alias="regex")  # noqa: UP045
-    pattern: Optional[str] = Field(None, alias="pattern")  # noqa: UP045
+    regex: Optional[str] = Field(None, alias="regex")
+    pattern: Optional[str] = Field(None, alias="pattern")
 
     @model_validator(mode="before")
     def validate_min_max_items(cls, values: Any) -> dict[str, Any]:  # noqa: N805
         """Validate and convert minItems/maxItems to minLength/maxLength."""
-        if not isinstance(values, dict):  # pragma: no cover
+        if not isinstance(values, dict):
             return values
         min_items = values.pop("minItems", None)
         if min_items is not None:
@@ -318,6 +327,9 @@ _UNIQUE_ITEMS_ARGUMENT = "unique_items"
 """The constraint argument ``Field()`` of Pydantic v2 cannot express."""
 _FROZEN = Why(RuleId("D11.pydantic.frozen"), keyword="readOnly", option="--use-frozen-field")
 _UNION_MODE = Why(RuleId("D6.union-mode"), keyword="union_mode")
+_UNION_WRAPPING_CONSTRAINTS: frozenset[str] = _applicability.NUMBER_FIELD_KEYWORDS | _applicability.LENGTH_META_KEYWORDS
+"""The constraint arguments Pydantic applies before ``union_mode``: on a union, each wraps it in a validator, which
+``union_mode`` cannot take."""
 _ALIAS_GENERATOR = Why(RuleId("D9.alias.generator"), keyword="alias")
 _ALIAS_GENERATOR_PIN = Why(RuleId("D9.alias.generator-pinned"), keyword="alias")
 _VALIDATION_ALIASES = Why(RuleId("D9.alias.validation-choices"), keyword="validation_aliases")
@@ -570,7 +582,7 @@ def _compiled_python_pattern(
     """
     if (
         not isinstance(pattern, str)
-        or has_lone_surrogate(pattern)
+        or holds_lone_surrogate(pattern)
         or not (_needs_python_regex_engine(pattern, data_type, field) if prefix is None else pattern.startswith(prefix))
     ):
         return None
@@ -630,8 +642,8 @@ def _copy_alias_data_type(
         else None
     )
     base = (
-        _ANNOTATED_CONSTRAINT_BASES.get(_import_key(import_))
-        if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
+        _constraint_base(data_type)
+        if data_type.is_func and kwargs and not isinstance(data_type, AnnotatedConstraintDataType)
         else None
     )
     if pattern is None and base is None and dict_key is None and not any(nested):
@@ -640,22 +652,9 @@ def _copy_alias_data_type(
     if base is None:
         copied = data_type.model_copy()
     else:
-        values: dict[str, Any] = {
-            **dict(data_type),
-            "type": None,
-            "parent": None,
-            "children": [],
-            "constrained_base": base,
-        }
-        copied = AnnotatedConstraintDataType.model_construct(**values)
+        copied = AnnotatedConstraintDataType.of_call(data_type, base)
         keep_node_records(copied, data_type)
-        field_keywords, multiple_of = annotated_constraint_metadata(base, cast("dict[str, Any]", kwargs))
-        annotation_imports = (IMPORT_FIELD,) if field_keywords else ()
-        if multiple_of is not None:
-            annotation_imports = (*annotation_imports, IMPORT_MULTIPLE_OF)
-        if annotation_imports:
-            annotation_imports = (IMPORT_ANNOTATED, *annotation_imports)
-        runtime_imports = (*annotation_imports, *runtime_imports)
+        runtime_imports = (*copied.runtime_expression_imports, *runtime_imports)
     if pattern is not None:
         copied.kwargs = {**cast("dict[str, Any]", kwargs), "pattern": pattern}
         runtime_imports = (*runtime_imports, pattern.import_)
@@ -690,9 +689,45 @@ def _prepare_type_alias_field(
     return True
 
 
+def _type_without_pattern(data_type: DataType) -> DataType:
+    """Return a new type that writes ``data_type`` without its ``pattern`` (#6941).
+
+    It keeps its class and its other keywords; a string type left with none is the ``str`` it constrains.
+    """
+    kwargs = {key: value for key, value in (data_type.kwargs or {}).items() if key != "pattern"}
+    fresh = {"parent": None, "children": [], "data_types": []}
+    if kwargs or _constraint_base(data_type, annotated_string=True) != "str":
+        return data_type.model_copy(update={**fresh, "kwargs": kwargs or None})
+    values = {**dict(data_type), **fresh, "type": "str", "import_": None, "is_func": False, "kwargs": None}
+    written = PydanticV2DataType.model_construct(None, **values)
+    keep_node_records(written, data_type)
+    return written
+
+
+def _writes_no_call_without_plan(field: DataModelFieldBase) -> bool:
+    """Return whether ``field`` has nothing a ``Field()`` call could write and needs no null default, so no call.
+
+    Only the Pydantic v2 field class itself answers it, its subclasses build their plans: its plan is then built
+    without a call (``_build_render_plan``) and its imports read no plan (``WRITES_NO_CALL_WITHOUT_PLAN``).
+    """
+    return (
+        type(field) is DataModelField
+        and not field.is_class_var
+        and not field._may_have_field_statement()  # noqa: SLF001
+        and field._alias_generator_name_from_parent() is None  # noqa: SLF001
+        and ((parent := field.parent) is None or not parent._uses_custom_root_template)  # noqa: SLF001
+        and not field._requires_null_default(  # noqa: SLF001
+            missing_sentinel=field._uses_missing_sentinel(factory_present=False)  # noqa: SLF001
+        )
+    )
+
+
 def _needs_model_regex_engine(fields: list[DataModelFieldBase]) -> bool:
-    """Return whether a pattern of the fields needs the ``python-re`` engine of the model that holds them."""
-    return has_lookaround_pattern(fields)
+    """Return whether a pattern of the fields needs the ``python-re`` engine of the model that holds them.
+
+    A lone surrogate is left to ``_select_surrogate_regex_engines``.
+    """
+    return has_lookaround_pattern(fields, surrogates=False)
 
 
 def _pattern_needs_holder_engine(
@@ -717,6 +752,38 @@ def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
         args.pop(_COMPILED_PATTERN_KEY, "compiled-pattern-metadata", _COMPILED_PATTERN)
 
 
+def _choice_key(member: DataType) -> object:
+    """Return what makes two members of a union one choice: a ``Literal``'s set of values, else the written type."""
+    if member.literals and not member.enum_member_literals and not member.alias:
+        return frozenset((type(value), value) for value in member.literals)
+    return member.type_hint
+
+
+def _validates_as_union(data_type: DataType) -> bool:
+    """Return whether Pydantic validates a type as a union of two or more choices, the one schema ``union_mode`` takes.
+
+    Pydantic validates a union beside None as the union, and a type alias as its value: a type is one when its members,
+    None aside, write two or more types (equal ``Literal`` types are one) or one that is such a union, when it names
+    a type alias whose value is one, or when the annotation it is given (``x-python-type``) joins two or more types.
+    Any other type is a single choice.
+    """
+    if data_type in CONTAINERS:
+        return False
+    if not (data_type.alias or data_type.type):
+        if data_type.data_types:
+            choices = [
+                *{_choice_key(member): member for member in data_type.data_types if member.type != NONE}.values()
+            ]
+            return len(choices) > 1 or (len(choices) == 1 and _validates_as_union(choices[0]))
+        if (reference := data_type.reference) is not None and (source := reference.source) is not None:
+            return source.is_alias and any(_validates_as_union(field.data_type) for field in source.fields[:1])
+    if (bound := data_type.python_type) is None:
+        return False
+    from datamodel_code_generator._python_type_annotation import iter_union_choices  # noqa: PLC0415
+
+    return len({*iter_union_choices(bound.expression)}) > 1
+
+
 class DataModelField(_PydanticBaseDataModelField):
     """Pydantic v2 field with Field() constraints and json_schema_extra support."""
 
@@ -728,7 +795,9 @@ class DataModelField(_PydanticBaseDataModelField):
     _TYPE_MANAGER: ClassVar[type[DataTypeManagerBase]] = DataTypeManager
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
+    _TYPE_WITHOUT_PATTERN = staticmethod(_type_without_pattern)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
+    WRITES_NO_CALL_WITHOUT_PLAN = staticmethod(_writes_no_call_without_plan)
     PATTERN_NEEDS_HOLDER_ENGINE = staticmethod(_pattern_needs_holder_engine)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
@@ -743,39 +812,64 @@ class DataModelField(_PydanticBaseDataModelField):
         "pattern",
     }
     _DEFAULT_FIELD_KEYS: ClassVar[frozenset[str]] = _PYDANTIC_V2_DEFAULT_FIELD_KEYS
-    constraints: Optional[Constraints] = None  # noqa: UP045  # ty: ignore[invalid-mutable-override]
+    constraints: Optional[Constraints] = None  # ty: ignore[invalid-mutable-override]
     can_have_extra_keys: ClassVar[bool] = False
     _PYDANTIC_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     _PYDANTIC_EXTRA_PLAIN_ANNOTATION_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
 
     @override
     def _pydantic_constructs(self) -> tuple[PydanticConstruct, ...]:
-        """Return the Pydantic constructs that the field's ``Field()`` data and constrained types write."""
-        data, _ = self._get_field_data_and_default_factory()
+        """Return the Pydantic constructs that the field's ``Field()`` call and constrained types write."""
+        call = self._render_plan().call
+        written = {} if call is None else {argument.name: argument.value for argument in call.kwargs}
         constructs: list[PydanticConstruct] = []
-        if "union_mode" in data:
+        if "union_mode" in written:
             constructs.append("pydantic.union_mode")
-        if isinstance(pattern := data.get("pattern"), PythonRuntimeExpression) or any(
+        if isinstance(pattern := written.get("pattern"), PythonRuntimeExpression) or any(
             isinstance((data_type.kwargs or {}).get("pattern"), PythonRuntimeExpression)
             for data_type in self.data_type.all_data_types
         ):
             constructs.append("pydantic.compiled_pattern")
+        if any(data_type.import_ == _IMPORT_JSON_VALUE for data_type in self.data_type.all_data_types):
+            constructs.append("pydantic.json_value")
         if pattern is not None:
-            string_type = _pattern_data_type(self.data_type, includes_bytes=False)
-            if string_type is None and _pattern_data_type(self.data_type, includes_bytes=True) is not None:
-                constructs.append("pydantic.bytes_pattern")
-            elif string_type is not None and any(
-                member.type in _BYTES_PATTERN_TYPES for member in self.data_type.data_types
-            ):
-                constructs.append("pydantic.str_bytes_union_pattern")
+            match self._pattern_member_kind():
+                case "bytes":
+                    constructs.append("pydantic.bytes_pattern")
+                case "string" if any(member.type in _BYTES_PATTERN_TYPES for member in self.data_type.data_types):
+                    constructs.append("pydantic.str_bytes_union_pattern")
         return tuple(constructs)
+
+    def _pattern_member_kind(self) -> Literal["string", "bytes"] | None:
+        """Return what a pattern of the field constrains: a string type, else only a ``bytes`` type, else neither."""
+        if _pattern_data_type(self.data_type, includes_bytes=False) is not None:
+            return "string"
+        return "bytes" if _pattern_data_type(self.data_type, includes_bytes=True) is not None else None
+
+    @override
+    def _writes_bytes_pattern_rust_rejects(self) -> bool:
+        """Return whether the field writes a string pattern on ``bytes`` whose syntax needs Python's ``re`` (#6673).
+
+        Pydantic compiles it from 2.14 on, with the default engine unless the config selects ``python-re``; the
+        decision is ``pattern_engine``'s, as for a string pattern Pydantic compiles.
+        """
+        if self._pattern_member_kind() != "bytes":
+            return False
+        call = self._render_plan().call
+        return call is not None and any(
+            argument.name == "pattern"
+            and isinstance(pattern := argument.value, str)
+            and pattern_engine(pattern, row="model") == "python"
+            for argument in call.kwargs
+        )
 
     @property
     @override
     def dropped_constraints_warning(self) -> str | None:
         """Return the warning of the base field, and one naming base64 constraints the explicit target does not check.
 
-        Pydantic checks the constraints of a value written as base64 text on that text only from 2.10 on.
+        Pydantic checks the constraints of a value written as base64 text on that text, and the strictness of a strict
+        string decoded from it, only from 2.10 on.
         """
         messages = [super().dropped_constraints_warning]
         if not model_target_meets(self.parent, "pydantic.encoded_text_constraints") and (
@@ -783,7 +877,7 @@ class DataModelField(_PydanticBaseDataModelField):
                 name
                 for data_type in self.data_type.all_data_types
                 if isinstance(data_type, EncodedTextDataType)
-                for name in data_type.kwargs or ()
+                for name in (*(data_type.kwargs or ()), *(("strict",) if data_type.strict else ()))
             })
         ):
             minimum = REQUIREMENTS["pydantic.encoded_text_constraints"].minimum
@@ -797,7 +891,7 @@ class DataModelField(_PydanticBaseDataModelField):
     @field_validator("extras")
     def validate_extras(cls, values: Any) -> dict[str, Any]:  # noqa: N805
         """Validate and convert example to examples list."""
-        if not isinstance(values, dict):  # pragma: no cover
+        if not isinstance(values, dict):  # pragma: no cover - pydantic validates extras to a dict first
             return values
         if "examples" in values:
             return values
@@ -832,10 +926,9 @@ class DataModelField(_PydanticBaseDataModelField):
         """Get the rendered default value for the field."""
         if (plan := frozen_render_plan(self)) is not None:
             default = plan.default
-            return _MISSING_SENTINEL if default.missing_sentinel else represent_python_value(default.value)
-        if self.use_missing_sentinel_default:
-            return _MISSING_SENTINEL
-        return super().represented_default
+        else:
+            default = self._field_default(missing=self.use_missing_sentinel_default)
+        return _MISSING_SENTINEL if default.missing_sentinel else self._written_default(default)
 
     @override
     def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
@@ -843,6 +936,18 @@ class DataModelField(_PydanticBaseDataModelField):
         if self.use_missing_sentinel_default:
             return False
         return super().should_strip_default_none(keep_optional=keep_optional)
+
+    @override
+    def _written_assignment(self) -> WrittenAssignment:
+        """Return the field's written assignment: the model's class body keeps a stripped ``None`` for a type with None.
+
+        The model template writes ``= None`` for a type rendered with None whatever ``--strip-default-none`` says; the
+        root model template strips it.
+        """
+        return _model_written(
+            self,
+            keeps_none=((parent := self.parent) is None or not parent.IS_ROOT_MODEL) and self.data_type.admits_none,
+        )
 
     @property
     @override
@@ -860,25 +965,13 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         return self.data_type.type == "None"
 
-    def _writes_no_field_metadata(self) -> bool:
-        """Return whether the field has nothing a ``Field()`` call could write, so its plan needs no call."""
-        return (
-            type(self) is DataModelField
-            and not self.is_class_var
-            and not super()._may_have_field_statement()
-            and self._alias_generator_name_from_parent() is None
-            and ((parent := self.parent) is None or not parent._uses_custom_root_template)  # noqa: SLF001
-        )
-
     @override
     def _build_render_plan(self) -> FieldRenderPlan:
         """Include the explicit null default required by Pydantic v2; a field without metadata writes no call."""
-        if self._writes_no_field_metadata() and not self._requires_null_default(
-            missing_sentinel=(missing := self._uses_missing_sentinel(factory_present=False))
-        ):
+        if _writes_no_call_without_plan(self):
             return self._field_render_plan(
                 None,
-                FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE),
+                self._field_default(missing=self._uses_missing_sentinel(factory_present=False)),
                 has_default_factory_in_field=False,
                 omitted=tuple(self._warned_omissions()[0]),
             )
@@ -979,7 +1072,13 @@ class DataModelField(_PydanticBaseDataModelField):
         match args.take("union_mode"):
             case None:
                 pass
-            case union_mode if union_mode.value and self.data_type.is_union and "discriminator" not in args:
+            case union_mode if (
+                union_mode.value
+                and self.data_type.is_union
+                and "discriminator" not in args
+                and _UNION_WRAPPING_CONSTRAINTS.isdisjoint(args.data())
+                and _validates_as_union(self.data_type)
+            ):
                 args.put("union_mode", cast("Any", union_mode.value).value, _UNION_MODE, union_mode.items)
             case union_mode:
                 args.omit_entry(union_mode, "union-mode-inapplicable", _UNION_MODE)
@@ -1347,12 +1446,12 @@ def _only_describes_own_named_type(field: DataModelFieldBase) -> bool:
     from ``Annotated``.
     """
     if not any(
-        (reference := data_type.reference) is not None and (data_type.alias or reference.short_name) == field.name
+        (reference := data_type.reference) is not None and _written_name(data_type, reference) == field.name
         for data_type in field.data_type.all_data_types
     ):
         return False
-    data, default_factory = cast("DataModelField", field)._get_field_data_and_default_factory()  # noqa: SLF001
-    return not default_factory and all(key == "description" for key, value in data.items() if value is not None)
+    call = field._render_plan().call  # noqa: SLF001
+    return call is None or (call.factory is None and all(argument.name == "description" for argument in call.kwargs))
 
 
 def _field_patterns(fields: Iterable[DataModelFieldBase]) -> Iterator[tuple[str, DataType, DataModelFieldBase, bool]]:
@@ -1385,9 +1484,7 @@ def _pattern_engines(
         if compiled:
             if include_compiled and counts(pattern) and _needs_python_regex_engine(pattern, data_type, field):
                 yield pattern, "python"
-        elif (engine := _model_pattern_engine(pattern, data_type, field)) is not None and (
-            counts(pattern) or engine == "default"
-        ):
+        elif (engine := _counted_engine(_model_pattern_engine(pattern, data_type, field), pattern, counts)) is not None:
             yield pattern, engine
 
 
@@ -1423,10 +1520,8 @@ def has_lookaround_pattern(
         (
             engine
             for scope in scopes
-            for _, engine in (
-                _pattern_engines(scope, include_compiled=include_compiled)
-                if follow_references
-                else _pattern_engines(scope, include_compiled=include_compiled, counts=counts)
+            for _, engine in _pattern_engines(
+                scope, include_compiled=include_compiled, counts=_counts_every_pattern if follow_references else counts
             )
         ),
         surrogates=surrogates,
@@ -1445,9 +1540,7 @@ def _pattern_models_followed(fields: Iterable[DataModelFieldBase]) -> Iterator[D
     """
     for reference in _field_references(fields):
         source = reference.source
-        if reference.__dict__.get(FIELDLESS_SITE_KEY) and model_target_meets(
-            cast("DataModel", source), "pydantic.compiled_pattern"
-        ):
+        if is_fieldless_site(reference) and model_target_meets(cast("DataModel", source), "pydantic.compiled_pattern"):
             continue
         if getattr(source, "fields", None) is not None:
             yield cast("DataModel", source)
@@ -1475,6 +1568,87 @@ def _internal_runtime_validation(model: DataModel) -> SchemaRuntimeValidation | 
     return validation if _is_internal_schema_runtime_validation(validation) and validation else None
 
 
+def _inherits_schema_runtime_validation_base(model: DataModel, local_model_ids: Collection[int]) -> bool:
+    """Return whether a model already inherits the generated runtime validation base.
+
+    It does where one of the generated models it inherits from through models of ``local_model_ids``, however distant,
+    has runtime validation (``_internal_runtime_validation``).
+    """
+    walk = _base_walk(
+        (model,), bases_of=lambda current: [base for base in _find_base_classes(current) if id(base) in local_model_ids]
+    )
+    return any(
+        _internal_runtime_validation(walk.node_of[key]) for key in walk.graph.reached(walk.starts[0], (EdgeKind.BASE,))
+    )
+
+
+_HELPER_LAYER_NAMES: tuple[str, ...] = ("Core", "PropertyCount", "ConstantTypes", "ConditionalBounds", "Contains")
+"""The helper layers, innermost first: the core helper template, then the Python-rendered layers."""
+_HELPER_PREFIXES: dict[tuple[bool, ...], str] = {
+    (True, False): "Core",
+    (False, True): "PropertyCount",
+    (True, True): "Combined",
+    (False, False): "",
+}
+
+
+def _helper_capability_sets() -> dict[tuple[bool, ...], str]:
+    """Return each non-empty set of helper layers with the suffix of its helper's name, in rendering order.
+
+    A set is numbered by its layers as bits, the core the lowest, so a helper follows the helper it extends; the
+    name is that of its core and property-count part, then the names of its later layers.
+    """
+    count = len(_HELPER_LAYER_NAMES)
+    sets: dict[tuple[bool, ...], str] = {}
+    for number in range(1, 2**count):
+        capabilities = tuple(bool(number >> index & 1) for index in range(count))
+        sets[capabilities] = _HELPER_PREFIXES[capabilities[:2]] + "".join(
+            name for name, capability in zip(_HELPER_LAYER_NAMES[2:], capabilities[2:], strict=True) if capability
+        )
+    return sets
+
+
+_HELPER_SUFFIXES: dict[tuple[bool, ...], str] = _helper_capability_sets()
+_CORE_CAPABILITIES: tuple[bool, ...] = (True, *(False for _ in _HELPER_LAYER_NAMES[1:]))
+_PRIMARY_HELPERS: tuple[tuple[bool, ...], ...] = tuple(
+    dict.fromkeys((
+        *(
+            (*capabilities, *(False for _ in _HELPER_LAYER_NAMES[3:]))
+            for capabilities in (
+                (True, True, True),
+                (True, True, False),
+                (False, True, True),
+                (False, True, False),
+                (True, False, True),
+                (False, False, True),
+                (True, False, False),
+            )
+        ),
+        *_HELPER_SUFFIXES,
+    ))
+)
+"""The helper sets in the order that gives the plain base class name to the first one a module needs."""
+
+
+def _helper_inner_capabilities(capabilities: tuple[bool, ...]) -> tuple[bool, ...]:
+    """Return the capabilities of the helper the outermost layer of ``capabilities`` is rendered on.
+
+    The layers are those of ``_HELPER_LAYER_NAMES``, innermost first.
+    """
+    outermost = max(index for index, capability in enumerate(capabilities) if capability)
+    return tuple(capability and index != outermost for index, capability in enumerate(capabilities))
+
+
+def _python_layer_rules(runtime_validation: SchemaRuntimeValidation) -> tuple[bool, ...]:
+    """Return whether a model has rules of each Python-rendered layer (``_HELPER_LAYER_NAMES`` after the core)."""
+    return (
+        bool(runtime_validation.property_count),
+        bool(runtime_validation.constant_types),
+        bool(runtime_validation.conditional_bounds),
+        bool(runtime_validation.contains),
+    )
+
+
 def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -> dict[str, bool]:
     """Return what the schema validator helpers write for the rules of a module's models; imports read it too."""
     facts = {
@@ -1500,12 +1674,22 @@ def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -
             for rule in runtime_validation.conditional_required
             for _names, expected in rule.condition
         ),
-        "has_conditional_json_equality": any(
-            conditional_value_uses_json_equality(value)
+        "has_json_value": any(
+            runtime_validation.conditional_required
+            or runtime_validation.conditional_bounds
+            or runtime_validation.contains
             for runtime_validation in runtime_validations
-            for rule in runtime_validation.conditional_required
-            for _names, expected in rule.condition
-            for value in expected
+        ),
+        "has_conditional_json_equality": any(
+            runtime_validation.conditional_bounds
+            or any(rule.uses_json_equality for rule in runtime_validation.contains)
+            or any(
+                conditional_value_uses_json_equality(value)
+                for rule in runtime_validation.conditional_required
+                for _names, expected in rule.condition
+                for value in expected
+            )
+            for runtime_validation in runtime_validations
         ),
         "has_unique_items": any(runtime_validation.unique_items for runtime_validation in runtime_validations),
         "has_unique_items_regex_paths": any(
@@ -1534,10 +1718,7 @@ def _alias_pattern_engines(alias: DataModel) -> Iterator[tuple[str, PatternEngin
 
     A type alias has no config, and keeps the patterns ``alias_keeps_string_pattern`` names strings.
     """
-    target = alias.extra_template_data.get("target_pydantic_version")
-    return _pattern_engines(
-        alias.fields, include_compiled=False, counts=partial(alias_keeps_string_pattern, target=target)
-    )
+    return _pattern_engines(alias.fields, include_compiled=False, counts=alias_pattern_counter(alias))
 
 
 def _reaching_aliases(models: list[DataModel], aliases: Iterable[DataModel]) -> set[int]:
@@ -1571,25 +1752,26 @@ def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[i
 
 
 def _holds_lone_surrogate(models: Iterable[DataModel]) -> bool:
-    """Return whether a string pattern of the models holds a lone surrogate (``has_lone_surrogate``)."""
+    """Return whether a string pattern of the models holds a lone surrogate (``holds_lone_surrogate``)."""
     return any(
-        not compiled and has_lone_surrogate(pattern)
+        not compiled and holds_lone_surrogate(pattern)
         for model in models
         for pattern, _, _, compiled in _field_patterns(model.fields)
     )
 
 
-def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngine]]:
-    """Yield the patterns that the config a model applies builds, with what each asks of it.
+def _config_scopes(model: DataModel) -> Iterator[tuple[DataModel, bool]]:
+    """Yield the models whose patterns the config a model applies builds, each with whether it is a type alias.
 
-    Those of its fields, of the fields of the bases it inherits, which Pydantic builds again with its config, and the
-    string patterns of the type aliases it reaches through any chain of fields and base classes
-    (``models_reaching_string_pattern_aliases``).
+    The model and the bases it inherits, whose fields Pydantic builds again with its config, and the type aliases it
+    reaches through any chain of fields and base classes (``models_reaching_string_pattern_aliases``), whose string
+    patterns it builds.
     """
     from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
 
-    for current in reach((model,), _find_base_classes, key=id):
-        yield from _pattern_engines(current.fields)
+    walk = _base_walk((model,))
+    for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE):
+        yield walk.node_of[key], False
     reached = reach(
         (model,),
         lambda current: [
@@ -1601,7 +1783,28 @@ def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngi
     )
     for alias in reached:
         if isinstance(alias, TypeAliasBase):
-            yield from _alias_pattern_engines(alias)
+            yield alias, True
+
+
+def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngine]]:
+    """Yield the patterns that the config a model applies builds (``_config_scopes``), with what each asks of it."""
+    for current, alias in _config_scopes(model):
+        yield from _alias_pattern_engines(current) if alias else _pattern_engines(current.fields)
+
+
+def _uses_reached_alias(model: _PydanticV2Model, reached: Collection[int]) -> bool:
+    """Return whether a model names a model of ``reached`` in its fields or ``_bases_without_inherited_config``."""
+    return any(
+        id(reference.source) in reached
+        for reference in _model_references(model, model._bases_without_inherited_config())  # noqa: SLF001
+    )
+
+
+def _select_python_engine(model: _PydanticV2Model, *, through_alias: bool) -> None:
+    """Select Python's regex engine in a model; for a type alias it reaches, its bases name no such alias too."""
+    if through_alias:
+        model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
+    model._select_python_regex_engine()  # noqa: SLF001
 
 
 def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[DataModel]) -> None:
@@ -1632,10 +1835,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
             if model._takes_config_of(base):  # noqa: SLF001
                 takers[id(base)].append(model)
     for model in holders:
-        through_alias = isinstance(model, alias_users) and any(
-            id(reference.source) in reached
-            for reference in _model_references(model, model._bases_without_inherited_config())  # noqa: SLF001
-        )
+        through_alias = isinstance(model, alias_users) and _uses_reached_alias(model, reached)
         own = [
             pattern
             for scope in model._surrogate_pattern_scopes()  # noqa: SLF001
@@ -1658,9 +1858,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
             None,
         )
         if blocker is None:
-            if through_alias:
-                model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
-            model._select_python_regex_engine()  # noqa: SLF001
+            _select_python_engine(model, through_alias=through_alias)
             continue
         surrogate = next(chain(own, (pattern for pattern, engine in engines if engine == "surrogate")))
         warn(
@@ -1696,9 +1894,7 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
                 return False
         return name.startswith(namespaces)
 
-    walk = walk_graph(
-        GraphSnapshot.PROTECTED_NAMESPACES, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes
-    )
+    walk = _base_walk((model,))
     graph = walk.graph
     return conflicts(
         (walk.node_of[key], bool(graph.ordered_targets(key, EdgeKind.BASE)))
@@ -1736,6 +1932,12 @@ def _value_hash_facts(data_type: DataType) -> ValueHashFacts:
 class _PydanticV2Model(DataModel):
     """The config items, constructs, type alias users and forward references of the Pydantic BaseModel and dataclass."""
 
+    WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
+    _CONFIG_ITEMS_KEY: ClassVar[str] = _CONFIG_ITEMS_TEMPLATE_DATA_KEY
+    _CONFIG_AS_CONFIG_DICT: ClassVar[bool] = True
+    _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = False
+    _FOLLOWS_PATTERN_REFERENCES: ClassVar[bool] = False
+
     @override
     def assigns_forward_reference_field(
         self, field: DataModelFieldBase, positions: Mapping[str, int], index: int
@@ -1746,25 +1948,65 @@ class _PydanticV2Model(DataModel):
     @classmethod
     @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
-        """Select Python's regex engine in the models that reach a string pattern type alias, and for lone surrogates.
+        """Select Python's regex engine where the patterns ask for it, once every model and its patterns are final.
 
-        The references of a model's fields count, and those of the bases whose config it does not take
-        (``_bases_without_inherited_config``). A lone surrogate selects it where the config allows it, once every
-        model and its patterns are final (``_select_surrogate_regex_engines``).
+        A BaseModel whose own patterns need the engine selects it (``_own_patterns_select_python``); a config that
+        already names an engine is kept. So does a model that reaches a string pattern type alias: the references of
+        its fields count, and those of the bases whose config it does not take (``_bases_without_inherited_config``). A
+        lone surrogate selects it where the config allows it (``_select_surrogate_regex_engines``). Every model whose
+        patterns a config selecting it builds (``_config_scopes``), a dataclass's once it selected its engine, is
+        marked once (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
         """
+        for model in models:
+            if isinstance(model, BaseModel) and model._own_patterns_select_python():  # noqa: SLF001
+                model._select_python_regex_engine()  # noqa: SLF001
         if reached := models_reaching_string_pattern_aliases(models):
             for model in models:
-                if isinstance(model, cls) and any(
-                    id(reference.source) in reached
-                    for reference in _model_references(model, model._bases_without_inherited_config())  # noqa: SLF001
-                ):
-                    model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
-                    model._select_python_regex_engine()  # noqa: SLF001
+                if isinstance(model, cls) and _uses_reached_alias(model, reached):
+                    _select_python_engine(model, through_alias=True)
         _select_surrogate_regex_engines(models, cls)
+        built: dict[int, DataModel] = {}
+        for model in models:
+            if isinstance(model, _PydanticV2Model) and model._builds_patterns_with_python_engine():  # noqa: SLF001
+                built.update((id(current), current) for current, _ in _config_scopes(model))
+        for current in built.values():
+            current._set_internal_template_data(PYTHON_ENGINE_BUILDS_KEY, value=True)  # noqa: SLF001
+            for field in current.fields:
+                field.invalidate_semantic_caches()
+
+    @override
+    def _builds_patterns_with_python_engine(self) -> bool:
+        """Return whether the config the model applies selects ``python-re``."""
+        return self._applied_config_items().get("regex_engine") == '"python-re"'
+
+    def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]:
+        """Return the config items Pydantic applies to the model, the bases included, and which of them are known.
+
+        A configured base class the generator does not read may set any item; the second value names the items set
+        after the last such base, or is None where the model has none.
+        """
+        return self._applied_config()
+
+    def _applied_config_items(self) -> dict[str, str]:
+        """Return the config items Pydantic applies to the model that the generator reads."""
+        return self._applied_config()[0]
+
+    @abstractmethod
+    def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
+        """Return the config items Pydantic applies to the model and which of them are known (``applied_config``)."""
+
+    def _own_patterns_select_python(self) -> bool:
+        """Return whether the model's own patterns select ``python-re`` (``has_lookaround_pattern``).
+
+        The rule of ``_needs_model_regex_engine`` (a lone surrogate is left to ``_select_surrogate_regex_engines``).
+        A dataclass's own are also those of every model its fields reach (``_FOLLOWS_PATTERN_REFERENCES``, row
+        ``legacy-dataclass-follows-every-reference``).
+        """
+        return has_lookaround_pattern(self.fields, follow_references=self._FOLLOWS_PATTERN_REFERENCES, surrogates=False)
 
     def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:
-        """Yield the fields whose lone surrogates ask for the model's engine: its own."""
-        yield self.fields
+        """Yield the fields whose lone surrogates ask for the model's engine: those its other patterns count in."""
+        return _followed_fields(self.fields) if self._FOLLOWS_PATTERN_REFERENCES else iter((self.fields,))
 
     def _takes_config_of(self, base: DataModel) -> bool:  # noqa: ARG002, PLR6301
         """Return whether the model applies the config of a base it names: a model merges the config of every base."""
@@ -1777,13 +2019,49 @@ class _PydanticV2Model(DataModel):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
-    @abstractmethod
     def _select_python_regex_engine(self) -> None:
-        """Set ``regex_engine`` in the config the model renders."""
+        """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
+
+        Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
+        config names (#5637). The model gets a config of its own: the one in the template data may be shared with
+        every model of the same name (``--extra-template-data``). It reads the items of that config, so a config that
+        is no mapping adds none.
+        """
+        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
+        if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
+            return
+        config_parameters["regex_engine"] = '"python-re"'
+        self._store_config(config_parameters)
+        self.invalidate_render_caches()
+
+    def _store_config(self, config_parameters: dict[str, Any]) -> None:
+        """Store the config the model renders with the items the template writes, and import ``ConfigDict``.
+
+        A model validates it as a ``ConfigDict``; a dataclass keeps the mapping (``_CONFIG_AS_CONFIG_DICT``), so the
+        keys ``ConfigDict`` leaves out stay.
+        """
+        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
+
+        self.extra_template_data["config"] = (
+            ConfigDict.model_validate(config_parameters) if self._CONFIG_AS_CONFIG_DICT else config_parameters
+        )
+        self._set_internal_template_data(self._CONFIG_ITEMS_KEY, self._config_items())
+        if IMPORT_CONFIG_DICT not in self._additional_imports:
+            self._additional_imports.append(IMPORT_CONFIG_DICT)
+
+    def _config_items(self) -> list[tuple[str, str]]:
+        """Return the ``ConfigDict`` items of the model's config, which the built-in templates write for the target."""
+        return _template_config_items(self.extra_template_data, self.target_python_version)
 
     def _rendered_config_items(self) -> list[tuple[str, str]]:
-        """Return the ``ConfigDict`` items the built-in template writes; imports and alias decisions read them too."""
-        return _template_config_items(self.extra_template_data, self.target_python_version)
+        """Return the ``ConfigDict`` items the built-in template writes; imports and alias decisions read them too.
+
+        In a parse they are the items stored with the config (``_store_config``); outside one a caller may change the
+        config after ``__init__``, so they are read from it.
+        """
+        if RENDER_READY.get() is None or (stored := self._internal_template_data.get(self._CONFIG_ITEMS_KEY)) is None:
+            return self._config_items()
+        return stored
 
     @override
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
@@ -1803,6 +2081,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     _SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY: ClassVar[str] = "_schema_runtime_validation_module_plan"
     _CORE_VALIDATION_BASE_MARKER: ClassVar[str] = "_core_validation_base"
     _PROPERTY_COUNT_VALIDATION_BASE_MARKER: ClassVar[str] = "_property_count_validation_base"
+    _CONSTANT_TYPES_VALIDATION_BASE_MARKER: ClassVar[str] = "_constant_types_validation_base"
+    _CONDITIONAL_BOUNDS_VALIDATION_BASE_MARKER: ClassVar[str] = "_conditional_bounds_validation_base"
+    _CONTAINS_VALIDATION_BASE_MARKER: ClassVar[str] = "_contains_validation_base"
     BASE_CLASS: ClassVar[str] = "pydantic.BaseModel"
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
     _READ_BY_PYDANTIC: ClassVar[bool] = True
@@ -1876,8 +2157,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         """Replace a RootModel wrapper with the alias form that --use-type-alias selects."""
         if not configured_root_model_type.IS_ROOT_MODEL:
             return configured_root_model_type
-        from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
-        from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
 
         return get_data_model_types(
             DataModelType.PydanticV2BaseModel, target_python_version, use_type_alias=True
@@ -1897,7 +2176,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             return ""
 
         _runtime_models, runtime_validations = cls._get_schema_runtime_validation_models(models)
-        if not module_plan.has_property_count:
+        if not module_plan.plans_capabilities:
             return cls._render_core_schema_runtime_validation_helpers(
                 module_plan.base_class_name,
                 runtime_validations,
@@ -1906,7 +2185,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         helper_base_class_names = dict(module_plan.helper_base_class_names)
         if not helper_base_class_names:
             return ""
-        return cls._render_property_count_validation_helpers(
+        return cls._render_capability_validation_helpers(
+            module_plan.base_class_name,
             helper_base_class_names,
             runtime_validations,
             models,
@@ -1952,10 +2232,12 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         runtime_validation_by_model = {
             id(model): runtime_validations[index] for index, model in enumerate(runtime_models)
         }
-        has_property_count = any(runtime_validation.property_count for runtime_validation in runtime_validations)
+        plans_capabilities = any(
+            any(_python_layer_rules(runtime_validation)) for runtime_validation in runtime_validations
+        )
         uses_generated_generic_base_class = cls._has_generated_generic_base_class(models)
-        local_helpers: tuple[bool, bool] | None = (True, False)
-        if not has_property_count:
+        local_helpers: tuple[bool, ...] | None = _CORE_CAPABILITIES
+        if not plans_capabilities:
             local_model_ids = {id(model) for model in models}
             for model in runtime_models:
                 model._set_internal_template_data(  # noqa: SLF001
@@ -1964,13 +2246,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 )
                 model._set_internal_template_data(  # noqa: SLF001
                     "schema_runtime_validation_use_base",
-                    not cls._inherits_schema_runtime_validation_base(
-                        model,
-                        seen=set(),
-                        local_model_ids=local_model_ids,
-                    ),
+                    not _inherits_schema_runtime_validation_base(model, local_model_ids),
                 )
-            module_plan = SchemaRuntimeValidationModulePlan(base_class_name, has_property_count=False)
+            module_plan = SchemaRuntimeValidationModulePlan(base_class_name, plans_capabilities=False)
         else:
             missing_capabilities_by_model = plan_schema_runtime_validation_bases(
                 runtime_models,
@@ -1979,7 +2257,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 get_external_capabilities=cls._get_external_schema_runtime_validation_capabilities,
                 get_model_requirements=cls._get_schema_runtime_validation_requirements,
             )
-            helper_capabilities = frozenset(missing_capabilities_by_model.values()) - {(False, False)}
+            helper_capabilities = frozenset(
+                capabilities for capabilities in missing_capabilities_by_model.values() if any(capabilities)
+            )
             helper_base_class_names = (
                 cls._get_schema_runtime_validation_base_class_names(base_class_name, helper_capabilities, models)
                 if helper_capabilities
@@ -1993,16 +2273,11 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                     missing_capabilities,
                 )
             local_helpers = (
-                (
-                    any(capabilities[0] for capabilities in helper_base_class_names),
-                    any(capabilities[1] for capabilities in helper_base_class_names),
-                )
-                if helper_base_class_names
-                else None
+                tuple(map(any, zip(*helper_base_class_names, strict=True))) if helper_base_class_names else None
             )
             module_plan = SchemaRuntimeValidationModulePlan(
                 base_class_name,
-                has_property_count=True,
+                plans_capabilities=True,
                 helper_base_class_names=tuple(helper_base_class_names.items()),
             )
         if local_helpers is not None:
@@ -2013,8 +2288,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             cls._add_schema_runtime_validation_helper_imports(
                 runtime_models[0],
                 runtime_validations,
-                has_local_core_helper=local_helpers[0],
-                has_local_property_count_helper=local_helpers[1],
+                local_helpers=local_helpers,
                 uses_generated_generic_base_class=uses_generated_generic_base_class,
             )
         models[0].__dict__[cls._SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY] = module_plan
@@ -2054,37 +2328,39 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     def refresh_field_config(self) -> None:
         """Select Python's regex engine for lookaround patterns, also those fields gained after ``__init__``.
 
-        Collapsed root models inline their patterns; a config that already names an engine is kept. A lone surrogate
-        selects it once every model is final (``_select_surrogate_regex_engines``).
+        Collapsed root models inline their patterns; a config that already names an engine is kept. The patterns that
+        later passes give the fields select it once every model is final (``finalize_type_alias_users``), and so does a
+        lone surrogate (``_select_surrogate_regex_engines``).
         """
-        if has_lookaround_pattern(self.fields, surrogates=False):
+        if self._own_patterns_select_python():
             self._select_python_regex_engine()
 
     @override
-    def _select_python_regex_engine(self) -> None:
-        """Set ``regex_engine`` unless the config already names an engine."""
-        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
-        if "regex_engine" in config_parameters:
-            return
-        config_parameters["regex_engine"] = '"python-re"'
-        self._set_config(config_parameters)
-        self.invalidate_render_caches()
-
-    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
+    def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies: those of the bases merged in order, then the model's own.
 
-        A base on an inheritance cycle, which generation rejects later, adds nothing.
+        A configured base class the generator does not read comes first and leaves every item unknown, and a base
+        that has one leaves unknown the items it does not set. A base on an inheritance cycle, which generation
+        rejects later, adds nothing.
         """
         visiting |= {id(self)}
         items: dict[str, str] = {}
-        for base in _find_base_classes(self):
-            items.update(
-                base._applied_config_items(visiting)  # noqa: SLF001
-                if isinstance(base, BaseModel) and id(base) not in visiting
-                else {}
-            )
-        items.update(self._rendered_config_items())
-        return items
+        known: set[str] | None = set() if _has_opaque_custom_base(self, self.BASE_CLASS) else None
+        for inherited, settled in (
+            base._applied_config(visiting)  # noqa: SLF001
+            for base in _find_base_classes(self)
+            if isinstance(base, BaseModel) and id(base) not in visiting
+        ):
+            items.update(inherited)
+            if settled is not None:
+                known = set(settled)
+            elif known is not None:
+                known.update(inherited)
+        items.update(own := self._rendered_config_items())
+        if known is None:
+            return items, None
+        known.update(name for name, _ in own)
+        return items, frozenset(known)
 
     @override
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
@@ -2097,15 +2373,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             rule.python_regex_types for rule in validation.pattern_properties
         ):
             yield from _config_constructs((("regex_engine", '"python-re"'),))
-
-    def _set_config(self, config_parameters: dict[str, Any]) -> None:
-        """Store the ConfigDict rendered as ``model_config``."""
-        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
-
-        self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
-        self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
-        if IMPORT_CONFIG_DICT not in self._additional_imports:
-            self._additional_imports.append(IMPORT_CONFIG_DICT)
 
     @classmethod
     @override
@@ -2128,15 +2395,18 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         model: DataModel,
         runtime_validations: list[SchemaRuntimeValidation],
         *,
-        has_local_core_helper: bool,
-        has_local_property_count_helper: bool = False,
+        local_helpers: tuple[bool, ...],
         uses_generated_generic_base_class: bool = False,
     ) -> None:
-        """Add imports only when this module renders a shared runtime helper."""
+        """Add imports only when this module renders a shared runtime helper.
+
+        ``local_helpers`` says whether the module renders each helper layer (``_HELPER_LAYER_NAMES``).
+        """
+        has_local_core_helper, _, has_local_constant_types_helper, _, has_local_contains_helper = local_helpers
         additional_imports = model._additional_imports  # noqa: SLF001
         helper_imports = (IMPORT_MODEL_VALIDATOR, IMPORT_ANY, IMPORT_CLASSVAR)
         if (
-            has_local_property_count_helper
+            any(local_helpers[1:])
             or not cls._has_custom_schema_runtime_validation_helper(model)
             or (model.custom_template_dir is not None and not overrides_builtin_templates(model.custom_template_dir))
         ):
@@ -2146,12 +2416,16 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if not uses_generated_generic_base_class:
             helper_imports += (IMPORT_BASE_MODEL,)
         facts = _helper_template_facts(runtime_validations)
-        if has_local_core_helper and (facts["has_pattern_properties"] or facts["has_unique_items_regex_paths"]):
-            helper_imports += (
-                (Import(import_="re"), IMPORT_TYPE_ADAPTER)
-                if facts["has_pattern_properties"]
-                else (Import(import_="re"),)
-            )
+        if (
+            has_local_constant_types_helper
+            or has_local_contains_helper
+            or (has_local_core_helper and (facts["has_pattern_properties"] or facts["has_unique_items_regex_paths"]))
+        ):
+            helper_imports += (Import(import_="re"),)
+        if has_local_core_helper and facts["has_pattern_properties"]:
+            helper_imports += (IMPORT_TYPE_ADAPTER,)
+        if has_local_core_helper and facts["has_json_value"]:
+            helper_imports += (Import(from_="enum", import_="Enum", alias="_Enum", keep_unaliased=True),)
         for import_ in helper_imports:
             if import_ not in additional_imports:
                 additional_imports.append(import_)
@@ -2181,27 +2455,49 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
 
     @staticmethod
     def _has_core_schema_runtime_validation(runtime_validation: SchemaRuntimeValidation) -> bool:
-        """Return whether a validation needs the existing template-rendered helper."""
+        """Return whether a validation needs the existing template-rendered helper.
+
+        A conditional bounds rule and a contains rule need it for the JSON value of a Python value
+        (``_json_schema_json_value``) and the JSON equality of a condition or a matcher
+        (``_json_schema_conditional_equal``), which their layers call on the core helper they are rendered on.
+        """
         return bool(
             runtime_validation.pattern_properties
             or runtime_validation.required_groups
             or runtime_validation.conditional_required
             or runtime_validation.unique_items
+            or runtime_validation.conditional_bounds
+            or runtime_validation.contains
         )
 
     @classmethod
-    def _get_external_schema_runtime_validation_capabilities(cls, model: DataModel) -> tuple[bool, bool]:
+    def _get_external_schema_runtime_validation_capabilities(cls, model: DataModel) -> tuple[bool, ...]:
         """Return reusable capabilities supplied by another generated module.
 
         Core helpers are specialized to the rules rendered in their module;
         reusing one could shadow a child rule with a method it does not have.
-        Property-count helpers are invariant, so they remain reusable.
+        The Python-rendered layers are invariant, so they remain reusable.
         """
         runtime_validation = _internal_runtime_validation(model)
+        markers = cls._validation_base_markers()[1:]
+        rules = _python_layer_rules(runtime_validation) if runtime_validation else (False,) * len(markers)
         return (
             False,
-            bool(runtime_validation and runtime_validation.property_count)
-            or bool(model._internal_template_data.get(cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER)),  # noqa: SLF001
+            *(
+                rule or bool(model._internal_template_data.get(marker))  # noqa: SLF001
+                for rule, marker in zip(rules, markers, strict=True)
+            ),
+        )
+
+    @classmethod
+    def _validation_base_markers(cls) -> tuple[str, ...]:
+        """Return the template data key that records each helper layer of a model's base (``_HELPER_LAYER_NAMES``)."""
+        return (
+            cls._CORE_VALIDATION_BASE_MARKER,
+            cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER,
+            cls._CONSTANT_TYPES_VALIDATION_BASE_MARKER,
+            cls._CONDITIONAL_BOUNDS_VALIDATION_BASE_MARKER,
+            cls._CONTAINS_VALIDATION_BASE_MARKER,
         )
 
     @classmethod
@@ -2209,27 +2505,26 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         cls,
         model: DataModel,
         base_class_name: str | None,
-        capabilities: tuple[bool, bool],
+        capabilities: tuple[bool, ...],
     ) -> None:
         """Record the one local helper base, if any, used by a generated model."""
         if base_class_name is not None:
             model._set_internal_template_data("schema_runtime_validation_base_class_name", base_class_name)  # noqa: SLF001
-        uses_base_class = capabilities != (False, False)
-        model._set_internal_template_data("schema_runtime_validation_use_base", uses_base_class)  # noqa: SLF001
-        model._set_internal_template_data(cls._CORE_VALIDATION_BASE_MARKER, capabilities[0])  # noqa: SLF001
-        model._set_internal_template_data(cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER, capabilities[1])  # noqa: SLF001
+        model._set_internal_template_data("schema_runtime_validation_use_base", any(capabilities))  # noqa: SLF001
+        for marker, capability in zip(cls._validation_base_markers(), capabilities, strict=True):
+            model._set_internal_template_data(marker, capability)  # noqa: SLF001
 
     @classmethod
     def _get_schema_runtime_validation_requirements(
         cls,
         model: DataModel,
         runtime_validation: SchemaRuntimeValidation,
-    ) -> tuple[bool, bool]:
-        """Return the helper capabilities required by one generated model."""
+    ) -> tuple[bool, ...]:
+        """Return the helper layers one generated model requires (``_HELPER_LAYER_NAMES``)."""
         return (
             cls._has_core_schema_runtime_validation(runtime_validation)
             or (bool(runtime_validation.property_count) and cls._has_custom_schema_runtime_validation_helper(model)),
-            bool(runtime_validation.property_count),
+            *_python_layer_rules(runtime_validation),
         )
 
     @classmethod
@@ -2244,23 +2539,16 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     def _get_schema_runtime_validation_base_class_names(
         cls,
         base_class_name: str,
-        helper_capabilities: frozenset[tuple[bool, bool]],
+        helper_capabilities: frozenset[tuple[bool, ...]],
         models: list[DataModel],
-    ) -> dict[tuple[bool, bool], str]:
-        """Allocate at most one shared helper for each missing capability set."""
-        if (True, True) in helper_capabilities:
-            primary_capabilities = (True, True)
-        elif (False, True) in helper_capabilities:
-            primary_capabilities = (False, True)
-        else:
-            primary_capabilities = (True, False)
+    ) -> dict[tuple[bool, ...], str]:
+        """Allocate at most one shared helper for each missing capability set; the first of ``_PRIMARY_HELPERS``."""
+        primary_capabilities = next(
+            capabilities for capabilities in _PRIMARY_HELPERS if capabilities in helper_capabilities
+        )
         base_class_names = {primary_capabilities: base_class_name}
         reserved_names = {base_class_name}
-        for capabilities, suffix in (
-            ((True, False), "Core"),
-            ((False, True), "PropertyCount"),
-            ((True, True), "Combined"),
-        ):
+        for capabilities, suffix in _HELPER_SUFFIXES.items():
             if capabilities not in helper_capabilities or capabilities == primary_capabilities:
                 continue
             base_class_names[capabilities] = cls._get_unique_schema_runtime_validation_base_class_name(
@@ -2292,50 +2580,61 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         return first_free(f"{base_class_name}{suffix}", class_names.__contains__, "joined-from-2")[0]
 
     @classmethod
-    def _render_property_count_validation_helpers(
+    def _render_capability_validation_helpers(
         cls,
-        helper_base_class_names: dict[tuple[bool, bool], str],
+        base_class_name: str,
+        helper_base_class_names: dict[tuple[bool, ...], str],
         runtime_validations: list[SchemaRuntimeValidation],
         models: list[DataModel],
     ) -> str:
-        """Render only the shared helpers needed for local missing capabilities."""
+        """Render only the shared helpers needed for local missing capabilities.
+
+        The helper of a set of capabilities is the core helper, or its outermost Python-rendered layer
+        (``_HELPER_LAYER_NAMES``) on the helper of the set without that layer; a set no model needs is named for its
+        layers.
+        """
         from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
+            render_conditional_bounds_validation_base,
+            render_constant_types_validation_base,
+            render_contains_validation_base,
             render_property_count_validation_base,
         )
 
-        core_runtime_validations = [
-            runtime_validation
-            for runtime_validation in runtime_validations
-            if cls._has_core_schema_runtime_validation(runtime_validation)
-        ]
-        requires_combined_base = (True, True) in helper_base_class_names
-        core_base_class_name = helper_base_class_names.get((True, False))
-        if requires_combined_base and core_base_class_name is None:
-            core_base_class_name = cls._get_unique_schema_runtime_validation_base_class_name(
-                helper_base_class_names[True, True],
-                "Core",
-                models,
-                set(helper_base_class_names.values()),
-            )
+        layer_renderers = (
+            render_property_count_validation_base,
+            render_constant_types_validation_base,
+            render_conditional_bounds_validation_base,
+            render_contains_validation_base,
+        )
 
+        names = dict(helper_base_class_names)
+        needed = set(names)
+        for capabilities in reversed(_HELPER_SUFFIXES):
+            if capabilities in needed and any(inner := _helper_inner_capabilities(capabilities)):
+                needed.add(inner)
         helpers: list[str] = []
-        if core_base_class_name is not None:
-            helpers.append(
-                cls._render_core_schema_runtime_validation_helpers(
-                    core_base_class_name,
-                    core_runtime_validations,
-                    models,
-                ).rstrip()
-            )
-        if (property_base_class_name := helper_base_class_names.get((False, True))) is not None:
-            helpers.append(render_property_count_validation_base(property_base_class_name, "BaseModel"))
-        if (combined_base_class_name := helper_base_class_names.get((True, True))) is not None:
-            helpers.append(
-                render_property_count_validation_base(
-                    combined_base_class_name,
-                    cast("str", core_base_class_name),
+        for capabilities, suffix in _HELPER_SUFFIXES.items():
+            if capabilities not in needed:
+                continue
+            if capabilities not in names:
+                names[capabilities] = cls._get_unique_schema_runtime_validation_base_class_name(
+                    base_class_name, suffix, models, set(names.values())
                 )
-            )
+            if capabilities == _CORE_CAPABILITIES:
+                core_runtime_validations = [
+                    runtime_validation
+                    for runtime_validation in runtime_validations
+                    if cls._has_core_schema_runtime_validation(runtime_validation)
+                ]
+                helpers.append(
+                    cls._render_core_schema_runtime_validation_helpers(
+                        names[capabilities], core_runtime_validations, models
+                    ).rstrip()
+                )
+                continue
+            inner = _helper_inner_capabilities(capabilities)
+            render = layer_renderers[max(index for index, capability in enumerate(capabilities) if capability) - 1]
+            helpers.append(render(names[capabilities], names[inner] if any(inner) else "BaseModel"))
         return "\n\n\n".join(helpers) + "\n"
 
     @classmethod
@@ -2384,31 +2683,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         return template.render(**context)
 
     @classmethod
-    def _inherits_schema_runtime_validation_base(
-        cls,
-        model: DataModel,
-        *,
-        seen: set[ModelKey],
-        local_model_ids: set[int] | None = None,
-    ) -> bool:
-        """Return whether a model already inherits the generated runtime validation base; ``seen`` holds model keys."""
-        if (key := model_key_of(model.reference)) in seen:
-            return False
-        seen.add(key)
-        for base_model in _find_base_classes(model):
-            if local_model_ids is not None and id(base_model) not in local_model_ids:
-                continue
-            if _internal_runtime_validation(base_model):
-                return True
-            if cls._inherits_schema_runtime_validation_base(
-                base_model,
-                seen=seen,
-                local_model_ids=local_model_ids,
-            ):
-                return True
-        return False
-
-    @classmethod
     @override
     def create_typed_extra_field(
         cls,
@@ -2432,7 +2706,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             original_name=cls.TYPED_EXTRA_FIELD_NAME,
         )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,
@@ -2489,7 +2763,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             config_parameters["json_schema_extra"] = {**existing, **model_extras}
 
         if config_parameters:
-            self._set_config(config_parameters)
+            self._store_config(config_parameters)
             _import_rendered_alias_generator(self, self._rendered_config_items())
         else:
             self.extra_template_data.pop("config", None)
@@ -2532,22 +2806,33 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             if property_count_line not in self._internal_template_data.get("class_body_lines", ()):
                 self._append_internal_template_data("class_body_lines", property_count_line)
 
-        if runtime_validation.unique_items or runtime_validation.replace_unique_items:
-            from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
-                render_unique_items_rules,
-            )
+        from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
+            render_conditional_bounds_rules,
+            render_constant_types_rules,
+            render_contains_rules,
+            render_unique_items_rules,
+        )
 
-            unique_items_lines = render_unique_items_rules(runtime_validation.unique_items)
-            class_body_lines = self._internal_template_data.get("class_body_lines", ())
-            if unique_items_lines[0] not in class_body_lines:
-                for line in unique_items_lines:
+        rule_lines_by_kind = (
+            render_unique_items_rules(runtime_validation.unique_items)
+            if runtime_validation.unique_items or runtime_validation.replace_unique_items
+            else (),
+            render_constant_types_rules(runtime_validation.constant_types)
+            if runtime_validation.constant_types or runtime_validation.replace_constant_types
+            else (),
+            render_conditional_bounds_rules(runtime_validation.conditional_bounds)
+            if runtime_validation.conditional_bounds
+            else (),
+            render_contains_rules(runtime_validation.contains)
+            if runtime_validation.contains or runtime_validation.replace_contains
+            else (),
+        )
+        for rule_lines in rule_lines_by_kind:
+            if rule_lines and rule_lines[0] not in self._internal_template_data.get("class_body_lines", ()):
+                for line in rule_lines:
                     self._append_internal_template_data("class_body_lines", line)
 
-        if (
-            runtime_validation.property_count is not None
-            or runtime_validation.unique_items
-            or runtime_validation.replace_unique_items
-        ):
+        if runtime_validation.property_count is not None or any(rule_lines_by_kind):
             self._additional_imports.append(IMPORT_ANY)
             self._additional_imports.append(IMPORT_CLASSVAR)
 

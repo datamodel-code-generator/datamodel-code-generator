@@ -12,12 +12,12 @@ from typing_extensions import TypeAliasType
 Tags = TypeAliasType("Tags", Annotated[list[str], Field(..., max_length=3)])
 
 
-TagsLen = TypeAliasType("TagsLen", Tags)
+TagsLen = TypeAliasType("TagsLen", Annotated[Tags, Field(..., min_length=1)])
 
 
 @dataclass
 class Model:
     tags_len: TagsLen | None = None
-    tags_len_prop: Tags | None = None
+    tags_len_prop: Annotated[Tags | None, Field(min_length=1)] = None
     tags_len_items: list[Tags] | None = None
     tags_len_map: dict[str, Tags] | None = None

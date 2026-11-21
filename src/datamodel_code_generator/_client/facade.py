@@ -53,7 +53,7 @@ def name_set(values: Iterable[str]) -> str:
     return set_display(map(stable_repr, values))
 
 
-def facade_module(  # noqa: PLR0913
+def facade_module(
     module: str,
     docstring: str,
     *,

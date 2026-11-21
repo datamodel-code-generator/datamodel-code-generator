@@ -182,10 +182,7 @@ def name_models(original: Callable[[Any, Any], None]) -> Callable[[Any, Any], No
             and (log := naming_mode.state.pop(_LOG, None)) is not None
             and (problems := _unexplained(log, parser.results))
         ):
-            from datamodel_code_generator import Error
-
             naming_mode.violation(
-                Error,
                 f"names the resolver's naming calls do not explain: {'; '.join(problems[:_REPORTED])}",
                 problems=problems,
             )

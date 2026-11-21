@@ -62,6 +62,8 @@ DataModelType.TypingTypedDict-modelless-bodies	main/generation_platform/client/t
 DataModelType.TypingTypedDict-no-success	main/generation_platform/client/typing/no-success.txt
 DataModelType.TypingTypedDict-no-success-unpack	main/generation_platform/client/typing/no-success.txt
 [test_client_typing_package]
+asyncapi-events	main/generation_platform/client/typing/pydantic_v2-BaseModel-asyncapi-events.txt	= main/generation_platform/client/typing/no-success.txt
+asyncapi-market-v3	main/generation_platform/client/typing/pydantic_v2-BaseModel-asyncapi-market-v3.txt	= main/generation_platform/client/typing/no-success.txt
 naming	main/generation_platform/client/typing/pydantic_v2-BaseModel-naming.txt	= main/generation_platform/client/typing/no-success.txt
 naming-snake	main/generation_platform/client/typing/pydantic_v2-BaseModel-naming-snake.txt	= main/generation_platform/client/typing/no-success.txt
 pagination-counts	main/generation_platform/client/typing/pydantic_v2-BaseModel-pagination-counts.txt	= main/generation_platform/client/typing/no-success.txt
@@ -70,6 +72,7 @@ pagination-querystring	main/generation_platform/client/typing/pydantic_v2-BaseMo
 pagination-targets	main/generation_platform/client/typing/pydantic_v2-BaseModel-pagination-targets.txt	= main/generation_platform/client/typing/no-success.txt
 streams-mixed	main/generation_platform/client/typing/pydantic_v2-BaseModel-streams-mixed.txt	= main/generation_platform/client/typing/no-success.txt
 type-checking-imports-on	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-checking-imports-on.txt	= main/generation_platform/client/typing/no-success.txt
+type-spellings-containers	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-containers.txt	= main/generation_platform/client/typing/no-success.txt
 type-spellings-cycle	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-cycle.txt	= main/generation_platform/client/typing/no-success.txt
 type-spellings-exact	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-exact.txt	= main/generation_platform/client/typing/no-success.txt
 type-spellings-legacy	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-legacy.txt	= main/generation_platform/client/typing/no-success.txt

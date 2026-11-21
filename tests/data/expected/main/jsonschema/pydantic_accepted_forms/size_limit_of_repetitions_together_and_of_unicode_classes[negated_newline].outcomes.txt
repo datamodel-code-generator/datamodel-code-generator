@@ -1,0 +1,2 @@
+text: valid
+two lines: string_pattern_mismatch

@@ -1,0 +1,11 @@
+{
+  "valid": [
+    {"values": {"k": "str"}},
+    {"values": {"k": {"t@a": "x"}}},
+    {"values": {"k": {"t@a": {"t@b": "y"}}}}
+  ],
+  "invalid": [
+    {"values": {"k": {"t@a": 5}}},
+    {"values": {"k": 5}}
+  ]
+}

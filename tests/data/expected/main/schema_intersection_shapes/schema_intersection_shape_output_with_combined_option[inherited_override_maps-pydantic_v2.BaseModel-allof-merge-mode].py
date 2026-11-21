@@ -33,5 +33,7 @@ class Base(BaseModel):
 class Child(Base):
     settings: Settings | None = None
     tagged: (
-        dict[constr(pattern=r'default|type'), str] | dict[constr(pattern=r'^n'), conint(ge=0)] | None
+        dict[constr(pattern=r'default|type'), str]
+        | dict[constr(pattern=r'^n'), conint(ge=0)]
+        | None
     ) = None

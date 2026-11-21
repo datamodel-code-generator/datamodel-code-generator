@@ -1,0 +1,25 @@
+{"one": 1} (valid): accepted/accepted
+{"one": 1.0} (valid): accepted/accepted
+{"one": true} (invalid): rejected/rejected
+{"yes": true} (valid): accepted/accepted
+{"yes": 1} (invalid): rejected/rejected
+{"yes": false} (invalid): rejected/rejected
+{"number": 2} (valid): accepted/accepted
+{"number": true} (invalid): rejected/rejected
+{"mixed": "x"} (valid): accepted/accepted
+{"mixed": 1} (valid): accepted/accepted
+{"mixed": true} (invalid): rejected/rejected
+{"both": true} (valid): accepted/accepted
+{"both": 1} (valid): accepted/accepted
+{"items": [1, 2.0]} (valid): accepted/accepted
+{"items": [2, true]} (invalid): rejected/rejected
+{"values": {"a": 1}} (valid): accepted/accepted
+{"values": {"a": true}} (invalid): rejected/rejected
+{"color": 0} (valid): accepted/accepted
+{"color": false} (invalid): rejected/rejected
+{"switch": 1} (valid): accepted/accepted
+{"switch": true} (invalid): rejected/rejected
+{"switch": false} (invalid): rejected/rejected
+{"closed": null} (valid): accepted/accepted
+{"closed": true} (invalid): rejected/rejected
+{"open": true} (valid): accepted/accepted

@@ -24,5 +24,4 @@ class Root2(BaseModel):
 
 class Root(RootModel[dict[constr(pattern=r'^x|x$'), Root1 | Root2]]):
 
-
     root: dict[constr(pattern=r'^x|x$'), Root1 | Root2] = Field(..., title='Root')

@@ -1,0 +1,4 @@
+[
+  "/pipeline/type const null: invalid, model accepts",
+  "/version/version const 1.0: valid, model rejects"
+]

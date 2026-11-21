@@ -96,9 +96,10 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import ANY, NONE, DataType, Types
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
-_SYMLINK_CREATION_SKIP = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+_SYMLINK_CREATION_SKIP = needs("symlinks")
 
 
 class A(TemplateBase):
@@ -1006,7 +1007,6 @@ def test_direct_data_models_reuse_bounded_custom_template_cache(tmp_path: Path) 
             _refresh_custom_template_paths(tmp_path / f"signature-{index}")
         assert_output(
             f"{len(_missing_custom_template_state.signatures)}\n",
-            Path(__file__).parent.parent / "data/expected/model/custom_template_signature_cache_size.txt",
         )
     finally:
         _clear_custom_template_caches()
@@ -1064,13 +1064,6 @@ def test_custom_template_signature_tolerates_stat_errors(
 
     assert_output(
         _get_custom_template_signature(tmp_path).hex() + "\n",
-        Path(__file__).parent.parent
-        / "data/expected/model"
-        / (
-            "custom_template_signature_dangling_link.txt"
-            if failed_path_kind == "file"
-            else "custom_template_signature_empty.txt"
-        ),
     )
 
 
@@ -1083,7 +1076,6 @@ def test_custom_template_signature_tracks_root_directory_symlink(tmp_path: Path)
 
     assert_output(
         _get_custom_template_signature(template_directory).hex() + "\n",
-        Path(__file__).parent.parent / "data/expected/model/custom_template_signature_root_link.txt",
     )
 
 
@@ -1698,7 +1690,7 @@ def test_pydantic_class_var_factory_state_is_access_order_independent() -> None:
     )
 
     assert field.has_default_factory_in_field is False
-    assert field._get_field_data_and_default_factory() == ({}, None)
+    assert field._render_plan().call is None
     assert field._rendered_field_values() == (None, None)
     assert field.field is None
     assert field.has_default_factory_in_field is False
@@ -1759,8 +1751,8 @@ def test_msgspec_struct_default_render_plan_requires_convert_import() -> None:
         has_default=True,
     )
 
-    assert str(field) == "field(default_factory=lambda: convert({'value': 'Field('},  type=Nested))"
-    assert field._get_field_data() == {"default_factory": "lambda: convert({'value': 'Field('},  type=Nested)"}
+    assert str(field) == "field(default_factory=lambda: convert({'value': 'Field('}, type=Nested))"
+    assert field._get_field_data() == {"default_factory": "lambda: convert({'value': 'Field('}, type=Nested)"}
     assert IMPORT_MSGSPEC_FIELD in field.imports
     assert IMPORT_MSGSPEC_CONVERT in field.imports
 
@@ -1778,7 +1770,7 @@ def test_msgspec_empty_struct_default_uses_conversion_factory() -> None:
     )
     MsgspecStruct(reference=Reference(path="#/Owner", name="Owner"), fields=[field])
 
-    assert str(field) == "field(default_factory=lambda: convert({},  type=Nested))"
+    assert str(field) == "field(default_factory=lambda: convert({}, type=Nested))"
     assert IMPORT_MSGSPEC_FIELD in field.imports
     assert IMPORT_MSGSPEC_CONVERT in field.imports
     assert IMPORT_MSGSPEC_UNSET not in field.imports

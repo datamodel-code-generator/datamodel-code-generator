@@ -8,15 +8,15 @@ from typing import Any, Literal, TypeAlias
 
 from pydantic import ConfigDict, Field, StrictStr, ValidationError
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
-    SCHEMA_MAP_KEYS,  # noqa: F401
-    SCHEMA_VALUE_KEYS,  # noqa: F401
-    DefinitionKey,  # noqa: F401
     _rewrite_schema_refs,
 )
+from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS as SCHEMA_MAP_KEYS
+from datamodel_code_generator._json_schema import SCHEMA_VALUE_KEYS as SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import DefinitionKey as DefinitionKey
 from datamodel_code_generator._name_words import pascal_words
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.parser._convert_common import _unique_name
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import BaseModel
@@ -68,7 +68,9 @@ def _tool_validation_error(value: JSONSchemaMapping, validation_error: Validatio
         return f"MCP tool {stable_repr(tool_name)} {key} must be a JSON Schema object"
     if key in OPTIONAL_STRING_TOOL_KEYS:
         return f"MCP tool {stable_repr(tool_name)} {key} must be a string"
-    return f"Invalid MCP tool {stable_repr(tool_name)}: {first_error['msg']}"  # pragma: no cover
+    return (  # pragma: no cover - not proven unreachable
+        f"Invalid MCP tool {stable_repr(tool_name)}: {first_error['msg']}"
+    )
 
 
 def _parse_tool(value: JSONSchemaMapping) -> MCPTool:

@@ -46,6 +46,18 @@
       ]
     },
     {
+      "class_name": "SharedModel",
+      "name": "SharedModel",
+      "module": "schema_a.shared_model",
+      "source_ref": "schema_a.json#/$defs/SharedModel",
+      "source_path": [
+        "$defs",
+        "SharedModel"
+      ],
+      "title": null,
+      "fields": []
+    },
+    {
       "class_name": "Model",
       "name": "Model",
       "module": "schema_a.model",

@@ -1,0 +1,82 @@
+=== module redundant_local_imports
+== imports
+=== module redundant_local_imports.cycle
+== imports
+from@2 redundant_local_imports.loader as loader from redundant_local_imports in <module> [always]; level 1; unconditional
+definition redundant_local_imports.cycle:NAME -> module redundant_local_imports.loader@4 via redundant_local_imports.cycle [always]
+definition redundant_local_imports.cycle:loader -> module redundant_local_imports.loader@2 via redundant_local_imports.cycle [always]
+=== module redundant_local_imports.later
+== imports
+=== module redundant_local_imports.leaf
+== imports
+definition redundant_local_imports.leaf:VALUE -> assign redundant_local_imports.leaf:VALUE@3 via redundant_local_imports.leaf [always]
+=== module redundant_local_imports.loader
+== imports
+import@5 sys as sys from sys in <module> [always]; unconditional
+from@6 typing.TYPE_CHECKING as TYPE_CHECKING from typing in <module> [always]; unconditional
+from@8 redundant_local_imports.cycle as cycle from redundant_local_imports in <module> [always]; level 1; unconditional
+from@8 redundant_local_imports.leaf as leaf from redundant_local_imports in <module> [always]; level 1; unconditional
+from@9 redundant_local_imports.leaf.VALUE as VALUE from redundant_local_imports.leaf in <module> [always]; level 1; unconditional
+from@12 redundant_local_imports.typing_only as typing_only from redundant_local_imports in <module> [type-checking:body@11]; level 1; typing only
+from@14 redundant_local_imports.newer as newer from redundant_local_imports in <module> [version:body@13]; level 1
+from@16 redundant_local_imports.windows as windows from redundant_local_imports in <module> [version:else@13|platform:body@15]; level 1
+from@18 redundant_local_imports.optional as optional from redundant_local_imports in <module> [import-error:body@17]; level 1
+from@24 redundant_local_imports.leaf as leaf from redundant_local_imports in redundant [function:body@23]; level 1
+from@25 redundant_local_imports.leaf.VALUE as value from redundant_local_imports.leaf in redundant [function:body@23]; level 1
+from@31 redundant_local_imports.cycle as cycle from redundant_local_imports in several [function:body@30]; level 1
+from@31 redundant_local_imports.later as later from redundant_local_imports in several [function:body@30]; level 1
+from@37 redundant_local_imports.cycle as cycle from redundant_local_imports in closes_the_cycle [function:body@36]; level 1
+from@43 redundant_local_imports.typing_only as typing_only from redundant_local_imports in under_guards [function:body@42]; level 1
+from@43 redundant_local_imports.newer as newer from redundant_local_imports in under_guards [function:body@42]; level 1
+from@43 redundant_local_imports.windows as windows from redundant_local_imports in under_guards [function:body@42]; level 1
+from@49 redundant_local_imports.optional as optional from redundant_local_imports in after_a_try [function:body@48]; level 1
+from@55 redundant_local_imports.later as later from redundant_local_imports in deferred [function:body@54]; level 1
+from@62 redundant_local_imports.leaf as leaf from redundant_local_imports in Holder.method [function:body@61]; level 1
+import@69 datamodel_code_generator.redundant_local_imports.leaf as datamodel_code_generator from datamodel_code_generator.redundant_local_imports.leaf in nested.<locals>.inner [function:body@67|function:body@68]
+import@72 datamodel_code_generator.redundant_local_imports.nested as module from datamodel_code_generator.redundant_local_imports.nested in nested.<locals>.Local [function:body@67]
+definition redundant_local_imports.loader:Holder -> class redundant_local_imports.loader:Holder@60 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:TYPE_CHECKING -> outside typing.TYPE_CHECKING@6 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:VALUE -> assign redundant_local_imports.leaf:VALUE@3 via redundant_local_imports.loader [always] > redundant_local_imports.leaf [always]
+definition redundant_local_imports.loader:after_a_try -> def redundant_local_imports.loader:after_a_try@48 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:closes_the_cycle -> def redundant_local_imports.loader:closes_the_cycle@36 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:cycle -> module redundant_local_imports.cycle@8 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:deferred -> def redundant_local_imports.loader:deferred@54 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:leaf -> module redundant_local_imports.leaf@8 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:nested -> def redundant_local_imports.loader:nested@67 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:newer -> module redundant_local_imports.newer@14 via redundant_local_imports.loader [version:body@13]
+definition redundant_local_imports.loader:optional -> module redundant_local_imports.optional@18 via redundant_local_imports.loader [import-error:body@17]; assign redundant_local_imports.loader:optional@20 via redundant_local_imports.loader [import-error:except@19]
+definition redundant_local_imports.loader:redundant -> def redundant_local_imports.loader:redundant@23 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:several -> def redundant_local_imports.loader:several@30 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:sys -> outside sys@5 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:typing_only -> module redundant_local_imports.typing_only@12 via redundant_local_imports.loader [type-checking:body@11]
+definition redundant_local_imports.loader:under_guards -> def redundant_local_imports.loader:under_guards@42 via redundant_local_imports.loader [always]
+definition redundant_local_imports.loader:windows -> module redundant_local_imports.windows@16 via redundant_local_imports.loader [version:else@13|platform:body@15]
+=== module redundant_local_imports.nested
+== imports
+=== module redundant_local_imports.newer
+== imports
+=== module redundant_local_imports.optional
+== imports
+=== module redundant_local_imports.typing_only
+== imports
+=== module redundant_local_imports.windows
+== imports
+edge redundant_local_imports.cycle -> redundant_local_imports.loader @2 via submodule (module) [always]
+edge redundant_local_imports.loader -> redundant_local_imports.cycle @8 via submodule (module) [always]
+edge redundant_local_imports.loader -> redundant_local_imports.leaf @8 via submodule (module) [always]
+edge redundant_local_imports.loader -> redundant_local_imports.leaf @9 via from (module) [always]
+edge redundant_local_imports.loader -> redundant_local_imports.typing_only @12 via submodule (module) [type-checking:body@11]
+edge redundant_local_imports.loader -> redundant_local_imports.newer @14 via submodule (module) [version:body@13]
+edge redundant_local_imports.loader -> redundant_local_imports.windows @16 via submodule (module) [version:else@13|platform:body@15]
+edge redundant_local_imports.loader -> redundant_local_imports.optional @18 via submodule (module) [import-error:body@17]
+edge redundant_local_imports.loader -> redundant_local_imports.leaf @24 via submodule (function) [function:body@23]
+edge redundant_local_imports.loader -> redundant_local_imports.leaf @25 via from (function) [function:body@23]
+edge redundant_local_imports.loader -> redundant_local_imports.cycle @31 via submodule (function) [function:body@30]
+edge redundant_local_imports.loader -> redundant_local_imports.later @31 via submodule (function) [function:body@30]
+edge redundant_local_imports.loader -> redundant_local_imports.cycle @37 via submodule (function) [function:body@36]
+edge redundant_local_imports.loader -> redundant_local_imports.typing_only @43 via submodule (function) [function:body@42]
+edge redundant_local_imports.loader -> redundant_local_imports.newer @43 via submodule (function) [function:body@42]
+edge redundant_local_imports.loader -> redundant_local_imports.windows @43 via submodule (function) [function:body@42]
+edge redundant_local_imports.loader -> redundant_local_imports.optional @49 via submodule (function) [function:body@48]
+edge redundant_local_imports.loader -> redundant_local_imports.later @55 via submodule (function) [function:body@54]
+edge redundant_local_imports.loader -> redundant_local_imports.leaf @62 via submodule (function) [function:body@61]

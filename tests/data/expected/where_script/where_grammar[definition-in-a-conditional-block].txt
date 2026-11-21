@@ -1,0 +1,10 @@
+exit status 0
+symbol _ParserResults
+  defined (1):
+    src/datamodel_code_generator/_generation.py:<line> annassign _ParserResults
+  users (1):
+    src/datamodel_code_generator/_generation.py: <module>
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

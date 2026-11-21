@@ -42,7 +42,7 @@ import warnings
 
 from datamodel_code_generator import infer_input_type
 
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="datamodel_code_generator")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 try:
     outcome = infer_input_type({text!r}).value
@@ -164,6 +164,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
         if "dynamic_anchor_held_document" in file.parts and file.name != "api.yaml":
             continue
         if "reference_object_siblings" in file.parts and file.name != "api.yaml":
+            continue
+        if "single_allof_refs" in file.parts and file.name != "api.yaml":
             continue
         if file.name.endswith((
             "aliases.json",

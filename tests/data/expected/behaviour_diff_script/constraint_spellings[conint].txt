@@ -1,0 +1,3 @@
+runtime: same: Union[Annotated[int, ge=1], None, bool] | Union[Annotated[int, ge=1], None, bool]
+string: same: Union[Annotated[int, ge=1], None, bool] | Union[Annotated[int, ge=1], None, bool]
+model-field: same: Union[Annotated[int, ge=1], None, bool] | Union[Annotated[int, ge=1], None, bool]

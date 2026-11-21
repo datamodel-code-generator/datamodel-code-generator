@@ -6,7 +6,15 @@ from __future__ import annotations
 from decimal import Decimal
 from enum import Enum, IntEnum
 
-from pydantic import AwareDatetime, BaseModel, RootModel, confloat, conint, constr
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    Field,
+    RootModel,
+    confloat,
+    conint,
+    constr,
+)
 
 
 class NullsibC(BaseModel):
@@ -56,12 +64,12 @@ class Model(BaseModel):
     level2_prop: Level | None = None
     level2_items: list[Level] | None = None
     level2_map: dict[str, Level] | None = None
-    number5: int | None = None
-    number5_prop: int | None = None
+    number5: int | None = Field(None, ge=5)
+    number5_prop: int | None = Field(None, ge=5)
     number5_items: list[int] | None = None
     number5_map: dict[str, int] | None = None
     non_negative: confloat(ge=0.0) | None = None
-    non_negative_prop: float | None = None
+    non_negative_prop: float | None = Field(None, ge=0.0)
     non_negative_items: list[float] | None = None
     non_negative_map: dict[str, float] | None = None
     two_refs: conint(ge=3, le=5) | None = None
@@ -73,12 +81,12 @@ class Model(BaseModel):
     stamp_len_items: list[AwareDatetime] | None = None
     stamp_len_map: dict[str, AwareDatetime] | None = None
     quantity: conint(ge=1) | None = None
-    q_allof: conint(ge=1) | None = None
-    q_allof_prop: conint(ge=1) | None = None
+    q_allof: conint(ge=1) | None = Field(None, le=10)
+    q_allof_prop: conint(ge=1) | None = Field(None, le=10)
     q_allof_items: list[conint(ge=1)] | None = None
     q_allof_map: dict[str, conint(ge=1)] | None = None
     q_allof2: conint(ge=1, le=10) | None = None
-    q_allof2_prop: conint(ge=1) | None = None
+    q_allof2_prop: conint(ge=1) | None = Field(None, le=10)
     q_allof2_items: list[conint(ge=1)] | None = None
     q_allof2_map: dict[str, conint(ge=1)] | None = None
     xpt_a: Decimal | None = None

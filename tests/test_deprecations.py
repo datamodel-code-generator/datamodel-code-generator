@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator import PythonVersion
 from datamodel_code_generator.deprecations import (
     DEPRECATIONS,
     Deprecation,
@@ -22,8 +23,6 @@ from datamodel_code_generator.deprecations import (
     warn_deprecated,
 )
 from tests.conftest import assert_output, assert_warnings_do_not_contain
-
-EXPECTED_DEPRECATIONS_PATH = Path(__file__).parent / "data" / "expected" / "deprecations"
 
 
 def test_deprecation_registry_has_stable_required_metadata() -> None:
@@ -126,7 +125,6 @@ def test_scheduled_deprecation_release_note_and_warning(monkeypatch: pytest.Monk
     assert_warnings_do_not_contain(recorded_warnings, scheduled.message)
     assert_output(
         render_release_note_deprecations("8.0.0"),
-        EXPECTED_DEPRECATIONS_PATH / "scheduled_release_notes.txt",
     )
 
 
@@ -136,18 +134,34 @@ def test_warn_deprecated_uses_registered_message() -> None:
         warn_deprecated("cli.parent-scoped-naming")
 
 
+def test_python_version_has_type_alias_warns_and_answers() -> None:
+    """The deprecated ``PythonVersion.has_type_alias`` warns with its registered message and still answers."""
+    with pytest.warns(DeprecationWarning, match=deprecation_message("python-api.python-version-has-type-alias")):
+        assert PythonVersion.PY_311.has_type_alias is True
+
+
 def _emit_deprecation_warning() -> None:
     warn_deprecated("cli.parent-scoped-naming")
 
 
-def test_warn_deprecated_default_stacklevel_points_to_caller() -> None:
-    """The default stacklevel keeps warnings attributed to the call site."""
+def test_warn_deprecated_points_to_caller() -> None:
+    """A notice names the code that called into the package."""
     with warnings.catch_warnings(record=True) as recorded_warnings:
         warnings.simplefilter("always")
         _emit_deprecation_warning()
 
     assert len(recorded_warnings) == 1
     assert Path(recorded_warnings[0].filename).name == "test_deprecations.py"
+
+
+def test_warn_deprecated_takes_an_explicit_stacklevel() -> None:
+    """A caller that passes ``stacklevel`` gets the frame it names, as before notices named the caller."""
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        warn_deprecated("cli.parent-scoped-naming", stacklevel=1)
+
+    assert len(recorded_warnings) == 1
+    assert Path(recorded_warnings[0].filename).name == "deprecations.py"
 
 
 def test_dependency_notice_release_comparisons() -> None:
@@ -159,5 +173,4 @@ def test_dependency_notice_release_comparisons() -> None:
     )
     assert_output(
         "\n".join(f"{version}: {_dependency_version_is_legacy(version, tuple(minimum))}" for version, minimum in cases),
-        EXPECTED_DEPRECATIONS_PATH / "dependency_versions.txt",
     )

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "Hand",
+  "fields": [
+    {
+      "name": "suit",
+      "doc": "The suit of the hand.",
+      "type": {"type": "enum", "name": "Suit", "symbols": ["CLUBS", "HEARTS"]},
+      "default": "HEARTS"
+    },
+    {"name": "trump", "type": "Suit", "default": "CLUBS"}
+  ]
+}

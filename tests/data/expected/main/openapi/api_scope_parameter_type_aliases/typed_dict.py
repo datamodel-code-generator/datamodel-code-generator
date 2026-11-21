@@ -35,7 +35,9 @@ ItemsItemIdGetQueryTagsParameter: TypeAlias = list[ItemsItemIdGetQueryTagsParame
 ItemsItemIdGetQueryLabelsParameterItem: TypeAlias = str
 
 
-ItemsItemIdGetQueryLabelsParameter: TypeAlias = list[ItemsItemIdGetQueryLabelsParameterItem]
+ItemsItemIdGetQueryLabelsParameter: TypeAlias = list[
+    ItemsItemIdGetQueryLabelsParameterItem
+]
 
 
 ItemsItemIdGetQueryShadeParameter: TypeAlias = Literal['light', 'dark']

@@ -1,0 +1,113 @@
+scripts/check_action.py: workflow .github/actions/setup/action.yml
+scripts/check_badargs.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_chdir.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_commented.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_data.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_described.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_discarded.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_echoed.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_escaped.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_exec.py: workflow .github/workflows/ci.yaml
+scripts/check_filesonly.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_fixture.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_flagged.py: workflow .github/workflows/ci.yaml
+scripts/check_hookargs.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_ignored.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_inline.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_input.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_lint.py: workflow .github/workflows/ci.yaml
+scripts/check_listed.py: tox listed (run by .github/workflows/ci.yaml)
+scripts/check_listing.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_looped.py: tox looped (run by .github/workflows/ci.yaml)
+scripts/check_module.py: workflow .github/workflows/ci.yaml
+scripts/check_module_skipped.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_monkeypatched.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_moved.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_named.py: tox named (run by .github/workflows/ci.yaml)
+scripts/check_nested.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_noparser.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_notested.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_pathonly.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_placed.py: tox placed (run by .github/workflows/ci.yaml)
+scripts/check_posarg.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_quoted.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_ratchets.py: workflow .github/workflows/ci.yaml
+scripts/check_rooted.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rules.py: ratchet
+scripts/check_sequenced.py: workflow .github/workflows/ci.yaml
+scripts/check_shared.py: tox named (run by .github/workflows/ci.yaml)
+scripts/check_shell.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_skipped.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_spelled.py: test tests/test_tools.py::test_tree
+scripts/check_stored.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_style.py: hook .pre-commit-config.yaml
+scripts/check_toxcommented.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_toxechoed.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_tree.py: test tests/test_tools.py::test_tree
+scripts/check_twice.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_unlisted.py: unreached (a reason)
+scripts/check_unrun.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_varied.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_workdir.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_xfailed.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rules.py::counted: ratchet
+scripts/check_rules.py::listed: unreached (report only)
+scripts/check_rules.py::missing: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_gone.py: listed in UNREACHED, but it is reached or gone: remove the entry
+scripts/check_lint.py: listed in UNREACHED, but it is reached or gone: remove the entry
+--- only the pin lookup runs the ratchet
+scripts/check_action.py: workflow .github/actions/setup/action.yml
+scripts/check_badargs.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_chdir.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_commented.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_data.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_described.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_discarded.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_echoed.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_escaped.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_exec.py: workflow .github/workflows/ci.yaml
+scripts/check_filesonly.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_fixture.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_flagged.py: workflow .github/workflows/ci.yaml
+scripts/check_hookargs.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_ignored.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_inline.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_input.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_lint.py: workflow .github/workflows/ci.yaml
+scripts/check_listed.py: tox listed (run by .github/workflows/ci.yaml)
+scripts/check_listing.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_looped.py: tox looped (run by .github/workflows/ci.yaml)
+scripts/check_module.py: workflow .github/workflows/ci.yaml
+scripts/check_module_skipped.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_monkeypatched.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_moved.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_named.py: tox named (run by .github/workflows/ci.yaml)
+scripts/check_nested.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_noparser.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_notested.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_pathonly.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_placed.py: tox placed (run by .github/workflows/ci.yaml)
+scripts/check_posarg.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_quoted.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_ratchets.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rooted.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rules.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_sequenced.py: workflow .github/workflows/ci.yaml
+scripts/check_shared.py: tox named (run by .github/workflows/ci.yaml)
+scripts/check_shell.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_skipped.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_spelled.py: test tests/test_tools.py::test_tree
+scripts/check_stored.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_style.py: hook .pre-commit-config.yaml
+scripts/check_toxcommented.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_toxechoed.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_tree.py: test tests/test_tools.py::test_tree
+scripts/check_twice.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_unlisted.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_unrun.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_varied.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_workdir.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_xfailed.py: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rules.py::counted: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rules.py::listed: UNREACHED: run it on the tree, or list it in UNREACHED with the reason
+scripts/check_rules.py::missing: UNREACHED: run it on the tree, or list it in UNREACHED with the reason

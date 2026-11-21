@@ -12,7 +12,7 @@ disable-warnings	main/main_recommend_options/naming_hint[disable-warnings].txt	=
 json	main/main_recommend_options/naming_hint[json].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 model-name-map	main/main_recommend_options/naming_hint[model-name-map].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 naming-strategy	main/main_recommend_options/naming_hint[naming-strategy].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-numbered	main/recommend_options/naming_hint.txt
+numbered	main/main_recommend_options/naming_hint[numbered].txt	= main/recommend_options/naming_hint.txt
 pyproject-map	main/main_recommend_options/naming_hint[pyproject-map].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 pyproject-naming	main/main_recommend_options/naming_hint[pyproject-naming].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 recommend-options	main/main_recommend_options/naming_hint[recommend-options].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -22,7 +22,7 @@ one-job	main/main_recommend_options/naming_hint_as_error[one-job].txt	= main/mai
 [test_naming_hint_batch_jobs]
 all-jobs	main/main_recommend_options/naming_hint_batch_jobs[all-jobs].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 jobs	main/main_recommend_options/naming_hint_batch_jobs[jobs].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-one-job	main/recommend_options/naming_hint.txt
+one-job	main/main_recommend_options/naming_hint_batch_jobs[one-job].txt	= main/recommend_options/naming_hint.txt
 [test_naming_hint_not_shown_by_generate]
 	main/main_recommend_options/naming_hint_not_shown_by_generate.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_recommend_options]
@@ -86,6 +86,8 @@ blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[bla
 draft-07-pattern-map	main/main_recommend_options/recommend_options_for_schemas[draft-07-pattern-map].stdout.txt
 enums-read-as-their-const	main/main_recommend_options/recommend_options_for_schemas[enums-read-as-their-const].stdout.txt
 explicit-options	main/main_recommend_options/recommend_options_for_schemas[explicit-options].stdout.txt
+formats-needing-extras	main/main_recommend_options/recommend_options_for_schemas[formats-needing-extras].stdout.txt
+formats-needing-extras-msgspec	main/main_recommend_options/recommend_options_for_schemas[formats-needing-extras-msgspec].stdout.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt
 json	main/main_recommend_options/recommend_options_for_schemas[json].stdout.txt
 jsonschema	main/main_recommend_options/recommend_options_for_schemas[jsonschema].stdout.txt
@@ -143,7 +145,7 @@ text	main/main_recommend_options/recommend_options_in_prompt[text].txt
 [test_recommend_options_runs_on_pydantic_2_0]
 	main/main_recommend_options/recommend_options_runs_on_pydantic_2_0.stdout.txt	= main/recommend_options/titled_variants.txt
 [test_recommend_options_small_schema_default]
-	main/recommend_options/titled_variants.txt
+	main/main_recommend_options/recommend_options_small_schema_default.stdout.txt	= main/recommend_options/titled_variants.txt
 [test_recommend_options_without_schema_rules]
 directory	main/main_recommend_options/recommend_options_without_schema_rules[directory].stdout.txt
 graphql	main/main_recommend_options/recommend_options_without_schema_rules[graphql].stdout.txt

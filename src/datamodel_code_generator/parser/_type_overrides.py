@@ -3,9 +3,9 @@
 It names a user-named type path for the target (an error for a type the target lacks, or once output imports it),
 binds the names and imports of a Python type annotation, replaces the type of a field or of a model's references by the
 type an override names, and decides which constraints the replaced type kept that the override type takes. Each
-function takes the parser through ``TypeOverridesHost``, which ``Parser`` satisfies structurally. The methods stay on
-``Parser`` as delegators to these functions, and these functions call them through the parser, so subclasses still
-override them; ``Parser._resolve_type_import_from_defs``, which ``JsonSchemaParser`` overrides, stays a parser method.
+function takes the parser through ``TypeOverridesHost``, which ``Parser`` satisfies structurally, and the parser and the
+passes call these functions; ``Parser._resolve_type_import_from_defs``, which ``JsonSchemaParser`` overrides, stays a
+parser method.
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import (
+    COUNT_KEYWORDS,
     ITEM_COUNT_KEYWORDS,
     LENGTH_KEYWORDS,
     overridden_declared_constraints,
@@ -25,19 +25,25 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_minimums,
 )
 from datamodel_code_generator._container_kinds import ARRAYS, CONTAINER_FLAGS, MAPPINGS
+from datamodel_code_generator._graph_links import type_children
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import dotted_name
+from datamodel_code_generator._python_target_names import target_stdlib_module_names
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_unicode import is_dotted_python_name
 from datamodel_code_generator._user_keys import model_type_override
 from datamodel_code_generator.enums import _pydantic_version_key
 from datamodel_code_generator.imports import Import, _import_key, _import_path
 from datamodel_code_generator.model.base import BaseClassDataType, ConstraintsBase
+from datamodel_code_generator.parser._passes._keys import site_constraints
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     TypeOverrideHost,
     enum_site_override_import,
 )
+from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.python_literal import message_repr
 from datamodel_code_generator.types import _copy_data_type, _value_members
 
@@ -113,43 +119,6 @@ class TypeOverridesHost(TypeOverrideHost, Protocol):
     def _unavailable_imports(self) -> dict[tuple[str | None, str], str]:
         """The imports of types the target lacks, with the error each raises once output imports it."""
 
-    def _apply_override_to_data_type(self, data_type: DataType) -> bool:
-        """Recursively apply model-level overrides to a DataType; a stand-in takes the import it stands for first."""
-
-    def _bind_python_type(self, expression: PythonTypeExpr) -> BoundPythonType:
-        """Bind names/imports without returning to runtime-dependent text parsing."""
-
-    def _decide_overridden_constraints(
-        self, field: DataModelFieldBase, keywords: Callable[..., frozenset[str]]
-    ) -> None:
-        """Keep the constraints that the emitted type decides only when the override type takes them."""
-
-    def _get_target_python_type_path(self, path: str) -> str:
-        """Return a user-named type path for the target, naming a newer typing name by its backport."""
-
-    def _is_target_python_builtin_type(self, type_name: str) -> bool:
-        """Recognize builtins against the target version, never the host runtime."""
-
-    def _mark_untaken_constraints(
-        self,
-        field: DataModelFieldBase,
-        untaken: dict[str, Any],
-        keywords_for: Callable[[str], frozenset[str]],
-    ) -> None:
-        """Remember the declared constraints a field leaves out, and the target version that would take each."""
-
-    def _override_annotation(self, override_import: Import, *, is_optional: bool = False) -> DataType | None:
-        """Return the type a ``--type-overrides`` value spells as an annotation, or None when it names a class."""
-
-    def _record_overridden_constraints(self, field: DataModelFieldBase, *, keeps_top_kwargs: bool) -> None:
-        """Remember how many ``con*`` arguments the override of a field drops, to warn about them."""
-
-    def _resolve_qualified_type_import(self, qualified_name: str) -> Import:
-        """Resolve known stdlib paths against the target without host imports."""
-
-    def _resolve_type_import(self, type_name: str) -> Import | None:
-        """Resolve a type through target-stable metadata, never host imports."""
-
     def _resolve_type_import_from_defs(self, type_name: str) -> Import | PythonTypeExpr | None:
         """Resolve a type name by the ``$defs`` of the document, which only a JSON Schema document has."""
 
@@ -194,10 +163,10 @@ def get_emitted_python_type_path(parser: TypeOverridesHost, path: str) -> str:
     A type that an override replaces or that no model uses emits no import, so it is left alone.
     """
     try:
-        return parser._get_target_python_type_path(path)  # noqa: SLF001
+        return get_target_python_type_path(parser, path)
     except Error as exc:
         import_ = Import.from_full_path(path)
-        parser._unavailable_imports[_import_key(import_)] = str(exc)  # noqa: SLF001
+        parser._unavailable_imports[_import_key(import_)] = str(exc)
         return path
 
 
@@ -207,7 +176,7 @@ def reject_unavailable_imports(parser: TypeOverridesHost, contexts: Sequence[Mod
     The first such type in schema order is reported, so the message does not depend on set iteration order.
     """
     all_imports = (parser.imports, *(ctx.imports for ctx in contexts))
-    for (from_, name), message in parser._unavailable_imports.items():  # noqa: SLF001
+    for (from_, name), message in parser._unavailable_imports.items():
         if any(name in imports.get(from_, ()) for imports in all_imports):
             raise Error(message)
 
@@ -239,7 +208,7 @@ def is_target_python_builtin_type(parser: TypeOverridesHost, type_name: str) -> 
 
 def resolve_qualified_type_import(parser: TypeOverridesHost, qualified_name: str) -> Import:
     """Resolve known stdlib paths against the target without host imports."""
-    return _qualified_python_type_import(parser._get_target_python_type_path(qualified_name))  # noqa: SLF001
+    return _qualified_python_type_import(get_target_python_type_path(parser, qualified_name))
 
 
 def _registry_import(binding: object, version_key: tuple[int, int]) -> bool:
@@ -257,12 +226,10 @@ def _write_refused_literal_values(parser: TypeOverridesHost, written: PythonType
     """
     if not (refused := parser.data_type_manager.REFUSED_LITERAL_TYPES):
         return written
-    from datamodel_code_generator._message_text import for_count  # noqa: PLC0415
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         render_python_type_expr,
         write_refused_literal_values,
     )
-    from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base  # noqa: PLC0415
 
     read, values = write_refused_literal_values(written, refused)
     if values:
@@ -286,7 +253,6 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
     """
     # Binding is exclusive to x-python-type. Import it only after that
     # extension is present so ordinary schema generation keeps its fast path.
-    from datamodel_code_generator._python_target_names import target_stdlib_module_names  # noqa: PLC0415
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
         PythonTypeExpr,
@@ -317,15 +283,15 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
         """Return what a bare name binds: nothing for a builtin, else the registry's import or the schema's."""
         if name not in resolved_name_imports:
             try:
-                is_builtin = parser._is_target_python_builtin_type(name)  # noqa: SLF001
-                import_ = None if is_builtin else parser._resolve_type_import(name)  # noqa: SLF001
+                is_builtin = is_target_python_builtin_type(parser, name)
+                import_ = None if is_builtin else resolve_type_import(parser, name)
             except Error:
-                if not (import_ := parser._resolve_type_import_from_defs(name)):  # noqa: SLF001
+                if not (import_ := parser._resolve_type_import_from_defs(name)):
                     raise
                 resolved_name_imports[name] = import_
             else:
                 resolved_name_imports[name] = (
-                    None if is_builtin else import_ or parser._resolve_type_import_from_defs(name)  # noqa: SLF001
+                    None if is_builtin else import_ or parser._resolve_type_import_from_defs(name)
                 )
         return resolved_name_imports[name]
 
@@ -344,7 +310,7 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
         nonlocal resolving_names
         match item:
             case PythonTypeQualifiedName():
-                import_, name = bind_import(parser._resolve_qualified_type_import(".".join(item.parts)))  # noqa: SLF001
+                import_, name = bind_import(resolve_qualified_type_import(parser, ".".join(item.parts)))
                 return PythonTypeBoundName(name, import_.from_, import_.import_)
             case PythonTypeRuntimeSymbol(module=module) if module:
                 import_, _ = bind_import(Import(import_=module))
@@ -387,7 +353,7 @@ def python_type_data_type(
     """
     from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
 
-    bound_type = parser._bind_python_type(expression)  # noqa: SLF001
+    bound_type = bind_python_type(parser, expression)
     return parser.data_type(
         type=render_python_type_expr(bound_type.expression), python_type=bound_type, is_optional=is_optional
     )
@@ -410,10 +376,7 @@ def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr
 
     name = path.strip() if path.strip().startswith(".") else path
     if "[" not in name and is_dotted_python_name(name.lstrip("."), parser.target_python_version):
-        if "." in name or not (
-            parser._is_target_python_builtin_type(path)  # noqa: SLF001
-            or parser._resolve_type_import(path)  # noqa: SLF001
-        ):
+        if "." in name or not (is_target_python_builtin_type(parser, path) or resolve_type_import(parser, path)):
             return None
         return PythonTypeName(path)
     expression = _parse_override_annotation(path)
@@ -484,38 +447,36 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
     (``dict[str, X]``, ``_override_node``), and every override keeps the item or property counts of the array or map
     it replaces (``_untaken_container_counts``).
     """
-    if (
-        data_type := parser._override_annotation(override_import, is_optional=field.data_type.is_optional)  # noqa: SLF001
-    ) is not None:
-        parser._record_overridden_constraints(field, keeps_top_kwargs=False)  # noqa: SLF001
-        parser._decide_overridden_constraints(  # noqa: SLF001
+    if (data_type := override_annotation(parser, override_import, is_optional=field.data_type.is_optional)) is not None:
+        record_overridden_constraints(parser, field, keeps_top_kwargs=False)
+        decide_overridden_constraints(
+            parser,
             field,
             partial(parser.data_type_manager.constraint_keywords, data_type, parser.target_python_version.version_key),
         )
-        parser._graph_builder.replace_field_type(field, data_type)  # noqa: SLF001
+        parser._graph_builder.replace_field_type(field, data_type)
         return
     from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
         is_known_python_type_path,
     )
 
     data_type = _override_node(field.data_type, whole_type=parser.type_overrides_replace_whole_type)
+    _drop_site_constraints(parser, data_type)
     data_type.import_ = override_import
     data_type.alias = override_import.import_
     path = _import_path(override_import)
     if data_type.kwargs and is_known_python_type_path(path, parser.target_python_version.version_key):
         data_type.kwargs = None
-    parser._record_overridden_constraints(field, keeps_top_kwargs=data_type.kwargs is not None)  # noqa: SLF001
-    parser._decide_overridden_constraints(  # noqa: SLF001
+    record_overridden_constraints(parser, field, keeps_top_kwargs=data_type.kwargs is not None)
+    decide_overridden_constraints(
+        parser,
         field,
         partial(parser.data_type_manager.type_constraint_keywords, path, parser.target_python_version.version_key),
     )
-    parser._graph_builder.replace_field_type(field, data_type)  # noqa: SLF001
-    parser._graph_builder.detach_data_type_ref(field.data_type)  # noqa: SLF001
-    parser._graph_builder.set_nested_data_types(field.data_type, [])  # noqa: SLF001
+    parser._graph_builder.replace_field_type(field, data_type)
+    parser._graph_builder.detach_data_type_ref(field.data_type)
+    parser._graph_builder.set_nested_data_types(field.data_type, [])
 
-
-_COUNT_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS | ITEM_COUNT_KEYWORDS
-"""The keywords a field's constraints write the counts of a map or an array it holds under."""
 
 _WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
     **dict.fromkeys(CONTAINER_FLAGS.values(), False),
@@ -524,6 +485,12 @@ _WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
     "tuple_item_count": None,
 })
 """The values of a type node that holds no container: no container slot, member, dict key or tuple length."""
+
+
+def _drop_site_constraints(parser: TypeOverridesHost, data_type: DataType) -> None:
+    """Drop the constraints the allOf site of ``data_type`` adds to the target it named, which leave with it."""
+    if site_constraints(data_type):
+        parser._graph_builder.record_site_constraints(data_type, {})
 
 
 def _override_node(data_type: DataType, *, whole_type: bool) -> DataType:
@@ -547,7 +514,7 @@ def _untaken_container_counts(
     takes the array's counts (a sequence). The lengths of any other field are not decided here (row
     ``legacy-override-keeps-string-keywords``).
     """
-    if not (lengths := [key for key in keys if key in _COUNT_KEYWORDS]) or not (
+    if not (lengths := [key for key in keys if key in COUNT_KEYWORDS]) or not (
         members := [*_value_members(field.data_type)]
     ):
         return []
@@ -595,11 +562,11 @@ def decide_overridden_constraints(
     type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
     constraints = field.constraints
     is_model = isinstance(constraints, ConstraintsBase)
-    values = {
-        key: value
-        for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
-        if value is not None
-    }
+    values = (
+        constraints.set_values()
+        if is_model
+        else {key: value for key, value in (constraints or {}).items() if value is not None}
+    )
     declared = (
         overridden_declared_constraints(values, type_dependent=type_dependent, untaken=field.pop_untaken_constraints())
         if parser.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
@@ -623,12 +590,10 @@ def decide_overridden_constraints(
         taken=keywords(),
         declared_taken=keywords(number_values=True, target_model_version=parser.target_pydantic_version),
     )
-    parser._mark_untaken_constraints(  # noqa: SLF001
-        field, untaken, lambda minimum: keywords(number_values=True, target_model_version=minimum)
+    mark_untaken_constraints(
+        parser, field, untaken, lambda minimum: keywords(number_values=True, target_model_version=minimum)
     )
-    parser._graph_builder.set_field_constraints(  # noqa: SLF001
-        field, type(constraints).model_validate(values) if is_model else values
-    )
+    parser._graph_builder.set_field_constraints(field, type(constraints).model_validate(values) if is_model else values)
 
 
 def mark_untaken_constraints(
@@ -661,43 +626,35 @@ def mark_untaken_constraints(
     )
 
 
-def _is_class_name(annotation: DataType) -> bool:
-    """Return whether an override annotation is a bare class name, such as ``str`` or ``Decimal``, but not ``None``."""
-    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-        PythonTypeBoundName,
-        PythonTypeName,
-    )
+def _class_path(annotation: DataType) -> str | None:
+    """Return the path of the class an override annotation names as a bare class name, such as ``str`` or ``Decimal``.
 
-    return (
-        annotation.python_type is not None
-        and isinstance(expression := annotation.python_type.expression, PythonTypeName | PythonTypeBoundName)
-        and expression.value != "None"
-    )
-
-
-def _base_class_refusal(parser: TypeOverridesHost, override_import: Import, annotation: DataType | None) -> str | None:
-    """Return why an override cannot replace a base class, or None when it names a class.
-
-    A class path names a class, and so does an annotation that is a bare class name (``_is_class_name``);
-    ``typing.Any``, by its path or as ``Any``, is a class only on a target that can subclass it.
+    None for any other annotation, and for ``None``.
     """
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
         PythonTypeName,
     )
 
+    expression = None if annotation.python_type is None else annotation.python_type.expression
+    if not isinstance(expression, PythonTypeName | PythonTypeBoundName) or expression.value == "None":
+        return None
+    return (
+        dotted_name(expression.import_from, expression.import_name)
+        if isinstance(expression, PythonTypeBoundName)
+        else expression.value
+    )
+
+
+def _base_class_refusal(parser: TypeOverridesHost, override_import: Import, annotation: DataType | None) -> str | None:
+    """Return why an override cannot replace a base class, or None when it names a class.
+
+    A class path names a class, and so does an annotation that is a bare class name (``_class_path``);
+    ``typing.Any``, by its path or as ``Any``, is a class only on a target that can subclass it.
+    """
     path = _import_path(override_import)
-    if annotation is not None:
-        if annotation.python_type is None or not _is_class_name(annotation):
-            return "is no class"
-        expression = annotation.python_type.expression
-        path = (
-            dotted_name(expression.import_from, expression.import_name)
-            if isinstance(expression, PythonTypeBoundName)
-            else expression.value
-            if isinstance(expression, PythonTypeName)
-            else path
-        )
+    if annotation is not None and (path := _class_path(annotation)) is None:
+        return "is no class"
     if path == "typing.Any" and not python_target_meets(
         "python.subclass_any", parser.target_python_version.version_key
     ):
@@ -714,11 +671,11 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
     """
     overridden = False
     if (reference := data_type.reference) and (
-        override_import := parser._base_stand_in_imports.get(model_key_of(reference))  # noqa: SLF001
-        or model_type_override(parser._model_type_override_imports, reference, row="class-name")  # noqa: SLF001
+        override_import := parser._base_stand_in_imports.get(model_key_of(reference))
+        or model_type_override(parser._model_type_override_imports, reference, row="class-name")
         or enum_site_override_import(parser, reference)
     ):
-        annotation = parser._override_annotation(override_import)  # noqa: SLF001
+        annotation = override_annotation(parser, override_import)
         if isinstance(data_type, BaseClassDataType) and (
             refusal := _base_class_refusal(parser, override_import, annotation)
         ):
@@ -726,19 +683,18 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
             msg = f"--type-overrides {name}: {value} {refusal}, so it cannot replace {reference.name} as a base class"
             raise Error(msg)
         if annotation is None:
-            parser._graph_builder.override_type_import(data_type, override_import)  # noqa: SLF001
-            parser._graph_builder.name_reference(data_type, override_import.binding_name)  # noqa: SLF001
-            parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+            parser._graph_builder.override_type_import(data_type, override_import)
+            parser._graph_builder.name_reference(data_type, override_import.binding_name)
+            parser._graph_builder.detach_data_type_ref(data_type)
         else:
-            parser._graph_builder.name_reference(data_type, annotation.type_hint)  # noqa: SLF001
-            parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
-            parser._graph_builder.set_type_expressions(  # noqa: SLF001
+            parser._graph_builder.name_reference(data_type, annotation.type_hint)
+            parser._graph_builder.detach_data_type_ref(data_type)
+            parser._graph_builder.set_type_expressions(
                 data_type, type_=annotation.type, python_type=annotation.python_type
             )
+        _drop_site_constraints(parser, data_type)
         overridden = True
     # Handle nested types (List[CustomType], Optional[CustomType], etc.)
-    for nested in data_type.data_types:
-        overridden = parser._apply_override_to_data_type(nested) or overridden  # noqa: SLF001
-    if data_type.dict_key:
-        overridden = parser._apply_override_to_data_type(data_type.dict_key) or overridden  # noqa: SLF001
+    for nested in type_children(data_type):
+        overridden = apply_override_to_data_type(parser, nested) or overridden
     return overridden

@@ -19,7 +19,7 @@ from scripts.build_docs_examples import pyproject_table, with_newest_preset
 from tests.main.conftest import run_main_with_args
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Generator, Iterable
     from pathlib import Path
 
     import pytest
@@ -102,7 +102,7 @@ def run_tests(root: Path, *tests: str) -> str:
 
 
 @contextmanager
-def serve(root: Path, *arguments: str) -> Iterator[str]:
+def serve(root: Path, *arguments: str) -> Generator[str, None, None]:
     """Serve an application with uvicorn on a free port from a directory, yielding its URL.
 
     The arguments name the application, such as `app.server.main:app`, and any options, such as `--app-dir`.

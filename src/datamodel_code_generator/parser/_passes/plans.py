@@ -12,13 +12,18 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import ReuseScope
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator._user_keys import model_type_override
-from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
-from datamodel_code_generator.parser._field_rows import uses_default_with_required
+from datamodel_code_generator.enums import ReuseScope
+from datamodel_code_generator.model.base import (
+    BaseLayoutView,
+    _find_base_classes,
+    _walk_bases_first,
+    linearize_data_models,
+)
+from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import reuse_candidate_key
 from datamodel_code_generator.parser._passes._shared import (
@@ -33,13 +38,14 @@ from datamodel_code_generator.parser._passes._state import RecursionFacts
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, field_namer, iter_union_sites, possible_tag_names
 
 if TYPE_CHECKING:
-    from datamodel_code_generator import CollapseRootModelsNameStrategy
+    from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator.enums import CollapseRootModelsNameStrategy
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
-    from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun
+    from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun, _KeptParentRoot
     from datamodel_code_generator.parser._tag_plan import TagCapabilities
     from datamodel_code_generator.reference import ModelType, Reference
-    from datamodel_code_generator.types import DataTypeManager
+    from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
     "FlattenHost",
@@ -62,6 +68,10 @@ class _Clearable(Protocol):
 class FlattenHost(InheritedFieldHost, GraphBuilderHost, Protocol):
     """What making a model declare the fields of its bases reads and writes of the parser."""
 
+    @property
+    def keep_defaults_of_inherited_required_fields(self) -> bool:
+        """Whether a field only a base requires keeps its default (``--keep-defaults-of-inherited-required-fields``)."""
+
 
 class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelTypeHost, TagPlanHost, Protocol):
     """The options, run state and hooks of the parser that the plan passes read and write."""
@@ -75,7 +85,7 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The type manager of the output model, whose constraint options the union members are read with."""
 
     @property
-    def _base_stand_ins(self) -> _Clearable:
+    def _base_stand_ins(self) -> dict[int, Reference | None]:
         """The stand-ins of bases that the output cannot import, by base."""
 
     @property
@@ -83,15 +93,15 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The models collapsed reuse removed, by the id of their canonical model."""
 
     @property
-    def _hidden_named_types(self) -> _Clearable:
+    def _hidden_named_types(self) -> dict[tuple[ModelKey, str | None], bool]:
         """Whether a field hides the named type of its model, by model key and field name."""
 
     @property
-    def _hiding_field_names(self) -> _Clearable:
+    def _hiding_field_names(self) -> dict[tuple[ModelKey, str | None], str]:
         """The fields that hide a named type, by model key and field name."""
 
     @property
-    def _kept_parent_roots(self) -> _Clearable:
+    def _kept_parent_roots(self) -> dict[int, _KeptParentRoot]:
         """The roots that the ``parent`` strategy kept for their later holders."""
 
     @property
@@ -103,11 +113,11 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The modules prepared for rendering."""
 
     @property
-    def _removed_reuse_users(self) -> _Clearable:
+    def _removed_reuse_users(self) -> dict[int, tuple[DataType, list[str]]]:
         """The data types whose duplicate reuse removed, with the paths they named."""
 
     @property
-    def _replaced_root_models(self) -> _Clearable:
+    def _replaced_root_models(self) -> dict[int, tuple[DataModel, DataModel]]:
         """The roots that collapse replaced by their inner models."""
 
     @property
@@ -125,15 +135,15 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
 
 def reset_per_run_state(parser: PlansHost, _run: StructuredRun[Any]) -> None:
     """Forget what the passes of an earlier parse recorded on the parser."""
-    parser._hidden_named_types.clear()  # noqa: SLF001
-    parser._hiding_field_names.clear()  # noqa: SLF001
-    parser._tag_plan.reset()  # noqa: SLF001
-    parser._prepared_modules.clear()  # noqa: SLF001
-    parser._base_stand_ins.clear()  # noqa: SLF001
-    parser._generic_base_model = None  # noqa: SLF001
-    parser._removed_reuse_users.clear()  # noqa: SLF001
-    parser._replaced_root_models.clear()  # noqa: SLF001
-    parser._kept_parent_roots.clear()  # noqa: SLF001
+    parser._hidden_named_types.clear()
+    parser._hiding_field_names.clear()
+    parser._tag_plan.reset()
+    parser._prepared_modules.clear()
+    parser._base_stand_ins.clear()
+    parser._generic_base_model = None
+    parser._removed_reuse_users.clear()
+    parser._replaced_root_models.clear()
+    parser._kept_parent_roots.clear()
 
 
 def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleModels) -> None:
@@ -146,8 +156,6 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     output. A model that a type override replaces has a layout the generator does not know, as a configured base
     class has.
     """
-    if not parser._tag_capabilities.flattens_layouts:  # noqa: SLF001
-        return
     models = [model for _, models in module_models for model in models]
     if not (joins := [model for model in models if len(model.base_classes) > 1]):
         return
@@ -161,11 +169,11 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
 
     layout_models = reach(joins, layout_targets, key=id)
     tag_names = possible_tag_names(
-        iter_union_sites(chain(models, chain.from_iterable(parser._collapsed_reuse_models.values()))),  # noqa: SLF001
+        iter_union_sites(chain(models, chain.from_iterable(parser._collapsed_reuse_models.values()))),
         layout_models,
         field_namer(parser.model_resolver, parser.field_name_model_type),
     )
-    overrides = parser._model_type_override_imports  # noqa: SLF001
+    overrides = parser._model_type_override_imports
 
     def is_slot(field: DataModelFieldBase) -> bool:
         names = tag_names.get(id(field.parent), frozenset())
@@ -176,16 +184,9 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
         lambda model: duplicates.get(id(model), model),
         lambda model: model_type_override(overrides, model.reference, row="class-name") is not None,
     )
-    visits = [(model, False) for model in reversed(joins)]
-    visited: set[int] = set()
-    while visits:
-        model, complete = visits.pop()
-        if complete and len(model.base_classes) > 1:
+    for model in _walk_bases_first(joins):
+        if len(model.base_classes) > 1:
             model.flatten_conflicting_base_layouts(view, partial(flatten_base_layouts, parser))
-        elif not complete and id(model) not in visited:
-            visited.add(id(model))
-            visits.append((model, True))
-            visits.extend((base, False) for base in reversed(_find_base_classes(model)))
 
 
 def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
@@ -199,25 +200,18 @@ def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
 
     def adopt(field: DataModelFieldBase, required: bool) -> DataModelFieldBase:  # noqa: FBT001
         if id(field) not in own_fields:
-            field = parser._copy_model_field(field)  # noqa: SLF001
+            field = parser._copy_model_field(field)
         if required and not field.required:
-            parser._graph_builder.require_field(  # noqa: SLF001
-                field,
-                use_default_with_required=uses_default_with_required(
-                    required=required,
-                    has_default=field.has_default,
-                    use_default=parser.apply_default_values_for_required_fields,
-                ),
-            )
+            require_field(parser, field)
         return field
 
-    parser._graph_builder.adopt_base_options(model)  # noqa: SLF001
+    parser._graph_builder.adopt_base_options(model)
     fields = model.flatten_base_layouts(adopt)
-    with parser._graph_builder.defer_refresh():  # noqa: SLF001
+    with parser._graph_builder.defer_refresh():
         for base_class in model.base_classes:
-            parser._graph_builder.detach_data_type_ref(base_class)  # noqa: SLF001
-        parser._graph_builder.set_fields(model, fields)  # noqa: SLF001
-        parser._graph_builder.reset_base_classes(model)  # noqa: SLF001
+            parser._graph_builder.detach_data_type_ref(base_class)
+        parser._graph_builder.set_fields(model, fields)
+        parser._graph_builder.reset_base_classes(model)
 
 
 def find_possible_reuse_duplicates(parser: PlansHost, module_models: ModuleModels) -> dict[int, DataModel]:
@@ -250,7 +244,7 @@ def unconstrain_union_members_in_modules(parser: PlansHost, run: StructuredRun[A
     options = parser.data_type_manager.constraint_options
     for _, models in run.module_models:
         for field in (field for model in models for field in model.fields):
-            parser._graph_builder.drop_union_member_constraints(field, refresh="deferred", options=options)  # noqa: SLF001
+            parser._graph_builder.drop_union_member_constraints(field, refresh="deferred", options=options)
 
 
 def set_circular_root_model_paths(
@@ -262,7 +256,7 @@ def set_circular_root_model_paths(
     """Record the root models in circular components before collapsing them."""
     snapshot = GraphSnapshot.CIRCULAR_ROOT_MODELS
     keyed = keyed_models(
-        (model for _, models in module_models for model in models if parser._is_root_model(model)),  # noqa: SLF001
+        (model for _, models in module_models for model in models if parser._is_root_model(model)),
         snapshot.value,
     )
     index = parser.generation_store.index
@@ -291,8 +285,8 @@ def set_circular_root_model_paths(
         if require_dict_key_edge
         else frozenset(key for component in components for key in component)
     )
-    recursion_facts = parser._recursion_facts  # noqa: SLF001
-    parser._recursion_facts = RecursionFacts(  # noqa: SLF001
+    recursion_facts = parser._recursion_facts
+    parser._recursion_facts = RecursionFacts(
         require_update=recursion_facts["require_update"], circular_roots=circular_roots
     )
 
@@ -309,13 +303,11 @@ def root_dict_key_references(model: DataModel) -> list[Reference]:
 
 def record_emitting_modules(parser: PlansHost, run: StructuredRun[Any]) -> None:
     """Record the module that writes each model, for ``--collapse-root-models-name-strategy``."""
-    parser._emitting_module_lists = (  # noqa: SLF001
+    parser._emitting_module_lists = (
         [(dotted_module(module_), models) for module_, models in run.module_models]
         if parser.collapse_root_models and parser.collapse_root_models_name_strategy is not None
         else []
     )
-    parser._emitting_module_names = {  # noqa: SLF001
-        id(model): module_name
-        for module_name, models in parser._emitting_module_lists  # noqa: SLF001
-        for model in models
+    parser._emitting_module_names = {
+        id(model): module_name for module_name, models in parser._emitting_module_lists for model in models
     }

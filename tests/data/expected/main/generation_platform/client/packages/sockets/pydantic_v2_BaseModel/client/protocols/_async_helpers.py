@@ -93,7 +93,9 @@ class AsyncRoomsChatWebsocket:
         since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[models.ClientMessage, models.ServerMessage]]:
+    ) -> AbstractAsyncContextManager[
+        AsyncWebSocketSession[models.ClientMessage, models.ServerMessage]
+    ]:
         """Open the WebSocket of GET /rooms/{room}/socket for an async with block once its handshake got a valid 101."""
         return aconnect_socket(
             self._core,

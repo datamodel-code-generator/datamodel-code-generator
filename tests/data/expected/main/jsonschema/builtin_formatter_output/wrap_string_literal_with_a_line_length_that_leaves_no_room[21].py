@@ -11,38 +11,25 @@ from pydantic import (
 )
 
 
-class NarrowWrap(BaseModel):
+class NarrowWrap(
+    BaseModel
+):
     text: str = (
         Field(
             ...,
             description=(
-                'hel'
-                'lo'
-                ' wo'
-                'rld'
-                ' an'
-                'd'
-                ' th'
-                'en'
-                ' a'
-                ' re'
-                'all'
-                'y'
-                ' lo'
-                'ng'
-                ' de'
-                'scr'
-                'ipt'
-                'ion'
+                'hello'
+                ' world'
+                ' and then'
+                ' a really'
+                ' long'
+                ' description'
             ),
         )
     )
-    hex: str = (
-        Field(
-            ...,
-            description=(
-                'abc'
-                '\x7f'
-            ),
-        )
+    hex: str = Field(
+        ...,
+        description=(
+            'abc\x7f'
+        ),
     )

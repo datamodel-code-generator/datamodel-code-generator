@@ -33,9 +33,9 @@ from ..client.errors import (
 from ..client.native import _AsyncHeld, _Held, native_phases  # pyright: ignore[reportPrivateUsage]
 from ..client.operations import codec_condition
 from ..client.options import RequestOptions
-from ..client.raw import afinished, aheld, checked, finished, held, native_request
+from ..client.raw import AsyncClosing, Closing, afinished, aheld, checked, finished, held, native_request
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import NO_CONTENT, json_value
+from ..model_codecs.media import NO_CONTENT, json_text, json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     HELPER_ERRORS,
@@ -49,12 +49,12 @@ from .errors import (
 from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
 from .resume import require_state, restored, saved_expiry, state_array, state_expiry, state_fields
-from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, written
+from .routes import Unrouted, route
+from .values import MISSING, Patch, absence, read_expiry, resolve, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator, Mapping
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan
@@ -185,6 +185,8 @@ class EventPlan(Generic[T]):
     events, by the same discriminator. A `sentinel` completion ends at the raw data `terminal` and an `event_type` one
     at that SSE type; neither terminal event is decoded or delivered. An NDJSON body's bytes after its last line end
     are a record only when `final_line` is `allow_eof`. `resume` is how a helper declaring resumption reopens it.
+    With `fields`, `event` decodes each SSE event's parsed fields as one JSON object instead of its data: its data and
+    type, its event ID when one is set, and its own valid `retry` (the OpenAPI 3.2 item of an event stream).
     """
 
     helper_id: str
@@ -201,6 +203,7 @@ class EventPlan(Generic[T]):
     kind: Literal["sse", "ndjson"] = "sse"
     final_line: Literal["require_newline", "allow_eof"] = "require_newline"
     resume: StreamResumePlan | None = None
+    fields: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,7 +211,7 @@ class _Frame:
     """A dispatched event: its joined data, its type, the last event ID, and the reconnection time.
 
     An NDJSON record is a frame of its line, without a type, an event ID, or a reconnection time, that keeps the line's
-    bytes as `raw`, which its data was decoded from.
+    bytes as `raw`, which its data was decoded from. An event of a plan decoding `fields` keeps their JSON as `raw`.
     """
 
     data: str
@@ -219,7 +222,7 @@ class _Frame:
 
     @property
     def body(self) -> bytes:
-        """Return the bytes of the data: the line's own, or the data encoded as UTF-8."""
+        """Return the bytes a codec decodes: the line's own or the fields' JSON, else the data encoded as UTF-8."""
         return self.data.encode() if self.raw is None else self.raw
 
 
@@ -583,14 +586,21 @@ class _Events(Generic[T]):
         more than 18 digits is ignored. Until a response sets an event ID, its events keep the one the stream reopened
         after.
         """
-        if (retry := event.retry) is not None and 0 <= retry < _MAX_RETRY:
+        if retried := (retry := event.retry) is not None and 0 <= retry < _MAX_RETRY:
             self._retry = retry
         if event.id:
             self._identified = True
         if not event.data:
             return None
         event_id = event.id or (None if self._identified else self._carried)
-        return _Frame(event.data, event.event, event_id, self._retry)
+        if not self._plan.fields:
+            return _Frame(event.data, event.event, event_id, self._retry)
+        item: dict[str, object] = {"data": event.data, "event": event.event}
+        if event_id:
+            item["id"] = event_id
+        if retried:
+            item["retry"] = retry
+        return _Frame(event.data, event.event, event_id, self._retry, json_text(item).encode())
 
     def _record(self, line: bytes) -> _Frame:
         """Return the record of an NDJSON line, without the CR of a CRLF, refusing one that is not UTF-8.
@@ -795,10 +805,12 @@ class _Events(Generic[T]):
         wire: JSONValue | None = None
         key = frame.event_type
         if (selector := plan.discriminator) is not None:
-            wire = self._wire(frame)
-            if (found := resolve(wire, selector.pointer)) is MISSING or not isinstance(found, str):
-                raise self._stamped(self._decode_error(frame.body, unfit(found), location=selector))
-            key = found
+            if isinstance(routed := route(frame.body, selector), Unrouted):
+                location = None if routed.reason == "malformed" else selector
+                raise self._stamped(
+                    self._decode_error(frame.body, routed.reason, location=location, cause=routed.cause)
+                )
+            wire, key = routed
         if (error := self._errors.get(key)) is not None:
             data = self._decoded(error, frame)
             raise self._stamped(ProtocolDataError(reason="error_event", data=data))
@@ -819,14 +831,6 @@ class _Events(Generic[T]):
             sequence=self._sequence,
             raw_data=frame.data,
         )
-
-    def _wire(self, frame: _Frame) -> JSONValue:
-        """Return an event's data parsed as JSON, raising DecodeError for data that does not parse."""
-        data = frame.body
-        try:
-            return json_value(data)
-        except (ValueError, UnicodeDecodeError, RecursionError) as error:
-            raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
     def _decoded(self, codec: InboundModelCodec[U], frame: _Frame) -> U:
         """Return an event's data decoded by its codec, raising DecodeError for data it refuses."""
@@ -855,7 +859,7 @@ class _Events(Generic[T]):
 
 
 @final
-class EventStream(_Events[T]):
+class EventStream(_Events[T], Closing):
     """A synchronous SSE or NDJSON stream: iterate over its events, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one consumer at a time; after a failure
@@ -985,19 +989,9 @@ class EventStream(_Events[T]):
             self._chunks.close()
             self._response.close()
 
-    def __enter__(self) -> Self:
-        """Return this stream, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the stream."""
-        self.close()
-
 
 @final
-class AsyncEventStream(_Events[T]):
+class AsyncEventStream(_Events[T], AsyncClosing):
     """An asyncio SSE or NDJSON stream: iterate over its events with `async for`, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one task at a time; after a failure or
@@ -1135,16 +1129,6 @@ class AsyncEventStream(_Events[T]):
             await self._frames.aclose()
             await self._chunks.aclose()
             await self._response.aclose()
-
-    async def __aenter__(self) -> Self:
-        """Return this stream, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the stream."""
-        await self.aclose()
 
 
 def _sent(  # noqa: PLR0913, PLR0917

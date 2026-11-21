@@ -1,0 +1,34 @@
+"""Type parameters and type statements hide a Host parameter of the scopes around them (Python 3.12 syntax)."""
+
+from __future__ import annotations
+
+from typing import Protocol
+
+
+class FixtureHost(Protocol):
+    _state: int
+
+
+def type_parameters(parser: FixtureHost) -> int:
+    def generic[parser]() -> int:
+        return parser._state
+
+    class Generic[parser]:
+        state = parser._state
+
+        def method(self) -> int:
+            return parser._state
+
+    class Plain:
+        def method(self) -> int:
+            return parser._state
+
+    return parser._state + generic() + Generic().method() + Plain().method()
+
+
+def type_statement(parser: FixtureHost) -> int:
+    def declares() -> int:
+        type parser = int
+        return parser._state
+
+    return parser._state + declares()

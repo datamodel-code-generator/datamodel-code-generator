@@ -1,0 +1,22 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  VALUES: assign@3 [always]; value [1, 2, 3]
+  FOUND: assign@4 [always]; value [last for v in VALUES if (last := v)]
+  last: walrus@4 [loop:body@4]
+  GEN: assign@5 [always]; value sum(total := v for v in VALUES)
+  total: walrus@5 [loop:body@5]
+  NESTED: assign@6 [always]; value [[deep := w for w in row] for row in [VALUES]]
+  deep: walrus@6 [loop:body@6|loop:body@6]
+scope comprehension <listcomp>#0 '<listcomp>': code 3.11 only; first line 4; global last
+  opened by a node evaluated in <module>#0
+  v: comprehension@4 [loop:body@4]
+scope comprehension <genexpr>#0 '<genexpr>': code yes; first line 5; global total
+  opened by a node evaluated in <module>#0
+  v: comprehension@5 [loop:body@5]
+scope comprehension <listcomp>#1 '<listcomp>': code 3.11 only; first line 6
+  opened by a node evaluated in <module>#0
+  row: comprehension@6 [loop:body@6]
+scope comprehension <listcomp>#0 '<listcomp>': code 3.11 only; first line 6; global deep
+  opened by a node evaluated in <listcomp>#1
+  w: comprehension@6 [loop:body@6|loop:body@6]
+== code objects: one per scope that compiles on this Python

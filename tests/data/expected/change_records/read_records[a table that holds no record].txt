@@ -1,0 +1,2 @@
+ValueError: changes/0.2.0.toml: id 'B' is not a lower-case slug
+entry c: cells are not [[change.cells]] tables

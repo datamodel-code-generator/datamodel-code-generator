@@ -33,9 +33,9 @@ class Area(Enum):
     """The model graph that the generation store records keeps its invariants (``model_graph.py``)."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
-    """No reader writes a schema object the schema graph validated once and shares, every schema site the target
-    bindings read again equals the documents then, and no string `$ref` of a site leads to no loaded schema
-    (``schema_graph.py``)."""
+    """No reader writes a schema object the schema graph validated once and shares, or a loaded document, every
+    value a document record keeps for a pointer and every schema site the target bindings read again equal the
+    documents then, and no string `$ref` of a site leads to no loaded schema (``schema_graph.py``)."""
 
     MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
     """The imports of every module, and those all modules share, equal the replay of their import ledger when the
@@ -47,6 +47,11 @@ class Area(Enum):
     """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
     modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
     with it renders as the type hint then (``render_plans.py``)."""
+
+    TEMPLATE_ASSIGNMENTS = "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS"
+    """Every class-scope field line a model's built-in template renders after B2 binds the field's name exactly where
+    the model's row of ``classify_assignment`` decides that the class body binds the field
+    (``template_assignments.py``)."""
 
     NAMING = "DATAMODEL_CODE_GENERATOR_CHECK_NAMING"
     """The names the L1 resolver and the L2 settle give are a function of the resolver's naming calls: replayed on a
@@ -60,10 +65,25 @@ class Area(Enum):
     """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a
     freeze point, a write to the graph of facts frozen there fails where it is made (``finality.py``)."""
 
+    PASS_TRIGGERS = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
+    """A pass whose trigger is false runs anyway and changes nothing: no fact, memo revision, import, parser attribute,
+    run-state field or warning (``finality.ParseChecks.idle_pass``). It needs ``STORE_WRITES`` or ``FACT_FINALITY``,
+    which open the checks of a parse, and compares the facts only with ``FACT_FINALITY``."""
+
     FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
     """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.
 
     It widens what ``FACT_FINALITY`` compares and reports nothing itself: ``1`` and ``report:<path>`` both turn it on.
+    """
+
+
+class CheckFailure(BaseException):
+    """A violation of a debug check that raises: the one exception every area of the suite checks raises.
+
+    It derives from ``BaseException``, neither from the package's ``Error`` nor from ``Exception``: generations
+    catch ``Error`` to try another reading of the input or to write ``Error: <message>`` into their output, and
+    others catch ``Exception``, so a failing check would become a stored output change that a fix run accepts
+    instead of a failing test (#7184).
     """
 
 
@@ -78,14 +98,14 @@ class Mode:
     state: dict[Any, Any] = field(default_factory=dict, compare=False)
     """What the area's wrappers keep for the parse."""
 
-    def violation(self, error: type[Exception], message: str, **details: object) -> None:
-        """Raise error with the message, or append the message and its details to the report as one JSON line.
+    def violation(self, message: str, **details: object) -> None:
+        """Raise ``CheckFailure`` with the message, or append the message and its details to the report as a line.
 
         The message starts with the area's variable, so that it names the flag that found it.
         """
         text = f"{self.area.value}: {message}"
         if self.report_path is None:
-            raise error(text)
+            raise CheckFailure(text)
         self.record(text, **details)
 
     def record(self, message: str, **details: object) -> None:

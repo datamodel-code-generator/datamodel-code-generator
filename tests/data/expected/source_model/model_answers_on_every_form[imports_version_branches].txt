@@ -1,0 +1,8 @@
+== imports
+import@3 sys as sys from sys in <module> [always]; unconditional
+import@6 versioned as versioned from versioned in <module> [version:body@5]
+import@8 middle as middle from middle in <module> [version:else@5|version:body@7]
+import@10 legacy as legacy from legacy in <module> [version:else@5|version:else@7]
+import@13 both as both from both in <module> [version:body@12]
+import@17 versioned as versioned from versioned in later [function:body@16]
+== code objects: one per scope that compiles on this Python

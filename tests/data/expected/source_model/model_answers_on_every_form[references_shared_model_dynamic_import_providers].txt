@@ -1,0 +1,65 @@
+== references
+12:0 CONCRETE_BACKEND store in <module> -> local <module> @12
+14:0 load_module store in <module> -> local <module> @14
+14:14 importlib load in <module> -> local <module> @8; origin importlib
+15:0 load_module load in <module> -> local <module> @14; origin importlib.import_module
+15:12 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+16:0 importlib load in <module> -> local <module> @8; origin importlib
+16:29 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+17:0 provider_load_module store in <module> -> local <module> @17
+17:23 import_provider load in <module> -> local <module> @9; origin importlib
+18:0 provider_load_module load in <module> -> local <module> @17; origin importlib.import_module
+18:21 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+19:0 provider_alias store in <module> -> local <module> @19
+19:17 import_provider load in <module> -> local <module> @9; origin importlib
+20:0 provider_alias load in <module> -> local <module> @19; origin importlib
+20:29 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+21:0 annotated_provider store in <module> -> local <module> @21
+21:20 object load (evaluated annotation) in <module> -> builtin; origin builtins.object
+21:29 import_provider load in <module> -> local <module> @9; origin importlib
+22:0 annotated_provider load in <module> -> local <module> @21; origin importlib
+22:33 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+23:0 provider_import store in <module> -> local <module> @23
+23:18 builtin_provider load in <module> -> local <module> @7; origin builtins
+24:0 provider_import load in <module> -> local <module> @23; origin builtins.__import__
+24:16 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+25:0 load_module load in <module> -> local <module> @14; origin importlib.import_module
+26:0 importlib load in <module> -> local <module> @8; origin importlib
+26:17 importlib load in <module> -> local <module> @8; origin importlib
+30:4 future_provider load in inspect_forward_provider -> global <module> @33; origin importlib
+30:34 CONCRETE_BACKEND load in inspect_forward_provider -> global <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+35:0 enabled store in <module> -> local <module> @35
+36:3 enabled load in <module> -> local <module> @35; origin forms.references.shared_model_dynamic_import_providers.enabled
+43:4 conditional_provider load in inspect_conditional_provider -> global <module> @37,39
+  may be importlib [if:body@36]
+  may be sys [if:else@36]
+43:39 CONCRETE_BACKEND load in inspect_conditional_provider -> global <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+50:36 str load (evaluated annotation) in ReboundImporter -> builtin; origin builtins.str
+54:0 rebound_provider store in <module> -> local <module> @46,54
+54:19 ReboundImporter load in <module> -> local <module> @49; origin forms.references.shared_model_dynamic_import_providers.ReboundImporter
+55:0 rebound_provider load in <module> -> local <module> @46,54
+  may be importlib [always]
+55:31 CONCRETE_BACKEND load in <module> -> local <module> @12; origin forms.references.shared_model_dynamic_import_providers.CONCRETE_BACKEND
+uses of <module>:builtin_provider@7: read@23
+uses of <module>:importlib@8: read@14, call:import_module@16, call:reload@26, argument@26
+uses of <module>:import_provider@9: read@17, read@19, read@21
+uses of <module>:CONCRETE_BACKEND@12: argument@15, argument@16, argument@18, argument@20, argument@22, argument@24, argument@30, argument@43, argument@55
+uses of <module>:load_module@14: call@15, call@25
+uses of <module>:provider_load_module@17: call@18
+uses of <module>:provider_alias@19: call:import_module@20
+uses of <module>:annotated_provider@21: call:import_module@22
+uses of <module>:provider_import@23: call@24
+uses of <module>:future_provider@33: call:import_module@30
+uses of <module>:enabled@35: read@36
+uses of <module>:conditional_provider@37: call:import_module@43
+uses of <module>:conditional_provider@39: call:import_module@43
+uses of <module>:rebound_provider@46: call:import_module@55
+uses of <module>:rebound_provider@54: call:import_module@55
+uses of <module>:ReboundImporter@49: call@54
+type positions @12: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @21: object
+type positions @29: -
+type positions @42: -
+type positions @50: -
+type positions @50: str
+== code objects: one per scope that compiles on this Python

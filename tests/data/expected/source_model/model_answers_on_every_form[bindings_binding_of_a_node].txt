@@ -1,0 +1,99 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  _path: import@9 [always]; origin os.path
+  _cast: import-from@10 [always]; origin typing.cast
+  load: def@13 [always]
+  _json: import@15 [function:body@13]; origin json
+  outer: def@20 [always]
+  handle: def@31 [always]
+  Holder: class@45 [always]
+scope function load#0 'load': code yes; first line 13; global _json
+  opened by a node evaluated in <module>#0
+scope function outer#0 'outer': code yes; first line 20
+  opened by a node evaluated in <module>#0
+  count: assign@21 [function:body@20]; value 0
+  count: assign@25 [function:body@20|function:body@23]; value count + 1
+  bump: def@23 [function:body@20]
+scope function outer.<locals>.bump#0 'bump': code yes; first line 23; nonlocal count
+  opened by a node evaluated in outer#0
+scope function handle#0 'handle': code yes; first line 31
+  opened by a node evaluated in <module>#0
+  value: param@31 [function:body@31]
+  rest: param@31 [function:body@31]
+  flag: param@31 [function:body@31]
+  flag: assign@34 [function:body@31|try:body@33]; value not flag
+  extra: param@31 [function:body@31]
+  error: except@35 [function:body@31|try:except@35]
+  captured: match@38 [function:body@31|case:body@38]
+  others: match@38 [function:body@31|case:body@38]
+  first: match@40 [function:body@31|case:body@40]
+  tail: match@40 [function:body@31|case:body@40]
+  last: walrus@42 [function:body@31|loop:body@42]
+scope comprehension handle.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 42; nonlocal last
+  opened by a node evaluated in handle#0
+  seen: comprehension@42 [function:body@31|loop:body@42]
+scope class Holder#0 'Holder': code yes; first line 45
+  opened by a node evaluated in <module>#0
+  size: assign@46 [always]; value 0
+  grow: def@48 [always]
+  members: grow, size
+scope function Holder.grow#0 'grow': code yes; first line 48
+  opened by a node evaluated in Holder#0
+  self: param@48 [function:body@48]
+  receiver: self@48
+binding at alias@9:7: <module>:_path@9 (import)
+binding at alias@10:19: <module>:_cast@10 (import-from)
+binding at FunctionDef@13:0: <module>:load@13 (def)
+binding at alias@15:11: <module>:_json@15 (import)
+binding at Name@17:11: none
+binding at Name@17:18: none
+binding at Name@17:25: none
+binding at FunctionDef@20:0: <module>:outer@20 (def)
+binding at Name@21:4: outer:count@21 (assign)
+binding at FunctionDef@23:4: outer:bump@23 (def)
+binding at Name@25:8: outer:count@25 (assign)
+binding at Name@25:16: none
+binding at Name@26:15: none
+binding at Name@28:11: none
+binding at FunctionDef@31:0: <module>:handle@31 (def)
+binding at arg@31:11: handle:value@31 (param)
+binding at arg@31:19: handle:rest@31 (param)
+binding at arg@31:25: handle:flag@31 (param)
+binding at arg@31:39: handle:extra@31 (param)
+binding at Name@32:5: none
+binding at Name@32:17: none
+binding at Name@34:8: handle:flag@34 (assign)
+binding at Name@34:19: none
+binding at ExceptHandler@35:4: handle:error@35 (except)
+binding at Name@35:11: none
+binding at Name@36:8: none
+binding at Name@36:14: none
+binding at Name@36:21: none
+binding at Name@37:10: none
+binding at MatchMapping@38:13: handle:others@38 (match)
+binding at MatchAs@38:19: handle:captured@38 (match)
+binding at Name@39:12: none
+binding at Name@39:18: none
+binding at Name@39:28: none
+binding at MatchSequence@40:13: none
+binding at MatchAs@40:14: handle:first@40 (match)
+binding at MatchStar@40:21: handle:tail@40 (match)
+binding at Name@41:12: none
+binding at Name@41:18: none
+binding at Name@41:25: none
+binding at Name@42:12: none
+binding at Name@42:21: handle.<locals>.<listcomp>:seen@42 (comprehension)
+binding at Name@42:29: none
+binding at Name@42:38: handle:last@42 (walrus)
+binding at Name@42:46: none
+binding at Name@42:54: none
+binding at ClassDef@45:0: <module>:Holder@45 (class)
+binding at Name@46:4: Holder:size@46 (assign)
+binding at FunctionDef@48:4: Holder:grow@48 (def)
+binding at arg@48:13: Holder.grow:self@48 (param)
+binding at Name@49:8: none
+== imports
+import@9 os.path as _path from os.path in <module> [always]; unconditional
+from@10 typing.cast as _cast from typing in <module> [always]; unconditional
+import@15 json as _json from json in load [function:body@13]; binds in <module>
+== code objects: one per scope that compiles on this Python

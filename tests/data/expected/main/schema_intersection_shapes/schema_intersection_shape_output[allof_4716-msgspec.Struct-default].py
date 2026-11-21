@@ -51,9 +51,9 @@ QItem: TypeAlias = Annotated[Quantity, Meta(le=10)]
 
 
 class Measurement(Struct):
-    count: Count | UnsetType = UNSET
-    code: Code | UnsetType = UNSET
-    tags: Tags | UnsetType = UNSET
+    count: Annotated[Count, Meta(ge=5)] | UnsetType = UNSET
+    code: Annotated[Code, Meta(max_length=3)] | UnsetType = UNSET
+    tags: Annotated[Tags, Meta(min_length=1)] | UnsetType = UNSET
     score: Score | UnsetType = UNSET
     counts: list[Count1] | UnsetType = UNSET
     limits: dict[str, Limits] | UnsetType = UNSET
@@ -65,7 +65,7 @@ class Measurement(Struct):
     ref_pair: Annotated[list[str], Meta(max_length=2, min_length=1)] | UnsetType = UNSET
     pp: dict[str, Count] | UnsetType = UNSET
     ap: dict[str, Ap] | UnsetType = UNSET
-    q_allof: Quantity | UnsetType = UNSET
+    q_allof: Annotated[Quantity, Meta(le=10)] | UnsetType = UNSET
     q_items: list[QItem] | UnsetType = UNSET
     q_map: dict[str, QMap] | UnsetType = UNSET
     short_status: Status | UnsetType = UNSET

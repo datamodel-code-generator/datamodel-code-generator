@@ -48,3 +48,7 @@ class Payload(B, D, A, kw_only=True):
     typename__: Literal['Payload'] | UnsetType = field(
         name='__typename', default='Payload'
     )
+
+    @property
+    def __typename(self) -> Literal['Payload'] | UnsetType:
+        return self.typename__

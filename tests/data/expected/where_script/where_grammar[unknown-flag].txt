@@ -1,0 +1,3 @@
+exit status 1
+no table knows --no-such-option
+near: --force-optional, --no-use-schema-description, --use-schema-description

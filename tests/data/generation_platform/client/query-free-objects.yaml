@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Query objects that take other properties
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /apps:
+    get:
+      operationId: listApps
+      parameters:
+        - {name: per_page, in: query, schema: {type: integer}}
+        - name: sort_by
+          in: query
+          schema: {type: object, additionalProperties: {type: string, enum: [asc, desc]}}
+        - name: filter
+          in: query
+          schema:
+            type: object
+            properties:
+              app_type: {type: string}
+            additionalProperties: {type: string}
+      responses:
+        '204':
+          description: The apps.

@@ -1,0 +1,3 @@
+[
+  "/PetKind enum null: invalid, model accepts"
+]

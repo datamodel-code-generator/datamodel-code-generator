@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info: {title: Required nullable parameters, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /items/{id}:
+    get:
+      operationId: getItem
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, nullable: true}}
+        - {name: q, in: query, required: true, schema: {type: string, nullable: true}}
+        - {name: kind, in: query, required: true, schema: {$ref: "#/components/schemas/Kind"}}
+        - {name: label, in: query, required: true, schema: {$ref: "#/components/schemas/Label"}}
+        - {name: tags, in: query, required: true, schema: {type: array, nullable: true, items: {type: integer}}}
+        - {name: X-Trace, in: header, required: true, schema: {type: string, nullable: true}}
+        - {name: session, in: cookie, required: true, schema: {type: string, nullable: true}}
+        - name: blob
+          in: query
+          required: true
+          content: {application/json: {schema: {type: integer, nullable: true}}}
+        - {name: ids, in: query, required: true, schema: {$ref: "#/components/schemas/Ids"}}
+        - {name: labels, in: query, required: true, schema: {$ref: "#/components/schemas/Labels"}}
+        - {name: weights, in: query, required: true, schema: {$ref: "#/components/schemas/Weights"}}
+        - {name: cap, in: query, schema: {type: integer, nullable: true}}
+        - {name: levels, in: query, required: true, schema: {type: array, items: {type: integer, nullable: true}}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Kind:
+      type: string
+      nullable: true
+      enum: [a, b, null]
+    Label:
+      type: string
+      nullable: true
+    Ids:
+      type: array
+      nullable: true
+      items: {type: integer}
+    Labels:
+      type: array
+      nullable: true
+      items: {$ref: "#/components/schemas/Label"}
+    Weights:
+      type: object
+      nullable: true
+      additionalProperties: {type: integer}

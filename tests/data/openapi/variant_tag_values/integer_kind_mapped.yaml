@@ -1,0 +1,27 @@
+openapi: '3.1.0'
+info: {title: Variants told apart by a shared integer enum that mapping keys name, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    PetKind: {type: integer, enum: [1, 2]}
+    Cat:
+      type: object
+      required: [kind, name]
+      properties:
+        kind: {$ref: '#/components/schemas/PetKind'}
+        name: {type: string}
+    Dog:
+      type: object
+      required: [kind, bark]
+      properties:
+        kind: {$ref: '#/components/schemas/PetKind'}
+        bark: {type: boolean}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '1': '#/components/schemas/Cat'
+          '2': '#/components/schemas/Dog'

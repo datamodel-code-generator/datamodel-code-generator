@@ -1,0 +1,22 @@
+== references
+10:4 output_type store in Config -> local Config @10, else unbound
+10:18 output_backend load in Config -> global <module> @5; origin datamodel_code_generator.model.typed_dict
+11:4 literal_type store in Config -> local Config @11, else unbound
+11:19 LiteralType load in Config -> global <module> @6; origin datamodel_code_generator.parser.LiteralType
+17:0 OUTPUT_FAMILY store in <module> -> local <module> @17
+17:16 DataModelType load in <module> -> local <module> @14; origin datamodel_code_generator.DataModelType
+18:0 OUTPUT_NAMING store in <module> -> local <module> @18
+18:16 NamingType load in <module> -> local <module> @15; origin datamodel_code_generator.reference.ModelType
+24:11 _rewrite_schema_refs load in rewrite_schema -> local rewrite_schema @22; origin datamodel_code_generator.parser.mcp._rewrite_schema_refs
+24:32 schema load in rewrite_schema -> local rewrite_schema @21
+30:11 _rewrite_schema_refs load in rewrite_shared_schema -> local rewrite_shared_schema @28; origin datamodel_code_generator._json_schema._rewrite_schema_refs
+30:32 schema load in rewrite_shared_schema -> local rewrite_shared_schema @27
+uses of <module>:output_backend@5: read@10
+uses of <module>:LiteralType@6: read@11
+uses of <module>:DataModelType@14: read@17
+uses of <module>:NamingType@15: read@18
+uses of rewrite_schema:schema@21: argument@24
+uses of rewrite_schema:_rewrite_schema_refs@22: call@24
+uses of rewrite_shared_schema:schema@27: argument@30
+uses of rewrite_shared_schema:_rewrite_schema_refs@28: call@30
+== code objects: one per scope that compiles on this Python

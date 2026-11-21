@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import gc
+import importlib
+import importlib.util
+import inspect
 import json
+import os
+import pickle
+import re
 import subprocess
 import sys
 import threading
 import types
+import warnings
+import weakref
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -21,9 +30,12 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     LiteralType,
+    OpenAPIScope,
+    ReadOnlyWriteOnlyModelType,
     clear_dynamic_models_cache,
     generate,
     generate_dynamic_models,
+    generate_dynamic_module,
     load_yaml_dict_from_path,
 )
 from datamodel_code_generator.config import GenerateConfig
@@ -45,13 +57,13 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from typing import Any
 
+    from datamodel_code_generator.dynamic import DynamicModule
 
-pytestmark = pytest.mark.skipif(pydantic.VERSION < "2.0.0", reason="generate_dynamic_models requires Pydantic v2")
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "dynamic_models"
-EXPECTED_PATH = Path(__file__).parent.parent / "data" / "expected" / "dynamic_models"
 
 
 def make_object_schema(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
@@ -78,22 +90,22 @@ def make_config(
 def assert_dynamic_models(
     schema: dict[str, Any],
     validations: dict[str, dict[str, Any]],
-    expected_path: Path,
     *,
+    name: str | None = None,
     config: GenerateConfig | None = None,
     include_model_names: bool = False,
 ) -> None:
-    """Generate dynamic models, validate data, and assert with external file."""
+    """Generate dynamic models, validate data, and assert the validated dumps."""
     models = generate_dynamic_models(schema, config=config)
     actual: dict[str, Any] = {}
-    for name, data in validations.items():
-        model = models[name]
+    for model_name, data in validations.items():
+        model = models[model_name]
         model_dump = model.model_validate(data).model_dump(mode="json")
         if include_model_names:
-            actual[name] = {"__name__": model.__name__, "data": model_dump}
+            actual[model_name] = {"__name__": model.__name__, "data": model_dump}
             continue
-        actual[name] = model_dump
-    assert_output(actual, expected_path)
+        actual[model_name] = model_dump
+    assert_output(actual, name=name, suffix=".json")
 
 
 @pytest.fixture(autouse=True)
@@ -106,14 +118,14 @@ def _setup_and_clear_cache() -> None:
 def test_simple_model() -> None:
     """Test generating a simple model and validating data."""
     schema = make_object_schema({"name": {"type": "string"}, "age": {"type": "integer"}}, required=["name"])
-    assert_dynamic_models(schema, {"Model": {"name": "John", "age": 30}}, EXPECTED_PATH / "simple_model.json")
-    assert_dynamic_models(schema, {"Model": {"name": "Jane"}}, EXPECTED_PATH / "simple_model_optional.json")
+    assert_dynamic_models(schema, {"Model": {"name": "John", "age": 30}})
+    assert_dynamic_models(schema, {"Model": {"name": "Jane"}}, name="optional")
 
 
 def test_nested_models() -> None:
     """Test generating nested models and validating nested data."""
     schema = make_object_schema({"user": {"type": "object", "properties": {"name": {"type": "string"}}}})
-    assert_dynamic_models(schema, {"Model": {"user": {"name": "Alice"}}}, EXPECTED_PATH / "nested_models.json")
+    assert_dynamic_models(schema, {"Model": {"user": {"name": "Alice"}}})
 
 
 @pytest.mark.parametrize(
@@ -164,7 +176,7 @@ def test_asyncapi_dynamic_models() -> None:
 def test_enum_model() -> None:
     """Test generating model with enum and validating enum values."""
     schema = make_object_schema({"status": {"type": "string", "enum": ["active", "inactive"]}})
-    assert_dynamic_models(schema, {"Model": {"status": "active"}}, EXPECTED_PATH / "enum_model.json")
+    assert_dynamic_models(schema, {"Model": {"status": "active"}})
 
     models = generate_dynamic_models(schema)
     with pytest.raises(pydantic.ValidationError):
@@ -190,7 +202,6 @@ def test_imported_model_classes_are_not_returned() -> None:
     }
     assert_output(
         f"{json.dumps(actual, indent=2, sort_keys=True)}\n",
-        EXPECTED_PATH / "imported_model_classes.txt",
     )
 
 
@@ -206,7 +217,6 @@ def test_generated_root_model_aliases(
 
     schema = json.loads((DATA_PATH / "root_model_aliases.json").read_text(encoding="utf-8"))
     payloads = json.loads((DATA_PATH / "root_model_alias_payloads.json").read_text(encoding="utf-8"))
-    expected = EXPECTED_PATH / "root_model_aliases" / ("aliases" if use_aliases else "classes")
     config = GenerateConfig(
         input_file_type=InputFileType.JsonSchema,
         use_root_model_type_alias=use_aliases,
@@ -222,9 +232,9 @@ def test_generated_root_model_aliases(
     )
     generated = generate(schema, config=config)
     if module_split_mode is None:
-        assert_output(generated, expected / "code.py")
+        assert_output(generated, name="code", suffix=".py")
     else:
-        assert_generated_modules_output(generated, expected / "modules")
+        assert_generated_modules_output(generated, name="modules")
 
     original_module = ImportedIntegerRoot.__module__
     registered_module = sys.modules.get(module_name or "")
@@ -267,10 +277,7 @@ def test_generated_root_model_aliases(
         "imported_target_error": str(error.value),
         "registered_module_restored": sys.modules.get(module_name or "") is registered_module,
     }
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n",
-        expected / ("runtime_single.txt" if module_split_mode is None else "runtime_modules.txt"),
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="runtime")
 
 
 @pytest.mark.parametrize("include_private", [False, True])
@@ -290,7 +297,6 @@ def test_private_root_model_aliases(include_private: bool) -> None:
     )
     assert_output(
         f"{json.dumps({name: model.model_validate(3).root for name, model in models.items()}, indent=2)}\n",
-        EXPECTED_PATH / "root_model_aliases" / ("private.txt" if include_private else "normalized_private.txt"),
     )
 
 
@@ -309,17 +315,14 @@ def test_root_model_alias_assignments_ignore_nested_and_attribute_targets(includ
         formatters=[Formatter.BUILTIN],
         disable_timestamp=True,
     )
-    assert_output(generate(schema, config=config), EXPECTED_PATH / "root_model_aliases" / "header_code.py")
+    assert_output(generate(schema, config=config), name="code", suffix=".py")
     models = generate_dynamic_models(schema, config=config, cache_size=0)
     actual = {
         "models": list(models),
         "header_root": models["HeaderRoot"].model_validate("header").root,
         "generated_root": models["GeneratedRoot"].model_validate(3).root,
     }
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n",
-        EXPECTED_PATH / "root_model_aliases" / ("header_private.txt" if include_private else "header_public.txt"),
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="runtime")
 
 
 def test_ordinary_type_alias_extraction_is_unchanged() -> None:
@@ -332,20 +335,19 @@ def test_ordinary_type_alias_extraction_is_unchanged() -> None:
         formatters=[Formatter.BUILTIN],
         disable_timestamp=True,
     )
-    assert_output(generate(schema, config=config), EXPECTED_PATH / "root_model_aliases" / "type_alias_code.py")
+    assert_output(generate(schema, config=config), name="type_alias_code", suffix=".py")
     models = generate_dynamic_models(schema, config=config, cache_size=0)
     actual = {
         "models": list(models),
         "validated": models["AliasModels"].model_validate(payloads["AliasModels"]).model_dump(mode="json"),
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "root_model_aliases" / "type_alias.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="type_alias")
 
 
 @pytest.mark.parametrize("use_aliases", [False, True], ids=["classes", "aliases"])
 @pytest.mark.parametrize("split_modules", [False, True])
 def test_root_model_alias_cli_output_is_unchanged(tmp_path: Path, use_aliases: bool, split_modules: bool) -> None:
     """CLI code matches baseline Python bytes and validates through the same RootModel fields."""
-    expected = EXPECTED_PATH / "root_model_aliases" / ("aliases" if use_aliases else "classes")
     output = tmp_path / ("models" if split_modules else "models.py")
     args = [
         "--input",
@@ -370,9 +372,9 @@ def test_root_model_alias_cli_output_is_unchanged(tmp_path: Path, use_aliases: b
         args.extend(["--module-split-mode", "single"])
     run_main_with_args(args)
     if split_modules:
-        assert_directory_content(output, expected / "cli_modules")
+        assert_directory_content(output)
     else:
-        assert_output(output.read_text(encoding="utf-8"), expected / "cli_code.py")
+        assert_output(output.read_text(encoding="utf-8"), suffix=".py")
         payloads = json.loads((DATA_PATH / "root_model_alias_payloads.json").read_text(encoding="utf-8"))
         assert_generated_model_json_validation(
             output,
@@ -408,7 +410,6 @@ def test_circular_reference() -> None:
                 "children": [{"value": "child1", "children": []}, {"value": "child2", "children": []}],
             }
         },
-        EXPECTED_PATH / "circular_reference.json",
     )
 
 
@@ -423,7 +424,7 @@ def test_allof_inheritance() -> None:
         },
         "$ref": "#/$defs/Extended",
     }
-    assert_dynamic_models(schema, {"Extended": {"id": 42, "name": "test"}}, EXPECTED_PATH / "allof_inheritance.json")
+    assert_dynamic_models(schema, {"Extended": {"id": 42, "name": "test"}})
 
 
 def test_validation_error() -> None:
@@ -465,18 +466,17 @@ def test_cache_miss_different_config() -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture_prefix", "payload_name", "expected_name"),
+    ("fixture_prefix", "payload_name"),
     [
-        ("cache_field_order", "field", "cache_field_order.txt"),
-        ("cache_nested_field_order", "nested", "cache_nested_field_order.txt"),
-        ("cache_defs_model_order", "defs", "cache_defs_model_order.txt"),
-        ("cache_openapi_components_order", "openapi", "cache_openapi_components_order.txt"),
+        ("cache_field_order", "field"),
+        ("cache_nested_field_order", "nested"),
+        ("cache_defs_model_order", "defs"),
+        ("cache_openapi_components_order", "openapi"),
     ],
 )
 def test_cache_distinguishes_schema_order(
     fixture_prefix: str,
     payload_name: str,
-    expected_name: str,
 ) -> None:
     """Keep cached models aligned with both orders of order-sensitive schemas."""
     first_schema = json.loads((DATA_PATH / f"{fixture_prefix}_first.json").read_text(encoding="utf-8"))
@@ -530,7 +530,7 @@ def test_cache_distinguishes_schema_order(
                 for name, payload in payloads.items()
             },
         }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / expected_name)
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_cache_hits_do_not_reorder_fifo_eviction() -> None:
@@ -551,7 +551,7 @@ def test_cache_hits_do_not_reorder_fifo_eviction() -> None:
         "second_retained": second_retained_models is second_models,
         "first_evicted": first_rebuilt_models is not first_models,
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "cache_fifo_order.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_module_name_is_applied_for_same_schema_with_different_runtime_modules() -> None:
@@ -576,7 +576,7 @@ def test_module_name_is_applied_for_same_schema_with_different_runtime_modules()
     ids=["importable", "missing-package"],
 )
 def test_module_name_of_importable_module(
-    module_name: str, base_class: str | None, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+    module_name: str, base_class: str | None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Import a module that module_name names before the generated code imports from it, instead of masking it."""
     monkeypatch.delitem(sys.modules, module_name, raising=False)
@@ -597,10 +597,7 @@ def test_module_name_of_importable_module(
         "validated": model.model_validate({"name": "Alice"}).model_dump(mode="json"),
         "module_imported": module_name in sys.modules,
     }
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n",
-        EXPECTED_PATH / f"module_name_{request.node.callspec.id}.txt",
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_target_model_names_filters_single_model() -> None:
@@ -812,7 +809,7 @@ def test_concurrent_different_schemas() -> None:
 def test_numeric_constraints() -> None:
     """Test models with numeric constraints validate properly."""
     schema = make_object_schema({"age": {"type": "integer", "minimum": 0, "maximum": 150}})
-    assert_dynamic_models(schema, {"Model": {"age": 30}}, EXPECTED_PATH / "numeric_constraints.json")
+    assert_dynamic_models(schema, {"Model": {"age": 30}})
 
     models = generate_dynamic_models(schema)
     with pytest.raises(pydantic.ValidationError):
@@ -824,7 +821,7 @@ def test_numeric_constraints() -> None:
 def test_string_constraints() -> None:
     """Test models with string constraints validate properly."""
     schema = make_object_schema({"email": {"type": "string", "pattern": r"^[\w\.-]+@[\w\.-]+\.\w+$"}})
-    assert_dynamic_models(schema, {"Model": {"email": "test@example.com"}}, EXPECTED_PATH / "string_constraints.json")
+    assert_dynamic_models(schema, {"Model": {"email": "test@example.com"}})
 
     models = generate_dynamic_models(schema)
     with pytest.raises(pydantic.ValidationError):
@@ -842,9 +839,7 @@ def test_openapi_auto_detection() -> None:
     """Test that OpenAPI schemas are auto-detected and models work."""
     with (DATA_PATH / "openapi_schema.json").open() as f:
         openapi_schema = json.load(f)
-    assert_dynamic_models(
-        openapi_schema, {"User": {"id": 1, "name": "Alice"}}, EXPECTED_PATH / "openapi_auto_detection.json"
-    )
+    assert_dynamic_models(openapi_schema, {"User": {"id": 1, "name": "Alice"}})
 
 
 def test_force_optional_discriminator_literals() -> None:
@@ -862,7 +857,6 @@ def test_force_optional_discriminator_literals() -> None:
             "CashPayment": {},
             "Payment": {"kind": "cash", "received_amount": 50},
         },
-        EXPECTED_PATH / "force_optional_discriminator_literals.json",
         config=config,
     )
 
@@ -884,7 +878,6 @@ def test_optional_literal_discriminator_tags() -> None:
             "Queue": {"current": {"type": "track", "name": "a"}},
             "Payment": {"kind": "voucher", "code": "x"},
         },
-        EXPECTED_PATH / "optional_literal_discriminator_tags.json",
         config=config,
     )
 
@@ -907,7 +900,6 @@ def test_leading_underscore_class_name_default_unchanged() -> None:
     assert_dynamic_models(
         schema,
         {"FieldParsedModel": {"name": "Alice"}},
-        EXPECTED_PATH / "leading_underscore_class_name_default_unchanged.json",
         config=config,
         include_model_names=True,
     )
@@ -925,7 +917,6 @@ def test_allow_leading_underscore_class_name() -> None:
     assert_dynamic_models(
         schema,
         {"__ParsedModel": {"name": "Alice"}},
-        EXPECTED_PATH / "allow_leading_underscore_class_name.json",
         config=config,
         include_model_names=True,
     )
@@ -954,8 +945,34 @@ def test_dynamic_cache_key_does_not_retain_schema_payload() -> None:
     assert len(cache_key) < 180
 
 
+def test_dynamic_cache_key_does_not_depend_on_hash_seed() -> None:
+    """Test the cache key sorts set-valued settings, so processes with other hash seeds compute the same key."""
+    from datamodel_code_generator.dynamic import _make_cache_key
+
+    schema = make_object_schema({"name": {"type": "string"}})
+    extra_keys = {f"x-key-{index}" for index in range(20)}
+    script = (
+        "from datamodel_code_generator.config import GenerateConfig, _rebuild_generate_config\n"
+        "from datamodel_code_generator.dynamic import _make_cache_key\n"
+        "_rebuild_generate_config()\n"
+        f"print(_make_cache_key({schema!r}, GenerateConfig(field_extra_keys={extra_keys!r})))\n"
+    )
+    keys = {
+        subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            text=True,
+        ).stdout.strip()
+        for seed in ("1", "2", "3")
+    }
+
+    assert keys == {_make_cache_key(schema, GenerateConfig(field_extra_keys=extra_keys))}
+
+
 def test_cache_hit_inside_lock() -> None:
-    """Test cache hit after acquiring lock (double-checked locking)."""
+    """Test a cache hit when the lock is taken again after the lookups made outside it (double-checked locking)."""
     from datamodel_code_generator import dynamic as dcg
     from datamodel_code_generator.dynamic import _make_cache_key
 
@@ -965,11 +982,14 @@ def test_cache_hit_inside_lock() -> None:
     cache_populated, lock_acquired = threading.Event(), threading.Event()
     result_holder: list[dict[str, type]] = []
     cache_key: str | None = None
+    entries: list[None] = []
 
     class InstrumentedLock:
         def __enter__(self) -> None:
-            lock_acquired.set()
-            cache_populated.wait(timeout=5)
+            entries.append(None)
+            if len(entries) == 2:
+                lock_acquired.set()
+                cache_populated.wait(timeout=5)
             original_lock.__enter__()
 
         def __exit__(self, *args: object) -> None:
@@ -1018,12 +1038,12 @@ def test_multi_module_output() -> None:
     assert_dynamic_models(
         schema,
         {"User": {"name": "Alice", "age": 25}, "Order": {"id": 1, "user": {"name": "Bob", "age": 30}}},
-        EXPECTED_PATH / "multi_module_output.json",
         config=config,
+        name="validated",
     )
     assert_output(
         f"{json.dumps({'models': list(generate_dynamic_models(schema, config=config))}, indent=2)}\n",
-        EXPECTED_PATH / "multi_module_model_order.txt",
+        name="model_order",
     )
 
 
@@ -1042,11 +1062,7 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
         formatters=[],
     )
     modules = cast("dict[tuple[str, ...], str]", generate(schema, config=config))
-    assert_generated_modules_output(
-        modules,
-        EXPECTED_PATH / "relative_parent_import_modules",
-        transform=lambda output: f"{output}\n",
-    )
+    assert_generated_modules_output(modules, name="modules", transform=lambda output: f"{output}\n")
 
     package_name = "runtime_relative_parent_import"
     models = generate_dynamic_models(schema, config=config, cache_size=0, module_name=package_name)
@@ -1058,9 +1074,9 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
             name == package_name or name.startswith(f"{package_name}.") for name in sys.modules
         ),
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "relative_parent_import.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="relative_parent_import")
     dynamic_payload = f"{json.dumps(actual['validated'], indent=2)}\n"
-    assert_output(dynamic_payload, EXPECTED_PATH / "relative_parent_import_payload.txt")
+    assert_output(dynamic_payload, name="relative_parent_import_payload")
 
     output_path = tmp_path / "cli_generated"
     subprocess.run(
@@ -1089,7 +1105,7 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
         check=True,
         text=True,
     )
-    assert_directory_content(output_path, EXPECTED_PATH / "relative_parent_import_cli_modules")
+    assert_directory_content(output_path, name="cli_modules")
 
     cli_import_result = subprocess.run(
         [
@@ -1108,7 +1124,7 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
         cwd=tmp_path,
         text=True,
     )
-    assert_output(cli_import_result.stdout, EXPECTED_PATH / "relative_parent_import_payload.txt")
+    assert_output(cli_import_result.stdout, name="relative_parent_import_payload")
 
 
 def test_multi_module_restores_preexisting_modules_after_execution_failure() -> None:
@@ -1157,7 +1173,7 @@ def test_multi_module_restores_preexisting_modules_after_execution_failure() -> 
             "success_restored": success_restored,
             "failure_restored": failure_restored,
         }
-        assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "nested_module_restoration.txt")
+        assert_output(f"{json.dumps(actual, indent=2)}\n")
     finally:
         for name in module_names:
             sys.modules.pop(name, None)
@@ -1218,7 +1234,7 @@ def test_generated_code_matches_expected() -> None:
     )
     result = generate(input_=schema, config=config)
     assert isinstance(result, str)
-    assert_output(result, EXPECTED_PATH / "complex_schema.py")
+    assert_output(result, name="code", suffix=".py")
 
     assert_dynamic_models(
         schema,
@@ -1226,7 +1242,7 @@ def test_generated_code_matches_expected() -> None:
             "Person": {"name": "John", "address": {"street": "123 Main St", "city": "NYC"}},
             "Address": {"street": "456 Oak Ave", "city": "LA"},
         },
-        EXPECTED_PATH / "generated_code_validation.json",
+        name="validated",
     )
 
 
@@ -1241,7 +1257,7 @@ def test_build_module_edges_ignores_unresolvable_relative_imports() -> None:
         "/".join(path): ["/".join(dependency) for dependency in sorted(dependencies)]
         for path, dependencies in edges.items()
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "relative_import_edge_cases.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_build_module_edges_no_matching_import() -> None:
@@ -1329,7 +1345,6 @@ def test_multiple_aliases_required_field() -> None:
     assert_dynamic_models(
         schema,
         {"Customer": {"name": "John"}},
-        EXPECTED_PATH / "multiple_aliases_required.json",
         config=config,
     )
 
@@ -1345,7 +1360,7 @@ def test_multiple_aliases_required_field_code_output() -> None:
     )
     result = generate(input_=schema, config=config)
     assert isinstance(result, str)
-    assert_output(result, EXPECTED_PATH / "multiple_aliases_required_code.py")
+    assert_output(result, suffix=".py")
 
 
 def test_execute_multi_module_enum_only() -> None:
@@ -1360,3 +1375,603 @@ def test_execute_multi_module_enum_only() -> None:
     models = _execute_multi_module(modules)
     assert "Status" in models
     assert models["Status"].ACTIVE.value == "active"
+
+
+def describe_source_refs(module: DynamicModule) -> dict[str, object]:
+    """Describe the root class and the class of each schema location of a dynamic module by the classes' names."""
+    return {
+        "root_class": None if module.root_class is None else module.root_class.__name__,
+        "models_by_source_ref": {
+            source_ref: model.__name__ for source_ref, model in module.models_by_source_ref.items()
+        },
+    }
+
+
+def test_dynamic_module_root_class_and_source_refs() -> None:
+    """Test the root class is the class of the document, not the definition whose name the title asks for."""
+    schema = json.loads((DATA_PATH / "source_refs.json").read_text(encoding="utf-8"))
+    module = generate_dynamic_module(schema)
+    assert module.root_class is not None
+    payload = {"root": {"name": "Alice"}, "tags": [{"label": "x"}], "status": "active", "owner": {"id": 1}}
+    actual = {
+        **describe_source_refs(module),
+        "models": list(module.models),
+        "module_name": module.module_name,
+        "payload": cast("type[pydantic.BaseModel]", module.root_class).model_validate(payload).model_dump(mode="json"),
+    }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+DYNAMIC_MODULE_SOURCE_REF_CASES: dict[str, tuple[dict[str, Any] | Path, dict[str, Any]]] = {
+    "nullable_enum_root": ({"title": "Level", "type": "string", "enum": ["low", "high", None]}, {}),
+    "allof_union_members": (
+        {
+            "title": "Event",
+            "allOf": [
+                {
+                    "type": "object",
+                    "required": ["id"],
+                    "properties": {"id": {"type": "string"}, "color": {"type": "string", "enum": ["red", None]}},
+                },
+                {
+                    "oneOf": [
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "created"}}},
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "deleted"}}},
+                    ]
+                },
+            ],
+        },
+        {},
+    ),
+    "generated_model_paths": (JSON_SCHEMA_DATA_PATH / "all_of_any_of_base_class_ref.json", {}),
+    "id_and_anchor_targets": (
+        {
+            "title": "Doc",
+            "type": "object",
+            "properties": {"user": {"$ref": "https://example.com/user"}, "address": {"$ref": "#address"}},
+            "$defs": {
+                "User": {"$id": "https://example.com/user", "type": "object", "properties": {"x": {"type": "string"}}},
+                "Address": {"$anchor": "address", "type": "object", "properties": {"y": {"type": "string"}}},
+            },
+        },
+        {},
+    ),
+    "skip_root_model": (DATA_PATH / "source_refs.json", {"skip_root_model": True}),
+    "type_alias_root": ({"title": "Names", "type": "array", "items": {"type": "string"}}, {"use_type_alias": True}),
+    "type_alias_allof_union_root": (
+        {
+            "title": "Event",
+            "allOf": [
+                {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}},
+                {
+                    "oneOf": [
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "created"}}},
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "deleted"}}},
+                    ]
+                },
+            ],
+        },
+        {"use_type_alias": True},
+    ),
+    "type_alias_allof_union_component": (
+        {
+            "openapi": "3.0.0",
+            "info": {"title": "Events", "version": "1.0.0"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "Ev": {
+                        "allOf": [
+                            {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}},
+                            {
+                                "oneOf": [
+                                    {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "new"}}},
+                                    {"type": "object", "properties": {"at": {"type": "string"}}},
+                                ]
+                            },
+                        ]
+                    },
+                    "Created": {"type": "object", "properties": {"at": {"type": "string"}}},
+                }
+            },
+        },
+        {"use_type_alias": True},
+    ),
+    "leading_underscore_class_name": (make_object_schema({"name": {"type": "string"}}), {"class_name": "__Parsed"}),
+    "allowed_leading_underscore_class_name": (
+        make_object_schema({"name": {"type": "string"}}),
+        {"class_name": "__Parsed", "allow_leading_underscore_class_name": True},
+    ),
+    "openapi_request_body": (
+        {
+            "openapi": "3.0.0",
+            "info": {"title": "Pets", "version": "1.0.0"},
+            "paths": {
+                "/pets": {
+                    "post": {
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {"owner": {"$ref": "#/components/schemas/Owner"}},
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {"200": {"description": "OK"}},
+                    }
+                }
+            },
+            "components": {"schemas": {"Owner": {"type": "object", "properties": {"id": {"type": "integer"}}}}},
+        },
+        {"openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Paths]},
+    ),
+    "read_only_write_only_request_response": (
+        OPEN_API_DATA_PATH / "read_only_write_only_mixed.yaml",
+        {"read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.RequestResponse},
+    ),
+    "read_only_write_only_all": (
+        OPEN_API_DATA_PATH / "read_only_write_only_mixed.yaml",
+        {"read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.All},
+    ),
+    "reuse_model_subclass": (JSON_SCHEMA_DATA_PATH / "reuse_model_subclass_metadata.json", {"reuse_model": True}),
+}
+
+
+@pytest.mark.parametrize(
+    ("schema", "options"), DYNAMIC_MODULE_SOURCE_REF_CASES.values(), ids=DYNAMIC_MODULE_SOURCE_REF_CASES.keys()
+)
+def test_dynamic_module_source_refs(schema: dict[str, Any] | Path, options: dict[str, Any]) -> None:
+    """Test a location shared by several classes keeps the one parsed there, and keys only locations in documents."""
+    if isinstance(schema, Path):
+        schema = load_yaml_dict_from_path(schema, "utf-8")
+    module = generate_dynamic_module(schema, config=GenerateConfig(**options))
+    assert set(module.models_by_source_ref.values()) <= set(module.models.values())
+    assert_output(f"{json.dumps(describe_source_refs(module), indent=2)}\n")
+
+
+def test_dynamic_module_source_refs_of_referenced_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the classes of files that references read are keyed by the file path and the pointer in the file."""
+    monkeypatch.chdir(DATA_PATH / "source_ref_files")
+    schema = json.loads(Path("schema.json").read_text(encoding="utf-8"))
+    assert_output(f"{json.dumps(describe_source_refs(generate_dynamic_module(schema)), indent=2)}\n")
+
+
+def test_dynamic_module_source_refs_of_split_output() -> None:
+    """Test split output keys the classes that share a name in different modules, which models holds one of."""
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    module = generate_dynamic_module(schema, module_name="runtime_source_refs")
+    assert list(module.models) == list(generate_dynamic_models(schema, module_name="runtime_source_refs"))
+    actual = {
+        "module_name": module.module_name,
+        "models_by_source_ref": {
+            source_ref: f"{model.__module__}.{model.__name__}"
+            for source_ref, model in module.models_by_source_ref.items()
+        },
+    }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def test_dynamic_module_caches_entries_of_its_own() -> None:
+    """Test the module function shares the cache, its size and its clearing, but not the entries of model calls."""
+    schema = make_object_schema({"name": {"type": "string"}})
+    other_schema = make_object_schema({"age": {"type": "integer"}})
+    module = generate_dynamic_module(schema)
+
+    assert generate_dynamic_module(schema) is module
+    assert generate_dynamic_module(schema, cache_size=0) is not module
+    assert module.models is not generate_dynamic_models(schema)
+    assert module.models["Model"] is not generate_dynamic_models(schema)["Model"]
+    assert clear_dynamic_models_cache() == 2
+    module = generate_dynamic_module(schema, cache_size=1)
+    generate_dynamic_models(other_schema, cache_size=1)
+    assert generate_dynamic_module(schema, cache_size=1) is not module
+    assert clear_dynamic_models_cache() == 1
+
+
+REGISTERED_SCHEMA: dict[str, Any] = {
+    "title": "Doc",
+    "type": "object",
+    "properties": {
+        "child": {"$ref": "#/$defs/Child"},
+        "mode": {"enum": ["a", "b"]},
+        "names": {"$ref": "#/$defs/Names"},
+    },
+    "$defs": {
+        "Child": {"type": "object", "properties": {"x": {"type": "integer"}}},
+        "Names": {"type": "array", "items": {"type": "string"}},
+    },
+}
+REGISTERED_PICKLE_SCRIPT = """\
+import pickle
+import sys
+
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+mode, path = sys.argv[1:]
+if mode == "load":
+    try:
+        pickle.loads(open(path, "rb").read())
+    except ModuleNotFoundError as error:
+        print(type(error).__name__, str(error).replace(error.name, "<module>"))
+module = generate_dynamic_module(
+    {schema!r}, config=GenerateConfig(field_extra_keys={extra_keys!r}), register_module=True
+)
+models = module.models
+if mode == "dump":
+    doc = module.root_class(child={{"x": 1}}, mode="a", names=["q"])
+    open(path, "wb").write(pickle.dumps([doc, models["Mode"].a, models["Names"](["z"]), models["Doc"]]))
+else:
+    doc, member, names, doc_class = pickle.loads(open(path, "rb").read())
+    print(type(doc) is models["Doc"], type(doc.child) is models["Child"], member is models["Mode"].a)
+    print(type(names) is models["Names"], doc_class is models["Doc"], doc.model_dump(mode="json"))
+print(module.module_name)
+"""
+
+
+@pytest.fixture
+def forget_registered_modules() -> Iterator[None]:
+    """Remove the modules a test registers from sys.modules, as programs remove a registered module."""
+    before = set(sys.modules)
+    yield
+    for name in {name for name in sys.modules if name.startswith(("_dcg_dynamic_", "runtime_registered"))} - before:
+        del sys.modules[name]
+
+
+def test_registered_module_pickles_load_in_another_process(tmp_path: Path) -> None:
+    """Test a process that runs the same generation loads the pickles of registered classes and instances."""
+    pickle_path = tmp_path / "models.pickle"
+    script = REGISTERED_PICKLE_SCRIPT.format(schema=REGISTERED_SCHEMA, extra_keys={f"x-key-{n}" for n in range(9)})
+
+    def run(mode: str, seed: str) -> list[str]:
+        return subprocess.run(
+            [sys.executable, "-c", script, mode, str(pickle_path)],
+            capture_output=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            text=True,
+        ).stdout.splitlines()
+
+    dumped = run("dump", "1")
+    loaded = run("load", "2")
+
+    assert loaded == [
+        "ModuleNotFoundError No module named '<module>'",
+        "True True True",
+        "True True {'child': {'x': 1}, 'mode': 'a', 'names': ['q']}",
+        *dumped,
+    ]
+    assert dumped[0].startswith("_dcg_dynamic_")
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_module_stays_in_sys_modules() -> None:
+    """Test a registered module stays importable and gives its classes to later calls, also without the cache."""
+    module = generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True)
+    doc = cast("type[pydantic.BaseModel]", module.root_class)
+    instance = doc.model_validate({"child": {"x": 1}, "mode": "b", "names": ["q"]})
+
+    assert module.module_name == "runtime_registered"
+    assert doc.__module__ == "runtime_registered"
+    assert sys.modules["runtime_registered"].Doc is doc
+    assert importlib.util.find_spec("runtime_registered") is not None
+    assert pickle.loads(pickle.dumps(instance)) == instance
+    assert pickle.loads(pickle.dumps(module.models["Mode"].b)) is module.models["Mode"].b
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True) is module
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", cache_size=0) is module
+    assert clear_dynamic_models_cache() == 0
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered") is module
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_module_name_is_derived_from_the_schema_and_settings() -> None:
+    """Test the derived name differs for another property order and stays outside the cache and its eviction."""
+    module = generate_dynamic_module(REGISTERED_SCHEMA, register_module=True)
+    reordered = {**REGISTERED_SCHEMA, "properties": dict(reversed(REGISTERED_SCHEMA["properties"].items()))}
+    other = generate_dynamic_module(reordered, register_module=True, cache_size=1)
+    generate_dynamic_models(make_object_schema({"x": {"type": "string"}}), cache_size=1)
+
+    assert cast("str", module.module_name).startswith("_dcg_dynamic_")
+    assert other.module_name != module.module_name
+    assert list(other.models["Doc"].model_fields) == ["names", "mode", "child"]
+    assert generate_dynamic_module(REGISTERED_SCHEMA, register_module=True, cache_size=1) is module
+    assert clear_dynamic_models_cache() == 1
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_split_output_stays_in_sys_modules() -> None:
+    """Test split output keeps its package and modules registered, so the classes of every module pickle."""
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    module = generate_dynamic_module(schema, module_name="runtime_registered_package", register_module=True)
+    nested = module.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
+
+    assert nested.__module__ == "runtime_registered_package.empty_parent.nested.deep"
+    assert sys.modules["runtime_registered_package"].empty_parent.nested.deep is sys.modules[nested.__module__]
+    assert pickle.loads(pickle.dumps(nested)) is nested
+    assert pickle.loads(pickle.dumps(module.root_class)) is module.root_class
+    assert sorted(name for name in sys.modules if name.startswith("runtime_registered_package")) == [
+        "runtime_registered_package",
+        "runtime_registered_package.empty_parent",
+        "runtime_registered_package.empty_parent.nested",
+        "runtime_registered_package.empty_parent.nested.deep",
+        "runtime_registered_package.nested",
+        "runtime_registered_package.nested.deep",
+    ]
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_module_lives_until_removed_from_sys_modules() -> None:
+    """Test removing a registered module frees it, and a later call registers new classes under the name."""
+    module = generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True)
+    registered = weakref.ref(sys.modules["runtime_registered"])
+    del sys.modules["runtime_registered"]
+    gc.collect()
+
+    assert registered() is None
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True) is not (
+        module
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "module_name", "message"),
+    [
+        (
+            make_object_schema({"x": {"type": "string"}}),
+            "runtime_registered",
+            "module_name 'runtime_registered' is registered for another schema or other settings",
+        ),
+        (
+            REGISTERED_SCHEMA,
+            "json",
+            "module_name 'json' names a module that generate_dynamic_module() did not register",
+        ),
+        (
+            REGISTERED_SCHEMA,
+            "runtime_registered_parent.models",
+            (
+                "register_module needs the parent package 'runtime_registered_parent' of module_name "
+                "'runtime_registered_parent.models' to be importable"
+            ),
+        ),
+        (
+            {**REGISTERED_SCHEMA, "x-callback": object()},
+            None,
+            "register_module needs module_name when the schema or the config cannot be serialized as JSON",
+        ),
+    ],
+)
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_refuses_names_it_cannot_own(
+    schema: dict[str, Any], module_name: str | None, message: str
+) -> None:
+    """Test registration never replaces a module, and needs a name that pickle can import."""
+    generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True)
+
+    with pytest.raises(Error, match=re.escape(message)):
+        generate_dynamic_module(schema, module_name=module_name, register_module=True)
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_refuses_the_name_of_an_importable_module(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test registration refuses a name that a module file has, and leaves that module to import."""
+    (tmp_path / "runtime_registered_importable.py").write_text("VALUE = 1\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    with pytest.raises(Error, match="module_name 'runtime_registered_importable' names an importable module"):
+        generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered_importable", register_module=True)
+    assert "runtime_registered_importable" not in sys.modules
+    assert importlib.import_module("runtime_registered_importable").VALUE == 1
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_below_a_package(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test a dotted name registers below a package that is imported first, so that pickle finds the classes."""
+    (tmp_path / "runtime_registered_app").mkdir()
+    (tmp_path / "runtime_registered_app" / "__init__.py").write_text("", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    module = generate_dynamic_module(
+        REGISTERED_SCHEMA, module_name="runtime_registered_app.generated", register_module=True
+    )
+
+    split_schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    split = generate_dynamic_module(split_schema, module_name="runtime_registered_app.split", register_module=True)
+    nested = split.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
+    app = sys.modules["runtime_registered_app"]
+
+    assert app.generated is sys.modules["runtime_registered_app.generated"]
+    assert app.split.empty_parent.nested.deep is sys.modules[nested.__module__]
+    assert pickle.loads(pickle.dumps(module.root_class)) is module.root_class
+    assert pickle.loads(pickle.dumps(nested)) is nested
+
+
+REENTRANT_PACKAGE_SCRIPT = """\
+import sys
+from pathlib import Path
+
+from datamodel_code_generator import generate_dynamic_models, generate_dynamic_module
+
+for package in ("app_module", "app_models"):
+    Path(sys.argv[1], package).mkdir()
+    Path(sys.argv[1], package, "__init__.py").write_text(
+        "from datamodel_code_generator import generate_dynamic_models\\n"
+        "MODELS = generate_dynamic_models({'type': 'object', 'properties': {'x': {'type': 'integer'}}})\\n"
+    )
+sys.path.insert(0, sys.argv[1])
+schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}
+print(generate_dynamic_module(schema, module_name="app_module.generated", register_module=True).root_class.__module__)
+print(generate_dynamic_models(schema, module_name="app_models.generated")["Model"].__module__)
+"""
+
+
+def test_dynamic_calls_import_packages_that_generate_dynamic_models(tmp_path: Path) -> None:
+    """Test a package whose import generates dynamic models can hold the module of a dynamic call."""
+    result = subprocess.run(
+        [sys.executable, "-c", REENTRANT_PACKAGE_SCRIPT, str(tmp_path)],
+        capture_output=True,
+        check=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert result.stdout.splitlines() == ["app_module.generated", "app_models.generated"]
+
+
+LEAF_MODULE_SCRIPT = """\
+import sys
+from pathlib import Path
+
+from datamodel_code_generator import generate_dynamic_models, generate_dynamic_module
+
+schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}
+for module, call in (("app_leaf_models", "generate_dynamic_models"), ("app_leaf_module", "generate_dynamic_module")):
+    Path(sys.argv[1], f"{module}.py").write_text(
+        f"from datamodel_code_generator import {call}\\n"
+        f"GENERATED = {call}({schema!r}, module_name=__name__)\\n"
+    )
+sys.path.insert(0, sys.argv[1])
+models = generate_dynamic_models(schema, module_name="app_leaf_models")
+print(models is sys.modules["app_leaf_models"].GENERATED, models["Model"].__module__)
+module = generate_dynamic_module(schema, module_name="app_leaf_module")
+print(module is sys.modules["app_leaf_module"].GENERATED, module.root_class.__module__)
+"""
+
+
+def test_dynamic_calls_import_modules_that_generate_dynamic_models_in_themselves(tmp_path: Path) -> None:
+    """Test a call names a module not imported yet whose import generates the same models, and gets its classes."""
+    result = subprocess.run(
+        [sys.executable, "-c", LEAF_MODULE_SCRIPT, str(tmp_path)],
+        capture_output=True,
+        check=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.stdout.splitlines() == ["True app_leaf_models", "True app_leaf_module"]
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_refuses_a_name_with_modules_below_it() -> None:
+    """Test registration refuses a name with modules left below it, and registers once they go as the message says."""
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    other_schema = {**schema, "description": "Another schema"}
+    module = generate_dynamic_module(schema, module_name="runtime_registered_package", register_module=True)
+    nested = module.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
+    submodules = (
+        "'runtime_registered_package.empty_parent', 'runtime_registered_package.empty_parent.nested', "
+        "'runtime_registered_package.empty_parent.nested.deep', 'runtime_registered_package.nested' and "
+        "'runtime_registered_package.nested.deep'"
+    )
+
+    with pytest.raises(
+        Error, match=re.escape(f"or remove 'runtime_registered_package', {submodules} from sys.modules")
+    ):
+        generate_dynamic_module(other_schema, module_name="runtime_registered_package", register_module=True)
+    del sys.modules["runtime_registered_package"]
+    with pytest.raises(
+        Error,
+        match=re.escape(
+            "module_name 'runtime_registered_package' has modules below it in sys.modules, which a registered module "
+            f"would replace or hide; pass another module_name, or remove {submodules} from sys.modules first."
+        ),
+    ):
+        generate_dynamic_module(other_schema, module_name="runtime_registered_package", register_module=True)
+    assert sys.modules[nested.__module__].Json is nested
+    for name in [name for name in sys.modules if name.startswith("runtime_registered_package.")]:
+        del sys.modules[name]
+    other = generate_dynamic_module(other_schema, module_name="runtime_registered_package", register_module=True)
+    assert other.root_class is sys.modules["runtime_registered_package"].NestedPerson
+    assert pickle.loads(pickle.dumps(other.root_class)) is other.root_class
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_with_a_name_for_settings_that_cannot_be_serialized() -> None:
+    """Test a config with a callable registers under a given name, which no later call can be matched to."""
+    config = GenerateConfig(custom_class_name_generator=str.title)
+    module = generate_dynamic_module(
+        REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
+    )
+    unregistered = generate_dynamic_module(REGISTERED_SCHEMA, config=config, module_name="runtime_registered")
+
+    assert module.root_class is sys.modules["runtime_registered"].Doc
+    assert unregistered.root_class is not module.root_class
+    with pytest.raises(pickle.PicklingError, match=re.escape("not the same object as runtime_registered.Doc")):
+        pickle.dumps(unregistered.root_class)
+    with pytest.raises(Error, match="module_name 'runtime_registered' is registered, and the schema or the config"):
+        generate_dynamic_module(
+            REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
+        )
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_from_threads() -> None:
+    """Test threads that register one schema get one module and the same classes."""
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        modules = list(
+            executor.map(lambda _: generate_dynamic_module(REGISTERED_SCHEMA, register_module=True), range(10))
+        )
+
+    assert all(module is modules[0] for module in modules)
+
+
+@pytest.mark.parametrize("module_split_mode", [None, ModuleSplitMode.Single])
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_leaves_nothing_registered_when_the_code_fails(
+    module_split_mode: ModuleSplitMode | None,
+) -> None:
+    """Test generated code that raises leaves no module of the name behind, in single and split output."""
+    config = GenerateConfig(base_class="runtime_registered_missing.Base", module_split_mode=module_split_mode)
+
+    with pytest.raises(ModuleNotFoundError, match="runtime_registered_missing"):
+        generate_dynamic_module(
+            REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
+        )
+    assert [name for name in sys.modules if name.startswith("runtime_registered")] == []
+
+
+TRAILING_SPACES_SCHEMA = {
+    "title": "Described",
+    "description": "first line  \nsecond line",
+    "type": "object",
+    "properties": {"name": {"type": "string"}},
+}
+
+
+@pytest.mark.parametrize(
+    ("options", "formatted", "default_formatters"),
+    [
+        pytest.param({}, False, False, id="default"),
+        pytest.param({"preset": "standard-py313-20260619"}, False, False, id="preset_without_formatters"),
+        pytest.param({"formatters": [Formatter.BUILTIN]}, True, False, id="formatters"),
+        pytest.param({"preset": "standard-py313-20261111"}, True, False, id="preset_with_formatters"),
+        pytest.param(
+            {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
+            True,
+            True,
+            id="custom_formatters",
+        ),
+    ],
+)
+@pytest.mark.parametrize("generate_module", [False, True], ids=["models", "module"])
+def test_dynamic_generation_formats_only_where_the_config_selects_formatters(
+    options: dict[str, Any], *, formatted: bool, default_formatters: bool, generate_module: bool
+) -> None:
+    """Skip formatting without selected formatters; formatters, custom formatters and presets keep it."""
+    config = GenerateConfig(use_schema_description=True, **options)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        generated = (
+            generate_dynamic_module(TRAILING_SPACES_SCHEMA, config=config, cache_size=0).models
+            if generate_module
+            else generate_dynamic_models(TRAILING_SPACES_SCHEMA, config=config, cache_size=0)
+        )
+
+    # Python 3.13 and later strip the docstring's indentation when compiling; cleandoc reads both forms the same.
+    assert inspect.cleandoc(generated["Described"].__doc__ or "") == (
+        "first line\nsecond line" if formatted else "first line  \nsecond line"
+    )
+    assert any("Default formatters will change" in str(warning.message) for warning in caught) is default_formatters

@@ -1,0 +1,12 @@
+== references
+7:0 manager store in <module> -> local <module> @7
+7:10 contextlib load in <module> -> local <module> @3; origin contextlib
+10:1 contextlib load in <module> -> local <module> @3; origin contextlib
+15:1 asynccontextmanager load in <module> -> local <module> @4; origin contextlib.asynccontextmanager
+20:1 manager load in <module> -> local <module> @7; origin contextlib.contextmanager
+25:1 cached load in <module> -> local <module> @5; origin functools.lru_cache
+uses of <module>:contextlib@3: read@7, read@10
+uses of <module>:asynccontextmanager@4: read@15
+uses of <module>:cached@5: call@25
+uses of <module>:manager@7: read@20
+== code objects: one per scope that compiles on this Python

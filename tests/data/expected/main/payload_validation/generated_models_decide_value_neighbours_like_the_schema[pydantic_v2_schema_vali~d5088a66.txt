@@ -1,0 +1,4 @@
+[
+  "/int_two enum null: invalid, model accepts",
+  "/str_one enum null: invalid, model accepts"
+]

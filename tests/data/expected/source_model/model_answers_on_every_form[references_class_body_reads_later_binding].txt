@@ -1,0 +1,10 @@
+== references
+3:0 x store in <module> -> local <module> @3
+7:4 y store in C -> local C @7, else unbound
+7:8 x load in C -> local C @8, else global <module> @3
+8:4 x store in C -> local C @8, else global <module> @3
+uses of <module>:x@3: read@7
+uses of C:x@8: read@7
+type positions @3: module
+type positions @8: -
+== code objects: one per scope that compiles on this Python

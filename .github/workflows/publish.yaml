@@ -13,9 +13,15 @@ on:
         required: false
         default: false
         type: boolean
+      alias_only:
+        description: "Publish only the datamodel-codegen alias of the release at --ref <tag> (the release itself is on PyPI)."
+        required: false
+        default: false
+        type: boolean
 
 env:
   dists-artifact-name: python-package-distributions
+  alias-dists-artifact-name: alias-package-distributions
 
 jobs:
   verify:
@@ -129,21 +135,62 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: false
       - name: Build package
         run: uv build --python 3.13 --python-preference only-managed --sdist --wheel . --out-dir dist
       - name: Store the distribution packages
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/*
 
+  build_alias:
+    name: Build the datamodel-codegen alias
+    # Its own job, so that an alias failure never stops the release. The alias pins the release it installs, so a local
+    # backport version (+backport-N), which PyPI refuses, has none.
+    if: ${{ !contains(github.ref_name, '+') }}
+    needs:
+      - verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+      - name: Build the datamodel-codegen alias
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          alias=pypi-alias/datamodel-codegen/pyproject.toml
+          sed -i -e "s/^version = \"0\.0\.0\"$/version = \"${VERSION}\"/" \
+            -e "s/\"datamodel-code-generator\" \]$/\"datamodel-code-generator==${VERSION}\" ]/" "$alias"
+          grep -qx "version = \"${VERSION}\"" "$alias"
+          grep -qF "\"datamodel-code-generator==${VERSION}\" ]" "$alias"
+          uv build --python 3.13 --python-preference only-managed --sdist --wheel pypi-alias/datamodel-codegen --out-dir dist-alias
+      - name: Store the alias packages
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.alias-dists-artifact-name }}
+          path: dist-alias/*
+
   release:
     name: Publish package to PyPI
+    # Needs both builds, as release_alias does, so that both jobs wait for the pypi environment at the same time and one
+    # approval starts both. A failed alias build does not stop the release.
+    if: >-
+      ${{ !cancelled() && needs.build.result == 'success' &&
+      !(github.event_name == 'workflow_dispatch' && inputs.alias_only) }}
     needs:
       - build
+      - build_alias
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -152,7 +199,7 @@ jobs:
       id-token: write
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/
@@ -161,9 +208,69 @@ jobs:
         with:
           attestations: true
 
+  release_alias:
+    name: Publish the datamodel-codegen alias to PyPI
+    # Starts with release, so that one approval of the pypi environment starts both; it uploads only after pip finds the
+    # release it pins, so that installing the alias always finds it. A failure here leaves the release as is.
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.build_alias.result == 'success' }}
+    needs:
+      - build
+      - build_alias
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/datamodel-codegen/${{ github.ref_name }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+      - name: Wait until pip finds the release the alias pins
+        # The alias installs only once its pinned release resolves; an alias-only run of a tag that has no release stops here.
+        timeout-minutes: 25
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          python -m pip --disable-pip-version-check install --no-cache-dir --no-deps --upgrade -r requirements-pip.txt
+          deadline=$((SECONDS + 1200))
+          found_since=""
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            rm -rf "$RUNNER_TEMP/pypi-release"
+            if python -m pip --disable-pip-version-check download --quiet --no-cache-dir --no-deps \
+                --dest "$RUNNER_TEMP/pypi-release" "datamodel-code-generator==${VERSION}"; then
+              found_since=${found_since:-$SECONDS}
+              if [ $((SECONDS - found_since)) -ge 180 ]; then
+                exit 0
+              fi
+            else
+              found_since=""
+            fi
+            sleep 15
+          done
+          echo "pip did not find datamodel-code-generator==${VERSION} on every lookup for 3 minutes within 20 minutes." >&2
+          exit 1
+      - name: Download the alias packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.alias-dists-artifact-name }}
+          path: dist-alias/
+      - name: Publish the alias to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist-alias/
+          attestations: true
+          # A rerun after a partial upload publishes the missing file; the ones already on PyPI are the same build input.
+          skip-existing: true
+
   push_to_registry:
     name: Push Docker image to Docker Hub
-    if: "success() && startsWith(github.ref, 'refs/tags/')"
+    # Reads release's result directly, so that a failed or skipped alias build never skips the image.
+    if: ${{ !cancelled() && needs.release.result == 'success' && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-24.04
     needs: release
     permissions:
@@ -181,16 +288,43 @@ jobs:
           tags: |
             type=semver,pattern={{raw}}
       - name: Login to DockerHub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+      - name: Wait until pip finds the release on PyPI
+        timeout-minutes: 25
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # Right after the upload, PyPI can answer some lookups without the new release, so one hit is not enough.
+          python -m pip --disable-pip-version-check install --no-cache-dir --no-deps --upgrade -r requirements-pip.txt
+          deadline=$((SECONDS + 1200))
+          found_since=""
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            rm -rf "$RUNNER_TEMP/pypi-release"
+            if python -m pip --disable-pip-version-check download --quiet --no-cache-dir --no-deps \
+                --dest "$RUNNER_TEMP/pypi-release" "datamodel-code-generator==${VERSION}"; then
+              found_since=${found_since:-$SECONDS}
+              if [ $((SECONDS - found_since)) -ge 180 ]; then
+                exit 0
+              fi
+            else
+              found_since=""
+            fi
+            sleep 15
+          done
+          echo "pip did not find datamodel-code-generator==${VERSION} on every lookup for 3 minutes within 20 minutes." >&2
+          exit 1
       - name: Build Docker image for smoke test
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           load: true
@@ -204,7 +338,7 @@ jobs:
         with:
           image: datamodel-code-generator:smoke
       - name: Build and push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           push: true
           pull: true

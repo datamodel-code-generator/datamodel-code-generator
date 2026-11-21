@@ -148,8 +148,8 @@ class PydanticFieldNameResolver(FieldNameResolver):
             fast_name := self._get_valid_name_fast_path(
                 name,
                 excludes,
-                ignore_snake_case_field,
-                upper_camel,
+                ignore_snake_case_field=ignore_snake_case_field,
+                upper_camel=upper_camel,
             )
         ) is not None:
             return fast_name
@@ -159,8 +159,9 @@ class PydanticFieldNameResolver(FieldNameResolver):
         self,
         name: str,
         excludes: set[str] | None,
-        ignore_snake_case_field: bool,  # noqa: FBT001
-        upper_camel: bool,  # noqa: FBT001
+        *,
+        ignore_snake_case_field: bool,
+        upper_camel: bool,
     ) -> str | None:
         """Skip normalization for ordinary Pydantic field names."""
         if type(self) is not PydanticFieldNameResolver:

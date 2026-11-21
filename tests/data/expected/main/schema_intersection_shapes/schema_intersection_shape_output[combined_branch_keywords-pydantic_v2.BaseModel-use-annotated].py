@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import BaseModel, Field, RootModel
 
 
 class Bound(RootModel[int]):
@@ -41,8 +41,8 @@ class Multiple1(RootModel[str]):
     root: str
 
 
-class Typed(RootModel[constr(min_length=1) | int]):
-    root: constr(min_length=1) | int
+class Typed(RootModel[Annotated[str, Field(min_length=1)] | int]):
+    root: Annotated[str, Field(min_length=1)] | int
 
 
 class Typed1(RootModel[str]):

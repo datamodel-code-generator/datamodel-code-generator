@@ -1,0 +1,14 @@
+== suppressions
+comment @6: # noqa
+comment @7: # noqa: F401
+comment @8: #NOQA:F401,E501
+comment @9: # noqa : F401
+comment @10: # noqa:E501 F401
+comment @12: # noqa-not-a-directive
+ruff noqa @6 (every code): lines 6
+ruff noqa @7 (F401): lines 7
+ruff noqa @8 (F401,E501): lines 8
+ruff noqa @9 (every code): lines 9
+ruff noqa @10 (E501,F401): lines 10
+suppressed ruff F401 unused-import: 6-10
+== code objects: one per scope that compiles on this Python

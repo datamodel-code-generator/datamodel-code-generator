@@ -1,0 +1,17 @@
+$schema: http://json-schema.org/draft-07/schema#
+$defs:
+  Port:
+    description: A port number or an IANA service name.
+    x-kubernetes-int-or-string: true
+  ConfigMapRef:
+    type: object
+    x-kubernetes-group-version-kind:
+    - kind: ConfigMap
+      version: v1
+    properties:
+      apiVersion:
+        type: string
+      kind:
+        type: string
+      name:
+        type: string

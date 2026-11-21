@@ -14,24 +14,20 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import (
     _label,
     _overlaps,
-    _Pages,
     _problem,
     _relation,
     _target_key,
+    _value_types_problem,
 )
 from datamodel_code_generator._client.polling import _Polls, _Source
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Mapping
+    from collections.abc import Iterator, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._client.model_facts import ModelFacts
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.plan import OperationSpec, ParameterSpec
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import TypeUseId
 
 __all__ = ("UploadSpec", "plan_uploads")
 
@@ -115,7 +111,7 @@ class _Uploads:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.create.operation", message, create))
         return sources
 
-    def count(  # noqa: PLR0913, PLR0917
+    def count(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -144,7 +140,7 @@ class _Uploads:
         problems.extend(found)
         return None if found else _parameter(create, target)
 
-    def typed(  # noqa: PLR0913, PLR0917
+    def typed(  # noqa: PLR0917
         self, helper: Helper, sources: list[_Source], read: Mapping[str, Any], at: str, what: str, wanted: str
     ) -> Iterator[Diagnostic]:
         """Check that a selector reads values of one JSON type, or header text, from each response, never the status."""
@@ -161,11 +157,7 @@ class _Uploads:
             return
         allowed = {wanted, *(("string",) if read["from"] == "header" else ())}
         if types is not None and (others := sorted(types - allowed)):
-            message = (
-                f"The {what} of {stable_repr(helper.name)} reads {', '.join(others)} values, where only {wanted} "
-                "values fit"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            yield _value_types_problem(helper, spec, what, others, f"{wanted} values fit", at, joined=", ".join)
 
     def expiry(self, helper: Helper, created: list[_Source]) -> Iterator[Diagnostic]:
         """Check that a server expiry reads strings from every create response."""
@@ -286,15 +278,8 @@ class _Uploads:
         return spec
 
 
-def plan_uploads(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_uploads(polls: _Polls | None) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled upload helper, returning them and each checked helper's problems."""
-    if protocols is None:
+    if polls is None:
         return (), {}
-    uploads = _Uploads(_Polls(_Pages(protocols, plan, facts, codecs, request)))
-    return uploads.pages.each(("resumable_upload",), uploads.helper)
+    return polls.pages.each(("resumable_upload",), _Uploads(polls).helper)

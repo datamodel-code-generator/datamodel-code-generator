@@ -1,0 +1,11 @@
+models shared True
+# content_media_type in-process sync, in-process async
+upload binary image
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"string_unicode","loc":["body","image"],"msg":"<msg>"}]} [operation_id='upload', status_code=422, body=b'{"detail":[{"type":"string_unicode","loc":["body","image"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"string_unicode","loc":["body","image"],"msg":"<msg>"}]}', truncated=False]
+upload UTF-8 image
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  upload(body=UploadsPostRequest(image='PNG', encoded='aGk='))
+  < 204 -
+  = None

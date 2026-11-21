@@ -1,0 +1,69 @@
+== references
+8:0 REGISTRY store in <module> -> local <module> @8
+9:4 _name store in <module> -> local <module> @9
+9:13 globals load in <module> -> builtin; origin builtins.globals
+10:4 REGISTRY load in <module> -> local <module> @8; origin forms.references.consumers_of_expressions.REGISTRY
+10:13 _name load in <module> -> local <module> @9
+11:0 KEYS store in <module> -> local <module> @11
+11:23 globals load in <module> -> builtin; origin builtins.globals
+11:16 key store in <listcomp> -> local <listcomp> @11
+11:8 key load in <listcomp> -> local <listcomp> @11
+12:0 COPY store in <module> -> local <module> @12
+12:7 dict load in <module> -> builtin; origin builtins.dict
+12:12 globals load in <module> -> builtin; origin builtins.globals
+13:0 SPREAD store in <module> -> local <module> @13
+13:11 globals load in <module> -> builtin; origin builtins.globals
+14:0 MERGED store in <module> -> local <module> @14
+14:12 globals load in <module> -> builtin; origin builtins.globals
+15:0 OPTIONS store in <module> -> local <module> @15
+15:10 dict load in <module> -> builtin; origin builtins.dict
+15:17 vars load in <module> -> builtin; origin builtins.vars
+16:0 SORTED store in <module> -> local <module> @16
+16:9 sorted load in <module> -> builtin; origin builtins.sorted
+16:16 REGISTRY load in <module> -> local <module> @8; origin forms.references.consumers_of_expressions.REGISTRY
+16:30 str load in <module> -> builtin; origin builtins.str
+17:0 LOOKUP store in <module> -> local <module> @17
+17:9 globals load in <module> -> builtin; origin builtins.globals
+18:0 globals load in <module> -> builtin; origin builtins.globals
+19:0 TOTAL store in <module> -> local <module> @19
+19:8 sum load in <module> -> builtin; origin builtins.sum
+19:23 globals load in <module> -> builtin; origin builtins.globals
+19:18 _ store in <genexpr> -> local <genexpr> @19
+20:0 FOUND store in <module> -> local <module> @20
+20:8 globals load in <module> -> builtin; origin builtins.globals
+24:14 item store in stream -> local stream @24
+24:22 source load in stream -> local stream @23
+25:14 item load in stream -> local stream @24
+28:12 dict load in <module> -> builtin; origin builtins.dict
+28:28 type load in <module> -> builtin; origin builtins.type
+29:4 entries store in Built -> local Built @29, else unbound
+29:14 list load in Built -> builtin; origin builtins.list
+29:19 map load in Built -> builtin; origin builtins.map
+29:23 str load in Built -> builtin; origin builtins.str
+29:28 range load in Built -> builtin; origin builtins.range
+uses of <module>:REGISTRY@8: subscript-store@10, argument@16
+uses of <module>:_name@9: read@10
+uses of <listcomp>:key@11: read@11
+uses of stream:source@23: call@24
+uses of stream:item@24: read@25
+use of globals() @9:13: iterate
+use of dict(globals()) @12:7: read
+use of dict(**vars()) @15:10: read
+use of sorted(REGISTRY, key=str.lower) @16:9: read
+use of sum(1 for _ in globals()) @19:8: read
+use of globals().get("COPY") @20:8: read
+use of globals() @12:12: argument
+use of globals() @14:12: unpack
+use of globals() @17:9: read
+use of globals() @18:0: subscript-store
+use of source() @24:22: iterate
+use of list(map(str, range(3))) @29:14: read
+use of globals().keys() @11:23: iterate
+use of globals() @13:11: unpack
+use of vars() @15:17: unpack
+use of globals() @20:8: call:get
+use of map(str, range(3)) @29:19: argument
+use of globals() @19:23: iterate
+use of range(3) @29:28: argument
+use of globals() @11:23: call:keys
+== code objects: one per scope that compiles on this Python

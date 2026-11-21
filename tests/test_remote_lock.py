@@ -12,6 +12,7 @@ import pytest
 from datamodel_code_generator import _publication as publication_module
 from datamodel_code_generator import remote_lock
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
+from tests.capabilities import needs
 
 
 @pytest.mark.allow_direct_assert
@@ -268,7 +269,7 @@ def test_staging_directory_handles_deleted_sources_closed_handles_and_cleanup_fa
 
 
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(os.name == "nt", reason="private descriptor names require POSIX dir_fd support")
+@needs("posix")
 def test_staging_directory_fails_closed_for_unavailable_private_names(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -336,7 +337,7 @@ def test_staging_directory_path_fallback_cleanup_does_not_require_descriptors(tm
     assert not path.exists()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="descriptor publication requires POSIX dir_fd support")
+@needs("posix")
 @pytest.mark.allow_direct_assert
 def test_descriptor_publication_error_and_rollback_primitives_preserve_private_entries(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -556,7 +557,7 @@ def test_path_publication_helpers_preserve_modes_and_own_only_created_directorie
         publication_module._backup_existing_target(target)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX modes are not available on Windows")
+@needs("posix")
 @pytest.mark.allow_direct_assert
 def test_path_publication_helpers_preserve_posix_modes(tmp_path: Path) -> None:
     """Path publication copies every POSIX permission bit from an existing target."""

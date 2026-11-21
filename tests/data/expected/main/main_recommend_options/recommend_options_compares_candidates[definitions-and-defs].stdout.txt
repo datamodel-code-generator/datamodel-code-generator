@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-19)
+Option recommendations (experimental; full mode; rules 2026-11-19)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       2, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 1
 
-Start from  --preset standard-py314-20261106
+Start from  --preset standard-py314-20261120
 
 Add  nothing on top of the preset
 
@@ -26,10 +26,12 @@ Left out after the trial (the rules recommend these)
       --use-title-as-name, its title: Root), and full-path prefixes that name onto root-level
       models. The suggested name comes from the input file name; replace it with the name the
       project wants.
-      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
-      became TsConfig, names over 40 characters 6 -> 0
-      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
-      Workflow, Compose and PackageJson
+      measured: SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile
+      became Tsconfig, names over 40 characters 6 -> 0
+      measured: SchemaStore github-workflow schema: Model became GithubWorkflow
+      measured: compose spec with --naming-strategy full-path: ComposeSpecification became
+      ComposeSpec
+      measured: SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package
       trial: preset -> recommended: classes 3 -> 3, problem names 0 -> 0; 1 of 3 classes matched by
       schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
         Root -> DefinitionsAndDefs   at (root)
@@ -49,10 +51,10 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input definitions_and_defs.json --preset standard-py314-20261106 --target-python-version 3.14
+  datamodel-codegen --input definitions_and_defs.json --preset standard-py314-20261120 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "definitions_and_defs.json"
-  preset = "standard-py314-20261106"
+  preset = "standard-py314-20261120"
   target-python-version = "3.14"

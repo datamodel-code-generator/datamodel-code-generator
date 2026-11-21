@@ -1,0 +1,11 @@
+== references
+8:0 CONCRETE_BACKEND store in <module> -> local <module> @8
+9:0 importlib load in <module> -> local <module> @6; origin importlib
+9:21 CONCRETE_BACKEND load in <module> -> local <module> @8; origin forms.references.shared_model_importlib_dunder_import.CONCRETE_BACKEND
+10:0 builtins load in <module> -> local <module> @5; origin builtins
+10:20 CONCRETE_BACKEND load in <module> -> local <module> @8; origin forms.references.shared_model_importlib_dunder_import.CONCRETE_BACKEND
+uses of <module>:builtins@5: call:__import__@10
+uses of <module>:importlib@6: call:__import__@9
+uses of <module>:CONCRETE_BACKEND@8: argument@9, argument@10
+type positions @8: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+== code objects: one per scope that compiles on this Python

@@ -79,6 +79,13 @@ SEAMS: Final = (
     ),
     Seam(f"{_PASSES}.naming", None, "name_models", "naming.name_models"),
     Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
+    Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "pointer_value", "schema_graph.pointer_value"),
+    Seam(
+        f"{_PACKAGE}.parser._schema_documents",
+        None,
+        "prepare_schema_resources",
+        "schema_graph.prepare_schema_resources",
+    ),
     Seam(f"{_PACKAGE}.parser.openapi_scope", "ApiOpenAPIParser", "_site_facts", "schema_graph.site_facts"),
     Seam(
         f"{_PACKAGE}._site_facts",
@@ -91,6 +98,7 @@ SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_field_constraints", "parse.drop_field_constraints"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "mark_serialized_as_any", "parse.mark_serialized_as_any"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "write_sets", "parse.write_sets"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "omit_default", "parse.omit_default"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "merge_str_like_members", "parse.merge_str_like_members"),
     Seam(
         f"{_PACKAGE}.parser._phases",
@@ -113,6 +121,7 @@ SEAMS: Final = (
     Seam(
         f"{_PACKAGE}.model.base", "DataModel", "_refresh_field_render_plans", "render_plans.refresh_field_render_plans"
     ),
+    Seam(f"{_PACKAGE}.model.base", "DataModel", "_render_template", "template_assignments.render_template"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "value", "memos.value"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "derived", "memos.derived"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "keep_union_members", "memos.keep_union_members"),

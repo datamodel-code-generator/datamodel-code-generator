@@ -9,33 +9,34 @@ names, and recommends the best one; without a mode, schemas small enough are com
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from datamodel_code_generator import Error
+from datamodel_code_generator._document_reader import nesting_limit
+from datamodel_code_generator._generation import _infer_input
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
-from datamodel_code_generator._recommend._rules import (
-    Decision,
-    decide,
-    load_rules,
-    option_arguments,
-    values_arguments,
-)
+from datamodel_code_generator._option_stages import _resolve_preset
+from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
+from datamodel_code_generator._shared_types import DefaultPutDict, Error
+from datamodel_code_generator._source import decoding_from, is_swagger_2, load_data
+from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.enums import InputFileType, _openapi_scopes_or_default
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Sequence
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
     from datamodel_code_generator._recommend._signals import Signals
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
     from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
-    from datamodel_code_generator.enums import InputFileType
+    from datamodel_code_generator._source import DecodedInput
     from datamodel_code_generator.parser.schema_version import SchemaKind
-    from datamodel_code_generator.preset import ResolvedPresetConfig
 
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}
 _DOCUMENT_NAMES: dict[SchemaKind, str] = {
@@ -162,6 +163,7 @@ class _Plan:
     preset: str
     family: str
     baseline: dict[str, Any]
+    updates: dict[str, Any]
     delta: list[Option] = field(default_factory=list)
     covers: list[Option] = field(default_factory=list)
     optional: list[Option] = field(default_factory=list)
@@ -200,22 +202,20 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
     return request.read_stdin(), "stdin", None
 
 
-def _input_file_type(config: Any, text: str | None) -> str | None:
-    """Return the configured input file type, or the detected one for auto."""
-    from datamodel_code_generator import InputFileType, infer_input_type  # noqa: PLC0415
-
+def _input_file_type(config: Any, text: str | None) -> tuple[str | None, DecodedInput | None]:
+    """Return the configured input file type, or the detected one for auto with the document as detection decoded it."""
     if config.input_file_type != InputFileType.Auto:
-        return config.input_file_type.value
+        return config.input_file_type.value, None
     if text is None:
-        return None
-    return infer_input_type(text).value
+        return None, None
+    file_type, _, decoded = _infer_input(text)
+    return file_type.value, decoded
 
 
-def _load(text: str) -> dict[str, Any]:
-    """Load a JSON or YAML mapping, raising the loader's error."""
-    from datamodel_code_generator._source import load_data  # noqa: PLC0415
-
-    return load_data(text)
+def _load(text: str, decoded: DecodedInput | None = None) -> dict[str, Any]:
+    """Load a JSON or YAML mapping, raising the loader's error; the text of ``decoded`` is not decoded again."""
+    with decoding_from(decoded):
+        return load_data(text)
 
 
 def _load_errors() -> tuple[type[Exception], ...]:
@@ -224,9 +224,9 @@ def _load_errors() -> tuple[type[Exception], ...]:
     return TypeError, ValueError, *get_yaml_parse_errors()
 
 
-def _document(text: str, kind: SchemaKind, what: str) -> dict[str, Any]:
+def _document(text: str, kind: SchemaKind, what: str, decoded: DecodedInput | None = None) -> dict[str, Any]:
     try:
-        return _load(text)
+        return _load(text, decoded)
     except _load_errors() as e:
         msg = f"Unable to read {what} as {_DOCUMENT_NAMES[kind]} document: {e}"
         raise Error(msg) from e
@@ -234,14 +234,13 @@ def _document(text: str, kind: SchemaKind, what: str) -> dict[str, Any]:
 
 def _measure(document: dict[str, Any], kind: SchemaKind, config: Any) -> Signals:
     """Return the signals of a schema document, for the scopes the configuration generates."""
-    from datamodel_code_generator._document_reader import nesting_limit  # noqa: PLC0415
     from datamodel_code_generator._recommend._signals import measure_signals  # noqa: PLC0415
 
     with nesting_limit():
         return measure_signals(
             document,
             kind,
-            openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
+            openapi_scopes=frozenset(scope.value for scope in _openapi_scopes_or_default(config.openapi_scopes)),
             include_paths=config.openapi_include_paths or (),
             skip_path_extension_keys=config.skip_path_extension_keys,
         )
@@ -264,36 +263,24 @@ class _Input:
 def _analyse(request: RecommendRequest) -> _Input:
     """Read and analyse the input; a Swagger 2.0 document typed as OpenAPI generates nothing, so it is not analysed."""
     text, source, stem = _read_input(request)
-    file_type = _input_file_type(request.config, text)
+    file_type, decoded = _input_file_type(request.config, text)
     if text is None or (kind := _ANALYSED_TYPES.get(file_type or "")) is None:
         return _Input(text, source, stem, file_type, None, None, None)
-    document = _document(text, kind, "the input")
-    if kind == "openapi" and "swagger" in document:
+    document = _document(text, kind, "the input", decoded)
+    if kind == "openapi" and is_swagger_2(document):
         return _Input(text, source, stem, file_type, None, document, None, swagger=True)
     return _Input(text, source, stem, file_type, kind, document, _measure(document, kind, request.config))
 
 
 def _option(decision: Decision, values: Mapping[str, OptionValue]) -> Option:
-    return Option(decision, dict(values), values_arguments(values))
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
+
+    return Option(decision, dict(values), _values_arguments(values.items()))
 
 
 def _avoided(decision: Decision) -> Option:
     """Return the options an avoiding rule argues against, as the arguments that would turn them on."""
     return Option(decision, dict(decision.values), [option_flag(name) for name in decision.values])
-
-
-def _resolve_preset(preset: str, request: RecommendRequest) -> ResolvedPresetConfig:
-    """Resolve a preset for the fields the user left unset, the way ``--preset`` does."""
-    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
-
-    return _resolve_config_preset(preset, request.config, request.explicit_fields)
-
-
-def _preset_values(preset: str, request: RecommendRequest) -> dict[str, Any]:
-    """Return the values a preset gives the fields the user left unset."""
-    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
-
-    return _pyproject_values(_resolve_preset(preset, request).items)
 
 
 def _plan(
@@ -306,16 +293,22 @@ def _plan(
 ) -> _Plan:
     """Compare the decisions with what a preset already gives the configuration.
 
-    An optional rule lists the values the user did not set and the preset does not give, for the user to decide.
+    A preset that is not the configured one is resolved here, once, for the fields the user left unset, the way
+    ``--preset`` does; the plan keeps the config updates it makes for the trial. An optional rule lists the values the
+    user did not set and the preset does not give, for the user to decide.
     """
+    from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
+    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
+
     config = request.config
-    preset_values = {} if configured else _preset_values(preset, request)
+    resolved = None if configured else _resolve_preset(preset, config, request.explicit_fields)
+    preset_values = {} if resolved is None else _pyproject_values(resolved.items)
     baseline = {
         name: preset_values[name] if name in preset_values else configured_value(config, name)
         for decision in decisions
         for name in decision.values
     }
-    plan = _Plan(preset, family, baseline)
+    plan = _Plan(preset, family, baseline, {} if resolved is None else resolved.updates())
     for decision in decisions:
         changes = {
             name: value
@@ -327,7 +320,7 @@ def _plan(
                 plan.optional.append(_option(decision, changes))
             continue
         if blocked := [
-            (decision, name, value) for name, value in changes.items() if option_arguments(name, value) is None
+            (decision, name, value) for name, value in changes.items() if _option_arguments(name, value) is None
         ]:
             plan.blocked.extend(blocked)
         elif changes:
@@ -384,8 +377,6 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
 
 def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str]]:
     """Return the command-line values to repeat, leaving out credentials and redacting URLs."""
-    from datamodel_code_generator._url_redaction import redact_url  # noqa: PLC0415
-
     notes: list[str] = []
     values: dict[str, Any] = {}
     for name, value in request.cli_values.items():
@@ -429,22 +420,9 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
     """Return the input a generation of this configuration reads."""
     config = request.config
     if analysed.source == "input-model":
-        from datamodel_code_generator.input_model import Error as InputModelError  # noqa: PLC0415
-        from datamodel_code_generator.input_model import (  # noqa: PLC0415
-            _load_model_schema_with_python_type_expressions,
-        )
+        from datamodel_code_generator.input_model import _load_config_input_model  # noqa: PLC0415
 
-        try:
-            return _load_model_schema_with_python_type_expressions(
-                config.input_model,
-                config.input_file_type,
-                config.input_model_ref_strategy,
-                config.output_model_type,
-                read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
-                reuse_every_reached_type=config.reuse_every_reached_input_model_type,
-            )
-        except InputModelError as e:
-            raise Error(str(e)) from e
+        return _load_config_input_model(config)
     if analysed.source == "stdin":
         return cast("str", analysed.text)
     return config.url if analysed.source == "url" else config.input
@@ -452,8 +430,6 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
 
 def _vocabulary_document(analysed: _Input, trial_input: TrialInput) -> Mapping[str, Any] | None:
     """Return the document whose words class names may take: the analysed schema, or the input loaded as data."""
-    from collections.abc import Mapping  # noqa: PLC0415
-
     if analysed.document is not None:
         return analysed.document
     if isinstance(trial_input, Mapping):
@@ -476,11 +452,6 @@ def _applied(options: Sequence[Option]) -> dict[str, Any]:
     values = _merged_values(options)
     validated = BaseGenerateConfig.model_validate(values)
     return {name: getattr(validated, name) for name in values}
-
-
-def _preset_updates(preset: str, request: RecommendRequest) -> dict[str, Any]:
-    """Return the config updates ``--preset`` makes, including the target and forced field constraints."""
-    return _resolve_preset(preset, request).updates()
 
 
 @dataclass(frozen=True, slots=True)
@@ -586,9 +557,13 @@ def _trial_candidates(
     recommendation: Recommendation,
     candidates: Sequence[_Candidate],
     input_file_type: InputFileType | None,
+    preset: Mapping[str, Any],
 ) -> list[TrialCandidate]:
-    """Return each candidate's generation config: the configuration, the preset, and its options."""
-    from datamodel_code_generator import InputFileType  # noqa: PLC0415
+    """Return each candidate's generation config: the configuration, the preset, and its options.
+
+    ``preset`` holds the config updates ``--preset`` makes for the recommended preset, including the target and forced
+    field constraints, and nothing for a configured preset, which the configuration already has.
+    """
     from datamodel_code_generator._recommend._trial import TrialCandidate  # noqa: PLC0415
 
     config = request.config
@@ -598,7 +573,6 @@ def _trial_candidates(
         else {}
     )
     configured = config.preset is not None
-    preset = {} if configured else _preset_updates(recommendation.preset, request)
     return [
         TrialCandidate(
             candidate.label,
@@ -617,19 +591,14 @@ def _trial_candidates(
 
 def _known_type(analysed: _Input) -> InputFileType | None:
     """Return the input type the analysis knows: the configured or detected one, JSON Schema for --input-model."""
-    from datamodel_code_generator import InputFileType  # noqa: PLC0415
-
     known = analysed.file_type or ("jsonschema" if analysed.source == "input-model" else None)
     return None if known is None else InputFileType(known)
 
 
 def _runner(request: RecommendRequest, analysed: _Input) -> Callable[[Sequence[TrialCandidate]], _TrialRun]:
     """Return the function that generates candidates: one input, its vocabulary, the previous input, one cache."""
-    from functools import partial  # noqa: PLC0415
-
     from datamodel_code_generator._recommend._metrics import schema_vocabulary  # noqa: PLC0415
     from datamodel_code_generator._recommend._trial import run_trial  # noqa: PLC0415
-    from datamodel_code_generator._shared_types import DefaultPutDict  # noqa: PLC0415
 
     config = request.config
     trial_input = _trial_input(request, analysed)
@@ -645,11 +614,14 @@ def _runner(request: RecommendRequest, analysed: _Input) -> Callable[[Sequence[T
     )
 
 
-def _compare(request: RecommendRequest, recommendation: Recommendation, analysed: _Input) -> None:
+def _compare(
+    request: RecommendRequest, recommendation: Recommendation, analysed: _Input, preset: Mapping[str, Any]
+) -> None:
     """Generate the candidates, rank their class names, and recommend the options of the best one.
 
     When the best candidate is not the rules' recommendation, the configurations next to it that the first candidates
-    did not cover are generated too, so each option is measured on the selected configuration.
+    did not cover are generated too, so each option is measured on the selected configuration. ``preset`` holds the
+    config updates of the recommended preset, and nothing for a configured one.
     """
     from datamodel_code_generator._recommend._trial import rank  # noqa: PLC0415
 
@@ -657,7 +629,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
     delta = recommendation.recommendations
     candidates, dropped = _candidates(delta, configured=request.config.preset is not None)
     known = _known_type(analysed)
-    outcomes, detected = run(_trial_candidates(request, recommendation, candidates, known))
+    outcomes, detected = run(_trial_candidates(request, recommendation, candidates, known, preset))
     by_key = {candidate.key: outcome for candidate, outcome in zip(candidates, outcomes, strict=True)}
     selected = next(
         (outcome for outcome in rank(outcomes) if outcome.error is None and outcome.candidate.selectable), None
@@ -667,7 +639,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
     pairs = _pairs(chosen, delta)
     extra = [] if center is None or center.key == _key(delta) else _remeasure(center, pairs, by_key.keys())
     if extra:
-        more, _ = run(_trial_candidates(request, recommendation, extra, detected))
+        more, _ = run(_trial_candidates(request, recommendation, extra, detected, preset))
         by_key.update((candidate.key, outcome) for candidate, outcome in zip(extra, more, strict=True))
         outcomes = (*outcomes, *more)
     _select(
@@ -808,7 +780,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     if mode_note is not None:
         recommendation.notes.append(mode_note)
     if mode == "full":
-        _compare(request, recommendation, analysed)
+        _compare(request, recommendation, analysed, plan.updates)
     if analysed.swagger:
         recommendation.runnable = False
     else:

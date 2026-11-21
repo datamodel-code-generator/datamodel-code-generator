@@ -1,0 +1,6 @@
+[[change]]
+id = "drop-expected-paths-b3-2"
+extends = "preset-20261120"
+covers = [
+    "main/main_recommend_options/recommend_options_small_schema_default.stdout.txt",
+]

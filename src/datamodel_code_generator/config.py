@@ -26,6 +26,7 @@ from datamodel_code_generator.base_config import (
     _schema_validator_base_class_name_error,
     _validate_additional_import_paths,
     validate_named_paths,
+    validate_untyped_value_type,
 )
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -49,6 +50,7 @@ from datamodel_code_generator.enums import (
     OpenAPIAsDefinitions,
     OpenAPIScope,
     OpenAPIVersion,
+    OpenEnums,
     ProtobufVersion,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
@@ -68,12 +70,38 @@ CallableSchema = Callable[[str], str]
 DumpResolveReferenceAction = Callable[[Iterable[str]], str]
 _CONFIG_REBUILD_LOCK = RLock()
 DefaultPutDictSchema = DefaultPutDict[str, str]
+_FORMAT_PARSER_CONFIGS = frozenset({
+    "AsyncAPIParserConfig",
+    "AvroParserConfig",
+    "GraphQLParserConfig",
+    "OpenAPIParserConfig",
+    "ProtobufParserConfig",
+    "XMLSchemaParserConfig",
+})
 if TYPE_CHECKING:
     from datamodel_code_generator._parser_context import ParserSourceContext
 
     ExtraTemplateDataType = defaultdict[str, dict[str, Any]]
 else:
     ExtraTemplateDataType = defaultdict[str, Annotated[dict[str, Any], Field(default_factory=dict)]]
+
+    def __getattr__(name: str) -> type[ParserConfig] | list[str]:
+        """Build the parser config models of the other input formats on the first access to one of them (PEP 562).
+
+        ``__all__`` lists the names a star import took when they were built at import.
+        """
+        if name == "__all__":
+            return [member for member in __dir__() if not member.startswith("_")]
+        if name not in _FORMAT_PARSER_CONFIGS:
+            msg = f"module {__name__!r} has no attribute {name!r}"
+            raise AttributeError(msg)
+        with _CONFIG_REBUILD_LOCK:
+            return globals().get(name) or _define_format_parser_configs(name)
+
+    def __dir__() -> list[str]:
+        """List the names of the module, the models not built yet included, as if they were built at import."""
+        hooks = {"__dir__", "__getattr__", "_FORMAT_PARSER_CONFIGS", "_define_format_parser_configs"}
+        return sorted(globals().keys() - hooks | _FORMAT_PARSER_CONFIGS)
 
 
 def validate_schema_validator_base_class_name(value: str | None) -> str | None:
@@ -226,6 +254,7 @@ class ParserConfig(BaseModel):
     use_inline_field_description: bool = False
     use_single_line_docstring: bool = False
     use_default_kwarg: bool = False
+    apply_field_options_to_every_field: bool = False
     deserialize_default_values: Sequence[DefaultValueType] = ()
     use_missing_sentinel: bool = False
     reuse_model: bool = False
@@ -234,6 +263,8 @@ class ParserConfig(BaseModel):
     encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
+    open_enums: OpenEnums | None = None
+    open_enum_base_class_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False
@@ -258,6 +289,7 @@ class ParserConfig(BaseModel):
     use_title_as_name: bool = False
     infer_union_variant_names: bool = False
     use_tag_as_union_variant_name: bool = False
+    infer_union_discriminators: bool = False
     name_allof_union_members_after_branches: bool = False
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
@@ -271,6 +303,7 @@ class ParserConfig(BaseModel):
     allof_class_hierarchy: AllOfClassHierarchy = AllOfClassHierarchy.IfNoConflict
     allow_remote_refs: bool | None = None
     strict_refs: bool = False
+    untrusted_input: bool = False
     allow_private_network: bool = False
     http_backend: HTTPBackend = HTTPBackend.AUTO
     http_headers: Sequence[tuple[str, str]] | None = None
@@ -284,10 +317,12 @@ class ParserConfig(BaseModel):
     use_decimal_for_multiple_of: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
+    use_strict_str_for_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
     merge_msgspec_str_like_union_members: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
+    read_object_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
     use_site_models_for_constrained_refs: bool = False
     use_one_model_per_ref_site: bool = False
@@ -301,10 +336,17 @@ class ParserConfig(BaseModel):
     keep_constrained_root_models_in_every_container: bool = False
     keep_enum_literal_aliases: bool = False
     keep_reference_null_on_collapsed_root_models: bool = False
+    keep_shared_members_on_collapsed_root_models: bool = False
+    collapse_constrained_root_models_as_annotated: bool = False
+    remove_unused_models_beside_type_overrides: bool = False
+    keep_self_referencing_array_items: bool = False
+    keep_defaults_of_inherited_required_fields: bool = False
+    omit_incomplete_model_defaults: bool = False
     collapse_reuse_models: bool = False
     skip_root_model: bool = False
     use_root_model_sequence_interface: bool = False
     use_type_alias: bool = False
+    use_validate_default_for_root_model_type_aliases: bool = False
     use_plain_alias_for_recursive_models: bool = False
     special_field_name_prefix: str | None = None
     remove_special_field_name_prefix: bool = False
@@ -315,10 +357,15 @@ class ParserConfig(BaseModel):
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
     merge_shared_variant_tags: bool = False
+    use_unmapped_variant_tag_values: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
+    read_ids_with_empty_fragment: bool = False
+    read_single_allof_refs_in_their_documents: bool = False
+    read_ref_siblings_in_closed_allof_members: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
+    read_yaml_1_1_numbers_as_text: bool = False
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
@@ -327,13 +374,17 @@ class ParserConfig(BaseModel):
     use_typed_map_values_beside_other_types: bool = False
     use_single_dict_for_object_maps: bool = False
     read_unevaluated_properties: bool = False
+    read_kubernetes_extensions: bool = False
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
+    read_format_as_annotation: bool = False
+    read_uuid6_uuid7_uuid8_formats: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False
     distribute_allof_over_unions: bool = False
     read_allof_parents_in_mro_order: bool = False
+    read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False
@@ -343,6 +394,7 @@ class ParserConfig(BaseModel):
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
     use_object_type: bool = False
+    untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None
     treat_dot_as_module: bool | None = None
     strict_dotted_module_names: bool = False
@@ -371,9 +423,13 @@ class ParserConfig(BaseModel):
     type_mappings: list[str] | None = None
     type_overrides: dict[str, str] | None = None
     type_overrides_replace_whole_type: bool = False
-    use_x_python_type_unions: bool = False
+    use_x_python_type_as_written: bool = False
+    use_x_python_import_for_every_ref: bool = False
+    use_bytes_for_content_media_type: bool = False
+    use_bounds_for_float_const: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False
+    dedupe_numbered_request_response_variants: bool = False
     field_type_collision_strategy: FieldTypeCollisionStrategy | None = None
     target_pydantic_version: TargetPydanticVersion | None = None
     default_value_overrides: Mapping[str, Any] | None = None
@@ -386,17 +442,10 @@ class ParserConfig(BaseModel):
         return _validate_additional_import_paths(value, NEWEST_TARGET)
 
     _validate_named_paths = field_validator(*_NAMED_PATHS)(validate_named_paths)
+    _validate_untyped_value_type = field_validator("untyped_value_type")(validate_untyped_value_type)
     _validate_schema_validator_base_class_name = field_validator("schema_validator_base_class_name")(
         validate_schema_validator_base_class_name
     )
-
-
-class GraphQLParserConfig(ParserConfig):
-    """Configuration model for GraphQLParser.__init__()."""
-
-    data_model_scalar_type: type[DataModel] = DataTypeScalar
-    data_model_union_type: type[DataModel] = DataTypeUnion
-    graphql_no_typename: bool = False
 
 
 class JSONSchemaParserConfig(ParserConfig):
@@ -404,54 +453,6 @@ class JSONSchemaParserConfig(ParserConfig):
 
     jsonschema_version: JsonSchemaVersion | None = None
     schema_version_mode: VersionMode | None = None
-
-
-class AvroParserConfig(JSONSchemaParserConfig):
-    """Configuration model for AvroParser.__init__()."""
-
-
-class OpenAPIParserConfig(JSONSchemaParserConfig):
-    """Configuration model for OpenAPIParser.__init__()."""
-
-    openapi_scopes: list[OpenAPIScope] | None = None
-    include_path_parameters: bool = False
-    use_status_code_in_response_name: bool = False
-    keep_first_character_of_path_keys: bool = False
-    keep_content_parameter_refs: bool = False
-    skip_path_extension_keys: bool = False
-    openapi_include_paths: list[str] | None = None
-    openapi_include_info_version: bool = False
-    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
-    openapi_version: OpenAPIVersion | None = None
-
-
-class AsyncAPIParserConfig(JSONSchemaParserConfig):
-    """Configuration model for AsyncAPIParser.__init__()."""
-
-    openapi_scopes: list[OpenAPIScope] | None = None
-    include_path_parameters: bool = False
-    use_status_code_in_response_name: bool = False
-    keep_first_character_of_path_keys: bool = False
-    keep_content_parameter_refs: bool = False
-    skip_path_extension_keys: bool = False
-    openapi_include_paths: list[str] | None = None
-    openapi_include_info_version: bool = False
-    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
-    openapi_version: OpenAPIVersion | None = None
-    asyncapi_version: AsyncAPIVersion | None = None
-    name_converted_payloads_by_message: bool = False
-
-
-class XMLSchemaParserConfig(JSONSchemaParserConfig):
-    """Configuration model for XMLSchemaParser.__init__()."""
-
-    xmlschema_version: XMLSchemaVersion | None = None
-
-
-class ProtobufParserConfig(JSONSchemaParserConfig):
-    """Configuration model for ProtobufParser.__init__()."""
-
-    protobuf_version: ProtobufVersion | None = None
 
 
 class ParseConfig(BaseModel):
@@ -467,3 +468,63 @@ class ParseConfig(BaseModel):
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None
     module_split_mode: ModuleSplitMode | None = None
     collect_model_metadata: bool = False
+
+
+def _define_format_parser_configs(name: str) -> type[ParserConfig]:
+    """Build the parser config models of the input formats besides JSON Schema, which a JSON Schema run never reads."""
+    global AsyncAPIParserConfig, AvroParserConfig, GraphQLParserConfig, OpenAPIParserConfig, ProtobufParserConfig, XMLSchemaParserConfig  # noqa: E501, PLW0603  # ty: ignore[unresolved-global]
+
+    class GraphQLParserConfig(ParserConfig):
+        """Configuration model for GraphQLParser.__init__()."""
+
+        data_model_scalar_type: type[DataModel] = DataTypeScalar
+        data_model_union_type: type[DataModel] = DataTypeUnion
+        graphql_no_typename: bool = False
+
+    class AvroParserConfig(JSONSchemaParserConfig):
+        """Configuration model for AvroParser.__init__()."""
+
+    class OpenAPIParserConfig(JSONSchemaParserConfig):
+        """Configuration model for OpenAPIParser.__init__()."""
+
+        openapi_scopes: list[OpenAPIScope] | None = None
+        include_path_parameters: bool = False
+        use_status_code_in_response_name: bool = False
+        keep_first_character_of_path_keys: bool = False
+        keep_content_parameter_refs: bool = False
+        skip_path_extension_keys: bool = False
+        use_enum_field_as_literal_in_operations: bool = False
+        openapi_include_paths: list[str] | None = None
+        openapi_include_info_version: bool = False
+        openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
+        openapi_version: OpenAPIVersion | None = None
+
+    class AsyncAPIParserConfig(JSONSchemaParserConfig):
+        """Configuration model for AsyncAPIParser.__init__()."""
+
+        openapi_scopes: list[OpenAPIScope] | None = None
+        include_path_parameters: bool = False
+        use_status_code_in_response_name: bool = False
+        keep_first_character_of_path_keys: bool = False
+        keep_content_parameter_refs: bool = False
+        skip_path_extension_keys: bool = False
+        use_enum_field_as_literal_in_operations: bool = False
+        openapi_include_paths: list[str] | None = None
+        openapi_include_info_version: bool = False
+        openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
+        openapi_version: OpenAPIVersion | None = None
+        asyncapi_version: AsyncAPIVersion | None = None
+        name_converted_payloads_by_message: bool = False
+        merge_message_trait_headers: bool = False
+
+    class XMLSchemaParserConfig(JSONSchemaParserConfig):
+        """Configuration model for XMLSchemaParser.__init__()."""
+
+        xmlschema_version: XMLSchemaVersion | None = None
+
+    class ProtobufParserConfig(JSONSchemaParserConfig):
+        """Configuration model for ProtobufParser.__init__()."""
+
+        protobuf_version: ProtobufVersion | None = None
+
+    return globals()[name]

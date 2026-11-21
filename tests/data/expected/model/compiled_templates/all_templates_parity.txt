@@ -448,7 +448,11 @@ class _RuntimeBase(BaseModel):
             return data
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
-                any(name in data and data[name] in expected for name in names)
+                any(
+                    name in data
+                    and cls._json_schema_json_value(data[name]) in expected
+                    for name in names
+                )
                 for names, expected in rule['condition']
             )
             required_groups = (

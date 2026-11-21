@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
@@ -33,6 +33,8 @@ class Model(BaseModel):
         populate_by_name=True,
     )
     weight: Weight | None = None
-    quantity: Annotated[Quantity | Quantity1, Field(validate_default=True)] = 5
+    quantity: Annotated[Quantity | Quantity1, Field(validate_default=True)] = cast(
+        'Quantity | Quantity1', 5
+    )
     tags: Tags | None = None
     step: Step | None = None

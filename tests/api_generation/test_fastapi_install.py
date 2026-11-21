@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.conftest import assert_output, stored_expected
+from tests.conftest import assert_output
 from tests.main.conftest import run_main_and_assert
 
 DATA = Path(__file__).parents[1] / "data"
@@ -35,9 +35,6 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     if not os.environ.get("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E"):
         pytest.skip("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E enables installing generated servers")
     monkeypatch.chdir(tmp_path)
-    notice = stored_expected(EXPECTED.parent / "cli" / "pydantic-dependency" / "target-2.14.txt").read_text(
-        encoding="utf-8"
-    )
     run_main_and_assert(
         input_path=Path("contacts.yaml"),
         output_path=Path("models.py"),
@@ -48,9 +45,9 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
             (SOURCE / "pyproject-server.toml", tmp_path / "pyproject.toml"),
             (SOURCE / "app.py", tmp_path / "app.py"),
         ],
-        capsys=capsys,
-        expected_stderr=notice,
     )
+    notice = capsys.readouterr().err
+    assert_output(notice, name="notice")
     environment = tmp_path / "environment"
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, environment], check=True)
     python = environment / ("Scripts" if os.name == "nt" else "bin") / "python"

@@ -287,11 +287,11 @@ pydantic_v2.dataclass default wc_map {"k": "c"} rejected
 pydantic_v2.dataclass default wd 1 accepted
 pydantic_v2.dataclass default wd 10 accepted
 pydantic_v2.dataclass default wd 0 rejected
-pydantic_v2.dataclass default wd 11 accepted
+pydantic_v2.dataclass default wd 11 rejected
 pydantic_v2.dataclass default wd_prop 1 accepted
 pydantic_v2.dataclass default wd_prop 10 accepted
 pydantic_v2.dataclass default wd_prop 0 rejected
-pydantic_v2.dataclass default wd_prop 11 accepted
+pydantic_v2.dataclass default wd_prop 11 rejected
 pydantic_v2.dataclass default wd_items [1] accepted
 pydantic_v2.dataclass default wd_items [10] accepted
 pydantic_v2.dataclass default wd_items [0] rejected
@@ -460,11 +460,11 @@ msgspec.Struct default wc_map {"k": "c"} rejected
 msgspec.Struct default wd 1 accepted
 msgspec.Struct default wd 10 accepted
 msgspec.Struct default wd 0 rejected
-msgspec.Struct default wd 11 accepted
+msgspec.Struct default wd 11 rejected
 msgspec.Struct default wd_prop 1 accepted
 msgspec.Struct default wd_prop 10 accepted
 msgspec.Struct default wd_prop 0 rejected
-msgspec.Struct default wd_prop 11 accepted
+msgspec.Struct default wd_prop 11 rejected
 msgspec.Struct default wd_items [1] accepted
 msgspec.Struct default wd_items [10] accepted
 msgspec.Struct default wd_items [0] rejected
@@ -979,11 +979,11 @@ pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "c"} rejected
 pydantic_v2.BaseModel --collapse-root-models wd 1 accepted
 pydantic_v2.BaseModel --collapse-root-models wd 10 accepted
 pydantic_v2.BaseModel --collapse-root-models wd 0 rejected
-pydantic_v2.BaseModel --collapse-root-models wd 11 accepted
+pydantic_v2.BaseModel --collapse-root-models wd 11 rejected
 pydantic_v2.BaseModel --collapse-root-models wd_prop 1 accepted
 pydantic_v2.BaseModel --collapse-root-models wd_prop 10 accepted
 pydantic_v2.BaseModel --collapse-root-models wd_prop 0 rejected
-pydantic_v2.BaseModel --collapse-root-models wd_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_prop 11 rejected
 pydantic_v2.BaseModel --collapse-root-models wd_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models wd_items [10] accepted
 pydantic_v2.BaseModel --collapse-root-models wd_items [0] rejected
@@ -1152,11 +1152,11 @@ msgspec.Struct --collapse-root-models wc_map {"k": "c"} rejected
 msgspec.Struct --collapse-root-models wd 1 accepted
 msgspec.Struct --collapse-root-models wd 10 accepted
 msgspec.Struct --collapse-root-models wd 0 rejected
-msgspec.Struct --collapse-root-models wd 11 accepted
+msgspec.Struct --collapse-root-models wd 11 rejected
 msgspec.Struct --collapse-root-models wd_prop 1 accepted
 msgspec.Struct --collapse-root-models wd_prop 10 accepted
 msgspec.Struct --collapse-root-models wd_prop 0 rejected
-msgspec.Struct --collapse-root-models wd_prop 11 accepted
+msgspec.Struct --collapse-root-models wd_prop 11 rejected
 msgspec.Struct --collapse-root-models wd_items [1] accepted
 msgspec.Struct --collapse-root-models wd_items [10] accepted
 msgspec.Struct --collapse-root-models wd_items [0] rejected
@@ -1498,11 +1498,11 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_map {"k": "c"} r
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 1 accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 10 accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 0 rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 11 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 11 rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 1 accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 10 accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 0 rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 11 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 11 rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [1] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [10] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [0] rejected
@@ -1671,11 +1671,11 @@ msgspec.Struct --use-site-models-for-constrained-refs wc_map {"k": "c"} rejected
 msgspec.Struct --use-site-models-for-constrained-refs wd 1 accepted
 msgspec.Struct --use-site-models-for-constrained-refs wd 10 accepted
 msgspec.Struct --use-site-models-for-constrained-refs wd 0 rejected
-msgspec.Struct --use-site-models-for-constrained-refs wd 11 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd 11 rejected
 msgspec.Struct --use-site-models-for-constrained-refs wd_prop 1 accepted
 msgspec.Struct --use-site-models-for-constrained-refs wd_prop 10 accepted
 msgspec.Struct --use-site-models-for-constrained-refs wd_prop 0 rejected
-msgspec.Struct --use-site-models-for-constrained-refs wd_prop 11 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_prop 11 rejected
 msgspec.Struct --use-site-models-for-constrained-refs wd_items [1] accepted
 msgspec.Struct --use-site-models-for-constrained-refs wd_items [10] accepted
 msgspec.Struct --use-site-models-for-constrained-refs wd_items [0] rejected
@@ -2017,11 +2017,11 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 1 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 10 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 0 rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 11 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 11 rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 1 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 10 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 0 rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 11 rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [10] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [0] rejected

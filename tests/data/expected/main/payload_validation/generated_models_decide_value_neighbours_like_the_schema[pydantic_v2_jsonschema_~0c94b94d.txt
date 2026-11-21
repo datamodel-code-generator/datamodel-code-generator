@@ -1,0 +1,3 @@
+[
+  "/role enum null: invalid, model accepts"
+]

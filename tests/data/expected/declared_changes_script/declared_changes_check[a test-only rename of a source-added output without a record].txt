@@ -1,0 +1,5 @@
+exit 0
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs moved since 0.1.0 with no record before this change
+2 references moved: removed and added with equal content
+ok

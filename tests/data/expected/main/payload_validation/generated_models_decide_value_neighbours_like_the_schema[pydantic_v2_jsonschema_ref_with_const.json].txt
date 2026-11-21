@@ -1,0 +1,6 @@
+[
+  "/nullable_status const null: invalid, model accepts",
+  "/nullable_status enum \"inactive\": valid, model rejects",
+  "/nullable_status enum null: invalid, model accepts",
+  "/status enum \"inactive\": valid, model rejects"
+]

@@ -1,0 +1,5 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs moved since 0.1.0 and have no unreleased record:
+  models/b.py
+failed

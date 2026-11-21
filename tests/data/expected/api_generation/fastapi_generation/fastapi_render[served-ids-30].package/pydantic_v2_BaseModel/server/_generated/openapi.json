@@ -1,0 +1,49 @@
+{
+ "openapi": "3.0.3",
+ "info": {
+  "title": "Component ids under 3.0",
+  "version": "1"
+ },
+ "paths": {
+  "/pets": {
+   "get": {
+    "operationId": "getPet",
+    "responses": {
+     "200": {
+      "description": "The pet.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Pet"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Pet": {
+    "type": "object",
+    "properties": {
+     "owner": {
+      "$ref": "#/components/schemas/Owner"
+     },
+     "name": {
+      "type": "string"
+     }
+    }
+   },
+   "Owner": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ }
+}

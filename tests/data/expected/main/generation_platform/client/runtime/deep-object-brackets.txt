@@ -1,0 +1,31 @@
+# deep-object-brackets pydantic_v2.BaseModel, msgspec.Struct
+  > GET https://api.example.com/v1/charges/ch_1?expand%5B%5D=a&expand%5B%5D=b&limit=3&created%5Bgt%5D=5
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  charge = None
+  > GET https://api.example.com/v1/charges/ch_1?created=5
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  created at = None
+  > GET https://api.example.com/v1/customers?expand%5B%5D=data.source
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  one item = None
+  > GET https://api.example.com/v1/customers
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  no items = None
+  > GET https://api.example.com/v1/customers?ids=cus_1
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  one id = None
+  > GET https://api.example.com/v1/customers?ids%5B%5D=cus_1&ids%5B%5D=cus_2
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  ids = None
+  > POST https://api.example.com/v1/customers
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 132] b'balance=5&email=a%40b.c&expand%5B%5D=data.source&expand%5B%5D=tax&metadata%5Bplan%5D=pro&tax_rates%5B%5D=txr_1&tax_rates%5B%5D=txr_2'
+  form = None
+  > POST https://api.example.com/v1/customers
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 10] b'tax_rates='
+  cleared = None
+  > POST https://api.example.com/v1/subscriptions
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 488] b'customer=cus_1&discounts%5B0%5D%5Bcoupon%5D=co_1&items%5B0%5D%5Bprice%5D=price_1&items%5B0%5D%5Bquantity%5D=2&items%5B0%5D%5Bmetadata%5D%5Bseat%5D=a&items%5B1%5D%5Bprice%5D=price_2&metadata%5Border%5D=o_1&off_session=true&payment_settings%5Bpayment_method_options%5D%5Bcard%5D%5Brequest_three_d_secure%5D=any&payment_settings%5Bpayment_method_types%5D%5B%5D=card&payment_settings%5Bpayment_method_types%5D%5B%5D=sepa_debit&payment_settings%5Bsave_default_payment_method%5D=on_subscription'
+  nested = None
+  > POST https://api.example.com/v1/subscriptions
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 79] b'customer=cus_1&discounts=&metadata=&payment_settings%5Bpayment_method_types%5D='
+  unset = None

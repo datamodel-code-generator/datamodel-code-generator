@@ -11,9 +11,8 @@ from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support
 
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import descend, string_key
-from datamodel_code_generator._json_pointer import reference_tokens
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
 from datamodel_code_generator._openapi_paths import (
     PATHS_PARAMETERS,
@@ -24,11 +23,14 @@ from datamodel_code_generator._openapi_paths import (
     path_item_operations,
 )
 from datamodel_code_generator._records import record
+from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, TypeUseRole, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.config import OpenAPIParserConfig  # noqa: TC001 - Public annotations support get_type_hints().
+from datamodel_code_generator.enums import OpenAPIScope
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._api_reference import (
     ApiModelResolver,
     canonical_ref,
@@ -46,6 +48,7 @@ from datamodel_code_generator.parser.openapi import (
     OpenAPIParser,
     ParameterLocation,
     ReferenceObject,
+    _DiscriminatorScan,
     _mapping,
     _missing_operation_id,
     _parameter_array,
@@ -72,7 +75,7 @@ SchemaRole: TypeAlias = TypeUseRole
 ApiObjectKind: TypeAlias = Literal["parameter", "request_body", "response", "media", "encoding", "header", "callback"]
 
 
-@record
+@record(public=True)
 class ApiDeclarationFrame:
     """Borrow declaration context only while the existing model engine processes it."""
 
@@ -151,6 +154,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     """Collect API schema declarations through the ordinary model engine."""
 
     _supports_api_scope: ClassVar[bool] = True
+    _discriminator_scan: ClassVar[_DiscriminatorScan] = _DiscriminatorScan(canonical_keys=True, string_refs=True)
     _model_resolver_factory = staticmethod(ApiModelResolver)
     model_resolver: ApiModelResolver
 
@@ -164,7 +168,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> dict[tuple[str, ...], Result]:
         if not results:
             return results
-        return super()._result_modules_postprocessor(results, empty_init=empty_init)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return super()._result_modules_postprocessor(results, empty_init=empty_init)
 
     def __init__(
         self,
@@ -186,7 +190,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._active_api_objects: set[SchemaLocation] = set()
         self._completed_api_objects: set[SchemaLocation] = set()
         # Parser._iter_source_uncached supports mappings; the legacy constructor annotation omits them.
-        super().__init__(  # pyright: ignore[reportUnknownMemberType]
+        super().__init__(
             source,  # type: ignore[arg-type]
             config=config,
             **options,
@@ -207,12 +211,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         stripped = replace_non_word(path_name, self.target_python_version).lstrip("_") or "root"
         return super()._get_model_name(stripped, method, suffix)
 
-    def _declared(self, value: object) -> SchemaLocation:
-        """Return the location L0 recorded for a JSON object of a loaded document; a value below it is ``.child()``."""
-        return cast("SchemaLocation", self._raw_location(value))
-
     @contextmanager
-    def _schema_frame(  # noqa: PLR0913
+    def _schema_frame(
         self,
         name: str,
         path: list[str],
@@ -275,6 +275,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         raw: YamlValue,
         path: list[str],
         validated_obj: JsonSchemaObject | None = None,
+        *,
+        indexed: bool = False,
     ) -> None:
         """Carry the actual raw-entry declaration through validation and parsing.
 
@@ -287,7 +289,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 raise SchemaParseError(msg, path=path)
             if validated_obj is None and isinstance(raw, bool):
                 validated_obj = _locate(self._validate_schema_object(raw, path), frame.declaration)
-            super()._parse_raw_or_validated_obj(name, raw, path, validated_obj)  # pyright: ignore[reportUnknownMemberType]
+            super()._parse_raw_or_validated_obj(name, raw, path, validated_obj, indexed=indexed)
         self._mark_processed(frame)
 
     def _mark_processed(self, frame: ApiDeclarationFrame) -> None:
@@ -306,18 +308,18 @@ class ApiOpenAPIParser(OpenAPIParser):
         if self.declaration_frames and self.model_resolver.join_path(
             (frame := self.declaration_frames[-1]).engine_path
         ) == self.model_resolver.join_path(tuple(path)):
-            super().parse_obj(frame.candidate_name, obj, path)  # pyright: ignore[reportUnknownMemberType]
+            super().parse_obj(frame.candidate_name, obj, path)
             self._mark_processed(frame)
             return
         ref = canonical_ref(ModelResolver.join_path(tuple(path)))
         if ref in self.reserved_refs.get(tuple(self.model_resolver.current_root), ()):
-            raw = self._api_documents.get(ref.partition("#")[0], self.raw_obj)
+            raw = self._api_documents.get(document_part(ref), self.raw_obj)
             tokens = self._checked_pointer(raw, ref)
             reserved_path = [*self.model_resolver.current_root, "#", *tokens]
             candidate = tokens[-1] if tokens else name
             declaration = self._declared(raw).child(*tokens)
             with self._schema_frame(candidate, reserved_path, raw, declaration=declaration):
-                super().parse_obj(candidate, obj, reserved_path)  # pyright: ignore[reportUnknownMemberType]
+                super().parse_obj(candidate, obj, reserved_path)
             self._processed_declarations.add(declaration)
             return
         msg = "API_DECLARATION_CONTEXT_REQUIRED"
@@ -383,10 +385,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         The reference resolves by its edge, or, without one, in ``holder``, the document that holds it, as L1 resolves
         it. None is a schema in no loaded document.
         """
-        with self._home_context(holder):
-            document, _, fragment = self._ref_key(ref).key.partition("#")
-        tokens = reference_tokens(fragment)
-        return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
+        return self._reference_location(self._api_documents, holder, ref)
 
     def _site_facts(self, location: SchemaLocation) -> SiteFacts:
         """Return the site of a schema object of a loaded document, read once, with its references resolved.
@@ -411,9 +410,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     @contextmanager
     def _api_object_context(self, target: _ApiObject) -> Generator[None, None, None]:
         """Borrow external declaration context and restore it even after failure."""
-        if target.document is self.raw_obj and target.declaration.document == "/".join(
-            self.model_resolver.current_root
-        ):
+        if target.document is self.raw_obj and target.declaration.document == self.model_resolver.current_document:
             yield
             return
         previous = self.raw_obj
@@ -438,7 +435,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         models = self._get_model_by_json_pointer(raw, tokens, ref)
         self._parse_raw_at(tokens[-1], models, [*path_parts, "#", *tokens], self._member_location(raw, *tokens))
 
-    def _parse_file(  # noqa: PLR0913
+    def _parse_file(
         self,
         raw: dict[str, YamlValue],
         obj_name: str,
@@ -455,7 +452,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         canonical = self.model_resolver.join_path(tuple(path))
         self._checked_pointer(raw, ref or canonical)
         with self._schema_frame(obj_name, path, raw, phase="file", declaration=self._declared(raw).child(*tokens)):
-            super()._parse_file(  # pyright: ignore[reportUnknownMemberType]
+            super()._parse_file(
                 raw,
                 obj_name,
                 path_parts,
@@ -528,37 +525,10 @@ class ApiOpenAPIParser(OpenAPIParser):
             callback = _mapping(value, path)
             self._walk_callback(callback, path, self._get_model_name(key, "", "Callback"), self._declared(callback))
 
-    def _collect_discriminator_document(self, raw: dict[str, YamlValue]) -> None:
-        """Use the same canonical keys for parent registrations and subtype edges."""
-        document = self.model_resolver.join_path(tuple(self.model_resolver.current_root))
-        if document in self._discriminator_documents:
-            return
-        self._discriminator_documents.add(document)
-        self._api_documents[document.partition("#")[0]] = raw
-        self._register_discriminator_schema("#", raw)
-        components = _mapping(raw.get("components", {}), [document, "components"])
-        schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
-        potential: list[tuple[str, dict[str, YamlValue], list[str]]] = []
-        for name, schema in self._named_components(schemas, [document, "components", "schemas"]).items():
-            local_ref = "#" + pointer_fragment(("components", "schemas", name))
-            match schema:
-                case bool():
-                    continue
-                case dict():
-                    self._register_discriminator_schema(local_ref, schema)
-                    if isinstance(all_of := schema.get("allOf"), list):
-                        refs = [
-                            ref
-                            for item in all_of
-                            if isinstance(item, dict) and isinstance(ref := item.get("$ref"), str)
-                        ]
-                        if refs:
-                            potential.append((local_ref, schema, refs))
-                case _:
-                    self._validate_member(
-                        schema, [document, "components", "schemas", name], self._member_location(schemas, name)
-                    )
-        self._link_discriminator_subtypes(document, potential)
+    @override
+    def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
+        """Hold a document whose discriminators are collected among the API documents, by its canonical path."""
+        self._api_documents[document_part(document)] = raw
 
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
@@ -589,17 +559,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 self._parse_raw_or_validated_obj(name, raw, path, validated)
             self._processed_declarations.add(declaration)
 
-    def _reference_use(self, raw: YamlValue, path: list[str]) -> tuple[str | None, JsonSchemaObject | None]:
-        """Return the reference ``raw`` is used as, if any, and ``raw`` validated when a reference has siblings.
-
-        A reference is used as the model it names unless a sibling keyword constrains it.
-        """
-        if not isinstance(raw, dict) or not isinstance(ref := raw.get("$ref"), str):
-            return None, None
-        validated = self._validate_schema_object(raw, path) if len(raw) > 1 else None
-        return (None if validated and validated.has_ref_with_schema_keywords else ref), validated
-
-    def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
+    def _acquire_item_schema(
         self,
         name: str,
         item: YamlValue,
@@ -619,7 +579,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         # The existing media helper owns this fresh projection, not the source mapping.
         array_schema = _mapping(projected, path)
         item_ref = "#" + pointer_fragment(declaration.tokens)
-        array_schema["items"] = {"$ref": self._derived_ref(item_ref, declaration, "itemSchema", item_ref)}
+        array_schema["items"] = {"$ref": _schema_refs.derived_ref(self, item_ref, declaration, "itemSchema", item_ref)}
         projected_path = self._media_schema_path(path, from_item_schema=True)
         with self._schema_frame(
             name,
@@ -688,7 +648,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         """Extend ordinary identity only for version-permitted nameless querystrings."""
         if isinstance(parameter, dict) and parameter.get("in") == "querystring" and "name" not in parameter:
             return "", "querystring"
-        return super()._parameter_key(parameter)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return super()._parameter_key(parameter)
 
     def _walk_content(
         self, name: str, target: _ApiObject, *, owner: MediaOwner, role: SchemaRole | None = None
@@ -873,7 +833,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     def dispose(self) -> None:
         """Release API-only borrowed documents and use types with the parser graph."""
         try:
-            super().dispose()  # pyright: ignore[reportUnknownMemberType]
+            super().dispose()
         finally:
             self.declaration_frames.clear()
             self.declaration_uses.clear()
@@ -1014,7 +974,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         use_site = self.declaration_frames[-1].root_use_site if self.declaration_frames else None
         self.ignored_declarations.append(ApiIgnoredDeclaration(declaration, use_site, reason, owner, media, wire_name))
 
-    def _ignores_content_type(  # noqa: PLR0913, PLR0917
+    def _ignores_content_type(  # noqa: PLR0917
         self,
         holder: dict[str, YamlValue],
         headers: dict[str, YamlValue],

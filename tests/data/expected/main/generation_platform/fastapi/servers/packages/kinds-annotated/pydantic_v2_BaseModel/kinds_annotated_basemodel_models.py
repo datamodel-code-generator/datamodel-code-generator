@@ -22,10 +22,14 @@ class Filter(BaseModel):
 ValuesGetQueryAmountParameter = TypeAliasType("ValuesGetQueryAmountParameter", Decimal)
 
 
-ValuesGetQueryAmountsParameter = TypeAliasType("ValuesGetQueryAmountsParameter", list[Decimal])
+ValuesGetQueryAmountsParameter = TypeAliasType(
+    "ValuesGetQueryAmountsParameter", list[Decimal]
+)
 
 
-ValuesGetHeaderXAmountsParameter = TypeAliasType("ValuesGetHeaderXAmountsParameter", list[Decimal])
+ValuesGetHeaderXAmountsParameter = TypeAliasType(
+    "ValuesGetHeaderXAmountsParameter", list[Decimal]
+)
 
 
 ValuesGetQueryStepParameter = TypeAliasType(
@@ -38,7 +42,9 @@ ValuesGetQueryStepsParameterItem = TypeAliasType(
 )
 
 
-ValuesGetQueryStepsParameter = TypeAliasType("ValuesGetQueryStepsParameter", list[ValuesGetQueryStepsParameterItem])
+ValuesGetQueryStepsParameter = TypeAliasType(
+    "ValuesGetQueryStepsParameter", list[ValuesGetQueryStepsParameterItem]
+)
 
 
 class ValuesGetQueryRatioParameter(Enum):
@@ -54,7 +60,9 @@ class ValuesGetQueryLevelParameter(IntEnum):
 ValuesGetQueryMixedParameter = TypeAliasType("ValuesGetQueryMixedParameter", int | str)
 
 
-ValuesGetQueryMixedsParameter = TypeAliasType("ValuesGetQueryMixedsParameter", list[int | str])
+ValuesGetQueryMixedsParameter = TypeAliasType(
+    "ValuesGetQueryMixedsParameter", list[int | str]
+)
 
 
 ValuesGetQueryCodesParameterItem = TypeAliasType(
@@ -62,7 +70,9 @@ ValuesGetQueryCodesParameterItem = TypeAliasType(
 )
 
 
-ValuesGetQueryCodesParameter = TypeAliasType("ValuesGetQueryCodesParameter", list[ValuesGetQueryCodesParameterItem])
+ValuesGetQueryCodesParameter = TypeAliasType(
+    "ValuesGetQueryCodesParameter", list[ValuesGetQueryCodesParameterItem]
+)
 
 
 ValuesGetQueryCountsParameterItem = TypeAliasType(
@@ -70,4 +80,6 @@ ValuesGetQueryCountsParameterItem = TypeAliasType(
 )
 
 
-ValuesGetQueryCountsParameter = TypeAliasType("ValuesGetQueryCountsParameter", list[ValuesGetQueryCountsParameterItem])
+ValuesGetQueryCountsParameter = TypeAliasType(
+    "ValuesGetQueryCountsParameter", list[ValuesGetQueryCountsParameterItem]
+)

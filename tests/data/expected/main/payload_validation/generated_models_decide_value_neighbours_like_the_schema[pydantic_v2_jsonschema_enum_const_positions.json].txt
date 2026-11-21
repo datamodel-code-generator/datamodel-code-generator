@@ -1,0 +1,20 @@
+[
+  "/allOfDefinition const null: invalid, model accepts",
+  "/allOfDefinition enum null: invalid, model accepts",
+  "/besideNull const null: invalid, model accepts",
+  "/besideNull enum null: invalid, model accepts",
+  "/branch const null: invalid, model accepts",
+  "/branch const true: invalid, model accepts",
+  "/branch enum null: invalid, model accepts",
+  "/branch enum true: invalid, model accepts",
+  "/definition const null: invalid, model accepts",
+  "/definition enum null: invalid, model accepts",
+  "/definitionSingle const null: invalid, model accepts",
+  "/definitionSingle enum null: invalid, model accepts",
+  "/property const null: invalid, model accepts",
+  "/property enum null: invalid, model accepts",
+  "/propertySingle const null: invalid, model accepts",
+  "/propertySingle enum null: invalid, model accepts",
+  "/refSibling const null: invalid, model accepts",
+  "/refSibling enum null: invalid, model accepts"
+]
