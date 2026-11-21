@@ -1,0 +1,28 @@
+ordinary run without a target: generate str, exit 0, target modules []
+primitive check: exit 2 Installed black doesn't support Python version 3.11.
+You have to install a newer black.
+Installed black version: 22.1.0
+empty check: exit 2 Installed black doesn't support Python version 3.11.
+You have to install a newer black.
+Installed black version: 22.1.0
+unselected check: exit 2 Installed black doesn't support Python version 3.11.
+You have to install a newer black.
+Installed black version: 22.1.0
+primitive generate() output: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+primitive generate() memory: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty generate() output: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty generate() memory: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+unselected generate() output: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+unselected generate() memory: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+empty sentinel: Error: `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`
+primitive generate() memory: Error: Installed black doesn't support Python version 3.11.
+You have to install a newer black.
+Installed black version: 22.1.0
+empty generate() memory: Error: Installed black doesn't support Python version 3.11.
+You have to install a newer black.
+Installed black version: 22.1.0
+unselected generate() memory: Error: Installed black doesn't support Python version 3.11.
+You have to install a newer black.
+Installed black version: 22.1.0
+imported []
+written []
