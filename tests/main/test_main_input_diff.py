@@ -111,7 +111,7 @@ def test_diff_against_identical_single_file_does_not_write_virtual_output(
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 

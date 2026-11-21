@@ -1879,7 +1879,6 @@ def test_fastapi_cli_shared_parent_runs(
     run_generate_and_assert(
         input_=Path("pets.yaml"),
         expected_error=Error,
-        expected_file=expected / f"{package}-generate.txt",
         **GENERATE_OPTIONS,
         output=Path("models.py"),
         generate_server=ServerType.FastAPI,

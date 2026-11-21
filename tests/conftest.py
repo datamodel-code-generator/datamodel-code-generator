@@ -2248,6 +2248,27 @@ def default_output_count(role: str = "") -> int:
     return count
 
 
+def _derived_output_role(role: str = "", name: str | None = None) -> str:
+    """Return the role of the running test's next output of a kind: ``.<name><role>`` for a named one.
+
+    An unnamed output gets ``role``, then ``.2<role>``, ``.3<role>``, ... in the order the test compares them.
+    """
+    if name is not None:
+        return f".{name}{role}"
+    count = default_output_count(role)
+    return role if count == 1 else f".{count}{role}"
+
+
+def _compare_tree(tree: dict[str, str], expected_dir: Path | None, pattern: str, name: str | None) -> None:
+    """Compare the files of a tree a pattern selects with ``expected_dir``, or as the test's derived whole tree."""
+    __tracebackhide__ = True
+    if expected_dir is not None:
+        _compare_expected(expected_dir, tree, pattern=pattern)
+        return
+    selected = {path: text for path, text in tree.items() if PurePosixPath(path).match(pattern)}
+    _compare_derived(selected, role=_derived_output_role(name=name), tree=True)
+
+
 def _compare_direct(expected_path: Path, value: object, pattern: str | None) -> None:
     __tracebackhide__ = True
     stored = read_unit(expected_path, pattern)
@@ -2325,21 +2346,24 @@ def assert_output(
     expected_path: Path | None = None,
     *,
     name: str | None = None,
+    suffix: str = ".txt",
 ) -> None:
     """Assert that output matches the expected output stored for it.
 
     Args:
-        output: The output string to compare (e.g., captured.out, parser.parse()), or a JSON value for a .json path.
+        output: The output string to compare (e.g., captured.out, parser.parse()), or a JSON value for a .json file.
         expected_path: Path to the expected file. Without it, pytest names the file after the test item.
         name: Distinguishes several outputs of one test that pass no path, e.g. ``name="warnings"``.
+        suffix: The suffix of the file pytest names, e.g. ``suffix=".py"``.
 
     Usage:
         assert_output(captured.out, EXPECTED_PATH / "output.py")
-        assert_output(parser.parse())
+        assert_output(parser.parse(), suffix=".py")
         assert_output(captured.err, name="warnings")
     """
     __tracebackhide__ = True
-    is_json_value = expected_path is not None and expected_path.suffix == ".json" and not isinstance(output, str)
+    stored_suffix = suffix if expected_path is None else expected_path.suffix
+    is_json_value = stored_suffix == ".json" and not isinstance(output, str)
     if not isinstance(output, str) and not is_json_value:  # pragma: no cover
         pytest.fail(f"Expected generated output to be str, got {type(output).__name__}")
     value = output if is_json_value else _normalize_line_endings(cast("str", output))
@@ -2351,7 +2375,7 @@ def assert_output(
     _compare_derived(
         value,
         role=f".{name}" if name else "",
-        suffix=".txt",
+        suffix=suffix,
         hint='otherwise name the second: assert_output(text, name="second")',
     )
 
@@ -2408,34 +2432,44 @@ def _output_tree(output_dir: Path, pattern: str, encoding: str = "utf-8") -> dic
 
 def assert_directory_content(
     output_dir: Path,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     pattern: str = "*.py",
     encoding: str = "utf-8",
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert all files in output_dir match expected files in expected_dir.
 
     Args:
         output_dir: Directory containing generated output files.
-        expected_dir: Directory containing expected files.
+        expected_dir: Directory containing expected files. Without it, pytest stores the selected files as a tree
+            named after the test item.
         pattern: Glob pattern for files to compare (default: "*.py").
         encoding: File encoding (default: "utf-8").
+        name: Distinguishes several trees of one test that pass no expected directory, e.g. ``name="client"``.
 
     Usage:
         assert_directory_content(tmp_path / "model", EXPECTED_PATH / "main_modular")
+        assert_directory_content(tmp_path / "model")
     """
     __tracebackhide__ = True
-    _compare_expected(expected_dir, _output_tree(output_dir, pattern, encoding), pattern=pattern)
+    _compare_tree(_output_tree(output_dir, pattern, encoding), expected_dir, pattern, name)
 
 
 def assert_exact_directory_content(
     output_dir: Path,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     pattern: str = "*.py",
     encoding: str = "utf-8",
+    *,
+    name: str | None = None,
 ) -> None:
-    """Assert all files in output_dir match expected_dir exactly, with no file missing or extra on either side."""
+    """Assert all files in output_dir match expected_dir exactly, with no file missing or extra on either side.
+
+    Without ``expected_dir`` the selected files are stored as the test's own tree, as `assert_directory_content` does.
+    """
     __tracebackhide__ = True
-    _compare_expected(expected_dir, _output_tree(output_dir, pattern, encoding), pattern=pattern)
+    _compare_tree(_output_tree(output_dir, pattern, encoding), expected_dir, pattern, name)
 
 
 def _get_full_body(result: object) -> str:
@@ -2447,15 +2481,18 @@ def _get_full_body(result: object) -> str:
 
 def assert_parser_results(
     results: dict,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     pattern: str = "*.py",
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert parser results match expected files.
 
     Args:
         results: Dictionary with string keys mapping to objects with .body attribute.
-        expected_dir: Directory containing expected files.
+        expected_dir: Directory containing expected files; without it, the test's own tree.
         pattern: Glob pattern for files to compare (default: "*.py").
+        name: Distinguishes several trees of one test that pass no expected directory.
 
     Usage:
         results = {delimiter.join(p): r for p, r in parser.parse().items()}
@@ -2463,43 +2500,50 @@ def assert_parser_results(
     """
     __tracebackhide__ = True
     tree = {Path(key).as_posix(): _normalize_line_endings(_get_full_body(result)) for key, result in results.items()}
-    _compare_expected(expected_dir, tree, pattern=pattern)
+    _compare_tree(tree, expected_dir, pattern, name)
 
 
 def assert_parser_modules(
     modules: dict,
-    expected_dir: Path,
+    expected_dir: Path | None = None,
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert parser modules match expected files.
 
     Args:
         modules: Dictionary with tuple keys mapping to objects with .body attribute.
-        expected_dir: Directory containing expected files.
+        expected_dir: Directory containing expected files; without it, the test's own tree.
+        name: Distinguishes several trees of one test that pass no expected directory.
 
     Usage:
         modules = parser.parse()
         assert_parser_modules(modules, EXPECTED_PATH / "parser_modular")
+        assert_parser_modules(modules)
     """
     __tracebackhide__ = True
-    assert_generated_modules_output(modules, expected_dir)
+    assert_generated_modules_output(modules, expected_dir, name=name)
 
 
 def assert_generated_modules_output(
     modules: Mapping[tuple[str, ...], Any],
-    expected_dir: Path,
+    expected_dir: Path | None = None,
     transform: Callable[[str], str] | None = None,
     pattern: str = "*.py",
+    *,
+    name: str | None = None,
 ) -> None:
     """Assert generate(output=None) module output matches expected files exactly.
 
-    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree.
+    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree. Without ``expected_dir``
+    the selected modules are stored as the test's own tree; ``name`` tells several such trees of one test apart.
     """
     __tracebackhide__ = True
     tree = {}
     for paths, result in modules.items():
         content = _get_full_body(result)
         tree[Path(*paths).as_posix()] = _normalize_line_endings(transform(content) if transform else content)
-    _compare_expected(expected_dir, tree, pattern=pattern)
+    _compare_tree(tree, expected_dir, pattern, name)
 
 
 def write_generated_modules(output_dir: Path, modules: dict[tuple[str, ...], Any]) -> None:
@@ -2526,20 +2570,24 @@ def assert_runtime_result_model(output_dir: Path) -> None:
             del sys.modules[name]
 
 
-def assert_runtime_import_package(output_dir: Path, expected_dir: Path) -> None:
+def assert_runtime_import_package(
+    output_dir: Path, expected_dir: Path | None = None, *, name: str | None = None
+) -> None:
     """Assert generated modular package matches expected files and imports correctly at runtime."""
-    assert_exact_directory_content(output_dir, expected_dir)
+    assert_exact_directory_content(output_dir, expected_dir, name=name)
     assert_runtime_result_model(output_dir)
 
 
 def assert_generated_runtime_package(
     output_dir: Path,
     modules: dict[tuple[str, ...], Any],
-    expected_dir: Path,
+    expected_dir: Path | None = None,
+    *,
+    name: str | None = None,
 ) -> None:
     """Write parser-generated modules, compare the package tree, and verify runtime imports."""
     write_generated_modules(output_dir, modules)
-    assert_runtime_import_package(output_dir, expected_dir)
+    assert_runtime_import_package(output_dir, expected_dir, name=name)
 
 
 def assert_error_message(

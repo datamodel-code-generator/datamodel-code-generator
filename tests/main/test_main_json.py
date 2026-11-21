@@ -168,8 +168,6 @@ def test_main_http_json(mock_httpx_get: HttpxGetMockFactory, output_file: Path) 
         url="https://example.com/pet.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
-        expected_file="general.py",
         transform=lambda s: s.replace(
             "#   filename:  https://example.com/pet.json",
             "#   filename:  pet.json",
