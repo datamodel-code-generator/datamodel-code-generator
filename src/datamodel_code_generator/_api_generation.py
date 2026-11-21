@@ -74,7 +74,7 @@ from datamodel_code_generator._target_documents import (
     shown,
 )
 from datamodel_code_generator._target_naming import fold_key
-from datamodel_code_generator.enums import InputFileType, OpenAPIScope
+from datamodel_code_generator.enums import DataModelType, InputFileType, OpenAPIScope
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -94,7 +94,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
-    from datamodel_code_generator.enums import DataModelType, TargetPydanticVersion
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 _PYTHON_MINIMUM = (3, 11)
@@ -246,7 +246,6 @@ def prepare_target(
     resolved settings.
     """
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
-    from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     if model_config.output is None:
         raise config_error(
@@ -325,8 +324,6 @@ def implied_conflict(config: Any, generator: TargetGenerator) -> None:
 
     The command line's config names the settings its target implied in its record (stage `implied-target`).
     """
-    from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
-
     backend = DataModelType(config.output_model_type).value
     if "use_missing_sentinel" in config._run_options.staged_by("implied-target"):  # noqa: SLF001
         _check_pydantic_target(generator, backend, config.target_pydantic_version, sentinel=True, implied=True)

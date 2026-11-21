@@ -9,6 +9,7 @@ names, and recommends the best one; without a mode, schemas small enough are com
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
 from functools import partial
@@ -27,7 +28,7 @@ from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import InputFileType, _openapi_scopes_or_default
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Sequence
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
@@ -429,8 +430,6 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
 
 def _vocabulary_document(analysed: _Input, trial_input: TrialInput) -> Mapping[str, Any] | None:
     """Return the document whose words class names may take: the analysed schema, or the input loaded as data."""
-    from collections.abc import Mapping  # noqa: PLC0415
-
     if analysed.document is not None:
         return analysed.document
     if isinstance(trial_input, Mapping):

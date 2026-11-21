@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
 
 from pydantic import BaseModel
+from pydantic.json_schema import GenerateJsonSchema
 from typing_extensions import Self, Sentinel, TypeIs
 
 from datamodel_code_generator._all_or_none import all_or_none
@@ -75,8 +76,6 @@ from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Iterator, Sequence
-
-    from pydantic.json_schema import GenerateJsonSchema
 
     from datamodel_code_generator.enums import DataModelType
     from datamodel_code_generator.input_model_result import LoadedInputModelSchema
@@ -416,7 +415,6 @@ def _get_input_model_json_schema_class(
     use_standard_schema: bool = False,
 ) -> type[GenerateJsonSchema]:
     """Get the InputModelJsonSchema class lazily."""
-    from pydantic.json_schema import GenerateJsonSchema  # noqa: PLC0415
 
     class InputModelJsonSchema(GenerateJsonSchema):
         """Custom schema generator that handles ALL unserializable types."""

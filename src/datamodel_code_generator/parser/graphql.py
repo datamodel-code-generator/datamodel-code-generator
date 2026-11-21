@@ -34,6 +34,7 @@ from datamodel_code_generator.parser.base import (
     DataType,
     Parser,
 )
+from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
 from datamodel_code_generator.reference import ModelType, Reference
 from datamodel_code_generator.types import Types, build_union
 
@@ -53,7 +54,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import GraphQLParserConfig
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.model._decisions.enum_kind import EnumKind
-    from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
 
 # graphql-core >=3.2.7 removed TypeResolvers in favor of TypeFields.kind.
 # Normalize to a single callable for resolving type kinds.
@@ -103,8 +103,6 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
     @override
     def schema_features(self) -> JsonSchemaFeatures:
         """Get schema features for GraphQL (uses default JSON Schema features)."""
-        from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures  # noqa: PLC0415
-
         return JsonSchemaFeatures.from_version(JsonSchemaVersion.Draft202012)
 
     # all processed graphql objects
