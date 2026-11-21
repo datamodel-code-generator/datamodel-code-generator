@@ -20,6 +20,7 @@ from tests.conftest import assert_output
 from tests.units import REFS_HEADER
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
 GIT = ["git", "-c", "user.name=CI", "-c", "user.email=ci@example.com", "-c", "commit.gpgsign=false"]
@@ -79,7 +80,7 @@ def _commit(repository: Path, message: str) -> None:
         subprocess.run([*GIT, *command], cwd=repository, check=True)
 
 
-def _repository(tmp_path: Path, spec: dict[str, Any]) -> Path:
+def _repository(tmp_path: Path, spec: Mapping[str, Any]) -> Path:
     """Commit the release and tag it, commit the base on branch `base`, then the head on branch `fix-the-thing`.
 
     The `steps` are commits of main between the release and the base. With `origin`, origin/main points at the base,
@@ -873,7 +874,7 @@ WEAKENED = {
     )
 }
 """A change of the check that makes it pass every change (the head's own copy then passes the undeclared output)."""
-CI_CASES: dict[str, dict[str, Any]] = {
+CI_CASES: dict[str, Mapping[str, Mapping[str, str | None] | Sequence[str] | str]] = {
     "the verdicts file is missing where the gate wrote none": {
         "release": CHECK_TREE,
         "head": UNDECLARED_B | _record("same-output", ["models/b.py"]),
