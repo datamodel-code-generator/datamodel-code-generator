@@ -11,16 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "command-output": (
-        "embedded-source:tests/data/expected/main/generation_platform/client/cli/check-edited.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check-model-readme.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check-model.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check/foreign.json",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check/foreign.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/json/models-in-package.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/json/modular.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/json/package-in-models.txt",
-    ),
+    "command-output": (),
     "fixture-inputs": (
         "assertion-helper:tests/data/python/input_model/same_schema_a.py",
         "assertion-helper:tests/data/python/input_model/same_schema_b.py",
@@ -123,10 +114,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "embedded-sources": (
         "embedded-source:tests/data/expected/main/generation_platform/client/fields-shared-refs.txt",
         "embedded-source:tests/data/expected/main/generation_platform/client/input-cycle-reference.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/format.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/include-paths.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/layout-embedded.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/path-items.txt",
     ),
 }
 LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {

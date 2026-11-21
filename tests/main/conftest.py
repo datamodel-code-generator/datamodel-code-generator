@@ -368,7 +368,6 @@ def _assert_captured_output(
     *,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
-    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
@@ -378,7 +377,6 @@ def _assert_captured_output(
     if not any((
         expected_stdout_path is not None,
         expected_stderr is not None,
-        expected_stderr_path is not None,
         expected_stderr_contains is not None,
         assert_no_stderr,
         derived_stdout,
@@ -395,8 +393,6 @@ def _assert_captured_output(
         )
     if expected_stderr is not None and captured.err != expected_stderr:  # pragma: no cover
         pytest.fail(f"Expected stderr:\n{expected_stderr}\n\nActual stderr:\n{captured.err}")
-    if expected_stderr_path is not None:
-        assert_output(captured.err, expected_stderr_path)
     if expected_stderr_contains is not None and expected_stderr_contains not in captured.err:  # pragma: no cover
         pytest.fail(f"Expected stderr to contain: {expected_stderr_contains!r}\n\nActual stderr:\n{captured.err}")
     if assert_no_stderr and captured.err:  # pragma: no cover
@@ -735,7 +731,6 @@ def run_main_with_args(
     capsys: pytest.CaptureFixture[str] | None = None,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
-    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
@@ -752,7 +747,6 @@ def run_main_with_args(
         capsys: pytest capsys fixture for capturing output assertions
         expected_stdout_path: Path to file with expected stdout content
         expected_stderr: Exact expected stderr
-        expected_stderr_path: Path to file with expected stderr content
         expected_stderr_contains: Expected stderr substring
         assert_no_stderr: Assert stderr is empty
         derived_stdout: Compare stdout with the output pytest stores for the test
@@ -784,7 +778,6 @@ def run_main_with_args(
         capsys,
         expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
-        expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
         derived_stdout=derived_stdout,
@@ -1048,7 +1041,6 @@ def run_main_and_assert(  # noqa: PLR0912
     capsys: pytest.CaptureFixture[str] | None = None,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
-    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
@@ -1103,7 +1095,6 @@ def run_main_and_assert(  # noqa: PLR0912
         capsys: pytest capsys fixture
         expected_stdout_path: Compare stdout with file
         expected_stderr: Assert exact stderr match
-        expected_stderr_path: Compare stderr with file
         expected_stderr_contains: Assert stderr contains string
         assert_no_stderr: Assert stderr is empty
         derived_stdout: Compare stdout with the output pytest stores for the test, also when output_path is set
@@ -1211,7 +1202,6 @@ def run_main_and_assert(  # noqa: PLR0912
         capsys,
         expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
-        expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
         derived_stdout=(compare_stdout and capsys is not None) or (derived_stdout and stdout is None),
