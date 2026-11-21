@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -17,7 +17,9 @@ from tests.api_generation.support.client_typing import (
 from tests.conftest import assert_output
 from tests.main.conftest import run_main_with_args
 
-EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "client" / "typing"
+if TYPE_CHECKING:
+    from pathlib import Path
+
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
 
 
@@ -27,7 +29,7 @@ def test_client_typing_no_success(backend: DataModelType, case: str, tmp_path: P
     """Type-check error-only methods in both signature styles, and the codecs of a package with no model classes."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(client_typing_report(tmp_path, backend, case, ()), EXPECTED / "no-success.txt")
+    assert_output(client_typing_report(tmp_path, backend, case, ()))
 
 
 @pytest.mark.parametrize(
@@ -55,8 +57,7 @@ def test_client_typing_printed_dependencies(profile: str, tmp_path: Path, capsys
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     run_main_with_args(capability_arguments(profile, tmp_path / "project"))
     assert_output(
-        client_dependency_typing_report(tmp_path / "project", tmp_path / "environment", capsys.readouterr().err),
-        EXPECTED / "dependencies" / f"{profile}.txt",
+        client_dependency_typing_report(tmp_path / "project", tmp_path / "environment", capsys.readouterr().err)
     )
 
 
@@ -78,10 +79,7 @@ def test_client_typing(backend: DataModelType, case: str, tmp_path: Path) -> Non
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    suffix = case.removeprefix("pets-protocols")
-    assert_output(
-        client_typing_report(tmp_path, backend, case), EXPECTED / f"{backend.value.replace('.', '-')}{suffix}.txt"
-    )
+    assert_output(client_typing_report(tmp_path, backend, case))
 
 
 @pytest.mark.parametrize("case", ["fields-both", "fields-unpack"])
@@ -99,11 +97,7 @@ def test_client_typing_fields(backend: DataModelType, case: str, tmp_path: Path)
     """Check calls that give a body's fields: each media's overloads, the witnesses of an optional body, and views."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    suffix = case.removeprefix("fields").removeprefix("-both")
-    assert_output(
-        client_typing_report(tmp_path, backend, case, ("fields",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-fields{suffix}.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, case, ("fields",)))
 
 
 @pytest.mark.parametrize(
@@ -120,10 +114,7 @@ def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> Non
     """Check pagination helpers: typed items and pages, sync and asyncio pagers, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "pagination", ("pagination",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-pagination.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "pagination", ("pagination",)))
 
 
 @pytest.mark.parametrize(
@@ -140,10 +131,7 @@ def test_client_typing_polling(backend: DataModelType, tmp_path: Path) -> None:
     """Check polling helpers: typed results and polls, sync and asyncio handles, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "polling", ("polling",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-polling.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "polling", ("polling",)))
 
 
 @pytest.mark.parametrize(
@@ -160,10 +148,7 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
     """Check upload helpers: typed results, sync and asyncio handles and sources, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "uploads", ("uploads",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-uploads.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "uploads", ("uploads",)))
 
 
 @pytest.mark.parametrize(
@@ -195,10 +180,7 @@ def test_client_typing_package(case: str, tmp_path: Path) -> None:
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, ()),
-        EXPECTED / f"pydantic_v2-BaseModel-{case}.txt",
-    )
+    assert_output(client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, ()))
 
 
 @pytest.mark.parametrize(
@@ -215,10 +197,7 @@ def test_client_typing_webhooks(backend: DataModelType, tmp_path: Path) -> None:
     """Check webhook helpers: event and key types in both modes, replay stores, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "webhooks-typing", ("webhook_helpers",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-webhooks.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "webhooks-typing", ("webhook_helpers",)))
 
 
 def test_client_typing_public_keys(tmp_path: Path) -> None:
@@ -228,8 +207,7 @@ def test_client_typing_public_keys(tmp_path: Path) -> None:
     assert_output(
         client_typing_report(
             tmp_path, DataModelType.PydanticV2BaseModel, "webhooks-public-keys", ("public_key_helpers",)
-        ),
-        EXPECTED / "pydantic_v2-BaseModel-public-keys.txt",
+        )
     )
 
 
@@ -238,8 +216,7 @@ def test_client_typing_adapters(tmp_path: Path) -> None:
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "webhooks-adapters", ("adapter_helpers",)),
-        EXPECTED / "pydantic_v2-BaseModel-adapters.txt",
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "webhooks-adapters", ("adapter_helpers",))
     )
 
 
@@ -257,10 +234,7 @@ def test_client_typing_caches(backend: DataModelType, tmp_path: Path) -> None:
     """Check cache helpers: typed results in both modes, stores, invalidation, mutations, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "caching-typing", ("cache_helpers",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-caches.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "caching-typing", ("cache_helpers",)))
 
 
 @pytest.mark.parametrize(
@@ -277,10 +251,7 @@ def test_client_typing_streams(backend: DataModelType, tmp_path: Path) -> None:
     """Check SSE helpers: typed events and data, unknown events, sync and asyncio streams, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "streams", ("streams",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-streams.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "streams", ("streams",)))
 
 
 def test_client_typing_stream_resume(tmp_path: Path) -> None:
@@ -288,8 +259,7 @@ def test_client_typing_stream_resume(tmp_path: Path) -> None:
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "stream-resume", ("stream_resume",)),
-        EXPECTED / "pydantic_v2-BaseModel-stream-resume.txt",
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "stream-resume", ("stream_resume",))
     )
 
 
@@ -307,10 +277,7 @@ def test_client_typing_ndjson(backend: DataModelType, tmp_path: Path) -> None:
     """Check NDJSON helpers: typed records and data, unknown records, sync and asyncio streams, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "ndjson", ("ndjson",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-ndjson.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "ndjson", ("ndjson",)))
 
 
 @pytest.mark.parametrize(
@@ -324,20 +291,14 @@ def test_client_typing_sockets(backend: DataModelType, tmp_path: Path) -> None:
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "sockets", ("sockets",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-sockets.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "sockets", ("sockets",)))
 
 
 def test_client_typing_missing(tmp_path: Path) -> None:
     """Check a package of Pydantic dataclasses whose unset optional members hold MISSING, and the misuses of them."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2Dataclass, "missing-sentinel", ("missing",)),
-        EXPECTED / "pydantic_v2-dataclass-missing.txt",
-    )
+    assert_output(client_typing_report(tmp_path, DataModelType.PydanticV2Dataclass, "missing-sentinel", ("missing",)))
 
 
 @pytest.mark.parametrize("backend", [DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass])
@@ -348,30 +309,21 @@ def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "unions", ("unions",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-unions.txt",
-    )
+    assert_output(client_typing_report(tmp_path, backend, "unions", ("unions",)))
 
 
 def test_client_typing_compression(tmp_path: Path) -> None:
     """Check request coding settings on client, view, call, and helper options."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "compression", ("compression",)),
-        EXPECTED / "pydantic_v2-BaseModel-compression.txt",
-    )
+    assert_output(client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "compression", ("compression",)))
 
 
 def test_client_typing_auth(tmp_path: Path) -> None:
     """Check constructor credentials of each scheme kind, OAuth providers, and native Auth settings."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "auth", ("auth",)),
-        EXPECTED / "pydantic_v2-BaseModel-auth.txt",
-    )
+    assert_output(client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "auth", ("auth",)))
 
 
 @pytest.mark.parametrize("case", ["media", "pets"])
@@ -382,8 +334,7 @@ def test_client_typing_media_ranges(case: str, tmp_path: Path) -> None:
     sample = "media_ranges" if case == "media" else "media_ranges_only"
     target = "pets/resources/files" if case == "media" else "pets/resources/pets/photos"
     assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, (sample,), package_targets=(target,)),
-        EXPECTED / f"pydantic_v2-BaseModel-{case}-ranges.txt",
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, (sample,), package_targets=(target,))
     )
 
 
@@ -391,4 +342,4 @@ def test_client_typing_regenerated_user_code(tmp_path: Path) -> None:
     """Check user code clean against one API version, then each checker's errors where the next version breaks it."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(client_regenerated_typing_report(tmp_path), EXPECTED / "regenerated-user-code.txt")
+    assert_output(client_regenerated_typing_report(tmp_path))

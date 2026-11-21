@@ -3,4 +3,4 @@
 [test_fastapi_install]
 	api_generation/fastapi_install/fastapi_install.notice.txt	= api_generation/fastapi_cli/pydantic_dependency[target-2.14].txt
 	api_generation/fastapi_install/fastapi_install.py	= api_generation/fastapi_cli/pydantic_dependency[target-2.14-arguments1].py
-	main/generation_platform/fastapi/install/served.txt
+	api_generation/fastapi_install/fastapi_install.txt

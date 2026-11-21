@@ -118,7 +118,7 @@ def test_client_cli_quotes_text_alike_whatever_python_runs(tmp_path: Path, monke
         *OPTIONS,
         *CLIENT,
     ])
-    assert_output((tmp_path / "client" / "_operations.py").read_text(encoding="utf-8"))
+    assert_output((tmp_path / "client" / "_operations.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_client_cli_generate(
@@ -1598,7 +1598,7 @@ the option says. Other input types refuse the option.""",
         *CLIENT,
         *("--client-asyncapi-perspective", "client"),
     ],
-    golden_output="api_generation/client_cli/asyncapi_perspective.txt",
+    golden_output="api_generation/client_cli/asyncapi_perspective.plans.py",
 )
 def test_client_cli_asyncapi_perspective(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Swap the messages a client of an AsyncAPI document sends and receives under the client perspective."""
@@ -1610,7 +1610,9 @@ def test_client_cli_asyncapi_perspective(tmp_path: Path, monkeypatch: pytest.Mon
         extra_args=[*ASYNCAPI_OPTIONS, *CLIENT, "--client-asyncapi-perspective", "client"],
         copy_files=[(SOURCE / "asyncapi-market-v3.yaml", tmp_path / "asyncapi.yaml")],
     )
-    assert_output((tmp_path / "client" / "protocols" / "_plans.py").read_text(encoding="utf-8"))
+    assert_output(
+        (tmp_path / "client" / "protocols" / "_plans.py").read_text(encoding="utf-8"), name="plans", suffix=".py"
+    )
 
 
 @pytest.mark.parametrize(

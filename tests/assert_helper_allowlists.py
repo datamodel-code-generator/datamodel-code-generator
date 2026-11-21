@@ -11,7 +11,17 @@ from __future__ import annotations
 from pathlib import Path
 
 JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "command-output": (),
+    "command-output": (
+        "embedded-source:tests/data/expected/api_generation/client_cli/generate.stdout.txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/check_outputs[json-foreign].stdout.json",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/check_outputs[text-foreign].stdout.txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/config_values[loaded].txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/generate.2.stdout.txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/generate.stdout.txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/generation_json[absolute].payload.txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/generation_json[models-in-package].payload.txt",
+        "embedded-source:tests/data/expected/api_generation/fastapi_cli/generation_json[package-in-models].payload.txt",
+    ),
     "fixture-inputs": (
         "assertion-helper:tests/data/python/input_model/same_schema_a.py",
         "assertion-helper:tests/data/python/input_model/same_schema_b.py",
@@ -111,7 +121,14 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "abnormal-e2e": (
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._publication",
     ),
-    "embedded-sources": ("embedded-source:tests/data/expected/main/generation_platform/client/fields-shared-refs.txt",),
+    "embedded-sources": (
+        "embedded-source:tests/data/expected/api_generation/client_fields_shared_refs/client_fields_shared_refs.txt",
+        "embedded-source:tests/data/expected/api_generation/client_generation/client_input[input-cycle-reference].txt",
+        "embedded-source:tests/data/expected/api_generation/target_generation/target_render[include-paths].txt",
+        "embedded-source:tests/data/expected/api_generation/target_generation/target_render[layout-embedded].txt",
+        "embedded-source:tests/data/expected/api_generation/target_generation/target_render[path-items].txt",
+        "embedded-source:tests/data/expected/api_generation/target_generation/target_render_timestamp.txt",
+    ),
 }
 LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "pre-platform": (
