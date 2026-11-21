@@ -7,6 +7,7 @@
 [test_an_output_outside_the_directory_is_a_difference_of_output]
 	compare_release_script/an_output_outside_the_directory_is_a_difference_of_output.txt
 [test_cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base]
+a catalog cut short	compare_release_script/cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base[a catalog cut short].txt
 a catalog newer than the base	compare_release_script/cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base[a catalog newer than the base].txt
 a release base	compare_release_script/cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base[a release base].txt
 a usable catalog	compare_release_script/cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base[a usable catalog].txt
@@ -29,6 +30,9 @@ an arm of a line a hunk adds	compare_release_script/cell_catalog_places_a_sub_li
 an arm on an unchanged line	compare_release_script/cell_catalog_places_a_sub_line_key_where_its_text_holds[an arm on an unchanged line].txt
 an arm over two lines, one replaced	compare_release_script/cell_catalog_places_a_sub_line_key_where_its_text_holds[an arm over two lines, one replaced].txt
 an arm reaching past it	compare_release_script/cell_catalog_places_a_sub_line_key_where_its_text_holds[an arm reaching past it].txt
+the second of two lines replaced together	compare_release_script/cell_catalog_places_a_sub_line_key_where_its_text_holds[the second of two lines replaced together].txt
+[test_cell_catalog_startup_needs_both_kinds_of_keys]
+	compare_release_script/cell_catalog_startup_needs_both_kinds_of_keys.txt
 [test_cell_sets_are_stored_by_the_shorter_side]
 every cell	compare_release_script/cell_sets_are_stored_by_the_shorter_side[every cell].txt
 fewer than half	compare_release_script/cell_sets_are_stored_by_the_shorter_side[fewer than half].txt

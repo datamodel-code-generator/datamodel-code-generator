@@ -18,6 +18,7 @@ msgspec-meta	behaviour_diff_script/annotation_text_of_other_metadata[msgspec-met
 unresolvable-call	behaviour_diff_script/annotation_text_of_other_metadata[unresolvable-call].txt
 unresolvable-metadata	behaviour_diff_script/annotation_text_of_other_metadata[unresolvable-metadata].txt
 [test_base_gate_gets_no_head_only_option]
+a checkout named like an option after --	behaviour_diff_script/base_gate_gets_no_head_only_option[a checkout named like an option after --].txt
 joined values	behaviour_diff_script/base_gate_gets_no_head_only_option[joined values].txt
 neither	behaviour_diff_script/base_gate_gets_no_head_only_option[neither].txt
 unique prefixes	behaviour_diff_script/base_gate_gets_no_head_only_option[unique prefixes].txt
@@ -40,6 +41,8 @@ valid	behaviour_diff_script/base_skip_problems[valid].txt	= main/generation_plat
 versions	behaviour_diff_script/base_skip_problems[versions].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 [test_candidate_payload_path_does_not_import_the_guide_builder]
 	behaviour_diff_script/candidate_payload_path_does_not_import_the_guide_builder.txt
+[test_catalog_refuses_an_interpreter_without_sys_monitoring]
+	behaviour_diff_script/catalog_refuses_an_interpreter_without_sys_monitoring.txt
 [test_cells_report]
 fail: an uncovered differing cell	behaviour_diff_script/cells_report[fail_ an uncovered differing cell].txt
 pass: decided-change inside aspects and match	behaviour_diff_script/cells_report[pass_ decided-change inside aspects and match].txt

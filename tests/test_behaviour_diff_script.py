@@ -1992,12 +1992,21 @@ def test_identity_with_a_pick(case: str, tmp_path: Path, monkeypatch: pytest.Mon
         for line in stdout.getvalue().splitlines()
         if line.startswith(("pick: cell", "pick: no", "evidence: complete", "evidence: incomplete"))
     ]
-    verdict = (
-        "complete" if code == 0 and "evidence: complete" in lines else "incomplete" if code == 1 else f"exit={code}"
-    )
+    complete = code == 0 and "evidence: complete" in lines
+    incomplete = code == 1 and any(line.startswith("evidence: incomplete") for line in lines)
+    verdict = "complete" if complete else "incomplete" if incomplete else f"exit={code}"
     assert verdict == wanted, stdout.getvalue()
     text = "\n".join([f"exit={code}", *lines, *sorted(row["input"] for row in rows)]) + "\n"
     assert_output(text.replace(commit[:12], "<sha>").replace(str(tmp_path), "TMP"))
+
+
+@needs("no-sys-monitoring")
+def test_catalog_refuses_an_interpreter_without_sys_monitoring(tmp_path: Path) -> None:
+    """`catalog` refuses Python 3.11, which records nothing a cell ran, before any worker: no catalog of no keys."""
+    out = tmp_path / "catalog.json.gz"
+    with pytest.raises(SystemExit) as refused:
+        behaviour_diff.main(["catalog", str(out), "--select", "no/such/input", "--cache-dir", str(tmp_path / "cache")])
+    assert_output(f"{refused.value}\nwritten: {out.exists()}\n")
 
 
 BASE_ARGUMENT_CASES = {
@@ -2005,6 +2014,7 @@ BASE_ARGUMENT_CASES = {
     "joined values": ["gate", "--verdicts=v.json", "--pick=c.json.gz", "-j", "2"],
     "unique prefixes": ["gate", "--verd", "v.json", "--pi", "c.json.gz", "--projects", "p.json"],
     "neither": ["gate", "v1", "--identity"],
+    "a checkout named like an option after --": ["gate", "v1", "--pick", "c.json.gz", "--check", "--", "--pick"],
 }
 """Arguments of a head's gate: its base's gate gets them without the head-only options."""
 

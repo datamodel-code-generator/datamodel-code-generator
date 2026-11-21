@@ -1949,8 +1949,13 @@ def test_file_map_places_a_side_line_on_the_catalog(case: str) -> None:
     assert_output("".join(f"{line} -> {found.lines(line)}\n" for line in lines))
 
 
-REPLACED = ((3, "    return a if c else b", "    return a if c else b.lower()"),)
-"""Line 3 of a side replaces line 3 of the catalog, one for one: their texts agree up to byte 24."""
+REPLACED = (
+    (3, "    return a if c else b", "    return a if c else b.lower()"),
+    (30, "    a = first", "    a = second"),
+    (31, "    return b", "    return b or a"),
+)
+"""Line 3 of a side replaces line 3 of the catalog, one for one (their texts agree up to byte 24); lines 30 and 31
+replace two catalog lines together (`return b` is unchanged up to byte 12)."""
 SUB_LINE_KEY_CASES = {
     "a start on an unchanged line": ((), ("start", "m.py", "7:8 f.<locals>.<lambda>")),
     "a start below a pure insertion": (((2, 0, 3, 2),), ("start", "m.py", "7:8 f")),
@@ -1961,6 +1966,7 @@ SUB_LINE_KEY_CASES = {
     "an arm over two lines, one replaced": (((3, 1, 3, 1),), ("arm", "m.py", "2:4-3:9 CALL")),
     "an arm of a line a hunk adds": (((3, 1, 3, 2),), ("arm", "m.py", "4:4-4:9 LOAD_FAST")),
     "a file the catalog lacks": (None, ("arm", "m.py", "1:0-1:1 LOAD_NAME")),
+    "the second of two lines replaced together": (((20, 2, 30, 2),), ("arm", "m.py", "31:11-31:12 LOAD_FAST")),
 }
 """Sub-line keys of a side, with the hunks of their file between the catalog and the side (None: a new file)."""
 
@@ -2039,8 +2045,10 @@ LOADED_CASES = {
     "no catalog file": (None, "second", 2),
     "another format": ("first", "second", 1),
     "a catalog newer than the base": ("second", "first", 2),
+    "a catalog cut short": ("first", "second", 0),
 }
-"""The catalog revision (None: no file), the base (None: a release) and the catalog format of a gate's `--pick`."""
+"""The catalog revision (None: no file), the base (None: a release) and the catalog format (0: the file is cut short)
+of a gate's `--pick`."""
 
 
 @pytest.mark.parametrize("case", sorted(LOADED_CASES))
@@ -2059,7 +2067,9 @@ def test_cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base(case:
     if catalog_name is not None:
         cells = [CatalogCell("default", "a", "jsonschema", "pydantic_v2.BaseModel")]
         Catalog.of(commits[catalog_name], cells, [set()], set()).write(path)
-        if form != 2:
+        if not form:
+            path.write_bytes(path.read_bytes()[:20])
+        elif form != 2:
             with gzip.open(path, "rt", encoding="utf-8") as file:
                 data = json.load(file) | {"format": form}
             with gzip.open(path, "wt", encoding="utf-8") as file:
@@ -2069,6 +2079,46 @@ def test_cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base(case:
     for name, commit in commits.items():
         text = text.replace(commit, f"<{name}>").replace(commit[:12], f"<{name}>")
     assert_output(text.replace(str(tmp_path), "TMP"))
+
+
+RAISING_HELPER = "def helper(value):\n    number = int(value)\n    return number + 1\n"
+"""A helper whose call at import raised before its last line: startup ran its start, not that line."""
+
+
+@needs("branch-events")
+def test_cell_catalog_startup_needs_both_kinds_of_keys(tmp_path: Path) -> None:
+    """A probe narrowed by sub-line keys is met at startup only where its line keys are too, else by its cells.
+
+    The CLI's import called `helper`, which raised at `int`: startup holds its start key and line 2, not line 3. Cell
+    `a` runs line 3, cell `b` stops at line 2 like the import; the probe of line 3 is cell `a`'s, not startup's.
+    """
+    import dis
+
+    from scripts._cell_catalog import Catalog, CatalogCell, Sources, pick
+
+    package = tmp_path / "src" / compare_release.PACKAGE
+    package.mkdir(parents=True)
+    (package / "m.py").write_text(RAISING_HELPER, encoding="utf-8")
+    for args in (
+        ["init", "-q"],
+        ["add", "-A", "."],
+        ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "m"],
+    ):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+    commit = compare_release.git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+    helper = next(item for item in compile(RAISING_HELPER, "m.py", "exec").co_consts if hasattr(item, "co_code"))
+    started = ("start", "m.py", compare_release.start_place(helper))
+    cells = [CatalogCell("default", name, "jsonschema", "pydantic_v2.BaseModel") for name in ("a", "b")]
+    ran = [{("line", "m.py", 3), started}, {("line", "m.py", 2), started}]
+    version = "{}.{}".format(*sys.version_info[:2])
+    catalog = Catalog.of(commit, cells, ran, {("line", "m.py", 2), started}, version)
+    offsets = [item.offset for item in dis.get_instructions(helper) if item.positions.lineno == 3][:1]
+    code = ["m.py", helper.co_qualname, helper.co_firstlineno, *change_units.first_position(helper)]
+    probe = {"kind": "instr", "code": code, "offsets": offsets, "where": "3:11-3:21"}
+    units = [{"side": "base", "path": "m.py", "qualname": "helper", "probes": [probe]}]
+    sources = Sources({"base": tmp_path / "src", "head": tmp_path / "src"}, tmp_path, commit)
+    chosen = pick(catalog, units, {"base": {}, "head": {}}, 2, sources)
+    assert_output("\n".join(chosen.lines()).replace(commit[:12], "<catalog>") + "\n")
 
 
 def test_cell_catalog_pick_refuses_a_release_base(tmp_path: Path) -> None:

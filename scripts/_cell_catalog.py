@@ -275,19 +275,20 @@ class FileMap:
     def place(self, line: int, upto: int | None = None) -> int | None:
         """Return the catalog line of a side's line where its text is the catalog's, up to byte `upto` if given.
 
-        A line outside every hunk is the catalog's whole; a line a hunk replaces one for one keeps the catalog's
-        start up to where their texts first differ. None elsewhere, or where the text up to `upto` differs.
+        A line outside every hunk is the catalog's whole; a line a hunk replaces one for one is the catalog line it is
+        paired with up to where their texts first differ. None elsewhere, or where the text up to `upto` differs.
         """
         if self.catalog is None:
             return None
-        if not any(new <= line < new + new_count for _, _, new, new_count in self.hunks):
+        hunk = next((hunk for hunk in self.hunks if hunk[2] <= line < hunk[2] + hunk[3]), None)
+        if hunk is None:
             return self.lines(line)[0]
         before, after = next(((old, new) for at, old, new in self.replaced if at == line), ("", None))
         if after is None or upto is None:
             return None
         first, second = before.encode(), after.encode()
         same = next((at for at, pair in enumerate(zip(first, second, strict=False)) if pair[0] != pair[1]), len(first))
-        return self.lines(line)[0] if upto <= same else None
+        return hunk[0] + line - hunk[2] if upto <= same else None
 
 
 def file_maps(repo: Path, catalog: str, side: str | None) -> dict[str, FileMap]:
@@ -515,13 +516,15 @@ def requirements(
             requirement.cells = frozenset().union(*(catalog.cells_of(key) for key in requirement.keys))
             sub_line = sub_line_keys(probe, unit["side"], sources) if finer and sources is not None else None
             moved = _translated_all(sub_line, maps[unit["side"]]) if sub_line is not None else None
+            startup = bool(requirement.keys & catalog.startup)
             if moved and sources is not None and all(sources.held(key) == 1 for key in moved):
                 finer_cells = frozenset().union(*(catalog.cells_of(key) for key in moved))
                 requirement.keys, requirement.sub_line = requirement.keys | moved, True
                 requirement.cells &= finer_cells
+                startup = startup and bool(moved & catalog.startup)
             if probe["kind"] == "unmeasurable":
                 requirement.status = "unmeasurable"
-            elif requirement.keys & catalog.startup:
+            elif startup:
                 requirement.status = "startup"
             elif requirement.cells:
                 requirement.status = "cells"
@@ -692,17 +695,22 @@ def option_sets(text: str) -> list[tuple[str, ...]]:
 def loaded(path: Path, repo: Path, base: str | None) -> tuple[Catalog | None, str]:
     """Return the catalog a gate against `base` picks from, or None and why the gate runs its tier alone.
 
-    A release base (None) has no change units; the file may be missing or of another format; a catalog whose revision
-    is no ancestor of the base (or that the checkout lacks) maps the change through lines it cannot follow.
+    A release base (None) has no change units; the file may be missing, unreadable (cut short, not gzip JSON) or of
+    another format; a catalog whose revision is no ancestor of the base (or that the checkout lacks) maps the change
+    through lines it cannot follow.
     """
     if base is None:
         return None, "a release base has no change units"
     if not path.is_file():
         return None, f"no catalog at {path}"
-    with gzip.open(path, "rt", encoding="utf-8") as file:
-        data = json.load(file)
-    if data.get("format") != FORMAT:
-        return None, f"{path}: catalog format {data.get('format')}, this gate reads {FORMAT}"
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as file:
+            data = json.load(file)
+    except (OSError, EOFError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        return None, f"{path}: unreadable catalog ({type(error).__name__})"
+    if not isinstance(data, dict) or data.get("format") != FORMAT:
+        found = data.get("format") if isinstance(data, dict) else None
+        return None, f"{path}: catalog format {found}, this gate reads {FORMAT}"
     if compare_release.git(repo, "merge-base", "--is-ancestor", data["revision"], base).returncode:
         return None, f"catalog {data['revision'][:12]} is no ancestor of the base {base[:12]}"
     return Catalog.of_data(data), ""

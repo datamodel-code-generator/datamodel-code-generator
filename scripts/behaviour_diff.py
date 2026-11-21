@@ -1592,13 +1592,17 @@ def base_arguments(argv: list[str]) -> list[str]:
     """Return the arguments of the head's gate without `HEAD_ONLY_OPTIONS` (argparse also takes a unique prefix).
 
     The base's verdicts judge nothing; a pick adds the head's cells, which the base's gate does not judge; and a base
-    before an option refuses it.
+    before an option refuses it. What follows `--` is positional (a checkout named like an option) and stays.
     """
     dropped: set[int] = set()
-    for index, arg in enumerate(argv):
-        name, given, _ = arg.partition("=")
+    index = 0
+    while index < len(argv) and argv[index] != "--":
+        name, given, _ = argv[index].partition("=")
+        taken = 1
         if len(name) > len("--") and any(option.startswith(name) for option in HEAD_ONLY_OPTIONS):
-            dropped |= {index, index + (not given)}
+            taken += not given
+            dropped |= set(range(index, index + taken))
+        index += taken
     return [arg for index, arg in enumerate(argv) if index not in dropped]
 
 
@@ -2296,7 +2300,13 @@ def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path, environment:
 
 
 def catalog_main(ns: argparse.Namespace) -> int:
-    """Record the cell catalog of the fixtures x types x option sets on a revision (`_cell_catalog.record`)."""
+    """Record the cell catalog of the fixtures x types x option sets on a revision (`_cell_catalog.record`).
+
+    The workers record with `sys.monitoring`: an interpreter without it (Python 3.11) would write a catalog of no keys.
+    """
+    if not hasattr(sys, "monitoring"):
+        msg = "catalog: recording what each cell ran needs sys.monitoring (Python 3.12 or later)"
+        raise SystemExit(msg)
     python = Path(sys.executable).absolute()
     base = compare_release.resolve_base(ns.revision, python, ns.cache_dir.absolute(), repository())
     revision = base.revision or ns.revision
