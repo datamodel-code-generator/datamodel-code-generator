@@ -123,10 +123,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "embedded-sources": (
         "embedded-source:tests/data/expected/main/generation_platform/client/fields-shared-refs.txt",
         "embedded-source:tests/data/expected/main/generation_platform/client/input-cycle-reference.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/format.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/include-paths.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/layout-embedded.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/targets/path-items.txt",
     ),
 }
 LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {

@@ -21,7 +21,6 @@ from tests.main.conftest import run_main_and_assert
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "client"
 PUBLICATION = SOURCE / "publication"
-EXPECTED = DATA / "expected/main/generation_platform/client/install"
 BACKENDS = (
     "pydantic_v2.BaseModel",
     "pydantic_v2.dataclass",
@@ -88,10 +87,6 @@ def test_client_install(
             }),
         ))
     monkeypatch.chdir(tmp_path)
-    dependency_kind = (
-        "pydantic" if backend.startswith("pydantic") else "msgspec" if backend.startswith("msgspec") else "stdlib"
-    )
-    notice_profile = "all" if profile == "all" else "api-key"
     run_main_and_assert(
         input_path=source,
         output_path=Path("publication_client_models.py"),
@@ -100,7 +95,7 @@ def test_client_install(
         capsys=capsys,
     )
     notice = capsys.readouterr().err
-    assert_output(notice, EXPECTED / f"{notice_profile}-{dependency_kind}-dependencies.txt")
+    assert_output(notice, name="notice")
     command = shlex.split(notice.splitlines()[1])
     subprocess.run(
         [*command, "--no-sync", "--resolution", "lowest-direct", "--python", sys.executable],
@@ -181,4 +176,4 @@ def test_client_install(
         lines.append(f"server failures {server.failures}")
     finally:
         stop_servers()
-    assert_output("\n".join(lines) + "\n", EXPECTED / f"{profile}-{dependency_kind}-served.txt")
+    assert_output("\n".join(lines) + "\n", name="served")
