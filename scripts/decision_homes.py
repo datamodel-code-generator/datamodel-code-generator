@@ -12,13 +12,21 @@ One ``BuilderHome`` per builder home that the L1 prose of the page states (the p
 chooses at each position, the one builder of object maps, the resolver that names models): the builder, the passage of
 the page that states it, and the syntactic mark of what it builds. The prose stays as written; the guards of
 ``tests/test_decision_homes.py`` read these records.
+
+One ``Placement`` per row of the table of the Placement Guide that says where a decision reading some facts goes, in
+its order; ``scripts/build_architecture_docs.py`` writes that table from ``PLACEMENTS``. The two cells stay the Markdown
+the page shows; ``facts`` (members of ``Fact`` and ``RenderFact`` of ``scripts/fact_tables.py``) and ``after`` (passes
+of ``scripts/pass_decls.py``) are what ``tests/test_decision_homes.py`` checks: every pass a place names is declared,
+writes a fact its row reads and is named by the place cell, which names no other pass.
 """
 
 from __future__ import annotations
 
 from typing import Final, NamedTuple
 
-__all__ = ["BUILDER_HOMES", "DECISION_HOMES", "BuilderHome", "DecisionHome", "Home", "Mark"]
+from scripts.fact_tables import Fact, RenderFact
+
+__all__ = ["BUILDER_HOMES", "DECISION_HOMES", "PLACEMENTS", "BuilderHome", "DecisionHome", "Home", "Mark", "Placement"]
 
 
 class Home(NamedTuple):
@@ -89,6 +97,21 @@ class BuilderHome(NamedTuple):
     """The defs the builder hands parts of the output to, which the builder reaches by calls through one another."""
     within: str = ""
     """The package path prefix of the modules where a call with the mark is the output (``""``: the whole package)."""
+
+
+class Placement(NamedTuple):
+    """One row of the placement table: what a decision reads, the earliest correct place for it, and their data."""
+
+    reads: str
+    """What the decision reads: the Markdown of the first cell, which no other record repeats."""
+    facts: frozenset[Fact | RenderFact]
+    """The facts of ``scripts/fact_tables.py`` that ``reads`` names; empty where it names none (raw keywords, the
+    location of a model, the target version) or any fact."""
+    place: str
+    """The Markdown of the earliest correct place."""
+    after: tuple[str, ...] = ()
+    """The passes of ``scripts/pass_decls.py`` that ``place`` puts the decision after; empty where the
+    place is no pass (L1, the module loop, the end of a hook, render, any pass)."""
 
 
 DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
@@ -8211,3 +8234,82 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
     ),
 )
 """The builder homes of the L1 prose, guarded by ``tests/test_decision_homes.py``."""
+
+PLACEMENTS: Final[tuple[Placement, ...]] = (
+    Placement(
+        reads="raw keywords of one schema object (`const`, `enum`, `nullable`, `uniqueItems`, extension keys)",
+        facts=frozenset(),
+        place="L1 at that object, or record them on the field for a later pass",
+    ),
+    Placement(
+        reads="names settled by `--model-name-map` or yielding names",
+        facts=frozenset({RenderFact.CLASS_NAMES}),
+        place="after L2 `settle_yielding_names`",
+        after=("settle_yielding_names",),
+    ),
+    Placement(
+        reads="the names of the models once every model has claimed one (the naming plan)",
+        facts=frozenset({RenderFact.CLASS_NAMES, RenderFact.PLANS}),
+        place="after L2 `name_models`",
+        after=("name_models",),
+    ),
+    Placement(
+        reads="field set, required or nullable of a model in the same module, without discriminator tags",
+        facts=frozenset({Fact.FIELD_SET, Fact.REQUIRED, Fact.NULLABLE}),
+        place="after that module's `set_one_literal_on_default`",
+        after=("set_one_literal_on_default",),
+    ),
+    Placement(
+        reads="a fact of a model in another module that the module loop can still change",
+        facts=frozenset(),
+        place="L6, after the module loop (facts that settle earlier, such as mapped names, follow their own row)",
+    ),
+    Placement(
+        reads="discriminator tags or msgspec ClassVars",
+        facts=frozenset({Fact.DISCRIMINATOR_TAGS}),
+        place="L6, after `tag_fields_of_tagged_bases`",
+        after=("tag_fields_of_tagged_bases",),
+    ),
+    Placement(
+        reads="type overrides",
+        facts=frozenset({Fact.TYPE_OVERRIDES, Fact.FIELD_TYPES, Fact.BASES}),
+        place=(
+            "field types of a model in the same module: after that module's `apply_field_type_overrides`; of a model "
+            "in another module: after the module loop; base classes: after the model's "
+            "`apply_base_class_type_overrides`"
+        ),
+        after=("apply_field_type_overrides", "apply_base_class_type_overrides"),
+    ),
+    Placement(
+        reads="bases including the generic base class",
+        facts=frozenset({Fact.BASES}),
+        place="L6, after `apply_generic_base_class`",
+        after=("apply_generic_base_class",),
+    ),
+    Placement(
+        reads="class names",
+        facts=frozenset({RenderFact.CLASS_NAMES}),
+        place="L6, after `change_imported_model_name`",
+        after=("change_imported_model_name",),
+    ),
+    Placement(
+        reads="where a model comes from in its document",
+        facts=frozenset(),
+        place="after L1, through `location_of(model.reference)`, never from `Reference.path` or a parse path",
+    ),
+    Placement(
+        reads="imports or names written in annotations",
+        facts=frozenset({RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.CLASS_NAMES}),
+        place="end of `_finalize_modules`, or at render",
+    ),
+    Placement(
+        reads="the target Python or Pydantic version a generated construct needs",
+        facts=frozenset(),
+        place=(
+            "any pass: read its row in `_requirements.py` (`python_target_meets`, `pydantic_target_meets`, or "
+            "`model_target_meets` for the target recorded on a Pydantic model); a new construct gets a row instead "
+            "of a version comparison"
+        ),
+    ),
+)
+"""The rows of the placement table of the Placement Guide, in its order."""

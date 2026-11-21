@@ -1,6 +1,7 @@
 """Tests for the decision homes of scripts/decision_homes.py: homes and sites are definitions their rows name.
 
-Only the home modules and the adapter sites of a row call its homes, or a caller the baseline still lists.
+Only the home modules and the adapter sites of a row call its homes, or a caller the baseline still lists. The passes
+a placement row puts its decision after are declared and write a fact the row reads.
 """
 
 from __future__ import annotations
@@ -16,8 +17,26 @@ from typing import TYPE_CHECKING, NamedTuple, TypeGuard
 import pytest
 
 from scripts._source_model import bases
-from scripts.build_architecture_docs import DECISION_BEGIN_MARKER, DECISION_END_MARKER, generate_decision_table
-from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, BuilderHome, DecisionHome, Home, Mark
+from scripts.build_architecture_docs import (
+    DECISION_BEGIN_MARKER,
+    DECISION_END_MARKER,
+    PLACEMENT_BEGIN_MARKER,
+    PLACEMENT_END_MARKER,
+    generate_decision_table,
+    generate_placement_table,
+)
+from scripts.decision_homes import (
+    BUILDER_HOMES,
+    DECISION_HOMES,
+    PLACEMENTS,
+    BuilderHome,
+    DecisionHome,
+    Home,
+    Mark,
+    Placement,
+)
+from scripts.fact_tables import Fact, RenderFact
+from scripts.pass_decls import DECISION_DECLS, PASS_DECLS
 from scripts.where import DEFS, PACKAGE_DIR, SPAN, Page, Repo, scope_name
 from tests.decision_home_allowlist import BUILDER_BYPASSES, UNLISTED_CALLERS
 
@@ -501,6 +520,41 @@ def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = 
     return sorted(Bypass(home, scope, line) for (home, scope), line in found.items())
 
 
+def placement_problems(records: Iterable[Placement]) -> list[str]:
+    """Return what is wrong with placement records: a pass that is not declared or writes none of the row's facts.
+
+    A pass of ``after`` is a pass or a decision of ``scripts/pass_decls.py`` that writes a fact the row reads, as
+    `scripts/check_pass_pipeline.py` asks of an ``After`` edge, and the place cell names it in a code span; a pass the
+    place cell names is in ``after``. Every fact is a member of ``Fact`` or ``RenderFact``, and no two records read
+    the same.
+    """
+    declared = {decl.name: decl for decl in (*PASS_DECLS, *DECISION_DECLS.values())}
+    problems: list[str] = []
+    for record in records:
+        key = f"{record.reads[:60]}..."
+        spans = SPAN.findall(record.place)
+        problems.extend(
+            f"{key}: {fact!r} is no member of Fact or RenderFact"
+            for fact in record.facts
+            if not isinstance(fact, (Fact, RenderFact))
+        )
+        for name in record.after:
+            if (decl := declared.get(name)) is None:
+                problems.append(f"{key}: {name} is no pass of scripts/pass_decls.py")
+            elif not decl.writes & record.facts:
+                problems.append(f"{key}: after {name}, which writes none of its facts")
+            if name not in spans:
+                problems.append(f"{key}: the place cell does not name {name}")
+        problems.extend(
+            f"{key}: the place cell names {name}, which after leaves out"
+            for name in spans
+            if name in declared and name not in record.after
+        )
+    repeated = [reads for reads, count in Counter(record.reads for record in records).items() if count > 1]
+    problems.extend(f"{reads[:60]}...: recorded more than once" for reads in repeated)
+    return problems
+
+
 @pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
 def test_decision_homes_are_defined_in_src() -> None:
     """Every home of a record is a definition of src/ that the record's core cell names."""
@@ -543,6 +597,23 @@ def test_the_page_table_is_written_from_the_records() -> None:
     """The decision table of docs/architecture.md is the table the records write, row for row."""
     docs = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
     written = f"{DECISION_BEGIN_MARKER}{generate_decision_table()}{DECISION_END_MARKER}"
+
+    assert written in docs, "docs/architecture.md: run python scripts/build_architecture_docs.py"
+
+
+@pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
+def test_placements_name_declared_passes_that_write_their_facts() -> None:
+    """Every pass a placement row puts its decision after is declared, named by its place and writes a fact it reads."""
+    problems = placement_problems(PLACEMENTS)
+
+    assert not problems, "\n".join(problems)
+
+
+@pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
+def test_the_placement_table_is_written_from_the_records() -> None:
+    """The placement table of docs/architecture.md is the table the records write, row for row."""
+    docs = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+    written = f"{PLACEMENT_BEGIN_MARKER}{generate_placement_table()}{PLACEMENT_END_MARKER}"
 
     assert written in docs, "docs/architecture.md: run python scripts/build_architecture_docs.py"
 
@@ -861,4 +932,41 @@ def test_builder_problems_on_seeded_records(tmp_path: Path) -> None:
         "seeded: a table of a class src/ lacks...: parser/kinds.py assigns no dispatch table to NoSuchParser._TABLE",
         "seeded: neither a table nor a mark...: a record states either a table or a mark",
         "parser/kinds.py:Parser._OTHER is a dispatch table no record holds",
+    ]
+
+
+SEEDED_PLACEMENTS = (
+    Placement("seeded: a pass pass_decls.py lacks", frozenset({Fact.BASES}), "after `no_such_pass`", ("no_such_pass",)),
+    Placement(
+        "seeded: a pass that writes none of its facts",
+        frozenset({Fact.METADATA}),
+        "after L2 `name_models`",
+        ("name_models",),
+    ),
+    Placement(
+        "seeded: a pass the place cell does not name",
+        frozenset({RenderFact.CLASS_NAMES}),
+        "after L2",
+        ("name_models",),
+    ),
+    Placement("seeded: a pass the record leaves out", frozenset({Fact.BASES}), "L6, after `apply_generic_base_class`"),
+    Placement("seeded: a fact of no fact table", frozenset({"field_set"}), "L1 at that object"),
+    Placement("seeded: a fact of no fact table", frozenset(), "any pass"),
+)
+"""Placement records whose passes are not declared, write none of their facts or differ from their place cell."""
+
+
+@pytest.mark.allow_direct_assert("the problems of seeded records are the check's verdict, not a stored output")
+def test_placement_check_fails_on_seeded_records() -> None:
+    """A pass undeclared, writing none of the facts, unnamed or left out, a fact of no table, a repeat: problems."""
+    assert placement_problems(SEEDED_PLACEMENTS) == [
+        "seeded: a pass pass_decls.py lacks...: no_such_pass is no pass of scripts/pass_decls.py",
+        "seeded: a pass that writes none of its facts...: after name_models, which writes none of its facts",
+        "seeded: a pass the place cell does not name...: the place cell does not name name_models",
+        (
+            "seeded: a pass the record leaves out...: "
+            "the place cell names apply_generic_base_class, which after leaves out"
+        ),
+        "seeded: a fact of no fact table...: 'field_set' is no member of Fact or RenderFact",
+        "seeded: a fact of no fact table...: recorded more than once",
     ]
