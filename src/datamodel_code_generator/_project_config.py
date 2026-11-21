@@ -14,6 +14,7 @@ from datamodel_code_generator._config_fields import (
     option_path,
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
+from datamodel_code_generator._option_stages import _run_option_stages
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.util import _load_config_toml
@@ -220,7 +221,6 @@ def load_pyproject_config(
     if not options:
         return _loaded_from(GenerateConfig.model_validate(explicit), pyproject_path)
 
-    from datamodel_code_generator import _run_option_stages  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator._cli_config import (  # ruff: ignore[import-outside-top-level]
         _get_config_class,
         _template_data,

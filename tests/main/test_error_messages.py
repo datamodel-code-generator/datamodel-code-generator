@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import inspect
 import json
+import os
 import py_compile
 import re
 import shutil
+import subprocess
 import sys
 import warnings
 from pathlib import Path
@@ -2198,6 +2201,36 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
     )
 
 
+def test_dangling_local_ref_warning_is_filtered_as_the_package(tmp_path: Path) -> None:
+    """`PYTHONWARNINGS=error:::datamodel_code_generator` makes the dangling `$ref` warning an error, as before."""
+    package = Path(inspect.getfile(generate)).parent
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "datamodel_code_generator",
+            "--input",
+            str(MALFORMED_DATA_PATH / "dangling_local_ref.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ],
+        capture_output=True,
+        check=False,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(package.parent), "PYTHONWARNINGS": "error:::datamodel_code_generator"},
+        text=True,
+        timeout=120,
+    )
+    assert_output(
+        f"exit status: {result.returncode}\n"
+        + "".join(
+            line[:60] + "\n" for line in result.stderr.splitlines() if line.startswith("datamodel_code_generator.")
+        )
+    )
+
+
 def test_dangling_component_ref_warning_names_the_parse_caller(output_file: Path) -> None:
     """The diagnostics warnings of an OpenAPI document name ``OpenAPIParser.parse()``, which calls the base one."""
     with pytest.warns(DanglingRefWarning) as warning_records:
@@ -2223,15 +2256,17 @@ def test_dangling_component_ref_warning_names_the_parse_caller(output_file: Path
 def debug_tracing(monkeypatch: pytest.MonkeyPatch) -> Iterator[ModuleType]:
     """Turn on the tracing of ``--debug`` and leave the process as it was found when the test ends.
 
-    The tracing state, and the namespaces of the package and of the parser's modules, whose functions the decoration
-    of ``snooper_to_methods`` wraps, come back afterwards, so no wrapper changes a frame a later test's warnings name.
+    The tracing state, and the namespaces of the package, of its tracing module and of the parser's modules, whose
+    functions the decoration of ``snooper_to_methods`` wraps, come back afterwards, so no wrapper changes a frame a
+    later test's warnings name.
     """
     pysnooper = pytest.importorskip("pysnooper")
     monkeypatch.setattr(pysnooper.tracer, "DISABLED", pysnooper.tracer.DISABLED)
     namespaces = [
         (vars(module), dict(vars(module)))
         for module_name, module in [*sys.modules.items()]
-        if module_name == "datamodel_code_generator" or module_name.startswith("datamodel_code_generator.parser._")
+        if module_name in {"datamodel_code_generator", "datamodel_code_generator._debug"}
+        or module_name.startswith("datamodel_code_generator.parser._")
     ]
     enable_debug_message()
     yield pysnooper

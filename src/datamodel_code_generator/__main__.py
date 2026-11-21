@@ -12,6 +12,10 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
+from datamodel_code_generator import _lazy_exports
+from datamodel_code_generator._debug import enable_debug_message
+from datamodel_code_generator._facade import generate
+from datamodel_code_generator._generation import _validate_generation_path_conflicts, get_version
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._shared_types import (
     Error,
@@ -60,8 +64,6 @@ def _print_json_schema(name: str) -> int:
 match sys.argv:
     # Fast path for --version (avoid importing heavy modules)
     case [_, "--version" | "-V"]:
-        from datamodel_code_generator import get_version
-
         sys.stdout.write(f"datamodel-codegen {get_version()}\n")
         sys.exit(0)
     # Fast path for --help (avoid importing heavy modules)
@@ -116,13 +118,6 @@ import shutil
 import signal
 import tempfile
 
-from datamodel_code_generator import (
-    _lazy_exports,
-    _run_option_stages,
-    _validate_generation_path_conflicts,
-    enable_debug_message,
-    generate,
-)
 from datamodel_code_generator._cli_config import (
     _explicit_config_args,
     _get_config_class,
@@ -157,6 +152,7 @@ from datamodel_code_generator._option_names import (
     values_arguments,  # noqa: F401  # Preserve the established __main__ export.
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
+from datamodel_code_generator._option_stages import _run_option_stages
 from datamodel_code_generator._output_comparison import ComparisonDifference as ComparisonDifference
 from datamodel_code_generator._output_comparison import DirectoryChangedFile as DirectoryChangedFile
 from datamodel_code_generator._output_comparison import OutputComparison as OutputComparison
@@ -2102,8 +2098,6 @@ def _command_output(namespace: Namespace) -> Exit | None:
         return Exit.ERROR
 
     if namespace.version:
-        from datamodel_code_generator import get_version  # noqa: PLC0415
-
         print(f"datamodel-codegen {get_version()}")  # noqa: T201
         sys.exit(Exit.OK)
 

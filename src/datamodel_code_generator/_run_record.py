@@ -4,7 +4,7 @@
 entry of a run from the sources that entry has, before any value is validated: the command line from its arguments
 and the ``pyproject.toml`` values (base table, profile and job merged), ``load_pyproject_config()`` from the keys it
 keeps and its overrides, ``generate()`` from the fields its config has set, with their values. The option stages read
-it and return it with the fields each of them gave a value (``__init__.py:_run_option_stages``).
+it and return it with the fields each of them gave a value (``_option_stages.py:_run_option_stages``).
 
 The record is history: a later write to the config does not change it, and a copy of a config shares it.
 """

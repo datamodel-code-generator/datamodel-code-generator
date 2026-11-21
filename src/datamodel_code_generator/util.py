@@ -18,6 +18,7 @@ from typing_extensions import Sentinel, override
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._records import mutable_record, record
+from datamodel_code_generator._warning_control import warn_as_public
 from datamodel_code_generator.deprecations import warn_deprecated
 
 if TYPE_CHECKING:
@@ -304,7 +305,7 @@ def warn_yaml_deprecated_bool_values(text: str) -> None:
     for match in matches:
         if match.start(1) not in offsets:
             continue
-        warnings.warn(
+        warn_as_public(
             f"YAML bool '{match.group(1)}' is deprecated. Use lowercase 'true' or 'false' instead. "
             f"In a future version, only lowercase booleans will be recognized.",
             DeprecationWarning,

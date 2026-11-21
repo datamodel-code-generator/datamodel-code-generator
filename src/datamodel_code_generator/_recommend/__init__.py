@@ -14,9 +14,10 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from datamodel_code_generator import _resolve_preset
+from datamodel_code_generator._generation import _infer_input
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
+from datamodel_code_generator._option_stages import _resolve_preset
 from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._source import is_swagger_2
@@ -199,8 +200,6 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
 
 def _input_file_type(config: Any, text: str | None) -> tuple[str | None, DecodedInput | None]:
     """Return the configured input file type, or the detected one for auto with the document as detection decoded it."""
-    from datamodel_code_generator import _infer_input  # noqa: PLC0415
-
     if config.input_file_type != InputFileType.Auto:
         return config.input_file_type.value, None
     if text is None:

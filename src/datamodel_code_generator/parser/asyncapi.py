@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import snooper_to_methods
+from datamodel_code_generator._debug import snooper_to_methods
 from datamodel_code_generator._document_reader import (
     CHANNEL_OPERATIONS,
     as_mapping,

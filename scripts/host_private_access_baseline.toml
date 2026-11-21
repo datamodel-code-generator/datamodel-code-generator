@@ -139,9 +139,6 @@
 "self.data_model_type._KEEPS_INHERITED_FIELD_TYPES" = 1
 "self.data_model_type._READ_BY_PYDANTIC" = 2
 
-["src/datamodel_code_generator/parser/_passes/_warnings.py"."warn_as_module"]
-"sys._getframe" = 2
-
 ["src/datamodel_code_generator/parser/_passes/cross_module.py"."apply_generic_base_class"]
 "model._additional_imports" = 2
 
@@ -305,7 +302,7 @@
 ["src/datamodel_code_generator/parser/_pipeline.py"."parse_caller"]
 "sys._getframe" = 1
 
-["src/datamodel_code_generator/parser/_pipeline.py"."stacklevel_at_parse_caller"]
+["src/datamodel_code_generator/parser/_pipeline.py"."warn_at_parse_caller"]
 "sys._getframe" = 1
 
 ["src/datamodel_code_generator/parser/_python_type_imports.py"."_collect_data_type_imports"]

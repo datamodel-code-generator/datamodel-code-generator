@@ -22,7 +22,7 @@ from warnings import warn
 from pydantic import Field, StrictBool, ValidationError, WrapValidator, field_validator
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import snooper_to_methods
+from datamodel_code_generator._debug import snooper_to_methods
 from datamodel_code_generator._document_reader import as_mapping as _as_mapping
 from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
 from datamodel_code_generator._json_pointer import document_part

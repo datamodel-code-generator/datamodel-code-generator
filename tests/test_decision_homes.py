@@ -5,6 +5,7 @@ Only the home modules and the adapter sites of a row call its homes, or a caller
 
 from __future__ import annotations
 
+import builtins
 import re
 from collections import Counter
 from functools import cache
@@ -13,6 +14,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import pytest
 
+from scripts._source_model import bases
 from scripts.build_architecture_docs import DECISION_BEGIN_MARKER, DECISION_END_MARKER, generate_decision_table
 from scripts.decision_homes import DECISION_HOMES, DecisionHome, Home
 from scripts.where import DEFS, PACKAGE_DIR, SPAN, Page, Repo, scope_name
@@ -115,6 +117,26 @@ def _covers(site: Home, module: str, scope: str) -> bool:
     return site.path == module and (not site.name or scope == site.name or scope.startswith(f"{site.name}."))
 
 
+def _is_exception(repo: Repo, path: str, name: str) -> bool:
+    """Return whether a class of the repository derives from ``BaseException``, through builtins or other classes.
+
+    A base the model cannot resolve to one origin does not make the class an exception.
+    """
+    model = repo.model(path)
+    modules = {module: rel for rel, (_, module) in repo.names.items()}
+    for scope in model.scopes:
+        if scope.kind != "class" or scope.qualname != name:
+            continue
+        for base in bases(scope):
+            module, _, leaf = (model.origin(base) or "").rpartition(".")
+            if module == "builtins":
+                if issubclass(getattr(builtins, leaf, object), BaseException):
+                    return True
+            elif module in modules and _is_exception(repo, modules[module], leaf):
+                return True
+    return False
+
+
 def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR) -> list[Caller]:
     """Return the run-time reads of a def or class home of records in a package outside the modules and sites.
 
@@ -123,12 +145,17 @@ def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str =
 
     `Repo.module_reads` finds the references; a store binds the name and one in an annotation names a type, so neither
     calls the home. A site is a def or a class (and the scopes inside it), or a whole module.
+
+    A home that is an exception class (it derives from ``BaseException``) is not checked: its record states where the
+    type is defined, not who may raise or catch it.
     """
     callers: list[Caller] = []
     for home, (modules, sites) in _callable_homes(records).items():
         path = f"{package}{home.path}"
         for found in repo.definitions(home.name, path) if path in repo.names else []:
             if found.qualname != home.name or found.parent != "module" or found.kind not in DEFS:
+                continue
+            if found.kind == "class" and _is_exception(repo, found.path, found.qualname):
                 continue
             for rel, references in repo.module_reads(found).items():
                 module = rel.removeprefix(package)
@@ -247,7 +274,8 @@ SEEDED_PACKAGE = {
     "__init__.py": "from .core import decide\n",
     "core.py": (
         "class Rule:\n    def method(self) -> None:\n        pass\n\n\nTABLE = {}\n\n\n"
-        "def decide() -> Rule:\n    return Rule()\n"
+        "def decide() -> Rule:\n    return Rule()\n\n\n"
+        "class Failure(Exception):\n    pass\n\n\nclass Detail(Failure):\n    pass\n"
     ),
     "adapter.py": (
         "from .core import TABLE, Rule, decide\n\n\ndef site() -> None:\n    decide()\n\n\n"
@@ -256,12 +284,22 @@ SEEDED_PACKAGE = {
         "def bypass(value: object) -> bool:\n    return isinstance(value, Rule) and decide() is not None\n"
     ),
     "whole.py": "from .core import decide\n\nRESULT = decide()\n",
+    "raises.py": (
+        "from .core import Detail, Failure\n\n\n"
+        "def raised() -> None:\n    raise Failure('x')\n\n\n"
+        "def caught() -> bool:\n    try:\n        raise Detail\n    except Failure as error:\n"
+        "        return isinstance(error, Detail)\n"
+    ),
     "through.py": (
         "from . import core\nfrom datamodel_code_generator import decide\n\n\n"
         "def by_module() -> None:\n    core.decide()\n\n\nby_package = decide()\n"
     ),
 }
-"""A package whose ``core.py`` holds the homes: callers by name, by module attribute and through a re-export."""
+"""A package whose ``core.py`` holds the homes: callers by name, by module attribute and through a re-export.
+
+``raises.py`` raises and catches the exception homes ``Failure`` and ``Detail`` (a subclass of it) outside ``core.py``:
+the guard does not report them.
+"""
 
 
 @pytest.mark.allow_direct_assert("the callers the guard finds in a seeded package are its verdict, not a stored output")
@@ -279,6 +317,8 @@ def test_unlisted_callers_on_a_seeded_package(tmp_path: Path) -> None:
             Home("core.py", "Rule"),
             Home("core.py", "TABLE"),
             Home("core.py", "Rule.method"),
+            Home("core.py", "Failure"),
+            Home("core.py", "Detail"),
         ),
         core="",
         adapters="",

@@ -1745,10 +1745,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model_name_path_keys`, `translate_class_keys` (over a `ModelNameRecord`, to `ModelNameKeys`)"
         ),
         adapters=(
-            "`__init__.py:_parse_generation` (the run without the class-name keys); `reference.py`: "
+            "`_generation.py:_parse_generation` (the run without the class-name keys); `reference.py`: "
             "`ModelResolver._get_model_name_map_value`, `ModelResolver.apply_model_name_keys`, the allocations and the "
             "settle it records; `parser/_passes/imports.py:record_generated_class_names` (the final names), "
-            "`translate_final_name_keys` (the output names keys name, by path); `__init__.py:_parse_generation_run` "
+            "`translate_final_name_keys` (the output names keys name, by path); `_generation.py:_parse_generation_run` "
             "(the parse again with them); `reference.py:ModelResolver.class_scope`; `reference.py`: "
             "`FieldNameResolver.prepare_explicit_field_aliases`, `FieldNameResolver.get_valid_field_name_and_alias`, "
             "`ModelResolver.resolve_default_value`; `parser/base.py`: `Parser.get_serialization_alias`, "
@@ -1765,12 +1765,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_naming.py:TargetNames.alias`"
         ),
         sites=(
-            Home("__init__.py", "_parse_generation"),
+            Home("_generation.py", "_parse_generation"),
             Home("reference.py", "ModelResolver._get_model_name_map_value"),
             Home("reference.py", "ModelResolver.apply_model_name_keys"),
             Home("parser/_passes/imports.py", "record_generated_class_names"),
             Home("parser/_passes/imports.py", "translate_final_name_keys"),
-            Home("__init__.py", "_parse_generation_run"),
+            Home("_generation.py", "_parse_generation_run"),
             Home("reference.py", "ModelResolver.class_scope"),
             Home("reference.py", "FieldNameResolver.prepare_explicit_field_aliases"),
             Home("reference.py", "FieldNameResolver.get_valid_field_name_and_alias"),
@@ -1817,7 +1817,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_lock_plan.py`: `default_lock_parent`, `remote_lock_plan`, `owns_lock_update`, `models_lockfile`",
         adapters=(
             "`__main__.py`: `_watch_remote_lock_setup`, `_recommend_lock_observer`, `_run_jobs`, `_run_watched_jobs`, "
-            "`_run_config` (each calls `_remote_lock_plan`); `_target_cli.py`: `_run`; `__init__.py`: "
+            "`_run_config` (each calls `_remote_lock_plan`); `_target_cli.py`: `_run`; `_generation.py`: "
             "`_resolve_generation_remote_lock`, `_prepare_atomic_generation_remote_lock`"
         ),
         sites=(
@@ -1827,8 +1827,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("__main__.py", "_run_watched_jobs"),
             Home("__main__.py", "_run_config"),
             Home("_target_cli.py", "_run"),
-            Home("__init__.py", "_resolve_generation_remote_lock"),
-            Home("__init__.py", "_prepare_atomic_generation_remote_lock"),
+            Home("_generation.py", "_resolve_generation_remote_lock"),
+            Home("_generation.py", "_prepare_atomic_generation_remote_lock"),
         ),
     ),
     DecisionHome(
@@ -1842,11 +1842,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`remote_lock.py`: `_open_lock_staging`, `_staged_lock`",
         adapters=(
-            "`__init__.py:_generate_with_atomic_remote_update`, `__main__.py:_RemoteLockTransaction`, "
+            "`_generation.py:_generate_with_atomic_remote_update`, `__main__.py:_RemoteLockTransaction`, "
             "`_api_generation.py:_stage`, `remote_lock.py:RemoteReferenceLock.commit`"
         ),
         sites=(
-            Home("__init__.py", "_generate_with_atomic_remote_update"),
+            Home("_generation.py", "_generate_with_atomic_remote_update"),
             Home("__main__.py", "_RemoteLockTransaction"),
             Home("_api_generation.py", "_stage"),
             Home("remote_lock.py", "RemoteReferenceLock.commit"),
@@ -1872,11 +1872,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_publication.py`: `artifact_roots`, `stage_outputs`, `StagedOutputs`, `StagedArtifact`",
         adapters=(
-            "`__init__.py:_generate_with_atomic_remote_update`; `__main__.py`: `_get_job_config`, `_single_job_plan`, "
+            "`_generation.py:_generate_with_atomic_remote_update`; `__main__.py`: `_get_job_config`, "
+            "`_single_job_plan`, "
             "`_stage_job_plan`"
         ),
         sites=(
-            Home("__init__.py", "_generate_with_atomic_remote_update"),
+            Home("_generation.py", "_generate_with_atomic_remote_update"),
             Home("__main__.py", "_get_job_config"),
             Home("__main__.py", "_single_job_plan"),
             Home("__main__.py", "_stage_job_plan"),
@@ -1986,12 +1987,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_paths.py`: `existing_ancestor`, `missing_root`, `creation_root`",
         adapters=(
-            "`__init__.py:_refuse_uncreatable_paths`; `_publication.py`: `publication_anchor`, "
+            "`_generation.py:_refuse_uncreatable_paths`; `_publication.py`: `publication_anchor`, "
             "`staging_directory_for`, `_create_target_parent`; `remote_lock.py:_nearest_existing_directory`; "
             "`watch_dependencies.py:_nearest_existing_directory`"
         ),
         sites=(
-            Home("__init__.py", "_refuse_uncreatable_paths"),
+            Home("_generation.py", "_refuse_uncreatable_paths"),
             Home("_publication.py", "publication_anchor"),
             Home("_publication.py", "staging_directory_for"),
             Home("_publication.py", "_create_target_parent"),
@@ -2016,7 +2017,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_publication.py`: `_planned_staged_file`, `_validate_planned_target`; "
             "`remote_lock.py:RemoteReferenceLock.commit`; `watch_dependencies.py:_path_variants`; "
             "`_api_generation.py`: `_Planner.check_collisions`, `_stage`, `_unshared`; "
-            "`_publication.py:artifact_roots`; `__init__.py:_prepare_directory_input`; left out: "
+            "`_publication.py:artifact_roots`; `_generation.py:_prepare_directory_input`; left out: "
             "`_target_cli.py:_stage_implementations` (resolves an existing services directory to compare it with the "
             "output root)"
         ),
@@ -2029,7 +2030,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_api_generation.py", "_stage"),
             Home("_api_generation.py", "_unshared"),
             Home("_publication.py", "artifact_roots"),
-            Home("__init__.py", "_prepare_directory_input"),
+            Home("_generation.py", "_prepare_directory_input"),
             Home("_target_cli.py", "_stage_implementations"),
         ),
     ),
@@ -2049,7 +2050,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_paths.py`: `lexical`, `resolved`",
         adapters=(
-            "`__init__.py`: `_validate_generation_path_conflicts`, `_prepare_generation_input`; `__main__.py`: "
+            "`_generation.py`: `_validate_generation_path_conflicts`, `_prepare_generation_input`; `__main__.py`: "
             "`_config_artifacts` (the artifacts of the job and lock checks), `_preflight_job_plans` (the job inputs), "
             "`_validate_staged_job_plans`; `_api_generation.py`: `_root_input`, `_remote_lock`, `_Planner`; "
             "`_publication.py`: `staging_directory_for`, `artifact_roots`; `_lock_plan.py:remote_lock_plan`; "
@@ -2057,8 +2058,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(the path validator of the command-line config); `_project_config.py:load_pyproject_config`"
         ),
         sites=(
-            Home("__init__.py", "_validate_generation_path_conflicts"),
-            Home("__init__.py", "_prepare_generation_input"),
+            Home("_generation.py", "_validate_generation_path_conflicts"),
+            Home("_generation.py", "_prepare_generation_input"),
             Home("__main__.py", "_config_artifacts"),
             Home("__main__.py", "_preflight_job_plans"),
             Home("__main__.py", "_validate_staged_job_plans"),
@@ -2090,12 +2091,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_paths.py`: `overlaps`, `same_file`",
         adapters=(
-            "`__init__.py:_validate_generation_path_conflicts`; `__main__.py:_paths_overlap_or_samefile` (the job and "
+            "`_generation.py:_validate_generation_path_conflicts`; `__main__.py:_paths_overlap_or_samefile` (the job "
+            "and "
             "lock checks); `_api_generation.py:_remote_lock`; `_publication.py:_restore_backup`; "
             "`watch_dependencies.py:_logical_working_directory`"
         ),
         sites=(
-            Home("__init__.py", "_validate_generation_path_conflicts"),
+            Home("_generation.py", "_validate_generation_path_conflicts"),
             Home("__main__.py", "_paths_overlap_or_samefile"),
             Home("_api_generation.py", "_remote_lock"),
             Home("_publication.py", "_restore_backup"),
@@ -2121,17 +2123,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`__main__.py`: `_run_config` (the refusal and the single-file switch of `--check`), "
             "`_copy_generated_output`, `_generated_files_from_output`; `_output_comparison.py:_compare_directories`; "
-            "`__init__.py`: `_write_results_to_output`, `generate`, `_generate_with_atomic_remote_update`; "
-            "`_publication.py:StagedArtifact.files`; `_api_generation.py`: `_staged_models`, `_generate_models`"
+            "`_generation.py`: `_write_results_to_output`, `_generate_with_atomic_remote_update`; "
+            "`_facade.py:generate`; `_publication.py:StagedArtifact.files`; `_api_generation.py`: `_staged_models`, "
+            "`_generate_models`"
         ),
         sites=(
             Home("__main__.py", "_run_config"),
             Home("_output_comparison.py", "_compare_directories"),
             Home("__main__.py", "_copy_generated_output"),
             Home("__main__.py", "_generated_files_from_output"),
-            Home("__init__.py", "_write_results_to_output"),
-            Home("__init__.py", "generate"),
-            Home("__init__.py", "_generate_with_atomic_remote_update"),
+            Home("_generation.py", "_write_results_to_output"),
+            Home("_facade.py", "generate"),
+            Home("_generation.py", "_generate_with_atomic_remote_update"),
             Home("_publication.py", "StagedArtifact.files"),
             Home("_api_generation.py", "_staged_models"),
             Home("_api_generation.py", "_generate_models"),
@@ -2157,7 +2160,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_PydanticV2Model` for `BaseModel` and `dataclass.py:DataClass`), whose config keys come from "
             "`_rendered_config_items` (`_PydanticV2Model`, `RootModel`), the items the renderer, the imports and the "
             "alias decisions read too; record: `parser/_passes/imports.py:record_pydantic_floor` at the end of L6, "
-            "into `pydantic_floors_recorded`; statement: `__init__.py:_parse_generation`, for the parse it keeps"
+            "into `pydantic_floors_recorded`; statement: `_generation.py:_parse_generation`, for the parse it keeps"
         ),
         sites=(
             Home("model/base.py", "DataModel"),
@@ -2167,7 +2170,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model"),
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._rendered_config_items"),
             Home("parser/_passes/imports.py", "record_pydantic_floor"),
-            Home("__init__.py", "_parse_generation"),
+            Home("_generation.py", "_parse_generation"),
             Home("model/type_alias.py"),
         ),
     ),
@@ -3159,7 +3162,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_naming_rules_of` (a resolver class outside the package that overrides how models are named keeps them, "
             "with a warning), `_ModelShapeSource.own_class_name` (the dedup of one class name renders a model under "
             "its base); `reference.py:ModelResolver` (`add`, `_add_ref_at` take `_assigned_names`); "
-            "`__init__.py:_parse_generation` (the parse again); `parser/_passes/structure.py`: "
+            "`_generation.py:_parse_generation` (the parse again); `parser/_passes/structure.py`: "
             "`delete_duplicate_models` (groups the models of a module by their base), "
             "`replace_duplicate_name_in_module` (gives the base back); the L1 allocation stays in "
             "`reference.py:ModelResolver` (`add`, `_add_ref_at`, `get_class_name`, `_get_unique_name`, "
@@ -3174,7 +3177,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("reference.py", "ModelResolver"),
             Home("reference.py", "ModelResolver.add"),
             Home("reference.py", "ModelResolver._add_ref_at"),
-            Home("__init__.py", "_parse_generation"),
+            Home("_generation.py", "_parse_generation"),
             Home("parser/_passes/structure.py", "delete_duplicate_models"),
             Home("parser/_passes/structure.py", "replace_duplicate_name_in_module"),
             Home("reference.py", "ModelResolver.get_class_name"),
@@ -3875,7 +3878,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("_python_syntax.py", "normalize_newlines"),),
         core="`_python_syntax.py:normalize_newlines`",
         adapters=(
-            "`_python_syntax.py:comment_safe`; `__init__.py`: `_is_comment_only_source`, `_prepare_directory_input` "
+            "`_python_syntax.py:comment_safe`; `_generation.py`: `_is_comment_only_source`, `_prepare_directory_input` "
             "(the headers that mark a generated file); `_source.py:DirectoryInputFilter.iter_files`; "
             "`parser/base.py:Source.from_path`; `_output_comparison.py:_read_existing_output` and the generated files "
             "`--check` compares; `_api_generation.py:_normalized` (then one final newline); "
@@ -3883,8 +3886,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         sites=(
             Home("_python_syntax.py", "comment_safe"),
-            Home("__init__.py", "_is_comment_only_source"),
-            Home("__init__.py", "_prepare_directory_input"),
+            Home("_generation.py", "_is_comment_only_source"),
+            Home("_generation.py", "_prepare_directory_input"),
             Home("_source.py", "DirectoryInputFilter.iter_files"),
             Home("parser/base.py", "Source.from_path"),
             Home("_output_comparison.py", "_read_existing_output"),
@@ -3900,13 +3903,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("_generation_timestamp.py", "current_timestamp"),),
         core="`_generation_timestamp.py:current_timestamp`",
         adapters=(
-            "the file header of a run without a pinned timestamp (`__init__.py:_build_file_header_parts`), a target "
+            "the file header of a run without a pinned timestamp (`_generation.py:_build_file_header_parts`), a target "
             "run, which pins one before it generates its models (`_api_generation.py:plan_target`; each later target "
             "of a batch takes the first one's), and the two runs of `--diff-against`, which pin one for both "
             "(`__main__.py:_run_config`)"
         ),
         sites=(
-            Home("__init__.py", "_build_file_header_parts"),
+            Home("_generation.py", "_build_file_header_parts"),
             Home("_api_generation.py", "plan_target"),
             Home("__main__.py", "_run_config"),
         ),
@@ -3972,18 +3975,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         adapters=(
             "`_source.py`: `_load_pyyaml` and the parsed-source cache (the reading in its key, the count in its "
-            "value); `__init__.py`: `_run_generation_with_metadata` and `_collect_model_metadata` (the run's reading), "
+            "value); `_generation.py`: `_run_generation_with_metadata` and `_collect_model_metadata` (the run's "
+            "reading), "
             "`_parse_yaml_numbers_again` (the read-again, a first parse of the run through `_parse_first`, whose "
             "warnings show only where it succeeds) and `_parse_again` (the reading of each parse again); "
             "`parser/base.py:Parser.parse` (the option for a parser used alone)"
         ),
         sites=(
             Home("_source.py", "_load_pyyaml"),
-            Home("__init__.py", "_run_generation_with_metadata"),
-            Home("__init__.py", "_collect_model_metadata"),
-            Home("__init__.py", "_parse_yaml_numbers_again"),
-            Home("__init__.py", "_parse_first"),
-            Home("__init__.py", "_parse_again"),
+            Home("_generation.py", "_run_generation_with_metadata"),
+            Home("_generation.py", "_collect_model_metadata"),
+            Home("_generation.py", "_parse_yaml_numbers_again"),
+            Home("_generation.py", "_parse_first"),
+            Home("_generation.py", "_parse_again"),
             Home("parser/base.py", "Parser.parse"),
         ),
     ),
@@ -5332,7 +5336,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_project_config.py`: `_resolve_pyproject_relative_paths`, `_resolve_relative_paths_from`, "
             "`load_pyproject_config`; `_cli_config.py:Config.validate_path`; "
-            "`config.py:GenerateConfig.expand_output_paths`; `__init__.py:_prepare_generation_config`; "
+            "`config.py:GenerateConfig.expand_output_paths`; `_generation.py:_prepare_generation_config`; "
             "`watch_dependencies.py`: `WatchDependencies._add_config`, `_configured_path`; `__main__.py`: "
             "`_record_raw_job_config_dependencies`, `_target_usage_errors`; `base_config.py:_selected_target`; the "
             "defaults: `_option_table.py` (the `--encoding` and `--watch-delay` help), `arguments.py` "
@@ -5342,7 +5346,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_parser_context.py:ParserSourceContext.encoding`, `_cli_config.py:Config.watch_delay`, "
             "`__main__.py:_batch_outer_settings` (the `Config` field defaults); left out: the `encoding` parameter "
             "defaults of functions, which every caller in the package passes (`http.py`, `format.py:CodeFormatter`, "
-            "`parser/protobuf.py`, `parser/xmlschema.py`), `__init__.py:_prepare_atomic_generation_remote_lock` (the "
+            "`parser/protobuf.py`, `parser/xmlschema.py`), `_generation.py:_prepare_atomic_generation_remote_lock` "
+            "(the "
             "model outputs the lock is checked against) and `_target_selection.py` (the settings file and "
             "`http_local_ref_path` of a target render)"
         ),
@@ -5351,7 +5356,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_project_config.py", "_resolve_relative_paths_from"),
             Home("_project_config.py", "load_pyproject_config"),
             Home("config.py", "GenerateConfig.expand_output_paths"),
-            Home("__init__.py", "_prepare_generation_config"),
+            Home("_generation.py", "_prepare_generation_config"),
             Home("watch_dependencies.py", "WatchDependencies._add_config"),
             Home("watch_dependencies.py", "_configured_path"),
             Home("__main__.py", "_record_raw_job_config_dependencies"),
@@ -5360,7 +5365,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("__main__.py", "_batch_outer_settings"),
             Home("http.py", "_FetchSettings.encoding"),
             Home("format.py", "CodeFormatter"),
-            Home("__init__.py", "_prepare_atomic_generation_remote_lock"),
+            Home("_generation.py", "_prepare_atomic_generation_remote_lock"),
             Home("_option_table.py"),
             Home("json_config.py", "document_base"),
             Home("json_config.py", "_read_json_or_inline"),
@@ -5420,7 +5425,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`use_annotated`, and msgspec turns an unset `use_annotated` on); `preset.py:ResolvedPresetConfig.updates` "
             "(every row over the updates it makes, `use_annotated` read as `force_field_constraints`); "
             "`model/__init__.py:get_data_model_types` (the `use_type_alias_type` row, through `implied_options`); "
-            "`__init__.py:_replaced_options` (every row, through `enabled_implied_options`, for the warning and for "
+            "`_option_stages.py:_replaced_options` (every row, through `enabled_implied_options`, for the warning and "
+            "for "
             "`_implied_model_updates` under `--read-implied-options-from-merged-values`); "
             "`cli_options.py:_documented_options` (the `implies` relations of `CLI_OPTION_META`)"
         ),
@@ -5431,8 +5437,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("base_config.py", "implied_model_settings"),
             Home("preset.py", "ResolvedPresetConfig.updates"),
             Home("model/__init__.py", "get_data_model_types"),
-            Home("__init__.py", "_replaced_options"),
-            Home("__init__.py", "_implied_model_updates"),
+            Home("_option_stages.py", "_replaced_options"),
+            Home("_option_stages.py", "_implied_model_updates"),
             Home("cli_options.py", "_documented_options"),
         ),
     ),
@@ -5470,14 +5476,16 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "row, through `check_option_relation`); `_cli_config.py:Config.validate_cli_option_relations` (after the "
             "`--output-datetime-class` and `--alias-generator` checks); `__main__.py`: `_resolve_cli_config` (after "
             "`implied-model`), `_apply_model_run_options` (after the black refusal and the deprecation of the "
-            "`--use-annotated` default); `__init__.py`: `_missing_sentinel_updates`, `_prepare_parser_common_options`; "
+            "`--use-annotated` default); `_option_stages.py:_missing_sentinel_updates`; "
+            "`_generation.py:_prepare_parser_common_options`; "
             "`cli_options.py`: `_with_relation_rows` (the `requires` and `conflicts` of `CLI_OPTION_META`), "
             "`_documented_options` (the `requires` of `--generate-server` and `--generate-client`); "
             "`base_config.py:_target_options_error` (the refusal of a target's options); left out: `__main__.py`: "
             "`_diff_against_validation_error`, `_reject_batch_input_diff` (the `--diff-against` family), "
             "`_generation_option_errors`, `_target_usage_errors` and the `--input-model` refusal of `_run_config`, the "
             "asyncapi refusals of `base_config.py:_target_options_error`, the argparse exclusive groups, "
-            "`__init__.py`: `_validate_output_datetime_class`, `_validate_alias_generator` (each with its own relation "
+            "`_option_rules.py`: `_validate_output_datetime_class`, `_validate_alias_generator` (each with its own "
+            "relation "
             "in `CLI_OPTION_META` or none)"
         ),
         sites=(
@@ -5485,8 +5493,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("base_config.py", "BaseGenerateConfig.validate_target_selection"),
             Home("__main__.py", "_resolve_cli_config"),
             Home("__main__.py", "_apply_model_run_options"),
-            Home("__init__.py", "_missing_sentinel_updates"),
-            Home("__init__.py", "_prepare_parser_common_options"),
+            Home("_option_stages.py", "_missing_sentinel_updates"),
+            Home("_generation.py", "_prepare_parser_common_options"),
             Home("cli_options.py", "_with_relation_rows"),
             Home("cli_options.py", "_documented_options"),
             Home("base_config.py", "_target_options_error"),
@@ -5495,8 +5503,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("__main__.py", "_generation_option_errors"),
             Home("__main__.py", "_target_usage_errors"),
             Home("__main__.py", "_run_config"),
-            Home("__init__.py", "_validate_output_datetime_class"),
-            Home("__init__.py", "_validate_alias_generator"),
+            Home("_option_rules.py", "_validate_output_datetime_class"),
+            Home("_option_rules.py", "_validate_alias_generator"),
         ),
     ),
     DecisionHome(
@@ -5525,15 +5533,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "and a call of other stages alone reports nothing"
         ),
         homes=(
-            Home("__init__.py", "_run_option_stages"),
-            Home("__init__.py", "_OPTION_STAGES"),
-            Home("__init__.py", "_replaced_options"),
-            Home("__init__.py", "_warn_of_replaced_options"),
-            Home("__init__.py", "_resolve_preset"),
+            Home("_option_stages.py", "_run_option_stages"),
+            Home("_option_stages.py", "_OPTION_STAGES"),
+            Home("_option_stages.py", "_replaced_options"),
+            Home("_option_stages.py", "_warn_of_replaced_options"),
+            Home("_option_stages.py", "_resolve_preset"),
             Home("_shared_types.py", "Error"),
         ),
         core=(
-            "`__init__.py`: `_run_option_stages` (the stages: `_OPTION_STAGES`), `_replaced_options`, "
+            "`_option_stages.py`: `_run_option_stages` (the stages: `_OPTION_STAGES`), `_replaced_options`, "
             "`_warn_of_replaced_options`, `_resolve_preset` (the resolution and its `Error`, "
             "`_shared_types.py`: `Error`)"
         ),
@@ -5548,11 +5556,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "after the target's option check); `_project_config.py:load_pyproject_config` (the record of the "
             "pyproject.toml keys it keeps and its overrides, then `implied-model` alone: every setting the stage gave "
             "counts as set on the config it returns, which keeps its `preset` for `generate()` to resolve, row "
-            "`loader-applies-no-preset`); `__init__.py:_resolve_run_options` (a config that brings no record: the "
+            "`loader-applies-no-preset`); `_option_stages.py:_resolve_run_options` (a config that brings no record: "
+            "the "
             "fields it has set are the given ones, with the values they have there, row `given-is-fields-set`; a "
             "config `load_pyproject_config()` returned gives no values, as the loader marks every field its stage gave "
             "as set, so what a preset of its table replaces is not reported) for "
-            "`__init__.py:_prepare_generate_facade_config` (`generate()`, a trial of the recommender and the metadata "
+            "`_generation.py:_prepare_generate_facade_config` (`generate()`, a trial of the recommender and the "
+            "metadata "
             "run of dynamic generation: the facade's two warnings, then `preset`, `sentinel`, `implied-model`, then "
             "the metadata path and the output encoding), `_api_generation.py:prepare_target` (a target through "
             "`generate()` and through the command line: the model output, then every stage, with the Pydantic target "
@@ -5566,12 +5576,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("__main__.py", "_resolve_cli_config"),
             Home("__main__.py", "_imply_target_settings"),
             Home("_project_config.py", "load_pyproject_config"),
-            Home("__init__.py", "_resolve_run_options"),
-            Home("__init__.py", "_prepare_generate_facade_config"),
+            Home("_option_stages.py", "_resolve_run_options"),
+            Home("_generation.py", "_prepare_generate_facade_config"),
             Home("_api_generation.py", "prepare_target"),
             Home("dynamic.py", "_without_default_formatting"),
             Home("_recommend/__init__.py", "_plan"),
-            Home("__init__.py", "_resolve_preset"),
+            Home("_option_stages.py", "_resolve_preset"),
         ),
     ),
     DecisionHome(
@@ -5601,7 +5611,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`staged_by`, `after`)"
         ),
         adapters=(
-            "`__init__.py`: `_run_option_stages` and the stages of `_OPTION_STAGES`, `_replaced_options` (the value an "
+            "`_option_stages.py`: `_run_option_stages` and the stages of `_OPTION_STAGES`, `_replaced_options` (the "
+            "value an "
             "option was turned off with), `_warn_of_replaced_options` (the stage or the source that gave the option "
             "that turns it on), `_resolve_run_options` (the record of a config); `_cli_config.py:Config._run_options` "
             "(the record a command-line config carries); `__main__.py`: `_main` (the record of a command, and the "
@@ -5616,7 +5627,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "gave it); `_api_generation.py:implied_conflict` (the sentinel the target implied); "
             "`_option_rules.py:OPTION_RELATIONS` (the `--use-specialized-enum` refusal by the value given, not by "
             "whether one was given, row `specialized-enum-by-value`); `_project_config.py:load_pyproject_config`; left "
-            "out: `__init__.py:_parse_generation_run` (the Pydantic floor warning names `--use-missing-sentinel` as "
+            "out: `_generation.py:_parse_generation_run` (the Pydantic floor warning names `--use-missing-sentinel` as "
             "the source of a 2.12 target from the values, also where an option gave the target, row "
             "`floor-target-from-by-value`), `_cli_config.py:Config.merge_args` and `__main__.py`: "
             "`_plan_jobs_unchecked` and `_batch_outer_settings`, `_cli_messages.py:_recommend_options_conflict` and "
@@ -5624,10 +5635,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "with `prompt.py:_current_options` (the arguments of a command, read from the namespace)"
         ),
         sites=(
-            Home("__init__.py", "_run_option_stages"),
-            Home("__init__.py", "_replaced_options"),
-            Home("__init__.py", "_warn_of_replaced_options"),
-            Home("__init__.py", "_resolve_run_options"),
+            Home("_option_stages.py", "_run_option_stages"),
+            Home("_option_stages.py", "_replaced_options"),
+            Home("_option_stages.py", "_warn_of_replaced_options"),
+            Home("_option_stages.py", "_resolve_run_options"),
             Home("__main__.py", "_main"),
             Home("__main__.py", "_rerun_copy"),
             Home("__main__.py", "_get_job_config"),
@@ -5641,7 +5652,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_target_cli.py", "_base"),
             Home("_api_generation.py", "implied_conflict"),
             Home("_project_config.py", "load_pyproject_config"),
-            Home("__init__.py", "_parse_generation_run"),
+            Home("_generation.py", "_parse_generation_run"),
             Home("__main__.py", "_plan_jobs_unchecked"),
             Home("_cli_messages.py", "_recommend_options_conflict"),
             Home("__main__.py", "_batch_outer_settings"),
@@ -6621,7 +6632,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_client/protocols.py:_literal_problem`, `_recommend/_metrics.py:_collect_words`; "
             "`parser/_schema_object.py:_locate_dump`, `parser/_intersection.py`, "
             "`_fastapi/source_document.py:SourceDocument.schema_member`, `input_model.py`, `_recommend/_signals.py`, "
-            "`_recommend/_metrics.py`, `__init__.py:is_schema`"
+            "`_recommend/_metrics.py`, `_generation.py:is_schema`"
         ),
         sites=(
             Home("parser/_schema_refs.py", "walk_ref_cycle"),
@@ -6633,7 +6644,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_recommend/_metrics.py", "_collect_words"),
             Home("parser/_schema_object.py", "_locate_dump"),
             Home("_fastapi/source_document.py", "SourceDocument.schema_member"),
-            Home("__init__.py", "is_schema"),
+            Home("_generation.py", "is_schema"),
             Home("parser/jsonschema.py", "JsonSchemaParser._walk_schema_objects"),
             Home("parser/jsonschema.py", "JsonSchemaParser._version_checked_subschemas"),
             Home("_input_model_transport.py"),
@@ -6653,13 +6664,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_warning_control.py:quiet`",
         adapters=(
             "`parser/base.py:Parser._run_with_suppressed_warnings` (the hook the settle passes call for a retry "
-            "parse), `__init__.py:_parse_again` (the category its caller names, or none), "
+            "parse), `_generation.py:_parse_again` (the category its caller names, or none), "
             "`_recommend/_trial.py:_run_candidate`, `parser/jsonschema.py:JsonSchemaParser._typed_model_children` (the "
             "extra items type of a key model)"
         ),
         sites=(
             Home("parser/base.py", "Parser._run_with_suppressed_warnings"),
-            Home("__init__.py", "_parse_again"),
+            Home("_generation.py", "_parse_again"),
             Home("_recommend/_trial.py", "_run_candidate"),
             Home("parser/jsonschema.py", "JsonSchemaParser._typed_model_children"),
         ),
@@ -6695,6 +6706,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters="`parser/_pipeline.py:parse_caller`, `parser/_passes/_warnings.py:warn_as_module`",
         sites=(
             Home("parser/_pipeline.py", "parse_caller"),
+            Home("parser/_passes/_warnings.py", "warn_as_module"),
+        ),
+    ),
+    DecisionHome(
+        decision=(
+            "which module the filters of a warning match, for code that moved out of a public module: the module "
+            "it came from, and the package for a frame in the generation core"
+        ),
+        homes=(Home("_warning_control.py", "warn_at_frame"),),
+        core="`_warning_control.py:warn_at_frame`",
+        adapters=(
+            "`_warning_control.py:warn_as_public`, `parser/_pipeline.py:warn_at_parse_caller`, "
+            "`parser/_passes/_warnings.py:warn_as_module`"
+        ),
+        sites=(
+            Home("_warning_control.py", "warn_as_public"),
+            Home("parser/_pipeline.py", "warn_at_parse_caller"),
             Home("parser/_passes/_warnings.py", "warn_as_module"),
         ),
     ),
@@ -6773,14 +6801,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_message_text.py:extra_requirement`, `_message_text.py:install_command`",
         adapters=(
-            "the missing-extra errors and warnings (`__init__.py:enable_debug_message`, `http.py:_get_http_stack`, "
+            "the missing-extra errors and warnings (`_debug.py:enable_debug_message`, `http.py:_get_http_stack`, "
             "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, "
             "`parser/openapi.py:OpenAPIParser.parse_raw` (`--validation`), `parser/protobuf.py`, `parser/graphql.py`), "
             "the help of `--url`, `--formatters` and `--debug` (`_option_table.py`), the `extra.httpx2` entry of "
             "`experimental.py`"
         ),
         sites=(
-            Home("__init__.py", "enable_debug_message"),
+            Home("_debug.py", "enable_debug_message"),
             Home("http.py", "_get_http_stack"),
             Home("watch.py", "_get_watchfiles"),
             Home("format.py", "CodeFormatter._find_ruff_path"),
@@ -7286,13 +7314,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("http.py", "_get_configured_body"),),
         core="`http.py:_get_configured_body`",
         adapters=(
-            "`__init__.py:_prepare_generation_input` (a `--url` input, through the remote text cache), "
+            "`_generation.py:_prepare_generation_input` (a `--url` input, through the remote text cache), "
             "`_recommend/__init__.py:_read_input` (the `--url` input of `--recommend-options`), "
             "`parser/base.py:Parser._get_text_from_url` (a remote reference, through the parser's session and the "
             "remote text cache)"
         ),
         sites=(
-            Home("__init__.py", "_prepare_generation_input"),
+            Home("_generation.py", "_prepare_generation_input"),
             Home("_recommend/__init__.py", "_read_input"),
             Home("parser/base.py", "Parser._get_text_from_url"),
         ),
@@ -7606,14 +7634,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`format.py:_model_formatter_arguments`",
         adapters=(
             "the formatter of a parse (`parser/base.py:Parser._build_code_formatter`, which a parser subclass may "
-            "override), the deferred Ruff run over a written package (`__init__.py:_format_deferred_output`) and the "
+            "override), the deferred Ruff run over a written package (`_generation.py:_format_deferred_output`) and "
+            "the "
             "formatter of a client or server package (`_api_generation.py:_Planner.finish`, a `TargetCodeFormatter`); "
             "each constructs the formatter itself and adds the settings path, the third-party packages and deferred "
             "formatting, and the formatter of a parse and of a client or server package also the formatter directory"
         ),
         sites=(
             Home("parser/base.py", "Parser._build_code_formatter"),
-            Home("__init__.py", "_format_deferred_output"),
+            Home("_generation.py", "_format_deferred_output"),
             Home("_api_generation.py", "_Planner.finish"),
         ),
     ),

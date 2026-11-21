@@ -7,6 +7,7 @@ returns them without importing the package root or the command line.
 
 from __future__ import annotations
 
+import sys
 from collections import UserDict
 from collections.abc import Callable, Sequence
 from enum import Enum, IntEnum
@@ -33,6 +34,15 @@ ResponseObserver: TypeAlias = Callable[
     [str, Sequence[tuple[str, str]] | None, Sequence[tuple[str, str]] | None, bytes], None
 ]
 """Take a remote fetch's URL, headers and query parameters as requested, and the body that answered them."""
+
+# Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
+if sys.version_info >= (3, 14):
+    from typing import TypeAliasType
+else:
+    from typing_extensions import TypeAliasType
+
+YamlScalar: TypeAlias = str | int | float | bool | None
+YamlValue = TypeAliasType("YamlValue", "dict[str, YamlValue] | list[YamlValue] | YamlScalar")
 
 GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
 """Type alias for multiple generated modules.
@@ -211,4 +221,4 @@ SchemaParseError.__module__ = _ROOT_MODULE
 SchemaFetchError.__module__ = _ROOT_MODULE
 Exit.__module__ = "datamodel_code_generator.__main__"
 
-__all__ = ["DefaultPutDict", "LiteralType", "ResponseObserver"]
+__all__ = ["DefaultPutDict", "LiteralType", "ResponseObserver", "YamlScalar", "YamlValue"]
