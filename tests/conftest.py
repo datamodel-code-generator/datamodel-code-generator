@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import difflib
 import importlib
-import inspect
 import json
 import os
 import re
@@ -2326,13 +2325,7 @@ def create_assert_file_content(
     ) -> None:
         """Assert that file content matches expected external file."""
         __tracebackhide__ = True
-        if expected_name is None:
-            frame = inspect.currentframe()
-            assert frame is not None
-            assert frame.f_back is not None
-            expected_name = _infer_expected_file(frame.f_back.f_code.co_name)
-            del frame
-
+        assert expected_name is not None, "name the stored file: pytest names it when no helper compares a file by path"
         content = output_file.read_text(encoding=encoding)
         if transform is not None:
             content = transform(content)

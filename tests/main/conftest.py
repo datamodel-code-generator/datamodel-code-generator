@@ -1043,7 +1043,6 @@ def run_main_and_assert(  # noqa: PLR0912
     file_should_not_exist: Path | Sequence[Path] | None = None,
     output_should_not_exist: bool = False,
     # Verification options
-    ignore_whitespace: bool = False,
     transform: Callable[[str], str] | None = None,
     # Capture options
     capsys: pytest.CaptureFixture[str] | None = None,
@@ -1098,7 +1097,6 @@ def run_main_and_assert(  # noqa: PLR0912
         output_should_not_exist: Assert output_path does NOT exist
 
     Verification modifiers:
-        ignore_whitespace: Ignore whitespace when comparing (for expected_output)
         transform: Transform output before comparison
 
     Capture verification:
@@ -1270,12 +1268,7 @@ def run_main_and_assert(  # noqa: PLR0912
         if output_path is None:  # pragma: no cover
             pytest.fail("output_path is required when using expected_output")
         actual_output = output_path.read_text(encoding="utf-8")
-        if ignore_whitespace:
-            if "".join(actual_output.split()) != "".join(expected_output.split()):  # pragma: no cover
-                pytest.fail(
-                    f"Output mismatch (ignoring whitespace)\nExpected:\n{expected_output}\n\nActual:\n{actual_output}"
-                )
-        elif actual_output != expected_output:  # pragma: no cover
+        if actual_output != expected_output:  # pragma: no cover
             pytest.fail(f"Output mismatch\nExpected:\n{expected_output}\n\nActual:\n{actual_output}")
     elif assert_func is not None:
         if output_path is None:  # pragma: no cover

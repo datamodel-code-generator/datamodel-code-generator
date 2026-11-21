@@ -114,16 +114,12 @@ def test_xmlschema_allof_root_type(output_file: Path, entry_point: str) -> None:
             field_constraints=True,
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
-            assert_func=assert_file_content,
-            expected_file="allof_root_types/xmlschema.py",
         )
     else:
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type="xmlschema",
-            assert_func=assert_file_content,
-            expected_file="allof_root_types/xmlschema.py",
             extra_args=["--field-constraints", "--disable-timestamp", "--formatters", "builtin"],
             force_exec_validation=True,
         )

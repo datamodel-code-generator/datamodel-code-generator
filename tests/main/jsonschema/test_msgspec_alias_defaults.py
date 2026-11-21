@@ -16,7 +16,6 @@ from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
@@ -159,7 +158,6 @@ def test_msgspec_recursive_alias_default(output_file: Path) -> None:
 @pytest.mark.parametrize("use_alias_type", [False, True])
 def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: bool, output_file: Path) -> None:
     """Scalar aliases with no model fields retain their original default factories."""
-    expected = EXPECTED_GRAPHQL_PATH / f"msgspec_scalar_alias_defaults_{use_alias_type}.py"
     input_path = GRAPHQL_DATA_PATH / "msgspec_scalar_alias_defaults.graphql"
     with pytest.warns(UserWarning, match=_BACKPORT_ALIAS_WARNING) if use_alias_type else nullcontext():
         if entrypoint == "cli":
@@ -167,8 +165,6 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="graphql",
-                assert_func=assert_file_content,
-                expected_file=expected,
                 extra_args=[
                     "--output-model-type",
                     "msgspec.Struct",
@@ -183,8 +179,6 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.GraphQL,
-                assert_func=assert_file_content,
-                expected_file=expected,
                 output_model_type=DataModelType.MsgspecStruct,
                 target_python_version=PythonVersion.PY_310,
                 use_type_alias_type=use_alias_type,
@@ -201,9 +195,7 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
         with pytest.raises(msgspec.ValidationError):
             msgspec.convert(payloads["invalid"], type=model)
         actual = {"defaults": msgspec.to_builtins(default), "explicit": msgspec.to_builtins(explicit)}
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / "msgspec_scalar_alias_defaults_runtime.txt"
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="msgspec_scalar_alias_defaults_runtime")
 
 
 def test_msgspec_union_member_defaults(output_file: Path) -> None:

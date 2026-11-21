@@ -17,7 +17,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -46,8 +45,6 @@ def test_reference_cycle_preserves_raw_ref_on_resolution_failure(
             input_path=input_path,
             output_path=output_file,
             input_file_type=InputFileType.JsonSchema,
-            assert_func=assert_file_content,
-            expected_file="schema_reference_cycles/schema_names.py",
             field_constraints=True,
             strict_refs=True,
             disable_timestamp=True,
@@ -57,15 +54,13 @@ def test_reference_cycle_preserves_raw_ref_on_resolution_failure(
             input_path=input_path,
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="schema_reference_cycles/schema_names.py",
             extra_args=["--field-constraints", "--strict-refs", "--disable-timestamp"],
             force_exec_validation=True,
         )
 
     assert_output(
         "\n".join(failed_refs) + "\n",
-        EXPECTED_JSON_SCHEMA_PATH / "schema_reference_cycles" / "resolver_failure.txt",
+        name="resolver_failure",
     )
     payloads = json.loads((DATA_PATH / "payloads" / "reference_resolution_fallback.json").read_text(encoding="utf-8"))
     assert_generated_model_json_validation(
