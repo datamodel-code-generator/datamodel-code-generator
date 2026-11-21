@@ -3430,7 +3430,6 @@ import pytest
 from tests.conftest import assert_generated_modules_output, assert_output, stored_expected
 
 EXPECTED = Path(__file__).parent / "data" / "expected"
-OUTSIDE_A_TEST = stored_expected(EXPECTED / "m" / "a.txt")
 
 
 def test_a():
@@ -3453,7 +3452,6 @@ def test_reader(tmp_path):
     assert stored_expected(EXPECTED / "tree" / "notes.txt") == EXPECTED / "tree" / "notes.txt"
     assert stored_expected(EXPECTED / "unknown.txt") == EXPECTED / "unknown.txt"
     assert stored_expected(tmp_path) == tmp_path
-    assert OUTSIDE_A_TEST == EXPECTED / "m" / "a.txt"
     assert stored_expected(EXPECTED / "o.txt").read_text() == "base\\n"
     assert stored_expected(EXPECTED / "mixed" / "r.md") == EXPECTED / "mixed" / "r.md"
     assert stored_expected(EXPECTED / "mixed" / "a.py") == EXPECTED / "pyfiles" / "a.py"

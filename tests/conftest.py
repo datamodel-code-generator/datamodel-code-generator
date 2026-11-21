@@ -2136,26 +2136,21 @@ def _own_storage(ledger: _Ledger, item: pytest.Item, name: str) -> str | None:
     return None
 
 
-@cache
-def _tests_index() -> RefsIndex:
-    """Return the index of this repository's tests, for expected files read outside a running test."""
-    return RefsIndex(Path(__file__).parent)
-
-
 def stored_expected(path: Path) -> Path:
     """Return the file that stores the expected output at a path below the expected root.
 
     Tests with equal output share one stored file, so a test that reads an expected file itself (as input, or to
     check another test's output) reads it through this. The running test's own ``.refs`` lines decide first, then
-    those of any test; a path the index does not name, or outside the expected root, is returned unchanged.
+    those of any test; a path the index does not name, or outside the expected root, is returned unchanged. It needs
+    a running test.
     """
     ledger = _ledger()
-    index = _tests_index() if ledger is None else ledger.index
+    assert ledger is not None, "stored_expected needs a running test"
+    index = ledger.index
     if not path.is_relative_to(index.expected_root):
         return path
     name = path.relative_to(index.expected_root).as_posix()
-    own = None if ledger is None else _own_storage(ledger, _CURRENT_ITEMS[-1], name)
-    storage = own or index.storage(name)
+    storage = _own_storage(ledger, _CURRENT_ITEMS[-1], name) or index.storage(name)
     return path if storage is None else index.expected_root / storage
 
 
