@@ -6513,6 +6513,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_origins.py"
+qualname = "with_json_number"
+rule_code = "MUT205"
+target = "DataType"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_origins.py"
 qualname = "with_subtype_ref"
 rule_code = "MUT205"
 target = "DataType"
@@ -7682,13 +7689,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_msgspec_member_slots"
-rule_code = "MUT204"
-target = "datamodel_code_generator._json_schema.literal_value_kind"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "_msgspec_number_slot"
 rule_code = "MUT204"
 target = "datamodel_code_generator._json_schema.literal_value_kind"
@@ -8714,34 +8714,6 @@ path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "tuple_unique_items_warning"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference._BaseModel._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "warn_about_msgspec_decoding"
-rule_code = "MUT203"
-target = "datamodel_code_generator.reference._BaseModel._*"
-count = 4
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "warn_about_msgspec_decoding"
-rule_code = "MUT203"
-target = "datamodel_code_generator.types.DataType._*"
-count = 4
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "warn_about_msgspec_decoding"
-rule_code = "MUT204"
-target = "datamodel_code_generator.reference._BaseModel._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "warn_about_msgspec_decoding"
-rule_code = "MUT204"
-target = "datamodel_code_generator.types.DataType._*"
 count = 1
 
 [[entries]]
