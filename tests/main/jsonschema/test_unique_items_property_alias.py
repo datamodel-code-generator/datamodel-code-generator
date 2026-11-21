@@ -43,6 +43,7 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
+        name="serialization",
         **serialization_kwargs,
     )
     generate(input_=schema, output=output_file, **serialization_kwargs)
@@ -60,6 +61,7 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
+        name="population",
         **population_kwargs,
     )
     generate(input_=schema, output=output_file, **population_kwargs)
@@ -78,6 +80,7 @@ def test_main_jsonschema_unique_items_property_alias(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
+        name="alias_generator",
         **serialization_generator_kwargs,
     )
     generate(input_=schema, output=output_file, **serialization_generator_kwargs)

@@ -59,6 +59,7 @@ def test_allof_root_types(output_file: Path, fixture: str, field_constraints: bo
         run_generate_file_and_assert(
             input_path=input_path,
             output_path=output_file,
+            name="file",
             **options,
         )
     else:

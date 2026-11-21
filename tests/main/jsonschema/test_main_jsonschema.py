@@ -27064,6 +27064,7 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type=InputFileType.JsonSchema,
+        name="refreshed",
         **generate_kwargs,
     )
 
@@ -27111,6 +27112,7 @@ def test_generate_refreshes_retargeted_custom_template_directory_symlink(tmp_pat
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type=InputFileType.JsonSchema,
+        name="refreshed",
         **generate_kwargs,
     )
 
@@ -27142,6 +27144,7 @@ def test_main_refreshes_modified_custom_template_between_calls(tmp_path: Path) -
         output_path=output_path,
         input_file_type="jsonschema",
         extra_args=extra_args,
+        name="refreshed",
     )
 
 
@@ -29542,6 +29545,7 @@ def test_main_jsonschema_generate_schema_validators_parser_branch_runtime(
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        name="required_ref",
     )
     assert_generated_model_json_validation(
         required_ref_output_file,
@@ -30846,6 +30850,7 @@ def test_schema_reference_cycles_preserve_normal_output(output_file: Path, fixtu
         strict_refs=True,
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
+        name="model",
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "schema_reference_cycles" / f"{fixture}.json",
@@ -30853,6 +30858,7 @@ def test_schema_reference_cycles_preserve_normal_output(output_file: Path, fixtu
         input_file_type="jsonschema",
         extra_args=["--field-constraints", "--strict-refs", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
+        name="model",
     )
     if fixture == "schema_names":
         assert_generated_model_json_validation(
@@ -35536,6 +35542,7 @@ def test_explicit_alias_names_valid(case: str, output_file: Path) -> None:
         snake_case_field=True,
         disable_timestamp=True,
         unchanged_inputs={"aliases": EXPLICIT_ALIAS_ALIASES[case]},
+        name="model",
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "explicit_alias_names.json",
@@ -35550,6 +35557,7 @@ def test_explicit_alias_names_valid(case: str, output_file: Path) -> None:
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        name="model",
     )
     fields = {
         "normal": ("a", "b"),
@@ -35605,6 +35613,7 @@ def test_explicit_alias_names_valid_shadows(
         target_pydantic_version=target_version,
         disable_timestamp=True,
         unchanged_inputs={"aliases": EXPLICIT_ALIAS_ALIASES[case]},
+        name="model",
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "explicit_alias_names.json",
@@ -35619,6 +35628,7 @@ def test_explicit_alias_names_valid_shadows(
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        name="model",
     )
     name = {"keyword": "class_", "invalid": "not_valid", "empty": "field_", "msgspec_field": "field"}.get(
         case, EXPLICIT_ALIAS_ALIASES[case]["a"]
@@ -35762,6 +35772,7 @@ def test_explicit_alias_names_configured_namespace(
         extra_template_data=defaultdict(dict, extra),
         target_pydantic_version=target_version,
         disable_timestamp=True,
+        name="model",
     )
     run_main_and_assert(
         input_path=input_path,
@@ -35776,6 +35787,7 @@ def test_explicit_alias_names_configured_namespace(
             *(["--target-pydantic-version", target_version.value] if target_version else []),
         ],
         force_exec_validation=True,
+        name="model",
     )
     with pytest.warns(UserWarning, match="shadows an attribute"):
         assert_generated_model_json_validation(
@@ -35817,6 +35829,7 @@ def test_explicit_alias_names_unicode(backend: DataModelType, output_file: Path)
         aliases=EXPLICIT_ALIAS_ALIASES["unicode"],
         output_model_type=backend,
         disable_timestamp=True,
+        name="model",
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "explicit_alias_names_unicode.json",
@@ -35830,6 +35843,7 @@ def test_explicit_alias_names_unicode(backend: DataModelType, output_file: Path)
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        name="model",
     )
 
 
@@ -35903,6 +35917,7 @@ def test_explicit_alias_names_custom_namespace(
         aliases={"a": "model_validate"},
         base_class=base_class,
         disable_timestamp=True,
+        name="model",
     )
     run_main_and_assert(
         input_path=input_path,
@@ -35910,6 +35925,7 @@ def test_explicit_alias_names_custom_namespace(
         input_file_type="jsonschema",
         extra_args=["--aliases", '{"a": "model_validate"}', "--base-class", base_class, "--disable-timestamp"],
         force_exec_validation=True,
+        name="model",
     )
     with pytest.warns(UserWarning, match="shadows an attribute"):
         assert_generated_model_json_validation(
@@ -39221,6 +39237,7 @@ def test_undeclared_required_variants(output_file: Path, mode: str, *, enabled: 
             "--disable-timestamp",
             *(["--schema-validator-type", "pydantic-v2"] if enabled else []),
         ],
+        name="model",
     )
     api_output = output_file.with_name("api.py")
     run_generate_and_assert(
@@ -39232,6 +39249,7 @@ def test_undeclared_required_variants(output_file: Path, mode: str, *, enabled: 
             schema_validator_type=SchemaValidatorType.PydanticV2 if enabled else None,
             disable_timestamp=True,
         ),
+        name="model",
     )
     payloads = json.loads((DATA_PATH / "payloads/variant_required.json").read_text())
     results = {}
@@ -40563,12 +40581,14 @@ def test_main_jsonschema_read_schema_version_per_document_explicit_version(tmp_p
         output_path=expected,
         input_file_type="jsonschema",
         extra_args=common,
+        name="tree",
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "schema_version_per_document",
         output_path=output,
         input_file_type="jsonschema",
         extra_args=[*common, "--read-schema-version-per-document"],
+        name="tree",
     )
 
 

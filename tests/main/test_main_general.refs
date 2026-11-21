@@ -684,29 +684,23 @@ minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_t
 [test_check_directory_file_undecodable]
 	main/main_general/check_directory_file_undecodable/	= main/main_general/check_directory_extra_file/
 [test_check_directory_ignores_pycache]
-	main/main_general/check_directory_ignores_pycache.2/	= main/main_general/check_directory_extra_file/
-	main/main_general/check_directory_ignores_pycache/	= main/main_general/check_directory_extra_file/
+	main/main_general/check_directory_ignores_pycache.tree/	= main/main_general/check_directory_extra_file/
 [test_check_directory_matches]
-	main/main_general/check_directory_matches.2/	= main/main_general/check_directory_extra_file/
-	main/main_general/check_directory_matches/	= main/main_general/check_directory_extra_file/
+	main/main_general/check_directory_matches.tree/	= main/main_general/check_directory_extra_file/
 [test_check_directory_missing_file]
 	main/main_general/check_directory_missing_file/	= main/main_general/check_directory_extra_file/
 [test_check_file_matches]
-	main/main_general/check_file_matches.2.py	= main/person.py
-	main/main_general/check_file_matches.py	= main/person.py
+	main/main_general/check_file_matches.model.py	= main/person.py
 [test_check_normalizes_line_endings]
-	main/main_general/check_normalizes_line_endings.2.py	= main/person.py
-	main/main_general/check_normalizes_line_endings.py	= main/person.py
+	main/main_general/check_normalizes_line_endings.model.py	= main/person.py
 [test_check_respects_pyproject_toml_settings]
-	main/main_general/check_respects_pyproject_toml_settings.2.py	= main/main_general/check_respects_pyproject_toml_settings.py
-	main/main_general/check_respects_pyproject_toml_settings.py
+	main/main_general/check_respects_pyproject_toml_settings.model.py
 [test_check_suffixless_file_differs]
 	main/main_general/check_suffixless_file_differs.txt
 [test_check_suffixless_file_does_not_exist]
 	main/main_general/check_suffixless_file_does_not_exist.txt
 [test_check_suffixless_file_matches]
-	main/main_general/check_suffixless_file_matches
-	main/main_general/check_suffixless_file_matches.2
+	main/main_general/check_suffixless_file_matches.model
 [test_class_decorators]
 	main/main_general/class_decorators.py
 [test_class_decorators_all_output_types]
@@ -907,11 +901,10 @@ replace	main/main_general/generate_custom_file_header_line_breaks_end_as_file_li
 [test_generate_parent_scoped_naming_backward_compat]
 	main/main_general/generate_parent_scoped_naming_backward_compat.py	= main/generate_parent_scoped_naming_backward_compat.py
 [test_generate_path_lists_keep_caller_or_common_base]
-	main/main_general/generate_path_lists_keep_caller_or_common_base.2.py
-	main/main_general/generate_path_lists_keep_caller_or_common_base.3/	= main/jsonschema/main_jsonschema/multiple_files/
 	main/main_general/generate_path_lists_keep_caller_or_common_base.api/	= main/main_general/generate_auto_path_list_reuses_detected_first_file[utf-16-_r_n-False].api/
+	main/main_general/generate_path_lists_keep_caller_or_common_base.cli/	= main/jsonschema/main_jsonschema/multiple_files/
 	main/main_general/generate_path_lists_keep_caller_or_common_base.files/
-	main/main_general/generate_path_lists_keep_caller_or_common_base.py	= main/main_general/generate_path_lists_keep_caller_or_common_base.2.py
+	main/main_general/generate_path_lists_keep_caller_or_common_base.model.py
 	main/main_general/generate_path_lists_keep_caller_or_common_base.single/
 [test_generate_pyproject_config_json_mapping_option_preserves_value]
 	main/main_general/generate_pyproject_config_json_mapping_option_preserves_value.stdout.txt
@@ -1119,8 +1112,7 @@ report	main/main_general/module_imports_written_outside_the_import_ledger[report
 [test_msgspec_constraints_on_a_graphql_scalar]
 	main/main_general/msgspec_constraints_on_a_graphql_scalar.txt
 [test_no_use_type_checking_imports]
-	main/main_general/no_use_type_checking_imports.2/	= main/openapi/no_use_type_checking_imports//*.py
-	main/main_general/no_use_type_checking_imports/	= main/openapi/no_use_type_checking_imports//*.py
+	main/main_general/no_use_type_checking_imports.tree/
 [test_output_format_json_writes_suffixless_file]
 False	main/main_general/output_format_json_writes_suffixless_file[False]	= main/main_general/check_suffixless_file_matches
 False	main/main_general/output_format_json_writes_suffixless_file[False].output_format_json.txt
@@ -1290,8 +1282,7 @@ check	main/main_general/template_assignment_check_reports_a_line_the_facts_do_no
 off	main/main_general/template_assignment_check_reports_a_line_the_facts_do_not_bind[off].txt
 report	main/main_general/template_assignment_check_reports_a_line_the_facts_do_not_bind[report].txt
 [test_type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff]
-	main/main_general/type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff.2/	= main/openapi/no_use_type_checking_imports//*.py
-	main/main_general/type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff/	= main/openapi/no_use_type_checking_imports//*.py
+	main/main_general/type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff.tree/	= main/main_general/no_use_type_checking_imports.tree/
 [test_type_expression_whose_field_changes_after_render_preparation]
 off	main/main_general/type_expression_whose_field_changes_after_render_preparation[off].txt
 report	main/main_general/type_expression_whose_field_changes_after_render_preparation[report].report.txt

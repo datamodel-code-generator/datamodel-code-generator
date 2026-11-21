@@ -90,6 +90,7 @@ def test_openapi_modular_relative_output_exec_current_version(tmp_path: Path, mo
             output_path=Path("model"),
             extra_args=get_current_version_args("--output-model-type", "pydantic_v2.BaseModel"),
             skip_code_validation=False,
+            name="tree",
         )
         shutil.rmtree("model")
 
@@ -108,6 +109,7 @@ def test_jsonschema_nested_packages_exec_current_version(tmp_path: Path) -> None
                 *("--use-title-as-name", "--snake-case-field"),
             ),
             skip_code_validation=False,
+            name=name,
         )
 
 
@@ -315,13 +317,13 @@ def test_older_target_outputs_are_exported_for_their_python(
     export = tmp_path / "export"
     monkeypatch.setenv(main_conftest._EXPORT_OLDER_TARGET_OUTPUTS, str(export))
     (tmp_path / "helper.py").write_text("VALUE = 1\n", encoding="utf-8")
-    for extra_args in (
-        [],
-        ["--target-python-version", "3.10", "--target-pydantic-version", "2"],
-        get_current_version_args(),
+    for role, extra_args in (
+        ("default", []),
+        ("older", ["--target-python-version", "3.10", "--target-pydantic-version", "2"]),
+        ("current", get_current_version_args()),
     ):
         run_main_and_assert(
-            input_path=JSON_SCHEMA_DATA_PATH / "person.json", output_path=output_file, extra_args=extra_args
+            input_path=JSON_SCHEMA_DATA_PATH / "person.json", output_path=output_file, extra_args=extra_args, name=role
         )
     cases = sorted(
         (

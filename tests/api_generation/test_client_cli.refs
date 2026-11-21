@@ -29,9 +29,8 @@ retries-options	api_generation/client_cli/equivalence[retries-options]/	= main/g
 retries-pyproject	api_generation/client_cli/equivalence[retries-pyproject]/	= main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
 retries-python	api_generation/client_cli/equivalence[retries-python]/	= main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
 [test_client_cli_generate]
-	api_generation/client_cli/generate.2.py	= main/generation_platform/client/cli/options/models.py
 	api_generation/client_cli/generate.client.py
-	api_generation/client_cli/generate.py	= main/generation_platform/client/cli/options/models.py
+	api_generation/client_cli/generate.model.py	= main/generation_platform/client/cli/options/models.py
 	api_generation/client_cli/generate.stderr.txt	= api_generation/client_cli/generation_json.notice.txt
 	api_generation/client_cli/generate.stdout.txt
 [test_client_cli_generate_cli_command]

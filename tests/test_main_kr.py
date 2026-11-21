@@ -849,6 +849,7 @@ def test_generate_pyproject_config_float_round_trip(tmp_path: Path, output_file:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--http-timeout", "1.5"],
+        name="model",
     )
     assert_output(output_file.read_text(encoding="utf-8"), name="model", suffix=".py")
 
@@ -860,6 +861,7 @@ def test_generate_pyproject_config_float_round_trip(tmp_path: Path, output_file:
             output_path=config_output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
+            name="model",
         )
 
     assert_output(config_output_file.read_text(encoding="utf-8"), name="model", suffix=".py")

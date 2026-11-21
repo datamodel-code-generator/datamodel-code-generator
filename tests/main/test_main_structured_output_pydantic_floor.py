@@ -107,6 +107,7 @@ def test_check_needs_no_payload_models(
         output_path=output,
         input_file_type=input_file_type,
         extra_args=["--disable-timestamp"],
+        name="model",
     )
     files = sorted(output.rglob("*.py")) if output.is_dir() else [output]
     match change:
@@ -124,6 +125,7 @@ def test_check_needs_no_payload_models(
         input_file_type=input_file_type,
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK if change == "none" else Exit.DIFF,
+        name="model",
     )
     captured = capsys.readouterr()
     assert_output(captured.out.replace(tmp_path.as_posix(), "<TMP>"), name="check")

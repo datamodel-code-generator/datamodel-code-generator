@@ -1055,8 +1055,7 @@ released	input_model/read_dataclass_fields_by_alias[released].txt	= input_model/
 [test_input_model_restores_cwd_in_sys_path]
 	input_model/restores_cwd_in_sys_path.txt	= input_model/path_format.txt
 [test_input_model_restores_cwd_package_modules]
-	input_model/restores_cwd_package_modules.2.txt	= input_model/path_format.txt
-	input_model/restores_cwd_package_modules.txt	= input_model/path_format.txt
+	input_model/restores_cwd_package_modules.model.txt	= input_model/path_format.txt
 [test_input_model_reuse_every_reached_input_model_type]
 order-reuse-all	input_model/reuse_every_reached_input_model_type[order-reuse-all].txt
 order-reuse-all-option	input_model/reuse_every_reached_input_model_type[order-reuse-all-option].txt

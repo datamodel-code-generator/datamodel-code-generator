@@ -1,0 +1,18 @@
+[[change]]
+id = "f-same-name-outputs"
+category = "harness"
+title = "Name the outputs tests stored as numbered .2 and .3 files"
+summary = "Each output a test stored as <label>.2 or .3 now has a name: outputs the test means to be equal share one, the others get a role. Suffixless outputs get a role that reads as a suffix, and the check cases name their generation and keep the default label for the tree the check compares; the package writes the same output."
+refs = ["#7334"]
+covers = [
+    "api_generation/fastapi_cli/check_outputs[json-package-in-models-services].2/",
+    "api_generation/fastapi_cli/check_outputs[json-package-in-models-services]/",
+    "api_generation/fastapi_cli/check_outputs[json-suffixless-models-in-package].2",
+    "api_generation/fastapi_cli/check_outputs[text-package-in-models-services].2/",
+    "api_generation/fastapi_cli/check_outputs[text-package-in-models-services]/",
+    "api_generation/fastapi_cli/check_outputs[text-suffixless-models-in-package].2",
+    "api_generation/fastapi_cli/generation_json[suffixless-model]",
+    "api_generation/fastapi_cli/generation_json[suffixless-model].2",
+    "main/main_general/check_suffixless_file_matches",
+    "main/main_general/check_suffixless_file_matches.2",
+]

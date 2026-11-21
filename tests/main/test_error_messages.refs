@@ -18,68 +18,52 @@
 [test_dangling_ref_warning_names_the_caller_of_a_traced_parse]
 	main/error_messages/dangling_ref_warning_names_the_caller_of_a_traced_parse.txt
 [test_directory_input_custom_header_trailing_newlines]
-False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].model.py	= main/person.py
-False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
-False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n].2/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
+False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].tree/
 False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n].model.py	= main/person.py
-False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
-False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].2/
+False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n].tree/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].tree/
 False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].model.py	= main/person.py
-False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].2/
-True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
+False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].tree/
 True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].model.py	= main/person.py
-True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
-True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n].2/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
+True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].tree/
 True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n].model.py	= main/person.py
-True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
-True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].2/
+True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n].tree/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].tree/
 True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].model.py	= main/person.py
-True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].2/
+True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].tree/
 [test_directory_input_excludes_metadata_symlink_spellings]
 False	main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 True	main/error_messages/directory_input_excludes_metadata_symlink_spellings[True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 [test_directory_input_preserves_nonstandard_schema_files]
-.json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].2/
 .json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].model.py	= main/person.py
 .json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
-.json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].2/
-.py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].2/
+.json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].tree/
 .py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].model.py	= main/person.py
 .py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
-.py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].2/
-.py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
+.py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].tree/
 .py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].model.py	= main/person.py
 .py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
-.py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
-.py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x].2/
-.py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x].2/
+.py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].tree/
+.py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x].tree/
 .py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~94e6d424.model.py	= main/person.py
 .py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~94e6d424.source.txt
-.py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].2/
 .py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].model.py	= main/person.py
-.py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].2/
+.py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].tree/
 .py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model~e8fd87b6].source.txt
-.py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].2/
 .py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].model.py	= main/person.py
 .py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].source.txt
-.py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].2/
-.py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].2/
+.py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].tree/
 .py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].model.py	= main/person.py
 .py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].source.txt
-.py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].2/
-.py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.2/
+.py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].tree/
 .py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.model.py	= main/person.py
 .py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.source.txt
-.py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.2/
-.py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].2/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
+.py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.tree/
 .py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].model.py	= main/person.py
 .py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
-.py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
-.schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].2/
+.py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].tree/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].tree/
 .schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].model.py	= main/person.py
 .schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
-.schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].2/
+.schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].tree/
 [test_directory_input_retains_type_aliases_without_future_imports]
 	main/error_messages/directory_input_retains_type_aliases_without_future_imports.tree/
 [test_empty_local_ref_is_valid_in_strict_mode]

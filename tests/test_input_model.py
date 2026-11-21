@@ -34,7 +34,6 @@ from tests.conftest import (
     TEST_DEFAULT_FORMATTER_ENV,
     assert_inputs_not_mutated,
     assert_output,
-    default_output_count,
     freeze_time,
 )
 from tests.data.python.input_model import inherited_overrides, union_annotations
@@ -119,8 +118,9 @@ def run_input_model_and_assert(
     input_model: str,
     output_path: Path,
     extra_args: Sequence[str] | None = None,
+    name: str | None = None,
 ) -> None:
-    """Run main with --input-model and assert results."""
+    """Run main with --input-model and assert results; ``name`` names the stored output of a second run."""
     __tracebackhide__ = True
     with freeze_time(TIMESTAMP):
         run_main_with_args(
@@ -129,8 +129,7 @@ def run_input_model_and_assert(
             use_builtin_default_formatter=False,
             isolate_model_template_cache=True,
         )
-    count = default_output_count()
-    assert_output(output_path.read_text(encoding="utf-8"), name=None if count == 1 else str(count))
+    assert_output(output_path.read_text(encoding="utf-8"), name=name)
 
 
 def run_input_model_error_and_assert(
@@ -469,6 +468,7 @@ def test_input_model_restores_cwd_package_modules(
         run_input_model_and_assert(
             input_model=f"{package_name}.model:User",
             output_path=directory / "output.py",
+            name="model",
         )
         assert (directory / "loaded.txt").read_text(encoding="utf-8") == marker
         _assert_sys_modules_with_prefix(package_name, existing_modules)
@@ -1651,8 +1651,7 @@ def run_multiple_input_models_and_assert(
             use_builtin_default_formatter=False,
             isolate_model_template_cache=True,
         )
-    count = default_output_count()
-    assert_output(output_path.read_text(encoding="utf-8"), name=None if count == 1 else str(count))
+    assert_output(output_path.read_text(encoding="utf-8"))
 
 
 def run_multiple_input_models_error_and_assert(

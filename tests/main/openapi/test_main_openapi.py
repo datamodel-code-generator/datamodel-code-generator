@@ -3233,6 +3233,7 @@ def test_main_openapi_detects_created_include_only_template_directory(
             input_file_type=None,
             extra_args=extra_args,
             expected_stderr=inferred_message.format("openapi") + "\n",
+            name="created",
         )
 
 

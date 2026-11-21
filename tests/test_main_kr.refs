@@ -85,10 +85,8 @@ typed_dict_closed.json-typing.TypedDict	main_kr/generate_cli_command_reconstruct
 [test_generate_pyproject_config_excludes_meta_options]
 	main_kr/generate_pyproject_config_excludes_meta_options.stdout.txt
 [test_generate_pyproject_config_float_round_trip]
-	main_kr/generate_pyproject_config_float_round_trip.2.py	= main/person.py
 	main_kr/generate_pyproject_config_float_round_trip.config.txt
 	main_kr/generate_pyproject_config_float_round_trip.model.py	= main/person.py
-	main_kr/generate_pyproject_config_float_round_trip.py	= main/person.py
 [test_generate_pyproject_config_helper_uses_default_formatter]
 	main_kr/generate_pyproject_config_helper_uses_default_formatter.txt
 [test_generate_pyproject_config_with_boolean_options]

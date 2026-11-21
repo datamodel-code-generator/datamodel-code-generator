@@ -74,6 +74,7 @@ def test_numeric_constraint_precision(
         run_generate_file_and_assert(
             input_path=input_path,
             output_path=output_file,
+            name="file",
             **options,
         )
     else:

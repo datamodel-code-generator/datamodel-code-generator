@@ -132,6 +132,7 @@ def test_client_cli_generate(
         input_file_type="openapi",
         extra_args=[*OPTIONS, *CLIENT],
         copy_files=_inputs(tmp_path),
+        name="model",
     )
     assert_output(capsys.readouterr().err, name="stderr")
     assert_output((tmp_path / SYNC).read_text(encoding="utf-8"), name="client", suffix=".py")
@@ -142,6 +143,7 @@ def test_client_cli_generate(
         extra_args=[*OPTIONS, *CLIENT, "--check"],
         capsys=capsys,
         assert_no_stderr=True,
+        name="model",
     )
     (tmp_path / SYNC).write_text("# edited\n", encoding="utf-8")
     run_main_and_assert(
