@@ -768,6 +768,7 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     ),
     **dict.fromkeys(
         (
+            "jsonschema/unique_items_by_value.json",
             "jsonschema/unique_items_collapsed_root_items.json",
             "jsonschema/unique_items_model_items.json",
             "jsonschema/unique_items_schema_validators.json",

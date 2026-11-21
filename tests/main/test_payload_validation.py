@@ -718,6 +718,23 @@ def test_payload_round_trip_exclusions_are_classified() -> None:
         pytest.fail("Payload round-trip exclusions reference unknown cases:\n" + "\n".join(unknown_cases))
 
 
+def test_payload_round_trip_drops_undeclared_properties(generated_model_cache: dict[str, Any]) -> None:
+    """Dump two pets that differ only in an undeclared property as equal items, which breaks their uniqueItems.
+
+    The default models ignore undeclared properties (``--extra-fields allow`` keeps them), so
+    jsonschema/unique_items_by_value.json is out of the round trip; the nightly drew this payload once the source of
+    the round trip's check, which seeds its derandomized examples, changed.
+    """
+    case = SCHEMA_CASE_BY_ID["jsonschema/unique_items_by_value.json"]
+    payload = {"codes": [], "pets": [{"id": 0}, {"id": 0, "": None}]}
+    validate_with_source_schema(case, payload)
+    adapter = load_generated_payload_adapter(case, generated_model_cache)
+    dumped = pydantic_payload_dump(adapter, adapter.validate_python(payload))
+    assert_output(
+        json.dumps({"dump": dumped, "source-valid": source_schema_validator(case).is_valid(dumped)}, indent=2) + "\n"
+    )
+
+
 @pytest.mark.parametrize(
     "case_id",
     [
