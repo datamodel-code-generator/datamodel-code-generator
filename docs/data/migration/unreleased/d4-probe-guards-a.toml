@@ -1,0 +1,15 @@
+[[change]]
+id = "d4-probe-guards-a"
+category = "harness"
+title = "Test inputs that reach two guards no input had reached"
+summary = "New e2e inputs reach a nested map allOf and nested unique-item sets; the package writes the same output."
+refs = ["#1"]
+covers = [
+    "main/jsonschema/nested_maps_and_unique_sets/allof_of_inner_maps_types_the_values_by_the_named_model.py",
+    "main/jsonschema/nested_maps_and_unique_sets/inner_unique_item_arrays_are_sets[dataclasses.dataclass].py",
+    "main/jsonschema/nested_maps_and_unique_sets/inner_unique_item_arrays_are_sets[pydantic_v2.BaseModel].py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_nested_unique_item_sets.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_object_map_values_refined_by_allof.json~fc793cac].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_nested_unique_item_sets.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_object_map_values_refined_by_allof.json].errors.txt",
+]

@@ -3375,7 +3375,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 for ap_type in additional_props_types[1:]:  # pragma: no branch
                     is_better = best_type.type == ANY and ap_type.type != ANY
                     is_better = is_better or (ap_type.reference and not best_type.reference)
-                    if is_better:  # pragma: no cover - not proven unreachable: a later additionalProperties type wins
+                    if is_better:
                         best_type = ap_type
                 return self.data_type(data_types=[best_type], is_dict=True)
 

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "$defs": {
+    "Label": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "lang": {"type": "string"}
+      },
+      "required": ["text"]
+    },
+    "LocalizedLabels": {
+      "description": "Labels by locale, then by key.",
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {"type": "object", "additionalProperties": {"type": "object"}},
+          {"type": "object", "additionalProperties": {"$ref": "#/$defs/Label"}}
+        ]
+      }
+    },
+    "LocalizedNotes": {
+      "description": "Notes by locale, then by key.",
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {"type": "object", "additionalProperties": {"$ref": "#/$defs/Label"}},
+          {"type": "object", "additionalProperties": {"type": "object"}}
+        ]
+      }
+    }
+  },
+  "properties": {
+    "labels": {"$ref": "#/$defs/LocalizedLabels"},
+    "notes": {"$ref": "#/$defs/LocalizedNotes"}
+  }
+}
