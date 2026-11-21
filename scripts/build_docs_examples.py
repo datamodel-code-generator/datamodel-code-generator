@@ -26,6 +26,7 @@ EXPECTED_JSON_SCHEMA = EXPECTED_MAIN / "jsonschema"
 EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
 EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
+EXPECTED_CLIENT_GENERATION = TEST_DATA / "expected" / "api_generation" / "client_generation"
 CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
 FASTAPI_CLI_DATA = TEST_DATA / "generation_platform" / "fastapi" / "cli"
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
@@ -1103,7 +1104,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "text",
-                error_findings(EXPECTED_CLIENT / "fields-errors.txt"),
+                error_findings(EXPECTED_CLIENT_GENERATION / "client_render[fields-errors].txt"),
             ),
         ),
         DocsExample(
