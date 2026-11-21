@@ -118,7 +118,7 @@ SEEDED_HOMES = {
         "def _helper() -> int:\n    return decide()\n"
     ),
 }
-"""A decision home that ``run`` and ``run_through_helper`` may call; the second delegates the call to a private helper."""
+"""A decision home that `run` and `run_through_helper` may call; the second hands the call to a private helper."""
 SEEDED_HOME_CONTRACT = """[[call-owners]]
 name = "home:home.py:decide"
 targets = ["datamodel_code_generator.home.decide"]
