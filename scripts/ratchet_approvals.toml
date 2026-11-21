@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline"
+head = 3997
+pr = 7325
+decision = ["#7325"]
+reason = "today's heki findings on the contracts scripts/build_heki_contracts.py writes from the records, recorded as the baseline that only shrinks; each site repeats a violation that UNLISTED_CALLERS, host-private-access, the generation store allowlist, env-probe@src or BUILDER_BYPASSES already budgets, until those checks are removed, so a new violation needs both entries"
