@@ -13,7 +13,7 @@ A check asks five questions of a module, and this module is the only place that 
 - **imports**: each import with its absolute target, scope and guard (``TYPE_CHECKING``, version, platform,
   ``ImportError`` fallback, ...), and across modules (`SourceTree`) the definitions names reach and the import graph;
 - **suppressions**: the suppression comments (``noqa``, ``ruff: ignore/disable``, ``type: ignore`` and its siblings,
-  coverage pragmas) and the lines each one covers;
+  ``heki: ignore``, coverage pragmas) and the lines each one covers;
 - **extents**: statement extents, the clauses of compound statements, the statement that holds a line, the lines with
   code, the innermost scope region that holds a position, the header and the nodes that hold one, the `Segment` (a
   statement or a part of one that may be skipped) that holds one, and folded source text.
@@ -388,6 +388,7 @@ _NOQA = re.compile(rf"#\s*noqa(?![\w-]){_CODES}", re.IGNORECASE)
 _FILE_NOQA = re.compile(rf"#\s*(?:ruff|flake8):\s*noqa(?![\w-]){_CODES}")
 _RUFF_RULES = re.compile(r"#\s*ruff:\s*(?P<action>ignore|disable|enable)\[(?P<rules>[^\]]*)\]")
 _TYPE_IGNORE = re.compile(r"\b(?P<tool>ty|pyright|type):\s*ignore\b(?:\[(?P<codes>[^\]]*)\])?")
+_HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?!\[[^\]]*$)(?:\[(?P<codes>[^\]]*)\])?", re.IGNORECASE)
 _PRAGMA = re.compile(r"\bpragma:\s*(no\s+cover|no\s+branch|\S+(?:\s+no)?\s+cover)\b")
 _PRAGMA_FORMS = {"no cover": "no-cover", "no branch": "no-branch"}
 _LOOP_KEYWORDS = {ast.For: "for", ast.AsyncFor: "async for", ast.While: "while", ast.With: "with"}
@@ -1265,7 +1266,7 @@ class _Suppressions(_Extents):
         return self._comments
 
     def suppressions(self, tool: str | None = None) -> list[Suppression]:
-        """Return the suppression comments (of one tool: ``ruff``, ``type``, ``ty``, ``pyright``, ``coverage``)."""
+        """Return the suppression comments (of one tool: ruff, type, ty, pyright, heki, coverage)."""
         _ask("suppressions")
         return [item for item in self._suppressions if tool is None or item.tool == tool]
 
@@ -1307,6 +1308,14 @@ class _Suppressions(_Extents):
                     tuple(code.strip() for code in match["codes"].split(",")) if match["codes"] is not None else None
                 )
                 found.append(Suppression(match["tool"], "ignore", codes, line, frozenset({line})))
+            for match in _HEKI_IGNORE.finditer(comment):
+                codes = (
+                    tuple(code.strip() for code in match["codes"].split(",") if code.strip())
+                    if match["codes"] is not None
+                    else None
+                )
+                if codes != ():
+                    found.append(Suppression("heki", "ignore", codes, line, frozenset({line})))
             for match in _PRAGMA.finditer(comment):
                 form = _PRAGMA_FORMS.get(" ".join(match[1].split()), "conditional-cover")
                 lines = frozenset({line}) if form == "no-branch" else self._covered(line)

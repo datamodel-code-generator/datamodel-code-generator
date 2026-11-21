@@ -5,11 +5,17 @@ allowlist:DEFAULT_ALLOWLIST                        1
 allowlist:FROZEN_EXEMPT_FILES                      1
 allowlist:JUSTIFIED_VIOLATIONS                     1
 cast@src                                           1
+comment:plain@src                                  2
 coverage-config:exclude:if TYPE_CHECKING:          1
 coverage-config:omit:src/pkg/d.py                  1
 dynamic-import@src                                 1
 filterwarnings-ignore@src                          2
 getattr-private@src                                1
+heki-ignore:BARE@src                               2
+heki-ignore:MUT201@src                             2
+heki-ignore:OPT103@src                             1
+heki-ignore:OPT110@src                             1
+heki-ignore:OPT120@src                             1
 pragma:conditional-cover@src                       1
 pragma:no-branch@src                               1
 pragma:no-cover@src                                1
@@ -22,6 +28,7 @@ ruff-config:ignore:D                               1
 ruff-config:ignore:ERA001                          1
 ruff-config:ignore:INP                             1
 ruff-config:per-file:tests/**/*.py:S101            1
+ruff:FURB113@src                                   1
 ruff:PLC0415@src                                   1
 source-rule:raw-skip                               1
 store-allowlist:counted                            2

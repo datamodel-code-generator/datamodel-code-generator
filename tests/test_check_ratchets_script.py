@@ -92,6 +92,17 @@ def risky(value: object) -> int:  # pragma: no cover
     module = importlib.import_module("json")  # ty: ignore[unresolved-import]
     secret = getattr(module, "_default_encoder", None)  # pyright: ignore[reportPrivateUsage]
     return cast("int", secret)  # type: ignore[return-value]  # pragma: win32 cover
+
+
+def silenced(items: list[int]) -> None:
+    items.insert(0, 1)  # heki: ignore
+    items.pop(0)  # heki: ignore[OPT103, list-front-pop]
+    items.sort()  # noqa: OPT110, E501
+    items.reverse()  # noqa: write-owner-violation
+    items.clear()  # noqa: PLC0415 - MUT201
+    items.append(1)  # noqa
+    items.append(2)  # heki: ignore[MUT201
+    items.append(3)  # heki: ignore[]
 """,
     "tests/test_d.py": FUTURE
     + """
@@ -118,6 +129,15 @@ FROZEN_EXEMPT_FILES = frozenset({Path("test_d.py")})
 HOST_BASELINE = """["src/pkg/a.py"."run"]
 "host._cache" = 1
 "host._size" = 1
+"""
+HEKI_BASELINE = """version = 2
+
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "run"
+rule_code = "MUT201"
+target = "Model.fields"
+count = 1
 """
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
@@ -674,6 +694,31 @@ def show(flag: bool) -> None:
     },
     "host-baseline-unreadable-value": {
         "head": {"scripts/host_private_access_baseline.toml": '["src/pkg/a.py"."run"]\n"host._x" = "two"\n'},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-grows": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE},
+        "head": {
+            "scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2")
+            + HEKI_BASELINE.removeprefix("version = 2\n").replace('"run"', '"stop"')
+        },
+        "args": ["--enforce"],
+    },
+    "heki-baseline-shrinks": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 3")},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unreadable": {
+        "head": {"scripts/heki_baseline.toml": "version = 2\n[[entries]\n"},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unreadable-count": {
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", 'count = "one"')},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unreadable-shape": {
+        "head": {"scripts/heki_baseline.toml": "version = 2\nentries = 3\n"},
         "args": ["--enforce"],
     },
     "allowlist-unreadable": {

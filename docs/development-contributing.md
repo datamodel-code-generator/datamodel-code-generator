@@ -545,6 +545,26 @@ cycles of every import, function-local and `TYPE_CHECKING` ones included, and
 function or not, move what the modules share into a module that imports none
 of them.
 
+heki, a development dependency of the `test` group, checks the same records
+statically: `scripts/build_heki_contracts.py` writes `scripts/heki.toml` from
+the fact rows of `scripts/fact_tables.py`, the homes and builders of
+`scripts/decision_homes.py` and the concern modules above, and
+`tests/test_build_heki_contracts_script.py` runs
+`heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src`.
+The baseline records today's findings and only shrinks (its sites are the
+`allowlist:heki-baseline` key of `scripts/check_ratchets.py`): keep a new write,
+read or call inside its owners instead of recording it, and after a change that
+removes findings run the same command with `--update-baseline`. If the findings
+only moved (a function was renamed or moved), `--update-baseline` refuses the
+new ones: delete `scripts/heki_baseline.toml` and run the command with
+`--update-baseline` again; the key must not rise. Each site of the baseline
+repeats a violation that another key already budgets
+(`allowlist:UNLISTED_CALLERS`, `allowlist:host-private-access`, the generation
+store allowlist, `env-probe@src`, `allowlist:BUILDER_BYPASSES`), so a new
+violation of a recorded rule raises both keys and needs both `[[approved]]`
+entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
+comments that name a heki rule count as `heki-ignore:<rule>` keys.
+
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
 an `[[approved]]` entry of `scripts/ratchet_approvals.toml`: the key, the count
 it may reach (`head`), the pull request it is for (`pr`), the public references

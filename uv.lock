@@ -710,6 +710,7 @@ dev = [
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "heki" },
     { name = "httpx2", extra = ["http2", "ws"], marker = "extra == 'group-24-datamodel-code-generator-dev' or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8')" },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
@@ -774,6 +775,7 @@ test = [
     { name = "cryptography" },
     { name = "diff-cover" },
     { name = "email-validator" },
+    { name = "heki" },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
     { name = "inline-snapshot" },
@@ -797,6 +799,7 @@ type = [
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "heki" },
     { name = "httpx2", extra = ["http2", "ws"] },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
@@ -887,17 +890,18 @@ client = [
 ]
 coverage = [
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11" },
     { name = "diff-cover", specifier = ">=9.7.2" },
 ]
 dev = [
     { name = "check-wheel-contents", specifier = ">=0.6.1" },
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11" },
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
+    { name = "heki", specifier = "==0.2.1" },
     { name = "httpx2", specifier = ">=2,<3" },
     { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
@@ -951,10 +955,11 @@ playground = [
 ]
 test = [
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11" },
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
+    { name = "heki", specifier = "==0.2.1" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
     { name = "inline-snapshot", specifier = ">=0.37" },
@@ -973,11 +978,12 @@ test = [
 ]
 type = [
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11" },
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
+    { name = "heki", specifier = "==0.2.1" },
     { name = "httpx2", specifier = ">=2,<3" },
     { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
@@ -1265,6 +1271,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e7/85/7c366e69d84c17bb778fe41419e1fbcce3033d5b7ce29bbffff0a98b859f/h2-4.4.1.tar.gz", hash = "sha256:4e866ffb1a869ae14dd9b5e6beb5c24a13da0495ad72b65925ded182521c1516", size = 2157281, upload-time = "2026-08-03T11:45:09.509Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/22/e85faf23bd72a92d1921e37d674ca56eb298a3c8be31fdecef0ff2b3aaac/h2-4.4.1-py3-none-any.whl", hash = "sha256:0e25f1462b23c9cb82d9eb02e28bc706dac2a68cb457c6a0d74d63c8a2a5d0e6", size = 62636, upload-time = "2026-08-03T11:44:59.164Z" },
+]
+
+[[package]]
+name = "heki"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/ed/dde045d5730740a0bc2a82003c9fd994a134f4a13dcba78bf8aa8430a9db/heki-0.2.1.tar.gz", hash = "sha256:9b721660a85b596fa7960517ee6b42716832927d9d748337d53a82a39aa07d82", size = 1721610, upload-time = "2026-11-21T18:44:56.916Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/05/74/db4db24af9eae70a5b345a12fa48d2a9399cb72fce1e97ccb903e1a5c7b3/heki-0.2.1-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:ffa998b7c1453052ebd8cd94736b1bca49fa9b192023bade7ee651d7a0374f07", size = 7786723, upload-time = "2026-11-21T18:44:44.28Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/8c/c45224cad4ec68f4fbaa2f2d5211ddd77c5bc8512d43e9b9c8f2818a713f/heki-0.2.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:a79afb69cc96f16dd67f88be77f59397a3c518f10ef9b073effaeff7d16030c8", size = 7414025, upload-time = "2026-11-21T18:44:46.33Z" },
+    { url = "https://files.pythonhosted.org/packages/37/fa/b50405342ca4814749041136a7c231530a13c63a2e342678d7ac3e88f545/heki-0.2.1-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:0ac470e45f791ebde881e21bcbfa47438eb5ef7f690215e47175699d8ea53a17", size = 7837882, upload-time = "2026-11-21T18:44:48.53Z" },
+    { url = "https://files.pythonhosted.org/packages/49/7b/5178176bfe7ed7cb551cdb845d2c1a84579e78d4c7d3ec7c2a85e5fd7afa/heki-0.2.1-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:59bd72b531c0398b9998ab248d523633db4e165213b5617400bd9c2deb3b37e6", size = 8027109, upload-time = "2026-11-21T18:44:50.894Z" },
+    { url = "https://files.pythonhosted.org/packages/30/63/7ae1ae851eee5ff05150b372572d7c2b76734c56dcc1061992a06d0225de/heki-0.2.1-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:8a3828ed23f46d3737340fc7965cd683f373ddaa309be5cd4c9b205bfc48bbff", size = 8347015, upload-time = "2026-11-21T18:44:53.101Z" },
+    { url = "https://files.pythonhosted.org/packages/92/b6/6b6eccbcd837ee7961453979bfde0570748832cc5fd0195d078ffb973df7/heki-0.2.1-py3-none-win_amd64.whl", hash = "sha256:3caf34b79ba9374bb4981b9c0a1747cdf0af27700ab7fb0c8bb5e43e1af4e247", size = 7297574, upload-time = "2026-11-21T18:44:55.091Z" },
 ]
 
 [[package]]

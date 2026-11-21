@@ -14,6 +14,12 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   ruff configuration file (``ruff.toml``, ``.ruff.toml``, a nested ``pyproject.toml`` with ``[tool.ruff]``).
 - ``pragma:no-cover``, ``pragma:no-branch``, ``pragma:conditional-cover``, ``ty-ignore:<rule>``,
   ``pyright-ignore:<rule>`` and ``type-ignore:<code>`` comments, read with ``tokenize``.
+- ``heki-ignore:<rule>``: ``# heki: ignore`` comments, bare (``BARE``) or per listed rule, and ``# noqa`` comments,
+  bare (``BARE``) or naming a heki rule, which heki reads as suppressions too. A rule is named by its code
+  (``EFF101``, ``MUT201``, ``DATA101``, ``OPT110``) or its name (``write-owner-violation``; anywhere after
+  ``noqa:``, or inside ``heki: ignore[...]``) and counts under the rule's code. A bracketed list that is not closed
+  or names no rule silences nothing in heki and counts none. A ``noqa`` also counts under ``ruff:`` where ruff
+  would report the finding. The source model reports the ``heki: ignore`` comments as suppressions of tool ``heki``.
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
@@ -54,10 +60,11 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
-  (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
-  architecture checks, the callers of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the
-  bypasses of builder homes (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a
-  form this script cannot read).
+  (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (``allowlist:heki-baseline``, the
+  sum of the site counts of its entries), and the allowlists of the test style and architecture checks, the callers
+  of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the bypasses of builder homes
+  (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot
+  read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -127,6 +134,7 @@ if TYPE_CHECKING:
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
+HEKI_BASELINE = "scripts/heki_baseline.toml"
 EXPECTED_ROOT = "tests/data/expected"
 TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
@@ -162,7 +170,53 @@ CHUNK = 200
 PRAGMA = re.compile(r"\bpragma:\s*(no\s+cover|no\s+branch|\S+(?:\s+no)?\s+cover)\b")
 PRAGMA_KINDS = {"no cover": "no-cover", "no branch": "no-branch"}
 TYPE_IGNORE = re.compile(r"\b(ty|pyright|type):\s*ignore\b(?:\[([^\]]*)\])?")
-COMMENT_HINT = re.compile(r"pragma:|ignore")
+HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?!\[[^\]]*$)(?:\[([^\]]*)\])?", re.IGNORECASE)
+HEKI_NOQA = re.compile(r"#\s*noqa(?![\w-])(?::(.*))?", re.IGNORECASE)
+HEKI_RULES = {
+    "cached-property-stale-mutation": "MUT101",
+    "summary-effect-regression": "MUT103",
+    "iterator-double-consumption": "MUT106",
+    "hash-attr-mutation": "MUT107",
+    "readonly-type-mutation": "MUT108",
+    "write-without-invalidation": "MUT109",
+    "readonly-param-mutation": "MUT110",
+    "cached-property-stale-read": "MUT111",
+    "conditional-ownership-mutation": "MUT112",
+    "iterated-container-mutation": "MUT113",
+    "cached-result-mutation": "MUT114",
+    "write-owner-violation": "MUT201",
+    "readonly-return-mutation": "MUT202",
+    "read-owner-violation": "MUT203",
+    "call-owner-violation": "MUT204",
+    "unresolved-guarded-write": "MUT205",
+    "unresolved-guarded-read": "MUT206",
+    "unresolved-guarded-call": "MUT207",
+    "async-blocking-call": "EFF101",
+    "async-possibly-blocking-call": "EFF111",
+    "loop-unpooled-client": "EFF102",
+    "loop-db-query": "EFF103",
+    "loop-possible-db-query": "EFF113",
+    "async-blocking-fs": "EFF105",
+    "lock-or-tx-held-across-io": "EFF106",
+    "lock-reacquired-while-held": "EFF109",
+    "exclusive-object-fanout": "EFF110",
+    "unretained-async-task": "EFF107",
+    "effect-boundary-violation": "EFF201",
+    "loop-carried-concat": "DATA101",
+    "list-quadratic-concat": "OPT101",
+    "set-dict-quadratic-merge": "OPT102",
+    "immutable-quadratic-concat": "OPT103",
+    "loop-linear-membership": "OPT110",
+    "loop-linear-dedup": "OPT111",
+    "loop-linear-list-lookup": "OPT112",
+    "nested-loop-equijoin": "OPT113",
+    "list-front-pop": "OPT120",
+    "list-front-insert": "OPT121",
+    "loop-invariant-container-rebuild": "OPT130",
+}
+"""The rules of heki 0.2.0 by name (``heki rule --all``): a suppression may name a rule by its code or its name."""
+HEKI_CODE = re.compile(r"(?:EFF|MUT|DATA|OPT)\d{3}", re.IGNORECASE)
+COMMENT_HINT = re.compile(r"pragma:|ignore|noqa", re.IGNORECASE)
 CALL_HINT = re.compile(
     r"cast|attr\(|attrgetter|__getattribute__|import_module|__import__|filterwarnings|simplefilter|catch_warnings"
     r"|abnormal_path|no_type_check|\bAny\b"
@@ -279,6 +333,7 @@ ADVICE = {
     "ty-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
     "type-ignore": "Fix the type error or the annotation instead of ignoring it.",
+    "heki-ignore": "Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.",
     "cast": "Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().",
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
@@ -625,6 +680,11 @@ def _ruff_tally(tally: Tally, root: Path, files: list[str], ruff: list[str], pyp
         tally.add(f"ruff:{code}@{_area(path)}", path, line)
 
 
+def _heki_rule(word: str) -> str:
+    """Return the code of a heki rule named by its code or its name, else the word as written."""
+    return word.upper() if HEKI_CODE.fullmatch(word) else HEKI_RULES.get(word.lower(), word)
+
+
 def _comment_keys(text: str) -> list[str]:
     pragmas = [
         f"pragma:{PRAGMA_KINDS.get(' '.join(match[1].split()), 'conditional-cover')}" for match in PRAGMA.finditer(text)
@@ -634,7 +694,15 @@ def _comment_keys(text: str) -> list[str]:
         for match in TYPE_IGNORE.finditer(text)
         for rule in (match[2] or "").split(",")
     ]
-    return [*pragmas, *ignores]
+    heki: list[str] = []
+    for match in HEKI_IGNORE.finditer(text):
+        listed = None if match[1] is None else [rule.strip() for rule in match[1].split(",") if rule.strip()]
+        heki += ["heki-ignore:BARE"] if listed is None else [f"heki-ignore:{_heki_rule(rule)}" for rule in listed]
+    for match in HEKI_NOQA.finditer(text):
+        words = re.findall(r"[\w-]+", match[1] or "")
+        rules = [rule for word in words if HEKI_CODE.fullmatch(rule := _heki_rule(word))]
+        heki += [f"heki-ignore:{rule}" for rule in rules] if words else ["heki-ignore:BARE"]
+    return [*pragmas, *ignores, *heki]
 
 
 def _private_name(node: ast.expr) -> bool:
@@ -936,6 +1004,20 @@ def _host_baseline_tally(tally: Tally, root: Path) -> None:
             tally.add(key, HOST_BASELINE)
 
 
+def _heki_baseline_tally(tally: Tally, root: Path) -> None:
+    """Count the sites of heki's baseline; a file that is not entries with integer counts is unreadable."""
+    file = root / HEKI_BASELINE
+    try:
+        entries = tomllib.loads(file.read_text(encoding="utf-8")).get("entries", []) if file.is_file() else []
+        counts = [entry.get("count") for entry in entries]
+    except (tomllib.TOMLDecodeError, AttributeError, TypeError):
+        counts = [None]
+    for count in counts:
+        key = "allowlist:heki-baseline" + ("" if type(count) is int else ":unreadable")
+        for _ in range(count if type(count) is int else 1):
+            tally.add(key, HEKI_BASELINE)
+
+
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
     """Count the configuration entries and allowlist entries that switch a check off."""
     tool = pyproject.get("tool", {})
@@ -959,6 +1041,7 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
     for _ in pytest.get("ini_options", {}).get("assert_helper_direct_assert_exempt_files", []):
         tally.add("allowlist:direct-assert-exempt-files", "pyproject.toml")
     _host_baseline_tally(tally, root)
+    _heki_baseline_tally(tally, root)
     for value in _toml_leaves(root, STORE_ALLOWLIST):
         counted = isinstance(value, int)
         for _ in range(value if counted else 1):
