@@ -1,0 +1,14 @@
+[[change]]
+id = "fix-client-item-none-api"
+category = "api"
+title = "Public name for the None of a container's item union"
+summary = "DataType.items_admit_none tells whether the union a container writes of its several items includes None, inside the container, as the model's hint writes it; the client and server targets read it. Nothing is removed or changed."
+refs = ["#7303"]
+source = "release-note"
+decision = ["#7303"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.types.DataType"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

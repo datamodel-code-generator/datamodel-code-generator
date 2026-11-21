@@ -25,6 +25,8 @@ callbacks	api_generation/fastapi_generation/fastapi_render[callbacks].package/
 callbacks	api_generation/fastapi_generation/fastapi_render[callbacks].report.txt
 codec-errors	api_generation/fastapi_generation/fastapi_render[codec-errors].package/	= main/generation_platform/client/bindings/api-traversal//*.py
 codec-errors	api_generation/fastapi_generation/fastapi_render[codec-errors].report.txt
+container-item-nulls	api_generation/fastapi_generation/fastapi_render[container-item-nulls].package/
+container-item-nulls	api_generation/fastapi_generation/fastapi_render[container-item-nulls].report.txt
 containers	api_generation/fastapi_generation/fastapi_render[containers].package/
 containers	api_generation/fastapi_generation/fastapi_render[containers].report.txt
 cookie-names	api_generation/fastapi_generation/fastapi_render[cookie-names].package/	= main/generation_platform/client/bindings/api-traversal//*.py

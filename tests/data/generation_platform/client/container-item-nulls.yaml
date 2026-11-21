@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: Container item nulls
+  version: "1"
+servers:
+  - url: https://rows.example.com
+paths:
+  /rows:
+    post:
+      operationId: sendRows
+      parameters:
+        - name: tags
+          in: query
+          schema: {type: array, prefixItems: [{type: string}, {type: "null"}], items: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Row"}
+      responses:
+        "204":
+          description: Sent.
+components:
+  schemas:
+    Label:
+      type: [string, "null"]
+    Row:
+      type: object
+      properties:
+        tail: {type: array, prefixItems: [{type: string}, {type: "null"}], items: {type: string}}
+        closed: {type: array, prefixItems: [{type: string}, {type: [string, "null"]}], items: false}
+        tail_null: {type: array, prefixItems: [{type: string}], items: {type: [integer, "null"]}}
+        union_position:
+          type: array
+          prefixItems: [{anyOf: [{type: string}, {type: "null"}]}, {type: integer}]
+          items: false
+        unevaluated: {type: array, prefixItems: [{type: string}], unevaluatedItems: {type: "null"}}
+        null_first: {type: array, prefixItems: [{type: "null"}, {type: string}], items: {type: string}}
+        nullable_reference:
+          type: array
+          prefixItems: [{$ref: "#/components/schemas/Label"}, {type: string}]
+          items: false
+        nested:
+          type: array
+          items: {type: array, prefixItems: [{type: string}, {type: "null"}], items: {type: string}}
+        by_key:
+          type: object
+          additionalProperties: {type: array, prefixItems: [{type: string}, {type: "null"}], items: {type: string}}
+        patterns:
+          type: object
+          patternProperties:
+            "^a": {type: [string, "null"]}
+            "^b": {type: integer}
+        own_union: {type: array, items: {anyOf: [{type: string}, {type: "null"}]}}
