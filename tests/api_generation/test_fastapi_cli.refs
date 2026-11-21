@@ -748,7 +748,7 @@ omitted	api_generation/fastapi_cli/pyproject_input_file_type[omitted].txt	= main
 	api_generation/fastapi_cli/pyproject_paths.notice.txt	= api_generation/fastapi_cli/json_file_documents[option].notice.txt
 	api_generation/fastapi_cli/pyproject_paths.stderr.txt	= main/generation_platform/fastapi/cli/dependencies-service.txt
 [test_fastapi_cli_quotes_text_alike_whatever_python_runs]
-	api_generation/fastapi_cli/quotes_text_alike_whatever_python_runs.txt
+	api_generation/fastapi_cli/quotes_text_alike_whatever_python_runs.py
 [test_fastapi_cli_removed_options]
 dependency-format	api_generation/fastapi_cli/removed_options[dependency-format].txt
 diagnostics-json	api_generation/fastapi_cli/removed_options[diagnostics-json].txt	= api_generation/fastapi_cli/removed_options[dependency-format].txt

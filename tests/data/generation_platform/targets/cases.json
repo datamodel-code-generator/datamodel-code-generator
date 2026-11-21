@@ -622,6 +622,6 @@
   "roles-after-pointer": {
     "input": {"path": "roles-after-pointer.yaml"},
     "model": {"openapi_scopes": ["schemas", "api"]},
-    "steps": [{"generate": {}}, {"check": {}}, {"show": "models.py"}]
+    "steps": [{"generate": {}}, {"check": {}}]
   }
 }

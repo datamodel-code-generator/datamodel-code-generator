@@ -146,7 +146,7 @@ def test_fastapi_cli_quotes_text_alike_whatever_python_runs(tmp_path: Path, monk
     monkeypatch.chdir(tmp_path)
     Path("api.json").write_text(json.dumps(_NEW_LETTER_DOCUMENT), encoding="utf-8")
     run_main_with_args(["--input", "api.json", "--input-file-type", "openapi", "--output", "models.py", *_server()])
-    assert_output((tmp_path / "server" / "routers" / "pets.py").read_text(encoding="utf-8"))
+    assert_output((tmp_path / "server" / "routers" / "pets.py").read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_fastapi_cli_generate(
