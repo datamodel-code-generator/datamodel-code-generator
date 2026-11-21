@@ -28,7 +28,6 @@ from tests.main.conftest import (
     run_main_with_args,
     target_pydantic_args,
 )
-from tests.main.graphql.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -598,7 +597,6 @@ def test_main_graphql_typename_property(output_model_type: DataModelType, output
             input_path=input_path,
             output_path=output_file,
             input_file_type="graphql",
-            assert_func=assert_file_content,
             extra_args=["--output-model-type", output_model_type.value, "--target-python-version", "3.11"],
         )
     query = "{ search { __typename ... on TextMatch { property } ... on Repository { name } } node { __typename id } }"
@@ -624,7 +622,6 @@ def test_main_graphql_typename_property_custom_template(output_file: Path) -> No
         input_path=GRAPHQL_DATA_PATH / "union.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -705,7 +702,6 @@ def test_main_graphql_scalar_type_name_follows_target(output_file: Path, target_
         input_path=GRAPHQL_DATA_PATH / "additional-imports.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=[
             "--extra-template-data",
             json.dumps({"MyCustomClass": {"py_type": "mypkg.\U0001e4d0T"}}),
