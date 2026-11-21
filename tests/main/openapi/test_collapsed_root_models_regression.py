@@ -15,7 +15,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.openapi.conftest import EXPECTED_OPENAPI_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,14 +24,12 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("include_api", [False, True], ids=["schemas", "schemas-api"])
 def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, include_api: bool) -> None:
     """Generate and validate the existing partial-schema package with inherited roots."""
-    expected_directory = EXPECTED_OPENAPI_PATH / "collapsed_tree_reuse_partial"
     if entrypoint == "cli":
         with chdir(output_dir.parent):
             run_main_and_assert(
                 input_path=OPEN_API_DATA_PATH / "allof_partial_unconstrained_schemas.yaml",
                 output_path=output_dir,
                 input_file_type="openapi",
-                expected_directory=expected_directory,
                 extra_args=[
                     "--reuse-model",
                     "--reuse-scope",
@@ -49,7 +46,6 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
             input_path=OPEN_API_DATA_PATH / "allof_partial_unconstrained_schemas.yaml",
             output_path=output_dir,
             input_file_type=InputFileType.OpenAPI,
-            expected_directory=expected_directory,
             reuse_model=True,
             reuse_scope="tree",
             collapse_root_models=True,

@@ -238,6 +238,7 @@ def test_open_enums_turned_off_in_preset(output_file: Path, tmp_path: Path, sour
             input_file_type="openapi",
             extra_args=[*preset_args, "--disable-timestamp"],
             skip_code_validation=sys.version_info < (3, 12),
+            name="model",
         )
     run_main_and_assert(
         input_path=OPEN_ENUMS,
@@ -250,7 +251,7 @@ def test_open_enums_turned_off_in_preset(output_file: Path, tmp_path: Path, sour
             "--disable-timestamp",
         ],
         skip_code_validation=sys.version_info < (3, 12),
-        expected_output=output_file.read_text(encoding="utf-8"),
+        name="model",
     )
 
 

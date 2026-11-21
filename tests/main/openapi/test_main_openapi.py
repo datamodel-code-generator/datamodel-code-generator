@@ -224,8 +224,6 @@ def test_main_openapi_include_info_version_modular(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "modular.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        output_to_expected=[("__init__.py", EXPECTED_OPENAPI_PATH / "modular_info_version" / "__init__.py")],
         extra_args=["--openapi-include-info-version"],
     )
 
@@ -793,7 +791,7 @@ property as a field, the union tags none of its variants and a warning names the
     input_schema="openapi/discriminator_field_aliases/direct.json",
     cli_args=["--use-msgspec-tagged-unions", "--output-model-type", "msgspec.Struct"],
     golden_output="openapi/main_openapi/use_msgspec_tagged_unions.py",
-    comparison_output="openapi/discriminator/msgspec_tagged_unions_default.py",
+    comparison_output="openapi/main_openapi/discriminator_msgspec_default[fields].py",
 )
 def test_main_openapi_use_msgspec_tagged_unions(output_file: Path) -> None:
     """Write a msgspec.Struct discriminated union as tagged structs as a whole.
@@ -818,15 +816,13 @@ def test_main_openapi_use_msgspec_tagged_unions(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("input_file", "expected_file"),
+    "input_file",
     [
-        pytest.param("discriminator_field_aliases/direct.json", "msgspec_tagged_unions_default.py", id="fields"),
-        pytest.param(
-            "discriminator_mapping_msgspec_untagged.yaml", "mapping_msgspec_untagged_default.py", id="shared-variants"
-        ),
+        pytest.param("discriminator_field_aliases/direct.json", id="fields"),
+        pytest.param("discriminator_mapping_msgspec_untagged.yaml", id="shared-variants"),
     ],
 )
-def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_file: str, output_file: Path) -> None:
+def test_main_openapi_discriminator_msgspec_default(input_file: str, output_file: Path) -> None:
     """Keep the released msgspec discriminator output without --use-msgspec-tagged-unions."""
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
@@ -834,8 +830,6 @@ def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_fi
             input_path=OPEN_API_DATA_PATH / input_file,
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / expected_file,
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -850,7 +844,6 @@ def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_fi
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        EXPECTED_OPENAPI_PATH / "discriminator" / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
@@ -1160,7 +1153,7 @@ enum that lists only `null` becomes the alias `None`.""",
     input_schema="openapi/msgspec_nullable_enum_31.yaml",
     cli_args=["--use-msgspec-nullable-enum-alias", "--output-model-type", "msgspec.Struct"],
     golden_output="openapi/main_openapi/use_msgspec_nullable_enum_alias.py",
-    comparison_output="openapi/msgspec_nullable_enum/openapi_31.py",
+    comparison_output="openapi/main_openapi/msgspec_nullable_enum[openapi-31].py",
 )
 def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None:
     """Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
@@ -1185,43 +1178,39 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
 
 
 @pytest.mark.parametrize(
-    ("input_file", "extra_args", "expected_file", "imports"),
+    ("input_file", "extra_args", "imports"),
     [
-        pytest.param("msgspec_nullable_enum_31.yaml", [], "openapi_31.py", True, id="openapi-31"),
-        pytest.param("msgspec_nullable_enum.yaml", [], "openapi_30.py", True, id="openapi-30"),
+        pytest.param("msgspec_nullable_enum_31.yaml", [], True, id="openapi-31"),
+        pytest.param("msgspec_nullable_enum.yaml", [], True, id="openapi-30"),
         pytest.param(
             "msgspec_nullable_enum.yaml",
             ["--use-msgspec-nullable-enum-alias"],
-            "openapi_30_alias.py",
             True,
             id="openapi-30-alias",
         ),
         pytest.param(
             "msgspec_nullable_enum.yaml",
             ["--set-default-enum-member"],
-            "openapi_30_set_default_enum_member.py",
             True,
             id="openapi-30-set-default-enum-member",
         ),
         pytest.param(
             "msgspec_nullable_enum.yaml",
             ["--set-default-enum-member", "--use-msgspec-nullable-enum-alias"],
-            "openapi_30_set_default_enum_member_alias.py",
             True,
             id="openapi-30-set-default-enum-member-alias",
         ),
-        pytest.param("msgspec_nullable_enum_inherited.yaml", [], "openapi_inherited.py", True, id="inherited"),
+        pytest.param("msgspec_nullable_enum_inherited.yaml", [], True, id="inherited"),
         pytest.param(
             "msgspec_nullable_enum_inherited_overlap.yaml",
             [],
-            "openapi_inherited_overlap.py",
             True,
             id="inherited-overlap",
         ),
     ],
 )
 def test_main_openapi_msgspec_nullable_enum(
-    input_file: str, extra_args: list[str], expected_file: str, imports: bool, output_file: Path
+    input_file: str, extra_args: list[str], imports: bool, output_file: Path
 ) -> None:
     """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
 
@@ -1236,8 +1225,6 @@ def test_main_openapi_msgspec_nullable_enum(
             input_path=OPEN_API_DATA_PATH / input_file,
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / expected_file,
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -1254,7 +1241,6 @@ def test_main_openapi_msgspec_nullable_enum(
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
@@ -1295,7 +1281,7 @@ class _IntValue(int):
     __slots__ = ()
 
 
-class _StrValue(str):  # noqa: FURB189 - a schema passed to generate() may hold str subclasses
+class _StrValue(str):  # ruff: ignore[subclass-builtin] - a schema passed to generate() may hold str subclasses
     """A str subclass that a schema passed to generate() may hold as a value."""
 
     __slots__ = ()
@@ -1589,14 +1575,11 @@ def test_main_openapi_msgspec_tagged_base_redefined_field(output_dir: Path) -> N
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_main_openapi_msgspec_tagged_unions_inherited(output_file: Path, entrypoint: str) -> None:
     """Leave a union untagged when a base or derived struct, however distant or renamed, keeps its property."""
-    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_unions_inherited.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_unions_inherited.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -1614,8 +1597,6 @@ def test_main_openapi_msgspec_tagged_unions_inherited(output_file: Path, entrypo
             input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_unions_inherited.yaml",
             output_path=output_file,
             input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
             expected_warnings=[
                 "'petType' of Owner cannot be represented as msgspec tags: a base or derived struct of Cat keeps",
                 "'species' of Zoo cannot be represented as msgspec tags: a base or derived struct of Horse, Zebra",
@@ -1687,14 +1668,11 @@ def test_main_openapi_discriminator_mapping_msgspec_untagged(output_file: Path) 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_main_openapi_discriminator_inherited_msgspec_untagged(output_file: Path, entrypoint: str) -> None:
     """Leave a msgspec union untagged when its variants inherit the discriminator field from a base struct."""
-    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "inherited_msgspec_untagged.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "discriminator_allof.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -1711,8 +1689,6 @@ def test_main_openapi_discriminator_inherited_msgspec_untagged(output_file: Path
             input_path=OPEN_API_DATA_PATH / "discriminator_allof.yaml",
             output_path=output_file,
             input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
             expected_warnings=[
                 "'petType' of PetContainer cannot be represented as msgspec tags: a base or derived struct of Cat, Dog,"
             ],
@@ -2126,7 +2102,6 @@ def test_target_python_version(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--target-python-version", f"3.{MIN_VERSION}"],
     )
 
@@ -2139,7 +2114,6 @@ def test_target_python_version_313_has_future_annotations(output_file: Path) -> 
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
             extra_args=["--target-python-version", "3.13"],
         )
 
@@ -2152,7 +2126,6 @@ def test_target_python_version_314_no_future_annotations(output_file: Path) -> N
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
             extra_args=["--target-python-version", "3.14"],
         )
 
@@ -2222,8 +2195,6 @@ def test_main_modular_treat_dot_as_module_keeps_subpackage_initializer(output_di
         input_path=OPEN_API_DATA_PATH / "modular.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        output_to_expected=[("foo/__init__.py", "modular_treat_dot_as_module/foo_init.py")],
         extra_args=["--treat-dot-as-module", "--disable-timestamp", "--formatters", "builtin"],
     )
     sys.path.insert(0, str(output_dir.parent))
@@ -2273,7 +2244,7 @@ def test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings(capsys: 
             output_path=None,
             input_file_type="openapi",
             extra_args=["--model-name-map", '{"#/components/schemas/SaveTrifectaV2.2": "Trifecta"}'],
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_stdout.py",
+            stdout_suffix=".py",
             capsys=capsys,
             assert_no_stderr=True,
         )
@@ -2684,7 +2655,7 @@ def test_main_unrelated_invalid_dotted_model_stdout(capsys: pytest.CaptureFixtur
             "--formatters",
             "builtin",
         ],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "unrelated_invalid_dotted_model_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2714,7 +2685,6 @@ def test_main_invalid_dotted_schema_name_json_stdout(capsys: pytest.CaptureFixtu
         output_path=None,
         input_file_type="openapi",
         extra_args=["--output-format", "json", "--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_json_stdout.txt",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2830,7 +2800,7 @@ def test_main_no_strict_dotted_module_names_stdout(capsys: pytest.CaptureFixture
         output_path=None,
         input_file_type="openapi",
         extra_args=["--no-strict-dotted-module-names", "--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_stdout_no_timestamp.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2847,7 +2817,7 @@ def test_main_no_strict_dotted_module_names_from_pyproject_stdout(
             output_path=None,
             input_file_type="openapi",
             extra_args=["--disable-timestamp", "--formatters", "builtin"],
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_stdout_no_timestamp.py",
+            stdout_suffix=".py",
             capsys=capsys,
             assert_no_stderr=True,
             copy_files=[
@@ -2867,7 +2837,7 @@ def test_main_treat_dot_as_module_preserves_modular_stdout(capsys: pytest.Captur
         output_path=None,
         input_file_type="openapi",
         extra_args=["--treat-dot-as-module", "--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_legacy_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2881,7 +2851,7 @@ def test_main_schema_validators_preserve_invalid_dotted_modules(capsys: pytest.C
         output_path=None,
         input_file_type="openapi",
         extra_args=["--generate-schema-validators", "--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_legacy_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2903,7 +2873,7 @@ def test_main_generic_base_preserves_invalid_dotted_modules(capsys: pytest.Captu
             "--formatters",
             "builtin",
         ],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_generic_base_legacy_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2924,7 +2894,7 @@ def test_main_invalid_dotted_fingerprint_failure_preserves_legacy(
         output_path=None,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_legacy_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -2991,7 +2961,7 @@ def test_main_invalid_dotted_unsafe_retry_preserves_legacy(
         output_path=None,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_legacy_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
         assert_no_stderr=True,
     )
@@ -3010,7 +2980,6 @@ def test_generate_invalid_dotted_schema_name_default_modules() -> None:
 
     assert_generated_modules_output(
         cast("dict[tuple[str, ...], str]", result),
-        EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_default",
         transform=lambda content: f"{content}\n",
     )
 
@@ -3050,7 +3019,7 @@ def test_generate_inline_openapi_relative_ref_uses_caller_base(source_type: str,
             formatters=[Formatter.BUILTIN],
         )
 
-    assert_file_content(output_file, "all_of_with_relative_ref.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @pytest.mark.parametrize("source_type", ["text", "mapping"])
@@ -3071,7 +3040,7 @@ def test_generate_invalid_dotted_retry_preserves_relative_ref_base(source_type: 
     with chdir(input_path.parent):
         generate(source, config=config)
 
-    assert_file_content(output_file, "invalid_dotted_external_relative_ref.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
     with chdir(input_path.parent):
         returned = generate(source, config=config.model_copy(update={"output": None}))
     assert_generated_file_matches_output(returned, output_file)
@@ -3088,7 +3057,7 @@ def test_main_openapi_no_file(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "no_file.py",
+            stdout_suffix=".py",
             capsys=capsys,
             expected_stderr=inferred_message.format("openapi") + "\n",
         )
@@ -3124,7 +3093,7 @@ def test_main_openapi_extra_template_data_config(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "extra_template_data_config_pydantic_v2.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=[
@@ -3147,7 +3116,7 @@ def test_main_custom_template_dir_old_style(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "custom_template_dir_old_style.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=[
@@ -3188,7 +3157,7 @@ def test_main_openapi_custom_template_dir(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "custom_template_dir.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=[
@@ -3213,7 +3182,7 @@ def test_main_openapi_custom_template_dir_include_override(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "custom_template_dir_include_override.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=[
@@ -3251,7 +3220,7 @@ def test_main_openapi_detects_created_include_only_template_directory(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "extra_template_data_config_pydantic_v2.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=extra_args,
@@ -3262,7 +3231,7 @@ def test_main_openapi_detects_created_include_only_template_directory(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "custom_template_dir_include_override.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=extra_args,
@@ -3282,7 +3251,7 @@ def test_main_openapi_schema_extensions(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "schema_extensions.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "schema_extensions.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=[
@@ -3307,7 +3276,7 @@ def test_main_openapi_schema_extensions_enum(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "schema_extensions_enum.yaml",
             output_path=None,
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "schema_extensions_enum.py",
+            stdout_suffix=".py",
             capsys=capsys,
             input_file_type=None,
             extra_args=[
@@ -3352,7 +3321,6 @@ def test_pyproject(tmp_path: Path) -> None:
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
         )
 
 
@@ -3364,7 +3332,6 @@ def test_pyproject_not_found(tmp_path: Path) -> None:
             input_path=OPEN_API_DATA_PATH / "api.yaml",
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
         )
 
 
@@ -3708,7 +3675,6 @@ def test_main_with_snake_case_field(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--snake-case-field"],
     )
 
@@ -3727,7 +3693,7 @@ not `None`, so there is no `None` default to strip. Only a field that `nullable:
 under `--strict-nullable` defaults to `None`, and that default stays, as the field's type admits None.""",
     input_schema="openapi/api.yaml",
     cli_args=["--strip-default-none"],
-    golden_output="openapi/with_strip_default_none.py",
+    golden_output="openapi/main_openapi/main_with_strip_default_none.py",
 )
 def test_main_with_strip_default_none(output_file: Path) -> None:
     """Remove fields with None as default value from generated models.
@@ -3744,7 +3710,6 @@ def test_main_with_strip_default_none(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--strip-default-none"],
     )
 
@@ -4110,7 +4075,6 @@ def test_disable_timestamp(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--disable-timestamp"],
     )
 
@@ -4287,7 +4251,6 @@ def test_use_default(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--use-default"],
     )
 
@@ -4299,7 +4262,7 @@ def test_use_default(output_file: Path) -> None:
 The `--force-optional` flag configures the code generation behavior.""",
     input_schema="openapi/api.yaml",
     cli_args=["--force-optional"],
-    golden_output="openapi/force_optional.py",
+    golden_output="openapi/main_openapi/force_optional.py",
 )
 @pytest.mark.benchmark
 def test_force_optional(output_file: Path) -> None:
@@ -4311,7 +4274,6 @@ def test_force_optional(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--force-optional"],
     )
 
@@ -4322,7 +4284,6 @@ def test_main_with_exclusive(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "exclusive.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
     )
 
 
@@ -4332,7 +4293,6 @@ def test_main_subclass_enum(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "subclass_enum.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
     )
 
 
@@ -4808,7 +4768,6 @@ def test_main_openapi_use_one_literal_as_default_keeps_nullable(output_file: Pat
         input_path=OPEN_API_DATA_PATH / "one_literal_as_default_nullable.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=["--enum-field-as-literal", "one", "--use-one-literal-as-default", "--strict-nullable"],
     )
 
@@ -4820,8 +4779,6 @@ def test_main_openapi_enum_models_as_literal_all(min_version: str, output_file: 
         input_path=OPEN_API_DATA_PATH / "enum_models.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file="enum_models/all.py",
         extra_args=["--enum-field-as-literal", "all", "--target-python-version", min_version],
     )
 
@@ -4833,8 +4790,6 @@ def test_main_openapi_enum_models_as_literal(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "enum_models.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_OPENAPI_PATH / "enum_models" / "as_literal.py",
         extra_args=["--enum-field-as-literal", "all", "--target-python-version", f"3.{MIN_VERSION}"],
     )
 
@@ -5315,7 +5270,7 @@ def test_main_openapi_nullable_map_value_stdout(capsys: pytest.CaptureFixture[st
             "--formatters",
             "builtin",
         ],
-        expected_stdout_path=EXPECTED_OPENAPI_PATH / "nullable_map_value_stdout.py",
+        stdout_suffix=".py",
         capsys=capsys,
     )
 
@@ -5603,7 +5558,6 @@ def test_main_openapi_model_name_map_key_of_numbered_name(
         input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -5660,7 +5614,6 @@ def test_main_openapi_nullable_map_value_dotted_field_keys(output_file: Path) ->
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_dotted_field_keys.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -6092,7 +6045,6 @@ def test_main_generate_custom_class_name_generator_modular(
 ) -> None:
     """Test OpenAPI generation with custom class name generator in modular mode."""
     output_path = tmp_path / "model"
-    main_modular_custom_class_name_dir = EXPECTED_OPENAPI_PATH / "modular_custom_class_name"
 
     def custom_class_name_generator(name: str) -> str:
         return f"Custom{name[0].upper() + name[1:]}"
@@ -6106,7 +6058,7 @@ def test_main_generate_custom_class_name_generator_modular(
             custom_class_name_generator=custom_class_name_generator,
         )
 
-        assert_directory_content(output_path, main_modular_custom_class_name_dir)
+        assert_directory_content(output_path)
 
 
 def test_main_http_openapi(mock_httpx_get: HttpxGetMockFactory, output_file: Path) -> None:
@@ -6123,8 +6075,6 @@ def test_main_http_openapi(mock_httpx_get: HttpxGetMockFactory, output_file: Pat
         url="https://example.com/refs.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file="http_refs.py",
     )
     assert_httpx_get_kwargs(
         httpx_get_mock,
@@ -6148,8 +6098,6 @@ def test_main_http_openapi_with_custom_port(mock_httpx_get: HttpxGetMockFactory,
         url="https://example.com:8123/openapi.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="http_openapi_with_custom_port.py",
         extra_args=["--disable-timestamp"],
     )
 
@@ -6163,7 +6111,7 @@ def test_main_http_openapi_with_custom_port(mock_httpx_get: HttpxGetMockFactory,
 The `--disable-appending-item-suffix` flag configures the code generation behavior.""",
     input_schema="openapi/api_constrained.yaml",
     cli_args=["--disable-appending-item-suffix", "--field-constraints"],
-    golden_output="openapi/disable_appending_item_suffix.py",
+    golden_output="openapi/main_openapi/main_disable_appending_item_suffix.py",
 )
 def test_main_disable_appending_item_suffix(output_file: Path) -> None:
     """Disable appending 'Item' suffix to array item types.
@@ -6175,7 +6123,6 @@ def test_main_disable_appending_item_suffix(output_file: Path) -> None:
             input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
             extra_args=["--field-constraints", "--disable-appending-item-suffix"],
         )
 
@@ -6272,7 +6219,6 @@ def test_main_openapi_json_pointer_through_scalar(output_file: Path) -> None:
             input_path=OPEN_API_DATA_PATH / "json_pointer_through_scalar.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
         )
 
     assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j")
@@ -6357,7 +6303,6 @@ def test_main_nested_enum(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "nested_enum.json",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
     )
 
 
@@ -6436,7 +6381,6 @@ def test_main_collapse_root_models(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "not_real_string.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--collapse-root-models"],
     )
 
@@ -6447,7 +6391,6 @@ def test_main_collapse_root_models_field_constraints(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "not_real_string.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--collapse-root-models", "--field-constraints"],
     )
 
@@ -6458,7 +6401,6 @@ def test_main_collapse_root_models_with_references_to_flat_types(output_file: Pa
         input_path=OPEN_API_DATA_PATH / "flat_type.jsonschema",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--collapse-root-models"],
     )
 
@@ -6669,17 +6611,10 @@ def test_main_openapi_allof_with_required_inherited_complex_allof(output_file: P
 
 def test_main_openapi_allof_with_required_inherited_comprehensive(output_file: Path) -> None:
     """Test OpenAPI generation with allOf covering all type inheritance scenarios."""
-    expected_file = (
-        "allof_with_required_inherited_comprehensive_black_lt_24.py"
-        if version.parse(black.__version__) < version.parse("24.0.0")
-        else "allof_with_required_inherited_comprehensive.py"
-    )
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_with_required_inherited_comprehensive.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
     )
 
 
@@ -7857,7 +7792,6 @@ def test_main_openapi_allof_boolean_member(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "allof_boolean_member" / "openapi.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--openapi-scopes",
             "schemas",
@@ -9252,7 +9186,6 @@ def test_main_use_default_kwarg(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "nullable.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=["--use-default-kwarg"],
     )
 
@@ -9323,23 +9256,20 @@ def test_main_openapi_discriminator(input_: str, output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_file", "extra_args"),
+    ("output_model_type", "extra_args"),
     [
         pytest.param(
             DataModelType.DataclassesDataclass.value,
-            "discriminator/dataclass_constructor_order.py",
             [],
             id="dataclass",
         ),
         pytest.param(
             DataModelType.MsgspecStruct.value,
-            "discriminator/msgspec_constructor_order.py",
             [],
             id="msgspec",
         ),
         pytest.param(
             DataModelType.MsgspecStruct.value,
-            "discriminator/msgspec_constructor_order_tagged_unions.py",
             ["--use-msgspec-tagged-unions"],
             id="msgspec-tagged-unions",
         ),
@@ -9348,7 +9278,6 @@ def test_main_openapi_discriminator(input_: str, output_file: Path) -> None:
 def test_main_openapi_discriminator_constructor_order(
     output_file: Path,
     output_model_type: str,
-    expected_file: str,
     extra_args: list[str],
 ) -> None:
     """Place injected required discriminator fields before optional constructor fields."""
@@ -9358,8 +9287,6 @@ def test_main_openapi_discriminator_constructor_order(
             input_path=OPEN_API_DATA_PATH / "discriminator.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--output-model-type",
                 output_model_type,
@@ -9375,7 +9302,6 @@ def test_main_openapi_discriminator_constructor_order(
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        EXPECTED_OPENAPI_PATH / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
@@ -9552,7 +9478,6 @@ def test_main_dataclass(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "dataclasses.dataclass"],
     )
 
@@ -9563,7 +9488,6 @@ def test_main_dataclass_base_class(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "dataclasses.dataclass", "--base-class", "custom_base.Base"],
     )
 
@@ -9588,7 +9512,6 @@ def test_main_multiple_required_any_of(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "multiple_required_any_of.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--collapse-root-models"],
     )
 
@@ -9731,7 +9654,6 @@ def test_main_unsorted_optional_fields(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "unsorted_optional_fields.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "dataclasses.dataclass"],
     )
 
@@ -9742,7 +9664,6 @@ def test_main_typed_dict(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -9753,7 +9674,6 @@ def test_main_typed_dict_py(min_version: str, output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "typing.TypedDict", "--target-python-version", min_version],
     )
 
@@ -9782,7 +9702,6 @@ def test_main_typed_dict_nullable(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "nullable.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "typing.TypedDict", "--target-python-version", "3.11"],
     )
 
@@ -9812,7 +9731,6 @@ def test_main_typed_dict_nullable_strict_nullable(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "nullable.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "typing.TypedDict", "--target-python-version", "3.11", "--strict-nullable"],
     )
 
@@ -9925,11 +9843,7 @@ def test_main_custom_file_header_with_docstring_and_import(output_file: Path, di
             input_path=input_path,
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
-            expected_file="custom_file_header_with_docstring_and_import.py",
-            output_to_expected=[("api.py", "custom_file_header_with_docstring_and_import.py")]
-            if directory_input
-            else None,
+            name="model",
             extra_args=[
                 "--custom-file-header-path",
                 str(DATA_PATH / "custom_file_header_with_docstring_and_import.txt"),
@@ -9990,7 +9904,6 @@ def test_main_pydantic_v2(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -10303,7 +10216,6 @@ def test_main_openapi_discriminator_optional_literal(
         input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--formatters",
             "builtin",
@@ -10819,7 +10731,7 @@ def test_main_generate_openapi_keyword_only_msgspec_with_extra_data(tmp_path: Pa
         use_annotated=True,
         field_constraints=True,
     )
-    assert_file_content(output_file, "msgspec_keyword_only_omit_defaults.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 @MSGSPEC_LEGACY_BLACK_SKIP
@@ -11150,7 +11062,6 @@ def test_main_openapi_use_tag_as_union_variant_name_parent_prefix(output_file: P
         input_path=OPEN_API_DATA_PATH / "use_tag_as_union_variant_name_parent_prefix.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -11557,7 +11468,6 @@ def test_main_openapi_webhooks(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "webhooks.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=["--openapi-scopes", "schemas", "webhooks"],
     )
 
@@ -11592,7 +11502,6 @@ def test_main_openapi_item_schema_beside_null_schema(scopes: list[str], output_f
         input_path=OPEN_API_DATA_PATH / "item_schema_null_schema.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=["--disable-timestamp", "--openapi-scopes", *scopes],
     )
 
@@ -11636,7 +11545,6 @@ def test_main_openapi_non_operations_and_security(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "non_operations_and_security.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=["--openapi-scopes", "schemas", "paths", "webhooks"],
     )
 
@@ -11663,7 +11571,6 @@ def test_main_openapi_webhooks_with_parameters(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "webhooks_with_parameters.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=["--openapi-scopes", "schemas", "webhooks", "parameters"],
     )
 
@@ -12051,7 +11958,7 @@ def test_main_openapi_external_ref_mapping_normalizes_imported_class_name(tmp_pa
         output=output_file,
         external_ref_mapping={"common_normalized.yaml": "mypackage.shared.models"},
     )
-    assert_file_content(output_file, "external_ref_mapping_normalized.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_external_ref_mapping_file_uri(tmp_path: Path) -> None:
@@ -12070,7 +11977,7 @@ def test_main_openapi_external_ref_mapping_file_uri(tmp_path: Path) -> None:
         output=output_file,
         external_ref_mapping={common_uri: "mypackage.shared.models"},
     )
-    assert_file_content(output_file, "external_ref_mapping_file_uri.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_external_ref_mapping_absolute_path_ref(tmp_path: Path) -> None:
@@ -12089,7 +11996,7 @@ def test_main_openapi_external_ref_mapping_absolute_path_ref(tmp_path: Path) -> 
         output=output_file,
         external_ref_mapping={common_path: "mypackage.shared.models"},
     )
-    assert_file_content(output_file, "external_ref_mapping_absolute_path.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_external_ref_mapping_local_ref_unchanged(tmp_path: Path) -> None:
@@ -12101,7 +12008,7 @@ def test_main_openapi_external_ref_mapping_local_ref_unchanged(tmp_path: Path) -
         output=output_file,
         external_ref_mapping={"common.yaml": "mypackage.shared.models"},
     )
-    assert_file_content(output_file, "external_ref_mapping_local_ref_unchanged.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_external_ref_mapping_ref_without_fragment_errors(tmp_path: Path) -> None:
@@ -12125,7 +12032,7 @@ def test_main_openapi_external_ref_mapping_no_duplicate_classes(tmp_path: Path) 
         output=output_file,
         external_ref_mapping={"common.yaml": "mypackage.shared.models"},
     )
-    assert_file_content(output_file, "external_ref_mapping.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_external_ref_mapping_without_flag_generates_classes(tmp_path: Path) -> None:
@@ -12136,7 +12043,7 @@ def test_main_openapi_external_ref_mapping_without_flag_generates_classes(tmp_pa
         input_file_type=InputFileType.OpenAPI,
         output=output_file,
     )
-    assert_file_content(output_file, "external_ref_mapping_without_flag.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_external_ref_mapping_invalid_format(capsys: pytest.CaptureFixture[str]) -> None:
@@ -12201,7 +12108,7 @@ def test_main_openapi_external_ref_mapping_programmatic_api(tmp_path: Path) -> N
         input_=EXTERNAL_REF_MAPPING_DATA_PATH / "api.yaml",
         config=config,
     )
-    assert_file_content(output_file, "external_ref_mapping.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_main_openapi_namespace_subns_ref(output_dir: Path) -> None:
@@ -13141,7 +13048,6 @@ def test_main_openapi_read_only_write_only_variant_graph_default(output_file: Pa
             input_path=OPEN_API_DATA_PATH / "read_only_write_only_variant_graph.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--formatters",
@@ -13404,7 +13310,6 @@ def test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice(
             input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "two_holders.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
             extra_args=[
                 "--output-model-type",
                 output_model_type,
@@ -13844,18 +13749,17 @@ def test_main_openapi_collapse_root_models_name_strategy_as_direct_reference(
         "--disable-timestamp",
     ]
     direct_output = tmp_path / "direct"
-    run_main_with_args([
-        "--input",
-        str(COLLAPSE_NAME_STRATEGY_DATA_PATH / direct_schema / "derived_split.yaml"),
-        "--output",
-        str(direct_output),
-        *args,
-    ])
+    run_main_and_assert(
+        input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / direct_schema / "derived_split.yaml",
+        output_path=direct_output,
+        extra_args=args,
+        name="tree",
+    )
     run_main_and_assert(
         input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "derived_split.yaml",
         output_path=tmp_path / "collapsed",
-        expected_directory=direct_output,
         extra_args=args,
+        name="tree",
     )
 
 
@@ -14296,7 +14200,6 @@ def test_main_allof_enum_ref(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "allof_enum_ref.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
     )
 
 
@@ -14311,7 +14214,6 @@ def test_main_openapi_allof_single_ref_inline(output_file: Path) -> None:
             "--enum-field-as-literal",
             "all",
         ],
-        assert_func=assert_file_content,
     )
 
 
@@ -14777,7 +14679,6 @@ def test_main_openapi_recursive_ref_discriminator_request_response(output_file: 
         input_path=OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14830,7 +14731,6 @@ def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: 
         input_path=OPEN_API_DATA_PATH / "read_only_write_only_nullable_enum_reference.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             *dedupe_args,
             "--disable-timestamp",
@@ -14865,7 +14765,6 @@ def test_main_openapi_read_only_write_only_all_reentrant_additional_properties_d
         input_path=OPEN_API_DATA_PATH / "read_only_write_only_reentrant_additional_properties.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--disable-timestamp",
             "--formatters",
@@ -14902,8 +14801,8 @@ Both forms validate the same data.""",
         "request-response",
         "--dedupe-request-response-variants",
     ],
-    golden_output="main/openapi/openapi_read_only_write_only_allof_parent_inline_models.py",
-    comparison_output="main/openapi/openapi_read_only_write_only_allof_parent_inline_models~read_only_write_only_allof_parent_inline_models[default].py",
+    golden_output="main/openapi/main_openapi/read_only_write_only_allof_parent_inline_models[dedupe].py",
+    comparison_output="main/openapi/main_openapi/read_only_write_only_allof_parent_inline_models[default].py",
 )
 @pytest.mark.parametrize(
     "extra_args",
@@ -14922,7 +14821,6 @@ def test_main_openapi_read_only_write_only_allof_parent_inline_models(output_fil
         input_path=OPEN_API_DATA_PATH / "read_only_write_only_allof_parent_inline_models.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             *extra_args,
             "--disable-timestamp",
@@ -15505,7 +15403,6 @@ def test_ref_merge_parameters(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "ref_merge_parameters.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -15529,7 +15426,6 @@ def test_main_reuse_model_with_type_alias(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "reuse_model_with_type_alias.json",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -15554,7 +15450,6 @@ def test_main_openapi_discriminated_oneof_allof_cycle(output_file: Path) -> None
         input_path=OPEN_API_DATA_PATH / "openapi_discriminated_oneof_allof_cycle.json",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
     )
 
 
@@ -15629,7 +15524,6 @@ def test_discriminator_final_field_aliases(
     aliases_path = fixture_dir / f"{alias_file}_aliases.json"
     if alias_file == "none":
         (aliases_path := output_file.parent / "none_aliases.json").write_text("{}\n", encoding="utf-8")
-    expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / f"{case}.py"
     if entrypoint == "cli":
         args = ["--aliases", str(aliases_path), "--disable-timestamp"]
         for key, value in options.items():
@@ -15640,8 +15534,6 @@ def test_discriminator_final_field_aliases(
             input_path=fixture_dir / f"{source}.json",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=args,
             force_exec_validation=True,
         )
@@ -15651,18 +15543,15 @@ def test_discriminator_final_field_aliases(
             input_path=fixture_dir / f"{source}.json",
             output_path=output_file,
             input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
             aliases=aliases,
             disable_timestamp=True,
             unchanged_inputs={"aliases": aliases},
             **options,
         )
-    payload_dir = DATA_PATH / "expected" / "payloads" / "discriminator_alias_outputs"
     payloads = json.loads((DATA_PATH / "payloads" / "discriminator_alias_outputs" / "validation.json").read_text())
     runtime: dict[str, Any] = {}
     wire_name = "wireKind" if "serialization_aliases" in options else "petType"
-    for tag, detail in [("cat", "meow"), ("dog", "bark")]:
+    for tag, detail, ordinary in [("cat", "meow", "cat_ordinary"), ("dog", "bark", "dog_ordinary")]:
         assert_generated_model_json_validation(
             output_file,
             module_name=f"generated_discriminator_alias_{case}_{tag}",
@@ -15688,28 +15577,19 @@ def test_discriminator_final_field_aliases(
                 ),
             }
             assert_output(
-                json.dumps(value.model_dump(by_alias=True, exclude_none=True), sort_keys=True) + "\n",
-                payload_dir / f"{wire_name}_{tag}.txt",
+                json.dumps(value.model_dump(by_alias=True, exclude_none=True), sort_keys=True) + "\n", name=tag
             )
             if case.startswith("wire_collision"):
                 native = variant.model_validate(payloads["ordinary"][tag])
                 runtime[tag]["ordinary_native_identity"] = model.model_validate(native).root is native
                 assert_output(
                     json.dumps(native.model_dump(mode="json", by_alias=True, exclude_none=True), sort_keys=True) + "\n",
-                    payload_dir / f"{wire_name}_{tag}_ordinary.txt",
+                    name=ordinary,
                 )
                 # Keep tagged dispatch and its existing schema order, including Python-name-first lookup.
                 schema = model.model_json_schema()
                 schema_keys = ("anyOf",) if source == "wire_collision_nullable" else ("discriminator", "oneOf")
-                assert_output(
-                    json.dumps({key: schema[key] for key in schema_keys}, indent=2) + "\n",
-                    payload_dir
-                    / (
-                        "collision_nullable_schema.txt"
-                        if source == "wire_collision_nullable"
-                        else "collision_schema.txt"
-                    ),
-                )
+                assert_output(json.dumps({key: schema[key] for key in schema_keys}, indent=2) + "\n", name="schema")
                 if source in {"wire_collision", "wire_collision_nullable"}:
                     value = model.model_validate(payloads["matching"][tag])
                     runtime[tag]["matching_selected_variant"] = type(value.root) is variant
@@ -15733,10 +15613,7 @@ def test_discriminator_final_field_aliases(
             model.model_validate(payloads["unrelated"]).model_dump(by_alias=True)
             == payloads["unrelated_outputs"][wire_name]
         )
-    runtime_case = "runtime"
-    if case.startswith("wire_collision"):
-        runtime_case += "_matching" if source in {"wire_collision", "wire_collision_nullable"} else "_collision"
-    assert_output(json.dumps(runtime, indent=2, sort_keys=True) + "\n", payload_dir / f"{runtime_case}.txt")
+    assert_output(json.dumps(runtime, indent=2, sort_keys=True) + "\n", name="runtime")
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
@@ -15777,18 +15654,11 @@ def test_discriminator_different_field_aliases(
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
-@pytest.mark.parametrize(
-    ("tagged_unions", "expected_name"),
-    [(False, "msgspec.py"), (True, "msgspec_tagged_unions.py")],
-    ids=["fields", "tagged-unions"],
-)
-def test_discriminator_field_aliases_msgspec(
-    output_file: Path, entrypoint: str, tagged_unions: bool, expected_name: str
-) -> None:
+@pytest.mark.parametrize("tagged_unions", [False, True], ids=["fields", "tagged-unions"])
+def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str, tagged_unions: bool) -> None:
     """Keep msgspec's existing wire-field handling independent of Pydantic tag names."""
     fixture_dir = OPEN_API_DATA_PATH / "discriminator_field_aliases"
     aliases_path = fixture_dir / "different_aliases.json"
-    expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / expected_name
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         if entrypoint == "cli":
@@ -15796,8 +15666,6 @@ def test_discriminator_field_aliases_msgspec(
                 input_path=fixture_dir / "direct.json",
                 output_path=output_file,
                 input_file_type="openapi",
-                assert_func=assert_file_content,
-                expected_file=expected,
                 extra_args=[
                     "--aliases",
                     str(aliases_path),
@@ -15813,8 +15681,6 @@ def test_discriminator_field_aliases_msgspec(
                 input_path=fixture_dir / "direct.json",
                 output_path=output_file,
                 input_file_type=InputFileType.OpenAPI,
-                assert_func=assert_file_content,
-                expected_file=expected,
                 aliases=json.loads(aliases_path.read_text()),
                 disable_timestamp=True,
                 output_model_type=DataModelType.MsgspecStruct,
@@ -15825,7 +15691,6 @@ def test_discriminator_field_aliases_msgspec(
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        expected.with_name(f"{expected.stem}_warnings.txt"),
     )
 
 
@@ -15834,7 +15699,6 @@ def test_discriminator_field_aliases_msgspec(
 def test_external_discriminator_base(output_file: Path, entrypoint: str, case: str) -> None:
     """Keep discriminator definitions, mappings and tag payloads in their source document."""
     fixture_dir = OPEN_API_DATA_PATH / "external_discriminator_base"
-    expected = EXPECTED_OPENAPI_PATH / "external_discriminator_base" / f"{case}.py"
     if entrypoint == "cli":
         args = ["--disable-timestamp"]
         if case in {"bare", "empty"}:
@@ -15845,8 +15709,6 @@ def test_external_discriminator_base(output_file: Path, entrypoint: str, case: s
             input_path=fixture_dir / f"{case}.json",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=args,
             force_exec_validation=True,
         )
@@ -15858,8 +15720,6 @@ def test_external_discriminator_base(output_file: Path, entrypoint: str, case: s
             input_path=fixture_dir / f"{case}.json",
             output_path=output_file,
             input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
             disable_timestamp=True,
             **options,
         )
@@ -15895,14 +15755,14 @@ def test_external_discriminator_base(output_file: Path, entrypoint: str, case: s
             assert_output(
                 json.dumps(model.model_validate(payload).model_dump(by_alias=True, exclude_none=True), sort_keys=True)
                 + "\n",
-                DATA_PATH / "expected" / "payloads" / "external_discriminator_outputs" / f"{case}_{tag}.txt",
+                name=tag,
             )
     if case == "many_ordinary":
         with _generated_model(output_file, "generated_discriminator_ordinary_refs", "Controls") as model:
             payload = {"field0": {"value": "first"}, "field99": {"value": "last"}}
             assert_output(
                 json.dumps(model.model_validate(payload).model_dump(exclude_none=True), sort_keys=True) + "\n",
-                DATA_PATH / "expected" / "payloads" / "external_discriminator_outputs" / "ordinary.txt",
+                name="ordinary",
             )
 
 
@@ -15915,13 +15775,11 @@ def test_external_discriminator_multiple_inputs(
 ) -> None:
     """Do not recollect or lose metadata when a referenced document is also an input."""
     fixture_dir = OPEN_API_DATA_PATH / "external_discriminator_base" / "multiple"
-    expected = EXPECTED_OPENAPI_PATH / "external_discriminator_base" / "multiple"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=fixture_dir,
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=expected,
             extra_args=["--disable-timestamp", "--formatters", *(formatter.value for formatter in formatters)],
             runtime_validation_module="a",
             runtime_validation_model_name="Wrapper",
@@ -15935,13 +15793,13 @@ def test_external_discriminator_multiple_inputs(
             disable_timestamp=True,
             formatters=formatters,
         )
-        assert_directory_content(output_dir, expected)
+        assert_directory_content(output_dir)
     with _generated_package_module(output_dir, "a") as module:
         for tag, detail in [("cat", "meow"), ("dog", "bark")]:
             payload = {"item": {"kind": tag, detail: "yes"}}
             assert_output(
                 json.dumps(module.Wrapper.model_validate(payload).model_dump(exclude_none=True), sort_keys=True) + "\n",
-                DATA_PATH / "expected" / "payloads" / "external_discriminator_outputs" / f"local_{tag}.txt",
+                name=tag,
             )
 
 
@@ -15950,14 +15808,11 @@ def test_external_discriminator_multiple_inputs(
 def test_external_discriminator_parent_load_order(output_file: Path, entrypoint: str, case: str) -> None:
     """Keep external child fields when their discriminator parent is loaded later."""
     source = OPEN_API_DATA_PATH / "external_discriminator_base" / f"{case}.json"
-    expected = EXPECTED_OPENAPI_PATH / "external_discriminator_base" / f"{case}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=source,
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=["--disable-timestamp"],
         )
     else:
@@ -15965,8 +15820,6 @@ def test_external_discriminator_parent_load_order(output_file: Path, entrypoint:
             input_path=source,
             output_path=output_file,
             input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
             disable_timestamp=True,
         )
     payloads = json.loads((DATA_PATH / "payloads/external_discriminator_pending.json").read_text())
@@ -15990,8 +15843,7 @@ def test_external_discriminator_parent_load_order(output_file: Path, entrypoint:
             )
             with _generated_model(model_file, "discriminator_pending_dump", "Wrapper") as model:
                 assert_output(
-                    json.dumps(model.model_validate(payloads[tag]).model_dump(), sort_keys=True) + "\n",
-                    DATA_PATH / "expected/payloads/external_discriminator_outputs" / f"local_{tag}.txt",
+                    json.dumps(model.model_validate(payloads[tag]).model_dump(), sort_keys=True) + "\n", name=tag
                 )
 
 
@@ -16027,8 +15879,6 @@ def test_numeric_union_preserves_nullable_warning(output_file: Path, entrypoint:
                     "--formatters",
                     "builtin",
                 ],
-                assert_func=assert_file_content,
-                expected_file="type_union_nullable.py",
             )
         else:
             run_generate_file_and_assert(
@@ -16039,8 +15889,6 @@ def test_numeric_union_preserves_nullable_warning(output_file: Path, entrypoint:
                 field_constraints=True,
                 schema_version_mode=VersionMode.Strict,
                 formatters=[Formatter.BUILTIN],
-                assert_func=assert_file_content,
-                expected_file="type_union_nullable.py",
             )
     assert_warnings_contain(recorded, "nullable keyword is deprecated")
 
@@ -16183,7 +16031,6 @@ def test_main_openapi_api_scope_external_boolean_schema(output_file: Path) -> No
         input_path=OPEN_API_DATA_PATH / "api_scope_external_boolean_schema" / "openapi.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--openapi-scopes",
             "schemas",
@@ -16204,7 +16051,6 @@ def test_main_openapi_self_spelled_external_reference(output_file: Path) -> None
         input_path=OPEN_API_DATA_PATH / "self_spelled_external_ref" / "openapi.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
         extra_args=[
             "--openapi-scopes",
             "schemas",
@@ -16259,39 +16105,52 @@ def test_main_openapi_api_scope_path_names_custom_class_name_generator(tmp_path:
 
 
 API_SCOPE_WITHOUT_MODELS_PATH = OPEN_API_DATA_PATH / "api_scope_without_models.yaml"
-EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH = EXPECTED_OPENAPI_PATH / "api_scope_without_models"
 
 
 @pytest.mark.parametrize(
-    ("output_name", "existing_file", "extra_args", "expected_exit", "expected_stdout"),
+    ("output_name", "existing_file", "extra_args", "expected_exit"),
     [
-        ("models.py", None, [], Exit.OK, "empty.txt"),
-        ("models.py", None, ["--output-format", "json"], Exit.OK, "json_output.txt"),
-        ("models", None, ["--output-format", "json"], Exit.OK, "json_output.txt"),
-        (None, None, ["--output-format", "json"], Exit.OK, "json_stdout.txt"),
-        ("models.py", "models.py", ["--output-format", "json"], Exit.OK, "json_output.txt"),
-        ("models.py", None, ["--check"], Exit.OK, "empty.txt"),
-        ("models.py", None, ["--check", "--output-format", "json"], Exit.OK, "check_success_json.txt"),
-        ("models", None, ["--check"], Exit.OK, "empty.txt"),
-        ("models.py", "models.py", ["--check"], Exit.DIFF, "check_extra_text.txt"),
-        ("models.py", "models.py", ["--check", "--output-format", "json"], Exit.DIFF, "check_extra_json.txt"),
-        ("models", "models", ["--check"], Exit.DIFF, "check_extra_text.txt"),
-        ("models", "models/__init__.py", ["--check"], Exit.DIFF, "check_extra_directory_text.txt"),
-        ("models.py", None, ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH)], Exit.OK, "empty.txt"),
-        (
+        pytest.param("models.py", None, [], Exit.OK, id="file-text"),
+        pytest.param("models.py", None, ["--output-format", "json"], Exit.OK, id="file-json"),
+        pytest.param("models", None, ["--output-format", "json"], Exit.OK, id="directory-json"),
+        pytest.param(None, None, ["--output-format", "json"], Exit.OK, id="stdout-json"),
+        pytest.param("models.py", "models.py", ["--output-format", "json"], Exit.OK, id="existing-file-json"),
+        pytest.param("models.py", None, ["--check"], Exit.OK, id="check-file-text"),
+        pytest.param("models.py", None, ["--check", "--output-format", "json"], Exit.OK, id="check-file-json"),
+        pytest.param("models", None, ["--check"], Exit.OK, id="check-directory-text"),
+        pytest.param("models.py", "models.py", ["--check"], Exit.DIFF, id="check-existing-file-text"),
+        pytest.param(
+            "models.py", "models.py", ["--check", "--output-format", "json"], Exit.DIFF, id="check-existing-file-json"
+        ),
+        pytest.param("models", "models", ["--check"], Exit.DIFF, id="check-existing-directory-text"),
+        pytest.param("models", "models/__init__.py", ["--check"], Exit.DIFF, id="check-existing-package-text"),
+        pytest.param(
+            "models.py",
+            None,
+            ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH)],
+            Exit.OK,
+            id="diff-against-file-text",
+        ),
+        pytest.param(
             "models.py",
             None,
             ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH), "--output-format", "json"],
             Exit.OK,
-            "input_diff_success_json.txt",
+            id="diff-against-file-json",
         ),
-        ("models", None, ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH)], Exit.OK, "empty.txt"),
-        (
+        pytest.param(
+            "models",
+            None,
+            ["--diff-against", str(API_SCOPE_WITHOUT_MODELS_PATH)],
+            Exit.OK,
+            id="diff-against-directory-text",
+        ),
+        pytest.param(
             "models.py",
             None,
             ["--diff-against", str(OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases.yaml")],
             Exit.DIFF,
-            "input_diff_removed_text.txt",
+            id="diff-against-removed-text",
         ),
     ],
 )
@@ -16302,7 +16161,6 @@ def test_main_openapi_api_scope_without_models(
     existing_file: str | None,
     extra_args: list[str],
     expected_exit: Exit,
-    expected_stdout: str,
 ) -> None:
     """Report an API scope run without models alike for text and JSON, files and directories."""
     output_path = tmp_path / (output_name or "models.py")
@@ -16324,25 +16182,19 @@ def test_main_openapi_api_scope_without_models(
         expected_exit=expected_exit,
     )
     captured = capsys.readouterr()
-    assert_output(
-        captured.out.replace(output_path.as_posix(), "<OUTPUT>"),
-        EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / expected_stdout,
-    )
-    assert_output(captured.err, EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / "empty.txt")
-    assert_output(
-        checked_path.read_text(encoding="utf-8") if checked_path.is_file() else "",
-        EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / ("existing_output.txt" if existing_file else "empty.txt"),
-    )
+    assert_output(captured.out.replace(output_path.as_posix(), "<OUTPUT>"), name="stdout")
+    assert_output(captured.err, name="stderr")
+    assert_output(checked_path.read_text(encoding="utf-8") if checked_path.is_file() else "", name="output")
 
 
 @pytest.mark.parametrize(
-    ("existing_output", "extra_args", "expected_exit", "expected_stdout"),
+    ("existing_output", "extra_args", "expected_exit"),
     [
-        (False, ["--output-format", "json"], Exit.OK, "jobs_json_output.txt"),
-        (False, ["--check"], Exit.OK, "empty.txt"),
-        (False, ["--check", "--output-format", "json"], Exit.OK, "jobs_check_success_json.txt"),
-        (True, ["--check"], Exit.DIFF, "jobs_check_extra_text.txt"),
-        (True, ["--check", "--output-format", "json"], Exit.DIFF, "jobs_check_extra_json.txt"),
+        pytest.param(False, ["--output-format", "json"], Exit.OK, id="json"),
+        pytest.param(False, ["--check"], Exit.OK, id="check-text"),
+        pytest.param(False, ["--check", "--output-format", "json"], Exit.OK, id="check-json"),
+        pytest.param(True, ["--check"], Exit.DIFF, id="check-existing-text"),
+        pytest.param(True, ["--check", "--output-format", "json"], Exit.DIFF, id="check-existing-json"),
     ],
 )
 def test_main_openapi_api_scope_without_models_jobs(
@@ -16352,7 +16204,6 @@ def test_main_openapi_api_scope_without_models_jobs(
     existing_output: bool,
     extra_args: list[str],
     expected_exit: Exit,
-    expected_stdout: str,
 ) -> None:
     """Report batch jobs without models like the single runs for their file and directory outputs."""
     shutil.copyfile(API_SCOPE_WITHOUT_MODELS_PATH, tmp_path / API_SCOPE_WITHOUT_MODELS_PATH.name)
@@ -16362,11 +16213,8 @@ def test_main_openapi_api_scope_without_models_jobs(
     with chdir(tmp_path):
         run_main_with_args(["--all-jobs", *extra_args], expected_exit=expected_exit)
     captured = capsys.readouterr()
-    assert_output(
-        captured.out.replace(tmp_path.resolve().as_posix(), "<ROOT>"),
-        EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / expected_stdout,
-    )
-    assert_output(captured.err, EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / "empty.txt")
+    assert_output(captured.out.replace(tmp_path.resolve().as_posix(), "<ROOT>"), name="stdout")
+    assert_output(captured.err, name="stderr")
 
 
 def test_main_openapi_ignored_content_type_header_refs(output_file: Path) -> None:
@@ -16899,6 +16747,7 @@ def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
             output_path=output_file,
             input_file_type="openapi",
             extra_args=common,
+            name="model",
         )
     with pytest.warns(UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"):
         run_main_and_assert(
@@ -16906,7 +16755,7 @@ def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
             output_path=tmp_path / "merged.py",
             input_file_type="openapi",
             extra_args=[*common, "--merge-shared-variant-tags"],
-            expected_output=output_file.read_text(encoding="utf-8"),
+            name="model",
         )
 
 
@@ -17534,13 +17383,14 @@ def test_main_openapi_ignore_ref_siblings_by_schema_version_applies_them_in_31(t
         output_path=output_file,
         input_file_type="openapi",
         extra_args=common,
+        name="model",
     )
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
         output_path=tmp_path / "ignored.py",
         input_file_type="openapi",
         extra_args=[*common, "--ignore-ref-siblings-by-schema-version"],
-        expected_output=output_file.read_text(encoding="utf-8"),
+        name="model",
     )
 
 
@@ -18046,7 +17896,6 @@ def test_main_openapi_binary_request_body_pattern_warning(
             input_path=input_file,
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
             extra_args=[
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
@@ -18072,24 +17921,6 @@ def test_main_openapi_binary_request_body_pattern_warning(
 
 def test_main_openapi_discriminator_beside_a_variant_that_admits_any_value(tmp_path: Path, output_file: Path) -> None:
     """Drop the discriminator of a ``oneOf`` that holds an empty schema: that variant admits any value."""
-    expected = """\
-# generated by datamodel-codegen:
-#   filename:  any_variant.yaml
-
-from __future__ import annotations
-
-from typing import Any
-
-from pydantic import BaseModel
-
-
-class A(BaseModel):
-    kind: str | None = None
-
-
-class Holder(BaseModel):
-    item: A | Any | None = None
-"""
     input_path = tmp_path / "any_variant.yaml"
     input_path.write_text(
         """\
@@ -18120,7 +17951,6 @@ components:
         output_path=output_file,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_output=expected,
     )
 
 

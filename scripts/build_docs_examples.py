@@ -789,7 +789,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_OPENAPI / "custom_template_dir.py",
+                    path=EXPECTED_OPENAPI / "main_openapi/custom_template_dir.stdout.py",
                     strip_python_header=True,
                 ),
             ),

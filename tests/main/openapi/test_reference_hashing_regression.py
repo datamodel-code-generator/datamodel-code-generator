@@ -15,7 +15,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.openapi.conftest import assert_file_content
 
 
 @pytest.mark.parametrize("entrypoint", ["generate", "cli"])
@@ -24,14 +23,11 @@ def test_reused_inherited_bases(tmp_path: Path, entrypoint: str, api_scope: bool
     """Collapse duplicate parents while keeping required nested fields and diamond inheritance."""
     output = tmp_path / "models"
     source = OPEN_API_DATA_PATH / "allof_required_inherited_nested_inline.yaml"
-    expected = f"reuse_reference_identity{'_cli' if entrypoint == 'cli' else ''}.py"
     if entrypoint == "generate":
         run_generate_file_and_assert(
             input_path=source,
             output_path=output,
             input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
             reuse_model=True,
             collapse_reuse_models=True,
             disable_timestamp=True,
@@ -43,8 +39,6 @@ def test_reused_inherited_bases(tmp_path: Path, entrypoint: str, api_scope: bool
             input_path=source,
             output_path=output,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=[
                 "--formatters",
                 "builtin",
