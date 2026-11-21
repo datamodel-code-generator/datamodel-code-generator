@@ -22,7 +22,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
 __all__ = [
     "add_child",
@@ -30,6 +30,7 @@ __all__ = [
     "chain_root",
     "clear_children",
     "clear_parents",
+    "data_model_children",
     "data_type_children",
     "drop_child",
     "drop_child_and_detached",
@@ -69,6 +70,13 @@ def drop_tree(root: Any | None) -> None:
 def data_type_children(reference: Any) -> list[Any]:
     """Return the data types that name ``reference``, in the order they were added, as a list of their own."""
     return [child for child in reference.children if hasattr(child, "replace_reference")]
+
+
+def data_model_children(children: Iterable[object]) -> Iterator[object]:
+    """Yield the models among the ``children`` of a reference: the children without ``replace_reference``, in order."""
+    for child in children:
+        if not hasattr(child, "replace_reference"):
+            yield child
 
 
 def type_children(node: Any) -> tuple[Any, ...]:
