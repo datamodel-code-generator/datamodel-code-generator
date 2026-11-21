@@ -685,7 +685,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "model-reuse.reuse-model.output",
             "model-reuse.md",
             language="python",
-            path=EXPECTED_JSON_SCHEMA / "json_reuse_enum.py",
+            path=EXPECTED_JSON_SCHEMA / "main_jsonschema" / "main_json_reuse_enum.py",
             strip_python_header=True,
         ),
         DocsExample(
