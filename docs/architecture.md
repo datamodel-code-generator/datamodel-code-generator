@@ -2040,7 +2040,12 @@ paths:
   `types.py` exports, are views of its rows.
 
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
-backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
+backend inspection with the Python AST, including lazy and dynamic imports. No module of the package imports the
+package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
+`TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root
+re-exports the names of the modules that define them for users, so the package imports each name from its module. A
+submodule read through the root (`from datamodel_code_generator import enums`) is a module import where the root binds
+no name of the same spelling. Entrypoint, parser, configuration,
 input-model, reference, model-composition, output-model, shared-model, schema graph, parser pass, requirement-table,
 constraint-table and subschema-position-table files are classified explicitly. The composition
 root may select concrete backends, while shared-model modules must remain neutral: they cannot import a concrete backend or resolve one through
