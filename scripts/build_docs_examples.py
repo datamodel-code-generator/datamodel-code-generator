@@ -25,7 +25,6 @@ EXPECTED_INPUT_MODEL = TEST_DATA / "expected" / "input_model"
 EXPECTED_JSON_SCHEMA = EXPECTED_MAIN / "jsonschema"
 EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
-EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
 EXPECTED_CLIENT_GENERATION = TEST_DATA / "expected" / "api_generation" / "client_generation"
 CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
 FASTAPI_CLI_DATA = TEST_DATA / "generation_platform" / "fastapi" / "cli"
@@ -815,8 +814,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "text",
                 error_findings(
                     *(
-                        EXPECTED_CLIENT / "protocols" / name
-                        for name in ("protocols-unsupported.txt", "protocols-references.txt")
+                        EXPECTED_CLIENT_GENERATION / f"client_protocols[{name}].txt"
+                        for name in ("protocols-unsupported", "protocols-references")
                     ),
                     keep=lambda finding: "reserves the argument" in finding,
                 ),
@@ -932,10 +931,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             render=lambda: (
                 "\n"
                 + blocks(
-                    EXPECTED_CLIENT
-                    / "packages"
-                    / "caching"
-                    / "pydantic_v2_BaseModel"
+                    EXPECTED_CLIENT_GENERATION
+                    / "client_documentation[caching]"
                     / "client"
                     / "_generated_docs"
                     / "runtime.md",
