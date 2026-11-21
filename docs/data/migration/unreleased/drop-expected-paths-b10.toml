@@ -1,0 +1,8 @@
+[[change]]
+id = "drop-expected-paths-b10"
+category = "harness"
+title = "The FastAPI scope report is stored per formatter"
+summary = "The scope report names the installed black release in its error text, so under black 22 it is stored as its own unit; the package writes the same output."
+covers = [
+    "main/generation_platform/fastapi/acceptance/scope.txt",
+]

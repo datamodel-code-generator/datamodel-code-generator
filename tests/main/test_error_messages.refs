@@ -7,7 +7,7 @@
 [test_cli_latin1_custom_header_writes_module]
 	main/error_messages/cli_latin1_custom_header_writes_module.py
 [test_cross_file_empty_ref_is_valid_in_strict_mode]
-	main/malformed/cross_file_empty_ref//*.py
+	main/error_messages/cross_file_empty_ref_is_valid_in_strict_mode/
 [test_dangling_component_ref_warning_names_the_parse_caller]
 	main/error_messages/dangling_component_ref_warning_names_the_parse_caller.txt
 [test_dangling_local_ref_warning_is_filtered_as_the_package]
@@ -19,61 +19,71 @@
 	main/error_messages/dangling_ref_warning_names_the_caller_of_a_traced_parse.txt
 [test_directory_input_custom_header_trailing_newlines]
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
+False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].model.py	= main/person.py
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
-False-prepend-\n\n	main/person.py
 False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n].2/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
+False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n].model.py	= main/person.py
 False-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_r_n_r_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
-False-prepend-\r\n\r\n	main/person.py
 False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].2/
+False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].model.py	= main/person.py
 False-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-replace-_n_n].2/
-False-replace-\n\n	main/person.py
 True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
+True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].model.py	= main/person.py
 True-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
-True-prepend-\n\n	main/person.py
 True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n].2/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
+True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n].model.py	= main/person.py
 True-prepend-\r\n\r\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_r_n_r_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-prepend-_n_n].2/
-True-prepend-\r\n\r\n	main/person.py
 True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].2/
+True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].model.py	= main/person.py
 True-replace-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[True-replace-_n_n].2/
-True-replace-\n\n	main/person.py
 [test_directory_input_excludes_metadata_symlink_spellings]
-False	main/malformed/directory_input//*.py
-True	main/malformed/directory_input//*.py
+False	main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
+True	main/error_messages/directory_input_excludes_metadata_symlink_spellings[True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 [test_directory_input_preserves_nonstandard_schema_files]
 .json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].2/
+.json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].model.py	= main/person.py
+.json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
 .json-False-jsonschema-\n-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].2/
-.json-False-jsonschema-\n-None	main/person.py
 .py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].2/
+.py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].model.py	= main/person.py
+.py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
 .py-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-False-jsonschema-None-None].2/
-.py-False-jsonschema-None-None	main/person.py
 .py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
+.py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].model.py	= main/person.py
+.py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
 .py-True-None-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
-.py-True-None-None-None	main/person.py
 .py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x].2/
 .py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = lambda x].2/
-.py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/person.py
+.py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~94e6d424.model.py	= main/person.py
+.py-True-jsonschema-# Shared copyright header-Alias = lambda x	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~94e6d424.source.txt
 .py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].2/
+.py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].model.py	= main/person.py
 .py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model].2/
-.py-True-jsonschema-# Shared copyright header-Alias = model	main/person.py
+.py-True-jsonschema-# Shared copyright header-Alias = model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-Alias = model~e8fd87b6].source.txt
 .py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].2/
+.py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].model.py	= main/person.py
+.py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].source.txt
 .py-True-jsonschema-# Shared copyright header-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-None].2/
-.py-True-jsonschema-# Shared copyright header-None	main/person.py
 .py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].2/
+.py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].model.py	= main/person.py
+.py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].source.txt
 .py-True-jsonschema-# Shared copyright header-class Model	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared copyright header-class Model].2/
-.py-True-jsonschema-# Shared copyright header-class Model	main/person.py
 .py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.2/
+.py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.model.py	= main/person.py
+.py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.source.txt
 .py-True-jsonschema-# Shared copyright header-from module import name	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-# Shared ~82d4b660.2/
-.py-True-jsonschema-# Shared copyright header-from module import name	main/person.py
 .py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].2/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
+.py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].model.py	= main/person.py
+.py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
 .py-True-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-jsonschema-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.py-True-None-None-None].2/
-.py-True-jsonschema-None-None	main/person.py
 .schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].2/
+.schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].model.py	= main/person.py
+.schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].source.txt	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.json-False-jsonschema-_n-None].source.txt
 .schema-False-jsonschema-None-None	main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None]/	= main/error_messages/directory_input_preserves_nonstandard_schema_files[.schema-False-jsonschema-None-None].2/
-.schema-False-jsonschema-None-None	main/person.py
 [test_directory_input_retains_type_aliases_without_future_imports]
-	main/malformed/directory_input_alias.py
+	main/error_messages/directory_input_retains_type_aliases_without_future_imports.tree/
 [test_empty_local_ref_is_valid_in_strict_mode]
-	main/malformed/empty_local_ref.py
+	main/error_messages/empty_local_ref_is_valid_in_strict_mode.py
 [test_external_dangling_pointer_warns_and_preserves_output]
 	main/error_messages/external_dangling_pointer_warns_and_preserves_output.py
 [test_generate_hardlinked_output_path_does_not_overwrite_input]
@@ -92,7 +102,7 @@ package-onto-file	main/error_messages/generate_with_a_lock_update_refuses_an_out
 [test_model_metadata_path_does_not_overwrite_input]
 	main/error_messages/model_metadata_path_does_not_overwrite_input.txt	= main/malformed/path_conflict_input.txt
 [test_modular_output_file_is_a_clean_cli_error]
-	main/person.py
+	main/error_messages/modular_output_file_is_a_clean_cli_error.py	= main/person.py
 [test_openapi_dangling_component_ref_warns]
 	main/error_messages/openapi_dangling_component_ref_warns.py
 [test_out_of_range_array_ref_warns_and_generates_importable_fallback]
@@ -113,161 +123,163 @@ package-onto-file-jobs-json	main/error_messages/output_layout_mismatch_is_refuse
 package-onto-file-json	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-json].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
 package-onto-file-update-lock	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-update-lock].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
 [test_output_path_can_write_inside_input_directory]
+InputFileType.Auto-None-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-child-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-None-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-child-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-None-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-child-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-None-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-child-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-child-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-None-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-None-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-same-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-None-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-None-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-same-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-None-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-cli-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-None-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-same-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-None-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-cli-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-None-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-same-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-None-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-sibling-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-None-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-sibling-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-None-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-sibling-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-None-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-None-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-sibling-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-None-sibling-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-child-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-child-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-child-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-child-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-child-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.Auto-inside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-same-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.Auto-inside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-same-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-cli-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.Auto-inside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-same-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-cli-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.Auto-inside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-same-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-sibling-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-sibling-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-sibling-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-inside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-inside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-sibling-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-inside-sibling-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-child-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-child-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-child-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-child-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-child-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-api-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-outside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-same-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-api-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-outside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-same-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-cli-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-outside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-same-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-cli-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.Auto-outside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-same-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-same-cli-True	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-sibling-api-False	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-sibling-api-True	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-sibling-cli-False	main/malformed/directory_input//*.py
+InputFileType.Auto-outside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.Auto-outside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-outside-sibling-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.Auto-outside-sibling-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-child-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-child-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-child-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-child-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-child-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-api-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-None-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-same-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-api-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-None-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-same-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-cli-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-None-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-same-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-cli-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-None-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-same-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-same-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-sibling-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-sibling-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-sibling-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-None-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-None-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-None-sibling-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-None-sibling-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-child-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-child-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-child-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-child-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-child-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-api-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.JsonSchema-inside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-same-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-api-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.JsonSchema-inside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-same-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-cli-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.JsonSchema-inside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-same-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-cli-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-inside-same-api-False].tree/
 InputFileType.JsonSchema-inside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-same-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-same-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-sibling-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-sibling-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-sibling-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-inside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-inside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-inside-sibling-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-inside-sibling-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-child-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-child-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-child-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-child-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-child-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-child-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-child-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-child-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-child-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-api-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-outside-same-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-same-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-api-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-outside-same-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-same-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-cli-False].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-outside-same-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-same-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-cli-True].tree/	= main/error_messages/output_path_can_write_inside_input_directory[InputFileType.Auto-None-same-api-False].tree/
 InputFileType.JsonSchema-outside-same-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-same-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-same-cli-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-api-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-sibling-api-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-api-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-sibling-api-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-api-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-sibling-api-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-api-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-sibling-api-True	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-cli-False].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-sibling-cli-False	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-cli-False].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-sibling-cli-False	main/malformed/directory_input//*.py
+InputFileType.JsonSchema-outside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-cli-True].tree/	= main/error_messages/directory_input_excludes_metadata_symlink_spellings[False].tree/
 InputFileType.JsonSchema-outside-sibling-cli-True	main/error_messages/output_path_can_write_inside_input_directory[InputFileType.JsonSchema-outside-sibling-cli-True].txt	= main/malformed/path_conflict_input.txt
-InputFileType.JsonSchema-outside-sibling-cli-True	main/malformed/directory_input//*.py
 [test_output_path_does_not_overwrite_input]
 	main/error_messages/output_path_does_not_overwrite_input.txt	= main/malformed/path_conflict_input.txt
 [test_parse_deferred_json_pointer]
-array	main/malformed/parsed_array_pointer.py
-empty	main/malformed/parsed_empty_pointer.py
-missing	main/malformed/parsed_missing_pointer.py
+array	main/error_messages/parse_deferred_json_pointer[array].py
+empty	main/error_messages/parse_deferred_json_pointer[empty].py	= main/error_messages/parse_file_object_path_without_resolved_ref.py
+missing	main/error_messages/parse_deferred_json_pointer[missing].py
 [test_parse_file_object_path_without_resolved_ref]
-	main/malformed/parsed_empty_pointer.py
+	main/error_messages/parse_file_object_path_without_resolved_ref.py
 [test_pass_warnings_name_the_package_once_traced]
 finish-pass	main/error_messages/pass_warnings_name_the_package_once_traced[finish-pass].txt
 module-pass	main/error_messages/pass_warnings_name_the_package_once_traced[module-pass].txt
+[test_pyproject_http_pairs_may_be_written_as_arrays]
+	main/error_messages/pyproject_http_pairs_may_be_written_as_arrays.py
 [test_remote_dangling_ref_omits_credentials_and_query]
 warning	main/error_messages/remote_dangling_ref_omits_credentials_and_query[warning].py
 [test_remote_resource_ref_warning_omits_credentials_and_query]

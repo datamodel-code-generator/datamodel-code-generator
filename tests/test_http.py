@@ -50,7 +50,6 @@ from tests.conftest import (
     assert_output,
     assert_warnings_contain,
     assert_warnings_do_not_contain,
-    create_assert_file_content,
     stored_expected,
 )
 from tests.main.conftest import (
@@ -62,12 +61,17 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from pytest_mock import MockerFixture
 
 HTTP_E2E_DATA_PATH = Path(__file__).parent / "data"
-assert_http_e2e_file = create_assert_file_content(HTTP_E2E_DATA_PATH / "expected" / "http")
+
+
+def assert_http_e2e_file(path: Path, *, name: str, suffix: str, transform: Callable[[str], str] | None = None) -> None:
+    """Compare a file a test published with the output stored for the test item under a role."""
+    text = path.read_text(encoding="utf-8")
+    assert_output(transform(text) if transform else text, name=name, suffix=suffix)
 
 
 @pytest.fixture(autouse=True)
@@ -556,10 +560,8 @@ def test_cli_header_names_the_url_without_credentials_or_query(
         "--formatters",
         "builtin",
     ])
-    assert_http_e2e_file(
-        tmp_path / "output.py", f"url_header_redacted{'_equals' if joined else ''}.py", transform=normalize
-    )
-    assert_http_e2e_file(tmp_path / "metadata.json", "url_header_redacted_metadata.txt", transform=normalize)
+    assert_http_e2e_file(tmp_path / "output.py", name="output", suffix=".py", transform=normalize)
+    assert_http_e2e_file(tmp_path / "metadata.json", name="metadata", suffix=".txt", transform=normalize)
 
 
 def test_cli_warning_names_a_remote_location_without_credentials_or_query(
@@ -630,8 +632,6 @@ def test_cli_fetches_external_schema_with_selected_backend(
         url=schema_url,
         output_path=tmp_path / "output.py",
         input_file_type="jsonschema",
-        assert_func=assert_http_e2e_file,
-        expected_file="backend.py",
         extra_args=extra_args,
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
@@ -693,8 +693,7 @@ def test_cli_updates_and_verifies_remote_lock_for_root_and_nested_refs(
             url=root_url,
             output_path=tmp_path / "output.py",
             input_file_type="jsonschema",
-            assert_func=assert_http_e2e_file,
-            expected_file="remote_lock_nested.py",
+            name="model",
             extra_args=update_args,
             transform=lambda output: output.replace(root_url, "root.json"),
         )
@@ -713,8 +712,7 @@ def test_cli_updates_and_verifies_remote_lock_for_root_and_nested_refs(
             url=root_url,
             output_path=tmp_path / "verified.py",
             input_file_type="jsonschema",
-            assert_func=assert_http_e2e_file,
-            expected_file="remote_lock_nested.py",
+            name="model",
             extra_args=verify_args,
             transform=lambda output: output.replace(root_url, "root.json"),
         )
@@ -802,8 +800,7 @@ def test_cli_locks_final_real_redirect_response_under_the_original_request(
             url=redirect_url,
             output_path=tmp_path / "output.py",
             input_file_type="jsonschema",
-            assert_func=assert_http_e2e_file,
-            expected_file="backend.py",
+            name="model",
             extra_args=update_args,
             transform=lambda output: output.replace(redirect_url, "http://localhost/schema.json"),
         )
@@ -816,8 +813,7 @@ def test_cli_locks_final_real_redirect_response_under_the_original_request(
             url=redirect_url,
             output_path=tmp_path / "verified.py",
             input_file_type="jsonschema",
-            assert_func=assert_http_e2e_file,
-            expected_file="backend.py",
+            name="model",
             extra_args=["--allow-private-network", "--disable-timestamp", "--locked", "--lockfile", str(lockfile)],
             transform=lambda output: output.replace(redirect_url, "http://localhost/schema.json"),
         )
@@ -956,7 +952,7 @@ def test_cli_locks_local_http_reference_mirrors(
     ]
 
     run_main_with_args([*common_args, "--update-lock"])
-    assert_http_e2e_file(output_path, "remote_lock_nested.py")
+    assert_http_e2e_file(output_path, name="output", suffix=".py")
     lock_content = lockfile.read_text(encoding="utf-8")
     assert '"url": "https://registry.example"' in lock_content
 
@@ -1313,7 +1309,8 @@ locked = true
             run_main_with_args(["--url", schema_url, "--output", str(output_path), "--profile", "update"])
             assert_http_e2e_file(
                 output_path,
-                "backend.py",
+                name="output",
+                suffix=".py",
                 transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
             )
             original_lock = lockfile.read_text(encoding="utf-8")
@@ -1563,12 +1560,14 @@ def test_generate_publishes_output_metadata_and_remote_lock_as_one_journal(
     generate(urlparse(schema_url), config=config)
     assert_http_e2e_file(
         output_path,
-        "backend.py",
+        name="output",
+        suffix=".py",
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
     assert_http_e2e_file(
         metadata_path,
-        "remote_lock_stdout_metadata.txt",
+        name="metadata",
+        suffix=".txt",
         transform=lambda output: output.replace(local_http_server, "http://localhost"),
     )
     original_lock = lockfile.read_text(encoding="utf-8")
@@ -1584,12 +1583,14 @@ def test_generate_publishes_output_metadata_and_remote_lock_as_one_journal(
             generate(urlparse(schema_url), config=config)
         assert_http_e2e_file(
             output_path,
-            "backend.py",
+            name="output",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
         )
         assert_http_e2e_file(
             metadata_path,
-            "remote_lock_stdout_metadata.txt",
+            name="metadata",
+            suffix=".txt",
             transform=lambda output: output.replace(local_http_server, "http://localhost"),
         )
         assert lockfile.read_text(encoding="utf-8") == original_lock
@@ -1648,12 +1649,14 @@ def test_generate_rolls_back_output_and_metadata_when_late_lock_publication_and_
             generate(urlparse(schema_url), config=config)
         assert_http_e2e_file(
             output_path,
-            "backend.py",
+            name="output",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
         )
         assert_http_e2e_file(
             metadata_path,
-            "remote_lock_stdout_metadata.txt",
+            name="metadata",
+            suffix=".txt",
             transform=lambda output: output.replace(local_http_server, "http://localhost"),
         )
         assert lockfile.read_text(encoding="utf-8") == original_lock
@@ -1686,11 +1689,12 @@ def test_generate_publishes_metadata_and_lock_while_returning_stdout(
     assert isinstance(generated, str)
     assert_output(
         f"{generated.replace(schema_url, 'http://localhost/schema.json')}\n",
-        HTTP_E2E_DATA_PATH / "expected" / "http" / "backend.py",
+        suffix=".py",
     )
     assert_http_e2e_file(
         metadata_path,
-        "remote_lock_stdout_metadata.txt",
+        name="metadata",
+        suffix=".txt",
         transform=lambda output: output.replace(local_http_server, "http://localhost"),
     )
     assert lockfile.is_file()
@@ -1719,7 +1723,7 @@ def test_generate_returns_stdout_and_updates_a_lock_without_artifacts(
     assert isinstance(generated, str)
     assert_output(
         f"{generated.replace(schema_url, 'http://localhost/schema.json')}\n",
-        HTTP_E2E_DATA_PATH / "expected" / "http" / "backend.py",
+        suffix=".py",
     )
     assert lockfile.is_file()
 
@@ -1782,12 +1786,14 @@ def test_generate_publishes_relative_nested_artifacts_and_lock_together(
 
     assert_http_e2e_file(
         tmp_path / output_path,
-        "backend.py",
+        name="output",
+        suffix=".py",
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
     assert_http_e2e_file(
         tmp_path / metadata_path,
-        "remote_lock_stdout_metadata.txt",
+        name="metadata",
+        suffix=".txt",
         transform=lambda output: output.replace(local_http_server, "http://localhost"),
     )
     assert (tmp_path / lockfile).is_file()
@@ -1822,7 +1828,7 @@ def test_generate_uses_logical_output_context_for_custom_formatter_and_lock(
 
     assert_output(
         output_path.read_text(encoding="utf-8"),
-        DATA_PATH / "expected" / "main_kr" / "jobs" / "custom_formatter.py",
+        suffix=".py",
     )
     assert (tmp_path / "locks/remote.lock").is_file()
 
@@ -1844,7 +1850,7 @@ def test_generate_publishes_extensionless_file_output_with_remote_lock(tmp_path:
     )
 
     assert output_path.is_file()
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
     assert lockfile.is_file()
 
 
@@ -1870,7 +1876,7 @@ def test_generate_update_lock_preserves_lockfile_symlink(tmp_path: Path) -> None
     assert lockfile.is_symlink()
     assert lockfile.readlink() == lock_target
     assert lock_target.is_file()
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_generate_rejects_a_lockfile_inside_a_multimodule_output_before_fetching(
@@ -1944,17 +1950,20 @@ def test_generate_publishes_multimodule_directory_with_remote_lock(
         assert output_path.is_dir()
         assert_http_e2e_file(
             output_path / "__init__.py",
-            "public_remote_module_init.py",
+            name="init",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/root.json"),
         )
         assert_http_e2e_file(
             output_path / "child.py",
-            "public_remote_module_child.py",
+            name="child",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/root.json"),
         )
         assert_http_e2e_file(
             output_path / "root.py",
-            "public_remote_module_root.py",
+            name="root",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/root.json"),
         )
         assert lockfile.is_file()
@@ -1987,7 +1996,7 @@ def test_generate_atomic_remote_update_omits_absent_generated_artifacts(
     )
 
     _assert_file_does_not_exist(output_path)
-    assert_http_e2e_file(lockfile, "remote_lock_empty.txt")
+    assert_http_e2e_file(lockfile, name="lock", suffix=".txt")
 
 
 def test_generate_atomic_remote_update_releases_output_resources_after_lock_staging_failure(
@@ -2081,12 +2090,14 @@ def test_generate_rejects_a_changed_public_output_anchor_before_publication(
             generate(urlparse(schema_url), config=config)
         assert_http_e2e_file(
             output_path,
-            "backend.py",
+            name="output",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
         )
         assert_http_e2e_file(
             metadata_path,
-            "remote_lock_stdout_metadata.txt",
+            name="metadata",
+            suffix=".txt",
             transform=lambda output: output.replace(local_http_server, "http://localhost"),
         )
         assert lockfile.read_text(encoding="utf-8") == original_lock
@@ -2118,8 +2129,6 @@ def test_cli_does_not_fall_back_to_a_subdirectory_lock_when_project_lock_is_abse
         url=schema_url,
         output_path=tmp_path / "output.py",
         input_file_type="jsonschema",
-        assert_func=assert_http_e2e_file,
-        expected_file="backend.py",
         extra_args=["--allow-private-network", "--disable-timestamp"],
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
@@ -2153,7 +2162,8 @@ def test_cli_preserves_existing_lock_when_atomic_update_fails(
     original_lock = lockfile.read_text(encoding="utf-8")
     assert_http_e2e_file(
         output_path,
-        "backend.py",
+        name="output",
+        suffix=".py",
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
     original_response = _SchemaHandler.routes["/pet.json"]
@@ -2173,7 +2183,8 @@ def test_cli_preserves_existing_lock_when_atomic_update_fails(
         assert lockfile.read_text(encoding="utf-8") == original_lock
         assert_http_e2e_file(
             output_path,
-            "backend.py",
+            name="output",
+            suffix=".py",
             transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
         )
     finally:
@@ -2240,7 +2251,7 @@ lockfile = "{lockfile.as_posix()}"
     with chdir(tmp_path):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
 
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
     assert not lockfile.exists()
 
 
@@ -2268,7 +2279,7 @@ def test_cli_check_update_lock_keeps_the_existing_output_and_discards_the_staged
         str(lockfile),
     ])
 
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
     assert not lockfile.exists()
 
 
@@ -2307,10 +2318,9 @@ lockfile = "{lockfile.as_posix()}"
     with chdir(tmp_path):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
 
-    expected_output = DATA_PATH / "expected" / "main" / "person.py"
-    assert_output(check_output.read_text(encoding="utf-8"), expected_output)
-    assert_output(write_output.read_text(encoding="utf-8"), expected_output)
-    assert_http_e2e_file(lockfile, "remote_lock_empty.txt")
+    assert_output(check_output.read_text(encoding="utf-8"), name="person", suffix=".py")
+    assert_output(write_output.read_text(encoding="utf-8"), name="person", suffix=".py")
+    assert_http_e2e_file(lockfile, name="lock", suffix=".txt")
 
 
 @pytest.mark.allow_direct_assert
@@ -2353,8 +2363,8 @@ lockfile = "{lockfile.as_posix()}"
 
     assert "could not clean batch output staging: simulated lock cleanup failure" in captured.err
     assert "could not publish batch output" not in captured.err
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
-    assert_http_e2e_file(lockfile, "remote_lock_empty.txt")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
+    assert_http_e2e_file(lockfile, name="lock", suffix=".txt")
 
 
 @pytest.mark.allow_direct_assert
@@ -2431,8 +2441,8 @@ def test_cli_remote_lock_transaction_reports_cleanup_failure_after_publication(
         expected_stderr_contains="could not clean up command transaction",
     )
 
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
-    assert_http_e2e_file(lockfile, "remote_lock_empty.txt")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
+    assert_http_e2e_file(lockfile, name="lock", suffix=".txt")
 
 
 @pytest.mark.allow_direct_assert
@@ -2473,8 +2483,8 @@ def test_cli_remote_lock_transaction_reports_anchor_cleanup_after_publication(
 
     assert "could not clean up command transaction: simulated lock cleanup failure" in captured.err
     assert "could not publish batch output" not in captured.err
-    assert_output(output_path.read_text(encoding="utf-8"), DATA_PATH / "expected" / "main" / "person.py")
-    assert_http_e2e_file(lockfile, "remote_lock_empty.txt")
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
+    assert_http_e2e_file(lockfile, name="lock", suffix=".txt")
 
 
 @pytest.mark.allow_direct_assert
@@ -2596,14 +2606,14 @@ output = "{(tmp_path / "second.py").as_posix()}"
     try:
         with chdir(tmp_path):
             run_main_with_args(["--all-jobs", "--formatters", "builtin"])
-            assert_http_e2e_file(tmp_path / "first.py", "remote_lock_batch_first.py")
-            assert_http_e2e_file(tmp_path / "second.py", "remote_lock_batch_second.py")
-            assert_http_e2e_file(lockfile, "remote_lock_batch_union.txt", transform=normalize_lockfile)
+            assert_http_e2e_file(tmp_path / "first.py", name="first", suffix=".py")
+            assert_http_e2e_file(tmp_path / "second.py", name="second", suffix=".py")
+            assert_http_e2e_file(lockfile, name="lock", suffix=".txt", transform=normalize_lockfile)
             second_input.write_text("{", encoding="utf-8")
             run_main_with_args(["--all-jobs", "--formatters", "builtin"], expected_exit=Exit.ERROR)
-            assert_http_e2e_file(tmp_path / "first.py", "remote_lock_batch_first.py")
-            assert_http_e2e_file(tmp_path / "second.py", "remote_lock_batch_second.py")
-            assert_http_e2e_file(lockfile, "remote_lock_batch_union.txt", transform=normalize_lockfile)
+            assert_http_e2e_file(tmp_path / "first.py", name="first", suffix=".py")
+            assert_http_e2e_file(tmp_path / "second.py", name="second", suffix=".py")
+            assert_http_e2e_file(lockfile, name="lock", suffix=".txt", transform=normalize_lockfile)
             second_input.write_text(second_input_content, encoding="utf-8")
             _SchemaHandler.routes["/second.json"] = (
                 200,
@@ -2618,7 +2628,7 @@ output = "{(tmp_path / "second.py").as_posix()}"
             )
             first_input.write_text('{"type":"object"}', encoding="utf-8")
             run_main_with_args(["--all-jobs", "--formatters", "builtin"])
-            assert_http_e2e_file(lockfile, "remote_lock_batch_pruned.txt", transform=normalize_lockfile)
+            assert_http_e2e_file(lockfile, name="pruned_lock", suffix=".txt", transform=normalize_lockfile)
             run_main_with_args(["--all-jobs", "--locked", "--formatters", "builtin"])
     finally:
         del _SchemaHandler.routes["/first.json"]
@@ -2706,11 +2716,10 @@ lockfile = "{active_lock.as_posix()}"
     with chdir(tmp_path):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
 
-    expected_output = DATA_PATH / "expected" / "main" / "person.py"
-    assert_output(first_output.read_text(encoding="utf-8"), expected_output)
-    assert_output(second_output.read_text(encoding="utf-8"), expected_output)
-    assert_output(active_output.read_text(encoding="utf-8"), expected_output)
-    assert_http_e2e_file(active_lock, "remote_lock_empty.txt")
+    assert_output(first_output.read_text(encoding="utf-8"), name="person", suffix=".py")
+    assert_output(second_output.read_text(encoding="utf-8"), name="person", suffix=".py")
+    assert_output(active_output.read_text(encoding="utf-8"), name="person", suffix=".py")
+    assert_http_e2e_file(active_lock, name="lock", suffix=".txt")
 
 
 @needs("symlinks")
@@ -2853,7 +2862,7 @@ def test_cli_diff_locks_old_and_new_remote_closures_without_committing_on_differ
     try:
         run_main_with_args([*common_args, "--update-lock"])
         assert not virtual_output.exists()
-        assert_http_e2e_file(lockfile, "remote_lock_diff_union.txt", transform=normalize_lockfile)
+        assert_http_e2e_file(lockfile, name="lock", suffix=".txt", transform=normalize_lockfile)
 
         _SchemaHandler.routes["/new/shared.json"] = (
             200,
@@ -2864,14 +2873,14 @@ def test_cli_diff_locks_old_and_new_remote_closures_without_committing_on_differ
         assert_output(
             capsys.readouterr().out.replace(" \n", "\n"),
         )
-        assert_http_e2e_file(lockfile, "remote_lock_diff_union.txt", transform=normalize_lockfile)
+        assert_http_e2e_file(lockfile, name="lock", suffix=".txt", transform=normalize_lockfile)
         run_main_with_args(
             [*common_args, "--locked"],
             expected_exit=Exit.ERROR,
             capsys=capsys,
             expected_stderr_contains="content does not match lock",
         )
-        assert_http_e2e_file(lockfile, "remote_lock_diff_union.txt", transform=normalize_lockfile)
+        assert_http_e2e_file(lockfile, name="lock", suffix=".txt", transform=normalize_lockfile)
     finally:
         del _SchemaHandler.routes["/old/shared.json"]
         del _SchemaHandler.routes["/new/shared.json"]
@@ -3001,7 +3010,7 @@ def test_cli_rolls_back_stdout_metadata_and_lock_when_publication_fails(
         return content.replace(local_http_server, "http://localhost")
 
     run_main_with_args(common_args)
-    assert_http_e2e_file(metadata_path, "remote_lock_stdout_metadata.txt", transform=normalize_metadata)
+    assert_http_e2e_file(metadata_path, name="metadata", suffix=".txt", transform=normalize_metadata)
     original_lock = lockfile.read_text(encoding="utf-8")
     original_response = _SchemaHandler.routes["/pet.json"]
     _SchemaHandler.routes["/pet.json"] = (
@@ -3018,7 +3027,7 @@ def test_cli_rolls_back_stdout_metadata_and_lock_when_publication_fails(
             expected_stderr_contains="could not publish batch output",
         )
         assert lockfile.read_text(encoding="utf-8") == original_lock
-        assert_http_e2e_file(metadata_path, "remote_lock_stdout_metadata.txt", transform=normalize_metadata)
+        assert_http_e2e_file(metadata_path, name="metadata", suffix=".txt", transform=normalize_metadata)
     finally:
         _SchemaHandler.routes["/pet.json"] = original_response
 

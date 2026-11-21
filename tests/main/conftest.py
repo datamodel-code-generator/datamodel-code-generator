@@ -251,7 +251,6 @@ EXPECTED_ASYNC_API_PATH: Path = EXPECTED_MAIN_PATH / "asyncapi"
 EXPECTED_JSON_SCHEMA_PATH: Path = EXPECTED_MAIN_PATH / "jsonschema"
 EXPECTED_GRAPHQL_PATH: Path = EXPECTED_MAIN_PATH / "graphql"
 EXPECTED_XML_SCHEMA_PATH: Path = EXPECTED_MAIN_PATH / "xmlschema"
-EXPECTED_AVRO_PATH: Path = EXPECTED_MAIN_PATH / "avro"
 EXPECTED_JSON_PATH: Path = EXPECTED_MAIN_PATH / "json"
 EXPECTED_CSV_PATH: Path = EXPECTED_MAIN_PATH / "csv"
 
@@ -1650,12 +1649,11 @@ def assert_generated_model_json_validation(
     expected_attribute_value: Any = None,
     expected_keyword_only_fields: Collection[str] | None = None,
     expected_repr: str | None = None,
-    expected_repr_path: Path | None = None,
     invalid_keyword_arguments: Sequence[tuple[Mapping[str, Any], str]] = (),
 ) -> None:
     """Import a generated module and validate JSON data through a generated Pydantic model or dataclass.
 
-    The repr of the parsed value equals ``expected_repr``, or the expected file ``expected_repr_path`` as one line.
+    The repr of the parsed value equals ``expected_repr``.
     """
     with _generated_model(output_path, module_name, model_name) as model:
         validate_json = _model_json_validator(model)
@@ -1695,8 +1693,6 @@ def assert_generated_model_json_validation(
 
         if expected_repr is not None and repr(parsed) != expected_repr:  # pragma: no cover
             pytest.fail(f"Expected repr {expected_repr!r}, got {parsed!r}", pytrace=False)
-        if expected_repr_path is not None:
-            assert_output(f"{parsed!r}\n", expected_repr_path)
 
         _assert_model_json_invalid(validate_json, invalid_json, expected_error_type)
         for keyword_arguments, keyword_error_type in invalid_keyword_arguments:
@@ -1721,7 +1717,6 @@ def run_main_url_and_assert(
     url: str,
     output_path: Path,
     input_file_type: InputFileTypeLiteral | None,
-    assert_func: AssertFileContent | None = None,
     expected_file: str | Path | None = None,
     extra_args: Sequence[str] | None = None,
     transform: Callable[[str], str] | None = None,
@@ -1734,8 +1729,7 @@ def run_main_url_and_assert(
         url: URL to fetch schema from
         output_path: Path to output file
         input_file_type: Type of input file (openapi, jsonschema, graphql, etc.)
-        assert_func: The assert_file_content function to use with expected_file
-        expected_file: Expected output filename; without both, pytest names the stored output after the test
+        expected_file: Expected output filename; without it, pytest names the stored output after the test
         extra_args: Additional CLI arguments
         transform: Optional function to transform output before comparison
         force_exec_validation: Run exec() even when target Python version differs from
@@ -1745,15 +1739,12 @@ def run_main_url_and_assert(
     __tracebackhide__ = True
     return_code = _run_main_url(url, output_path, input_file_type, extra_args=extra_args)
     _assert_exit_code(return_code, Exit.OK, f"URL: {url}")
-    if assert_func is None:
-        _compare_output(
-            output_path,
-            expected_file,
-            transform,
-            _get_argument_value(extra_args, "--encoding") or "utf-8",
-            name=name,
-        )
-    else:
-        assert_func(output_path, expected_file, transform=transform)
+    _compare_output(
+        output_path,
+        expected_file,
+        transform,
+        _get_argument_value(extra_args, "--encoding") or "utf-8",
+        name=name,
+    )
 
     _validate_output_files(output_path, extra_args, force_exec_validation=force_exec_validation)
