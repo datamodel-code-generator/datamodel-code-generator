@@ -531,8 +531,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Check whether preset docs, preset-powered quick-start examples, and README support lists are up to date "
-            "(docs/presets.md, docs/preset-history.md, docs/getting-started.md, and generated sections in README.md and the FastAPI "
-            "server page)"
+            "(docs/presets.md, docs/preset-history.md, docs/getting-started.md, and generated sections in README.md "
+            "and the FastAPI server page)"
         ),
     )
     parser.add_argument(
