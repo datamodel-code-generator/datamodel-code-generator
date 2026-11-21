@@ -76,7 +76,10 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 
     assert result.returncode == 0, (
         "heki findings the baseline does not record: keep the write, read or call inside its owners "
-        "(scripts/build_heki_contracts.py names the records each contract comes from)\n" + result.stdout + result.stderr
+        "(scripts/build_heki_contracts.py names the records each contract comes from). If the findings only moved "
+        "(a function was renamed or moved), delete scripts/heki_baseline.toml and run heki check --config "
+        "scripts/heki.toml --baseline scripts/heki_baseline.toml --update-baseline src; allowlist:heki-baseline "
+        "of scripts/check_ratchets.py must not rise\n" + result.stdout + result.stderr
     )
     assert baseline.read_text(encoding="utf-8") == BASELINE.read_text(encoding="utf-8"), (
         "baseline entries the code no longer reaches: run heki check --config scripts/heki.toml --baseline "

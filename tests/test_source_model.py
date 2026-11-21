@@ -23,6 +23,7 @@ from coverage.config import DEFAULT_EXCLUDE
 from coverage.python import PythonParser
 
 from scripts import _behaviour_classify as behaviour_classify
+from scripts import _decision_home_reads as home_callers
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import (
@@ -40,7 +41,6 @@ from tests import expected_access
 from tests import test_assert_helper_usage as assert_helper_usage
 from tests import test_checks_are_run as checks_are_run
 from tests import test_ci_workflow as ci_workflow
-from tests import test_decision_homes as home_callers
 from tests import test_generated_import_closure as import_closure
 from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
@@ -1206,7 +1206,7 @@ RULES: dict[str, RuleRun] = {
         "scripts._behaviour_classify", frozenset({"bindings", "imports", "references"}), _rule_b_of_unparsed_text
     ),
     "decision-home-callers": RuleRun(
-        "tests.test_decision_homes",
+        "scripts._decision_home_reads",
         frozenset({"bindings", "references", "imports", "extents"}),
         _decision_home_callers,
     ),

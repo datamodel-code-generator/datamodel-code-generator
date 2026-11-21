@@ -15,9 +15,10 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``pragma:no-cover``, ``pragma:no-branch``, ``pragma:conditional-cover``, ``ty-ignore:<rule>``,
   ``pyright-ignore:<rule>`` and ``type-ignore:<code>`` comments, read with ``tokenize``.
 - ``heki-ignore:<rule>``: ``# heki: ignore`` comments, bare (``BARE``) or per listed rule or rule name, and ``# noqa``
-  comments that list a heki rule code (``EFF101``, ``MUT201``, ``DATA101``, ``OPT110``), which heki reads as
-  suppressions too; a ``noqa`` also counts under ``ruff:`` where ruff would report the finding. The source model
-  reports the ``heki: ignore`` comments as suppressions of tool ``heki``.
+  comments that name a heki rule, by its code (``EFF101``, ``MUT201``, ``DATA101``, ``OPT110``) or its name
+  (``write-owner-violation``) anywhere after ``noqa:``, which heki reads as suppressions too (a name counts under the
+  rule's code, also inside ``heki: ignore[...]``). A ``noqa`` also counts under ``ruff:`` where ruff would report the
+  finding. The source model reports the ``heki: ignore`` comments as suppressions of tool ``heki``.
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
@@ -169,7 +170,48 @@ PRAGMA = re.compile(r"\bpragma:\s*(no\s+cover|no\s+branch|\S+(?:\s+no)?\s+cover)
 PRAGMA_KINDS = {"no cover": "no-cover", "no branch": "no-branch"}
 TYPE_IGNORE = re.compile(r"\b(ty|pyright|type):\s*ignore\b(?:\[([^\]]*)\])?")
 HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?:\[([^\]]*)\])?", re.IGNORECASE)
-HEKI_NOQA = re.compile(r"#\s*noqa(?![\w-]):\s*([A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*)", re.IGNORECASE)
+HEKI_NOQA = re.compile(r"#\s*noqa(?![\w-]):(.*)", re.IGNORECASE)
+HEKI_RULES = {
+    "cached-property-stale-mutation": "MUT101",
+    "summary-effect-regression": "MUT103",
+    "iterator-double-consumption": "MUT106",
+    "hash-attr-mutation": "MUT107",
+    "readonly-type-mutation": "MUT108",
+    "write-without-invalidation": "MUT109",
+    "readonly-param-mutation": "MUT110",
+    "cached-property-stale-read": "MUT111",
+    "conditional-ownership-mutation": "MUT112",
+    "iterated-container-mutation": "MUT113",
+    "cached-result-mutation": "MUT114",
+    "write-owner-violation": "MUT201",
+    "readonly-return-mutation": "MUT202",
+    "read-owner-violation": "MUT203",
+    "call-owner-violation": "MUT204",
+    "unresolved-guarded-write": "MUT205",
+    "unresolved-guarded-read": "MUT206",
+    "unresolved-guarded-call": "MUT207",
+    "async-blocking-call": "EFF101",
+    "async-possibly-blocking-call": "EFF111",
+    "loop-unpooled-client": "EFF102",
+    "loop-db-query": "EFF103",
+    "loop-possible-db-query": "EFF113",
+    "async-blocking-fs": "EFF105",
+    "lock-or-tx-held-across-io": "EFF106",
+    "unretained-async-task": "EFF107",
+    "effect-boundary-violation": "EFF201",
+    "loop-carried-concat": "DATA101",
+    "list-quadratic-concat": "OPT101",
+    "set-dict-quadratic-merge": "OPT102",
+    "immutable-quadratic-concat": "OPT103",
+    "loop-linear-membership": "OPT110",
+    "loop-linear-dedup": "OPT111",
+    "loop-linear-list-lookup": "OPT112",
+    "nested-loop-equijoin": "OPT113",
+    "list-front-pop": "OPT120",
+    "list-front-insert": "OPT121",
+    "loop-invariant-container-rebuild": "OPT130",
+}
+"""The rules of heki 0.2.0 by name (``heki rule --all``): a suppression may name a rule by its code or its name."""
 HEKI_CODE = re.compile(r"(?:EFF|MUT|DATA|OPT)\d{3}", re.IGNORECASE)
 COMMENT_HINT = re.compile(r"pragma:|ignore|noqa", re.IGNORECASE)
 CALL_HINT = re.compile(
@@ -635,6 +677,11 @@ def _ruff_tally(tally: Tally, root: Path, files: list[str], ruff: list[str], pyp
         tally.add(f"ruff:{code}@{_area(path)}", path, line)
 
 
+def _heki_rule(word: str) -> str:
+    """Return the code of a heki rule named by its code or its name, else the word as written."""
+    return word.upper() if HEKI_CODE.fullmatch(word) else HEKI_RULES.get(word.lower(), word)
+
+
 def _comment_keys(text: str) -> list[str]:
     pragmas = [
         f"pragma:{PRAGMA_KINDS.get(' '.join(match[1].split()), 'conditional-cover')}" for match in PRAGMA.finditer(text)
@@ -645,15 +692,15 @@ def _comment_keys(text: str) -> list[str]:
         for rule in (match[2] or "").split(",")
     ]
     heki = [
-        f"heki-ignore:{rule.strip() or 'BARE'}"
+        f"heki-ignore:{_heki_rule(rule.strip()) or 'BARE'}"
         for match in HEKI_IGNORE.finditer(text)
         for rule in (match[1] or "").split(",")
     ]
     heki += [
-        f"heki-ignore:{code.upper()}"
+        f"heki-ignore:{rule}"
         for match in HEKI_NOQA.finditer(text)
-        for code in re.split(r"[\s,]+", match[1])
-        if HEKI_CODE.fullmatch(code)
+        for word in re.findall(r"[\w-]+", match[1])
+        if HEKI_CODE.fullmatch(rule := _heki_rule(word))
     ]
     return [*pragmas, *ignores, *heki]
 

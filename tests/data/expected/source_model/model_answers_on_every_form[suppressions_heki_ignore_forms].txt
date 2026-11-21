@@ -4,10 +4,14 @@ comment @4: # heki: ignore[EFF101]
 comment @5: # heki: ignore[EFF101, async-blocking-call]
 comment @6: # noqa: EFF101
 comment @7: # heki: ignore[EFF101]  # type: ignore[misc]
+comment @8: # noqa: write-owner-violation
+comment @9: # noqa: PLC0415 - MUT201
 heki ignore @3 (every code): lines 3
 heki ignore @4 (EFF101): lines 4
 heki ignore @5 (EFF101,async-blocking-call): lines 5
 ruff noqa @6 (EFF101): lines 6
 type ignore @7 (misc): lines 7
 heki ignore @7 (EFF101): lines 7
+ruff noqa @8 (WRITE): lines 8
+ruff noqa @9 (PLC0415): lines 9
 == code objects: one per scope that compiles on this Python

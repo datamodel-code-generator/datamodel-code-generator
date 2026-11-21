@@ -554,7 +554,16 @@ the fact rows of `scripts/fact_tables.py`, the homes and builders of
 The baseline records today's findings and only shrinks (its sites are the
 `allowlist:heki-baseline` key of `scripts/check_ratchets.py`): keep a new write,
 read or call inside its owners instead of recording it, and after a change that
-removes findings run the same command with `--update-baseline`.
+removes findings run the same command with `--update-baseline`. If the findings
+only moved (a function was renamed or moved), `--update-baseline` refuses the
+new ones: delete `scripts/heki_baseline.toml` and run the command with
+`--update-baseline` again; the key must not rise. Each site of the baseline
+repeats a violation that another key already budgets
+(`allowlist:UNLISTED_CALLERS`, `allowlist:host-private-access`, the generation
+store allowlist, `env-probe@src`, `allowlist:BUILDER_BYPASSES`), so a new
+violation of a recorded rule raises both keys and needs both `[[approved]]`
+entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
+comments that name a heki rule count as `heki-ignore:<rule>` keys.
 
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
 an `[[approved]]` entry of `scripts/ratchet_approvals.toml`: the key, the count

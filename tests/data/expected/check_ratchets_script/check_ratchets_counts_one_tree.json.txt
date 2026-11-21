@@ -33,13 +33,16 @@ exit status 0
  "heki-ignore:BARE@src": {
   "src/pkg/d.py": 1
  },
+ "heki-ignore:MUT201@src": {
+  "src/pkg/d.py": 2
+ },
  "heki-ignore:OPT103@src": {
   "src/pkg/d.py": 1
  },
  "heki-ignore:OPT110@src": {
   "src/pkg/d.py": 1
  },
- "heki-ignore:list-front-pop@src": {
+ "heki-ignore:OPT120@src": {
   "src/pkg/d.py": 1
  },
  "pragma:conditional-cover@src": {

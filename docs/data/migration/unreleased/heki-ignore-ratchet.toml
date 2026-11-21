@@ -3,7 +3,6 @@ id = "heki-ignore-ratchet"
 category = "harness"
 title = "The ratchet counts heki suppression comments"
 summary = "Stored test output of the ratchet script and of the source model for the new heki-ignore key; the package writes the same output."
-refs = ["#1"]
 covers = [
     "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
     "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",

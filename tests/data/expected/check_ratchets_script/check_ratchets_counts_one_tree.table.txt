@@ -11,9 +11,10 @@ dynamic-import@src                                 1
 filterwarnings-ignore@src                          2
 getattr-private@src                                1
 heki-ignore:BARE@src                               1
+heki-ignore:MUT201@src                             2
 heki-ignore:OPT103@src                             1
 heki-ignore:OPT110@src                             1
-heki-ignore:list-front-pop@src                     1
+heki-ignore:OPT120@src                             1
 pragma:conditional-cover@src                       1
 pragma:no-branch@src                               1
 pragma:no-cover@src                                1

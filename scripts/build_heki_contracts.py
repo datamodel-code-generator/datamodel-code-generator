@@ -13,7 +13,7 @@ so the file is never edited by hand:
   operations and the generation store module may write the attributes. A ``__dict__`` key row names the value of its
   constant; a cached-property row also forbids the decorator on its owner.
 - ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py`` that the caller guard checks
-  (`tests.test_decision_homes.checked_homes`), callable by the home modules and the adapter sites of their rows; the
+  (`scripts._decision_home_reads.checked_homes`), callable by the home modules and the adapter sites of their rows; the
   parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
   records mark by a callee, built only by the builder and its parts.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder; and the private members of
@@ -34,12 +34,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._decision_home_reads import checked_homes, held_parse_methods
 from scripts.check_architecture_boundaries import _in_host_scope, _protocol_bases
 from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home
 from scripts.fact_tables import ATTRIBUTE_FACTS, Access, FactKind
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
-from tests.test_decision_homes import checked_homes, held_parse_methods
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
