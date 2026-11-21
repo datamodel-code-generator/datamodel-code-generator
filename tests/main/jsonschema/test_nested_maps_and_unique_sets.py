@@ -1,8 +1,9 @@
 """Nested containers whose inner level an allOf or ``uniqueItems`` rewrites.
 
-A map whose values are maps, refined by an allOf whose members say that the inner values are objects and name their
-model, in either order, types the inner values by that model. An array of arrays whose inner arrays list unique items
-is a list of sets under ``--use-unique-items-as-set``, and a list of lists where the items take no hashable value.
+A TypedDict whose extra values are maps, refined by an allOf whose members say that the inner values are objects and
+name their model, takes those maps of the model as its ``extra_items``, in either order of the members. An array of
+arrays whose inner arrays list unique items is a list of sets under ``--use-unique-items-as-set``, and a list of lists
+where the items take no hashable value.
 """
 
 from __future__ import annotations
@@ -17,20 +18,20 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def test_allof_of_inner_maps_types_the_values_by_the_named_model(output_file: Path) -> None:
-    """Type the inner values of a map of maps by the model one allOf member names, not by the other's untyped object."""
+def test_allof_of_inner_maps_types_the_extra_items_by_the_named_model(output_file: Path) -> None:
+    """Write ``extra_items=dict[str, Label]``, not the untyped ``dict[str, dict[str, Any]]`` of the other member."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "object_map_values_refined_by_allof.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+        extra_args=["--output-model-type", "typing.TypedDict", "--disable-timestamp", "--formatters", "builtin"],
     )
     assert_generated_model_json_validation(
         output_file,
         module_name="object_map_values_refined_by_allof",
         model_name="Catalog",
-        valid_json='{"labels": {"en": {"title": {"text": "Hello", "lang": "en"}}}}',
-        invalid_json='{"labels": {"en": {"title": {"lang": "en"}}}}',
+        valid_json='{"default_locale": "en", "en": {"title": {"text": "Hello", "lang": "en"}}}',
+        invalid_json='{"default_locale": "en", "en": {"title": {"lang": "en"}}}',
         expected_error_type="missing",
     )
 

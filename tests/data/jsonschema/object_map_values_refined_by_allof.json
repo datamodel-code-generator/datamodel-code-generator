@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Catalog",
+  "description": "Labels by locale, then by key, beside the default locale.",
   "type": "object",
   "$defs": {
     "Label": {
@@ -11,19 +12,10 @@
       },
       "required": ["text"]
     },
-    "LocalizedLabels": {
-      "description": "Labels by locale, then by key.",
+    "Notes": {
+      "description": "Notes by locale, then by key, beside the default locale.",
       "type": "object",
-      "additionalProperties": {
-        "allOf": [
-          {"type": "object", "additionalProperties": {"type": "object"}},
-          {"type": "object", "additionalProperties": {"$ref": "#/$defs/Label"}}
-        ]
-      }
-    },
-    "LocalizedNotes": {
-      "description": "Notes by locale, then by key.",
-      "type": "object",
+      "properties": {"default_locale": {"type": "string"}},
       "additionalProperties": {
         "allOf": [
           {"type": "object", "additionalProperties": {"$ref": "#/$defs/Label"}},
@@ -33,7 +25,13 @@
     }
   },
   "properties": {
-    "labels": {"$ref": "#/$defs/LocalizedLabels"},
-    "notes": {"$ref": "#/$defs/LocalizedNotes"}
+    "default_locale": {"type": "string"},
+    "notes": {"$ref": "#/$defs/Notes"}
+  },
+  "additionalProperties": {
+    "allOf": [
+      {"type": "object", "additionalProperties": {"type": "object"}},
+      {"type": "object", "additionalProperties": {"$ref": "#/$defs/Label"}}
+    ]
   }
 }
