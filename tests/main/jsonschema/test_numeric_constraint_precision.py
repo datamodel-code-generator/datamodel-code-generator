@@ -26,7 +26,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -43,19 +42,19 @@ EXACT_INTEGER_CONSTRAINTS_PAYLOADS = (
 
 @pytest.mark.parametrize("entry_point", ["api", "cli"])
 @pytest.mark.parametrize(
-    ("fixture", "field_constraints", "strict", "expected_name"),
+    ("fixture", "field_constraints", "strict"),
     [
-        ("large", True, False, "large_field"),
-        ("large", False, False, "large_constrained"),
-        ("large", True, True, "large_strict"),
-        ("ordinary", True, False, "ordinary_field"),
-        ("ordinary", False, False, "ordinary_constrained"),
-        ("draft4", True, False, "draft4_field"),
-        ("draft4", False, False, "draft4_constrained"),
+        pytest.param("large", True, False, id="large_field"),
+        pytest.param("large", False, False, id="large_constrained"),
+        pytest.param("large", True, True, id="large_strict"),
+        pytest.param("ordinary", True, False, id="ordinary_field"),
+        pytest.param("ordinary", False, False, id="ordinary_constrained"),
+        pytest.param("draft4", True, False, id="draft4_field"),
+        pytest.param("draft4", False, False, id="draft4_constrained"),
     ],
 )
 def test_numeric_constraint_precision(
-    output_file: Path, entry_point: str, fixture: str, field_constraints: bool, strict: bool, expected_name: str
+    output_file: Path, entry_point: str, fixture: str, field_constraints: bool, strict: bool
 ) -> None:
     """Retain large integer constraints while preserving ordinary floats and Draft 4 booleans."""
     input_path = JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision" / f"{fixture}.json"
@@ -69,15 +68,12 @@ def test_numeric_constraint_precision(
         }
         run_generate_and_assert(
             input_=json.loads(input_path.read_text(encoding="utf-8")),
-            expected_file=EXPECTED_JSON_SCHEMA_PATH / "numeric_constraint_precision" / f"{expected_name}_api.py",
             assert_input_unchanged=True,
             **options,
         )
         run_generate_file_and_assert(
             input_path=input_path,
             output_path=output_file,
-            assert_func=assert_file_content,
-            expected_file=f"numeric_constraint_precision/{expected_name}.py",
             **options,
         )
     else:
@@ -85,8 +81,6 @@ def test_numeric_constraint_precision(
             input_path=input_path,
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"numeric_constraint_precision/{expected_name}.py",
             extra_args=[
                 "--disable-timestamp",
                 "--formatters",
@@ -110,7 +104,7 @@ def test_numeric_constraint_precision(
             _assert_model_json_invalid(model.model_validate_json, json.dumps(valid_payload), "json_invalid")
             assert_output(
                 json.dumps(model.model_validate(valid_payload).model_dump(), indent=2) + "\n",
-                EXPECTED_JSON_SCHEMA_PATH / "numeric_constraint_precision/large_native_python.txt",
+                name="native_python",
             )
             for name, payload in payloads.items():
                 _assert_model_json_invalid(
@@ -153,14 +147,13 @@ def test_numeric_constraint_serialization(fixture: str, serialization: str, cons
                     parsed.model_dump_json(exclude_unset=True, by_alias=True)
                 assert_output(
                     f"native: {native_error}\ngenerated: {generated_error.value}\n",
-                    EXPECTED_JSON_SCHEMA_PATH / "numeric_constraint_precision/native_json_overflow.txt",
+                    name="native_json_overflow",
                 )
             else:
                 serialized = json.loads(parsed.model_dump_json(exclude_unset=True, by_alias=True))
         schema["properties"][name] = serialized if constraint_model == "schema" else {**value, **serialized}
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "numeric_constraint_precision" / f"{fixture}_field_api.py",
         assert_input_unchanged=True,
         input_file_type=InputFileType.JsonSchema,
         field_constraints=True,

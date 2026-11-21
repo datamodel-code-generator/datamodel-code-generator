@@ -11,7 +11,6 @@ import pytest
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -78,16 +77,16 @@ def test_main_jsonschema_enum_names_allow_null_entries(output_file: Path) -> Non
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "extra_args", "expected_file"),
+    ("output_model_type", "extra_args"),
     [
-        ("pydantic_v2.BaseModel", [], "enum_names_beside_null.py"),
-        ("msgspec.Struct", [], "enum_names_beside_null_msgspec_default.py"),
-        ("msgspec.Struct", ["--use-msgspec-nullable-enum-alias"], "enum_names_beside_null_msgspec.py"),
+        ("pydantic_v2.BaseModel", []),
+        ("msgspec.Struct", []),
+        ("msgspec.Struct", ["--use-msgspec-nullable-enum-alias"]),
     ],
     ids=["pydantic_v2.BaseModel", "msgspec.Struct", "msgspec.Struct-nullable-enum-alias"],
 )
 def test_main_jsonschema_enum_names_beside_null(
-    output_model_type: str, extra_args: list[str], expected_file: str, output_file: Path
+    output_model_type: str, extra_args: list[str], output_file: Path
 ) -> None:
     """Give members beside a null value the x-enum-varnames, x-enumNames and x-enum-descriptions entries of 0.83.0.
 
@@ -99,8 +98,6 @@ def test_main_jsonschema_enum_names_beside_null(
             input_path=JSON_SCHEMA_DATA_PATH / "enum_names_beside_null.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--disable-timestamp",
                 "--target-python-version",
@@ -117,7 +114,7 @@ def test_main_jsonschema_enum_names_beside_null(
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        EXPECTED_JSON_SCHEMA_PATH / f"{expected_file.removesuffix('.py')}_warnings.txt",
+        name="warnings",
     )
 
 

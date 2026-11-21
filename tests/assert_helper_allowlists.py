@@ -135,7 +135,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "disguised-assert:tests/cli_doc/test_cli_doc_coverage.py::TestCLIDocCoverage.test_all_options_have_cli_doc_markers",
         "disguised-assert:tests/cli_doc/test_cli_doc_coverage.py::TestCLIDocCoverage.test_meta_options_not_manual",
         "disguised-assert:tests/main/graphql/test_main_graphql.py::test_main_graphql_builtin_scalar_template_data_is_non_executing",
-        "disguised-assert:tests/main/jsonschema/test_main_jsonschema.py::assert_schema_required_group_validator_not_generated",
         "disguised-assert:tests/main/jsonschema/test_main_jsonschema.py::test_generate_schema_validators_invalid_base_class_name_public_api",
         "disguised-assert:tests/main/jsonschema/test_main_jsonschema.py::test_main_dataclass_nested_mapping_defaults_require_constructor_arguments",
         "disguised-assert:tests/main/jsonschema/test_main_jsonschema.py::test_main_defer_forward_nested_model_default_factories",
