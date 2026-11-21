@@ -103,9 +103,9 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
 def test_fastapi_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's parameters, body, and responses, and render the package they need."""
     report, rendered, documented = fastapi_render(case, tmp_path / "render")
-    assert_output(report, EXPECTED / f"{case}.txt")
+    assert_output(report, name="report")
     package = {(backend, *parts): body for backend, modules in rendered.items() for parts, body in modules.items()}
-    assert_generated_modules_output({**package, **documented}, EXPECTED / "packages" / case, pattern="*")
+    assert_generated_modules_output({**package, **documented}, pattern="*", name="package")
 
 
 @pytest.mark.parametrize(
@@ -128,13 +128,12 @@ def test_fastapi_template_fallback(case: str, *, builtin_sources: bool, tmp_path
     """Render a package from copies of the builtin templates' Jinja sources, or without server overrides, unchanged.
 
     The copies live in the fastapi directory of a custom template directory; a custom template directory without one
-    falls back to the builtin roles. Each case reports under the name of the case it equals.
+    falls back to the builtin roles. Each case reports what the case it equals reports.
     """
     report, rendered, documented = fastapi_render(case, tmp_path / "render", builtin_sources=builtin_sources)
-    expected = report.splitlines()[0].removeprefix("# ")
-    assert_output(report, EXPECTED / f"{expected}.txt")
+    assert_output(report, name="report")
     package = {(backend, *parts): body for backend, modules in rendered.items() for parts, body in modules.items()}
-    assert_generated_modules_output({**package, **documented}, EXPECTED / "packages" / expected, pattern="*")
+    assert_generated_modules_output({**package, **documented}, pattern="*", name="package")
 
 
 def test_fastapi_api(tmp_path: Path) -> None:
