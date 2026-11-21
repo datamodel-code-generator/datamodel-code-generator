@@ -28,7 +28,6 @@ from tests.conftest import (
     write_generated_modules,
 )
 
-EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/bindings"
 BINDING_CASES = json.loads(CASES.read_text(encoding="utf-8"))
 PARITY_CASES = json.loads((DATA / "generation_platform/binding/capture-parity.json").read_text(encoding="utf-8"))
 
@@ -42,8 +41,8 @@ def test_client_model_bindings(case: str, tmp_path: Path) -> None:
     diagnostics never reach a package) and #4300 (conflicting allOf base order) will change.
     """
     report, packages, bindings = client_binding_report(case, tmp_path)
-    assert_output(report, EXPECTED / f"{case}.txt")
-    assert_generated_modules_output(bindings, EXPECTED / case)
+    assert_output(report)
+    assert_generated_modules_output(bindings, name="bindings")
     for index, (models, ordinary) in enumerate(packages):
         write_generated_modules(captured := tmp_path / "captured" / str(index), models)
         assert_exact_directory_content(captured, ordinary)
@@ -114,4 +113,4 @@ def test_client_model_bindings_rewritten(case: str, tmp_path: Path) -> None:
 
     The package still ships the old bindings without a diagnostic until #4299 is fixed.
     """
-    assert_output(client_binding_rewrite_report(case, tmp_path), EXPECTED / "rewrites" / f"{case}.txt")
+    assert_output(client_binding_rewrite_report(case, tmp_path))
