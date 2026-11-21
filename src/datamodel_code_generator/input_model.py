@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import types
 from collections import ChainMap, Counter, OrderedDict, defaultdict, deque
@@ -29,6 +30,7 @@ from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import is_dataclass
 from enum import Enum as PyEnum
+from hashlib import sha256
 from operator import itemgetter, methodcaller
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
@@ -45,6 +47,7 @@ from datamodel_code_generator._json_schema import (
     MODEL_VALUE_POSITIONS,
     SCHEMA_MAP_KEYS,
     SCHEMA_VALUE_KEYS,
+    _rewrite_schema_refs,
     definition_ref,
 )
 from datamodel_code_generator._process_state import ABSENT, PROCESS_STATE_LOCK, restore_entry
@@ -60,12 +63,14 @@ from datamodel_code_generator._python_type_annotation import (
     render_python_type_expr,
     rewrite_python_type_expr,
 )
+from datamodel_code_generator._shared_types import Error as GenerationError
 from datamodel_code_generator.enums import (
     InputFileType,
     InputModelRefStrategy,
     _get_output_model_family,
     _OutputModelFamily,
 )
+from datamodel_code_generator.input_model_result import PythonModelBases
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -208,8 +213,6 @@ def _get_path_module_name(file_path: Path) -> str:
         return module_name
     if previous_file == file_path:
         return module_name
-
-    from hashlib import sha256  # noqa: PLC0415
 
     digest = sha256(str(file_path).encode()).hexdigest()[:16]
     return f"_datamodel_code_generator_input_model_{digest}"
@@ -1525,8 +1528,6 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0913, PLR0917
     new_schema["title"] = schema.get("title")
     new_schema["type"] = "object"
     if overrides:
-        from datamodel_code_generator.input_model_result import PythonModelBases  # noqa: PLC0415
-
         new_schema["allOf"] = PythonModelBases(definition_ref("$defs", parent_name), overrides)
 
     new_schema.update({
@@ -1589,7 +1590,6 @@ class _InputModelDefinitions:
                     renames[old_name] = name
         if renames:
             # Only schema positions contain references: defaults/examples are user data.
-            from datamodel_code_generator._json_schema import _rewrite_schema_refs  # noqa: PLC0415
 
             schema = _rewrite_schema_refs(schema, renames, set())
             schema["$defs"] = {renames.get(name, name): value for name, value in schema["$defs"].items()}
@@ -1657,8 +1657,6 @@ def _load_config_input_model(config: Any) -> LoadedInputModelSchema:
 
     An error loading it is a ``datamodel_code_generator.Error``.
     """
-    from datamodel_code_generator._shared_types import Error as GenerationError  # noqa: PLC0415
-
     try:
         return _load_model_schema_with_python_type_expressions(
             config.input_model,
@@ -1786,7 +1784,6 @@ def _load_single_model_schema(
             # Dict schemas contain no runtime IR. Preserve the former CLI JSON
             # round trip exactly: it both isolates module state and performs
             # JSON key coercion/validation before parser construction.
-            import json  # noqa: PLC0415
 
             return cast("dict[str, object]", json.loads(json.dumps(obj)))
 

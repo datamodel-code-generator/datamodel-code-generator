@@ -19,6 +19,7 @@ from _thread import allocate_lock  # noqa: PLC2701
 from collections.abc import Callable, Sequence  # noqa: TC003  # Runtime public annotation introspection
 from dataclasses import dataclass, field
 from functools import partial
+from importlib import import_module
 from ipaddress import IPv4Address, IPv6Address, IPv6Network, ip_address
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar, cast
@@ -371,8 +372,6 @@ class _HTTPStack(Generic[_HTTPTransportT_co]):
 
         with _HTTP_CACHE_LOCK:
             if (transport_type := self._transport_type) is None:  # pragma: no branch - False only after a cache race.
-                from importlib import import_module  # noqa: PLC0415
-
                 httpcore_module = cast("_HTTPCoreModule", import_module(self.core_backend))
                 transport_type = cast(
                     "_HTTPTransportFactory[_HTTPTransportT_co]",
@@ -723,7 +722,6 @@ def _load_http_stack(backend: _HTTPBackendName) -> _HTTPStack[_HTTPTransport]:
     if (core_backend := _HTTP_CORE_BACKENDS.get(backend)) is None:
         msg = f"Unexpected HTTP backend: {stable_repr(backend)}"
         raise AssertionError(msg)
-    from importlib import import_module  # noqa: PLC0415
 
     return _HTTPStack(backend=backend, httpx=cast("_HTTPXModule", import_module(backend)), core_backend=core_backend)
 

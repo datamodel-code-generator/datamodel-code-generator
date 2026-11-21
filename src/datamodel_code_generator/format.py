@@ -25,8 +25,11 @@ from weakref import ReferenceType, WeakKeyDictionary, ref
 from typing_extensions import Sentinel
 
 from datamodel_code_generator import _format_types
+from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._module_paths import is_below_name, is_within_name
 from datamodel_code_generator._process import run_captured
+from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import _load_config_toml
@@ -185,8 +188,6 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
         return module
     replacement, code = prepared
 
-    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
-
     with PROCESS_STATE_LOCK:
         exec(code, replacement.__dict__)  # noqa: S102
         sys.modules[module.__name__] = replacement
@@ -230,8 +231,6 @@ def _fresh_watch_package(module: ModuleType) -> ModuleType:
     if (prepared := _prepare_watch_module(module)) is None:
         return module
     replacement, code = prepared
-
-    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
         loaded_modules = sys.modules.copy()
@@ -277,8 +276,6 @@ def _load_watch_formatter_module(module_name: str, watch_dependencies: Any) -> M
     """Load or source-refresh a formatter once per watch generation."""
     _record_watch_module_candidates(module_name, watch_dependencies)
     generation = watch_dependencies.collector_identity()
-
-    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
         module = sys.modules.get(module_name)
@@ -600,8 +597,6 @@ class CodeFormatter:
 
         if use_black:
             if (black_target_version := _get_black_python_version_map().get(python_version)) is None:
-                from datamodel_code_generator._shared_types import Error  # noqa: PLC0415
-
                 raise Error(unsupported_black_message(python_version))
             root = black_find_project_root((settings_path,))
             path = root / "pyproject.toml"
@@ -678,8 +673,6 @@ class CodeFormatter:
             else:
                 import_ = import_module(custom_formatter_import)
         except ImportError as e:
-            from datamodel_code_generator._shared_types import Error  # noqa: PLC0415
-
             msg = f"Unable to import custom formatter {stable_repr(custom_formatter_import)}: {e}"
             raise Error(msg) from e
 
@@ -839,7 +832,6 @@ class CodeFormatter:
             return str(ruff_in_venv)
         if ruff_path := shutil.which("ruff"):
             return ruff_path
-        from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
 
         msg = f"Ruff executable was not found. Install it with {install_command('ruff')}."
         raise RuntimeError(msg)

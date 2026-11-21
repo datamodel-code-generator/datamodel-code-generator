@@ -17,6 +17,7 @@ from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD
 from datamodel_code_generator._option_stages import _run_option_stages
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
@@ -230,8 +231,6 @@ def load_pyproject_config(
     options = _resolve_pyproject_relative_paths(options, pyproject_path, PYPROJECT_API_PATH_FIELDS)
     config = _get_config_class().model_validate(options)
     if "output_model_type" in explicit:
-        from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
-
         config.output_model_type = DataModelType(explicit["output_model_type"])
     for field in ("use_annotated", "field_constraints"):
         if field in explicit:

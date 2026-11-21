@@ -25,6 +25,7 @@ from datamodel_code_generator._fastapi.packages import (
     implementations_owner,
     services_package,
 )
+from datamodel_code_generator._format_types import RUFF_FORMATTERS
 from datamodel_code_generator._generation import (
     _absolute_generation_path,
     _build_file_header_parts,
@@ -64,8 +65,16 @@ from datamodel_code_generator._target_config import (
     _diagnostic,
     config_error,
 )
-from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
+from datamodel_code_generator._target_documents import (
+    ROOT_URN,
+    DocumentTable,
+    RootInput,
+    document_identity,
+    named_document,
+    shown,
+)
 from datamodel_code_generator._target_naming import fold_key
+from datamodel_code_generator.enums import InputFileType, OpenAPIScope
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -364,8 +373,6 @@ def model_requirement(config: GenerateConfig, selector: str) -> str | None:
 
     An AsyncAPI input, which has no api scope, needs none.
     """
-    from datamodel_code_generator.enums import InputFileType, OpenAPIScope  # noqa: PLC0415
-
     scopes = config.openapi_scopes
     if InputFileType(config.input_file_type) is InputFileType.AsyncAPI or (
         scopes is not None and OpenAPIScope.Api in scopes
@@ -484,8 +491,6 @@ def _generate_models(  # noqa: PLR0913
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
         except MetadataCycleError as error:
-            from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
-
             identity = document_identity(error.document, source.base)
             named = "" if identity == source.identity else named_document(identity, identity)
             raise APIGenerationError((
@@ -916,7 +921,6 @@ class _Planner:
         modules, `own`, are staged beside it as they lie beside the package. Ruff reads and writes UTF-8 only, so the
         staged files are UTF-8 whatever encoding the files are written in.
         """
-        from datamodel_code_generator._format_types import RUFF_FORMATTERS  # noqa: PLC0415
         from datamodel_code_generator.format import _RUFF_ENCODING  # noqa: PLC0415
 
         if not paths or not RUFF_FORMATTERS.intersection(formatter.formatters):

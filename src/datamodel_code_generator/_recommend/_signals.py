@@ -11,6 +11,8 @@ from functools import partial
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
+from pydantic import ValidationError
+
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORDS,
     NUMBER_BOUND_KEYWORDS,
@@ -445,8 +447,6 @@ def _operation_schemas(
 
 def _is_inline_object_body(schema: object) -> bool:
     """Return whether ``--openapi-as-definitions paths-bodies`` changes the model of a paths or webhooks body."""
-    from pydantic import ValidationError  # noqa: PLC0415
-
     from datamodel_code_generator.parser.jsonschema import JsonSchemaObject  # noqa: PLC0415
     from datamodel_code_generator.parser.openapi import is_inline_object_body, is_object_map_body  # noqa: PLC0415
 

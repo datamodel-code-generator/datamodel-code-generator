@@ -6,11 +6,13 @@ import contextlib
 import re
 import sys
 import warnings
+from collections import deque
+from collections.abc import Hashable
 from contextvars import ContextVar
 from copy import deepcopy
 from functools import lru_cache, partial
 from io import BytesIO
-from types import MappingProxyType
+from types import GeneratorType, MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeVar
 
 from typing_extensions import Sentinel, override
@@ -18,6 +20,7 @@ from typing_extensions import Sentinel, override
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._records import mutable_record, record
+from datamodel_code_generator._shared_types import _InvalidConfigTomlError
 from datamodel_code_generator._warning_control import warn_as_public
 from datamodel_code_generator.deprecations import warn_deprecated
 
@@ -61,8 +64,6 @@ def _load_config_toml(path: Path) -> dict[str, Any]:
     try:
         return load_toml(path)
     except ValueError as exc:
-        from datamodel_code_generator._shared_types import _InvalidConfigTomlError  # noqa: PLC0415
-
         msg = f"Invalid TOML in {path}: {exc}"
         raise _InvalidConfigTomlError(msg) from exc
 
@@ -386,10 +387,6 @@ def _fast_construct_document(loader: Any, root: Any) -> Any:  # noqa: PLR0914, P
     so aliases, recursive structures, merge keys, explicit tags and error cases take the
     standard path in the same order. Only plain map / seq / str handling is inlined.
     """
-    from collections import deque  # noqa: PLC0415
-    from collections.abc import Hashable  # noqa: PLC0415
-    from types import GeneratorType  # noqa: PLC0415
-
     from yaml.constructor import ConstructorError, SafeConstructor  # noqa: PLC0415
     from yaml.nodes import MappingNode, ScalarNode, SequenceNode  # noqa: PLC0415
 

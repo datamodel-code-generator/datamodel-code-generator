@@ -10,6 +10,7 @@ documents.
 
 from __future__ import annotations
 
+from ast import literal_eval
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, replace
 from decimal import Decimal
@@ -37,6 +38,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
+from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator._json_pointer import document_part, pointer_tokens, reference_tokens
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import collect_members
@@ -1194,7 +1196,6 @@ def _backend_value(value: object) -> KnownBackendValue:
 
 
 def _syntax_value(value: str) -> KnownBackendValue:
-    from ast import literal_eval  # noqa: PLC0415
 
     try:
         literal = _literal_scalar(literal_eval(value))
@@ -2392,7 +2393,6 @@ class _Models:
             return
         with parser.model_resolver.current_root_context(declaration.document.split("/")):
             data_type = parser._build_lightweight_type(schema)  # noqa: SLF001
-        from datamodel_code_generator._graph_links import drop_tree  # noqa: PLC0415
 
         try:
             yield data_type

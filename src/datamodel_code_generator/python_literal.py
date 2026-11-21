@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from functools import partial
 from itertools import chain
 from math import isfinite, isnan
+from operator import itemgetter
 from pprint import PrettyPrinter
 from typing import IO, TYPE_CHECKING, Any, ClassVar, Final, Literal, Protocol, TypeAlias, TypeGuard, cast
 
@@ -337,8 +338,6 @@ def _represent_container(value: object, render: Callable[[Any], str], *, set_ord
         case tuple():
             return tuple_display(map(render, value))
         case set():
-            from operator import itemgetter  # noqa: PLC0415
-
             rows = [
                 (type(item).__name__, repr(item) if set_order == "repr" and type(item) is not str else text, text)
                 for item in value
