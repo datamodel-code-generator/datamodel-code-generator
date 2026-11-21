@@ -1,0 +1,19 @@
+[[change]]
+id = "b7-dead-branches"
+category = "harness"
+title = "Test deferred inherited overrides through the CLI instead of private names"
+summary = "Six tests of parser/base.py that imported private re-exports give way to e2e cases of overrides of a parent written later and of request/response variants; the package writes the same output."
+refs = ["#1"]
+covers = [
+    "main/jsonschema/deferred_inherited_overrides/deferred_override_of_a_parent_defined_later[default].py",
+    "main/jsonschema/deferred_inherited_overrides/deferred_override_of_a_parent_defined_later[default_values].py",
+    "main/jsonschema/deferred_inherited_overrides/request_response_variant_keeps_a_constrained_override.py",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_jsonschema_defe~0b3e0bd8.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~a56b616c.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~b2ae075c.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~cac2f906.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~552863ed.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~654d9bb3.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~3d667376.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~c3cf19dd.errors.txt",
+]
