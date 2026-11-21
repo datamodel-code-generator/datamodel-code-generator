@@ -23,6 +23,7 @@ from datamodel_code_generator._container_kinds import (
     ARRAYS,
     CONTAINER_FLAGS,
     CONTAINERS,
+    ITEM_CONTAINERS,
     MAPPINGS,
     SETS,
     UNHASHABLE_CONTAINERS,
@@ -95,7 +96,13 @@ from datamodel_code_generator.reference import (
     schema_path_of,
     unique_items_of,
 )
-from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
+from datamodel_code_generator.types import (
+    DataType,
+    DefaultValueRecipe,
+    _union_members,
+    _UnionNodeT,
+    union_members,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -1327,6 +1334,20 @@ class _FieldTagFacts:
 
 def _is_discriminator_wrapper(model: DataModel) -> bool:
     return model.IS_ALIAS or model.IS_ROOT_MODEL
+
+
+def msgspec_union_members(data_type: _UnionNodeT) -> Sequence[_UnionNodeT]:
+    """Return the members of the union a type writes: its own, or the items of a list, set or map of several types.
+
+    Such a container writes its items as a union inside it; the items of a tuple are its positions instead. The msgspec
+    decoding warnings (``imports.py:warn_about_msgspec_decoding``) read it for a ``DataType``, the decision of
+    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) for a view of one.
+    """
+    if members := _union_members(data_type):
+        return members
+    if len(data_type.data_types) > 1 and (data_type in ITEM_CONTAINERS or data_type in MAPPINGS):
+        return data_type.data_types
+    return ()
 
 
 def _iter_discriminator_data_types(

@@ -1,0 +1,16 @@
+[[change]]
+id = "merge-msgspec-str-like-union-members-help"
+extends = "uuid-version-formats"
+covers = [
+    "input_model/config_class.txt",
+    "main/help/color.txt",
+    "main/help/no_color.txt",
+    "main_kr/generate_prompt/basic.txt",
+    "main_kr/generate_prompt/json_output.txt",
+    "main_kr/generate_prompt/with_list_options.txt",
+    "main_kr/generate_prompt/with_options.txt",
+    "main_kr/generate_prompt/with_question.txt",
+    "main_kr/help_shows_new_options.txt",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+    "prompt/generate_prompt_uses_default_parser_for_text_output.txt",
+]

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "decimal": {"anyOf": [{"type": "number", "format": "decimal"}, {"type": "string"}]},
+    "decimal_alias": {"anyOf": [{"$ref": "#/$defs/NumberDecimal"}, {"type": "string", "format": "uuid"}]},
+    "decimal_items": {"type": "array", "items": {"anyOf": [{"type": "number", "format": "decimal"}, {"type": "string"}]}},
+    "decimal_values": {
+      "type": "object",
+      "additionalProperties": {"anyOf": [{"type": "number", "format": "decimal"}, {"type": "string", "format": "uuid"}]}
+    },
+    "type_array": {"anyOf": [{"type": ["number", "string"], "format": "decimal"}, {"type": "string", "format": "uuid"}]},
+    "nullable_decimal": {"anyOf": [{"type": ["number", "null"], "format": "decimal"}, {"type": "string"}]},
+    "duration": {"anyOf": [{"type": "number", "format": "time-delta"}, {"type": "string"}]},
+    "moment": {"anyOf": [{"type": "integer", "format": "date-time"}, {"type": "string", "format": "uuid"}]},
+    "mapped": {"anyOf": [{"type": "number", "format": "double"}, {"type": "string", "format": "uuid"}]},
+    "child": {"$ref": "#/$defs/Child"}
+  },
+  "$defs": {
+    "NumberDecimal": {"type": "number", "format": "decimal"},
+    "StringDecimal": {"type": "string", "format": "decimal"},
+    "Base": {
+      "type": "object",
+      "properties": {"inherited": {"anyOf": [{"type": "number", "format": "decimal"}, {"type": "string"}]}}
+    },
+    "Child": {"allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "properties": {"name": {"type": "string"}}}]},
+    "Controls": {
+      "type": "object",
+      "properties": {
+        "decimal": {"anyOf": [{"type": "string", "format": "decimal"}, {"type": "string"}]},
+        "decimal_alias": {"anyOf": [{"$ref": "#/$defs/StringDecimal"}, {"type": "string", "format": "uuid"}]},
+        "duration": {"anyOf": [{"type": "string", "format": "duration"}, {"type": "string", "format": "uuid"}]}
+      }
+    }
+  }
+}

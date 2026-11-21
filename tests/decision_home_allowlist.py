@@ -251,7 +251,6 @@ UNLISTED_CALLERS: Final[dict[str, tuple[str, ...]]] = {
         "model/_decisions/tag_value.py:struct_tag_refused",
         "model/_decisions/tag_value.py:union_tag_values",
         "parser/_passes/imports.py:_msgspec_enum_clashes",
-        "parser/_passes/imports.py:_msgspec_member_slots",
         "parser/_passes/imports.py:_msgspec_number_slot",
         "parser/_value_keywords.py:extract_const_enum_from_combined",
         "parser/_value_keywords.py:get_scalar_data_type_from_json_value",

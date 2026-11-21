@@ -1,9 +1,10 @@
-"""Where the parser builds each field and type node from: FIELD_ORIGIN and TYPE_ORIGIN, and UNIQUE_ITEMS.
+"""Where the parser builds each field and type node from: FIELD_ORIGIN and TYPE_ORIGIN, UNIQUE_ITEMS and JSON_NUMBER.
 
 The builders record them on the object when they build it, as bookkeeping (``scripts/fact_tables.py``);
-``reference.py`` reads them (``field_origin_of``, ``type_origin_of``, ``unique_items_of``), and copies of a field or
-node keep them. No generated output depends on the origins; UNIQUE_ITEMS is the ``uniqueItems`` of the schema a node is
-built from, which --use-unique-items-as-set reads.
+``reference.py`` reads them (``field_origin_of``, ``type_origin_of``, ``unique_items_of``, ``_json_number_of``), and
+copies of a field or node keep them. No generated output depends on the origins; UNIQUE_ITEMS is the ``uniqueItems`` of
+the schema a node is built from, which --use-unique-items-as-set reads, and JSON_NUMBER that the node is built for an
+``integer`` or ``number`` schema, which --merge-msgspec-str-like-union-members reads.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator.reference import (
+    _JSON_NUMBER_KEY,
     BINARY_CONTENT_KEY,
     ENUM_LITERAL_KEY,
     FIELD_ORIGIN_KEY,
@@ -30,6 +32,7 @@ __all__ = [
     "with_binary_content",
     "with_enum_literal",
     "with_field_origin",
+    "with_json_number",
     "with_subtype_ref",
     "with_type_origin",
     "with_unique_items",
@@ -63,6 +66,12 @@ def with_type_origin(data_type: DataType, location: SchemaLocation | None) -> Da
 def with_binary_content(data_type: DataType) -> DataType:
     """Record on ``data_type`` that the parser reads the string it is built for as raw octets (BINARY_CONTENT)."""
     data_type.__dict__[BINARY_CONTENT_KEY] = True
+    return data_type
+
+
+def with_json_number(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that the parser builds it for an ``integer`` or ``number`` schema (JSON_NUMBER)."""
+    data_type.__dict__[_JSON_NUMBER_KEY] = True
     return data_type
 
 

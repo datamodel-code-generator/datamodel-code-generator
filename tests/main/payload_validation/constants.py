@@ -99,6 +99,10 @@ EXCLUDED_FILES: dict[str, str] = {
         "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
         "test_msgspec_number_limits validates its msgspec payloads"
     ),
+    "jsonschema/msgspec_str_like_number_members.json": (
+        "Pydantic reads its number time-delta as a timedelta of at most 999,999,999 days and dumps its number decimal "
+        "as a string; test_msgspec_str_like_number_members validates its msgspec payloads"
+    ),
     "jsonschema/msgspec_wide_int_enums.json": (
         "Pydantic refuses JSON ints beyond the 64-bit range as Enum and Literal values (int_parsing_size); "
         "test_msgspec_wide_int_enums validates its msgspec payloads"
@@ -173,6 +177,10 @@ EXCLUDED_FILES: dict[str, str] = {
     ),
     "openapi/complex_reference.json": "intentionally invalid JSON fixture",
     "openapi/list.json": "input is JSON data, not an OpenAPI document",
+    "openapi/msgspec_str_like_number_members.yaml": (
+        "Pydantic dumps its number decimal as a string; test_msgspec_str_like_number_members_openapi pins its msgspec "
+        "output"
+    ),
     "openapi/not.json": "intentionally invalid JSON fixture",
     "openapi/subclass_enum.json": "intentionally invalid JSON fixture",
     **dict.fromkeys(

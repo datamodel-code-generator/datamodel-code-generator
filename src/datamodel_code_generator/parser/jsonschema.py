@@ -342,6 +342,7 @@ from datamodel_code_generator.parser._origins import (
     with_binary_content,
     with_enum_literal,
     with_field_origin,
+    with_json_number,
     with_type_origin,
     with_unique_items,
 )
@@ -1328,17 +1329,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         format_ = obj.format or "default"
         types = self._get_schema_type(obj, type_, format_)
         data_type = self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
-        return self._with_binary_content(data_type, obj, type_, format_, types)
+        return self._with_type_records(data_type, obj, type_, format_, types)
 
-    def _with_binary_content(
+    def _with_type_records(
         self, data_type: DataType, obj: JsonSchemaObject, type_: str, format_: str, types: Types
     ) -> DataType:
-        """Record BINARY_CONTENT on the type of a string of ``obj`` that the specification reads as raw octets.
+        """Record what the type mapping reads of the schema type of ``obj`` on the type it built for it.
 
-        A string holds raw octets when its format maps to bytes, unless they are bytes mapped from base64 text, or,
-        where a content media type reads so (``_content_media_type_is_octets``), when it names a content media type
-        without a content encoding and its format maps to plain text.
+        JSON_NUMBER for an ``integer`` or ``number`` type, whatever type it maps to; BINARY_CONTENT for a string that
+        the specification reads as raw octets: when its format maps to bytes, unless they are bytes mapped from base64
+        text, or, where a content media type reads so (``_content_media_type_is_octets``), when it names a content
+        media type without a content encoding and its format maps to plain text.
         """
+        if type_ in {"integer", "number"}:
+            return with_json_number(data_type)
         if type_ == "string" and (
             self._format_bytes(types, type_, format_) == "raw"
             if types == Types.binary
@@ -2314,7 +2318,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         context = self._output_model_context
         if not field_constraints and context.writes_constrained_types and context.supports_annotated_constraints:
             kwargs["annotated_constraints"] = True
-        data_type = self._with_binary_content(
+        data_type = self._with_type_records(
             self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs),
             obj,
             type_,

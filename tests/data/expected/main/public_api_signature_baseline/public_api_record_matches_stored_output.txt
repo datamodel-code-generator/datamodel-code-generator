@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 305>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 306>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -565,6 +565,7 @@ class BaseGenerateConfig(BaseModel)
     use_encoded_str_for_constrained_base64: bool = False
     use_strict_str_for_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
+    merge_msgspec_str_like_union_members: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
     read_object_keywords_by_type: bool = False
@@ -718,7 +719,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 305>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 306>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -941,6 +942,7 @@ class ParserConfig(BaseModel)
     use_encoded_str_for_constrained_base64: bool = False
     use_strict_str_for_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
+    merge_msgspec_str_like_union_members: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
     read_object_keywords_by_type: bool = False
@@ -3310,6 +3312,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.use_specialized_enum
     self.strict_nullable
     self.omit_redundant_reference_null
+    self.merge_msgspec_str_like_union_members
     self.keep_reference_null_on_merged_models
     self.use_generic_container_types
     self.use_union_operator
@@ -5006,7 +5009,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 305>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 306>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5028,7 +5031,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 301>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 302>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5999,6 +6002,7 @@ class ParserConfigDict(TypedDict)
     use_encoded_str_for_constrained_base64: NotRequired[bool]
     use_strict_str_for_base64: NotRequired[bool]
     use_msgspec_meta_for_map_keys: NotRequired[bool]
+    merge_msgspec_str_like_union_members: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
     read_object_keywords_by_type: NotRequired[bool]
@@ -6412,6 +6416,7 @@ class BaseGenerateConfig(TypedDict)
     use_encoded_str_for_constrained_base64: NotRequired[bool]
     use_strict_str_for_base64: NotRequired[bool]
     use_msgspec_meta_for_map_keys: NotRequired[bool]
+    merge_msgspec_str_like_union_members: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
     read_object_keywords_by_type: NotRequired[bool]
