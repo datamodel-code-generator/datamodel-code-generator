@@ -1,0 +1,16 @@
+[[change]]
+id = "drop-expected-paths-b4"
+category = "harness"
+title = "Compare the whole output tree of four JSON Schema tests"
+summary = "The tests compared two files of a generated package and now store the whole tree under their own name; the package writes the same output"
+refs = ["#7270"]
+covers = [
+    "main/jsonschema/require_referenced_field/referenced.py",
+    "main/jsonschema/require_referenced_field_import_override/required.py",
+    "main/jsonschema/require_referenced_field_naivedatetime/referenced.py",
+    "main/jsonschema/require_referenced_field_naivedatetime/required.py",
+    "main/jsonschema/require_referenced_field_pydantic_v2/referenced.py",
+    "main/jsonschema/require_referenced_field_pydantic_v2/required.py",
+    "main/jsonschema/schema_validators_runtime_root_cross_module/a.py",
+    "main/jsonschema/schema_validators_runtime_root_cross_module/z.py",
+]

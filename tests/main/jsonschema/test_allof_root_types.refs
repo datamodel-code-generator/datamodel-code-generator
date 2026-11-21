@@ -68,5 +68,5 @@ string_ref-True-api	main/jsonschema/allof_root_types/string_ref_field.py
 string_ref-True-api	main/jsonschema/allof_root_types/string_ref_field_api.py
 string_ref-True-cli	main/jsonschema/allof_root_types/string_ref_field.py
 [test_xmlschema_allof_root_type]
-api	main/jsonschema/allof_root_types/xmlschema.py
-cli	main/jsonschema/allof_root_types/xmlschema.py
+api	main/jsonschema/allof_root_types/xmlschema_allof_root_type[api].py
+cli	main/jsonschema/allof_root_types/xmlschema_allof_root_type[cli].py	= main/jsonschema/allof_root_types/xmlschema_allof_root_type[api].py
