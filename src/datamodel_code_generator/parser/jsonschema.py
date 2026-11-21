@@ -4566,7 +4566,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
                 if ref_schema.oneOf or ref_schema.anyOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
-                    self._parse_all_of_union_parts(name, ref_schema, path, union_parts, branch_schemas)
+                    self._parse_all_of_union_parts(
+                        name,
+                        ref_schema.model_copy(update={"extras": dict(ref_schema.extras)}),
+                        path,
+                        union_parts,
+                        branch_schemas,
+                    )
                 else:
                     ref = all_of_item.__dict__.get(_BRANCH_REFERENCE_KEY) or self._add_ref(all_of_item.ref)
                     if _schema_refs.dynamic_target_bindings(self, ref.path):

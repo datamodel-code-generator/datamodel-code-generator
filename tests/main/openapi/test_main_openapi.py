@@ -2073,6 +2073,28 @@ def test_main_openapi_allof_with_anyof_ref(output_file: Path) -> None:
     )
 
 
+@pytest.mark.filterwarnings("ignore:msgspec cannot decode:UserWarning")
+def test_main_openapi_allof_with_anyof_ref_msgspec_preserves_shared_schema(
+    output_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Union tag inference on an allOf $ref union must not mutate the shared schema object."""
+    from tests.checks.__main__ import main as checks_main
+
+    monkeypatch.setenv("DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH", "1")
+    exit_code = checks_main([
+        "--input",
+        str(OPEN_API_DATA_PATH / "allof_with_anyof_ref.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "msgspec.Struct",
+        "--use-msgspec-tagged-unions",
+        "--output",
+        str(output_file),
+    ])
+    assert exit_code == 0
+
+
 @pytest.mark.cli_doc(
     options=["--base-class"],
     option_description="""Specify a custom base class for generated models.
