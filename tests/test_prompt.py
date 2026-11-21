@@ -19,8 +19,6 @@ from datamodel_code_generator.prompt import (
 )
 from tests.conftest import assert_output
 
-EXPECTED_PROMPT_PATH = Path(__file__).parent / "data" / "expected" / "prompt"
-
 
 class SerializableChoice(Enum):
     """Enum value used to verify JSON serialization."""
@@ -100,4 +98,4 @@ def test_generate_prompt_uses_default_parser_for_text_output() -> None:
     """Use the shared parser when generate_prompt is called without one."""
     prompt = generate_prompt(Namespace(output_format="text", generate_prompt="", input="schema.json"), "HELP")
 
-    assert_output(prompt, EXPECTED_PROMPT_PATH / "default_parser_text.txt")
+    assert_output(prompt)

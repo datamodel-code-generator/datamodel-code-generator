@@ -24,8 +24,6 @@ from datamodel_code_generator.deprecations import (
 )
 from tests.conftest import assert_output, assert_warnings_do_not_contain
 
-EXPECTED_DEPRECATIONS_PATH = Path(__file__).parent / "data" / "expected" / "deprecations"
-
 
 def test_deprecation_registry_has_stable_required_metadata() -> None:
     """Every registry entry has enough data for docs, CLI output, and release notes."""
@@ -127,7 +125,6 @@ def test_scheduled_deprecation_release_note_and_warning(monkeypatch: pytest.Monk
     assert_warnings_do_not_contain(recorded_warnings, scheduled.message)
     assert_output(
         render_release_note_deprecations("8.0.0"),
-        EXPECTED_DEPRECATIONS_PATH / "scheduled_release_notes.txt",
     )
 
 
@@ -176,5 +173,4 @@ def test_dependency_notice_release_comparisons() -> None:
     )
     assert_output(
         "\n".join(f"{version}: {_dependency_version_is_legacy(version, tuple(minimum))}" for version, minimum in cases),
-        EXPECTED_DEPRECATIONS_PATH / "dependency_versions.txt",
     )

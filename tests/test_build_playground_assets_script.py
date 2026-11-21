@@ -10,7 +10,6 @@ from datamodel_code_generator.arguments import arg_parser
 from scripts import build_playground_assets, build_playground_release_versions
 from tests.conftest import assert_output
 
-EXPECTED_PLAYGROUND_ASSETS_PATH = Path(__file__).resolve().parent / "data" / "expected" / "playground_assets"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -25,7 +24,6 @@ def test_option_metadata_docs_urls() -> None:
 
     assert_output(
         json.dumps(output, indent=2, sort_keys=True) + "\n",
-        EXPECTED_PLAYGROUND_ASSETS_PATH / "option_docs_urls.txt",
     )
 
 
@@ -61,7 +59,6 @@ def test_playground_template_runtime_contract() -> None:
 
     assert_output(
         json.dumps(output, indent=2, sort_keys=True) + "\n",
-        EXPECTED_PLAYGROUND_ASSETS_PATH / "template_runtime_contract.txt",
     )
 
 
@@ -107,5 +104,4 @@ def test_playground_target_options_unsupported() -> None:
 
     assert_output(
         json.dumps(output, indent=2, sort_keys=True) + "\n",
-        EXPECTED_PLAYGROUND_ASSETS_PATH / "target_options.txt",
     )

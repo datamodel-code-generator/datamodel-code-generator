@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from datamodel_code_generator import MAX_VERSION, MIN_VERSION
 from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least
 from datamodel_code_generator.format import PythonVersion
 from tests.conftest import assert_output
-
-EXPECTED_ENUMS_PATH = Path(__file__).parent / "data" / "expected" / "enums"
 
 
 def test_is_pydantic_version_at_least() -> None:
@@ -25,7 +21,6 @@ def test_is_pydantic_version_at_least() -> None:
 
     assert_output(
         "".join(f"{label}: {_is_pydantic_version_at_least(target, minimum)}\n" for label, target, minimum in cases),
-        EXPECTED_ENUMS_PATH / "pydantic_version_at_least.txt",
     )
 
 

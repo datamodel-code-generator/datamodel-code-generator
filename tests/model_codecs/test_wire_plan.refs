@@ -12,7 +12,7 @@ oas32	main/generation_platform/codecs/plan/oas32//*.py
 parameters	main/generation_platform/codecs/plan/parameters.txt
 parameters	main/generation_platform/codecs/plan/parameters//*.py
 [test_wire_plan_legacy_scope_declarations]
-	main/generation_platform/codecs/plan/legacy.txt
+	model_codecs/wire_plan/legacy_scope_declarations.txt
 [test_wire_plan_rules]
 dialects	main/generation_platform/codecs/plan/dialects.txt
 dialects32	main/generation_platform/codecs/plan/dialects32.txt

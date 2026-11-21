@@ -1007,7 +1007,6 @@ def test_direct_data_models_reuse_bounded_custom_template_cache(tmp_path: Path) 
             _refresh_custom_template_paths(tmp_path / f"signature-{index}")
         assert_output(
             f"{len(_missing_custom_template_state.signatures)}\n",
-            Path(__file__).parent.parent / "data/expected/model/custom_template_signature_cache_size.txt",
         )
     finally:
         _clear_custom_template_caches()
@@ -1065,13 +1064,6 @@ def test_custom_template_signature_tolerates_stat_errors(
 
     assert_output(
         _get_custom_template_signature(tmp_path).hex() + "\n",
-        Path(__file__).parent.parent
-        / "data/expected/model"
-        / (
-            "custom_template_signature_dangling_link.txt"
-            if failed_path_kind == "file"
-            else "custom_template_signature_empty.txt"
-        ),
     )
 
 
@@ -1084,7 +1076,6 @@ def test_custom_template_signature_tracks_root_directory_symlink(tmp_path: Path)
 
     assert_output(
         _get_custom_template_signature(template_directory).hex() + "\n",
-        Path(__file__).parent.parent / "data/expected/model/custom_template_signature_root_link.txt",
     )
 
 

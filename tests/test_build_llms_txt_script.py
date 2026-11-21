@@ -17,7 +17,6 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_llms_txt.py"
 MIGRATION_SCRIPT = ROOT / "scripts" / "build_migration_docs.py"
-EXPECTED_LLMS_TXT_PATH = Path(__file__).resolve().parent / "data" / "expected" / "llms_txt"
 
 
 def _not_pages(directory: str, names: list[str]) -> list[str]:
@@ -76,7 +75,7 @@ def test_clean_summary_text_removes_markdown_links_and_heading_attrs() -> None:
         "",
     ))
 
-    assert_output(output, EXPECTED_LLMS_TXT_PATH / "description_cleanup.txt")
+    assert_output(output)
 
 
 def test_generate_llms_full_txt_strips_trailing_whitespace() -> None:
@@ -91,4 +90,4 @@ def test_generate_llms_full_txt_strips_trailing_whitespace() -> None:
         )
     ])
 
-    assert_output(output, EXPECTED_LLMS_TXT_PATH / "full_txt_trailing_whitespace.txt")
+    assert_output(output)

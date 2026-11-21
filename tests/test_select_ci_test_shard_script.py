@@ -58,7 +58,6 @@ def test_recipe_discovers_split_nodeids(tmp_path: Path) -> None:
             sort_keys=True,
         )
         + "\n",
-        Path(__file__).parent / "data/expected/ci_shards/discovery.txt",
     )
 
 
@@ -147,7 +146,6 @@ def test_recipe_round_trip_selects_disjoint_shards(tmp_path: Path, shard_total: 
             sort_keys=True,
         )
         + "\n",
-        Path(__file__).parent / "data/expected/ci_shards/round-trip.txt",
     )
 
 

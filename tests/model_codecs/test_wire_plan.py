@@ -30,4 +30,4 @@ def test_wire_plan_rules(name: str, tmp_path: Path, recwarn: pytest.WarningsReco
 
 def test_wire_plan_legacy_scope_declarations(tmp_path: Path) -> None:
     """Refuse parameter declarations that only the legacy paths scope admitted."""
-    assert_output(wire_plan_report("legacy", tmp_path)[0], EXPECTED / "legacy.txt")
+    assert_output(wire_plan_report("legacy", tmp_path)[0])

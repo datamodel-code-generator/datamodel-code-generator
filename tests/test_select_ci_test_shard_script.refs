@@ -40,11 +40,11 @@ zero-index	ci_shards/zero-index.txt	= ci_shards/zero-count.txt
 zero-tests	ci_shards/zero-tests.txt
 zero-weight	ci_shards/zero-weight.txt
 [test_recipe_discovers_split_nodeids]
-	ci_shards/discovery.txt
+	select_ci_test_shard_script/recipe_discovers_split_nodeids.txt
 [test_recipe_round_trip_selects_disjoint_shards]
-18	ci_shards/round-trip.txt
-2	ci_shards/round-trip.txt
-3	ci_shards/round-trip.txt
+18	select_ci_test_shard_script/recipe_round_trip_selects_disjoint_shards[18].txt
+2	select_ci_test_shard_script/recipe_round_trip_selects_disjoint_shards[2].txt	= select_ci_test_shard_script/recipe_round_trip_selects_disjoint_shards[18].txt
+3	select_ci_test_shard_script/recipe_round_trip_selects_disjoint_shards[3].txt	= select_ci_test_shard_script/recipe_round_trip_selects_disjoint_shards[18].txt
 [test_test_part_option_partitions_one_node]
 	select_ci_test_shard_script/test_part_option_partitions_one_node.txt
 [test_test_shard_option_partitions_collection]

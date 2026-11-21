@@ -86,9 +86,6 @@ def test_prepend_release_entry_replaces_existing_tag(tmp_path: Path, repo: str |
 
     assert_output(
         first_run,
-        Path(__file__).parent
-        / "data/expected/repository_transfer"
-        / ("changelog_override.txt" if repo == "another/project" else "changelog.txt"),
     )
     assert first_run == second_run
     assert first_run.count("## [0.57.0]") == 1

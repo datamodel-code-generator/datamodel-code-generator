@@ -20,4 +20,4 @@ def test_target_python_tables_match_this_interpreter(capsys: pytest.CaptureFixtu
     Each CI interpreter checks its own version, so the tables of every target are checked against their CPython.
     """
     status = build_target_python_tables.main(["--check-interpreter"])
-    assert_output(f"status: {status}\n{capsys.readouterr().err}", EXPECTED / "check_interpreter.txt")
+    assert_output(f"status: {status}\n{capsys.readouterr().err}")

@@ -11,7 +11,6 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_architecture_docs.py"
-EXPECTED_ARCHITECTURE_DOCS_PATH = ROOT / "tests" / "data" / "expected" / "architecture_docs"
 CORE_INVENTORY_MARKERS = (
     "OpenAPIParser",
     "JsonSchemaParser",
@@ -42,7 +41,6 @@ def test_build_architecture_docs_check_is_up_to_date() -> None:
 
     assert_output(
         _completed_process_output(result),
-        EXPECTED_ARCHITECTURE_DOCS_PATH / "build_architecture_docs_check.txt",
     )
 
 
@@ -52,5 +50,4 @@ def test_architecture_inventory_contains_core_routes() -> None:
 
     assert_output(
         _core_inventory_marker_output(content),
-        EXPECTED_ARCHITECTURE_DOCS_PATH / "architecture_inventory_core.txt",
     )

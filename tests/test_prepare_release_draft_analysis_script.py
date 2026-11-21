@@ -172,7 +172,7 @@ def test_missing_changed_files_fail_closed(tmp_path: Path) -> None:
     )
 
     result.check_returncode()
-    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"))
 
 
 def test_main_missing_changed_files_fail_closed(tmp_path: Path) -> None:
@@ -191,7 +191,7 @@ def test_main_missing_changed_files_fail_closed(tmp_path: Path) -> None:
         str(github_output_path),
     ])
 
-    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"))
 
 
 def test_main_unreadable_changed_files_fail_closed(tmp_path: Path) -> None:
@@ -212,7 +212,7 @@ def test_main_unreadable_changed_files_fail_closed(tmp_path: Path) -> None:
         str(github_output_path),
     ])
 
-    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"))
 
 
 def test_main_invalid_utf8_changed_files_fail_closed(tmp_path: Path) -> None:
@@ -233,4 +233,4 @@ def test_main_invalid_utf8_changed_files_fail_closed(tmp_path: Path) -> None:
         str(github_output_path),
     ])
 
-    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"))
