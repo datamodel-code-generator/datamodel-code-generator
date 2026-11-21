@@ -1743,8 +1743,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
         def normalize(value: str | list[str] | None) -> str | list[str] | None:
-            if value is None:  # pragma: no cover - not proven unreachable
-                return None
             if isinstance(value, list):
                 result = list(dict.fromkeys(v for v in value if isinstance(v, str) and v))
                 if not result:

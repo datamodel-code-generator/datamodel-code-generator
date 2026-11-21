@@ -1005,12 +1005,10 @@ _UUID_VERSION_DATA_FORMATS: dict[str, dict[str, Types]] = {
 
 def _get_type(
     type_: str,
-    format__: str | None = None,
-    data_formats: dict[str, dict[str, Types]] | None = None,
+    format__: str | None,
+    data_formats: dict[str, dict[str, Types]],
 ) -> Types:
     """Get the appropriate Types enum for a given JSON Schema type and format."""
-    if data_formats is None:  # pragma: no cover - not proven unreachable
-        data_formats = json_schema_data_formats
     if type_ not in data_formats:
         return Types.any
     if (type_format := data_formats[type_].get("default" if format__ is None else format__)) is not None:
@@ -3471,12 +3469,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return None
             data_types: list[DataType] = []
             for item in combined_items:
-                if _lightweight_types.is_false_schema_item(self, item):
-                    continue
                 if item is True:
                     data_types.append(untyped_value_data_type(DataType, self.data_type_manager.untyped_value))
                     continue
-                if not isinstance(item, JsonSchemaObject):  # pragma: no cover - not proven unreachable
+                if item is False or item.is_boolean_schema_false:
                     continue
                 if item.ref:
                     data_types.append(self.get_ref_data_type(item.ref))

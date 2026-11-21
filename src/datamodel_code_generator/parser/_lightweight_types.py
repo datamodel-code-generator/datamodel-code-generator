@@ -233,11 +233,8 @@ def contains_false_schema(parser: LightweightTypesHost, items: Iterable[JsonSche
     return any(is_false_schema_item(parser, item) for item in items)
 
 
-def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType | None) -> bool:  # noqa: ARG001
+def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType) -> bool:  # noqa: ARG001
     """Return True when data_type represents List[Any] (including nested lists)."""
-    if not data_type:  # pragma: no cover - not proven unreachable
-        return False
-
     candidate = data_type
     if candidate._wraps_one_list:
         candidate = candidate.data_types[0]
