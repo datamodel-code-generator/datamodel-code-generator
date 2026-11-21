@@ -6,6 +6,10 @@ summary = "The standard and practical 20261120 presets add --read-uuid6-uuid7-uu
 refs = ["#7246"]
 surface = ["preset:20261120"]
 covers = [
+    "build_preset_docs_script/build_preset_docs_json_format.txt",
+    "build_preset_docs_script/preset_metadata_renderers.preset_names.txt",
+    "build_preset_docs_script/preset_metadata_renderers.presets_json.txt",
+    "build_preset_docs_script/preset_metadata_renderers.presets_markdown.txt",
     "main/main_recommend_options/recommend_options.stdout.txt",
     "main/main_recommend_options/recommend_options_compares_candidates[candidate-limit].stdout.txt",
     "main/main_recommend_options/recommend_options_compares_candidates[definitions-and-defs].stdout.txt",
@@ -107,9 +111,6 @@ covers = [
     "main/main_recommend_options/recommend_options_without_schema_rules[graphql].stdout.txt",
     "main/main_recommend_options/recommend_options_without_schema_rules[input-model].stdout.txt",
     "main/recommend_options/titled_variants.txt",
-    "preset_docs/preset_names.txt",
-    "preset_docs/presets_json.txt",
-    "preset_docs/presets_markdown.txt",
     "recommender_calibrate_script/calibration_cases[inexpressible].txt",
     "recommender_calibrate_script/calibration_cases[partial_parallel].txt",
     "recommender_calibrate_script/calibration_cases[ratio_threshold].txt",

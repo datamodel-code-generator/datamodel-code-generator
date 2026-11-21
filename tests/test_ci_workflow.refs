@@ -5,8 +5,8 @@
 [test_ci_files_name_only_existing_tests]
 	ci_workflow/ci_files_name_only_existing_tests.txt
 [test_gate_rejects_every_unsuccessful_group]
-	ci_coverage/gate.txt
+	ci_workflow/gate_rejects_every_unsuccessful_group.txt
 [test_inherited_tests_are_defined]
 	ci_workflow/inherited_tests_are_defined.txt
 [test_workflow_matrix_and_coverage_contract]
-	ci_coverage/workflow.txt
+	ci_workflow/workflow_matrix_and_coverage_contract.txt

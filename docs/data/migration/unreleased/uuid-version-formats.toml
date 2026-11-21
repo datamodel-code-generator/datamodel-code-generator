@@ -52,5 +52,5 @@ covers = [
     "main_kr/generate_prompt/with_options.txt",
     "main_kr/generate_prompt/with_question.txt",
     "main_kr/help_shows_new_options.txt",
-    "prompt/default_parser_text.txt",
+    "prompt/generate_prompt_uses_default_parser_for_text_output.txt",
 ]

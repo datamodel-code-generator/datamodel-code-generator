@@ -118,7 +118,6 @@ def test_resolve_release_draft_pr_cli(
             sort_keys=True,
         )
         + "\n",
-        EXPECTED_PATH / case["expected"],
     )
 
 
@@ -134,5 +133,4 @@ def test_import_does_not_resolve_a_pr() -> None:
     assert_output(
         json.dumps({"returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}, sort_keys=True)
         + "\n",
-        EXPECTED_PATH / "import.txt",
     )

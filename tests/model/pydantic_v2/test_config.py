@@ -63,7 +63,6 @@ def test_config_dict_reexport_preserves_public_surface() -> None:
             f"ConfigDict module: {pydantic_v2.ConfigDict.__module__}\n"
             f"ConfigDict in __all__: {'ConfigDict' in pydantic_v2.__all__}\n"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "config_dict_reexport_public_surface.txt",
     )
 
 
@@ -83,7 +82,6 @@ def test_base_model_config_key_order_with_multiple_shared_parameters() -> None:
             f"template config items: {_config_dict_items(config)!r}\n\n"
             f"{_render_model_with_imports(model)}"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_config_shared_parameters.txt",
     )
 
 
@@ -111,7 +109,6 @@ def test_base_model_config_alias_generator_order_and_import() -> None:
             f"config keys: {list(config.dict(exclude_unset=True))!r}\n\n"
             f"{_render_model_with_imports(model)}"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_config_alias_generator.txt",
     )
 
 
@@ -134,7 +131,6 @@ def test_model_config_target_pydantic_version_uses_validate_by_name_for_later_ve
             f"dataclass config keys: {list(dataclass_config)!r}\n"
             f"dataclass config: {dataclass_config!r}\n"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "config_target_pydantic_future_version.txt",
     )
 
 
@@ -208,7 +204,7 @@ def test_base_model_alias_generator_variants_omit_matching_aliases() -> None:
 
         output += f"# {alias_generator}\n\n{_render_model_with_imports(model)}\n"
 
-    assert_output(output, EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_alias_generator_variants.txt")
+    assert_output(output)
 
 
 def test_base_model_alias_generator_keeps_non_alias_early_returns() -> None:
@@ -251,7 +247,6 @@ def test_alias_generator_helpers_handle_enum_and_unknown_values() -> None:
             "automatic_alias_disabled_without_parent: "
             f"{field._automatic_alias_disabled_for_alias_generator()}\n"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "alias_generator_helpers.txt",
     )
 
 
@@ -273,7 +268,6 @@ def test_config_dict_items_accepts_supported_config_shapes() -> None:
             f"none: {_config_dict_items(None)!r}\n"
             f"object: {_config_dict_items(object())!r}\n"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "config_dict_items.txt",
     )
 
 
@@ -288,7 +282,6 @@ def test_dataclass_config_key_order_with_multiple_shared_parameters() -> None:
     config = model.extra_template_data["config"]
     assert_output(
         (f"config type: {type(config).__name__}\nconfig keys: {list(config)!r}\n\n{_render_model_with_imports(model)}"),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "dataclass_config_shared_parameters.txt",
     )
 
 
@@ -304,5 +297,4 @@ def test_pattern_constraints_keep_leaf_specific_behavior() -> None:
             "Msgspec minItems dump: "
             f"{MsgspecConstraints.model_validate({'minItems': 1}).model_dump(exclude_unset=True)!r}\n"
         ),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "pattern_constraints.txt",
     )

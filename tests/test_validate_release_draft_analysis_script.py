@@ -1102,7 +1102,7 @@ def test_main_persists_in_process_validated_output(monkeypatch: pytest.MonkeyPat
     )
 
     validator.main()
-    assert_output(analysis_path.read_text(encoding="utf-8"), EXPECTED_PATH / "no_breaking_changes.txt")
+    assert_output(analysis_path.read_text(encoding="utf-8"))
 
 
 def test_main_rejects_nonpositive_pr_number(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1134,11 +1134,10 @@ def test_main_rejects_nonpositive_pr_number(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 @pytest.mark.parametrize(
-    ("claude_output", "expected_file", "token_capped_initial_page"),
+    ("claude_output", "token_capped_initial_page"),
     [
         (
             {"has_breaking_changes": False, "breaking_changes_content": "", "reasoning": "Prepared diff was read."},
-            "no_breaking_changes.txt",
             False,
         ),
         (
@@ -1147,19 +1146,16 @@ def test_main_rejects_nonpositive_pr_number(monkeypatch: pytest.MonkeyPatch) -> 
                 "breaking_changes_content": _valid_breaking_changes_content(),
                 "reasoning": "Prepared diff was read.",
             },
-            "breaking_changes.txt",
             False,
         ),
         (
             {"has_breaking_changes": False, "breaking_changes_content": "", "reasoning": "Prepared diff was read."},
-            "no_breaking_changes.txt",
             True,
         ),
     ],
 )
 def test_script_writes_validated_analysis(
     claude_output: dict[str, Any],
-    expected_file: str,
     token_capped_initial_page: bool,
     tmp_path: Path,
 ) -> None:
@@ -1216,7 +1212,7 @@ def test_script_writes_validated_analysis(
     )
 
     result.check_returncode()
-    assert_output(analysis_path.read_text(encoding="utf-8"), EXPECTED_PATH / expected_file)
+    assert_output(analysis_path.read_text(encoding="utf-8"))
 
 
 def test_script_rejects_partial_artifact_read(tmp_path: Path) -> None:
@@ -1281,7 +1277,6 @@ def test_script_rejects_partial_artifact_read(tmp_path: Path) -> None:
             sort_keys=True,
         )
         + "\n",
-        EXPECTED_PATH / "partial_artifact_read.txt",
     )
 
 

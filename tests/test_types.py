@@ -57,7 +57,6 @@ def test_union_int_float_conversion_after_json_round_trip() -> None:
     }
     assert_output(
         json.dumps(result, indent=2) + "\n",
-        data_path / "expected" / "types" / "union_int_float.txt",
     )
 
 

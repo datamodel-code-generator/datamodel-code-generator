@@ -39,7 +39,6 @@ def test_source_tree_respects_architecture_boundaries() -> None:
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "clean.txt",
     )
 
 
@@ -68,7 +67,6 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "violations.txt",
     )
 
 
@@ -177,7 +175,7 @@ def test_architecture_boundary_source_classification() -> None:
         for path in paths
     )
 
-    assert_output(classification, EXPECTED_ROOT / "classifications.txt")
+    assert_output(classification)
 
 
 def test_host_private_access_allows_only_declared_host_members() -> None:
@@ -325,7 +323,6 @@ def test_architecture_boundary_detector_allows_shared_and_composition_model_depe
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "clean.txt",
     )
 
 
@@ -347,7 +344,6 @@ def test_architecture_boundary_detector_reports_stale_allowlist_entries() -> Non
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "stale_allowlist.txt",
     )
 
 
@@ -369,7 +365,6 @@ def test_reference_allowlist_is_symbol_specific() -> None:
 
     assert_output(
         check_architecture_boundaries.format_report(violations),
-        EXPECTED_ROOT / "reference_allowlist.txt",
     )
 
 
@@ -399,7 +394,7 @@ def test_architecture_boundary_allowlist_contract_and_file_discovery(tmp_path: P
         ),
     )
 
-    assert_output("\n".join(messages) + "\n", EXPECTED_ROOT / "allowlist_contract.txt")
+    assert_output("\n".join(messages) + "\n")
 
 
 def test_architecture_boundary_cli_reports_actionable_failures(
@@ -441,7 +436,6 @@ def test_architecture_boundary_cli_reports_actionable_failures(
             f"entrypoint stdout: {entrypoint_output.out!r}\n"
             f"entrypoint stderr: {entrypoint_output.err!r}\n"
         ),
-        EXPECTED_ROOT / "cli.txt",
     )
 
 
@@ -457,7 +451,6 @@ def test_architecture_boundary_cli_checks_the_full_source_tree() -> None:
 
     assert_output(
         f"exit: {completed.returncode}\nstdout: {completed.stdout!r}\nstderr:\n{completed.stderr}",
-        EXPECTED_ROOT / "cli_subprocess.txt",
     )
 
 

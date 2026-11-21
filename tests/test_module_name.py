@@ -40,7 +40,7 @@ def test_split_module_name() -> None:
         for name, treat_dot_as_module, strict in cases
     )
 
-    assert_output(result, EXPECTED_PATH / "split_module_name.txt")
+    assert_output(result)
 
 
 def test_get_inferred_module_name() -> None:
@@ -59,4 +59,4 @@ def test_get_inferred_module_name() -> None:
         for name, treat_dot_as_module, strict in cases
     )
 
-    assert_output(result, EXPECTED_PATH / "get_inferred_module_name.txt")
+    assert_output(result)

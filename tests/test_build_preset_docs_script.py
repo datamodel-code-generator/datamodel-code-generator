@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_preset_docs.py"
-EXPECTED_PRESET_DOCS_PATH = Path(__file__).resolve().parent / "data" / "expected" / "preset_docs"
 BLACK_LT_233 = version.parse("23.3.0") > version.parse(black.__version__)
 
 
@@ -51,7 +50,7 @@ def test_build_preset_docs_json_format() -> None:
         text=True,
     )
 
-    assert_output(result.stdout, EXPECTED_PRESET_DOCS_PATH / "presets_json.txt")
+    assert_output(result.stdout)
 
 
 def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
@@ -63,16 +62,16 @@ def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
         text=True,
     )
 
-    assert_output(result.stdout, EXPECTED_PRESET_DOCS_PATH / "build_preset_docs_help.txt")
+    assert_output(result.stdout)
 
 
 def test_preset_metadata_renderers() -> None:
     """Preset metadata renderers expose the committed preset reference."""
-    assert_output(render_presets("markdown"), EXPECTED_PRESET_DOCS_PATH / "presets_markdown.txt")
-    assert_output(render_presets("json"), EXPECTED_PRESET_DOCS_PATH / "presets_json.txt")
+    assert_output(render_presets("markdown"), name="presets_markdown")
+    assert_output(render_presets("json"), name="presets_json")
     assert_output(
         f"{get_latest_preset_name()}\n{get_preset_infos()[0].name.value}\n",
-        EXPECTED_PRESET_DOCS_PATH / "preset_names.txt",
+        name="preset_names",
     )
 
 
@@ -80,7 +79,6 @@ def test_readme_supported_sections_are_rendered_from_enums() -> None:
     """README supported input/output lists are synchronized from public enums."""
     assert_output(
         build_preset_docs._render_readme_supported_sections(),
-        EXPECTED_PRESET_DOCS_PATH / "readme_supported_sections.txt",
     )
 
 
@@ -90,7 +88,6 @@ def test_marked_section_replacement_uses_end_marker_after_begin() -> None:
 
     assert_output(
         build_preset_docs._replace_marked_section(markdown, "<!-- BEGIN -->", "<!-- END -->", "Generated"),
-        EXPECTED_PRESET_DOCS_PATH / "marked_section_replacement.txt",
     )
 
 
@@ -102,7 +99,6 @@ def test_marked_section_replacement_indents_as_the_begin_marker() -> None:
         build_preset_docs._replace_marked_section(
             markdown, "<!-- BEGIN -->", "<!-- END -->", "```python\nx = 1\n\ny = 2\n```\n"
         ),
-        EXPECTED_PRESET_DOCS_PATH / "marked_section_replacement_indented.txt",
     )
 
 
@@ -132,7 +128,7 @@ def test_preset_config_supports_enum_backed_string_and_sequence_options() -> Non
         "",
     ))
 
-    assert_output(output, EXPECTED_PRESET_DOCS_PATH / "preset_config_enum_values.txt")
+    assert_output(output)
 
 
 def test_preset_api_refuses_an_unknown_format_and_an_unknown_field() -> None:
@@ -240,7 +236,7 @@ def test_dated_presets_keep_default_deserialization_immutable() -> None:
         label = f"{preset_name} explicit" if explicit_fields else preset_name
         lines.append(f"{label}: {[value.value for value in values]}, legacy={legacy}")
 
-    assert_output("\n".join((*lines, "")), EXPECTED_PRESET_DOCS_PATH / "preset_decimal_defaults.txt")
+    assert_output("\n".join((*lines, "")))
 
 
 def _render_preset_config_item(item: PresetConfigItem) -> str:

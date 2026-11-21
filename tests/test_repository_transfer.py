@@ -34,7 +34,7 @@ def test_release_notification_references() -> None:
         text=True,
         check=True,
     )
-    assert_output(result.stdout, EXPECTED / "release_notify.txt")
+    assert_output(result.stdout)
 
 
 def test_update_docs_version_preserves_other_references(tmp_path: Path) -> None:
@@ -42,9 +42,9 @@ def test_update_docs_version_preserves_other_references(tmp_path: Path) -> None:
     target = tmp_path / "actions.md"
     target.write_text((DATA / "actions.txt").read_text())
     results = {"stale": update_docs_version.update_file(target, "9.8.7", check=True)}
-    assert_output(target.read_text(), EXPECTED / "actions_check.txt")
+    assert_output(target.read_text(), name="actions_check")
     results["updated"] = update_docs_version.update_file(target, "9.8.7")
     results["current"] = update_docs_version.update_file(target, "9.8.7", check=True)
     results["unchanged"] = update_docs_version.update_file(target, "9.8.7")
-    assert_output(target.read_text(), EXPECTED / "actions.txt")
-    assert_output(json.dumps(results, indent=2) + "\n", EXPECTED / "action_results.txt")
+    assert_output(target.read_text(), name="actions")
+    assert_output(json.dumps(results, indent=2) + "\n", name="action_results")

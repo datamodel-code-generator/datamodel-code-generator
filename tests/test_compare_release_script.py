@@ -166,7 +166,7 @@ def test_compare_release_tracks_referenced_files(tmp_path: Path) -> None:
             ])
         text = stdout.getvalue().replace(os.path.realpath(tmp_path), "<tmp>").replace(str(tmp_path), "<tmp>")
         outputs.append(f"{revision}: exit={code}\n{text}")
-    assert_output("\n".join(outputs), EXPECTED / "referenced_files.txt")
+    assert_output("\n".join(outputs))
 
 
 def _fake_release(cache: Path, version: str, site: Path | None) -> Path:

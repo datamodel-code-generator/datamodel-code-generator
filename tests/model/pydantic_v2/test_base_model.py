@@ -77,7 +77,6 @@ def test_base_model_methods_render_once_after_all_fields() -> None:
 
     assert_output(
         f"method count: {rendered.count('def generated_method(')}\n\n{rendered}\n",
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_methods_once.txt",
     )
 
 

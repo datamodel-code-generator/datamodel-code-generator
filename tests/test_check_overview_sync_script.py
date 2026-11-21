@@ -11,7 +11,6 @@ from scripts import check_overview_sync
 from tests.conftest import assert_output
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "check_overview_sync.py"
-EXPECTED_OVERVIEW_SYNC_PATH = Path(__file__).resolve().parent / "data" / "expected" / "overview_sync"
 
 
 def _completed_process_output(result: subprocess.CompletedProcess[str]) -> str:
@@ -39,7 +38,7 @@ def test_check_overview_sync_reports_current_files_are_synchronized() -> None:
     """The committed README and docs overview blocks stay in sync."""
     result = subprocess.run([sys.executable, str(SCRIPT)], check=True, capture_output=True, text=True)
 
-    assert_output(result.stdout, EXPECTED_OVERVIEW_SYNC_PATH / "check_current.txt")
+    assert_output(result.stdout)
 
 
 def test_compare_snapshots_reports_changed_fields() -> None:
@@ -61,7 +60,6 @@ def test_compare_snapshots_reports_changed_fields() -> None:
 
     assert_output(
         "\n".join((*check_overview_sync.compare_snapshots(readme, docs), "")),
-        EXPECTED_OVERVIEW_SYNC_PATH / "changed_fields.txt",
     )
 
 
@@ -74,7 +72,7 @@ def test_check_overview_sync_reports_extraction_error_without_traceback(tmp_path
 
     result = _run_overview_sync(tmp_path, readme_path, docs_path)
 
-    assert_output(_completed_process_output(result), EXPECTED_OVERVIEW_SYNC_PATH / "extraction_error.txt")
+    assert_output(_completed_process_output(result))
 
 
 def test_check_overview_sync_reports_mismatched_fields(tmp_path: Path) -> None:
@@ -112,7 +110,7 @@ def test_check_overview_sync_reports_mismatched_fields(tmp_path: Path) -> None:
 
     result = _run_overview_sync(tmp_path, readme_path, docs_path)
 
-    assert_output(_completed_process_output(result), EXPECTED_OVERVIEW_SYNC_PATH / "mismatch.txt")
+    assert_output(_completed_process_output(result))
 
 
 def test_extract_badges_matches_known_badge_hosts_only() -> None:
@@ -125,4 +123,4 @@ def test_extract_badges_matches_known_badge_hosts_only() -> None:
         "## ✨ What it does",
     ])
 
-    assert_output("\n".join((*badges, "")), EXPECTED_OVERVIEW_SYNC_PATH / "badge_hosts.txt")
+    assert_output("\n".join((*badges, "")))

@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS_ROOT = ROOT / "tests"
-EXPECTED_PACKAGE_METADATA_PATH = ROOT / "tests" / "data" / "expected" / "package_metadata"
 EXCLUDED_IMPORT_ROOTS = frozenset({"datamodel_code_generator", "tests"})
 LOCAL_ONLY_FILE = re.compile(r"(?:.*/)?(?:CLAUDE\.md|\.coverage(?:\..+)?)")
 
@@ -99,7 +98,7 @@ def test_sdist_include_root_normalizes_entries() -> None:
         ]
     )
 
-    assert_output(f"{output}\n", EXPECTED_PACKAGE_METADATA_PATH / "sdist_include_roots.txt")
+    assert_output(f"{output}\n")
 
 
 def test_sdist_includes_test_support_imports() -> None:
@@ -108,7 +107,6 @@ def test_sdist_includes_test_support_imports() -> None:
 
     assert_output(
         "\n".join(import_roots) + "\n",
-        EXPECTED_PACKAGE_METADATA_PATH / "test_support_import_roots.txt",
     )
 
     if not (missing_roots := [root for root in import_roots if root not in _sdist_include_roots()]):
@@ -131,7 +129,6 @@ def test_formatter_extras_preserve_required_ranges_and_markers() -> None:
             f"all={f'datamodel-code-generator[{name}]' in project['optional-dependencies']['all']}"
             for name in ("black", "isort")
         ),
-        EXPECTED_PACKAGE_METADATA_PATH / "formatter_extras.txt",
     )
 
 

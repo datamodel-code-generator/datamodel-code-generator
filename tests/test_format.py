@@ -317,7 +317,6 @@ def test_builtin_generated_formatter_edge_cases() -> None:
 
     assert_output(
         f"{formatted_output}\n",
-        BUILTIN_FORMATTER_EXPECTED_PATH / "generated_edge_cases.txt",
     )
 
 
@@ -1709,7 +1708,6 @@ def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_p
             apply_builtin_formatter(compatibility, python_version=PythonVersion.PY_315),
             apply_builtin_formatter(joined_names, python_version=PythonVersion.PY_313),
         )),
-        BUILTIN_FORMATTER_EXPECTED_PATH / "target_identifiers.txt",
     )
 
 
@@ -1724,7 +1722,6 @@ def test_builtin_formatter_groups_each_module_of_an_import_by_target() -> None:
             apply_builtin_formatter(code, python_version=version)
             for version in (PythonVersion.PY_310, PythonVersion.PY_311)
         ),
-        BUILTIN_FORMATTER_EXPECTED_PATH / "import_modules_by_target.txt",
     )
 
 
@@ -2256,7 +2253,6 @@ def test_builtin_formatter_blank_line_guard_skips_tokenize_without_multiline_str
 
     assert_output(
         f"{builtin_formatter._normalize_top_level_blank_lines(code)}\n",
-        BUILTIN_FORMATTER_EXPECTED_PATH / "blank_line_normalization.txt",
     )
 
 
