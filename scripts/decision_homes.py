@@ -370,6 +370,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(
             Home("model/_decisions/nullability.py", "rendered_nullability"),
             Home("model/_decisions/nullability.py", "takes_member_null"),
+            Home("model/_decisions/nullability.py", "takes_item_null"),
             Home("model/_decisions/nullability.py", "member_null"),
             Home("model/_decisions/nullability.py", "field_renders_none"),
             Home("model/_decisions/nullability.py", "reference_null"),
@@ -377,26 +378,28 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/_decisions/nullability.py", "TypeNull"),
         ),
         core=(
-            "`model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, "
-            "`field_renders_none`, `reference_null`, `reference_adds_null` (record `TypeNull`)"
+            "`model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `takes_item_null`, "
+            "`member_null`, `field_renders_none`, `reference_null`, `reference_adds_null` (record `TypeNull`)"
         ),
         adapters=(
-            "`types.py:DataType.admits_none`, `names_nullable_model`, `adds_reference_null`; "
-            "`model/_field_imports.py:field_none_source` (the field's facts into `field_renders_none`, for "
-            "`model/base.py:DataModelFieldBase._field_null_source` and `field_admits_none`); writes: "
-            "`types.py:DataType._materialize_render_state` (see L7) and the record, through "
-            "`DataType._update_type_null`, from the store operations `redirect_reference_users`, "
+            "`types.py:DataType.admits_none`, `items_admit_none` (the None of a container's item union, inside it), "
+            "`names_nullable_model`, `adds_reference_null`; `model/_field_imports.py:field_none_source` (the field's "
+            "facts into `field_renders_none`, for `model/base.py:DataModelFieldBase._field_null_source` and "
+            "`field_admits_none`); writes: `types.py:DataType._materialize_render_state` (see L7) and the record, "
+            "through `DataType._update_type_null`, from the store operations `redirect_reference_users`, "
             "`redirect_model_reference_users`, `mark_target_null`, `clear_target_null`, `write_rendered_null` and "
             "`drop_held_null` of `parser/generation.py:GenerationStore`; the targets read them: "
             "`_target_binding.py:_Projector._admits_none` (`DataType.admits_none` of a node; a reference that binds no "
             "symbol is read through as the type it stands for, which holds the None of its model already, and adds "
-            "only its own None), `field_admits_none` for an annotation (`_Models.field_facts` and "
+            "only its own None), `_Projector._structural` (`DataType.items_admit_none` of a container whose items are "
+            "several schemas), `field_admits_none` for an annotation (`_Models.field_facts` and "
             "`_Models.alias_nullable`, whose field's own null is `field_renders_none`'s); not yet: the null of the "
             "wire, `_Models.wire_null` over `_Models.preexisting_null` (rows `legacy-wire-null-ignores-nullable-false` "
             "and `legacy-wire-null-unknown-type`)"
         ),
         sites=(
             Home("types.py", "DataType.admits_none"),
+            Home("types.py", "DataType.items_admit_none"),
             Home("types.py", "DataType.names_nullable_model"),
             Home("types.py", "DataType.adds_reference_null"),
             Home("model/_field_imports.py", "field_none_source"),
@@ -406,6 +409,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("types.py", "DataType._update_type_null"),
             Home("parser/generation.py", "GenerationStore"),
             Home("_target_binding.py", "_Projector._admits_none"),
+            Home("_target_binding.py", "_Projector._structural"),
             Home("_target_binding.py", "_Models.field_facts"),
             Home("_target_binding.py", "_Models.alias_nullable"),
             Home("_target_binding.py", "_Models.wire_null"),
@@ -1616,7 +1620,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "union as written, with such member unions spread (msgspec's plain-union checks, and the nested-union "
             "checks of `parser/_passes/imports.py` and `parser/_passes/_shared.py:_iter_discriminator_data_types`); a "
             "container's item union takes `constructed` from `DataType.__init__`, and the None of its items stays "
-            "inside the container (`model/_decisions/nullability.py:takes_member_null`: a container is no union); not "
+            "inside the container (`model/_decisions/nullability.py:takes_member_null`: a container is no union; "
+            "`takes_item_null`: its item union takes it, read by the targets through `DataType.items_admit_none`); not "
             "yet: msgspec's decode view (`model/msgspec.py:DataModelField._union_leaves`) spreads alias unions by its "
             "own rule"
         ),
@@ -1635,6 +1640,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("types.py", "written_union_members"),
             Home("parser/_passes/_shared.py", "_iter_discriminator_data_types"),
             Home("model/_decisions/nullability.py", "takes_member_null"),
+            Home("model/_decisions/nullability.py", "takes_item_null"),
+            Home("types.py", "DataType.items_admit_none"),
             Home("model/msgspec.py", "DataModelField._union_leaves"),
             Home("parser/jsonschema.py"),
             Home("parser/openapi.py"),

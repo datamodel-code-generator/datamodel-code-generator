@@ -1,0 +1,125 @@
+# container-item-nulls
+render pydantic_v2.BaseModel
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/closed: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail_null: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/union_position: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/unevaluated: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/null_first: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nullable_reference: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nested/items: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/by_key/additionalProperties: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/paths/~1rows/post/parameters/0/schema: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py
+render dataclasses.dataclass
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/closed: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail_null: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/union_position: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/unevaluated: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/null_first: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nullable_reference: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nested/items: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/by_key/additionalProperties: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/paths/~1rows/post/parameters/0/schema: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py
+render typing.TypedDict
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/closed: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail_null: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/union_position: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/unevaluated: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/null_first: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nullable_reference: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nested/items: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/by_key/additionalProperties: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/paths/~1rows/post/parameters/0/schema: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py
+render msgspec.Struct
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/closed: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/tail_null: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/union_position: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/unevaluated: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/null_first: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nullable_reference: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/nested/items: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/components/schemas/Row/properties/by_key/additionalProperties: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  warning UserWarning: container-item-nulls.yaml#/paths/~1rows/post/parameters/0/schema: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

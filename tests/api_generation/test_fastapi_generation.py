@@ -99,6 +99,7 @@ if TYPE_CHECKING:
         "parts-bound-types-errors",
         "nullable-parameters",
         "nullable-parameters-31",
+        "container-item-nulls",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:

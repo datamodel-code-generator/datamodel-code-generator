@@ -652,5 +652,11 @@
     "package_snapshots": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "container-item-nulls": {
+    "input": "container-item-nulls.yaml",
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

@@ -32,6 +32,7 @@ __all__ = [
     "reference_adds_null",
     "reference_null",
     "rendered_nullability",
+    "takes_item_null",
     "takes_member_null",
     "written_annotation_null",
 ]
@@ -117,7 +118,12 @@ def takes_member_null(*, is_container: bool, keeps_member_order: bool, member_co
 
     A container is no union: the None of an item stays with its items, inside the container.
     """
-    return member_count > 1 and not is_container and not keeps_member_order
+    return not is_container and takes_item_null(keeps_member_order=keeps_member_order, member_count=member_count)
+
+
+def takes_item_null(*, keeps_member_order: bool, member_count: int) -> bool:
+    """Return whether the union of a container's items takes over the None of its items, inside the container."""
+    return member_count > 1 and not keeps_member_order
 
 
 def member_null(*, is_none: bool, is_any: bool) -> bool | None:

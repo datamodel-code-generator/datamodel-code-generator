@@ -5405,6 +5405,8 @@ class DataType(_BaseModel)
     @property
     def admits_none(self) -> bool
     @property
+    def items_admit_none(self) -> bool
+    @property
     def type_hint(self) -> str
     @property
     def is_union(self) -> bool
