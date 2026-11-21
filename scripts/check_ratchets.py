@@ -54,10 +54,11 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
-  (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
-  architecture checks, the callers of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the
-  bypasses of builder homes (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a
-  form this script cannot read).
+  (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (``allowlist:heki-baseline``, the
+  sum of the site counts of its entries), and the allowlists of the test style and architecture checks, the callers
+  of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the bypasses of builder homes
+  (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot
+  read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -127,6 +128,7 @@ if TYPE_CHECKING:
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
+HEKI_BASELINE = "scripts/heki_baseline.toml"
 EXPECTED_ROOT = "tests/data/expected"
 TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
@@ -936,6 +938,20 @@ def _host_baseline_tally(tally: Tally, root: Path) -> None:
             tally.add(key, HOST_BASELINE)
 
 
+def _heki_baseline_tally(tally: Tally, root: Path) -> None:
+    """Count the sites of heki's baseline; a file that is not entries with integer counts is unreadable."""
+    file = root / HEKI_BASELINE
+    try:
+        entries = tomllib.loads(file.read_text(encoding="utf-8")).get("entries", []) if file.is_file() else []
+        counts = [entry.get("count") for entry in entries]
+    except (tomllib.TOMLDecodeError, AttributeError, TypeError):
+        counts = [None]
+    for count in counts:
+        key = "allowlist:heki-baseline" + ("" if type(count) is int else ":unreadable")
+        for _ in range(count if type(count) is int else 1):
+            tally.add(key, HEKI_BASELINE)
+
+
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
     """Count the configuration entries and allowlist entries that switch a check off."""
     tool = pyproject.get("tool", {})
@@ -959,6 +975,7 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
     for _ in pytest.get("ini_options", {}).get("assert_helper_direct_assert_exempt_files", []):
         tally.add("allowlist:direct-assert-exempt-files", "pyproject.toml")
     _host_baseline_tally(tally, root)
+    _heki_baseline_tally(tally, root)
     for value in _toml_leaves(root, STORE_ALLOWLIST):
         counted = isinstance(value, int)
         for _ in range(value if counted else 1):

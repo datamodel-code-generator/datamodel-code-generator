@@ -34,6 +34,11 @@ extend-exclude-swapped	check_ratchets_script/check_ratchets_against_base[extend-
 extended-per-file-ignores	check_ratchets_script/check_ratchets_against_base[extended-per-file-ignores].txt
 fix-enabled	check_ratchets_script/check_ratchets_against_base[fix-enabled].txt
 form-swap	check_ratchets_script/check_ratchets_against_base[form-swap].txt
+heki-baseline-grows	check_ratchets_script/check_ratchets_against_base[heki-baseline-grows].txt
+heki-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[heki-baseline-shrinks].txt
+heki-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable].txt
+heki-baseline-unreadable-count	check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable-count].txt	= check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable].txt
+heki-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable].txt
 hidden-by-config	check_ratchets_script/check_ratchets_against_base[hidden-by-config].txt
 hook-exclude-widened	check_ratchets_script/check_ratchets_against_base[hook-exclude-widened].txt
 host-baseline-grows	check_ratchets_script/check_ratchets_against_base[host-baseline-grows].txt

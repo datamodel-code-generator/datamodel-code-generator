@@ -119,6 +119,15 @@ HOST_BASELINE = """["src/pkg/a.py"."run"]
 "host._cache" = 1
 "host._size" = 1
 """
+HEKI_BASELINE = """version = 2
+
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "run"
+rule_code = "MUT201"
+target = "Model.fields"
+count = 1
+"""
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -674,6 +683,31 @@ def show(flag: bool) -> None:
     },
     "host-baseline-unreadable-value": {
         "head": {"scripts/host_private_access_baseline.toml": '["src/pkg/a.py"."run"]\n"host._x" = "two"\n'},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-grows": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE},
+        "head": {
+            "scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2")
+            + HEKI_BASELINE.removeprefix("version = 2\n").replace('"run"', '"stop"')
+        },
+        "args": ["--enforce"],
+    },
+    "heki-baseline-shrinks": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 3")},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unreadable": {
+        "head": {"scripts/heki_baseline.toml": "version = 2\n[[entries]\n"},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unreadable-count": {
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", 'count = "one"')},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unreadable-shape": {
+        "head": {"scripts/heki_baseline.toml": "version = 2\nentries = 3\n"},
         "args": ["--enforce"],
     },
     "allowlist-unreadable": {
