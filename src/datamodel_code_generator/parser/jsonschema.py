@@ -3322,14 +3322,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 groups.constraint_only.append(item)
         return groups
 
-    def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0917
+    def _build_allof_type(  # noqa: PLR0911, PLR0912
         self,
         allof_items: Sequence[JsonSchemaObject | bool],
         depth: int,
         visited: frozenset[int],
         max_depth: int,
         max_union_elements: int,
-        warn_on_ref_constraints: bool = True,  # noqa: FBT001, FBT002
+        *,
+        warn_on_ref_constraints: bool = True,
     ) -> DataType | None:
         """Build a DataType from allOf schema items."""
         if _lightweight_types.contains_false_schema(self, allof_items):
@@ -6094,7 +6095,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             with _schema_refs.NO_SCOPE if (merged_scope := choice.site.scope) is None else merged_scope:
                 return with_unique_items(
-                    with_type_origin(choice.build(self, choice.site), location), choice.site.obj.uniqueItems
+                    with_type_origin(choice.build(self, choice.site), location),
+                    unique_items=choice.site.obj.uniqueItems,
                 )
 
     def _has_materialized_container_constraints(self, item: JsonSchemaObject) -> bool:
@@ -6889,7 +6891,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 tuple_item_count=tuple_item_count,
                 **container_flags,
             ),
-            obj.uniqueItems,
+            unique_items=obj.uniqueItems,
         )
         if localize_constraints:
             array_data_type = self._parse_array_union_constrained_branch(

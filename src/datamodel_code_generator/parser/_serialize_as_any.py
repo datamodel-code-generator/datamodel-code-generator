@@ -28,7 +28,7 @@ __all__ = ["SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS", "SerializeAsAnyWriter"]
 class SerializeAsAnyWriter(DecisionWriter, Protocol):
     """The write of the decision: whether a type naming a model is wrapped in ``SerializeAsAny``."""
 
-    def mark_serialized_as_any(self, model: ModelView, wrapped: bool) -> None:  # noqa: FBT001
+    def mark_serialized_as_any(self, model: ModelView, *, wrapped: bool) -> None:
         """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny``."""
 
 
@@ -52,7 +52,7 @@ def _serialize_as_any_for_every_subclass(facts: FinalFacts, writer: SerializeAsA
         extended |= reached
         reached = {base for key in reached for base in bases[key]} - extended
     for model in facts.live_models:
-        writer.mark_serialized_as_any(model, model_key_of(model.reference) in extended)
+        writer.mark_serialized_as_any(model, wrapped=model_key_of(model.reference) in extended)
 
 
 SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS = DecisionPass(

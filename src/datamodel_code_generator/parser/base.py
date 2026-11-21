@@ -2152,8 +2152,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _uses_deferred_annotations(
         self,
-        with_import: bool | None,  # noqa: FBT001
-        disable_future_imports: bool,  # noqa: FBT001
+        *,
+        with_import: bool | None,
+        disable_future_imports: bool,
     ) -> bool:
         """Return whether generated annotations use deferred evaluation."""
         if (
@@ -2242,14 +2243,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _prepare_parse_config(
         self,
-        with_import: bool | None,  # noqa: FBT001
-        disable_future_imports: bool,  # noqa: FBT001
+        *,
+        with_import: bool | None,
+        disable_future_imports: bool,
         all_exports_scope: AllExportsScope | None,
         all_exports_collision_strategy: AllExportsCollisionStrategy | None,
         module_split_mode: ModuleSplitMode | None,
     ) -> ParseConfig:
         """Prepare configuration for the parse operation."""
-        use_deferred_annotations = self._uses_deferred_annotations(with_import, disable_future_imports)
+        use_deferred_annotations = self._uses_deferred_annotations(
+            with_import=with_import, disable_future_imports=disable_future_imports
+        )
         self._quotes_hidden_types = disable_future_imports or not with_import
 
         if (
@@ -2530,14 +2534,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
                 model_imports[model] = prepared_imports
 
-    def _finalize_modules(  # noqa: PLR0917
+    def _finalize_modules(
         self,
         contexts: list[ModuleContext],
         unused_models: list[DataModel],
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
         forwarder_modules: Collection[ModulePath],
-        with_import: bool,  # noqa: FBT001
+        *,
+        with_import: bool,
         config: ParseConfig,
         internal_modules: set[ModulePath],
         model_path_to_module_name: dict[str, str],
@@ -2904,7 +2909,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 collect_model_metadata,
             ),
             suppress_parse_warnings=suppress_parse_warnings,
-            suppress_settle_diagnostics=_state.settle_diagnostics_suppressed(suppress_parse_warnings),
+            suppress_settle_diagnostics=_state.settle_diagnostics_suppressed(
+                suppress_parse_warnings=suppress_parse_warnings
+            ),
             default_build_code_formatter=Parser._build_code_formatter,
             result_type=Result,
         )

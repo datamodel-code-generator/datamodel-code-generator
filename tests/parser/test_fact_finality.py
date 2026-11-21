@@ -73,9 +73,9 @@ class InvalidatingParser(JsonSchemaParser):
 class RefinalizingParser(JsonSchemaParser):
     """Finalizes the modules twice, so that the passes of the second time run in a later phase than they declare."""
 
-    def _finalize_modules(self, *args: Any) -> None:
-        super()._finalize_modules(*args)
-        super()._finalize_modules(*args)
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
+        super()._finalize_modules(*args, **kwargs)
 
 
 class RebasingParser(JsonSchemaParser):
@@ -93,8 +93,8 @@ class SealedWriteParser(JsonSchemaParser):
     Moving a model to its own path and forgetting a target null write nothing frozen; removing a field does.
     """
 
-    def _finalize_modules(self, *args: Any) -> None:
-        super()._finalize_modules(*args)
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
         builder = self.generation_store.builder()
         for model in self.results:
             builder.update_model_reference(model, new_path=model.path)
@@ -105,8 +105,8 @@ class SealedWriteParser(JsonSchemaParser):
 class RewritingParser(JsonSchemaParser):
     """Writes the lists of every model back through the store's builder once its modules are finalized."""
 
-    def _finalize_modules(self, *args: Any) -> None:
-        super()._finalize_modules(*args)
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
         builder = self.generation_store.builder()
         for model in self.results:
             builder.set_fields(model, list(model.fields))
@@ -116,8 +116,8 @@ class RewritingParser(JsonSchemaParser):
 class GrowingParser(JsonSchemaParser):
     """Gives a field a new type with a new member list once the modules are finalized, then appends to that list."""
 
-    def _finalize_modules(self, *args: Any) -> None:
-        super()._finalize_modules(*args)
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
         model = self.results[0]
         new = DataType(data_types=[DataType(type="int")])
         self.generation_store.builder().replace_field_type(model.fields[0], new)
@@ -129,8 +129,8 @@ class GrowingParser(JsonSchemaParser):
 class NoOpMutatingParser(JsonSchemaParser):
     """Calls list mutators that leave the lists of every model as they were once its modules are finalized."""
 
-    def _finalize_modules(self, *args: Any) -> None:
-        super()._finalize_modules(*args)
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
         for model in self.results:
             model.fields.extend([])
             model.fields.sort(key=lambda _field: 0)
@@ -369,8 +369,8 @@ class RenderReadingParser(JsonSchemaParser):
 
     _DECISION_PASSES = _decide("read_render_facts", _read_facts_and_render_facts)
 
-    def _finalize_modules(self, *args: Any) -> None:
-        super()._finalize_modules(*args)
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
         READ.append(f"after the decisions: {STASHED[-1].live_models[0].class_name}")
 
 
@@ -570,20 +570,20 @@ INHERITANCE_SCHEMA = {
 class BaseDefaultingAfterOrderingParser(JsonSchemaParser):
     """Gives the field of a base a default after constructor ordering read it."""
 
-    def _finalize_modules(self, *args: Any) -> None:
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
         base = next(model for model in self.results if model.class_name == "Base")
         base.fields[0].default = "x"
         base.fields[0].invalidate_semantic_caches()
-        super()._finalize_modules(*args)
+        super()._finalize_modules(*args, **kwargs)
 
 
 class BaseFieldDroppingAfterOrderingParser(JsonSchemaParser):
     """Removes the field of a base after constructor ordering read it."""
 
-    def _finalize_modules(self, *args: Any) -> None:
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
         base = next(model for model in self.results if model.class_name == "Base")
         base.fields.clear()
-        super()._finalize_modules(*args)
+        super()._finalize_modules(*args, **kwargs)
 
 
 @pytest.mark.parametrize("parser_type", [BaseDefaultingAfterOrderingParser, BaseFieldDroppingAfterOrderingParser])

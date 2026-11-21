@@ -135,11 +135,14 @@ def _inherited_field_nullability(
     nullable, type_has_null = inherited_field.nullable, inherited_field.type_has_null
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
-            nullable, type_has_null = _nullable_without_inherited_null(field.nullable, required=required), False
+            nullable, type_has_null = (
+                _nullable_without_inherited_null(override_nullable=field.nullable, required=required),
+                False,
+            )
     return {"nullable": nullable, "type_has_null": type_has_null}
 
 
-def _nullable_without_inherited_null(override_nullable: bool | None, *, required: bool) -> bool | None:  # noqa: FBT001
+def _nullable_without_inherited_null(*, override_nullable: bool | None, required: bool) -> bool | None:
     """Return the ``nullable`` of a copy whose override drops the inherited null.
 
     It is False where the copy is required or the override is not null, else undecided.
@@ -173,7 +176,7 @@ def _keep_nullable_without_default(
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
             without_default = _nullable_without_inherited_null(
-                field.nullable_without_default, required=copied_field.required
+                override_nullable=field.nullable_without_default, required=copied_field.required
             )
     if copied_field.nullable_without_default is not without_default:
         GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]

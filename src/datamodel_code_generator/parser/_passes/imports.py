@@ -2490,7 +2490,8 @@ def render(parser: RenderHost[ConfigT, ContextT, ResultT], run: FinishRun[Config
 def record_model_placement(
     parser: FinishHost,
     contexts: Sequence[ModuleContextView],
-    has_internal_modules: bool,  # noqa: FBT001
+    *,
+    has_internal_modules: bool,
 ) -> None:
     """Record where models other than typed map values are written, and whether the typed values could move them.
 

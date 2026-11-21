@@ -115,8 +115,9 @@ class SettleHost(RecursionFactsHost, GenerationStoreHost, RootModelTypeHost, Pro
 
     def _prepare_parse_config(
         self,
-        with_import: bool | None,  # noqa: FBT001
-        disable_future_imports: bool,  # noqa: FBT001
+        *,
+        with_import: bool | None,
+        disable_future_imports: bool,
         all_exports_scope: AllExportsScope | None,
         all_exports_collision_strategy: AllExportsCollisionStrategy | None,
         module_split_mode: ModuleSplitMode | None,
@@ -430,11 +431,11 @@ def report_parse_diagnostics(parser: SettleHost[Any], run: SettleRun[Any]) -> No
 def prepare_run_parse_config(parser: SettleHost[ConfigT], run: SettleRun[ConfigT]) -> None:
     """Prepare the configuration of output modules from the arguments of ``parse()``."""
     run.config = parser._prepare_parse_config(
-        run.args.with_import,
-        run.args.disable_future_imports,
-        run.args.all_exports_scope,
-        run.args.all_exports_collision_strategy,
-        run.args.module_split_mode,
+        with_import=run.args.with_import,
+        disable_future_imports=run.args.disable_future_imports,
+        all_exports_scope=run.args.all_exports_scope,
+        all_exports_collision_strategy=run.args.all_exports_collision_strategy,
+        module_split_mode=run.args.module_split_mode,
     )
 
 
