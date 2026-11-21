@@ -779,9 +779,10 @@ def entry_places(code: CodeType, offset: int) -> list[tuple[str, str]] | None:
 
     The instruction runs where a run enters the straight stretch of instructions that ends at it, at its first
     instruction or at a branch's destination inside it: a ``start`` key (the code object's first position) for the
-    stretch that starts the code object, else the ``arm`` key of each instruction of the stretch. None where a way into
-    the stretch reports no event: something falls through or jumps into it, or an exception does; or where nothing in
-    it has a place.
+    stretch that starts the code object, else the ``arm`` key of each instruction of the stretch. A branch's left way
+    is the instruction after it, or after its ``NOT_TAKEN``. None where a way into the stretch reports no event:
+    something falls through or jumps into it, an exception does, or a generator resumes into it after a ``yield``
+    (a run that stopped at the yield never runs on); or where nothing in it has a place.
     """
     instructions, jumpers, handlers, start = _flow(code)
     at = next((index for index, item in enumerate(instructions) if item.offset == offset), -1)
@@ -790,13 +791,17 @@ def entry_places(code: CodeType, offset: int) -> list[tuple[str, str]] | None:
         item = instructions[index]
         stretch.append(item.offset)
         entered = jumpers.get(item.offset, set())
-        if item.offset in handlers or entered - BRANCHES:
+        resumed = item.opname == "RESUME" and index != start
+        if item.offset in handlers or entered - BRANCHES or resumed:
             return None
         if index == start:
             return None if entered else [("start", start_place(code))]
         previous = instructions[index - 1].opname
-        if previous in BRANCHES or previous in NO_FALL_THROUGH or entered:
-            if previous not in BRANCHES and (previous not in NO_FALL_THROUGH or not entered):
+        left = previous in BRANCHES or (
+            previous == "NOT_TAKEN" and index > 1 and instructions[index - 2].opname in BRANCHES
+        )
+        if left or previous in NO_FALL_THROUGH or entered:
+            if not left and (previous not in NO_FALL_THROUGH or not entered):
                 return None
             found = [("arm", place) for kept in stretch if (place := instruction_place(code, kept)) is not None]
             return found or None

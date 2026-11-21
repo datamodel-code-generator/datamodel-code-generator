@@ -27,12 +27,15 @@ evidence incomplete where no other compared cell ran the code.
   to the catalog lines the hunk replaced, a line of a pure insertion to the catalog lines around it. Where the catalog
   has sub-line keys for the running interpreter's version, a probe of instructions needs one of the keys a run that
   ran them records on its way in (`compare_release.entry_places`, read off the side's code object, `Sources`), and a
-  ``start`` probe the `start` key of its code object; they replace the probe's line or code keys where the text of
-  each of them is the catalog's (`FileMap.place`), so the cells that run a line but not the probe's part of it are
-  no cells of the probe (none may be left); elsewhere the probe keeps its line or code keys. A
-  requirement is met at ``startup``, by catalog ``cells`` or by ``none``. The cells are chosen greedily (`cover`):
-  each requirement gets ``redundancy`` cells where the catalog has that many, ties broken by the cost order of `KINDS`
-  and a stable hash, so the choice is deterministic.
+  ``start`` probe the `start` key of its code object. Both kinds of keys hold for every run that ran the probe, so
+  its cells are those of its line or code keys that also hold a sub-line key: the cells that run a line but not the
+  probe's part of it drop out, and the pick is never wider than its line keys. That holds only where the text of
+  each sub-line key is the catalog's (`FileMap.place`) and the key names one instruction or code object of the
+  catalog's revision (`Sources.held`): an edit between them that drifts a key (a renamed function, a local turned
+  into a closure's cell), or a place several instructions share (the operands of one `and` chain), leaves the probe
+  its line or code keys alone. A requirement is met at ``startup``, by catalog ``cells`` or by ``none``. The cells
+  are chosen greedily (`cover`): each requirement gets ``redundancy`` cells where the catalog has that many, ties
+  broken by the cost order of `KINDS` and a stable hash, so the choice is deterministic.
 
 Usage:
   python -m scripts._cell_catalog pick CATALOG BASE [CANDIDATE] [--redundancy N] [--json OUT] --cache-dir DIR
@@ -46,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import dis
 import gzip
 import hashlib
 import heapq
@@ -54,6 +58,7 @@ import re
 import shlex
 import sys
 import tempfile
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -61,6 +66,7 @@ from types import CodeType
 from typing import TYPE_CHECKING, NamedTuple, Protocol
 
 from scripts import compare_release
+from scripts._behaviour_classify import RunCell
 from scripts._change_units import first_position
 
 if TYPE_CHECKING:
@@ -370,31 +376,62 @@ def probe_keys(probe: Record) -> list[Key]:
 
 
 class Sources:
-    """The code objects of each side's package (`roots`: the ``src`` directory of each side), by a probe's key.
+    """The code objects of each side's package and of the catalog's revision, compiled once per file.
 
+    `roots` are each side's ``src`` directory; the catalog's files are read from `repo` at the catalog's `revision`.
     A probe's ``code`` is the path below the package, ``co_qualname``, ``co_firstlineno`` and the first position
-    (`_change_units.Probe`); each file is compiled once, as the comparator's mapping compiles it.
+    (`_change_units.Probe`); a file is compiled as the comparator's mapping compiles it.
     """
 
-    def __init__(self, roots: dict[str, Path]) -> None:
-        """Find the code objects of the files below each side's `roots`."""
+    def __init__(self, roots: dict[str, Path], repo: Path, revision: str) -> None:
+        """Find the code objects of the sides below `roots` and of the catalog's `revision` of `repo`."""
         self.roots = roots
+        self.repo = repo
+        self.revision = revision
         self.found: dict[tuple[str, str], dict[tuple[object, ...], CodeType]] = {}
+        self.counted: dict[str, Counter[Key]] = {}
 
-    def code(self, side: str, key: list[object]) -> CodeType | None:
-        """Return the code object of a probe's key on a side, None where the side's file has none."""
-        path = str(key[0])
+    def _codes(self, side: str, path: str) -> dict[tuple[object, ...], CodeType]:
         if (side, path) not in self.found:
-            source = self.roots[side] / compare_release.PACKAGE / path
+            text = ""
+            if side == "catalog":
+                shown = compare_release.git(self.repo, "show", f"{self.revision}:{PACKAGE_SOURCE}{path}")
+                text = shown.stdout if not shown.returncode else ""
+            else:
+                with contextlib.suppress(OSError, ValueError):
+                    text = (self.roots[side] / compare_release.PACKAGE / path).read_text(encoding="utf-8")
             codes: dict[tuple[object, ...], CodeType] = {}
-            with contextlib.suppress(OSError, SyntaxError, ValueError):
-                pending = [compile(source.read_text(encoding="utf-8"), str(source), "exec", dont_inherit=True)]
+            with contextlib.suppress(SyntaxError, ValueError):
+                pending = [compile(text, path, "exec", dont_inherit=True)]
                 while pending:
                     code = pending.pop()
                     codes[(path, code.co_qualname, code.co_firstlineno, *first_position(code))] = code
                     pending += [item for item in code.co_consts if isinstance(item, CodeType)]
             self.found[side, path] = codes
-        return self.found[side, path].get(tuple(key))
+        return self.found[side, path]
+
+    def code(self, side: str, key: list[object]) -> CodeType | None:
+        """Return the code object of a probe's key on a side, None where the side's file has none."""
+        return self._codes(side, str(key[0])).get(tuple(key))
+
+    def held(self, key: Key) -> int:
+        """Return how many instructions or code objects of the catalog's revision have a sub-line key's place.
+
+        1 where the key names one; 0 where an edit between the catalog and the side drifted it (a renamed function, a
+        local turned into a closure's cell), more where it is shared (the operands of one `and` chain).
+        """
+        kind, path, _ = key
+        if path not in self.counted:
+            counted: Counter[Key] = Counter()
+            for code in self._codes("catalog", path).values():
+                counted["start", path, compare_release.start_place(code)] += 1
+                counted.update(
+                    ("arm", path, place)
+                    for item in dis.get_instructions(code)
+                    if (place := compare_release.instruction_place(code, item.offset)) is not None
+                )
+            self.counted[path] = counted
+        return self.counted[path][key] if kind in POSITIONED else 0
 
 
 def sub_line_keys(probe: Record, side: str, sources: Sources) -> list[Key] | None:
@@ -463,8 +500,9 @@ def requirements(
 ) -> list[Requirement]:
     """Return a requirement per probe of the units, with how the catalog meets it; `maps` are each side's.
 
-    With `sources` and a catalog of the running interpreter's sub-line keys, a probe's sub-line keys replace its line
-    or code keys where all of them translate (module docstring).
+    With `sources` and a catalog of the running interpreter's sub-line keys, a probe's cells are those its line or
+    code keys give that also hold one of its sub-line keys, where each sub-line key translates and names one
+    instruction or code object of the catalog's revision (module docstring); else its line or code keys alone.
     """
     version = "{}.{}".format(*sys.version_info[:2])
     finer = sources is not None and catalog.python == version
@@ -477,9 +515,10 @@ def requirements(
             requirement.cells = frozenset().union(*(catalog.cells_of(key) for key in requirement.keys))
             sub_line = sub_line_keys(probe, unit["side"], sources) if finer and sources is not None else None
             moved = _translated_all(sub_line, maps[unit["side"]]) if sub_line is not None else None
-            if moved:
-                requirement.keys, requirement.sub_line = moved, True
-                requirement.cells = frozenset().union(*(catalog.cells_of(key) for key in moved))
+            if moved and sources is not None and all(sources.held(key) == 1 for key in moved):
+                finer_cells = frozenset().union(*(catalog.cells_of(key) for key in moved))
+                requirement.keys, requirement.sub_line = requirement.keys | moved, True
+                requirement.cells &= finer_cells
             if probe["kind"] == "unmeasurable":
                 requirement.status = "unmeasurable"
             elif requirement.keys & catalog.startup:
@@ -611,21 +650,19 @@ def pick_change(
     names = ("base", "head")
     maps = {name: file_maps(repo, catalog.revision, side.revision) for name, side in zip(names, sides, strict=True)}
     roots = {name: side.src for name, side in zip(names, sides, strict=True) if side.src is not None}
-    return pick(catalog, units.units, maps, redundancy, Sources(roots) if len(roots) == len(names) else None)
+    sources = Sources(roots, repo, catalog.revision) if len(roots) == len(names) else None
+    return pick(catalog, units.units, maps, redundancy, sources)
 
 
-class GateCell(Protocol):
+class GateCell(RunCell, Protocol):
     """A cell of the gate (`behaviour_diff.Cell`): what a catalog row names and the arguments of its generation."""
 
-    kind: str
-    label: str
-    file_type: str
-    backend: str
-    options: tuple[str, ...]
+    @property
+    def kind(self) -> str:
+        """The kind of the cell (`KINDS`)."""
 
     def args(self) -> list[str]:
         """Return the generation arguments without `--output`."""
-        ...
 
 
 def record(runner: compare_release.Runner, cells: Sequence[GateCell], revision: str, jobs: int) -> Catalog:

@@ -14,6 +14,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -24,6 +25,9 @@ from scripts import compare_release
 from scripts._behaviour_classify import kinds
 from tests.capabilities import needs
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 IMPORTED = re.compile(r"from \S+,")
@@ -1630,13 +1634,14 @@ def _catalog_pick(
     tmp_path: Path,
     oracle: Oracle,
     *,
-    shift: bool = False,
+    between: Callable[[str], str] | None = None,
     inputs: dict[str, tuple[dict[str, object], str]] = CATALOG_INPUTS,
-) -> tuple[Path, list[str], list[str]]:
+) -> tuple[Path, list[str], list[str], list[dict[str, object]]]:
     """Record a catalog of `inputs` on the oracle's base commit and pick its change's cells.
 
-    With `shift`, a commit that moves the lines of `_case.py` comes between the catalog and the base of the change.
-    Return the repository, the comparison command of `_oracle_project` and the labels of the picked cells.
+    With `between`, a commit that edits `_case.py` so (on both sides of the change) comes between the catalog and the
+    base of the change. Return the repository, the comparison command of `_oracle_project`, the labels of the picked
+    cells and the pick's requirements.
     """
     from scripts import _cell_catalog as cell_catalog
     from scripts.behaviour_diff import Cell
@@ -1661,13 +1666,13 @@ def _catalog_pick(
     catalog = cell_catalog.record(runner, cells, catalog_commit, 1)
     catalog.write(tmp_path / "catalog.json.gz")
     base = catalog_side
-    if shift:
+    if between is not None:
         case = repo / "src" / "datamodel_code_generator" / "_case.py"
         changed = case.read_text(encoding="utf-8")
-        case.write_text(SHIFTED + oracle.base["_case.py"], encoding="utf-8")
-        for args in (["add", "-A", "src"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "shift"]):
+        case.write_text(between(oracle.base["_case.py"]), encoding="utf-8")
+        for args in (["add", "-A", "src"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "between"]):
             subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
-        case.write_text(SHIFTED + changed, encoding="utf-8")
+        case.write_text(between(changed), encoding="utf-8")
         shifted = compare_release.git(repo, "rev-parse", "HEAD").stdout.strip()
         base = compare_release.resolve_base(shifted, python, cache, repo)
         command[command.index("--base") + 1] = shifted
@@ -1679,7 +1684,7 @@ def _catalog_pick(
         (cell_catalog.ChangeSide(base.revision, base.source), cell_catalog.ChangeSide(None, repo / "src")),
         REDUNDANCY,
     )
-    return repo, command, [cell["label"] for cell in chosen.data()["cells"]]
+    return repo, command, [cell["label"] for cell in chosen.data()["cells"]], chosen.data()["requirements"]
 
 
 def _compare(repo: Path, command: list[str], names: list[str]) -> str:
@@ -1700,7 +1705,7 @@ def test_cell_catalog_picks_the_cells_the_evidence_asks_for(case: str, tmp_path:
     that runs no changed line is left out; where the plain path runs a changed line too, some plain cells come with
     it and one is still left out), and comparing them gives the verdict comparing that input gives.
     """
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case])
     assert "reached.json" in picked, picked
     if case in SHARED:
         assert set(picked) < set(CATALOG_INPUTS), picked
@@ -1721,7 +1726,7 @@ def test_cell_catalog_keys_a_change_inside_a_line(case: str, tmp_path: Path) -> 
     changed line past its unchanged start) keeps its line keys, which may add a plain cell. Comparing the picked
     cells gives the verdict comparing the reaching input gives.
     """
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case])
     assert "reached.json" in picked, picked
     assert set(picked) < set(CATALOG_INPUTS), picked
     assert _compare(repo, command, picked) == PICKED[case]
@@ -1744,7 +1749,7 @@ def test_cell_catalog_misses_a_change_inside_a_line(case: str, tmp_path: Path) -
     The pick takes the cheapest cells that run the line, the plain ones, so the picked comparison is incomplete (the
     gate then says which code objects no compared cell ran).
     """
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case])
     assert len(picked) == REDUNDANCY, picked
     assert set(picked) <= set(PLAIN_CELLS), picked
     assert _compare(repo, command, picked) == "incomplete"
@@ -1757,9 +1762,106 @@ def test_cell_catalog_misses_a_change_inside_a_line(case: str, tmp_path: Path) -
 @pytest.mark.parametrize("case", ["r2_p3_elif_deleted", "r2_p4_override_deleted", "r2_c4_override_body_changed"])
 def test_cell_catalog_reads_lines_of_an_older_revision(case: str, tmp_path: Path) -> None:
     """A catalog older than the change's base finds the change's lines where the commits between moved them."""
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case], shift=True)
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case], between=lambda text: SHIFTED + text)
     assert picked == ["reached.json"], picked
     assert _compare(repo, command, picked) == "complete"
+
+
+RENAMED_AROUND = """class Old:
+    @staticmethod
+    def convert(value):
+        return value.lower()
+
+
+def run(spec):
+    if spec.get("reach"):
+        return Old.convert(spec["value"])
+    return spec["value"]
+"""
+RAISES_BEFORE = """def convert(value):
+    number = int(value)
+    return str(number).lower()
+
+
+def run(spec):
+    try:
+        return convert("1" if spec.get("reach") else spec["value"])
+    except ValueError:
+        return spec["value"]
+"""
+AND_CHAIN = """def run(spec):
+    value = spec["value"]
+    return str(value and spec.get("reach") and value.lower())
+"""
+STOPPED_AT_A_YIELD = """def values(value):
+    yield value
+    yield value.lower()
+
+
+def run(spec):
+    parts = values(spec["value"])
+    first = next(parts)
+    return first + next(parts) if spec.get("reach") else first
+"""
+EITHER_TAKES_THE_BODY = """def run(spec):
+    value = spec["value"]
+    if spec.get("other") is not None or spec.get("reach"): value = value.lower()
+    return value
+"""
+SUB_LINE_LIMITS = {
+    "a rename between the catalog and the base": (
+        _changed(RENAMED_AROUND, ("value.lower()", "value.casefold()")),
+        lambda text: text.replace("Old", "New"),
+        ("line", ["reached.json"]),
+    ),
+    "a call that raises before the probe": (
+        _changed(RAISES_BEFORE, (".lower()", ".casefold()")),
+        None,
+        ("sub-line", ["reached.json"]),
+    ),
+    "a generator stopped at its first yield": (
+        _changed(STOPPED_AT_A_YIELD, ("value.lower()", "value.casefold()")),
+        None,
+        ("line", ["reached.json"]),
+    ),
+    "a body both ways of an or reach": (
+        _changed(EITHER_TAKES_THE_BODY, ("value.lower()", "value.casefold()")),
+        None,
+        ("sub-line", ["reached.json"]),
+    ),
+    "the operands of an and chain": (
+        _changed(AND_CHAIN, ("value.lower()", "value.casefold()")),
+        None,
+        ("line", ["plain.json", "plain3.json"]),
+    ),
+}
+"""Changes whose base probes' sub-line keys cannot stand alone, the commit between the catalog and the base (None:
+the catalog is the base's) and the keys and cells the pick gives the base probe of the changed call.
+
+A rename leaves the line's text but drifts its start key (`New.convert` against the catalog's `Old.convert`): the
+line keys decide. A call that raises before the probe ran its stretch's start in every cell, the plain ones too: the
+line's cells (the reaching one) intersect it. Every operand of an `and` chain ends at a `POP_TOP` with the chain's
+place, which the plain cells hold after the first operand: that key names no one instruction, so the line keys decide.
+A generator resumes after a `yield` without an event, so no key of the stretch before stands for the probe after it;
+the left way of an `or`'s last operand and its first operand's jump both lead into the body, each reported.
+"""
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own pick, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring", "branch-events")
+@pytest.mark.parametrize("case", sorted(SUB_LINE_LIMITS))
+def test_cell_catalog_sub_line_keys_only_narrow_the_line_s_cells(case: str, tmp_path: Path) -> None:
+    """Sub-line keys narrow a probe's line cells to those holding one, else the probe keeps its line cells.
+
+    They narrow where each names one instruction or code object of the catalog's revision; a key an edit drifted
+    never makes the probe `none`.
+    """
+    oracle, between, wanted = SUB_LINE_LIMITS[case]
+    _, _, _, found = _catalog_pick(tmp_path, oracle, between=between)
+    probe = next(item for item in found if item["side"] == "base" and item["kind"] in {"instr", "start"})
+    assert (probe["keys"], sorted(probe["picked"])) == wanted, found
 
 
 DROPPED_BASE = "def run(spec):\n    value = spec['value']\n    return value[:2]\n"
@@ -1781,7 +1883,7 @@ def test_cell_catalog_pick_is_not_the_verdict(tmp_path: Path) -> None:
     of the picked cells alone is no verdict: all the inputs that run the line differ where the picked ones do not.
     """
     oracle = Oracle({"_case.py": DROPPED_BASE}, {"_case.py": DROPPED_BASE.replace("[:2]", "[:3]")})
-    repo, command, picked = _catalog_pick(tmp_path, oracle, inputs=DROPPED_INPUTS)
+    repo, command, picked, _ = _catalog_pick(tmp_path, oracle, inputs=DROPPED_INPUTS)
     assert len(picked) == REDUNDANCY
     assert "w.json" not in picked
     assert _compare(repo, command, picked) == "complete"
@@ -2030,7 +2132,7 @@ def test_cell_catalog_records_code_the_warm_up_ran(tmp_path: Path) -> None:
     warm = "from datamodel_code_generator import _case\n\n_case.run({'value': 'warm'})\n"
     changed = "def run(spec):\n    value = spec['value']\n    return value\n"
     oracle = Oracle({"_case.py": PLAIN_RUN, "_warm.py": warm}, {"_case.py": changed})
-    _, _, picked = _catalog_pick(tmp_path, oracle)
+    _, _, picked, _ = _catalog_pick(tmp_path, oracle)
     assert len(picked) == REDUNDANCY, picked
     assert set(picked) <= set(PLAIN_CELLS), picked
 

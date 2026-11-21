@@ -74,7 +74,8 @@ BASE revision (`scripts/_cell_catalog.py`): it only adds cells, it never drops o
 what the run compared. It prints the pick (the requirements no catalog cell meets too); where it cannot pick (a
 release base, no catalog file, another format, a catalog revision that is no ancestor of BASE) it says so and the tier
 runs alone. `catalog OUT [REVISION]` records the catalog of the fixtures x `--types` x `--options` (option sets
-separated by ';', `default` for none) on a revision of this repository (default: HEAD), with what each cell ran.
+separated by ';', `default` for none) on a revision of this repository (default: HEAD), with what each cell ran; its
+`-j` defaults to 2, as each recording worker imports the whole package first.
 
 `record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
 `merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
@@ -1828,6 +1829,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     catalog.add_argument("--options", default="default", help="option sets separated by ';' ('default' = none)")
     catalog.add_argument("--select", action="append", default=[], help="only fixtures whose path matches this glob")
     _environment_args(catalog)
+    catalog.set_defaults(j=2)
     record = commands.add_parser("record", help="write the behaviour record of one release")
     record.add_argument("version", help="release version, or the version a checkout is recorded as")
     record.add_argument("checkout", nargs="?", help="checkout path or git revision to record instead of the release")
