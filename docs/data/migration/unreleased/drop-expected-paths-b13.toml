@@ -3,7 +3,7 @@ id = "drop-expected-paths-b13"
 category = "harness"
 title = "Store the remaining JSON Schema test outputs under the test names"
 summary = "These tests store their outputs under their own names; tests that compared part of a tree or two runs store the whole output, and outputs a formatter or Pydantic version selected by name are recorded per environment; the package writes the same output."
-refs = ["#7314"]
+refs = ["#7319"]
 covers = [
     "main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py",
     "main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin_black23.py",
