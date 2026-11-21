@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import gzip
 import json
 import os
 import re
@@ -1675,9 +1676,8 @@ def _catalog_pick(
         cell_catalog.Catalog.read(tmp_path / "catalog.json.gz"),
         repo,
         units,
-        (base.revision or "", None),
+        (cell_catalog.ChangeSide(base.revision, base.source), cell_catalog.ChangeSide(None, repo / "src")),
         REDUNDANCY,
-        roots={"base": base.source or repo / "src", "head": repo / "src"},
     )
     return repo, command, [cell["label"] for cell in chosen.data()["cells"]]
 
@@ -1931,13 +1931,51 @@ def test_cell_catalog_pick_names_how_each_requirement_is_met(round_trip: bool, t
     assert_output("\n".join([*chosen.lines(), *lines]) + "\n")
 
 
+LOADED_CASES = {
+    "a usable catalog": ("first", "second", 2),
+    "a release base": ("first", None, 2),
+    "no catalog file": (None, "second", 2),
+    "another format": ("first", "second", 1),
+    "a catalog newer than the base": ("second", "first", 2),
+}
+"""The catalog revision (None: no file), the base (None: a release) and the catalog format of a gate's `--pick`."""
+
+
+@pytest.mark.parametrize("case", sorted(LOADED_CASES))
+def test_cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base(case: str, tmp_path: Path) -> None:
+    """A gate picks from a catalog of this format whose revision is the base's ancestor; else it says why it cannot."""
+    from scripts._cell_catalog import Catalog, CatalogCell, loaded
+
+    catalog_name, base_name, form = LOADED_CASES[case]
+    commits = {}
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    for name in ("first", "second"):
+        allowed = ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", name, "--allow-empty"]
+        subprocess.run(["git", *allowed], cwd=tmp_path, check=True)
+        commits[name] = compare_release.git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+    path = tmp_path / "catalog.json.gz"
+    if catalog_name is not None:
+        cells = [CatalogCell("default", "a", "jsonschema", "pydantic_v2.BaseModel")]
+        Catalog.of(commits[catalog_name], cells, [set()], set()).write(path)
+        if form != 2:
+            with gzip.open(path, "rt", encoding="utf-8") as file:
+                data = json.load(file) | {"format": form}
+            with gzip.open(path, "wt", encoding="utf-8") as file:
+                json.dump(data, file)
+    catalog, reason = loaded(path, tmp_path, commits[base_name] if base_name else None)
+    text = f"{catalog.revision if catalog else None} | {reason}\n"
+    for name, commit in commits.items():
+        text = text.replace(commit, f"<{name}>").replace(commit[:12], f"<{name}>")
+    assert_output(text.replace(str(tmp_path), "TMP"))
+
+
 def test_cell_catalog_pick_refuses_a_release_base(tmp_path: Path) -> None:
     """A release base has no change units: `pick` says to run the tier instead of reporting an empty pick."""
-    from scripts._cell_catalog import Catalog, CatalogCell, pick_change
+    from scripts._cell_catalog import Catalog, CatalogCell, ChangeSide, pick_change
 
     catalog = Catalog.of("r" * 40, [CatalogCell("default", "a", "jsonschema", "pydantic_v2.BaseModel")], [set()], set())
     with pytest.raises(SystemExit) as refused:
-        pick_change(catalog, tmp_path, None, ("0.98.0", None))
+        pick_change(catalog, tmp_path, None, (ChangeSide("0.98.0"), ChangeSide(None)))
     assert_output(f"{refused.value}\n")
 
 

@@ -1,0 +1,1 @@
+None | catalog <second> is no ancestor of the base <first>

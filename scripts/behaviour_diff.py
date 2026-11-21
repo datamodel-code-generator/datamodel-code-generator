@@ -2,7 +2,8 @@
 
 Usage:
   python scripts/behaviour_diff.py gate [BASE] [CANDIDATE] [--tier pr|nightly|release] [--types T1,T2]
-      [--shard I/N] [-j N] [--check] [--json OUT] [--verdicts OUT] [--identity]
+      [--shard I/N] [-j N] [--check] [--json OUT] [--verdicts OUT] [--identity] [--pick CATALOG]
+  python scripts/behaviour_diff.py catalog OUT [REVISION] [--types T1,T2] [--options 'default;--x'] [--select GLOB]
 
 BASE is a released version (default: the latest tag) or a git revision of the candidate's repository (this
 repository for a candidate revision). CANDIDATE is a checkout path (default: this checkout; its `.venv` is used when
@@ -68,6 +69,13 @@ with those of each entry that shares a cell with them, the shard of their first 
 stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also the entries that
 cover no cell. `--select` narrows the inputs, so a selection may leave an entry's cells out.
 
+`--pick CATALOG` adds to the cells of the tier (and of `--select`) the catalog's cells that run the change against a
+BASE revision (`scripts/_cell_catalog.py`): it only adds cells, it never drops one, and the evidence stays the judge of
+what the run compared. It prints the pick (the requirements no catalog cell meets too); where it cannot pick (a
+release base, no catalog file, another format, a catalog revision that is no ancestor of BASE) it says so and the tier
+runs alone. `catalog OUT [REVISION]` records the catalog of the fixtures x `--types` x `--options` (option sets
+separated by ';', `default` for none) on a revision of this repository (default: HEAD), with what each cell ran.
+
 `record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
 `merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
 """
@@ -106,7 +114,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts import compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts import _cell_catalog, compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
     CLASSES,
     LINE_ASPECT,
@@ -227,6 +235,9 @@ HEAD_STOPPED = (
 """Set in the environment of the base's gate, so that it does not run its own base's gate again."""
 UNCOVERED = "no record's [[change.cells]] covers the cell"
 VERDICTS_OPTION = "--verdicts"
+PICK_OPTION = "--pick"
+HEAD_ONLY_OPTIONS = (VERDICTS_OPTION, PICK_OPTION)
+"""The options of the head's gate its base's gate does not get (`base_arguments`)."""
 REGEX_SPECIAL = re.compile(r"[\\.^$*+?{}\[\]|()]")
 MSGSPEC_IMPORT = re.compile(r"^\s*(?:import msgspec|from msgspec\b)", re.MULTILINE)
 COMPANION_LINE = re.compile(r"^(?:valid: |invalid .*: rejected \()", re.MULTILINE)
@@ -449,6 +460,7 @@ class Gate:
     refused_alike: set[str] = field(default_factory=set)
     no_payloads: set[str] = field(default_factory=set)
     verdicts: list[dict[str, str | None]] = field(default_factory=list)
+    picked: list[_cell_catalog.CatalogCell] = field(default_factory=list)
 
 
 def repository() -> Path:
@@ -1575,14 +1587,15 @@ def write_verdicts(gate: Gate, ns: argparse.Namespace) -> None:
 
 
 def base_arguments(argv: list[str]) -> list[str]:
-    """Return the arguments of the head's gate without `--verdicts` (argparse also takes a unique prefix of it).
+    """Return the arguments of the head's gate without `HEAD_ONLY_OPTIONS` (argparse also takes a unique prefix).
 
-    The base's verdicts judge nothing, and a base before the option refuses it.
+    The base's verdicts judge nothing; a pick adds the head's cells, which the base's gate does not judge; and a base
+    before an option refuses it.
     """
     dropped: set[int] = set()
     for index, arg in enumerate(argv):
         name, given, _ = arg.partition("=")
-        if len(name) > len("--") and VERDICTS_OPTION.startswith(name):
+        if len(name) > len("--") and any(option.startswith(name) for option in HEAD_ONLY_OPTIONS):
             dropped |= {index, index + (not given)}
     return [arg for index, arg in enumerate(argv) if index not in dropped]
 
@@ -1681,10 +1694,53 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
         cells += [cell for cell in projects if cell.backend in types and _selected(cell.label, ns.select)]
         if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
             cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
+    cells += picked_cells(gate)
     unique: dict[tuple[str, str, str, tuple[str, ...]], Cell] = {}
     for cell in cells:
         unique.setdefault((cell.label, cell.file_type, cell.backend, cell.options), cell)
     return list(unique.values())
+
+
+def picked_cells(gate: Gate) -> list[Cell]:
+    """Return the cells of the pick (`--pick`) whose input the candidate has; `--select` narrows only the tier."""
+    root = gate.candidate_info.root
+    cells = [
+        Cell(root / row.label, row.label, row.file_type, row.backend, row.options, row.kind) for row in gate.picked
+    ]
+    for cell in cells:
+        if not cell.input.exists():
+            print(f"pick: cell {cell.label} has no input in the candidate: left out")
+    return [cell for cell in cells if cell.input.exists()]
+
+
+def pick_rows(
+    ns: argparse.Namespace, candidate: Candidate, base: compare_release.Base, units: compare_release.Units | None
+) -> list[_cell_catalog.CatalogCell]:
+    """Return the catalog rows `--pick` adds (`_cell_catalog.pick_change`) and print the pick, or why there is none.
+
+    The change is mapped as identity maps it (`units`, else mapped here). Its sub-line keys need the code objects
+    of the interpreter that mapped it: where the candidate's is another than this one, the pick keys lines only.
+    """
+    if ns.pick is None:
+        return []
+    catalog, reason = _cell_catalog.loaded(ns.pick.absolute(), candidate.repo, base.revision)
+    if catalog is None:
+        print(f"pick: {reason}: the tier runs alone")
+        return []
+    src = candidate.root / "src"
+    mapped = (
+        units
+        if units is not None
+        else compare_release.changed_units(candidate.python, candidate.repo, base, candidate.revision, src)
+    )
+    same = Path(candidate.python).resolve() == Path(sys.executable).resolve()
+    sides = (
+        _cell_catalog.ChangeSide(base.revision, base.source if same else None),
+        _cell_catalog.ChangeSide(candidate.revision, src if same else None),
+    )
+    chosen = _cell_catalog.pick_change(catalog, candidate.repo, mapped, sides)
+    print("\n".join(chosen.lines()))
+    return [catalog.cells[index] for index in chosen.picked]
 
 
 def _selected(label: str, patterns: list[str]) -> bool:
@@ -1760,6 +1816,18 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="no allowlist: any difference in output, warnings, handled exceptions, messages, exit status or "
         "options is a violation, and so is evidence that compared too little; implies --check",
     )
+    gate.add_argument(
+        PICK_OPTION,
+        type=Path,
+        help="cell catalog (`catalog`): add its cells that run the change against a BASE revision to the run",
+    )
+    catalog = commands.add_parser("catalog", help="record a cell catalog: the fixtures' cells and what each ran")
+    catalog.add_argument("out", type=Path, help="catalog file to write (gzip JSON)")
+    catalog.add_argument("revision", nargs="?", default="HEAD", help="revision of this repository (default: HEAD)")
+    catalog.add_argument("--types", default="pydantic_v2.BaseModel", help="comma-separated --output-model-type values")
+    catalog.add_argument("--options", default="default", help="option sets separated by ';' ('default' = none)")
+    catalog.add_argument("--select", action="append", default=[], help="only fixtures whose path matches this glob")
+    _environment_args(catalog)
     record = commands.add_parser("record", help="write the behaviour record of one release")
     record.add_argument("version", help="release version, or the version a checkout is recorded as")
     record.add_argument("checkout", nargs="?", help="checkout path or git revision to record instead of the release")
@@ -1784,7 +1852,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     guide.add_argument("version", help="the release the page describes")
     guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
     _gate_args(guide)
-    guide.set_defaults(tier="release", identity=False, verdicts=None)
+    guide.set_defaults(tier="release", identity=False, verdicts=None, pick=None)
     guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
     guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
     guide.add_argument("--notes", type=Path, help="release-note fragment to write")
@@ -2026,6 +2094,7 @@ def build_gate(ns: argparse.Namespace) -> Gate:
         )
     if units is not None:
         gate.base.probes, gate.candidate.probes = units.probes["base"], units.probes["head"]
+    gate.picked = pick_rows(ns, candidate, base, units)
     return gate
 
 
@@ -2221,6 +2290,30 @@ def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path, environment:
         valid = [e["id"] for e in json.loads(payload_text) if e.get("kind") == "valid" and e.get("expect") == "accept"]
         entry["valid"] = sorted(valid)
     return entry
+
+
+def catalog_main(ns: argparse.Namespace) -> int:
+    """Record the cell catalog of the fixtures x types x option sets on a revision (`_cell_catalog.record`)."""
+    python = Path(sys.executable).absolute()
+    base = compare_release.resolve_base(ns.revision, python, ns.cache_dir.absolute(), repository())
+    revision = base.revision or ns.revision
+    candidate = Candidate(repository(), python, compare_release.run_environment(repository() / "src"), None)
+    inputs = [
+        (name, file_type) for name, file_type in fixture_inputs(candidate, revision) if _selected(name, ns.select)
+    ]
+    cells = [
+        Cell(candidate.root / name, name, file_type, backend, options, "option-set" if options else "default")
+        for options in _cell_catalog.option_sets(ns.options)
+        for backend in ns.types.split(",")
+        for name, file_type in inputs
+    ]
+    side = compare_release.Side("catalog", base.python, base.package)
+    runner = compare_release.Runner(side, base.env(), import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb)
+    catalog = _cell_catalog.record(runner, cells, revision, ns.j)
+    catalog.write(ns.out)
+    counts = (len(cells), len(catalog.failed), len(catalog.keys), len(catalog.sets), catalog.python or "lines only")
+    print("catalog: {} cells, {} failed, {} keys, {} sets, sub-line keys of Python {}".format(*counts))
+    return 0
 
 
 def record_main(ns: argparse.Namespace) -> int:
@@ -2680,6 +2773,7 @@ def main(argv: list[str] | None = None) -> int:
     ns.argv = argv
     commands = {
         "gate": gate_main,
+        "catalog": catalog_main,
         "record": record_main,
         "merge-record": merge_record_main,
         "query": query_main,

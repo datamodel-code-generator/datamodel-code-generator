@@ -17,6 +17,11 @@ literal-values	behaviour_diff_script/annotation_text_of_other_metadata[literal-v
 msgspec-meta	behaviour_diff_script/annotation_text_of_other_metadata[msgspec-meta].txt
 unresolvable-call	behaviour_diff_script/annotation_text_of_other_metadata[unresolvable-call].txt
 unresolvable-metadata	behaviour_diff_script/annotation_text_of_other_metadata[unresolvable-metadata].txt
+[test_base_gate_gets_no_head_only_option]
+joined values	behaviour_diff_script/base_gate_gets_no_head_only_option[joined values].txt
+neither	behaviour_diff_script/base_gate_gets_no_head_only_option[neither].txt
+unique prefixes	behaviour_diff_script/base_gate_gets_no_head_only_option[unique prefixes].txt
+verdicts and a pick	behaviour_diff_script/base_gate_gets_no_head_only_option[verdicts and a pick].txt
 [test_base_skip_for]
 exact	behaviour_diff_script/base_skip_for[exact].txt
 maximum	behaviour_diff_script/base_skip_for[maximum].txt
@@ -191,6 +196,9 @@ changed_branch_no_cell_takes	behaviour_diff_script/identity_evidence_oracle[chan
 no_input_matches_the_selection	behaviour_diff_script/identity_evidence_oracle[no_input_matches_the_selection].txt
 [test_identity_refuses_a_shard]
 	behaviour_diff_script/identity_refuses_a_shard.txt
+[test_identity_with_a_pick]
+the pick adds the cell that takes the change	behaviour_diff_script/identity_with_a_pick[the pick adds the cell that takes the change].txt
+without a catalog the tier runs alone	behaviour_diff_script/identity_with_a_pick[without a catalog the tier runs alone].txt
 [test_judge]
 a decision and a notice, a warning line only the notice selects	behaviour_diff_script/judge[a decision and a notice, a warning line only the notice selects].txt
 a decision beside a failing output-text record	behaviour_diff_script/judge[a decision beside a failing output-text record].txt

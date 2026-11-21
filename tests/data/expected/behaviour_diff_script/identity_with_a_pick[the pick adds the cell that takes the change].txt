@@ -1,0 +1,5 @@
+exit=0
+pick: cell default tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
+evidence: complete
+tests/data/jsonschema/deprecated.json
+tests/data/jsonschema/plain.json

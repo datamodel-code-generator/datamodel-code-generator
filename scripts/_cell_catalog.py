@@ -35,20 +35,17 @@ evidence incomplete where no other compared cell ran the code.
   and a stable hash, so the choice is deterministic.
 
 Usage:
-  python -m scripts._cell_catalog build OUT [REVISION] --cache-dir DIR [--types T1,T2] [--options 'default;--x']
-      [--select GLOB] [-j N]
   python -m scripts._cell_catalog pick CATALOG BASE [CANDIDATE] [--redundancy N] [--json OUT] --cache-dir DIR
 
-`build` records the fixtures of this checkout (`behaviour_diff.fixture_inputs`) x types x option sets on a revision
-(default: HEAD); `pick` maps the change from BASE (a revision) to the candidate (a revision, default: the working
-tree) and prints the requirements and the cells it picks.
+`pick` maps the change from BASE (a revision) to the candidate (a revision, default: the working tree) and prints the
+requirements and the cells it picks. `scripts/behaviour_diff.py catalog` builds a catalog of the gate's cells
+(`record`), and `gate --pick CATALOG` adds the picked cells to the cells it runs (`loaded`).
 """
 
 from __future__ import annotations
 
 import argparse
 import contextlib
-import fnmatch
 import gzip
 import hashlib
 import heapq
@@ -61,13 +58,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import CodeType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple, Protocol
 
-from scripts import behaviour_diff, compare_release
+from scripts import compare_release
 from scripts._change_units import first_position
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
 
 Record = compare_release.Record
@@ -229,6 +226,11 @@ class Catalog:
         if data.get("format") != FORMAT:
             msg = f"{path}: catalog format {data.get('format')}, this script reads {FORMAT}"
             raise SystemExit(msg)
+        return cls.of_data(data)
+
+    @classmethod
+    def of_data(cls, data: Record) -> Catalog:
+        """Return the catalog of the JSON data `write` wrote."""
         cells = [CatalogCell(**(row | {"options": tuple(row["options"])})) for row in data["cells"]]
         keys: dict[Key, int] = {("file", where, ""): found for where, found in data["keys"]["file"].items()}
         for kind in ("line", "code", *POSITIONED):
@@ -584,36 +586,53 @@ def pick(
     return Pick(catalog, found, cover(catalog, found, redundancy))
 
 
+class ChangeSide(NamedTuple):
+    """A side of a change: its revision (None: the working tree) and the ``src`` its units were mapped from."""
+
+    revision: str | None
+    src: Path | None = None
+
+
 def pick_change(
     catalog: Catalog,
     repo: Path,
     units: compare_release.Units | None,
-    sides: tuple[str, str | None],
+    sides: tuple[ChangeSide, ChangeSide],
     redundancy: int = 2,
-    *,
-    roots: dict[str, Path] | None = None,
 ) -> Pick:
-    """Return the pick of a change's units (`compare_release.changed_units`) of the base and candidate revisions.
+    """Return the pick of a change's units (`compare_release.changed_units`) of the base and candidate sides.
 
-    `sides` are the base revision and the candidate's, None for the working tree of `repo`; `roots` the ``src`` each
-    side's units were mapped from (`Sources`), None for line keys only. A release base has no change units (`units`
-    is None): there is nothing to pick, the tier runs.
+    The sides' revisions are of `repo`; with the ``src`` of both, the pick reads their code objects (`Sources`), else
+    it keys lines only. A release base has no change units (`units` is None): there is nothing to pick, the tier runs.
     """
     if units is None:
         msg = "pick: a release base has no change units: run the tier"
         raise SystemExit(msg)
-    maps = {
-        side: file_maps(repo, catalog.revision, revision)
-        for side, revision in zip(("base", "head"), sides, strict=True)
-    }
-    return pick(catalog, units.units, maps, redundancy, Sources(roots) if roots else None)
+    names = ("base", "head")
+    maps = {name: file_maps(repo, catalog.revision, side.revision) for name, side in zip(names, sides, strict=True)}
+    roots = {name: side.src for name, side in zip(names, sides, strict=True) if side.src is not None}
+    return pick(catalog, units.units, maps, redundancy, Sources(roots) if len(roots) == len(names) else None)
 
 
-def record(runner: compare_release.Runner, cells: list[behaviour_diff.Cell], revision: str, jobs: int) -> Catalog:
+class GateCell(Protocol):
+    """A cell of the gate (`behaviour_diff.Cell`): what a catalog row names and the arguments of its generation."""
+
+    kind: str
+    label: str
+    file_type: str
+    backend: str
+    options: tuple[str, ...]
+
+    def args(self) -> list[str]:
+        """Return the generation arguments without `--output`."""
+        ...
+
+
+def record(runner: compare_release.Runner, cells: Sequence[GateCell], revision: str, jobs: int) -> Catalog:
     """Run each cell on the runner's side in the comparator's `lines` mode and return the catalog of what each ran."""
     runner.lines = True
 
-    def one(cell: behaviour_diff.Cell) -> set[Key] | None:
+    def one(cell: GateCell) -> set[Key] | None:
         with tempfile.TemporaryDirectory() as tmp:
             outcome = runner.generate(cell.args(), Path(tmp))
         return keys_of(outcome.keys or []) if outcome.ok else None
@@ -627,59 +646,42 @@ def record(runner: compare_release.Runner, cells: list[behaviour_diff.Cell], rev
     return Catalog.of(revision, rows, ran, keys_of([startup]) if startup else set(), python)
 
 
-def _parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    commands = parser.add_subparsers(dest="command", required=True)
-    build = commands.add_parser("build", help="record the catalog of the fixtures on a revision")
-    build.add_argument("out", type=Path, help="catalog file to write (gzip JSON)")
-    build.add_argument("revision", nargs="?", default="HEAD", help="revision of this repository (default: HEAD)")
-    build.add_argument("--types", default="pydantic_v2.BaseModel", help="comma-separated --output-model-type values")
-    build.add_argument("--options", default="default", help="option sets separated by ';' ('default' = none)")
-    build.add_argument("--select", action="append", default=[], help="only fixtures whose path matches this glob")
-    build.add_argument("-j", type=int, default=2, help="parallel cells")
-    build.add_argument("--timeout", type=int, default=300, help="seconds before one generation fails")
-    build.add_argument("--cache-dir", type=Path, required=True, help="the comparator's cache (extracted revisions)")
-    chosen = commands.add_parser("pick", help="print the catalog cells a change has to run")
-    chosen.add_argument("catalog", type=Path, help="catalog file (`build`)")
-    chosen.add_argument("base", help="base revision of the change")
-    chosen.add_argument("candidate", nargs="?", help="candidate revision (default: the working tree)")
-    chosen.add_argument("--redundancy", type=int, default=2, help="cells per requirement where the catalog has them")
-    chosen.add_argument("--json", type=Path, help="write the pick as JSON")
-    chosen.add_argument("--cache-dir", type=Path, required=True, help="the comparator's cache (extracted revisions)")
-    return parser.parse_args(argv)
-
-
 def option_sets(text: str) -> list[tuple[str, ...]]:
     """Return the option sets of `--options`: separated by ';', each split like a shell would ('default' is none)."""
     parts = (part.strip() for part in text.split(";"))
     return [() if part == "default" else tuple(shlex.split(part)) for part in parts]
 
 
-def _build(ns: argparse.Namespace) -> int:
-    python = Path(sys.executable).absolute()
-    base = compare_release.resolve_base(ns.revision, python, ns.cache_dir.absolute())
-    revision = base.revision or ns.revision
-    candidate = behaviour_diff.Candidate(
-        compare_release.ROOT, python, compare_release.run_environment(compare_release.ROOT / "src"), None
-    )
-    inputs = behaviour_diff.fixture_inputs(candidate, revision)
-    inputs = [item for item in inputs if not ns.select or any(fnmatch.fnmatch(item[0], glob) for glob in ns.select)]
-    sets = option_sets(ns.options)
-    kinds = ["default" if not options else "option-set" for options in sets]
-    cells = [
-        behaviour_diff.Cell(compare_release.ROOT / name, name, file_type, backend, options, kind)
-        for options, kind in zip(sets, kinds, strict=True)
-        for backend in ns.types.split(",")
-        for name, file_type in inputs
-    ]
-    runner = compare_release.Runner(
-        compare_release.Side("catalog", base.python, base.package), base.env(), import_check=False, timeout=ns.timeout
-    )
-    catalog = record(runner, cells, revision, ns.j)
-    catalog.write(ns.out)
-    counts = (len(cells), len(catalog.failed), len(catalog.keys), len(catalog.sets))
-    print("catalog: {} cells, {} failed, {} keys, {} sets".format(*counts))
-    return 0
+def loaded(path: Path, repo: Path, base: str | None) -> tuple[Catalog | None, str]:
+    """Return the catalog a gate against `base` picks from, or None and why the gate runs its tier alone.
+
+    A release base (None) has no change units; the file may be missing or of another format; a catalog whose revision
+    is no ancestor of the base (or that the checkout lacks) maps the change through lines it cannot follow.
+    """
+    if base is None:
+        return None, "a release base has no change units"
+    if not path.is_file():
+        return None, f"no catalog at {path}"
+    with gzip.open(path, "rt", encoding="utf-8") as file:
+        data = json.load(file)
+    if data.get("format") != FORMAT:
+        return None, f"{path}: catalog format {data.get('format')}, this gate reads {FORMAT}"
+    if compare_release.git(repo, "merge-base", "--is-ancestor", data["revision"], base).returncode:
+        return None, f"catalog {data['revision'][:12]} is no ancestor of the base {base[:12]}"
+    return Catalog.of_data(data), ""
+
+
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    commands = parser.add_subparsers(dest="command", required=True)
+    chosen = commands.add_parser("pick", help="print the catalog cells a change has to run")
+    chosen.add_argument("catalog", type=Path, help="catalog file (`behaviour_diff.py catalog`)")
+    chosen.add_argument("base", help="base revision of the change")
+    chosen.add_argument("candidate", nargs="?", help="candidate revision (default: the working tree)")
+    chosen.add_argument("--redundancy", type=int, default=2, help="cells per requirement where the catalog has them")
+    chosen.add_argument("--json", type=Path, help="write the pick as JSON")
+    chosen.add_argument("--cache-dir", type=Path, required=True, help="the comparator's cache (extracted revisions)")
+    return parser.parse_args(argv)
 
 
 def _pick(ns: argparse.Namespace) -> int:
@@ -691,8 +693,8 @@ def _pick(ns: argparse.Namespace) -> int:
     root = compare_release.ROOT
     head = compare_release.source_tree(candidate, cache_dir) / "src" if candidate else root / "src"
     units = compare_release.changed_units(python, root, base, candidate, head)
-    roots = {"base": base.source, "head": head} if base.source else None
-    chosen = pick_change(catalog, root, units, (base.revision or ns.base, candidate), ns.redundancy, roots=roots)
+    sides = (ChangeSide(base.revision or ns.base, base.source), ChangeSide(candidate, head))
+    chosen = pick_change(catalog, root, units, sides, ns.redundancy)
     print("\n".join(chosen.lines()))
     if ns.json:
         ns.json.write_text(json.dumps(chosen.data(), indent=1) + "\n", encoding="utf-8")
@@ -700,10 +702,10 @@ def _pick(ns: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run `build` or `pick`."""
+    """Run `pick`."""
     ns = _parse_args(argv)
     with contextlib.suppress(BrokenPipeError):
-        return _build(ns) if ns.command == "build" else _pick(ns)
+        return _pick(ns)
     return 0
 
 

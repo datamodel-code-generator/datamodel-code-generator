@@ -1,0 +1,1 @@
+['gate', '--verdicts=v.json', '--pick=c.json.gz', '-j', '2'] -> ['gate', '-j', '2']
