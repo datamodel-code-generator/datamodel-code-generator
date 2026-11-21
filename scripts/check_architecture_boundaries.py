@@ -94,6 +94,14 @@ _DYNAMIC_IMPORT_ATTRIBUTE_NAMES: Final = frozenset({"__import__", "import_module
 _UNREADABLE_IMPORT_MESSAGE: Final = (
     "the import leaves the top-level package, so no module name can be read from it: import by an absolute name"
 )
+_ROOT_PACKAGE: Final = "datamodel_code_generator"
+_MAIN_MODULE: Final = "datamodel_code_generator.__main__"
+_ROOT_READERS: Final = frozenset({_ROOT_PACKAGE, _MAIN_MODULE})
+"""The modules that may read names of the package root: the root itself and the command line above it."""
+_ROOT_IMPORT_MESSAGE: Final = (
+    "no module of the package imports the package root, and none but __main__ imports __main__: import the name from "
+    "the module that defines it (the root only re-exports it for users)"
+)
 _SHARED_MODEL_BACKEND_IMPORT_MESSAGE: Final = (
     "shared model code must not depend on a concrete backend; expose a neutral capability instead"
 )
@@ -710,6 +718,13 @@ class ArchitectureBoundaryReader:
         if isinstance(item.source, Unreadable):
             self._add(item.node, "unreadable-import", str(item.source), _UNREADABLE_IMPORT_MESSAGE)
             return
+        root_name = (
+            self._root_attribute(item.alias.name)
+            if item.kind == "from" and item.source == _ROOT_PACKAGE and item.alias is not None
+            else self._entry_module(str(item.target))
+        )
+        if root_name is not None:
+            self._add(item.node, "root-import", root_name, _ROOT_IMPORT_MESSAGE)
         if item.alias is None or item.kind == "import":
             self._check_import(item.node, item.source)
             return
@@ -717,13 +732,6 @@ class ArchitectureBoundaryReader:
         if self.layer == "runtime" and item.level and _is_below(module, _RUNTIME_PACKAGE):
             return
         target = f"{module}.{name}" if module else name
-        if self.layer in _PARSER_LAYERS and module == "datamodel_code_generator" and name.startswith("_"):
-            self._add(
-                item.node,
-                "parser-root-private-import",
-                target,
-                "parser code must import private helpers from their neutral module, not the package facade",
-            )
         if module == "datamodel_code_generator.model" and name in CONCRETE_BACKEND_ROOTS:
             self._check_import(item.node, target)
             return
@@ -745,6 +753,8 @@ class ArchitectureBoundaryReader:
         """Check dynamic imports, semantic getattr, and backend module identity helpers."""
         reading = self.reading
         for target in self._dynamic_targets(node):
+            if (root_name := self._entry_module(target)) is not None:
+                self._add(node, "root-import", root_name, _ROOT_IMPORT_MESSAGE)
             if self.layer in _LEAF_LAYER_IMPORTS:
                 self._check_import(node, target)
             elif (
@@ -881,6 +891,12 @@ class ArchitectureBoundaryReader:
     def _attribute(self, node: ast.Attribute) -> None:
         """Check backend-specific semantic attributes and output policy references."""
         reading = self.reading
+        if (
+            node.value in reading.names
+            and _ROOT_PACKAGE in reading.origins(node.value)
+            and (root_name := self._root_attribute(node.attr)) is not None
+        ):
+            self._add(node, "root-import", root_name, _ROOT_IMPORT_MESSAGE)
         if self.layer == "entrypoint":
             if node.attr.startswith("_") and self._is_parser_instance(node.value):
                 self._add(
@@ -916,14 +932,7 @@ class ArchitectureBoundaryReader:
         reading = self.reading
         receiver = node.value
         origins = reading.origins(receiver) if reading.head(receiver) is not None else set()
-        if receiver in reading.names and "datamodel_code_generator" in origins and node.attr.startswith("_"):
-            self._add(
-                node,
-                "parser-root-private-import",
-                f"datamodel_code_generator.{node.attr}",
-                "parser code must import private helpers from their neutral module, not the package facade",
-            )
-        elif node.attr in PARSER_BACKEND_ATTRIBUTES:
+        if node.attr in PARSER_BACKEND_ATTRIBUTES:
             self._add(
                 node,
                 "backend-semantic-inspection",
@@ -988,12 +997,19 @@ class ArchitectureBoundaryReader:
         package = call_argument(node, 1, "package")
         anchors = [] if package is None or not reads_relative or not target.startswith(".") else self._packages(package)
         resolved = [_absolute_name(target, anchor) for anchor in anchors]
+        if not resolved and not reads_relative and not target.startswith("."):
+            level = call_argument(node, 4, "level")
+            if isinstance(level, ast.Constant) and isinstance(level.value, int) and level.value > 0:
+                resolved = [_absolute_name("." * level.value + target, self._packages_of_module())]
         return resolved or [target]
+
+    def _packages_of_module(self) -> str:
+        return self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]
 
     def _packages(self, node: ast.expr) -> list[str]:
         """Return the package names an expression may give: ``__package__`` of this module, or its strings."""
         if self.reading.spelled(node) == "__package__":
-            return [self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]]
+            return [self._packages_of_module()]
         return self.reading.strings(node)
 
     def _is_sys_modules_registry(self, node: ast.expr) -> bool:
@@ -1005,6 +1021,24 @@ class ArchitectureBoundaryReader:
             and node.func.attr == "get"
             and self._is_sys_modules_registry(node.func.value)
         )
+
+    def _entry_module(self, module: str) -> str | None:
+        """Return a module this module may not import because it is the package root or ``__main__``, else None."""
+        if _is_below(module, _MAIN_MODULE):
+            return None if self.model.module == _MAIN_MODULE else module
+        return module if module == _ROOT_PACKAGE and self.model.module not in _ROOT_READERS else None
+
+    def _root_attribute(self, name: str) -> str | None:
+        """Return ``<root>.<name>`` where reading ``name`` from the package root reads a name of the root, else None.
+
+        ``from <root> import name`` and ``<root>.name`` read the submodule ``<root>.name`` only where the root binds no
+        other ``name``; every other name is the root's, also one its ``__getattr__`` serves.
+        """
+        if name == "__main__":
+            return self._entry_module(_MAIN_MODULE)
+        if self.model.module in _ROOT_READERS or self.reading.package.reads_submodule(_ROOT_PACKAGE, name):
+            return None
+        return f"{_ROOT_PACKAGE}.{name}"
 
     def _check_target_boundary(self, node: ast.AST, target: str) -> bool:
         if self.layer == "target" and (
@@ -1191,24 +1225,36 @@ class PackageIndex:
         """Register a module's model, so that its own definitions and imports resolve."""
         self._models[module] = model
 
+    @staticmethod
+    def file(module: str) -> Path | None:
+        """Return the file of a module of the package, None for any other module."""
+        package, *parts = module.split(".")
+        relative = SOURCE_ROOT.joinpath(*parts)
+        paths = (relative.with_name(f"{relative.name}.py"), relative / "__init__.py")
+        return next((path for path in paths if package == _ROOT_PACKAGE and path.is_file()), None)
+
     def model(self, module: str) -> SourceModule | None:
         """Return the model of a module of the package, read once; None for any other module."""
         if module not in self._models:
-            package, *parts = module.split(".")
-            relative = SOURCE_ROOT.joinpath(*parts)
-            for path in (relative.with_name(f"{relative.name}.py"), relative / "__init__.py"):
-                if package == "datamodel_code_generator" and path.is_file():
-                    text = path.read_text(encoding="utf-8")
-                    display = _display_path(path.resolve())
-                    try:
-                        self._models[module] = SourceModule(text, display, module)
-                    except SourceModelError as error:
-                        self._models[module] = None
-                        self.refused[display] = str(error)
-                    break
-            else:
-                self._models[module] = None
+            self._models[module] = None
+            if (path := self.file(module)) is not None:
+                display = _display_path(path.resolve())
+                try:
+                    self._models[module] = SourceModule(path.read_text(encoding="utf-8"), display, module)
+                except SourceModelError as error:
+                    self.refused[display] = str(error)
         return self._models[module]
+
+    def reads_submodule(self, package: str, name: str) -> bool:
+        """Whether ``from <package> import <name>`` reads the submodule ``<package>.<name>``, not a name of the package.
+
+        As the import system reads it (`SourceTree.definition`): the submodule exists and the package binds no other
+        ``<name>``; a binding of the package, guarded or not, makes the name the package's.
+        """
+        submodule = f"{package}.{name}"
+        model = self.model(package)
+        bindings = [] if model is None else model.module_scope.bindings.get(name, [])
+        return self.file(submodule) is not None and all(binding.origin == submodule for binding in bindings)
 
     def resolve(self, origin: str) -> str:
         """Follow a dotted path through the names a module of the package imports from another module.

@@ -1,0 +1,11 @@
+[[change]]
+id = "boundary-no-root-imports"
+category = "harness"
+title = "Reject imports of the package root and __main__ inside the package"
+summary = "A repository check gains the root-import rule and stores its source-tree failure by symbol, not line; the package writes the same output."
+refs = ["#7264"]
+covers = [
+    "architecture_boundaries/cli.txt",
+    "architecture_boundaries/violations.txt",
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
+]

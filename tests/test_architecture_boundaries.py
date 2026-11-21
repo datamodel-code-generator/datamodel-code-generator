@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import runpy
 import subprocess
 import sys
@@ -122,6 +123,19 @@ def test_architecture_boundary_detector_reports_a_dependency_the_source_model_re
     )
 
     assert_output(report.replace(tmp_path.resolve().as_posix(), "TMP").replace(tmp_path.as_posix(), "TMP"))
+
+
+def test_architecture_boundary_detector_rejects_root_and_main_imports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail each read of a root name or of __main__ below the root, in every import form and attribute read.
+
+    Submodules read through the root pass, and so do the root's own re-exports and __main__ reading the root; a root
+    binding that shadows a submodule, a name its ``__getattr__`` serves and the root reading __main__ fail.
+    """
+    package = FIXTURE_ROOT / "root_import" / "datamodel_code_generator"
+    monkeypatch.setattr(check_architecture_boundaries, "SOURCE_ROOT", package)
+    violations = check_architecture_boundaries.check_paths([package], allowlist={})
+
+    assert_output(check_architecture_boundaries.format_report(violations))
 
 
 def test_architecture_boundary_source_classification() -> None:
@@ -392,7 +406,11 @@ def test_architecture_boundary_cli_reports_actionable_failures(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Exercise the clean CLI, an abnormal dependency, and the executable entry point."""
+    """Exercise the clean CLI, an abnormal dependency, and the executable entry point.
+
+    The failure in a source file is stored by its file and symbol (the ``in`` part), not by its line and column, so
+    an edit above it in that file leaves the stored output as it is.
+    """
     success_code = check_architecture_boundaries.main([str(ROOT / "src" / "datamodel_code_generator")])
     clean_output = capsys.readouterr()
 
@@ -404,7 +422,7 @@ def test_architecture_boundary_cli_reports_actionable_failures(
     )
     monkeypatch.delitem(check_architecture_boundaries.DEFAULT_ALLOWLIST, legacy_key)
     failure_code = check_architecture_boundaries.main([str(ROOT / "src" / "datamodel_code_generator" / "reference.py")])
-    failure_output = capsys.readouterr()
+    failure_by_symbol = re.sub(r"^(src/[^:]+):\d+:\d+:", r"\1:", capsys.readouterr().err, flags=re.MULTILINE)
     monkeypatch.undo()
 
     monkeypatch.setattr(sys, "argv", [str(ROOT / "scripts" / "check_architecture_boundaries.py")])
@@ -418,7 +436,7 @@ def test_architecture_boundary_cli_reports_actionable_failures(
             f"clean stdout: {clean_output.out!r}\n"
             f"clean stderr: {clean_output.err!r}\n"
             f"failure exit: {failure_code}\n"
-            f"{failure_output.err}"
+            f"{failure_by_symbol}"
             f"entrypoint exit: {exit_info.value.code}\n"
             f"entrypoint stdout: {entrypoint_output.out!r}\n"
             f"entrypoint stderr: {entrypoint_output.err!r}\n"
