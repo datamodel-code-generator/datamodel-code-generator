@@ -37,6 +37,7 @@ from decimal import Decimal
 from math import isnan
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias, overload
+from urllib.parse import unquote
 
 from typing_extensions import Sentinel
 
@@ -391,8 +392,6 @@ def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:
     if not ref.startswith("#"):
         return None
     if "%" in ref:
-        from urllib.parse import unquote  # noqa: PLC0415
-
         ref = unquote(ref)
     for key in DEFINITION_KEYS:
         prefix = definition_ref(key)

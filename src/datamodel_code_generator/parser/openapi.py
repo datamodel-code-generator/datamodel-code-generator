@@ -25,7 +25,9 @@ from typing_extensions import Unpack, override
 from datamodel_code_generator._debug import snooper_to_methods
 from datamodel_code_generator._document_reader import as_mapping as _as_mapping
 from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import document_part
+from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._openapi_objects import OBJECT_MEMBERS as _OBJECT_MEMBERS
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
@@ -1585,8 +1587,6 @@ class OpenAPIParser(JsonSchemaParser):
                                 encoding=self.encoding,
                             )
                         except ImportError:  # pragma: no cover - the prance extra is not installed
-                            from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
-
                             warn(
                                 "Warning: Validation was skipped for OpenAPI. "
                                 "`prance` or `openapi-spec-validator` are not installed.\n"
@@ -1640,8 +1640,6 @@ class OpenAPIParser(JsonSchemaParser):
 
     def _missing_references_of_parameter_models(self) -> set[str]:
         """Return the paths of the models that parameter models use, directly or through others, but lack."""
-        from datamodel_code_generator._graph import reach  # noqa: PLC0415
-
         models = {model.path: model for model in self.results}
         parameter_models = [model for model, _ in self._parameter_models]
         walked = {model.path for model in parameter_models}

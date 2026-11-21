@@ -11,13 +11,19 @@ from __future__ import annotations
 
 import contextlib
 import gc
+import importlib
+import io
+import json
 import os
+import stat
 import sys
 import threading
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Mapping
+from dataclasses import fields, replace
 from functools import lru_cache as _lru_cache
 from functools import partial as _partial
+from itertools import starmap
 from pathlib import Path
 from typing import (
     IO,
@@ -452,8 +458,6 @@ def _read_once_input(input_: _GenerationInput, input_file_type: InputFileType) -
     A pipe or a device yields its bytes to the first read only, so generation reads it before anything else and every
     later read of the input takes these bytes. CSV input is read once, up to its first row, by its reader alone.
     """
-    import stat  # noqa: PLC0415
-
     if not isinstance(input_, Path) or input_file_type == InputFileType.CSV:
         return None
     try:
@@ -503,7 +507,6 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
         if header[first_content] == "#" and _is_comment_only_source(header):
             return header_size
 
-    import io  # noqa: PLC0415
     import tokenize  # noqa: PLC0415
 
     line_end_positions = [0]
@@ -887,8 +890,6 @@ def _normalize_raw_input(  # noqa: PLR0912
     if not _INPUT_TYPES[input_file_type].genson:
         return input_text
 
-    import json  # noqa: PLC0415
-
     _warn_genson_optional()
     try:
         if isinstance(input_, Path) and input_.is_dir():
@@ -953,7 +954,6 @@ def _convert_mcp_tools(
     remote_text_cache: DefaultPutDict[str, str],
     read_once_data: bytes | None,
 ) -> tuple[Mapping[str, Any] | None, InputFileType, bool]:
-    import json  # noqa: PLC0415
 
     from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema  # noqa: PLC0415
 
@@ -1122,9 +1122,8 @@ def _build_parser(  # noqa: PLR0913
         else row.parser
     )
     module, _, class_name = name.rpartition(".")
-    from importlib import import_module  # noqa: PLC0415
 
-    parser_class = getattr(import_module(f"datamodel_code_generator.parser.{module}"), class_name)
+    parser_class = getattr(importlib.import_module(f"datamodel_code_generator.parser.{module}"), class_name)
     if python_type_expressions is not None and row.parser == _JSON_SCHEMA_ROW.parser:
         return parser_class._from_python_type_expressions(  # noqa: SLF001
             source=source,
@@ -1216,8 +1215,6 @@ def _write_results_to_output(  # noqa: PLR0913
     elif not names_directory(output):
         raise Error(MODULAR_OUTPUT_FILE_ERROR)
     if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
-        from itertools import starmap  # noqa: PLC0415
-
         from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
 
         warn_shadowed_modules([output] if isinstance(results, str) else starmap(output.joinpath, sorted(results)))
@@ -1519,7 +1516,6 @@ def _build_generation_parser(
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
         parser.remote_object_cache = reference_cache
-    from dataclasses import fields  # noqa: PLC0415
 
     parser.configure_run_context(**{field.name: getattr(run_context, field.name) for field in fields(run_context)})
     return parser
@@ -1869,8 +1865,6 @@ def _parse_again(  # noqa: PLR0913
     (``read_yaml_numbers_where_strings_required``), in a parse that is a first parse of the run (``as_first``): a parse
     that fails parses again as the run's first parse does (``_parse_first``).
     """
-    from dataclasses import replace  # noqa: PLC0415
-
     run_context = replace(run_context, suppress_parse_warnings=True)
     with (
         contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings),
@@ -1914,8 +1908,6 @@ def _parse_first(run: _GenerationRun, run_context: ParserRunContext, parser: Any
     with the same roles. The run's first parse is one, and so is its read-again of the YAML 1.1-only numbers
     (``_parse_yaml_numbers_again``).
     """
-    from dataclasses import replace  # noqa: PLC0415
-
     try:
         return parser, _parse_with_disposal(run, parser)
     except _CollapseRootModelsRecursionError:
@@ -1956,8 +1948,6 @@ def _parse_yaml_numbers_again(
     held none, or that reads them as text already, is not parsed again; a parse again that fails gives None, so the
     refusal stays as it was.
     """
-    from dataclasses import replace  # noqa: PLC0415
-
     from datamodel_code_generator.util import yaml_numbers_held  # noqa: PLC0415
 
     if not yaml_numbers_held():
@@ -1994,8 +1984,6 @@ def _parse_with_import_cycle_seeds(run: _GenerationRun, parsed: _Attempt, replac
     --rename-submodules-hidden-by-classes keeps while it seeds a parse again) raises it once every parse is disposed,
     the parsers that the caller replaces by this run (``replaced``) included.
     """
-    from dataclasses import replace  # noqa: PLC0415
-
     attempts = [parsed]
     with contextlib.suppress(Exception):
         while (seeds := (parser := attempts[-1][0]).import_cycle_seeds_to_apply) is not None:
@@ -2082,8 +2070,6 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
     The run's settings are one ``ParserRunContext``; each parse again replaces the settings it changes in the context of
     the parse before it.
     """
-    from dataclasses import replace  # noqa: PLC0415
-
     from datamodel_code_generator.parser.base import (  # noqa: PLC0415
         ParserRunContext,
         pydantic_floors_recorded,

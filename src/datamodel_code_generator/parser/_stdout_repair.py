@@ -12,6 +12,8 @@ passes reach the first two through ``Parser._inspect_invalid_dotted_stdout`` and
 from __future__ import annotations
 
 import re
+from contextlib import suppress
+from hashlib import sha256
 from typing import TYPE_CHECKING, Final
 
 from typing_extensions import Protocol
@@ -152,8 +154,6 @@ def stdout_model_fingerprint(model: DataModel) -> HashableComparable:
 
 def get_source_data_fingerprint(parser: StdoutRepairHost[ContextT, ResultT]) -> bytes | None:
     """Hash parsed root and reference data without allocating one serialized copy."""
-    from contextlib import suppress  # noqa: PLC0415
-    from hashlib import sha256  # noqa: PLC0415
     from pickle import Pickler  # noqa: PLC0415, S403
 
     digest = sha256()

@@ -64,6 +64,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, final
 from typing_extensions import Protocol
 
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
+from datamodel_code_generator._internal_utils import to_hashable
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind
@@ -2127,7 +2128,6 @@ def declared_union_tags(model: DataModel) -> tuple[HashableComparable, ...]:
         ]
     ):
         return ()
-    from datamodel_code_generator._internal_utils import to_hashable  # noqa: PLC0415
 
     return tuple(
         (

@@ -30,6 +30,7 @@ from datamodel_code_generator.parser._convert_common import _copy_schema, _name_
 from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser._type_overrides import override_spells_builtin
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -248,8 +249,6 @@ class _AvroSchemaConverter:
             case dict() as schema:
                 return self._convert_schema_dict(schema, namespace, root=root)
 
-        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
         msg = f"Unsupported Avro schema value: {stable_repr(schema)}"
         raise Error(msg)
 
@@ -272,8 +271,6 @@ class _AvroSchemaConverter:
             case str() as type_name:
                 return self._convert_schema_object(schema, type_name, namespace, root=root)
             case _:
-                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
                 msg = f"Avro schema object requires a string, object, or union type: {stable_repr(schema)}"
                 raise Error(msg)
 
@@ -336,8 +333,6 @@ class _AvroSchemaConverter:
                     raise Error(msg)
                 union_type = type_value if isinstance(type_value, str) and type_value not in NAMED_TYPES else None
             else:
-                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
                 msg = f"Unsupported Avro union value: {stable_repr(item)}"
                 raise Error(msg)
 
@@ -371,8 +366,6 @@ class _AvroSchemaConverter:
         elif type_value == "fixed":
             converted = self._convert_fixed(raw_schema, fullname)
         else:  # pragma: no cover - not proven unreachable
-            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
             msg = f"Unsupported Avro named type: {stable_repr(type_value)}"
             raise Error(msg)
         converted.setdefault("title", definition_key)

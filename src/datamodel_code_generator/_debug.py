@@ -6,6 +6,7 @@ package. The package root re-exports both under their historical module.
 
 from __future__ import annotations
 
+import inspect
 import sys
 from typing import (
     TYPE_CHECKING,
@@ -76,7 +77,6 @@ def snooper_to_methods() -> Callable[..., Any]:
     def inner(cls: type[T]) -> type[T]:
         if (snoop := _debug_snoop) is None:
             return cls
-        import inspect  # noqa: PLC0415
 
         methods = inspect.getmembers(cls, predicate=inspect.isfunction)
         for name, method in methods:

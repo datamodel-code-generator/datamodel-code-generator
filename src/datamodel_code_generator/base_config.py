@@ -33,8 +33,10 @@ from datamodel_code_generator._option_rules import (
     implied_option_sources,
     implied_options,
 )
+from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
 from datamodel_code_generator._shared_types import Error, LiteralType
 from datamodel_code_generator.enums import (
+    _PYDANTIC_MODEL_TYPES,
     DEFAULT_SHARED_MODULE_NAME,
     AliasGenerator,
     AllExportsCollisionStrategy,
@@ -58,6 +60,7 @@ from datamodel_code_generator.enums import (
     ModuleSplitMode,
     NamingStrategy,
     OpenAPIAsDefinitions,
+    OpenAPIScope,
     OpenEnums,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
@@ -69,6 +72,7 @@ from datamodel_code_generator.enums import (
     TargetPydanticVersion,
     UnionMode,
     VersionMode,
+    _openapi_scopes_or_default,
 )
 
 if TYPE_CHECKING:
@@ -284,15 +288,6 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     decodable unions and enums of msgspec. A setting that was set keeps its value, which the target refuses when it
     cannot use it.
     """
-    from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
-    from datamodel_code_generator.enums import (  # noqa: PLC0415
-        _PYDANTIC_MODEL_TYPES,
-        DataModelType,
-        OpenAPIScope,
-        TargetPydanticVersion,
-        _openapi_scopes_or_default,
-    )
-
     implied: dict[str, Any] = {}
     scopes = _openapi_scopes_or_default(config.openapi_scopes)
     if (

@@ -39,7 +39,7 @@ import os
 from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
-from urllib.parse import quote_from_bytes
+from urllib.parse import quote_from_bytes, urlsplit
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -138,7 +138,6 @@ def file_uri_path(uri: str) -> Path:
 
     A host other than ``localhost``, in any letter case as RFC 3986 compares hosts, names a UNC share, ``//host/path``.
     """
-    from urllib.parse import urlsplit  # noqa: PLC0415
     from urllib.request import url2pathname  # noqa: PLC0415
 
     parts = urlsplit(uri)

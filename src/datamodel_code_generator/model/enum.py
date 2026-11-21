@@ -5,6 +5,7 @@ Provides Enum, StrEnum, and specialized enum classes for code generation.
 
 from __future__ import annotations
 
+from ast import literal_eval
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, Optional, TypeAlias
 
@@ -94,8 +95,6 @@ NULL_ENUM_MEMBER_VALUE = _NullEnumMemberValue()
 @lru_cache(maxsize=4096)
 def _get_legacy_raw_enum_member_value(default: str) -> Any:
     """Decode a rendered default supplied by a third-party parser subclass."""
-    from ast import literal_eval  # noqa: PLC0415
-
     try:
         return literal_eval(default)
     except (SyntaxError, ValueError):

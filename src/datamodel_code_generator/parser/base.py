@@ -8,6 +8,7 @@ code generation.
 from __future__ import annotations
 
 import contextlib
+import importlib
 import operator
 import re
 from abc import ABC, abstractmethod
@@ -969,8 +970,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Uses _config_class_name class variable to dynamically import the config class.
         Subclasses should set _config_class_name to their config class name.
         """
-        import importlib  # noqa: PLC0415
-
         module = importlib.import_module("datamodel_code_generator.config")
         return getattr(module, cls._config_class_name)
 

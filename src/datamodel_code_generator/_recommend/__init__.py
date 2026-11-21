@@ -9,22 +9,26 @@ names, and recommends the best one; without a mode, schemas small enough are com
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
+from datamodel_code_generator._document_reader import nesting_limit
 from datamodel_code_generator._generation import _infer_input
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._option_stages import _resolve_preset
 from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
-from datamodel_code_generator._shared_types import Error
-from datamodel_code_generator._source import is_swagger_2
-from datamodel_code_generator.enums import InputFileType
+from datamodel_code_generator._shared_types import DefaultPutDict, Error
+from datamodel_code_generator._source import decoding_from, is_swagger_2, load_data
+from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.enums import InputFileType, _openapi_scopes_or_default
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Sequence
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
@@ -210,8 +214,6 @@ def _input_file_type(config: Any, text: str | None) -> tuple[str | None, Decoded
 
 def _load(text: str, decoded: DecodedInput | None = None) -> dict[str, Any]:
     """Load a JSON or YAML mapping, raising the loader's error; the text of ``decoded`` is not decoded again."""
-    from datamodel_code_generator._source import decoding_from, load_data  # noqa: PLC0415
-
     with decoding_from(decoded):
         return load_data(text)
 
@@ -232,9 +234,7 @@ def _document(text: str, kind: SchemaKind, what: str, decoded: DecodedInput | No
 
 def _measure(document: dict[str, Any], kind: SchemaKind, config: Any) -> Signals:
     """Return the signals of a schema document, for the scopes the configuration generates."""
-    from datamodel_code_generator._document_reader import nesting_limit  # noqa: PLC0415
     from datamodel_code_generator._recommend._signals import measure_signals  # noqa: PLC0415
-    from datamodel_code_generator.enums import _openapi_scopes_or_default  # noqa: PLC0415
 
     with nesting_limit():
         return measure_signals(
@@ -377,8 +377,6 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
 
 def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str]]:
     """Return the command-line values to repeat, leaving out credentials and redacting URLs."""
-    from datamodel_code_generator._url_redaction import redact_url  # noqa: PLC0415
-
     notes: list[str] = []
     values: dict[str, Any] = {}
     for name, value in request.cli_values.items():
@@ -432,8 +430,6 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
 
 def _vocabulary_document(analysed: _Input, trial_input: TrialInput) -> Mapping[str, Any] | None:
     """Return the document whose words class names may take: the analysed schema, or the input loaded as data."""
-    from collections.abc import Mapping  # noqa: PLC0415
-
     if analysed.document is not None:
         return analysed.document
     if isinstance(trial_input, Mapping):
@@ -601,11 +597,8 @@ def _known_type(analysed: _Input) -> InputFileType | None:
 
 def _runner(request: RecommendRequest, analysed: _Input) -> Callable[[Sequence[TrialCandidate]], _TrialRun]:
     """Return the function that generates candidates: one input, its vocabulary, the previous input, one cache."""
-    from functools import partial  # noqa: PLC0415
-
     from datamodel_code_generator._recommend._metrics import schema_vocabulary  # noqa: PLC0415
     from datamodel_code_generator._recommend._trial import run_trial  # noqa: PLC0415
-    from datamodel_code_generator._shared_types import DefaultPutDict  # noqa: PLC0415
 
     config = request.config
     trial_input = _trial_input(request, analysed)

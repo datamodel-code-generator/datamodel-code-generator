@@ -10,6 +10,7 @@ satisfies structurally. Constructor ordering also runs early, in the module body
 from __future__ import annotations
 
 import dataclasses
+from decimal import Decimal, InvalidOperation
 from itertools import chain, takewhile
 from typing import TYPE_CHECKING, Any, Final, cast
 
@@ -553,8 +554,6 @@ def deserialize_decimal_default(
         record_decimal_default_warning(parser, model, field)
         return False
     else:
-        from decimal import Decimal, InvalidOperation  # noqa: PLC0415
-
         try:
             value = str(Decimal(str(field.default)))
         except (InvalidOperation, TypeError, ValueError):

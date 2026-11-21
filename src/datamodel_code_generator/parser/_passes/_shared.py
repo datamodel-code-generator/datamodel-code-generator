@@ -12,6 +12,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import replace
+from decimal import Decimal
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar, cast
 
@@ -634,8 +635,6 @@ def normalize_default_value_constraints(
     import_overrides: dict[str, str] | None,
 ) -> bool:
     """Keep backend-declared runtime constraint values structured until alias resolution."""
-    from decimal import Decimal  # noqa: PLC0415
-
     normalized = False
     for model, _, data_type in iter_models_field_data_types(models):
         if (

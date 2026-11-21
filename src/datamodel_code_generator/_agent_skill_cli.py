@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import sys
+from typing import cast
+
+from datamodel_code_generator.enums import _ExitCode
 
 
 def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> int:
     """Install an Agent Skill without loading generation dependencies."""
-    from typing import cast  # noqa: PLC0415
-
     from datamodel_code_generator.agent_skill import (  # noqa: PLC0415
         AgentName,
         AgentSkillError,
         SkillScope,
         install_agent_skill,
     )
-    from datamodel_code_generator.enums import _ExitCode  # noqa: PLC0415
 
     try:
         destination = install_agent_skill(

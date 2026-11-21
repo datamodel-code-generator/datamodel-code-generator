@@ -26,8 +26,10 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._container_kinds import ARRAYS, CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._graph_links import type_children
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import dotted_name
+from datamodel_code_generator._python_target_names import target_stdlib_module_names
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_unicode import is_dotted_python_name
@@ -41,6 +43,7 @@ from datamodel_code_generator.parser._passes._shared import (
     TypeOverrideHost,
     enum_site_override_import,
 )
+from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.python_literal import message_repr
 from datamodel_code_generator.types import _copy_data_type, _value_members
 
@@ -223,12 +226,10 @@ def _write_refused_literal_values(parser: TypeOverridesHost, written: PythonType
     """
     if not (refused := parser.data_type_manager.REFUSED_LITERAL_TYPES):
         return written
-    from datamodel_code_generator._message_text import for_count  # noqa: PLC0415
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         render_python_type_expr,
         write_refused_literal_values,
     )
-    from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base  # noqa: PLC0415
 
     read, values = write_refused_literal_values(written, refused)
     if values:
@@ -252,7 +253,6 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
     """
     # Binding is exclusive to x-python-type. Import it only after that
     # extension is present so ordinary schema generation keeps its fast path.
-    from datamodel_code_generator._python_target_names import target_stdlib_module_names  # noqa: PLC0415
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
         PythonTypeExpr,

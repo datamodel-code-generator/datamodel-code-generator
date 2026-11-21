@@ -51,7 +51,7 @@ from datamodel_code_generator.imports import (
     _import_bindings,
     _import_key,
 )
-from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace, get_data_model_types
 from datamodel_code_generator.model._decisions.hashability import (
     HashClassFacts,
     ValueHashFacts,
@@ -2157,7 +2157,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         """Replace a RootModel wrapper with the alias form that --use-type-alias selects."""
         if not configured_root_model_type.IS_ROOT_MODEL:
             return configured_root_model_type
-        from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
 
         return get_data_model_types(
             DataModelType.PydanticV2BaseModel, target_python_version, use_type_alias=True
