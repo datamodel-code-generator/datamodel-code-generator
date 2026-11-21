@@ -95,11 +95,17 @@ def _compare_written(modules: Any, root: Path) -> None:
     copied = {path: text for path, text in python.items() if path[:2] == ("client", "_runtime")}
     kept = {path: text for path, text in python.items() if path not in copied}
     if copied:
-        write_generated_modules(returned := root.parent / "returned-runtime", copied)
+        write_generated_modules(returned := root.with_name(f"{root.name}-returned"), copied)
         assert_directory_content(root / "client" / "_runtime", returned / "client" / "_runtime")
     assert_generated_modules_output(kept, name="python")
+    written = [path.relative_to(root).parts for path in root.rglob("*.py")]
     assert_generated_modules_output(
-        {path: root.joinpath(*path).read_text(encoding="utf-8") for path in kept}, name="python"
+        {
+            parts: root.joinpath(*parts).read_text(encoding="utf-8")
+            for parts in written
+            if parts[:2] != ("client", "_runtime")
+        },
+        name="python",
     )
     assert_generated_modules_output(other, pattern="*", name="files")
     assert_generated_modules_output(
