@@ -25,10 +25,10 @@ from typing import TYPE_CHECKING, Final, Protocol, TypeAlias
 from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.msgspec_str_like import STR, msgspec_str_like_leaf
-from datamodel_code_generator.parser._passes._shared import msgspec_union_members, msgspec_written_member
+from datamodel_code_generator.parser._passes._shared import msgspec_union_members
 from datamodel_code_generator.parser._passes.imports import _msgspec_enum_kinds
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
-from datamodel_code_generator.types import _union_members, _written_union_members
+from datamodel_code_generator.types import _union_members, _written_member, _written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
@@ -107,7 +107,7 @@ class _Classifier:
         and other values, which the merge would lose, an Enum of str values and a type an ``x-python-type``
         annotation writes cannot merge.
         """
-        member = msgspec_written_member(member)
+        member = _written_member(member)
         if (reference := member.reference) is None:
             if member.python_type is not None or (seen and _other_literals(member)):
                 raise _UnmergeableError
@@ -119,7 +119,7 @@ class _Classifier:
                 if "str" in _msgspec_enum_kinds(model):
                     raise _UnmergeableError
             case "alias" | "root" if len(model.fields) == 1:
-                value = msgspec_written_member(model.fields[0].data_type)
+                value = _written_member(model.fields[0].data_type)
                 if value in CONTAINERS:
                     return None
                 if not msgspec_union_members(value):
@@ -182,7 +182,7 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
                 if not placed:
                     placed = True
                     members.extend((STR, _NONE) if keeps_null else (STR,))
-                if member.reference is None and (others := _other_literals(msgspec_written_member(member))):
+                if member.reference is None and (others := _other_literals(_written_member(member))):
                     members.append(others)
             elif _union_members(member) and any(id(leaf) in lost for leaf in _written_union_members(member.data_types)):
                 if inner := rewrite(member):

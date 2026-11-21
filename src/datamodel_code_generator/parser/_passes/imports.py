@@ -115,7 +115,6 @@ from datamodel_code_generator.parser._passes._shared import (
     definition_reads,
     get_special_path,
     msgspec_union_members,
-    msgspec_written_member,
     site_display_name,
     tagged_structs,
     unimported_model_keys,
@@ -134,7 +133,7 @@ from datamodel_code_generator.parser._passes._warnings import warn_as_parser_bas
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import field_origin_of, named_schema_location, type_origin_of
-from datamodel_code_generator.types import written_union_members
+from datamodel_code_generator.types import _written_member, written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -836,7 +835,7 @@ def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
     counts as that member, and one a Python type annotation types as the members the annotation writes, where it
     writes any msgspec counts (``_msgspec_annotation_slots``).
     """
-    leaf = msgspec_written_member(leaf)
+    leaf = _written_member(leaf)
     if (
         leaf.python_type is not None
         and leaf.reference is None

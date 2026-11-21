@@ -154,9 +154,6 @@
 ["src/datamodel_code_generator/parser/_passes/imports.py"."_definition_reads"]
 "model._setting_data_types_read_at_definition" = 1
 
-["src/datamodel_code_generator/parser/_passes/imports.py"."_msgspec_member_slots"]
-"leaf._writes_nothing_of_its_own" = 1
-
 ["src/datamodel_code_generator/parser/_passes/imports.py"."_pydantic_read_aliases"]
 "field._render_plan" = 1
 
