@@ -13,12 +13,10 @@ from datamodel_code_generator import DataModelType, InputFileType, PythonVersion
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_GRAPHQL_PATH,
     _generated_model,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.graphql.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -35,14 +33,11 @@ def test_msgspec_graphql_list_defaults(
     name = "msgspec_empty_list_defaults" if empty else "msgspec_object_list_defaults"
     extension = "graphql" if input_file_type == InputFileType.GraphQL else "json"
     input_path = DATA_PATH / input_file_type.value / f"{name}.{extension}"
-    expected_name = f"{name}_{input_file_type.value}_{output_model_type.value.replace('.', '_')}"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
             input_file_type=input_file_type.value,
-            assert_func=assert_file_content,
-            expected_file=f"{expected_name}.py",
             extra_args=[
                 "--output-model-type",
                 output_model_type.value,
@@ -56,8 +51,6 @@ def test_msgspec_graphql_list_defaults(
             input_path=input_path,
             output_path=output_file,
             input_file_type=input_file_type,
-            assert_func=assert_file_content,
-            expected_file=f"{expected_name}.py",
             output_model_type=output_model_type,
             target_python_version=PythonVersion.PY_310,
             disable_timestamp=True,
@@ -101,4 +94,4 @@ def test_msgspec_graphql_list_defaults(
         first.direct_item.n = 100
         actual["independent_items"] = [item.n for item in second.items]
         actual["independent_direct_item"] = second.direct_item.n
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / f"{expected_name}.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")

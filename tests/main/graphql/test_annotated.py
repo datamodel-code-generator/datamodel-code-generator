@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.main.conftest import GRAPHQL_DATA_PATH, run_main_and_assert
-from tests.main.graphql.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,7 +24,7 @@ Use [`--use-unique-items-as-set`](#use-unique-items-as-set) when you need the
 generated type to enforce uniqueness for array schemas.""",
     input_schema="graphql/annotated.graphql",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
-    golden_output="graphql/annotated.py",
+    golden_output="graphql/annotated/annotated.py",
 )
 def test_annotated(output_file: Path) -> None:
     """Use typing.Annotated for Field() with constraints.
@@ -41,7 +40,6 @@ def test_annotated(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "annotated.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
     )
 
@@ -52,7 +50,6 @@ def test_annotated_use_standard_collections(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "annotated.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -68,7 +65,6 @@ def test_annotated_use_standard_collections_use_union_operator(output_file: Path
         input_path=GRAPHQL_DATA_PATH / "annotated.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -88,7 +84,7 @@ The `--use-union-operator` flag generates union types using the | operator
 This is the default behavior.""",
     input_schema="graphql/annotated.graphql",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--use-union-operator"],
-    golden_output="graphql/annotated_use_union_operator.py",
+    golden_output="graphql/annotated/use_union_operator.py",
     related_options=["--no-use-union-operator"],
 )
 def test_annotated_use_union_operator(output_file: Path) -> None:
@@ -102,7 +98,6 @@ def test_annotated_use_union_operator(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "annotated.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -118,7 +113,6 @@ def test_annotated_field_aliases(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "field-aliases.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
