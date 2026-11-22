@@ -23,7 +23,6 @@ from tests import conftest as shared_conftest
 from tests import units
 from tests.capabilities import needs
 from tests.conftest import (
-    _infer_expected_file,
     _refuse_home_directory,
     assert_exact_directory_content,
     assert_inputs_not_mutated,
@@ -46,19 +45,6 @@ HEADER = units.REFS_HEADER
 SLOWEST_NODEID = (
     "tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files[0]"
 )
-
-
-@pytest.mark.parametrize(
-    ("function_name", "expected_file"),
-    [
-        ("test_main_pet", "pet.py"),
-        ("test_pet", "pet.py"),
-        ("helper", "helper.py"),
-    ],
-)
-def test_infer_expected_file(function_name: str, expected_file: str) -> None:
-    """Expected filenames are inferred consistently from test function names."""
-    assert _infer_expected_file(function_name) == expected_file
 
 
 @pytest.mark.parametrize(
@@ -510,8 +496,7 @@ def test_collection_runs_measured_slow_tests_first(request: pytest.FixtureReques
             },
             sort_keys=True,
         )
-        + "\n",
-        Path(__file__).parent / "data/expected/ci_shards/slow-first.txt",
+        + "\n"
     )
 
 
@@ -1981,7 +1966,6 @@ GENERATION_TESTS = """
 from pathlib import Path
 
 from datamodel_code_generator import InputFileType
-from tests.conftest import create_assert_file_content
 from tests.main.conftest import run_generate_and_assert, run_generate_file_and_assert, run_main_and_assert
 
 SCHEMA = Path(__file__).parent / "schema.json"
@@ -1999,13 +1983,7 @@ def test_directory(tmp_path):
     )
 
 
-def test_named(tmp_path):
-    run_main_and_assert(
-        input_path=SCHEMA, output_path=tmp_path / "model.py", extra_args=ARGS, expected_file="named.py"
-    )
-    run_main_and_assert(
-        input_path=MODULAR, output_path=tmp_path / "out", extra_args=["--disable-timestamp"], expected_file="tree"
-    )
+def test_unwritten(tmp_path):
     run_main_and_assert(input_path=SCHEMA, output_path=tmp_path / "unwritten.py", extra_args=["--generate-prompt"])
 
 
@@ -2032,19 +2010,6 @@ def test_stdout_twice(capsys):
     run_main_and_assert(input_path=SCHEMA, extra_args=[*ARGS, "--class-name", "B"], capsys=capsys)
 
 
-def test_explicit(tmp_path):
-    expected = Path(__file__).parent / "data" / "expected"
-    options = {"input_file_type": InputFileType.JsonSchema, "disable_timestamp": True}
-    run_generate_file_and_assert(
-        input_path=SCHEMA,
-        output_path=tmp_path / "m.py",
-        assert_func=create_assert_file_content(expected),
-        expected_file="e.py",
-        **options,
-    )
-    run_generate_and_assert(input_=SCHEMA, expected_file=expected / "e2.py", **options)
-
-
 def test_generate_file(tmp_path):
     run_generate_file_and_assert(
         input_path=SCHEMA,
@@ -2060,30 +2025,27 @@ def test_ledger_generation_helpers_name_outputs(ledger: LedgerProject) -> None:
     ledger.write("schema.json", '{"title": "A", "type": "object", "properties": {"x": {"type": "string"}}}')
     modular = Path(__file__).parent / "data" / "openapi" / "modular.yaml"
     ledger.write("test_main.py", GENERATION_TESTS.replace("SCHEMA = ", f"MODULAR = Path({str(modular)!r})\nSCHEMA = "))
-    ledger.store("named.py", "stale\n")
     first = ledger.run("suite", "--inline-snapshot=fix")
-    first.assert_outcomes(passed=10)
+    first.assert_outcomes(passed=9)
     files = ledger.files()
-    assert "tree/models.py" in files
-    assert sorted(name for name in files if not name.startswith(("main/directory/", "tree/"))) == [
-        "e.py",
-        "e2.py",
+    assert sorted(name for name in files if not name.startswith("main/directory/")) == [
         "main/file.2.py",
+        "main/file.py",
+        "main/generate.py",
         "main/generate_twice.2.py",
         "main/stdout.stdout.txt",
         "main/stdout_twice.2.stdout.txt",
     ]
     refs = ledger.refs("test_main")
-    assert "[test_file]\n\tmain/file.2.py\n\tmain/file.py\t= e.py\n" in refs
-    assert "[test_generate]\n\tmain/generate.py\t= e2.py\n" in refs
-    assert "[test_generate_file]\n\tmain/generate_file.py\t= e.py\n" in refs
-    assert "[test_generate_twice]\n\tmain/generate_twice.2.py\n\tmain/generate_twice.py\t= e2.py\n" in refs
-    assert "[test_named]\n\tnamed.py\t= e.py\n\ttree/\n" in refs
+    assert "[test_file]\n\tmain/file.2.py\n\tmain/file.py\n[" in refs
+    assert "[test_generate]\n\tmain/generate.py\n[" in refs
+    assert "[test_generate_file]\n\tmain/generate_file.py\t= main/file.py\n" in refs
+    assert "[test_generate_twice]\n\tmain/generate_twice.2.py\n\tmain/generate_twice.py\t= main/generate.py\n" in refs
     assert "[test_stdout_capsys]\n\tmain/stdout_capsys.stdout.txt\t= main/stdout.stdout.txt\n" in refs
     assert "\tmain/stdout_twice.2.stdout.txt\n\tmain/stdout_twice.stdout.txt\t= main/stdout.stdout.txt\n" in refs
-    assert "expected: test_named now has the same output as e.py; it uses that file" in first.stdout.str()
+    assert "test_unwritten" not in refs
     assert "CLASS PET(BASEMODEL)" in files["main/directory/models.py"]
-    ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=10)
+    ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=9)
 
 
 NAMED_OUTPUT_TESTS = """

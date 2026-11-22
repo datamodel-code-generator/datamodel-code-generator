@@ -5,7 +5,9 @@ byte. A longer changed line paired with its counterpart shows only the segments 
 line is folded into pieces without loss, and a long unchanged context line is shortened. If the copy is still over
 the reading budget, the diff of each stored output becomes one summary line. Every line the workflow writes starts
 with ``⟪dcg <nonce>⟫`` after the diff's sign, so PR text cannot pass for one. The registries that name the surfaces
-of a release are read through ``git show`` with ``ast`` and regular expressions; no repository code is imported.
+of a release are read through ``git show`` with ``ast`` and regular expressions; the stored help text is found through
+the help test's ``.refs`` line, read with this checkout's standard-library ``tests/units.py``. No code of the revisions
+read is imported.
 """
 
 from __future__ import annotations
@@ -15,11 +17,16 @@ import ast
 import difflib
 import re
 import subprocess
+import sys
 from collections import Counter
 from dataclasses import dataclass, field
+from functools import partial
 from itertools import accumulate, groupby
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tests.units import parse_refs, split_label
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -49,6 +56,8 @@ STATUS_PREFIXES = (
     (b"copy from ", "copied"),
 )
 STORED_OUTPUT_FILES = frozenset({"docs/llms-full.txt", "docs/llms.txt"})
+HELP_REFS = "tests/main/test_main_general.refs"
+HELP_ITEM = ("test_show_help", "True")
 
 Names = dict[str, str]
 
@@ -270,6 +279,24 @@ def _git_show(repository: Path, revision: str, path: str) -> str | None:
     return None if result.returncode else result.stdout.decode("utf-8", "replace")
 
 
+def _stored_help(repository: Path, revision: str) -> str | None:
+    """Return the ``--no-color`` help text a revision stores, or None when its help test records none.
+
+    Fix runs rename and share stored files, so the file is the one the test's ``.refs`` line names at that revision.
+    """
+    if (refs := _git_show(repository, revision, HELP_REFS)) is None:
+        return None
+    storage = next(
+        (
+            split_label(line.stored)[0]
+            for line in parse_refs(refs)[0]
+            if (line.function, line.param) == HELP_ITEM and not line.predicate
+        ),
+        None,
+    )
+    return None if storage is None else _git_show(repository, revision, f"tests/data/expected/{storage}")
+
+
 def _module_body(source: str) -> list[ast.stmt]:
     """Return a module's statements, or none when it is not valid Python."""
     try:
@@ -328,19 +355,25 @@ def _public_names(source: str) -> Names | None:
     }
 
 
-REGISTRIES: tuple[tuple[str, str, Callable[[str], Names | None], Callable[[str], object]], ...] = (
-    ("Experimental features", f"{PACKAGE}/experimental.py", _experimental_features, FEATURE_ID.fullmatch),
-    ("Command-line options", "tests/data/expected/main/help/no_color.txt", _options, OPTION.fullmatch),
-    ("Presets", f"{PACKAGE}/preset_names.py", _presets, PRESET_NAME.fullmatch),
-    ("Public Python names", f"{PACKAGE}/__init__.py", _public_names, str.isidentifier),
+REGISTRIES: tuple[
+    tuple[str, Callable[[Path, str], str | None], Callable[[str], Names | None], Callable[[str], object]], ...
+] = (
+    (
+        "Experimental features",
+        partial(_git_show, path=f"{PACKAGE}/experimental.py"),
+        _experimental_features,
+        FEATURE_ID.fullmatch,
+    ),
+    ("Command-line options", _stored_help, _options, OPTION.fullmatch),
+    ("Presets", partial(_git_show, path=f"{PACKAGE}/preset_names.py"), _presets, PRESET_NAME.fullmatch),
+    ("Public Python names", partial(_git_show, path=f"{PACKAGE}/__init__.py"), _public_names, str.isidentifier),
 )
 
 
 def _registry_names(repository: Path, revision: str) -> list[Names | None]:
     """Return the names of each registry at a revision, None where the registry cannot be read."""
     return [
-        None if (source := _git_show(repository, revision, path)) is None else reader(source)
-        for _, path, reader, _ in REGISTRIES
+        None if (source := show(repository, revision)) is None else reader(source) for _, show, reader, _ in REGISTRIES
     ]
 
 

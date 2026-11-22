@@ -12358,7 +12358,7 @@ def test_main_jsonschema_root_model_sequence_interface_type_alias(output_file: P
 The `--field-include-all-keys` flag configures the code generation behavior.""",
     input_schema="jsonschema/person.json",
     cli_args=["--field-include-all-keys"],
-    golden_output="jsonschema/general.py",
+    golden_output="jsonschema/main_jsonschema/field_include_all_keys.py",
 )
 @pytest.mark.benchmark
 def test_main_jsonschema_field_include_all_keys(output_file: Path) -> None:

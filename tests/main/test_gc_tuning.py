@@ -11,18 +11,14 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from datamodel_code_generator import _GC_YOUNG_THRESHOLD, InputFileType, _tuned_gc, generate
-from tests.conftest import assert_generated_file_matches_output, assert_output, create_assert_file_content
+from tests.conftest import assert_generated_file_matches_output, assert_output
 from tests.main.conftest import (
-    EXPECTED_JSON_SCHEMA_PATH,
     JSON_SCHEMA_DATA_PATH,
     run_generate_file_and_assert,
 )
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-assert_file_content = create_assert_file_content(EXPECTED_JSON_SCHEMA_PATH)
 
 
 class _ThresholdRecordingMapping(Mapping[str, Any]):
@@ -86,8 +82,6 @@ def test_generate_scopes_tuned_gc_for_e2e_mapping_input(gc_state: tuple[int, int
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
         output_path=tmp_path / "expected-person.py",
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="general.py",
     )
 
     assert_output(
@@ -214,8 +208,6 @@ def test_generate_without_gc_threshold_api(
             input_path=JSON_SCHEMA_DATA_PATH / "person.json",
             output_path=tmp_path / "person.py",
             input_file_type=InputFileType.JsonSchema,
-            assert_func=assert_file_content,
-            expected_file="general.py",
         )
 
     with _tuned_gc():

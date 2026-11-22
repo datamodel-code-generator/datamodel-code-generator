@@ -777,10 +777,6 @@ extra_args3	main/openapi/main_openapi/api_scope_path_names[extra_args3].py
 3.0	main/openapi/main_openapi/api_scope_ref_siblings[3.0].py
 3.1	main/openapi/main_openapi/api_scope_ref_siblings[3.1].py	= main/openapi/main_openapi/api_scope_ref_siblings[3.0].py
 [test_main_openapi_api_scope_without_models]
-None-None-extra_args3-0-json_stdout.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-None-None-extra_args3-0-json_stdout.txt	main/openapi/api_scope_without_models/json_stdout.txt	?
-None-None-extra_args3-Exit.OK-json_stdout.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-None-None-extra_args3-Exit.OK-json_stdout.txt	main/openapi/api_scope_without_models/json_stdout.txt	?
 check-directory-text	main/openapi/main_openapi/api_scope_without_models[check-directory-text].output.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 check-directory-text	main/openapi/main_openapi/api_scope_without_models[check-directory-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 check-directory-text	main/openapi/main_openapi/api_scope_without_models[check-directory-text].stdout.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -789,13 +785,13 @@ check-existing-directory-text	main/openapi/main_openapi/api_scope_without_models
 check-existing-directory-text	main/openapi/main_openapi/api_scope_without_models[check-existing-directory-text].stdout.txt	= main/openapi/api_scope_without_models/check_extra_text.txt
 check-existing-file-json	main/openapi/main_openapi/api_scope_without_models[check-existing-file-json].output.txt	= main/openapi/api_scope_without_models/existing_output.txt
 check-existing-file-json	main/openapi/main_openapi/api_scope_without_models[check-existing-file-json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-check-existing-file-json	main/openapi/main_openapi/api_scope_without_models[check-existing-file-json].stdout.txt	= main/openapi/api_scope_without_models/check_extra_json.txt
+check-existing-file-json	main/openapi/main_openapi/api_scope_without_models[check-existing-file-json].stdout.txt
 check-existing-file-text	main/openapi/main_openapi/api_scope_without_models[check-existing-file-text].output.txt	= main/openapi/api_scope_without_models/existing_output.txt
 check-existing-file-text	main/openapi/main_openapi/api_scope_without_models[check-existing-file-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 check-existing-file-text	main/openapi/main_openapi/api_scope_without_models[check-existing-file-text].stdout.txt	= main/openapi/api_scope_without_models/check_extra_text.txt
 check-existing-package-text	main/openapi/main_openapi/api_scope_without_models[check-existing-package-text].output.txt	= main/openapi/api_scope_without_models/existing_output.txt
 check-existing-package-text	main/openapi/main_openapi/api_scope_without_models[check-existing-package-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-check-existing-package-text	main/openapi/main_openapi/api_scope_without_models[check-existing-package-text].stdout.txt	= main/openapi/api_scope_without_models/check_extra_directory_text.txt
+check-existing-package-text	main/openapi/main_openapi/api_scope_without_models[check-existing-package-text].stdout.txt
 check-file-json	main/openapi/main_openapi/api_scope_without_models[check-file-json].output.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 check-file-json	main/openapi/main_openapi/api_scope_without_models[check-file-json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 check-file-json	main/openapi/main_openapi/api_scope_without_models[check-file-json].stdout.txt	= main/openapi/api_scope_without_models/check_success_json.txt
@@ -813,7 +809,7 @@ diff-against-file-text	main/openapi/main_openapi/api_scope_without_models[diff-a
 diff-against-file-text	main/openapi/main_openapi/api_scope_without_models[diff-against-file-text].stdout.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 diff-against-removed-text	main/openapi/main_openapi/api_scope_without_models[diff-against-removed-text].output.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 diff-against-removed-text	main/openapi/main_openapi/api_scope_without_models[diff-against-removed-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-diff-against-removed-text	main/openapi/main_openapi/api_scope_without_models[diff-against-removed-text].stdout.txt	= main/openapi/api_scope_without_models/input_diff_removed_text.txt
+diff-against-removed-text	main/openapi/main_openapi/api_scope_without_models[diff-against-removed-text].stdout.txt
 directory-json	main/openapi/main_openapi/api_scope_without_models[directory-json].output.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 directory-json	main/openapi/main_openapi/api_scope_without_models[directory-json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 directory-json	main/openapi/main_openapi/api_scope_without_models[directory-json].stdout.txt	= main/openapi/api_scope_without_models/json_output.txt
@@ -826,98 +822,20 @@ file-json	main/openapi/main_openapi/api_scope_without_models[file-json].stdout.t
 file-text	main/openapi/main_openapi/api_scope_without_models[file-text].output.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 file-text	main/openapi/main_openapi/api_scope_without_models[file-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 file-text	main/openapi/main_openapi/api_scope_without_models[file-text].stdout.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-None-extra_args14-0-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-None-extra_args14-Exit.OK-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-None-extra_args2-0-json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-None-extra_args2-0-json_output.txt	main/openapi/api_scope_without_models/json_output.txt	?
-models-None-extra_args2-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-None-extra_args2-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/json_output.txt	?
-models-None-extra_args7-0-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-None-extra_args7-Exit.OK-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-models-extra_args10-1-check_extra_text.txt	main/openapi/api_scope_without_models/check_extra_text.txt	?
-models-models-extra_args10-1-check_extra_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-models-extra_args10-1-check_extra_text.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models-models-extra_args10-Exit.DIFF-check_extra_text.txt	main/openapi/api_scope_without_models/check_extra_text.txt	?
-models-models-extra_args10-Exit.DIFF-check_extra_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-models-extra_args10-Exit.DIFF-check_extra_text.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models-models/__init__.py-extra_args11-1-check_extra_directory_text.txt	main/openapi/api_scope_without_models/check_extra_directory_text.txt	?
-models-models/__init__.py-extra_args11-1-check_extra_directory_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-models/__init__.py-extra_args11-1-check_extra_directory_text.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models-models/__init__.py-extra_args11-Exit.DIFF-check_extra_directory_text.txt	main/openapi/api_scope_without_models/check_extra_directory_text.txt	?
-models-models/__init__.py-extra_args11-Exit.DIFF-check_extra_directory_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models-models/__init__.py-extra_args11-Exit.DIFF-check_extra_directory_text.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models.py-None-extra_args0-0-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args0-Exit.OK-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args1-0-json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args1-0-json_output.txt	main/openapi/api_scope_without_models/json_output.txt	?
-models.py-None-extra_args1-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args1-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/json_output.txt	?
-models.py-None-extra_args12-0-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args12-Exit.OK-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args13-0-input_diff_success_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args13-0-input_diff_success_json.txt	main/openapi/api_scope_without_models/input_diff_success_json.txt	?
-models.py-None-extra_args13-Exit.OK-input_diff_success_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args13-Exit.OK-input_diff_success_json.txt	main/openapi/api_scope_without_models/input_diff_success_json.txt	?
-models.py-None-extra_args15-1-input_diff_removed_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args15-1-input_diff_removed_text.txt	main/openapi/api_scope_without_models/input_diff_removed_text.txt	?
-models.py-None-extra_args15-Exit.DIFF-input_diff_removed_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args15-Exit.DIFF-input_diff_removed_text.txt	main/openapi/api_scope_without_models/input_diff_removed_text.txt	?
-models.py-None-extra_args5-0-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args5-Exit.OK-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args6-0-check_success_json.txt	main/openapi/api_scope_without_models/check_success_json.txt	?
-models.py-None-extra_args6-0-check_success_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-None-extra_args6-Exit.OK-check_success_json.txt	main/openapi/api_scope_without_models/check_success_json.txt	?
-models.py-None-extra_args6-Exit.OK-check_success_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args4-0-json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args4-0-json_output.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models.py-models.py-extra_args4-0-json_output.txt	main/openapi/api_scope_without_models/json_output.txt	?
-models.py-models.py-extra_args4-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args4-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models.py-models.py-extra_args4-Exit.OK-json_output.txt	main/openapi/api_scope_without_models/json_output.txt	?
-models.py-models.py-extra_args8-1-check_extra_text.txt	main/openapi/api_scope_without_models/check_extra_text.txt	?
-models.py-models.py-extra_args8-1-check_extra_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args8-1-check_extra_text.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models.py-models.py-extra_args8-Exit.DIFF-check_extra_text.txt	main/openapi/api_scope_without_models/check_extra_text.txt	?
-models.py-models.py-extra_args8-Exit.DIFF-check_extra_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args8-Exit.DIFF-check_extra_text.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models.py-models.py-extra_args9-1-check_extra_json.txt	main/openapi/api_scope_without_models/check_extra_json.txt	?
-models.py-models.py-extra_args9-1-check_extra_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args9-1-check_extra_json.txt	main/openapi/api_scope_without_models/existing_output.txt	?
-models.py-models.py-extra_args9-Exit.DIFF-check_extra_json.txt	main/openapi/api_scope_without_models/check_extra_json.txt	?
-models.py-models.py-extra_args9-Exit.DIFF-check_extra_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-models.py-models.py-extra_args9-Exit.DIFF-check_extra_json.txt	main/openapi/api_scope_without_models/existing_output.txt	?
 stdout-json	main/openapi/main_openapi/api_scope_without_models[stdout-json].output.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 stdout-json	main/openapi/main_openapi/api_scope_without_models[stdout-json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-stdout-json	main/openapi/main_openapi/api_scope_without_models[stdout-json].stdout.txt	= main/openapi/api_scope_without_models/json_stdout.txt
+stdout-json	main/openapi/main_openapi/api_scope_without_models[stdout-json].stdout.txt
 [test_main_openapi_api_scope_without_models_jobs]
-False-extra_args0-0-jobs_json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-False-extra_args0-0-jobs_json_output.txt	main/openapi/api_scope_without_models/jobs_json_output.txt	?
-False-extra_args0-Exit.OK-jobs_json_output.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-False-extra_args0-Exit.OK-jobs_json_output.txt	main/openapi/api_scope_without_models/jobs_json_output.txt	?
-False-extra_args1-0-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-False-extra_args1-Exit.OK-empty.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-False-extra_args2-0-jobs_check_success_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-False-extra_args2-0-jobs_check_success_json.txt	main/openapi/api_scope_without_models/jobs_check_success_json.txt	?
-False-extra_args2-Exit.OK-jobs_check_success_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-False-extra_args2-Exit.OK-jobs_check_success_json.txt	main/openapi/api_scope_without_models/jobs_check_success_json.txt	?
-True-extra_args3-1-jobs_check_extra_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-True-extra_args3-1-jobs_check_extra_text.txt	main/openapi/api_scope_without_models/jobs_check_extra_text.txt	?
-True-extra_args3-Exit.DIFF-jobs_check_extra_text.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-True-extra_args3-Exit.DIFF-jobs_check_extra_text.txt	main/openapi/api_scope_without_models/jobs_check_extra_text.txt	?
-True-extra_args4-1-jobs_check_extra_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-True-extra_args4-1-jobs_check_extra_json.txt	main/openapi/api_scope_without_models/jobs_check_extra_json.txt	?
-True-extra_args4-Exit.DIFF-jobs_check_extra_json.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-True-extra_args4-Exit.DIFF-jobs_check_extra_json.txt	main/openapi/api_scope_without_models/jobs_check_extra_json.txt	?
 check-existing-json	main/openapi/main_openapi/api_scope_without_models_jobs[check-existing-json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-check-existing-json	main/openapi/main_openapi/api_scope_without_models_jobs[check-existing-json].stdout.txt	= main/openapi/api_scope_without_models/jobs_check_extra_json.txt
+check-existing-json	main/openapi/main_openapi/api_scope_without_models_jobs[check-existing-json].stdout.txt
 check-existing-text	main/openapi/main_openapi/api_scope_without_models_jobs[check-existing-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-check-existing-text	main/openapi/main_openapi/api_scope_without_models_jobs[check-existing-text].stdout.txt	= main/openapi/api_scope_without_models/jobs_check_extra_text.txt
+check-existing-text	main/openapi/main_openapi/api_scope_without_models_jobs[check-existing-text].stdout.txt
 check-json	main/openapi/main_openapi/api_scope_without_models_jobs[check-json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-check-json	main/openapi/main_openapi/api_scope_without_models_jobs[check-json].stdout.txt	= main/openapi/api_scope_without_models/jobs_check_success_json.txt
+check-json	main/openapi/main_openapi/api_scope_without_models_jobs[check-json].stdout.txt
 check-text	main/openapi/main_openapi/api_scope_without_models_jobs[check-text].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 check-text	main/openapi/main_openapi/api_scope_without_models_jobs[check-text].stdout.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json	main/openapi/main_openapi/api_scope_without_models_jobs[json].stderr.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-json	main/openapi/main_openapi/api_scope_without_models_jobs[json].stdout.txt	= main/openapi/api_scope_without_models/jobs_json_output.txt
+json	main/openapi/main_openapi/api_scope_without_models_jobs[json].stdout.txt
 [test_main_openapi_array_type_union_constraints]
 	main/openapi/main_openapi/array_type_union_constraints.py
 [test_main_openapi_aware_datetime]

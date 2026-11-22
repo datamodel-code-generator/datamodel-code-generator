@@ -1,0 +1,23 @@
+[[change]]
+id = "drop-stale-api-scope-lines"
+category = "harness"
+title = "Drop the stale API-scope references and store the template API output under its test"
+summary = "The API-scope tests lose the lines of parameter ids that no environment collects any more, and the relative template directory test stores its API output under its own name with the .py suffix instead of a hand-named .txt file; the package writes the same output."
+refs = ["#7332"]
+covers = [
+    "main/jsonschema/custom_template_relative_api.txt",
+    "main/openapi/api_scope_without_models/check_extra_directory_text.txt",
+    "main/openapi/api_scope_without_models/check_extra_json.txt",
+    "main/openapi/api_scope_without_models/check_extra_text.txt",
+    "main/openapi/api_scope_without_models/check_success_json.txt",
+    "main/openapi/api_scope_without_models/empty.txt",
+    "main/openapi/api_scope_without_models/existing_output.txt",
+    "main/openapi/api_scope_without_models/input_diff_removed_text.txt",
+    "main/openapi/api_scope_without_models/input_diff_success_json.txt",
+    "main/openapi/api_scope_without_models/jobs_check_extra_json.txt",
+    "main/openapi/api_scope_without_models/jobs_check_extra_text.txt",
+    "main/openapi/api_scope_without_models/jobs_check_success_json.txt",
+    "main/openapi/api_scope_without_models/jobs_json_output.txt",
+    "main/openapi/api_scope_without_models/json_output.txt",
+    "main/openapi/api_scope_without_models/json_stdout.txt",
+]

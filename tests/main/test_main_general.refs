@@ -916,7 +916,7 @@ replace	main/main_general/generate_custom_file_header_line_breaks_end_as_file_li
 [test_generate_pyproject_config_json_mapping_option_preserves_value]
 	main/main_general/generate_pyproject_config_json_mapping_option_preserves_value.stdout.txt
 [test_generate_resolves_relative_custom_template_dir_from_caller_cwd]
-	main/jsonschema/custom_template_relative_api.txt
+	main/main_general/generate_resolves_relative_custom_template_dir_from_caller_cwd.api.py
 	main/main_general/generate_resolves_relative_custom_template_dir_from_caller_cwd.model.py
 [test_generate_returns_dict_for_multiple_modules]
 	main/main_general/generate_returns_dict_for_multiple_modules.modules/
@@ -1223,8 +1223,8 @@ utf-16-format	main/main_general/ruff_formats_file_written_in_another_encoding[ut
 [test_run_generate_from_config_json_mapping_file_like]
 	main/main_general/run_generate_from_config_json_mapping_file_like.py	= main/jsonschema/base_class_map.py
 [test_show_help]
-False	main/help/color.txt
-True	main/help/no_color.txt
+False	main/main_general/show_help[False].txt	= main/help/color.txt
+True	main/main_general/show_help[True].txt
 [test_skip_root_model]
 	main/main_general/skip_root_model.py	= main/skip_root_model.py
 [test_skip_root_model_command_line]
