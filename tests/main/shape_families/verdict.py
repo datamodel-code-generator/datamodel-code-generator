@@ -19,7 +19,10 @@ payload is the payload suite's (``PayloadRuntime`` and ``model_verdict``). A cel
 
 A shape is generated with ``run_main_with_args`` and its module imported with ``_generated_model``, the helpers of the
 main tests, which store no output; a generation that does not exit cleanly fails the test there, as in the payload
-suite, so it is no kind of a cell. TypedDict and standard dataclasses have no runtime of their own; their annotations
+suite, so it is no kind of a cell. A ``Batch`` holds several rows of one document (the decision tables): it is
+generated and imported once, and each row is judged on its own payloads; a module that does not import is the
+``import-fails`` finding of every row.
+TypedDict and standard dataclasses have no runtime of their own; their annotations
 are judged by a Pydantic ``TypeAdapter``, which validates both. msgspec Structs are judged by ``msgspec.convert``, as
 the payload suite does.
 
@@ -36,6 +39,7 @@ import contextlib
 import hashlib
 import itertools
 import json
+import sys
 import warnings
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -49,12 +53,12 @@ from tests.main.conftest import _generated_model, run_main_with_args
 from tests.main.payload_validation import PayloadBackend, PayloadRuntime, SchemaCase, source_schema_validator
 from tests.main.payload_validation.neighbours import model_verdict, value_neighbours
 
-from .families import MSGSPEC
+from .families import DIALECT, MSGSPEC, Shape
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator, Mapping
+    from collections.abc import Generator, Iterator, Mapping, Sequence
 
-    from .families import Schema, Shape
+    from .families import Schema
 
 IMPORT_FAILS: Final = "import-fails"
 MODEL_RAISES: Final = "model-raises"
@@ -234,13 +238,18 @@ def holds_null(value: object) -> bool:
 
 def schema_case(shape: Shape) -> SchemaCase:
     """Return the payload suite's case of a shape's checked definition."""
-    digest = hashlib.sha256(json.dumps(shape.schema, sort_keys=True).encode()).hexdigest()[:16]
+    return _case(shape.family, shape.schema, shape.document)
+
+
+def _case(family: str, schema: Schema, document: Schema) -> SchemaCase:
+    """Return the payload suite's case whose validator reads ``schema``; ``document`` is what generation reads."""
+    digest = hashlib.sha256(json.dumps(schema, sort_keys=True).encode()).hexdigest()[:16]
     return SchemaCase(
-        id=f"shape_families/{shape.family}/{digest}",
+        id=f"shape_families/{family}/{digest}",
         input_file_type="jsonschema",
-        source_path=Path("shape_families", f"{shape.family}.json"),
-        source_schema=shape.schema,
-        codegen_schema=shape.document,
+        source_path=Path("shape_families", f"{family}.json"),
+        source_schema=schema,
+        codegen_schema=document,
         temp_input_suffix=".json",
     )
 
@@ -269,10 +278,43 @@ def truth(shape: Shape) -> Truth:
     """Return the pool of a shape with the validator's verdicts, computed once per schema in this process."""
     case = schema_case(shape)
     if (known := _TRUTHS.get(case.id)) is None:
-        payloads = payload_pool(shape.schema, case)
-        exact = source_schema_validator(case)
-        known = _TRUTHS[case.id] = Truth(payloads, tuple(map(exact.is_valid, payloads)), case)
+        known = _TRUTHS[case.id] = _truth(case, payload_pool(shape.schema, case))
     return known
+
+
+def _truth(case: SchemaCase, payloads: tuple[object, ...]) -> Truth:
+    """Return the payloads with the verdicts of the validator of ``case``."""
+    return Truth(payloads, tuple(map(source_schema_validator(case).is_valid, payloads)), case)
+
+
+@dataclass(frozen=True)
+class Row:
+    """One row of a decision table: its parameters, the definition whose model reads its decision, and its payloads."""
+
+    params: tuple[tuple[str, object], ...]
+    name: str
+    payloads: tuple[object, ...]
+
+
+@dataclass(frozen=True)
+class Batch:
+    """Rows of one table read from one generated module.
+
+    ``document`` is what generation reads, as ``input_file_type``. The validator reads a row's definition as
+    ``prefix`` plus its name beside ``definitions``, the part of the document that holds them as JSON Schema
+    (``{"$defs": ...}``, or ``{"components": {"schemas": ...}}`` with OpenAPI's own keywords read).
+    """
+
+    family: str
+    document: Schema
+    rows: tuple[Row, ...]
+    prefix: str
+    definitions: Schema
+    input_file_type: str = "jsonschema"
+
+    def schema(self, row: Row) -> Schema:
+        """Return the JSON Schema the validator reads a row's payloads with."""
+        return {"$schema": DIALECT, "$ref": self.prefix + row.name, **self.definitions}
 
 
 @dataclass(frozen=True)
@@ -300,17 +342,17 @@ class _UnusableCellError(Exception):
         self.detail = detail
 
 
-def _generate(shape: Shape, backend: str, contract: str, directory: Path) -> Path:
-    """Generate a shape into ``directory`` with the main tests' helper and return the path of the module."""
+def _generate(document: Schema, input_file_type: str, backend: str, contract: str, directory: Path) -> Path:
+    """Generate a document into ``directory`` with the main tests' helper and return the path of the module."""
     directory.mkdir(parents=True)
     source = directory / "schema.json"
-    source.write_text(json.dumps(shape.document), encoding="utf-8")
+    source.write_text(json.dumps(document), encoding="utf-8")
     output = directory / "model.py"
     args = [
         "--input",
         str(source),
         "--input-file-type",
-        "jsonschema",
+        input_file_type,
         "--output",
         str(output),
         "--output-model-type",
@@ -343,21 +385,23 @@ def _runtime(payload_type: object, backend: str) -> PayloadRuntime:
 
 
 @contextlib.contextmanager
-def _loaded(output: Path, name: str, backend: str) -> Generator[PayloadRuntime, None, None]:
-    """Import a generated module with the main tests' helper and yield the runtime of its ``name``.
+def _loaded(output: Path, names: Sequence[str], backend: str) -> Generator[list[PayloadRuntime], None, None]:
+    """Import a generated module with the main tests' helper and yield the runtime of each of its ``names``.
 
-    A module that does not import, lacks the name or cannot be adapted is the cell's finding, with the error.
+    A module that does not import, lacks a name or cannot adapt one is the finding of every cell it holds, with the
+    error.
     """
     module_name = "shape_families_" + hashlib.sha256(str(output).encode()).hexdigest()[:16]
     with contextlib.ExitStack() as stack:
         try:
             with warnings.catch_warnings(record=True):
                 warnings.simplefilter("always")
-                runtime = _runtime(stack.enter_context(_generated_model(output, module_name, name)), backend)
+                stack.enter_context(_generated_model(output, module_name, names[0]))
+                runtimes = [_runtime(getattr(sys.modules[module_name], name), backend) for name in names]
         except Exception as error:
             detail = f"{type(error).__name__}: {error}"[:200]
             raise _UnusableCellError(IMPORT_FAILS, detail) from error
-        yield runtime
+        yield runtimes
 
 
 def _strict_verdict(runtime: PayloadRuntime, payload: object) -> str:
@@ -371,8 +415,11 @@ def _strict_verdict(runtime: PayloadRuntime, payload: object) -> str:
     return "accepts"
 
 
-def _witnesses(runtime: PayloadRuntime, known: Truth) -> dict[str, list[object]]:
-    """Return the payloads on which a model differs from the validator, by kind."""
+def _witnesses(runtime: PayloadRuntime, known: Truth, *, judges_null: bool) -> dict[str, list[object]]:
+    """Return the payloads on which a model differs from the validator, by kind.
+
+    A payload holding null is judged for ``accepts-invalid`` only where ``judges_null`` says so (the null table).
+    """
     witnesses: dict[str, list[object]] = {}
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
@@ -385,23 +432,65 @@ def _witnesses(runtime: PayloadRuntime, known: Truth) -> dict[str, list[object]]
             elif (
                 not valid
                 and verdict == "accepts"
-                and not holds_null(payload)
-                and _strict_verdict(runtime, payload) == "accepts"
-                and not known.valid_as_any_of(payload)
+                and _accepted_invalid(runtime, known, payload, judges_null=judges_null)
             ):
                 witnesses.setdefault(ACCEPTS_INVALID, []).append(payload)
     return witnesses
 
 
-def judge(shape: Shape, backend: str, contract: str, directory: Path) -> Cell:
-    """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings."""
-    try:
-        with _loaded(_generate(shape, backend, contract, directory), shape.name, backend) as runtime:
-            witnesses = _witnesses(runtime, truth(shape))
-    except _UnusableCellError as unusable:
-        return Cell(shape, backend, contract, {unusable.kind: unusable.detail})
-    findings = {
+def _accepted_invalid(runtime: PayloadRuntime, known: Truth, payload: object, *, judges_null: bool) -> bool:
+    """Return whether a payload the validator rejects and the model accepts is a finding.
+
+    It is where strict validation accepts it too and ``oneOf`` read as ``anyOf`` still rejects it, and, where
+    ``judges_null`` does not say so, it holds no null.
+    """
+    return (
+        (judges_null or not holds_null(payload))
+        and _strict_verdict(runtime, payload) == "accepts"
+        and not known.valid_as_any_of(payload)
+    )
+
+
+def _findings(witnesses: Mapping[str, list[object]]) -> dict[str, str]:
+    """Return the smallest witness of each kind, as JSON."""
+    return {
         kind: min((json.dumps(payload) for payload in payloads), key=lambda text: (len(text), text))
         for kind, payloads in witnesses.items()
     }
-    return Cell(shape, backend, contract, findings)
+
+
+def judge(shape: Shape, backend: str, contract: str, directory: Path) -> Cell:
+    """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings."""
+    output = _generate(shape.document, "jsonschema", backend, contract, directory)
+    try:
+        with _loaded(output, [shape.name], backend) as (runtime,):
+            witnesses = _witnesses(runtime, truth(shape), judges_null=False)
+    except _UnusableCellError as unusable:
+        return Cell(shape, backend, contract, {unusable.kind: unusable.detail})
+    return Cell(shape, backend, contract, _findings(witnesses))
+
+
+def row_shape(batch: Batch, row: Row) -> Shape:
+    """Return a row as the shape its cells name: the batch's table and document, the row's parameters and name."""
+    return Shape(batch.family, row.params, batch.document, row.name, ())
+
+
+def judge_batch(batch: Batch, backend: str, contract: str, directory: Path, *, judges_null: bool) -> tuple[Cell, ...]:
+    """Generate a batch once for a backend under a contract and return the cell of each row with its findings."""
+    shapes = [row_shape(batch, row) for row in batch.rows]
+    output = _generate(batch.document, batch.input_file_type, backend, contract, directory)
+    try:
+        with _loaded(output, [row.name for row in batch.rows], backend) as runtimes:
+            found = [
+                _findings(
+                    _witnesses(
+                        runtime,
+                        _truth(_case(batch.family, batch.schema(row), batch.document), row.payloads),
+                        judges_null=judges_null,
+                    )
+                )
+                for row, runtime in zip(batch.rows, runtimes, strict=True)
+            ]
+    except _UnusableCellError as unusable:
+        found = [{unusable.kind: unusable.detail}] * len(batch.rows)
+    return tuple(Cell(shape, backend, contract, findings) for shape, findings in zip(shapes, found, strict=True))
