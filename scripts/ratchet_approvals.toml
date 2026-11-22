@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:JUSTIFIED_VIOLATIONS"
+head = 73
+pr = 7347
+decision = ["#7347"]
+reason = "tests/model/test_decision_cores.py checks the pure decision cores against the validator and msgspec through private imports, as the G14 tables do; it is the only test that catches a wrong null-site decision"
