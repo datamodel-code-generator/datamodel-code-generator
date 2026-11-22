@@ -11,6 +11,7 @@ import pytest
 from scripts._change_records import (
     CellSelector,
     Facts,
+    owner_of,
     parse_entry,
     read_records,
     rule_problems,
@@ -290,3 +291,27 @@ def test_read_records(case: str, tmp_path: Path) -> None:
     except ValueError as error:
         output = f"ValueError: {error}"
     assert_output(output + "\n")
+
+
+PAYLOAD_NODE = "tests/main/test_payload_validation.py::"
+OWNER_CASES: dict[str, tuple[str, str]] = {
+    "the count of the discovered schema files is a listing": (
+        PAYLOAD_NODE + "test_payload_validation_cases_cover_discovered_schema_files",
+        "main/payload_validation/cases_cover_discovered_schema_files.txt",
+    ),
+    "the other payload outputs stay model output": (
+        PAYLOAD_NODE + "test_generated_models_decide_value_neighbours_like_the_schema[a.json]",
+        "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema.txt",
+    ),
+    "a payload classification stays model output": (
+        PAYLOAD_NODE + "test_allof_payload_strategy_classification",
+        "main/payload_validation/allof_payload_strategy_classification.txt",
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(OWNER_CASES))
+def test_owner_of(case: str) -> None:
+    """A stored output is told from model output by its test node and label."""
+    nodeid, label = OWNER_CASES[case]
+    assert_output(f"{owner_of(nodeid, label).value}\n")

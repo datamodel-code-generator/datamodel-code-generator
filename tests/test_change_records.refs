@@ -2,6 +2,10 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_change_record_helpers]
 	change_records/change_record_helpers.txt
+[test_owner_of]
+a payload classification stays model output	change_records/owner_of[a payload classification stays model output].txt
+the count of the discovered schema files is a listing	change_records/owner_of[the count of the discovered schema files is a listing].txt
+the other payload outputs stay model output	change_records/owner_of[the other payload outputs stay model output].txt	= change_records/owner_of[a payload classification stays model output].txt
 [test_parse_entry_cells]
 a cell is no table	change_records/parse_entry_cells[a cell is no table].txt
 backends as another string	change_records/parse_entry_cells[backends as another string].txt
