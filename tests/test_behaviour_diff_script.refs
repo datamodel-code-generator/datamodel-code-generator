@@ -108,6 +108,10 @@ validation_probe_raised_in_release	behaviour_diff_script/classify_cell[validatio
 validation_probe_raises_now	behaviour_diff_script/classify_cell[validation_probe_raises_now].txt
 validation_probe_raises_on_both_sides	behaviour_diff_script/classify_cell[validation_probe_raises_on_both_sides].txt
 validation_probe_rejected_now	behaviour_diff_script/classify_cell[validation_probe_rejected_now].txt
+[test_classify_target_trees]
+a client argument whose annotation drops the None of its items	behaviour_diff_script/classify_target_trees[a client argument whose annotation drops the None of its items].txt
+a client module that no longer imports	behaviour_diff_script/classify_target_trees[a client module that no longer imports].txt
+the same client	behaviour_diff_script/classify_target_trees[the same client].txt
 [test_classify_trees]
 module_named_like_builtin	behaviour_diff_script/classify_trees[module_named_like_builtin].txt
 string_keywords_on_uuid_and_date	behaviour_diff_script/classify_trees[string_keywords_on_uuid_and_date].txt

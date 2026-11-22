@@ -130,7 +130,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts import _cell_catalog, compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts import _behaviour_signature, _cell_catalog, compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
     CLASSES,
     LINE_ASPECT,
@@ -297,6 +297,8 @@ one server (fastapi), OpenAPI 3.1, the shape as the JSON body of one operation, 
 the OpenAPI 3.0 spelling (`nullable: true`), shapes as parameters and non-JSON bodies, pydantic_v2.dataclass targets,
 other target options (the client's `body` mode and deep objects; the server's body and handler modes, layout,
 request inclusion), and presets and `OPTION_SETS` on the targets."""
+TARGET_OPTIONS = ("--generate-client", "--generate-server")
+"""The options that make a run write target packages beside its models, which its signature covers."""
 FAMILIES_KEY = "families"
 FAMILY_MODES = ("report", "fail")
 """The values of the allowlist file's `families` key: report the family cells only (the default), or judge them."""
@@ -969,19 +971,44 @@ def _write_tree(tree: dict[str, str], directory: Path) -> Path:
     return directory / "model.py" if "model.py" in tree else directory / "pkg"
 
 
-def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
-    """Compute a behaviour signature in a fresh process of the candidate's interpreter."""
-    return signature_of(gate.signature_python or gate.candidate_python, gate.timeout, target, backend, payloads)
+def cell_signature(
+    gate: Gate, cell: Cell, tree: dict[str, str], directory: Path, payloads: Path | None
+) -> dict[str, object]:
+    """Write a cell's output tree (with its project's stubs) under `directory` and return its behaviour signature.
+
+    A run that writes target packages (`TARGET_OPTIONS`: a client, a server) is signed as one tree, its models and
+    each target package with its callables (`_behaviour_signature.run_signature`), so a change of a target alone
+    shows; any other run by its models module or package.
+    """
+    models = _write_tree(tree | dict(cell.stubs), directory)
+    targets = any(option in cell.options for option in TARGET_OPTIONS)
+    return signature(gate, directory if targets else models, cell.backend, payloads, targets=targets)
+
+
+def signature(
+    gate: Gate, target: Path, backend: str, payloads: Path | None, *, targets: bool = False
+) -> dict[str, Any]:
+    """Compute a behaviour signature in a fresh process of the candidate's interpreter.
+
+    With `targets`, `target` is a run's directory whose target packages are signed beside its models.
+    """
+    flags = [_behaviour_signature.TARGETS_FLAG] if targets else []
+    arguments = [backend, *([str(payloads)] if payloads else []), *flags]
+    return _signed(gate.signature_python or gate.candidate_python, gate.timeout, target, arguments)
 
 
 def signature_of(python: Path, timeout: int, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
     """Compute the behaviour signature of a generated module or package in a fresh process of `python`."""
+    return _signed(python, timeout, target, [backend, *([str(payloads)] if payloads else [])])
+
+
+def _signed(python: Path, timeout: int, target: Path, arguments: list[str]) -> dict[str, object]:
+    """Run `scripts/_behaviour_signature.py` on `target` with `arguments` in a fresh process of `python`."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("DATAMODEL_CODE_GENERATOR")}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    command = [str(python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
     try:
         result = subprocess.run(
-            [*command, *([str(payloads)] if payloads else [])],
+            [str(python), "-I", str(SIGNATURE_SCRIPT), str(target), *arguments],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -1033,11 +1060,7 @@ def run_base_skipped(gate: Gate, cell: Cell, index: int) -> Result:
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
         candidate = gate.candidate.generate(cell.args(), tmp)
-        sig = (
-            signature(gate, _write_tree(candidate.tree | dict(cell.stubs), tmp / "sig-cand"), cell.backend, None)
-            if candidate.ok
-            else None
-        )
+        sig = cell_signature(gate, cell, candidate.tree, tmp / "sig-cand", None) if candidate.ok else None
     return Result(cell, classify_base_skipped(Side(candidate.ok, candidate.error, sig), note=note), index)
 
 
@@ -1082,9 +1105,7 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             sides = [
                 Side(
                     generated=True,
-                    signature=signature(
-                        gate, _write_tree(outcome.tree | dict(cell.stubs), tmp / f"sig-{side}"), cell.backend, payloads
-                    ),
+                    signature=cell_signature(gate, cell, outcome.tree, tmp / f"sig-{side}", payloads),
                 )
                 if outcome.ok
                 else failed
@@ -2542,8 +2563,7 @@ def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path, environment:
         key = _stable(json.dumps([outcome.tree, cell.backend, payload_text, environment]))[:24]
         path = out / "signatures" / f"{key}.json"
         if not path.exists():
-            target = _write_tree(outcome.tree, tmp / "sig")
-            _write_json(path, signature(gate, target, cell.backend, payloads))
+            _write_json(path, cell_signature(gate, cell, outcome.tree, tmp / "sig", payloads))
     entry: dict[str, Any] = {"gen": "ok", "sig": key}
     if payload_text:
         valid = [e["id"] for e in json.loads(payload_text) if e.get("kind") == "valid" and e.get("expect") == "accept"]
@@ -2774,7 +2794,7 @@ def _restoring_options(gate: Gate, cell: Cell, old: compare_release.Outcome, ns:
     candidate = gate.candidate_info
     new = _generate(gate.candidate, cell.args())
     with tempfile.TemporaryDirectory() as name:
-        old_signature = signature(gate, _write_tree(old.tree, Path(name) / "old"), cell.backend, None)
+        old_signature = cell_signature(gate, cell, old.tree, Path(name) / "old", None)
 
     def restores(option: list[str]) -> str | None:
         args = cell.args() + option
@@ -2784,7 +2804,7 @@ def _restoring_options(gate: Gate, cell: Cell, old: compare_release.Outcome, ns:
         if outcome.tree == old.tree:
             return " ".join(option)
         with tempfile.TemporaryDirectory() as name:
-            tried = signature(gate, _write_tree(outcome.tree, Path(name) / "new"), cell.backend, None)
+            tried = cell_signature(gate, cell, outcome.tree, Path(name) / "new", None)
         return " ".join(option) if not [c for c in diff(old_signature, tried) if c.behaviour] else None
 
     options = restore_candidates(candidate.python, candidate.env)

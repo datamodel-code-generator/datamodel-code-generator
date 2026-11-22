@@ -37,7 +37,7 @@ from scripts._behaviour_classify import (
     kinds,
     rule_b,
 )
-from scripts._behaviour_signature import Context, _pydantic_item, canonical, example_value, meta_items
+from scripts._behaviour_signature import TARGETS_FLAG, Context, _pydantic_item, canonical, example_value, meta_items
 from scripts._change_records import Category, CellKind, CellSelector, Record, covers_block, read_records
 from tests.capabilities import needs
 from tests.conftest import assert_output
@@ -1416,13 +1416,13 @@ TREE_CASES: dict[str, tuple[str, dict[str, str], dict[str, str]]] = {
 }
 
 
-def _tree_signature(files: dict[str, str], backend: str, directory: Path) -> dict[str, Any]:
+def _tree_signature(files: dict[str, str], backend: str, directory: Path, *, targets: bool = False) -> dict[str, Any]:
     for name, text in files.items():
         (directory / name).parent.mkdir(parents=True, exist_ok=True)
         (directory / name).write_text(text, encoding="utf-8")
-    target = directory / ("model.py" if "model.py" in files else "pkg")
+    target = directory if targets else directory / ("model.py" if "model.py" in files else "pkg")
     result = subprocess.run(
-        [sys.executable, "-I", str(SIGNATURE_SCRIPT), str(target), backend],
+        [sys.executable, "-I", str(SIGNATURE_SCRIPT), str(target), backend, *([TARGETS_FLAG] if targets else [])],
         capture_output=True,
         text=True,
         check=True,
@@ -1443,6 +1443,49 @@ def test_classify_trees(case: str, tmp_path: Path) -> None:
         for name, files in (("base", base_files), ("cand", candidate_files))
     ]
     verdict = classify_cell(*sides, input_path=case, backend=backend, allowlist=Allowlist("0.86.0"))
+    assert_output(json.dumps({**asdict(verdict), "accepted_by": sorted(verdict.accepted_by)}, indent=2) + "\n")
+
+
+TARGET_MODEL = "from pydantic import BaseModel\n\n\nclass Holder(BaseModel):\n    f: list[str | None] | None = None\n"
+TARGET_RESOURCE = (
+    "from __future__ import annotations\n\nimport model\n\n\nclass Resource:\n"
+    '    """The operations of a stand-in client."""\n\n'
+    "    def check(self, *, f: list[str | None] | None = None) -> model.Holder:\n"
+    '        """Send a holder."""\n'
+    "        return model.Holder(f=f)\n"
+)
+TARGET_TREE = {
+    "model.py": TARGET_MODEL,
+    "client/__init__.py": "from .resource import Resource\n",
+    "client/resource.py": TARGET_RESOURCE,
+}
+"""A run's models and the stand-in client package the run writes beside them, which imports them as `model`."""
+TARGET_TREE_CASES = {
+    "a client argument whose annotation drops the None of its items": {
+        **TARGET_TREE,
+        "client/resource.py": TARGET_RESOURCE.replace("f: list[str | None] | None", "f: list[str] | None"),
+    },
+    "a client module that no longer imports": {
+        **TARGET_TREE,
+        "client/resource.py": TARGET_RESOURCE.replace("import model\n", "import model\n\nmodel.Missing\n"),
+    },
+    "the same client": TARGET_TREE,
+}
+"""The candidate tree of each case; the base is `TARGET_TREE`."""
+
+
+@pytest.mark.parametrize("case", sorted(TARGET_TREE_CASES))
+def test_classify_target_trees(case: str, tmp_path: Path) -> None:
+    """A run that writes a target package beside its models is signed with it: a change of the target alone shows.
+
+    The client's callables are part of its signature, so an argument's annotation that changes is a `signature`
+    change and a client module that no longer imports an import error, while the models stay the same.
+    """
+    sides = [
+        Side(generated=True, signature=_tree_signature(files, "pydantic_v2.BaseModel", tmp_path / name, targets=True))
+        for name, files in (("base", TARGET_TREE), ("cand", TARGET_TREE_CASES[case]))
+    ]
+    verdict = classify_cell(*sides, input_path=case, backend="pydantic_v2.BaseModel", allowlist=Allowlist("0.86.0"))
     assert_output(json.dumps({**asdict(verdict), "accepted_by": sorted(verdict.accepted_by)}, indent=2) + "\n")
 
 
