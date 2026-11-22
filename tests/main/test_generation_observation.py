@@ -15,7 +15,6 @@ from tests.conftest import assert_inputs_not_mutated, assert_output
 from tests.data.python.generation_observer import GenerationObserver
 
 DATA = Path(__file__).parents[1] / "data"
-EXPECTED = DATA / "expected/main/generation_platform"
 
 
 @pytest.mark.parametrize("backend", list(DataModelType))
@@ -66,5 +65,4 @@ def test_generation_observation(backend: DataModelType, tmp_path: Path) -> None:
             ))
         ),
     }
-    expected = EXPECTED / ("windows" if sys.platform == "win32" else ".") / f"{backend.name}.txt"
-    assert_output(json.dumps(observation, indent=2) + "\n", expected)
+    assert_output(json.dumps(observation, indent=2) + "\n", varies_with=("windows",))

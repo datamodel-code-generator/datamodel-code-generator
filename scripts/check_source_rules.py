@@ -69,6 +69,11 @@ SLEEP_ALLOWLIST = "scripts/test_sleep_allowlist.toml"
 RERUN_MODULES = frozenset({"flaky", "pytest_rerunfailures", "rerunfailures"})
 TEST_DATA = "tests/data/"
 CAPABILITY_HOME = "tests/capabilities.py"
+CHECKOUT_INPUTS = ("pyproject.toml", CAPABILITY_HOME)
+"""Files this script reads from its own checkout where a counted tree lacks them or they give no answer.
+
+``_floor`` falls back to the ``requires-python`` of that checkout, and ``_table_of`` to its capability table.
+"""
 CAPABILITY_TABLE = "CAPABILITIES"
 NEEDS = "tests.capabilities.needs"
 SKIP_ORIGINS = frozenset({
@@ -853,11 +858,11 @@ def dead_capability(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report a capability of the table that no lane of the CI matrix has, or every lane has, or only subset lanes lack.
 
     Also a malformed one and an unreadable lane. A capability every lane has never skips; one only subset lanes lack
-    (lanes that run a fixed list of tests, e.g. the formatter subset) skips no test of the suite. The lane reader
-    knows which lanes are subset lanes, not which tests a subset lane lists, so the second case is refused outright.
+    (lanes that run a fixed list of tests, e.g. the formatter subset) skips no test of the suite. The rule does not
+    ask which tests a subset lane lists (`Lane.runs`), so the second case is refused outright.
 
-    The lanes and their facts are read from the workflow, ``tox.ini``, ``pyproject.toml`` and ``uv.lock``
-    (`scripts/_ci_lanes.py`); a tree without the workflow has no lanes and nothing is judged.
+    The lanes and their facts are read from the workflows, ``tox.ini``, ``pyproject.toml`` and ``uv.lock``
+    (`scripts/_ci_lanes.py`); a tree without workflows has no lanes and nothing is judged.
 
     Review class: a skip that guards against an environment no lane installs (black 19, Pydantic 1), so it says what
     the suite covers and covers nothing.
@@ -1894,15 +1899,15 @@ RULES: tuple[Rule, ...] = (
     Rule(
         "dead-capability",
         dead_capability,
-        "delete the capability and its uses (no lane of .github/workflows/test.yaml has it, so the tests it guards "
-        "always run, or never), or fix the clause or the lane the message names",
+        "delete the capability and its uses (no lane of a workflow matrix in .github/workflows has it, so the tests it "
+        "guards always run, or never), or fix the clause or the lane the message names",
         absolute=True,
     ),
     Rule(
         "never-run",
         never_run,
-        "delete the test, or the capability that excludes every lane; a test no lane of .github/workflows/test.yaml "
-        "runs checks nothing",
+        "delete the test, or the capability that excludes every lane; a test no lane of a workflow matrix in "
+        ".github/workflows runs checks nothing",
         absolute=True,
     ),
     Rule(

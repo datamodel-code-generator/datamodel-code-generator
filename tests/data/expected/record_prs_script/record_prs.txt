@@ -1,0 +1,11 @@
+=== HEAD ===
+{
+ "kept": 10,
+ "new-name": 14,
+ "stamped": 13
+}
+=== HEAD~7 ===
+{
+ "kept": 10,
+ "renamed": 10
+}

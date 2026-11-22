@@ -24,6 +24,8 @@ not-a-literal	source_rules/a_table_that_cannot_be_read_holds_no_capability[not-a
 [test_floor_syntax_without_requires_python_uses_this_checkouts]
 no-pyproject	source_rules/floor_syntax_without_requires_python_uses_this_checkouts[no-pyproject].txt	= source_rules/floor_syntax_follows_requires_python[3.11].txt
 no-requires-python	source_rules/floor_syntax_without_requires_python_uses_this_checkouts[no-requires-python].txt	= source_rules/floor_syntax_follows_requires_python[3.11].txt
+[test_joined_entries_keep_their_own_exclusions]
+	source_rules/joined_entries_keep_their_own_exclusions.txt
 [test_lanes_are_read_from_the_matrix_and_tox]
 	source_rules/lanes_are_read_from_the_matrix_and_tox.txt
 [test_lost_last_caller_compares_with_the_base]

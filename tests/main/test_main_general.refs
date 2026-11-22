@@ -1253,7 +1253,7 @@ pydantic_v2.BaseModel-20261027	main/main_general/standard_preset_enums_read_as_t
 	main/main_general/standard_preset_msgspec_struct.py
 [test_standard_preset_no_snake_case_cli_override]
 	main/main_general/standard_preset_no_snake_case_cli_override.py
-	main/main_general/standard_preset_no_snake_case_cli_override.py	@black=22	= main/main_general/standard_preset_no_snake_case_cli_override@black22.py
+	main/main_general/standard_preset_no_snake_case_cli_override.py	@black<24	= main/main_general/standard_preset_no_snake_case_cli_override@black-lt-24.py
 [test_standard_preset_no_use_annotated_cli_override]
 	main/main_general/standard_preset_no_use_annotated_cli_override.py	= main/main_general/generate_standard_preset_public_api_explicit_options.py
 [test_standard_preset_pydantic_v2]

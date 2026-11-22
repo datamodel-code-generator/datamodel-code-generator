@@ -20,7 +20,7 @@
 	main/protobuf/main_protobuf/custom_template_non_finite_raw.py
 [test_main_protobuf_directory_output_importable]
 	main/protobuf/main_protobuf/directory_output_importable/
-	main/protobuf/main_protobuf/directory_output_importable/	@black=22	= main/protobuf/main_protobuf/directory_output_importable@black22/
+	main/protobuf/main_protobuf/directory_output_importable/	@black<24	= main/protobuf/main_protobuf/directory_output_importable@black-lt-24/
 [test_main_protobuf_edition_2023_schema_version]
 	main/protobuf/main_protobuf/edition_2023_schema_version.py
 [test_main_protobuf_enum_field_defaults_beside_ref]

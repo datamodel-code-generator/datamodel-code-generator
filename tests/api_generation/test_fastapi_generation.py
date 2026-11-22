@@ -145,7 +145,7 @@ def test_fastapi_api(tmp_path: Path) -> None:
 
 def test_fastapi_scope(tmp_path: Path) -> None:
     """Stop unsupported settings before generating models, locking, or publishing."""
-    assert_output(fastapi_scope_report(tmp_path))
+    assert_output(fastapi_scope_report(tmp_path), varies_with=("black-without-py311-target",))
 
 
 def test_fastapi_checkouts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

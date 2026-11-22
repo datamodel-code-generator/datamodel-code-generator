@@ -1,0 +1,5 @@
+tests/a.py::test_x: False
+tests/a.py::test_z: True
+tests/b.py::test_x: True
+tests/a.py::test_y[one]: True
+tests/c.py: False

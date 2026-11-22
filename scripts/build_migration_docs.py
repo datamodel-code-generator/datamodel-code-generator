@@ -3,7 +3,7 @@
 Usage:
     python scripts/build_migration_docs.py
     python scripts/build_migration_docs.py --check
-    python scripts/build_migration_docs.py --release-notes unreleased
+    python scripts/build_migration_docs.py --release-notes unreleased [--record-prs FILE] [--latest-tag TAG]
     python scripts/build_migration_docs.py --has-breaking unreleased
     python scripts/build_migration_docs.py --stamp 0.97.0 --tag-tree DIR [--date 2026-12-01]
     python scripts/build_migration_docs.py --range-pages docs/migration
@@ -20,7 +20,9 @@ The build writes the committed hub docs/migration/index.md and the files the doc
 committed: docs/migration/changes.md (every change by release) and docs/data/migration.json. `--check` validates the
 data and compares the hub alone. `--range-pages` writes the page of each range of releases that need the same steps,
 `--raw-site` the Markdown of each release under `<site>/migration/from/<version>.md`; the docs deploy builds both.
-`--release-notes` prints the release-note sections of a release from the same entries, `--has-breaking` exits 0 when
+`--release-notes` prints the release-note sections of a release from the same entries (the release draft's body above
+the generated changelog; with `--record-prs`, each item first names the pull requests that added its records, and
+with `--latest-tag` it refuses while that tag still needs `--stamp`), `--has-breaking` exits 0 when
 the release has a breaking change and 1 otherwise, and `--stamp` moves the fragments a release tag contains into the
 changes of that release.
 """
@@ -76,6 +78,7 @@ from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-o
     PRESET_OPTION,
     PRESET_SURFACE,
     Action,
+    Category,
     Facts,
     Kind,
     Source,
@@ -85,6 +88,7 @@ from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-o
     guide_problems,
     parse_entry,
     rule_problems,
+    stamp_pending,
     version_key,
     with_covers,
     without_cells,
@@ -685,6 +689,29 @@ def _hand_changes(
         if record.extends is not None
         and ((target := fragments.get(record.extends)) is None or target.extends is not None or target.derived)
     )
+    unreleased = {entry_id for entry_id, entry in changes.items() if entry["release"] == UNRELEASED}
+    for record in fragments.values():
+        for entry_id in _note_entries(record, unreleased):
+            entry = changes[entry_id]
+            entry["records"] = [*entry.get("records", []), record.id]
+            entry["record_refs"] = [*entry.get("record_refs", []), *record.refs]
+
+
+def _note_entries(record: Record, unreleased: set[str]) -> list[str]:
+    """Return the ids of the unreleased entries whose release-note item a fragment adds its pull request and refs to.
+
+    A guide record adds them to its own entry and a `new-surface` record to the derived entries of the options, option
+    values and preset dates it names. A record that extends another only covers more output of the same change, which
+    a later pull request (a stack layer, a test move) may add, so it adds nothing.
+    """
+    if record.guide:
+        return [record.id] if record.id in unreleased else []
+    if record.category != Category.NEW_SURFACE:
+        return []
+    ids = [
+        item if item.startswith(PRESET_SURFACE) else f"option:{item.replace(' ', '=', 1)}" for item in record.surface
+    ]
+    return [entry_id for entry_id in ids if entry_id in unreleased]
 
 
 def _check_links(changes: dict[str, dict[str, Any]], order: dict[str, int], problems: list[str]) -> None:
@@ -1291,14 +1318,24 @@ def to_json(guide: Guide) -> str:
     return json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
 
 
-def _release_note_item(entry: dict[str, Any]) -> str:
-    refs = f" ({', '.join(entry['refs'])})" if entry.get("refs") else ""
+def _release_note_refs(records: list[str], refs: list[str], prs: dict[str, int]) -> str:
+    """Return the suffix of an item: the pull requests that added its records, then the refs, once each."""
+    refs = dict.fromkeys([*(f"#{prs[record]}" for record in records if record in prs), *refs])
+    return f" ({', '.join(refs)})" if refs else ""
+
+
+def _release_note_item(entry: dict[str, Any], prs: dict[str, int]) -> str:
+    refs = _release_note_refs(entry.get("records", []), [*entry.get("refs", []), *entry.get("record_refs", [])], prs)
+    if "note" in entry and entry["action"] not in BREAKING_ACTIONS:
+        return f"* {entry['note']}{refs}"
+    features = entry["affects"].get("experimental", [])
+    summary = f"Experimental: {', '.join(map(_code, features))}. {entry['summary']}" if features else entry["summary"]
     if entry["action"] not in BREAKING_ACTIONS:
-        return f"* {entry['note']}" if "note" in entry else f"* {entry['title']} - {entry['summary']}{refs}"
+        return f"* {entry['title']} - {summary}{refs}"
     keep = entry.get("keep", {})
     tail = f" Keep the old output with {_code(' '.join(keep['flags']))}." if keep.get("flags") else ""
     tail += "".join(f" {text}" for text in (keep.get("note"), entry.get("migrate")) if text)
-    return f"* {entry['title']} - {entry['summary']}{tail}{refs}"
+    return f"* {entry['title']} - {summary}{tail}{refs}"
 
 
 def _release_note_section(entry: dict[str, Any]) -> str:
@@ -1316,15 +1353,20 @@ def _release_note_section(entry: dict[str, Any]) -> str:
     return "Experimental Features" if entry["id"].startswith("experimental:") else "Changes That Need No Action"
 
 
-def release_notes(guide: Guide, release: str) -> str:
-    """Return the release-note sections of one release, each item from its entry."""
+def release_notes(guide: Guide, release: str, prs: dict[str, int] | None = None) -> str:
+    """Return the release-note sections of one release, each item from its entry.
+
+    `prs` maps a fragment's id to the pull request that added it (`scripts/record_prs.py`); each item names the pull
+    requests of its records before its refs. The text depends on the data alone, so every rebuild gives the same.
+    """
     sections: dict[str, list[str]] = {}
     categories: dict[str, list[str]] = {}
     for entry in guide.entries_of(release):
         section = _release_note_section(entry)
-        sections.setdefault(section, []).append(_release_note_item(entry))
+        item = _release_note_item(entry, prs or {})
+        sections.setdefault(section, []).append(item)
         if section == "Breaking Changes":
-            categories.setdefault(KINDS[entry["kind"]], []).append(_release_note_item(entry))
+            categories.setdefault(KINDS[entry["kind"]], []).append(item)
     lines: list[str] = []
     if categories:
         lines += ["## Breaking Changes", ""]
@@ -1716,6 +1758,17 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, help="the cache of scripts/compare_release.py")
     parser.add_argument("--tag-tree", type=Path, help="a checkout of the release tag, for --stamp")
     parser.add_argument("--date", help="the release date for --stamp (default: today, UTC)")
+    parser.add_argument(
+        "--record-prs",
+        type=Path,
+        metavar="FILE",
+        help="with --release-notes, the pull request of each fragment, as scripts/record_prs.py writes it",
+    )
+    parser.add_argument(
+        "--latest-tag",
+        metavar="TAG",
+        help="with --release-notes, the latest release tag: refuse while releases.toml does not list it",
+    )
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR)
     parser.add_argument("--docs-dir", type=Path, default=DOCS_DIR)
     parser.add_argument("--json", type=Path, default=JSON_PATH)
@@ -1723,6 +1776,22 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     if ns.stamp and ns.tag_tree is None:
         parser.error("--stamp needs --tag-tree")
     return ns
+
+
+def _next_release(guide: Guide, ns: argparse.Namespace) -> int:
+    """Answer `--has-breaking` by the exit code, or print the notes `--release-notes` names.
+
+    The notes refuse while `--latest-tag` still needs a stamp: releases.toml would count the fragments that tag
+    contains as unreleased.
+    """
+    if ns.has_breaking:
+        return 0 if has_breaking(guide, ns.has_breaking) else 1
+    if ns.latest_tag and (pending := stamp_pending(ns.latest_tag, [row["version"] for row in guide.releases])):
+        print(pending, file=sys.stderr)
+        return 1
+    prs = json.loads(ns.record_prs.read_text(encoding="utf-8")) if ns.record_prs else {}
+    print(release_notes(guide, ns.release_notes, prs), end="")
+    return 0
 
 
 def run(ns: argparse.Namespace, registries: Registries | None = None) -> int:
@@ -1742,16 +1811,14 @@ def run(ns: argparse.Namespace, registries: Registries | None = None) -> int:
         finally:
             generations.close()
     guide = load(layout, registries)
-    if ns.has_breaking:
-        return 0 if has_breaking(guide, ns.has_breaking) else 1
+    if ns.has_breaking or ns.release_notes:
+        return _next_release(guide, ns)
     if ns.check:
         if stale := check(guide, layout):
             print(f"Migration pages are out of date: {', '.join(stale)}", file=sys.stderr)
             print("Run 'python scripts/build_migration_docs.py' to update.", file=sys.stderr)
         return 1 if stale else 0
-    if ns.release_notes:
-        print(release_notes(guide, ns.release_notes), end="")
-    elif ns.range_pages:
+    if ns.range_pages:
         _write({ns.range_pages / group.page: range_page(guide, group) for group in guide.ranges})
     elif ns.raw_site:
         pages = ns.raw_site / "migration" / "from"

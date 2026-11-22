@@ -19,6 +19,26 @@
     "returncode": 0,
     "stdout": ""
   },
+  "build-notes/missing": {
+    "last_stderr_line": "Expected a full trusted workflow commit SHA.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "build-notes/non_git": {
+    "last_stderr_line": "Checked-out commit does not match the trusted workflow commit.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "build-notes/other": {
+    "last_stderr_line": "Checked-out commit does not match the trusted workflow commit.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "build-notes/workflow": {
+    "last_stderr_line": "",
+    "returncode": 0,
+    "stdout": ""
+  },
   "resolve-pr/missing": {
     "last_stderr_line": "Expected a full trusted workflow commit SHA.",
     "returncode": 1,

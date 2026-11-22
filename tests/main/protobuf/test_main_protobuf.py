@@ -308,6 +308,7 @@ def test_infer_input_file_type_from_message_declaration() -> None:
 def test_main_protobuf_directory_output_importable(output_dir: Path) -> None:
     """Generate a package from imported .proto files and import the result."""
     run_main_and_assert(
+        varies_with=("black-before-24",),
         input_path=PROTOBUF_DATA_PATH,
         output_path=output_dir,
         input_file_type="protobuf",

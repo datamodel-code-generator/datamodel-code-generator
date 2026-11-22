@@ -441,6 +441,11 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/test_package_metadata.py::*", "*", Owner.LISTING),
     ("tests/test_input_model.py::test_input_model_config_class*", "*", Owner.LISTING),
     ("tests/parser/test_builtin_formatter_contract.py::*", "*", Owner.LISTING),
+    (
+        "tests/main/test_payload_validation.py::test_payload_validation_cases_cover_discovered_schema_files",
+        "*",
+        Owner.LISTING,
+    ),
     ("tests/main/test_public_api_signature_baseline.py::*", "*", Owner.API),
     ("tests/parser/test_pipeline.py::*", "*", Owner.INTERNAL),
     ("tests/parser/test_generation_store_usage.py::*", "*", Owner.INTERNAL),

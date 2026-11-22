@@ -1,0 +1,18 @@
+{
+  "if": "always() && needs.resolve-pr.result == 'success'",
+  "needs": [
+    "resolve-pr",
+    "analyze",
+    "build-notes"
+  ],
+  "steps": {
+    "Add breaking-change-analyzed label": "needs.analyze.result == 'success'",
+    "Calculate version and update draft release": "needs.build-notes.result == 'success'",
+    "Download analysis artifact": "needs.analyze.result == 'success'",
+    "Download release notes artifact": "needs.build-notes.result == 'success'",
+    "Exclude maintenance changes from release notes": "needs.analyze.result == 'success' && needs.analyze.outputs.skip_changelog == 'true' && steps.analysis.outputs.has_breaking_changes != 'true'",
+    "Label undeclared changes": "needs.analyze.result == 'success' && steps.analysis.outputs.has_breaking_changes == 'true'",
+    "Load analysis result": "needs.analyze.result == 'success'",
+    "Report undeclared changes in the job summary": "needs.analyze.result == 'success'"
+  }
+}
