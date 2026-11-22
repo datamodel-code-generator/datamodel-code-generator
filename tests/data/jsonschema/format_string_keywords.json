@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Contact",
+  "type": "object",
+  "properties": {
+    "email": {"type": "string", "format": "email", "maxLength": 12},
+    "avatar": {"type": "string", "format": "byte", "maxLength": 8},
+    "home": {"type": "string", "format": "uri", "maxLength": 20, "pattern": "^https"},
+    "emails": {"type": "array", "items": {"type": "string", "format": "email", "maxLength": 12}},
+    "link": {"anyOf": [{"type": "string", "format": "uri", "maxLength": 20}, {"type": "integer"}]},
+    "plainLink": {"type": "string", "format": "uri"},
+    "plainEmail": {"type": "string", "format": "email"}
+  }
+}

@@ -1472,6 +1472,17 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first."
         ),
     ),
+    PresetOptionGroup(
+        title="String keywords kept beside formats",
+        config=PresetConfig(keep_string_keywords_beside_formats=True),
+        description=(
+            "Keep the minLength, maxLength and pattern beside a string format that Pydantic output writes as a "
+            "class no constr call constrains: an email takes them in Annotated[EmailStr, Field(...)], "
+            "a byte writes them in front of the base64 decoding and a uri is the plain string they check; an output "
+            "that writes a date or UUID format as str, as msgspec does, keeps the keywords an allOf member adds "
+            "beside a $ref to it."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 

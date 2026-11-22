@@ -171,6 +171,16 @@ EXCLUDED_FILES: dict[str, str] = {
         "which hypothesis-jsonschema cannot satisfy for generic payload validation"
     ),
     "jsonschema/unknown_format.json": "unknown format fixture intentionally emits a generator warning",
+    "jsonschema/format_string_keywords.json": (
+        "option-only e2e fixture of --keep-string-keywords-beside-formats; payload validation intentionally uses "
+        "default generation, which drops the keywords; test_keep_string_keywords_beside_formats and the decision "
+        "tables validate its payloads"
+    ),
+    "jsonschema/format_string_keywords_all_of.json": (
+        "option-only e2e fixture of --keep-string-keywords-beside-formats; payload validation intentionally uses "
+        "default generation, which drops the keywords; test_keep_string_keywords_beside_formats_all_of validates its "
+        "output"
+    ),
     "jsonschema/uuid_version_formats.json": (
         "option-only e2e fixture of --read-uuid6-uuid7-uuid8-formats; payload validation intentionally uses default "
         "generation, which types the formats as str; test_read_uuid6_uuid7_uuid8_formats validates its payloads"

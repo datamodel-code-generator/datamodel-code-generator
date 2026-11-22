@@ -1,0 +1,7 @@
+valid: accepted
+invalid email='abcdefgh@example.org': accepted
+invalid avatar='YWJjZGVmZ2g=': accepted
+invalid home='http://a.io': accepted
+invalid home='https://example.org/a/very/long/path': accepted
+invalid emails=['abcdefgh@example.org']: accepted
+invalid link='https://example.org/a/very/long/path': accepted

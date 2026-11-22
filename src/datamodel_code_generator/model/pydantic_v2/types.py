@@ -249,6 +249,9 @@ class DataTypeManager(_DataTypeManagerBase):
     PATTERN_KEY: ClassVar[str] = "pattern"
     HOSTNAME_REGEX: ClassVar[str] = HOSTNAME_REGEX
     WRITES_ENCODED_STR: ClassVar[bool] = True
+    FORMAT_KEYWORD_FORMS: ClassVar[Mapping[str, _applicability.FormatKeywordForm]] = (
+        _applicability.PYDANTIC_OUTPUT.format_keyword_forms
+    )
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.PYDANTIC_OUTPUT.zero_bound_classes
     )
@@ -522,6 +525,27 @@ class DataTypeManager(_DataTypeManagerBase):
             return self.data_type.from_import(IMPORT_CONBYTES, kwargs=data_type_kwargs)
         return self._unconstrained(types, StrictTypes.bytes)
 
+    def _annotated_format_type(self, types: Types, kwargs: Mapping[str, object]) -> DataType | None:
+        """Return the class of a format with the string keywords beside it, ``Annotated[<class>, Field(...)]``.
+
+        None where the schema declares none of them (``--keep-string-keywords-beside-formats``, row
+        ``legacy-format-types-drop-string-keywords``).
+        """
+        if (import_ := self.type_map[types].import_) is None:
+            return None
+        data_type_kwargs = self.transform_kwargs(dict(kwargs), string_kwargs)
+        if not data_type_kwargs:
+            return None
+        if self.PATTERN_KEY in data_type_kwargs:
+            data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
+        return self._runtime_annotated_type(
+            "PydanticV2AnnotatedFormatDataType",
+            AnnotatedFormatDataType,
+            import_,
+            data_type_kwargs,
+            (IMPORT_ANNOTATED, IMPORT_FIELD, import_),
+        )
+
     def _encoded_str_type(self, kwargs: Mapping[str, Any]) -> DataType | None:
         """Return a string decoded from base64 text with the string constraints of ``kwargs``, or None without any.
 
@@ -634,22 +658,30 @@ class DataTypeManager(_DataTypeManagerBase):
         data_type = self._constrained_data_type(types, field_constraints=field_constraints, **kwargs)
         return annotated_constraints(data_type) if annotated else data_type
 
+    def _base64_or_format_type(
+        self, types: Types, kwargs: Mapping[str, object], *, field_constraints: bool
+    ) -> DataType | None:
+        """Return the type of a base64 string or of a format that keeps its string keywords, None for any other type.
+
+        A ``byte`` takes its keywords in front of the decoding where a field form writes them
+        (``encodes_constrained_base64``) or ``--keep-string-keywords-beside-formats`` keeps them without
+        ``--field-constraints`` (``format_keyword_form``), as does the class of an email.
+        """
+        annotated = not field_constraints and self.format_keyword_form(types) == "annotated"
+        if types == Types.byte:
+            take = (field_constraints and self.encodes_constrained_base64) or annotated
+            if (encoded := self._encoded_str_type(kwargs if take else {})) is not None:
+                return encoded
+        return self._annotated_format_type(types, kwargs) if annotated else None
+
     def _constrained_data_type(  # noqa: PLR0911
         self, types: Types, *, field_constraints: bool, **kwargs: Any
     ) -> DataType:
         """Return the type ``get_data_type`` gives for ``types``, a ``con*`` call where it takes constraints."""
         if self._non_finite_multiple_of(types, kwargs) is not None:
             kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
-        if (
-            types == Types.byte
-            and (
-                encoded := self._encoded_str_type(
-                    kwargs if field_constraints and self.encodes_constrained_base64 else {}
-                )
-            )
-            is not None
-        ):
-            return encoded
+        if (formatted := self._base64_or_format_type(types, kwargs, field_constraints=field_constraints)) is not None:
+            return formatted
         if field_constraints:
             if _applicability.decimal_field_form(
                 options := self.constraint_options,
@@ -917,6 +949,22 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
         if not metadata:
             return self.annotated_base_type
         return self._annotated(self.annotated_base_type, *metadata)
+
+
+class AnnotatedFormatDataType(AnnotatedConstraintDataType):
+    """The class of a string format with the string keywords beside it, written as ``Annotated`` constraints.
+
+    ``--keep-string-keywords-beside-formats``: ``EmailStr`` is constrained by no ``con*`` call, so
+    the keywords are the ``Field()`` arguments of the annotation, as those of a ``con*`` call are under
+    ``--use-annotated``; the class is the type's own name.
+    """
+
+    @property
+    @override
+    def annotated_base_type(self) -> str:
+        """Return the class through its current binding."""
+        name = self.type or ""
+        return self._binding(name, name)
 
 
 _ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {

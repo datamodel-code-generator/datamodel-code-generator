@@ -1114,6 +1114,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
         self.data_type_manager.read_length_keywords_by_type = config.read_length_keywords_by_type
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly
+        self.data_type_manager.keep_string_keywords_beside_formats = config.keep_string_keywords_beside_formats
         self.data_type_manager.use_decimal_in_field_forms = config.use_decimal_in_field_forms
         self.data_type_manager.use_encoded_str_for_constrained_base64 = config.use_encoded_str_for_constrained_base64
         self.data_type_manager.use_strict_str_for_base64 = config.use_strict_str_for_base64

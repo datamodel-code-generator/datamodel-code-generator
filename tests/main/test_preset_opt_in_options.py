@@ -142,7 +142,10 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 """The options the 20261120 presets set beyond the 20261118 presets."""
 
-OPT_IN_OPTIONS_20261123: tuple[str, ...] = ("--read-mapping-keys-by-schema-tag-type",)
+OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
+    "--read-mapping-keys-by-schema-tag-type",
+    "--keep-string-keywords-beside-formats",
+)
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
 WARNINGS_WITH_OPTION: dict[str, str] = {
@@ -152,6 +155,7 @@ WARNINGS_WITH_OPTION: dict[str, str] = {
 
 WARNINGS_WITHOUT_OPTION: dict[str, str] = {
     "uuid_version_formats.json": "format of 'uuid[678]' not understood",
+    "format_string_keywords.json": "fields holding AnyUrl are written without max_length",
 }
 """The warning each input gives in a generation without the option that a turned-off test names, by file name."""
 
@@ -604,6 +608,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-mapping-keys-by-schema-tag-type",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="keep-string-keywords-beside-formats",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -959,6 +969,13 @@ def test_preset_sets_opt_in_option(
             "--read-mapping-keys-by-schema-tag-type",
             "--no-read-mapping-keys-by-schema-tag-type",
             id="read-mapping-keys-by-schema-tag-type",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
+            [],
+            "--keep-string-keywords-beside-formats",
+            "--no-keep-string-keywords-beside-formats",
+            id="keep-string-keywords-beside-formats",
         ),
     ],
 )

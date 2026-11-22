@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 63 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 43 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 44 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 74 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -266,6 +266,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-reference-null-on-merged-models`](model-customization.md#keep-reference-null-on-merged-models)
 - [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items)
 - [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models)
+- [`--keep-string-keywords-beside-formats`](field-customization.md#keep-string-keywords-beside-formats)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
 ### L {#l}

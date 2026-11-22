@@ -2326,11 +2326,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         format_ = obj.format or "default"
         types = self._get_schema_type(obj, type_, format_)
+        format_form = self.data_type_manager.format_keyword_form(types) if type_ == "string" else None
+        if format_form == "text" and _constraint_values(obj, STRING_KEYWORD_ORDER):
+            types = self._get_type_with_mappings(type_, "default")
+            format_form = None
         by_type = _value_keywords.reads_length_keywords_by_type(self)
         keyword_order = constrained_type_keyword_order(
             types.name,
             encoded_str=field_constraints and self.data_type_manager.encodes_constrained_base64,
             by_type=by_type,
+            format_form=None if field_constraints else format_form,
         )
         if by_type:
             other = other_kind_keywords(_value_keywords.declared_kinds(self, type_, obj.format), by_type=True)

@@ -61,7 +61,6 @@ UNLISTED_CALLERS: Final[dict[str, tuple[str, ...]]] = {
     ),
     "_constraint_applicability.py:constrained_type_keyword_order": (
         "parser/_schema_validators.py:collect_pattern_property_validators",
-        "parser/jsonschema.py:JsonSchemaParser._get_constrained_data_type",
     ),
     "_constraint_applicability.py:decimal_field_form": (
         "model/pydantic_v2/types.py:DataTypeManager._constrained_data_type",
@@ -82,10 +81,7 @@ UNLISTED_CALLERS: Final[dict[str, tuple[str, ...]]] = {
         "types.py:DataTypeManager._annotation_constraint_keywords",
         "types.py:DataTypeManager._literal_keywords",
     ),
-    "_constraint_applicability.py:other_kind_keywords": (
-        "parser/_value_keywords.py:declared_constraint_keywords",
-        "parser/jsonschema.py:JsonSchemaParser._get_constrained_data_type",
-    ),
+    "_constraint_applicability.py:other_kind_keywords": ("parser/_value_keywords.py:declared_constraint_keywords",),
     "_constraint_applicability.py:property_consumed_keywords": (
         "parser/jsonschema.py:JsonSchemaParser._keywords_left_out",
     ),

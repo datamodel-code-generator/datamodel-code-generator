@@ -155,12 +155,14 @@
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
 - `--infer-union-discriminators`: Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
+- `--keep-string-keywords-beside-formats`: Keep the string keywords beside a format Pydantic writes as a class `...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--name-allof-union-members-after-branches`: Name the classes an allOf gives the branches of a oneOf or anyOf ...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-infer-union-discriminators`
+- `--no-keep-string-keywords-beside-formats`
 - `--no-merge-shared-variant-tags`
 - `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
@@ -829,6 +831,21 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         change a member value, such as 2.5 in an IntEnum;
                         without it the base follows the schema type, as in
                         0.86.0
+  --keep-string-keywords-beside-formats, --no-keep-string-keywords-beside-formats
+                        Keep the minLength, maxLength and pattern beside a
+                        string format that Pydantic output writes as a class
+                        no constr call constrains: a `format: email` takes
+                        them in `Annotated[EmailStr, Field(...)]`, a `format:
+                        byte` writes them in front of the base64 decoding, so
+                        Pydantic checks them on the text (with --field-
+                        constraints this needs --use-encoded-str-for-
+                        constrained-base64), and a `format: uri` is the plain
+                        string they check, as AnyUrl takes no pattern; an
+                        output that writes a date or UUID format as `str`, as
+                        msgspec does, also keeps the keywords an `allOf`
+                        member adds beside a `$ref` to it. Without it these
+                        keywords are left out, silently or with a warning, as
+                        in 0.100.0
   --merge-shared-variant-tags, --no-merge-shared-variant-tags
                         Give a variant that several discriminated unions tag
                         differently (for example one by a mapping key, one by
