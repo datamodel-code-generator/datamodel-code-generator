@@ -938,7 +938,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:_document_reader.py:held_schema"
 targets = ["datamodel_code_generator._document_reader.held_schema"]
-allowed-callers = ["datamodel_code_generator._asyncapi_connections:_Reader.message", "datamodel_code_generator._asyncapi_connections:_Reader.message.*", "datamodel_code_generator._document_reader:*", "datamodel_code_generator._recommend._signals:_unwrap", "datamodel_code_generator._recommend._signals:_unwrap.*", "datamodel_code_generator.parser.asyncapi:AsyncAPIParser._iter_schema_format_schemas", "datamodel_code_generator.parser.asyncapi:AsyncAPIParser._iter_schema_format_schemas.*", "datamodel_code_generator.parser.asyncapi:_check_multi_format_schema_object", "datamodel_code_generator.parser.asyncapi:_check_multi_format_schema_object.*"]
+allowed-callers = ["datamodel_code_generator._asyncapi_connections:_Reader.message", "datamodel_code_generator._asyncapi_connections:_Reader.message.*", "datamodel_code_generator._document_reader:*", "datamodel_code_generator._recommend._signals:_unwrap", "datamodel_code_generator._recommend._signals:_unwrap.*", "datamodel_code_generator.parser._schema_documents:implicit_schema_resources", "datamodel_code_generator.parser._schema_documents:implicit_schema_resources.*", "datamodel_code_generator.parser.asyncapi:AsyncAPIParser._iter_schema_format_schemas", "datamodel_code_generator.parser.asyncapi:AsyncAPIParser._iter_schema_format_schemas.*", "datamodel_code_generator.parser.asyncapi:_check_multi_format_schema_object", "datamodel_code_generator.parser.asyncapi:_check_multi_format_schema_object.*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"
