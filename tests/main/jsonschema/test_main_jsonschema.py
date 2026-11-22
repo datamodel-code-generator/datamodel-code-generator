@@ -7537,6 +7537,25 @@ def test_main_strict_types_date_time(output_file: Path, extra_args: list[str]) -
     assert_output("\n".join([*rejected, f"python input of the valid payload: {python_iso}"]) + "\n", name="rejected")
 
 
+def test_main_strict_types_date_time_beside_fields_named_like_them(output_file: Path) -> None:
+    """Test strict date and time types keep their base when fields named like ``date``, ``time`` and ``datetime``."""
+    _run_jsonschema_dict(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Event",
+            "type": "object",
+            "properties": {
+                "date": {"type": "string", "format": "date"},
+                "time": {"type": "string", "format": "time"},
+                "datetime": {"type": "string", "format": "date-time"},
+            },
+        },
+        output_file,
+        extra_args=[*_STRICT_DATE_TIME, "--formatters", "builtin", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_strict_types_date_time_numbers(output_file: Path) -> None:
     """Test strict date and time types leave the numbers of a date-time or time format lax, which hold Unix times."""
     _run_jsonschema_dict(

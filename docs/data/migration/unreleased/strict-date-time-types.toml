@@ -19,6 +19,7 @@ covers = [
     "main/jsonschema/main_jsonschema/main_strict_types_date_time[root-model-type-alias].rejected.txt",
     "main/jsonschema/main_jsonschema/main_strict_types_date_time[strict].py",
     "main/jsonschema/main_jsonschema/main_strict_types_date_time[strict].rejected.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_date_time_beside_fields_named_like_them.py",
     "main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[dataclass].py",
     "main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[msgspec].py",
     "main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[pendulum].py",

@@ -807,8 +807,12 @@ class StrictAnnotatedDataType(_RuntimeAnnotatedDataType):
     @property
     @override
     def type_hint(self) -> str:
-        """The type, through its current binding, and ``Strict()`` inside an Annotated subscript."""
-        return self._annotated(self._binding(self.type or ""), f"{self._binding('Strict')}()")
+        """The type, through its current binding, and ``Strict()`` inside an Annotated subscript.
+
+        The base is read from its runtime import: a field named like the type aliases the import and renames ``type``.
+        """
+        _, base, strict = self.runtime_expression_imports
+        return self._annotated(base.binding_name, f"{strict.binding_name}()")
 
     @property
     @override
