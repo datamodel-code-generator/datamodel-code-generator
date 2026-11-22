@@ -1,0 +1,8 @@
+[[change]]
+id = "ci-speed"
+category = "harness"
+title = "Split CI test items that fill a shard into parts"
+summary = "only the shard selector for CI changes; the package writes the same output"
+covers = [
+    "select_ci_test_shard_script/recipe_cli_validates_external_cases[parts-apart].txt",
+]
