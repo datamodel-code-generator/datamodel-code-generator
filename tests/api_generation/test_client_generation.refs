@@ -84,6 +84,10 @@ protocols-pagination-checks	api_generation/client_generation/client_protocols[pr
 protocols-pagination-count-checks	api_generation/client_generation/client_protocols[protocols-pagination-count-checks].txt
 protocols-pagination-errors	api_generation/client_generation/client_protocols[protocols-pagination-errors].txt
 protocols-pagination-link-checks	api_generation/client_generation/client_protocols[protocols-pagination-link-checks].txt
+protocols-pagination-nullable-false	api_generation/client_generation/client_protocols[protocols-pagination-nullable-false].txt
+protocols-pagination-nullable-false-alias	api_generation/client_generation/client_protocols[protocols-pagination-nullable-false-alias].txt
+protocols-pagination-nullable-false-ends	api_generation/client_generation/client_protocols[protocols-pagination-nullable-false-ends].txt
+protocols-pagination-nullable-false-ends-alias	api_generation/client_generation/client_protocols[protocols-pagination-nullable-false-ends-alias].txt
 protocols-pagination-querystring-checks	api_generation/client_generation/client_protocols[protocols-pagination-querystring-checks].txt
 protocols-pagination-resume-checks	api_generation/client_generation/client_protocols[protocols-pagination-resume-checks].txt
 protocols-pagination-strict-checks	api_generation/client_generation/client_protocols[protocols-pagination-strict-checks].txt
@@ -312,6 +316,20 @@ empty-security	api_generation/client_generation/client_render[empty-security].tx
 evolution	api_generation/client_generation/client_render[evolution].msgspec_Struct/
 evolution	api_generation/client_generation/client_render[evolution].ordinary/
 evolution	api_generation/client_generation/client_render[evolution].txt
+field-null-arguments	api_generation/client_generation/client_render[field-null-arguments].dataclasses_dataclass/
+field-null-arguments	api_generation/client_generation/client_render[field-null-arguments].pydantic_v2_BaseModel/
+field-null-arguments	api_generation/client_generation/client_render[field-null-arguments].txt
+field-null-arguments	api_generation/client_generation/client_render[field-null-arguments].typing_TypedDict/
+field-null-arguments-30	api_generation/client_generation/client_render[field-null-arguments-30].dataclasses_dataclass/
+field-null-arguments-30	api_generation/client_generation/client_render[field-null-arguments-30].msgspec_Struct/
+field-null-arguments-30	api_generation/client_generation/client_render[field-null-arguments-30].pydantic_v2_BaseModel/
+field-null-arguments-30	api_generation/client_generation/client_render[field-null-arguments-30].txt
+field-null-arguments-30	api_generation/client_generation/client_render[field-null-arguments-30].typing_TypedDict/
+field-null-arguments-30-strict	api_generation/client_generation/client_render[field-null-arguments-30-strict].dataclasses_dataclass/
+field-null-arguments-30-strict	api_generation/client_generation/client_render[field-null-arguments-30-strict].msgspec_Struct/
+field-null-arguments-30-strict	api_generation/client_generation/client_render[field-null-arguments-30-strict].pydantic_v2_BaseModel/
+field-null-arguments-30-strict	api_generation/client_generation/client_render[field-null-arguments-30-strict].txt
+field-null-arguments-30-strict	api_generation/client_generation/client_render[field-null-arguments-30-strict].typing_TypedDict/
 fields	api_generation/client_generation/client_render[fields].msgspec_Struct/
 fields	api_generation/client_generation/client_render[fields].ordinary/
 fields	api_generation/client_generation/client_render[fields].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/fields/pydantic_v2_BaseModel//*.py

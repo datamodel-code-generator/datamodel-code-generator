@@ -6807,5 +6807,50 @@
     "input": "union-value-kinds-enums.yaml",
     "backends": ["dataclasses.dataclass", "typing.TypedDict"],
     "modules": [["client", "_generated", "model_bindings.py"], ["models.py"]]
+  },
+  "field-null-arguments": {
+    "input": "field-null-arguments.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"],
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"], ["models.py"]]
+  },
+  "field-null-arguments-30": {
+    "input": "field-null-arguments-30.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["models.py"]]
+  },
+  "field-null-arguments-30-strict": {
+    "input": "field-null-arguments-30.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "model": {"strict_nullable": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["models.py"]]
+  },
+  "protocols-pagination-nullable-false": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false.json"],
+    "config": {"protocols": "protocols/pagination-nullable-false.json"},
+    "modules": false
+  },
+  "protocols-pagination-nullable-false-alias": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false.json"],
+    "model": {"use_type_alias": true},
+    "config": {"protocols": "protocols/pagination-nullable-false.json"},
+    "modules": false
+  },
+  "protocols-pagination-nullable-false-ends": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false-ends.json"],
+    "config": {"protocols": "protocols/pagination-nullable-false-ends.json"},
+    "modules": false
+  },
+  "protocols-pagination-nullable-false-ends-alias": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false-ends.json"],
+    "model": {"use_type_alias": true},
+    "config": {"protocols": "protocols/pagination-nullable-false-ends.json"},
+    "modules": false
   }
 }
