@@ -1,0 +1,193 @@
+verdict problems: none
+undeclared questions: none
+bindings/binding_of_a_node: binding_of_a_node.py:10: _cast = typing.cast
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:9: f(x: Literal[tuple(i for i in "ab")])
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:9: f(y: Annotated[int, [j for j in "cd"]])
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:6: Annotated = typing.Annotated
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:6: Literal = typing.Literal
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:20: read(q: Annotated[list[str], Query(default_factory=lambda: [s for s in ("a", "b")])])
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:24: pick(x: Literal[tuple([j for j in i] for i in ("ef",))])
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:8: Annotated = typing.Annotated
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:8: Literal = typing.Literal
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:10: Query = fastapi.Query
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:11: BaseModel = pydantic.BaseModel
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:11: Field = pydantic.Field
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:6: Annotated = typing.Annotated
+bindings/conditional_module_bindings: conditional_module_bindings.py:9: SafeLoader = yaml.CSafeLoader
+bindings/conditional_module_bindings: conditional_module_bindings.py:11: SafeLoader = yaml.SafeLoader
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:9: f(x: Annotated[int, lambda v: v])
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:6: Annotated = typing.Annotated
+bindings/reexport_forms: reexport_forms.py:10: Counter = collections.Counter
+bindings/reexport_forms: reexport_forms.py:11: OrderedDict = collections.OrderedDict
+extents/annotations_without_future: annotations_without_future.py:7: convert(value: int)
+extents/typing_only_parts: typing_only_parts.py:24: convert(value: int)
+extents/typing_only_parts: typing_only_parts.py:26: convert(value: str)
+extents/typing_only_parts: typing_only_parts.py:27: convert(value: object)
+extents/typing_only_parts: typing_only_parts.py:38: Base.label(value: str)
+extents/typing_only_parts: typing_only_parts.py:9: TYPE_CHECKING = typing.TYPE_CHECKING
+extents/typing_only_parts: typing_only_parts.py:9: final = typing.final
+extents/typing_only_parts: typing_only_parts.py:9: overload = typing.overload
+extents/typing_only_parts: typing_only_parts.py:14: PathLike = os.PathLike
+imports/a6_conditional_bindings: a6_conditional_bindings.py:8: TYPE_CHECKING = typing.TYPE_CHECKING
+imports/a6_conditional_bindings: a6_conditional_bindings.py:11: TypeAliasType = typing.TypeAliasType
+imports/a6_conditional_bindings: a6_conditional_bindings.py:13: TypeAliasType = typing_extensions.TypeAliasType
+imports/a6_conditional_bindings: a6_conditional_bindings.py:31: Callable = collections.abc.Callable
+imports/calls_in_deferred_annotations: calls_in_deferred_annotations.py:8: import_module = importlib.import_module
+imports/dynamic_imports: dynamic_imports.py:6: load = importlib.import_module
+imports/import_error_fallback: import_error_fallback.py:4: SafeLoader = yaml.CSafeLoader
+imports/import_error_fallback: import_error_fallback.py:6: SafeLoader = yaml.SafeLoader
+imports/modules_in_written_order: views.py:3: Pet = modules_in_written_order.Models.Pet
+imports/package_binding_before_submodule: reader.py:3: helper = package_binding_before_submodule.helper
+imports/package_binding_before_submodule: reader.py:3: tool = package_binding_before_submodule.tool
+imports/redundant_local_imports: loader.py:6: TYPE_CHECKING = typing.TYPE_CHECKING
+imports/submodule_and_parent_packages: deep.py:3: TYPE_CHECKING = typing.TYPE_CHECKING
+imports/submodule_and_parent_packages: leaf.py:4: inner = submodule_and_parent_packages.inner
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:4: TYPE_CHECKING = typing.TYPE_CHECKING
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:7: X = a.X
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:9: X = b.X
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:11: X = c.X
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:13: Y = d.Y
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:15: Z = e.Z
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:17: W = f.W
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:19: W = g.W
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:21: V = h.V
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:23: U = i.U
+imports/type_checking_in_boolean_tests: type_checking_in_boolean_tests.py:25: S = j.S
+imports/type_checking_spellings: type_checking_spellings.py:7: TC = typing.TYPE_CHECKING
+imports/type_checking_spellings: type_checking_spellings.py:11: A = a.A
+imports/type_checking_spellings: type_checking_spellings.py:13: B = b.B
+imports/type_checking_spellings: type_checking_spellings.py:15: C = c.C
+imports/type_checking_spellings: type_checking_spellings.py:17: D = d.D
+imports/type_checking_spellings: type_checking_spellings.py:19: E = e.E
+imports/type_checking_spellings: type_checking_spellings.py:21: F = f.F
+references/a6_lazy_exports: table.py:3: TYPE_CHECKING = typing.TYPE_CHECKING
+references/a6_lazy_exports: table.py:9: Hidden = json.JSONDecoder
+references/aliased_library_names: aliased_library_names.py:5: load = importlib.import_module
+references/aliased_library_names: aliased_library_names.py:6: c = typing.cast
+references/all_augmented: all_augmented.py:6: join = os.path.join
+references/annotation_modes: annotation_modes.py:15: f(x: int)
+references/annotation_modes: annotation_modes.py:6: Annotated = typing.Annotated
+references/annotations_and_string_reads: annotations_and_string_reads.py:23: Later.method(other: "Later")
+references/annotations_and_string_reads: annotations_and_string_reads.py:23: Later.method(flag: bool)
+references/annotations_and_string_reads: annotations_and_string_reads.py:6: TYPE_CHECKING = typing.TYPE_CHECKING
+references/annotations_and_string_reads: annotations_and_string_reads.py:6: Literal = typing.Literal
+references/annotations_and_string_reads: annotations_and_string_reads.py:6: TypeAlias = typing.TypeAlias
+references/annotations_and_string_reads: annotations_and_string_reads.py:9: Mapping = collections.abc.Mapping
+references/backend_strings_and_modules: backend_strings_and_modules.py:8: _source = datamodel_code_generator._source
+references/backend_strings_and_modules: backend_strings_and_modules.py:10: msgspec = datamodel_code_generator.model.msgspec
+references/backend_strings_and_modules: backend_strings_and_modules.py:11: load_backend = importlib.import_module
+references/check_main_calls: check_main_calls.py:4: aliased = scripts.check_alias
+references/check_main_calls: check_main_calls.py:5: check_nested = scripts.check_nested
+references/check_main_calls: check_main_calls.py:5: check_rooted = scripts.check_rooted
+references/check_main_calls: check_main_calls.py:5: check_tree = scripts.check_tree
+references/conditional_expression_guards: conditional_expression_guards.py:12: TYPE_CHECKING = typing.TYPE_CHECKING
+references/decorator_origins: decorator_origins.py:4: asynccontextmanager = contextlib.asynccontextmanager
+references/decorator_origins: decorator_origins.py:5: cached = functools.lru_cache
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:3: Path = pathlib.Path
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:9: nap = time.sleep
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:13: retry = flaky.flaky
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:14: marks = pytest.mark
+references/globals_registry_shapes: globals_registry_shapes.py:7: namespace = builtins.globals
+references/hash_split_receivers: hash_split_receivers.py:6: text = builtins.str
+references/header_parts_evaluated_outside: header_parts_evaluated_outside.py:6: factory.<locals>.inner(value: kind)
+references/lazy_table_module_getattr: lazy_table_module_getattr.py:6: import_module = importlib.import_module
+references/legacy_row_reading_lines: reader.py:8: read(value: str)
+references/legacy_row_reading_lines: rows.py:16: Policy.choose(row: str)
+references/legacy_row_reading_lines: rows.py:20: decide(row: str)
+references/legacy_row_reading_lines: rows.py:20: decide(flag: bool)
+references/legacy_row_reading_lines: rows.py:33: documented(row: str)
+references/legacy_row_reading_lines: rows.py:47: collect(flag: bool)
+references/legacy_row_reading_lines: rows.py:55: branch(row: str)
+references/legacy_row_reading_lines: rows.py:55: branch(rows: frozenset[str])
+references/legacy_row_reading_lines: rows.py:63: hand(row: Literal["new", "legacy-annotated"])
+references/legacy_row_reading_lines: rows.py:3: Literal = typing.Literal
+references/legacy_row_reading_lines: rows.py:3: TypeAlias = typing.TypeAlias
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:6: Final = typing.Final
+references/literal_constants_and_late_writes: literal_constants_and_late_writes.py:23: MappingProxyType = types.MappingProxyType
+references/output_policy_by_origin: output_policy_by_origin.py:5: output_backend = datamodel_code_generator.model.typed_dict
+references/output_policy_by_origin: output_policy_by_origin.py:6: LiteralType = datamodel_code_generator.parser.LiteralType
+references/output_policy_by_origin: output_policy_by_origin.py:14: DataModelType = datamodel_code_generator.DataModelType
+references/output_policy_by_origin: output_policy_by_origin.py:15: NamingType = datamodel_code_generator.reference.ModelType
+references/parser_pass_public_import: parser_pass_public_import.py:5: generation = datamodel_code_generator.parser.generation
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:8: warn = warnings.warn
+references/portable_names_by_key: portable_names_by_key.py:26: run(root: Path)
+references/portable_names_by_key: portable_names_by_key.py:32: run_through_a_name(root: Path)
+references/portable_names_by_key: portable_names_by_key.py:9: Path = pathlib.Path
+references/portable_names_in_paths: portable_names_in_paths.py:12: Path = pathlib.Path
+references/posix_only_across_modules: cases.py:3: posix_only_across_modules = scripts.posix_only_across_modules
+references/posix_only_across_modules: cases.py:4: script = scripts.posix_only_across_modules.script
+references/posix_only_across_modules: cases.py:5: entry = scripts.posix_only_across_modules.script.main
+references/posix_only_across_modules: cases.py:7: needs = tests.capabilities.needs
+references/posix_only_at_import: posix_only_at_import.py:14: make_pipe = os.mkfifo
+references/posix_only_at_import: posix_only_at_import.py:15: KILL = signal.SIGKILL
+references/posix_only_fixtures_by_pytest: cases.py:3: needs = tests.capabilities.needs
+references/posix_only_fixtures_by_pytest: cases.py:1: needs = tests.capabilities.needs
+references/posix_only_in_tests: posix_only_in_tests.py:20: needs = tests.capabilities.needs
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:39: annotated(value: _TYPE)
+references/qualified_enum_receivers: qualified_enum_receivers.py:8: enums = datamodel_code_generator.enums
+references/reexported_names_by_origin: reexported_names_by_origin.py:7: DataModelType = datamodel_code_generator.base_config.DataModelType
+references/reexported_names_by_origin: reexported_names_by_origin.py:8: import_module = datamodel_code_generator.format.import_module
+references/reference_backend_definitions: reference_backend_definitions.py:8: typed_dict = datamodel_code_generator.model.typed_dict
+references/reference_backend_definitions: reference_backend_definitions.py:9: MsgspecFieldNameResolver = datamodel_code_generator.model.field_name.MsgspecFieldNameResolver
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py:7: load = importlib.import_module
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:15: use_shadowed_alias(load_module: Callable[[str], None])
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:20: NeutralImporter.import_module(module: str)
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:29: use_shadowed_provider(import_provider: NeutralImporter)
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:5: Callable = collections.abc.Callable
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:50: ReboundImporter.import_module(module: str)
+references/skip_markers_by_origin: skip_markers_by_origin.py:11: importorskip = pytest.importorskip
+references/skip_markers_by_origin: skip_markers_by_origin.py:12: marks = pytest.mark
+references/store_writes_through_bindings: store_writes_through_bindings.py:21: closure_keeps_the_schema_object(obj: JsonSchemaObject)
+references/store_writes_through_bindings: store_writes_through_bindings.py:55: schema_object_in_a_string(obj: list["JsonSchemaObject"])
+references/store_writes_through_bindings: store_writes_through_bindings.py:55: schema_object_in_a_string(other: "JsonSchemaObject | None")
+references/string_annotation_forward: string_annotation_forward.py:11: f(x: "Later")
+references/string_annotation_forward: string_annotation_forward.py:11: f(y: Optional["Fwd"])
+references/string_annotation_forward: string_annotation_forward.py:5: TYPE_CHECKING = typing.TYPE_CHECKING
+references/string_annotation_forward: string_annotation_forward.py:5: Optional = typing.Optional
+references/string_annotation_forward: string_annotation_forward.py:8: Later = m.Later
+references/string_annotation_type_positions: string_annotation_type_positions.py:8: f(a: Literal["Any"])
+references/string_annotation_type_positions: string_annotation_type_positions.py:8: f(b: Annotated[int, "Any"])
+references/string_annotation_type_positions: string_annotation_type_positions.py:8: f(c: "Any")
+references/string_annotation_type_positions: string_annotation_type_positions.py:8: f(d: list["Any"])
+references/string_annotation_type_positions: string_annotation_type_positions.py:8: f(e: "Literal['Any']")
+references/string_annotation_type_positions: string_annotation_type_positions.py:5: Annotated = typing.Annotated
+references/string_annotation_type_positions: string_annotation_type_positions.py:5: Any = typing.Any
+references/string_annotation_type_positions: string_annotation_type_positions.py:5: Literal = typing.Literal
+references/syntax_read_by_origin: syntax_read_by_origin.py:14: stores(tree: ast.Module)
+references/syntax_read_by_origin: syntax_read_by_origin.py:25: definitions(tree: ast.Module)
+references/syntax_read_by_origin: syntax_read_by_origin.py:33: table(text: str)
+references/syntax_read_by_origin: syntax_read_by_origin.py:37: comment(token: tokenize.TokenInfo)
+references/syntax_read_by_origin: syntax_read_by_origin.py:42: Finder.visit_Lambda(node: ast.Lambda)
+references/syntax_read_by_origin: syntax_read_by_origin.py:45: Finder.visit_Call(node: ast.Call)
+references/syntax_read_by_origin: syntax_read_by_origin.py:11: FunctionDef = ast.FunctionDef
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:11: rebuild_namespace(model_type: type[object])
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:15: parameter_shadow(registry: object)
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:15: parameter_shadow(concrete_backend: str)
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:19: conditional_neutral_backend(enabled: bool)
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:86: inspect_conditional_registry(enabled: bool)
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:93: inspect_conditional_backend(enabled: bool)
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:9: builtin_import = builtins.__import__
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:10: pydantic_v2 = datamodel_code_generator.model.pydantic_v2
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:11: base_model = datamodel_code_generator.model.pydantic_v2.base_model
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:12: load_module = importlib.import_module
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:13: loaded_modules = sys.modules
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:25: read(first: typing.Any)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:26: read(second: "t.Any")
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27: read(third: list[typing.Any])
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:28: read(fourth: Config)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:29: read(fifth: Plain)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:30: read(sixth: Table)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:31: read(seventh: Payload)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32: read(eighth: Annotated[int, typing.Any])
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:33: read(ninth: Literal["typing.Any"])
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:12: TYPE_CHECKING = typing.TYPE_CHECKING
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:12: Annotated = typing.Annotated
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:12: Any = typing.Any
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:12: Literal = typing.Literal
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:12: TypeAlias = typing.TypeAlias
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:12: cast = typing.cast
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15: Table = collections.abc.Mapping
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:11: f(x: object)
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:3: TypeAlias = typing.TypeAlias
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:3: TypeVar = typing.TypeVar
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:3: cast = typing.cast
