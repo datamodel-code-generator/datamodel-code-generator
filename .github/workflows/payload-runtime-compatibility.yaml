@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   payload-runtime:
-    name: ${{ matrix.tox_env }}
+    name: ${{ matrix.tox_env }} shard ${{ matrix.shard }}/${{ matrix.shard_total }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -24,6 +24,8 @@ jobs:
           - py311-payload-runtime-latest
           - py314-payload-runtime-min
           - py314-payload-runtime-latest
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        shard_total: [12]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,6 +36,7 @@ jobs:
         with:
           enable-cache: true
           cache-suffix: ${{ matrix.tox_env }}
+          save-cache: ${{ matrix.shard == 1 }}
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
       - name: Setup payload runtime suite
@@ -41,16 +44,26 @@ jobs:
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
       - name: Run payload runtime suite
-        run: tox run --skip-uv-sync --skip-pkg-install -e ${{ matrix.tox_env }}
+        run: >-
+          tox run --skip-uv-sync --skip-pkg-install -e ${{ matrix.tox_env }} --
+          --test-shard=${{ matrix.shard }}/${{ matrix.shard_total }}
         env:
           DCG_PAYLOAD_BACKEND_CASES: all
           DCG_PAYLOAD_MAX_EXAMPLES: "100"
           UV_PYTHON_PREFERENCE: "only-managed"
 
   generated-target310-import:
-    name: Import Python 3.10 output on Python 3.10
+    name: Import Python 3.10 output on Python 3.10 shard ${{ matrix.shard }}/${{ matrix.shard_total }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard_total: [8]
+    env:
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ matrix.shard_total }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -61,14 +74,40 @@ jobs:
         with:
           enable-cache: true
           cache-suffix: generated-target310-import
+          save-cache: ${{ matrix.shard == 1 }}
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
       - name: Setup the export suite
         run: tox run -vv --notest --skip-missing-interpreters false -e generated-target310-import
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
+      - name: Select test shard
+        run: |
+          python scripts/select_ci_test_shard.py --profile 3.11 --write-recipe .tox/ci-shard-recipe.json
+          python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
+            --recipe .tox/ci-shard-recipe.json | tee .tox/ci-shard-tests.txt
+          if [ "$SHARD_INDEX" = 1 ]; then
+            printf '%s\n' "$UNSHARDED_TESTS" >> .tox/ci-shard-tests.txt
+          fi
+        shell: bash
+        env:
+          UNSHARDED_TESTS: tests/cli_doc
       - name: Export the suite's Python 3.10 output and import it on Python 3.10
-        run: tox run --skip-uv-sync --skip-pkg-install -e generated-target310-import
+        run: |
+          test_paths=()
+          part_args=()
+          part_pattern='^(.+)@[1-9][0-9]*/[1-9][0-9]*$'
+          while IFS= read -r test_path; do
+            if [[ "$test_path" =~ $part_pattern ]]; then
+              part_args+=("--test-part=$test_path")
+              test_path="${BASH_REMATCH[1]}"
+            fi
+            test_paths+=("$test_path")
+          done < .tox/ci-shard-tests.txt
+          tox run --skip-uv-sync --skip-pkg-install -e generated-target310-import -- \
+            "${part_args[@]}" \
+            "${test_paths[@]}"
+        shell: bash
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
 
