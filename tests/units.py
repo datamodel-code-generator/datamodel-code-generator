@@ -57,7 +57,7 @@ __all__ = [
     "RefsIndex",
     "UnsafeWriteError",
     "applicable_lines",
-    "apply_payload",
+    "apply_payloads",
     "clauses_hold",
     "clauses_problem",
     "condition_holds",
@@ -383,6 +383,21 @@ def parse_clauses(text: str) -> tuple[str, ...]:
     return tuple(sorted(set(clauses)))
 
 
+def _historical_clauses(text: str) -> tuple[str, ...]:
+    """Parse the ``@`` column of a sidecar from any revision: condition clauses, or the pairs written before them.
+
+    Sidecars before condition clauses wrote ``fact=value,...`` (``@formatter=builtin,python=3.12``); such a pair held
+    where the fact equals the value or starts with it and a dot, which is what ``fact==value`` means now.
+    """
+    try:
+        return parse_clauses(text)
+    except ValueError:
+        pairs = [part.partition("=") for part in text.split(",")]
+        if any(not separator or not value or not _fact_fits(fact, value) for fact, separator, value in pairs):
+            raise
+        return parse_clauses(",".join(f"{fact}=={value}" for fact, _, value in pairs))
+
+
 def clauses_hold(clauses: Iterable[str], facts: Mapping[str, str]) -> bool:
     """Return whether every condition clause holds in an environment with these facts."""
     return all(condition_holds(clause, facts) for clause in clauses)
@@ -524,7 +539,7 @@ def format_refs(lines: Iterable[RefLine]) -> str:
     return REFS_HEADER + "".join(f"{text}\n" for text in output) if output else ""
 
 
-def _parse_columns(function: str, columns: list[str]) -> RefLine:
+def _parse_columns(function: str, columns: list[str], *, historical: bool = False) -> RefLine:
     if len(columns) < 2 or not columns[1]:
         msg = "expected a parameter id and a label separated by a tab"
         raise ValueError(msg)
@@ -534,7 +549,7 @@ def _parse_columns(function: str, columns: list[str]) -> RefLine:
         if flag == "?" and not conditional and not predicate and storage is None:
             conditional = True
         elif flag.startswith("@") and not predicate and storage is None:
-            predicate = parse_clauses(flag[1:])
+            predicate = (_historical_clauses if historical else parse_clauses)(flag[1:])
         elif flag.startswith("= ") and storage is None and flag[2:]:
             storage = flag[2:]
         else:
@@ -567,8 +582,12 @@ def refs_sections(text: str) -> list[str | None]:
     return sections
 
 
-def parse_refs(text: str) -> tuple[list[RefLine], list[Problem]]:
+def parse_refs(text: str, *, historical: bool = False) -> tuple[list[RefLine], list[Problem]]:
     """Parse a sidecar into its distinct lines and its problems; a canonical file has no problems.
+
+    ``historical`` reads a sidecar of any revision, such as a release tag's: its ``@`` columns may hold the pairs
+    sidecars wrote before condition clauses (`_historical_clauses`), which read as the clauses they meant, and such a
+    file has an ``ORDER`` problem only. Sidecars of the working tree are read without it, so pytest rewrites them.
 
     The ``#`` lines a sidecar starts with are its header and hold no references. Lines that do not parse are
     ``BROKEN`` and reported alone. Otherwise two lines for one item, label and predicate are a ``CONFLICT``, and a
@@ -589,7 +608,7 @@ def parse_refs(text: str) -> tuple[list[RefLine], list[Problem]]:
             problems.append(Problem(number, "the line is outside a [test] section", BROKEN))
             continue
         try:
-            lines.append(_parse_columns(function, raw.split("\t")))
+            lines.append(_parse_columns(function, raw.split("\t"), historical=historical))
         except ValueError as error:
             problems.append(Problem(number, str(error), BROKEN))
     if problems:
@@ -1438,23 +1457,27 @@ class _Resolution:
                 Event("moved", storage, tuple((sidecar, line.item) for sidecar, line in users), (), label)
             )
 
-    def class_reads(self, lines: Sequence[RefLine], clauses: Collection[str]) -> tuple[str | None, ...]:
-        """Return what a class (the clauses that hold in it) compares among a label's lines: the stored digests.
+    def class_reads(self, lines: Sequence[RefLine], clauses: Collection[str]) -> tuple[bool, tuple[str, ...]]:
+        """Return what a class (the clauses that hold in it) compares among a label's lines, and whether it must.
 
-        One digest for the line it reads; none without a line; several when its most specific lines store different
-        contents, a class no environment recorded, which fails until one records it.
+        The digests: one for the line it reads; none without a line; several when its most specific lines store
+        different contents, a class no environment recorded, which fails until one records it. It must compare the
+        label when one of the lines that hold in it is not conditional, as the check that every line was compared
+        reads them.
         """
         read = [line for line in lines if set(line.predicate) <= set(clauses)]
         most = max((len(line.predicate) for line in read), default=0)
-        return tuple(sorted({self.digest(line.stored) or "" for line in read if len(line.predicate) == most}))
+        digests = sorted({self.digest(line.stored) or "" for line in read if len(line.predicate) == most})
+        return any(not line.conditional for line in read), tuple(digests)
 
     def collapse_overrides(self) -> None:
         """Drop each override without which no environment class compares anything else.
 
         A class is a set of the clauses the label's lines name (each one that could hold in some environment); it reads
         the most specific lines whose clauses it holds. An override goes when every class reads the same contents with
-        and without it: the class it names then reads an equal line, and no class that holds more clauses falls back
-        to another line or loses its ambiguity. The most specific overrides are decided first.
+        and without it, and must compare the label exactly where it had to (`class_reads`): the class it names then
+        reads an equal line, no class that holds more clauses falls back to another line or loses its ambiguity, and
+        no class stops comparing a label it compared. The most specific overrides are decided first.
         """
         for lines in self.kept.values():
             labels: dict[tuple[str, str, str], list[RefLine]] = {}
@@ -1951,38 +1974,62 @@ def conflicting_payloads(payloads: Iterable[Payload]) -> list[str]:
     return problems
 
 
-def apply_payload(
-    base: list[Desired], lines: list[RefLine], payload: Payload, local: Mapping[str, str], *, exists: bool
+def apply_payloads(
+    start: list[Desired], payloads: Sequence[Payload], local: Mapping[str, str], *, exists: bool
 ) -> list[Desired]:
-    """Merge one CI payload, what another environment compared for an item, into the item's desired lines.
+    """Merge CI payloads, what other environments compared for one item, into the item's desired lines (`start`).
 
-    A stale payload (the lane lacks the item) marks the item's lines that lane reads conditional when the item exists
-    here, and drops them when it exists nowhere; a missing payload marks the label's lines it reads conditional. A
-    value payload writes or replaces the line of its class (`payload_class`) and drops the label's lines whose
-    clauses the comparison no longer declares. One of this environment's class raises ``ValueError``: apply sessions
-    refuse it before, since only a local run changes what this class compares.
+    A value payload writes or replaces the line of its class (`payload_class`) and drops the label's lines whose
+    clauses the comparison no longer declares. A line it adds takes the conditional flag of the line its class read in
+    `start`; without one it is conditional when the item has other lines or does not exist here. Where it would change
+    what this environment's class reads, that class keeps what it read under a line of its own, since only a local run
+    changes what this class compares; one of this environment's class raises ``ValueError`` (apply sessions refuse it
+    before). Then a stale payload (the lane lacks the item) marks the item's lines that lane reads conditional when
+    the item exists here, and drops them when it exists nowhere; a missing payload marks the label's lines it reads
+    conditional. So the result does not depend on the order of the payloads.
     """
-    facts = payload["facts"]
-    if payload.get("stale"):
-        marked = [replace(want, conditional=True) if clauses_hold(want.predicate, facts) else want for want in base]
-        return marked if exists else []
-    label = payload["label"]
-    if payload.get("missing"):
-        return [
-            replace(want, conditional=True) if want.label == label and clauses_hold(want.predicate, facts) else want
-            for want in base
-        ]
-    value, digest, target = payload["value"], payload["digest"], payload_class(payload, facts)
-    if target == payload_class(payload, local):
+    desired = list(start)
+    for payload in sorted(payloads, key=lambda payload: "digest" not in payload):
+        facts = payload["facts"]
+        if payload.get("stale"):
+            marked = [
+                replace(want, conditional=True) if clauses_hold(want.predicate, facts) else want for want in desired
+            ]
+            desired = marked if exists else []
+        elif payload.get("missing"):
+            desired = [
+                replace(want, conditional=True)
+                if want.label == payload["label"] and clauses_hold(want.predicate, facts)
+                else want
+                for want in desired
+            ]
+        else:
+            desired = _apply_value(start, desired, payload, local, exists=exists)
+    return desired
+
+
+def _apply_value(
+    start: list[Desired], desired: list[Desired], payload: Payload, local: Mapping[str, str], *, exists: bool
+) -> list[Desired]:
+    """Write a value payload's line into an item's desired lines (`apply_payloads`)."""
+    label, value, digest = payload["label"], payload["value"], payload["digest"]
+    target, home = payload_class(payload, payload["facts"]), payload_class(payload, local)
+    if target == home:
         msg = "the payload comes from this environment's class; run its test here with --inline-snapshot=fix instead"
         raise ValueError(msg)
     declared = set(payload["clauses"])
-    desired = [want for want in base if want.label != label or set(want.predicate) <= declared]
+    desired = [want for want in desired if want.label != label or set(want.predicate) <= declared]
+    before = applicable_lines((want for want in desired if want.label == label), local)
     if any(want.label == label and want.predicate == target for want in desired):
-        return [
+        desired = [
             replace(want, value=value, digest=digest) if want.label == label and want.predicate == target else want
             for want in desired
         ]
-    read = applicable_lines((want for want in desired if want.label == label), facts)
-    conditional = read[0].conditional if read else bool(lines) or bool(desired) or not exists
-    return [*desired, Desired(label, conditional, target, value, digest)]
+    else:
+        recorded = [want for want in start if want.label != label or set(want.predicate) <= declared]
+        read = applicable_lines((want for want in recorded if want.label == label), payload["facts"])
+        conditional = read[0].conditional if read else bool(recorded) or not exists
+        desired = [*desired, Desired(label, conditional, target, value, digest)]
+    if len(before) == 1 and applicable_lines((want for want in desired if want.label == label), local) != before:
+        desired.append(replace(before[0], predicate=home))
+    return desired

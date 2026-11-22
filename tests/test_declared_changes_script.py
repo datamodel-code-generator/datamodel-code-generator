@@ -249,6 +249,18 @@ CASES: dict[str, dict[str, Any]] = {
             ),
         },
     },
+    "selectors of an older revision in the old spelling": {
+        "release": {
+            "tests/test_models.refs": _sidecar(
+                REFS | {"test_tree": [*REFS["test_tree"], "py\tmodels/pkg//*.py\t@formatter=builtin,python=3.11"]}
+            )
+        },
+        "head": {
+            "tests/test_models.refs": _sidecar(
+                REFS | {"test_tree": [*REFS["test_tree"], "py\tmodels/pkg//*.py\t@formatter==builtin,python==3.11"]}
+            )
+        },
+    },
     "same units in another form": {
         "head": {
             f"{EXPECTED}/models/d.json": '{\n  "a": 1,\n  "b": [\n    1,\n    2\n  ]\n}',

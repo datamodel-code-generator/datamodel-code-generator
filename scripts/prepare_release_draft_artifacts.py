@@ -307,7 +307,7 @@ def _stored_help(repository: Path, revision: str) -> str | None:
     storage = next(
         (
             split_label(line.stored)[0]
-            for line in parse_refs(refs)[0]
+            for line in parse_refs(refs, historical=True)[0]
             if (line.function, line.param) == HELP_ITEM and not line.predicate
         ),
         None,

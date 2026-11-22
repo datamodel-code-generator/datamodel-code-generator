@@ -926,30 +926,45 @@ def test_ledger_keys_lines_on_the_declared_class(ledger: LedgerProject) -> None:
     assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "external\n"})
 
 
-def test_ledger_records_a_class_no_line_records(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(
+    ("output", "suffix", "stored", "written"),
+    [
+        pytest.param("'z\\n'", ".txt", ("x\n", "y\n"), "z\n", id="text"),
+        pytest.param("1", ".json", ("1", "true"), "1", id="json-kinds"),
+    ],
+)
+def test_ledger_records_a_class_no_line_records(
+    ledger: LedgerProject,
+    monkeypatch: pytest.MonkeyPatch,
+    output: str,
+    suffix: str,
+    stored: tuple[str, str],
+    written: str,
+) -> None:
     """Lines of as many clauses that all hold here and store different outputs leave this class unrecorded.
 
     Other runs fail saying so, CI with a payload for the class; a fix run writes the line of the class, which holds both
-    clauses.
+    clauses. JSON values of different kinds are different outputs, although Python finds ``1 == True``.
     """
     everywhere = "platform==darwin|platform==linux|platform==win32"
     monkeypatch.setitem(capabilities.CAPABILITIES, "any-platform", ((everywhere,), "every platform"))
     ledger.write(
         "test_m.py",
-        "from tests.conftest import assert_output\n\n\n"
-        "def test_a():\n    assert_output('z\\n', varies_with=('builtin-formatter', 'any-platform'))\n",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        f"    assert_output({output}, suffix={suffix!r}, varies_with=('builtin-formatter', 'any-platform'))\n",
     )
-    ledger.store("m/a@builtin.txt", "x\n")
-    ledger.store("m/a@any.txt", "y\n")
+    label = f"m/a{suffix}"
+    ledger.store(builtin := f"m/a@builtin{suffix}", stored[0])
+    ledger.store(anywhere := f"m/a@any{suffix}", stored[1])
     lines = [
-        units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage="m/a@builtin.txt"),
-        units.RefLine("test_a", "", "m/a.txt", predicate=(everywhere,), storage="m/a@any.txt"),
+        units.RefLine("test_a", "", label, predicate=("formatter==builtin",), storage=builtin),
+        units.RefLine("test_a", "", label, predicate=(everywhere,), storage=anywhere),
     ]
     (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
     failing = ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN)
     failing.assert_outcomes(failed=1)
     assert (
-        f"suite/test_m.py::test_a reads m/a.txt under @formatter==builtin and @{everywhere}, which store different "
+        f"suite/test_m.py::test_a reads {label} under @formatter==builtin and @{everywhere}, which store different "
         f"outputs: this environment's class (formatter==builtin,{everywhere}) has no line of its own.\n"
         "Fix: record this environment's class: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
     ) in failing.stdout.str()
@@ -960,7 +975,7 @@ def test_ledger_records_a_class_no_line_records(ledger: LedgerProject, monkeypat
     ledger.run("suite", "--inline-snapshot=fix", env=BUILTIN).assert_outcomes(passed=1)
     recorded = {line.predicate: line.stored for line in units.parse_refs(ledger.refs())[0]}
     assert sorted(recorded) == [("formatter==builtin",), ("formatter==builtin", everywhere), (everywhere,)]
-    assert ledger.files()[recorded["formatter==builtin", everywhere]] == "z\n"
+    assert ledger.files()[recorded["formatter==builtin", everywhere]] == written
     ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN).assert_outcomes(passed=1)
 
 
@@ -1574,7 +1589,8 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
     """A payload of another class adds the line of its class, and marks the labels its lane skips conditional.
 
     A label no line records gets the line of the payload's class, conditional since the item has other lines; the line
-    of a class that stores what the class would read without it goes again.
+    of a class that stores what the class would read without it goes again. A payload that replaces the line this
+    environment's class reads leaves that class what it read, under a line of its own.
     """
     ledger.write(
         "test_m.py",
@@ -1583,14 +1599,14 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
 
 
         def test_a():
-            assert_output("x\\n", varies_with=("black-before-24",))
+            assert_output("x\\n", varies_with=("builtin-formatter",))
             assert_output("y\\n", name="extra")
         """,
     )
     ledger.run("suite").assert_outcomes(passed=1)
     facts = {
         "python": "3.10",
-        "formatter": "external",
+        "formatter": "builtin",
         "black": "22.1.0",
         "isort": "5.13.2",
         "platform": "linux",
@@ -1604,7 +1620,7 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
             "label": "m/a.txt",
             "digest": units.unit_digest("m/a.txt", "x22\n"),
             "value": "x22\n",
-            "clauses": ["black<24"],
+            "clauses": ["formatter==builtin"],
         },
         {"facts": facts, "item": item, "label": "m/a.extra.txt", "missing": True},
         {
@@ -1613,23 +1629,77 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
             "label": "m/a.only.txt",
             "digest": units.unit_digest("m/a.only.txt", "o\n"),
             "value": "o\n",
-            "clauses": ["black<24"],
+            "clauses": ["formatter==builtin"],
         },
     ]
     apply_file = tmp_path / "apply.json"
     apply_file.write_text(json.dumps({"payloads": payloads}), encoding="utf-8")
     ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
+    storage = "m/a@formatter-eq-builtin.txt"
     assert ledger.refs() == HEADER + (
-        "[test_a]\n\tm/a.extra.txt\t?\n\tm/a.only.txt\t?\t@black<24\n\tm/a.txt\n"
-        "\tm/a.txt\t@black<24\t= m/a@black-lt-24.txt\n"
+        "[test_a]\n\tm/a.extra.txt\t?\n\tm/a.only.txt\t?\t@formatter==builtin\n\tm/a.txt\n"
+        f"\tm/a.txt\t@formatter==builtin\t= {storage}\n"
     )
-    assert ledger.files()["m/a@black-lt-24.txt"] == "x22\n"
+    assert ledger.files()[storage] == "x22\n"
     payloads[0] |= {"value": "x\n", "digest": units.unit_digest("m/a.txt", "x\n")}
     apply_file.write_text(json.dumps({"payloads": payloads[:1]}), encoding="utf-8")
     ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
     assert "m/a.txt\t@" not in ledger.refs()
-    assert "m/a@black-lt-24.txt" not in ledger.files()
+    assert storage not in ledger.files()
     ledger.run("suite").assert_outcomes(passed=1)
+    external = payloads[0] | {
+        "facts": facts | {"formatter": "external"},
+        "value": "z\n",
+        "digest": units.unit_digest("m/a.txt", "z\n"),
+    }
+    apply_file.write_text(json.dumps({"payloads": [external]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN).assert_outcomes()
+    recorded = {line.predicate: line.stored for line in units.parse_refs(ledger.refs())[0] if line.label == "m/a.txt"}
+    assert {predicate: ledger.files()[stored] for predicate, stored in recorded.items()} == {
+        (): "z\n",
+        ("formatter==builtin",): "x\n",
+    }
+    ledger.run("suite", env=BUILTIN).assert_outcomes(passed=1)
+
+
+@pytest.mark.parametrize("reverse", [False, True], ids=["missing-first", "value-first"])
+def test_ledger_applies_payloads_in_any_order(ledger: LedgerProject, tmp_path: Path, *, reverse: bool) -> None:
+    """The lines a batch of payloads writes do not depend on the order of the payloads.
+
+    A lane that reads the base line and compares nothing makes it conditional; the line another class's payload adds
+    takes the flag of the line its class read before the batch.
+    """
+    ledger.write(
+        "test_m.py",
+        """
+        from tests.conftest import assert_output
+
+
+        def test_a():
+            assert_output("x\\n", varies_with=("builtin-formatter",))
+            assert_output("y\\n", name="extra")
+        """,
+    )
+    ledger.run("suite").assert_outcomes(passed=1)
+    lane = {"python": "3.10", "black": "22.1.0", "isort": "5.13.2", "platform": "linux", "pydantic": "2.14.1"}
+    item = "suite/test_m.py::test_a"
+    payloads = [
+        {"facts": lane | {"formatter": "external"}, "item": item, "label": "m/a.txt", "missing": True},
+        {
+            "facts": lane | {"formatter": "builtin"},
+            "item": item,
+            "label": "m/a.txt",
+            "digest": units.unit_digest("m/a.txt", "b\n"),
+            "value": "b\n",
+            "clauses": ["formatter==builtin"],
+        },
+    ]
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": payloads[::-1] if reverse else payloads}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
+    assert ledger.refs() == HEADER + (
+        "[test_a]\n\tm/a.extra.txt\n\tm/a.txt\t?\n\tm/a.txt\t@formatter==builtin\t= m/a@formatter-eq-builtin.txt\n"
+    )
 
 
 def test_ledger_payload_too_large(ledger: LedgerProject) -> None:
@@ -2276,7 +2346,7 @@ def _value_payload(facts: dict[str, str], value: str, clauses: list[str], label:
     )
 
 
-def test_apply_payload_writes_the_line_of_its_class() -> None:
+def test_apply_payloads_write_the_line_of_their_class() -> None:
     """A value payload writes or replaces its class's line and drops lines of clauses the comparison no longer declares.
 
     One of this environment's class raises; stale and missing payloads mark the lines their lane reads conditional,
@@ -2284,27 +2354,91 @@ def test_apply_payload_writes_the_line_of_its_class() -> None:
     """
     base = [units.Desired("m/a.txt"), units.Desired("m/a.txt", predicate=("black<24",))]
     windows = _value_payload(WINDOWS, "w\n", ["platform==win32"])
-    added = units.apply_payload(base, [], windows, PY311, exists=True)
+    added = units.apply_payloads(base, [windows], PY311, exists=True)
     assert added == [
         units.Desired("m/a.txt"),
         units.Desired("m/a.txt", False, ("platform==win32",), "w\n", windows["digest"]),
     ]
-    again = units.apply_payload(added, [], _value_payload(WINDOWS, "v\n", ["platform==win32"]), PY311, exists=True)
+    again = units.apply_payloads(added, [_value_payload(WINDOWS, "v\n", ["platform==win32"])], PY311, exists=True)
     assert [(want.predicate, want.value) for want in again] == [((), units.KEEP), (("platform==win32",), "v\n")]
     with pytest.raises(ValueError, match="this environment's class"):
-        units.apply_payload(base, [], _value_payload(PY311, "x\n", ["platform==win32"]), PY311, exists=True)
-    new = units.apply_payload([], [], windows, PY311, exists=False)
+        units.apply_payloads(base, [_value_payload(PY311, "x\n", ["platform==win32"])], PY311, exists=True)
+    new = units.apply_payloads([], [windows], PY311, exists=False)
     assert [(want.predicate, want.conditional) for want in new] == [(("platform==win32",), True)]
     stale = units.Payload(facts=WINDOWS, item="t.py::test_a", stale=True)
-    assert units.apply_payload(added, [], stale, PY311, exists=True) == [
+    assert units.apply_payloads(added, [stale], PY311, exists=True) == [
         units.Desired("m/a.txt", conditional=True),
         replace(added[1], conditional=True),
     ]
-    assert units.apply_payload(added, [], stale, PY311, exists=False) == []
+    assert units.apply_payloads(added, [stale], PY311, exists=False) == []
     missing = units.Payload(facts=PY311, item="t.py::test_a", label="m/a.txt", missing=True)
-    assert units.apply_payload(added, [], missing, WINDOWS, exists=True) == [
+    assert units.apply_payloads(added, [missing], WINDOWS, exists=True) == [
         units.Desired("m/a.txt", conditional=True),
         added[1],
+    ]
+
+
+@pytest.mark.parametrize(
+    ("clauses", "facts", "local", "wanted"),
+    [
+        pytest.param(
+            ["formatter==builtin"],
+            BLACK22,
+            PY311,
+            [((), "y\n"), (("formatter==builtin",), units.KEEP)],
+            id="replacing-the-line-it-reads",
+        ),
+        pytest.param(
+            ["black<24", "platform==win32"],
+            WINDOWS,
+            {**BLACK22, "platform": "win32"},
+            [((), units.KEEP), (("platform==win32",), "y\n"), (("black<24", "platform==win32"), units.KEEP)],
+            id="adding-a-line-it-would-read",
+        ),
+        pytest.param(
+            ["black<24", "platform==win32"],
+            WINDOWS,
+            BLACK22,
+            [((), units.KEEP), (("platform==win32",), "y\n")],
+            id="adding-a-line-it-does-not-read",
+        ),
+    ],
+)
+def test_apply_payloads_keep_what_this_class_reads(
+    clauses: list[str],
+    facts: dict[str, str],
+    local: dict[str, str],
+    wanted: list[tuple[tuple[str, ...], object]],
+) -> None:
+    """A payload of another class that would change what this environment's class reads leaves that class its line.
+
+    The kept line has the contents and storage the class read, under the class's own clauses.
+    """
+    current = units.RefLine("test_a", "", "m/a.txt", storage="m/shared.txt")
+    applied = units.apply_payloads(
+        [units.Desired("m/a.txt", current=current)], [_value_payload(facts, "y\n", clauses)], local, exists=True
+    )
+    assert [(want.predicate, want.value) for want in applied] == wanted
+    assert all(want.current is current for want in applied if want.value is units.KEEP)
+
+
+def test_apply_payloads_do_not_depend_on_their_order() -> None:
+    """A line a value payload adds takes its flag from the item's lines before the payloads, not from other payloads.
+
+    A missing payload, from a lane that reads the base line and compares nothing, marks the base line conditional and
+    not the line of a class it is not in, in either order.
+    """
+    start = [units.Desired("m/a.txt"), units.Desired("m/a.extra.txt")]
+    payloads = [
+        units.Payload(facts=PY311, item="t.py::test_a", label="m/a.txt", missing=True),
+        _value_payload(WINDOWS, "w\n", ["platform==win32"]),
+    ]
+    applied = [units.apply_payloads(start, order, BLACK22, exists=True) for order in (payloads, payloads[::-1])]
+    assert applied[0] == applied[1]
+    assert [(want.label, want.predicate, want.conditional) for want in applied[0]] == [
+        ("m/a.txt", (), True),
+        ("m/a.extra.txt", (), False),
+        ("m/a.txt", ("platform==win32",), False),
     ]
 
 
@@ -2350,40 +2484,58 @@ def test_conflicting_payloads(payloads: list[units.Payload], problems: list[str]
 
 
 @pytest.mark.parametrize(
-    ("contents", "kept"),
+    ("contents", "kept", "optional"),
     [
-        pytest.param({(): "x\n", ("black<24",): "x\n"}, [()], id="equal-to-base"),
-        pytest.param({(): "x\n", ("black<24",): "y\n"}, [(), ("black<24",)], id="different"),
-        pytest.param({("black<24",): "y\n"}, [("black<24",)], id="no-base"),
+        pytest.param({(): "x\n", ("black<24",): "x\n"}, [()], (), id="equal-to-base"),
+        pytest.param({(): "x\n", ("black<24",): "y\n"}, [(), ("black<24",)], (), id="different"),
+        pytest.param({("black<24",): "y\n"}, [("black<24",)], (), id="no-base"),
         pytest.param(
             {(): "x\n", ("black<24",): "x\n", ("platform==win32",): "y\n"},
             [(), ("black<24",), ("platform==win32",)],
+            (),
             id="keeps-an-unrecorded-class-ambiguous",
         ),
         pytest.param(
             {(): "x\n", ("black<24",): "y\n", ("black<24", "platform==win32"): "y\n"},
             [(), ("black<24",)],
+            (),
             id="equal-to-a-broader-override",
+        ),
+        pytest.param(
+            {(): "x\n", ("platform==win32",): "x\n"},
+            [(), ("platform==win32",)],
+            ((),),
+            id="keeps-a-comparison-the-base-makes-optional",
+        ),
+        pytest.param(
+            {(): "x\n", ("platform==win32",): "x\n"}, [()], (("platform==win32",),), id="optional-under-a-required-base"
         ),
     ],
 )
 def test_collapse_drops_overrides_no_class_needs(
-    tmp_path: Path, contents: dict[tuple[str, ...], str], kept: list[tuple[str, ...]]
+    tmp_path: Path,
+    contents: dict[tuple[str, ...], str],
+    kept: list[tuple[str, ...]],
+    optional: tuple[tuple[str, ...], ...],
 ) -> None:
-    """An override goes only when every class of the label's clauses compares the same contents without it."""
+    """An override goes only when every class of the label's clauses compares the same contents without it.
+
+    Every class must also compare the label exactly where it had to: a class compares it when one of its lines is not
+    conditional (``optional`` lists the conditional ones).
+    """
     sidecar = tmp_path / "test_m.refs"
     storages = {predicate: f"m/a@{index}.txt" for index, predicate in enumerate(contents)}
     for predicate, text in contents.items():
         (tmp_path / storages[predicate]).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / storages[predicate]).write_text(text, encoding="utf-8")
     lines = [
-        units.RefLine("test_a", "", "m/a.txt", predicate=predicate, storage=storages[predicate])
+        units.RefLine("test_a", "", "m/a.txt", predicate in optional, predicate, storages[predicate])
         for predicate in contents
     ]
     updates = {
         sidecar: {
             ("test_a", ""): [
-                units.Desired("m/a.txt", predicate=predicate, current=line)
+                units.Desired("m/a.txt", line.conditional, predicate, current=line)
                 for predicate, line in zip(contents, lines, strict=True)
             ]
         }

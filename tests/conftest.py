@@ -49,13 +49,14 @@ from tests.units import (
     Desired,
     Event,
     Observations,
+    Payload,
     Plan,
     Problem,
     RefLine,
     RefsIndex,
     UnsafeWriteError,
     applicable_lines,
-    apply_payload,
+    apply_payloads,
     clauses_hold,
     clauses_problem,
     conflicting_payloads,
@@ -1524,14 +1525,19 @@ class _Ledger:
     def unrecorded_class(self, read: list[RefLine]) -> bool:
         """Return whether lines of different clauses, as many of each, hold here and store different contents.
 
-        That is a class no environment recorded: the lines tell nothing about which output it has.
+        That is a class no environment recorded: the lines tell nothing about which output it has. Contents compare by
+        their digests (`unit_digest`), so JSON values of different kinds differ although Python finds ``1 == True``;
+        a missing file differs from every stored value.
         """
         if len({line.predicate for line in read}) < 2:
             return False
-        contents = [
-            read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1]) for line in read
-        ]
-        return any(content != contents[0] for content in contents)
+        contents = {
+            None
+            if (value := read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1])) is None
+            else unit_digest(line.label, value)
+            for line in read
+        }
+        return len(contents) > 1
 
     def unrecorded_class_status(self, observation: _Observation, read: list[RefLine]) -> str:
         """Record the output of a class no environment recorded in a fixing or observing run; else fail saying how."""
@@ -1961,17 +1967,21 @@ class _Ledger:
             for nodeid in uncollected_items(self.observations, recorded):
                 sidecar, function, param = nodeid_key(rootpath, nodeid)
                 updates.setdefault(sidecar, {})[function, param] = []
+        by_item: dict[tuple[Path, str, str], list[Payload]] = {}
         for payload in self.apply_data.get("payloads", []):
-            sidecar, function, param = nodeid_key(rootpath, payload["item"])
+            by_item.setdefault(nodeid_key(rootpath, payload["item"]), []).append(payload)
+        for (sidecar, function, param), payloads in by_item.items():
             current = updates.get(sidecar, {}).get((function, param))
-            lines = self.index.item_lines(sidecar).get((function, param), [])
-            base = (
+            start = (
                 current
                 if current is not None
-                else [Desired(line.label, line.conditional, line.predicate) for line in lines]
+                else [
+                    Desired(line.label, line.conditional, line.predicate, current=line)
+                    for line in self.index.item_lines(sidecar).get((function, param), [])
+                ]
             )
-            updates.setdefault(sidecar, {})[function, param] = apply_payload(
-                base, lines, payload, self.facts, exists=(sidecar, function, param) in local
+            updates.setdefault(sidecar, {})[function, param] = apply_payloads(
+                start, payloads, self.facts, exists=(sidecar, function, param) in local
             )
         return updates
 
