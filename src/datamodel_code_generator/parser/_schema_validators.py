@@ -54,6 +54,7 @@ from datamodel_code_generator.parser._intersection import (
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
 from datamodel_code_generator.parser._naming import composed_name
+from datamodel_code_generator.parser._object_maps import with_item_null
 from datamodel_code_generator.parser._passes._shared import (
     CollapseRootModelsHost,
     DataModelTypeHost,
@@ -1915,7 +1916,7 @@ def collect_pattern_property_validators(
                         value_path = get_special_path(
                             f"schemaValidators/patternProperties/{source_index}/{pattern_index}", path
                         )
-                        value_type = parser.parse_item(name, schema, value_path)
+                        value_type = with_item_null(parser, schema, parser.parse_item(name, schema, value_path))
                         value_type = parser._pattern_value_alias(name, schema, value_type, value_path)
                     pattern_value_types.append((pattern, value_type))
                 case False | JsonSchemaObject():

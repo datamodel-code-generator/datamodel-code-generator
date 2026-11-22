@@ -426,6 +426,7 @@ class BaseGenerateConfig(BaseModel):
     read_allof_parents_in_mro_order: bool = False
     read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
+    keep_null_of_nullable_items: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False
     set_default_enum_member: bool = False

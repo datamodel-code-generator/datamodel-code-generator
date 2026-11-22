@@ -142,7 +142,10 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 """The options the 20261120 presets set beyond the 20261118 presets."""
 
-OPT_IN_OPTIONS_20261123: tuple[str, ...] = ("--read-mapping-keys-by-schema-tag-type",)
+OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
+    "--read-mapping-keys-by-schema-tag-type",
+    "--keep-null-of-nullable-items",
+)
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
 WARNINGS_WITH_OPTION: dict[str, str] = {
@@ -604,6 +607,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-mapping-keys-by-schema-tag-type",
     ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "nullable_item_forms.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--strict-nullable"],
+        id="keep-null-of-nullable-items",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -959,6 +968,13 @@ def test_preset_sets_opt_in_option(
             "--read-mapping-keys-by-schema-tag-type",
             "--no-read-mapping-keys-by-schema-tag-type",
             id="read-mapping-keys-by-schema-tag-type",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "nullable_item_forms.yaml",
+            ["--strict-nullable"],
+            "--keep-null-of-nullable-items",
+            "--no-keep-null-of-nullable-items",
+            id="keep-null-of-nullable-items",
         ),
     ],
 )

@@ -126,6 +126,7 @@ The 20261120 presets keep the 20261118 options and add:
 The 20261123 presets keep the 20261120 options and add:
 
 - Mapping keys by the schema's tag type (`--read-mapping-keys-by-schema-tag-type`): Read the keys of a discriminator mapping as values of the type the schema declares for the tag property, such as the integer 2 for the key '2' of an integer enum, also where an earlier discriminated union wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first.
+- Null kept on nullable items (`--keep-null-of-nullable-items`): Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, a map value of any form, a nested array, a map or an allOf of one $ref included, as it is written for a scalar or an object. An enum or a const still rejects null.
 
 ## Older presets
 

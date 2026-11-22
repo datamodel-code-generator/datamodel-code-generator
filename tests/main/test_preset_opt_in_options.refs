@@ -8,6 +8,8 @@ capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/p
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
+keep-null-of-nullable-items-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
+keep-null-of-nullable-items-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-inherited-property-schemas-in-mro-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].model.py
@@ -81,6 +83,8 @@ keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].model.py
 keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].model.py
 keep-first-character-of-path-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].model.py
+keep-null-of-nullable-items-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-practical].model.py
+keep-null-of-nullable-items-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-practical].model.py
 keep-reference-null-on-collapsed-root-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-practical].model.py
 keep-reference-null-on-collapsed-root-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-practical].model.py
 keep-reference-null-on-merged-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-merged-models-practical].model.py
