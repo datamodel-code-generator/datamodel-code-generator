@@ -807,12 +807,12 @@ def show(flag: bool) -> None:
     "unchanged-counter-other-checkout-input": {
         "base": {
             **COUNTER,
-            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = ">=3.11"\n',
-            "tests/test_a.py": "type Alias = int\n",
+            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = ">=3.9"\n',
+            "tests/test_a.py": "match 1:\n    case _:\n        pass\n",
         },
         "head": {
-            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = "~=3.11"\n',
-            "tests/test_b.py": "type Alias = int\n",
+            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = "~=3.9"\n',
+            "tests/test_b.py": "match 1:\n    case _:\n        pass\n",
         },
         "args": ["--enforce"],
         "subprocess": True,

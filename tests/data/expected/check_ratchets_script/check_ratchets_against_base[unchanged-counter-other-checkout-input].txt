@@ -13,13 +13,14 @@ ruff-config:ignore:ERA001                          1       1       0
 ruff-config:ignore:INP                             1       1       0
 ruff-config:per-file:tests/**/*.py:S101            1       1       0
 ruff:PLC0415@src                                   1       1       0
-source-rule:floor-syntax                           1       0      -1
+source-rule:floor-syntax                           2       0      -2
 
 The base revision's scripts/check_ratchets.py also counts these rises, which this copy does not: the change weakens the
 counter that judges it. Keep the counter's rules (changes to it are reviewed) and fix the hatches:
 
-source-rule:floor-syntax is absolute and holds 2 sites (the base 1): it must be 0. Store the file as `<name>.py.txt` and copy it where a test reads it on a Python that parses it, or write it in the oldest supported grammar; `python scripts/check_source_rules.py --rule floor-syntax` prints each site with its detail.
+source-rule:floor-syntax is absolute and holds 3 sites (the base 2): it must be 0. Store the file as `<name>.py.txt` and copy it where a test reads it on a Python that parses it, or write it in the oldest supported grammar; `python scripts/check_source_rules.py --rule floor-syntax` prints each site with its detail.
   tests/test_a.py: 1 -> 1
   tests/test_b.py: 0 -> 1
+  tests/units.py: 1 -> 1
 
 Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

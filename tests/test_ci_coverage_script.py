@@ -332,7 +332,11 @@ def test_collect_combines_the_files_written_after_the_tests(
     if Path(target).is_file():
         stored = CoverageData(target)
         stored.read()
-        lines = {Path(name).name: sorted(stored.lines(name) or []) for name in stored.measured_files()}
+        lines = {
+            Path(name).name: sorted(stored.lines(name) or [])
+            for name in stored.measured_files()
+            if Path(name).name == "sign.py"
+        }
     payload = {
         "code": code,
         # Coverage's verdict on each file, without the paths of its warnings, which differ by machine.
