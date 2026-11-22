@@ -24,7 +24,9 @@ a finding of one of these kinds:
   version lines normalised) decide alike without being judged.
 
 BASE generates only the contracts whose options it has (`behaviour_diff.opt_in_reason`): a dated preset newer than
-BASE is judged against the validator only. A finding is known when a rule covers it (`compose.covering`): a rule of
+BASE is judged against the validator only. A backend BASE lacks (a value of `--output-model-type` its options do not
+have) is not drawn, and the run says so; the run refuses when BASE lacks an option every generation uses
+(`common_args`) or every backend. A finding is known when a rule covers it (`compose.covering`): a rule of
 `shape_families/kept.py` that covers one level's own part, or a rule over the composition's parameters
 (`compose.COMPOSED`); the default output's differences are frozen and the newest preset's are its to-do list, as for
 the families themselves. Every other finding fails the run.
@@ -61,7 +63,7 @@ from tests.capabilities import missing
 from tests.conftest import expected_environment_facts
 from tests.main.payload_validation.neighbours import value_neighbours
 from tests.main.shape_families.compose import COMPOSED, backends, compose, covering, describe, levels
-from tests.main.shape_families.families import TYPED_DICT
+from tests.main.shape_families.families import FAMILY_BACKENDS, TYPED_DICT
 from tests.main.shape_families.kept import KEPT
 from tests.main.shape_families.moves import moved, verdicts
 from tests.main.shape_families.verdict import CONTRACTS, judge, schema_case
@@ -83,24 +85,29 @@ MOVED: Final = "moved"
 RULES: Final = (*KEPT, *COMPOSED)
 
 
-def shared_args(schema: Path, backend: str) -> list[str]:
-    """Return the arguments every generation has, whatever the contract."""
-    return [
-        "--input",
-        str(schema),
-        "--input-file-type",
-        "jsonschema",
-        "--output-model-type",
-        backend,
-        "--disable-timestamp",
-        "--formatters",
-        "builtin",
-    ]
+BACKEND_OPTION: Final = "--output-model-type"
+REQUESTED: Final = tuple(dict.fromkeys(backend for family in FAMILY_BACKENDS.values() for backend in family))
+"""The backends the families are generated for, each once, in the order the families name them."""
+
+
+def common_args(schema: Path) -> list[str]:
+    """Return the arguments every generation has, whatever the backend and the contract."""
+    return ["--input", str(schema), "--input-file-type", "jsonschema", "--disable-timestamp", "--formatters", "builtin"]
 
 
 def generation_args(schema: Path, backend: str, contract: str) -> list[str]:
     """Return the arguments both sides generate a composition with (the runner adds `--output`)."""
-    return [*shared_args(schema, backend), *CONTRACTS[contract]]
+    return [*common_args(schema), BACKEND_OPTION, backend, *CONTRACTS[contract]]
+
+
+def absent_common_option(inventory: dict[str, list[str] | None]) -> str | None:
+    """Return the first option or value of `common_args` that a base's option inventory lacks."""
+    return opt_in_reason(common_args(Path("schema.json")), inventory)
+
+
+def base_backends(inventory: dict[str, list[str] | None]) -> tuple[str, ...]:
+    """Return the backends of `REQUESTED` that a base's option inventory has as a value of `BACKEND_OPTION`."""
+    return tuple(backend for backend in REQUESTED if opt_in_reason([BACKEND_OPTION, backend], inventory) is None)
 
 
 @dataclass(frozen=True)
@@ -112,21 +119,31 @@ class Example:
     contract: str
 
 
-def judged_backends(chain: tuple[Level, ...]) -> tuple[str, ...]:
-    """Return the backends of a composition that this interpreter can judge.
+def judged_backends(chain: tuple[Level, ...], available: tuple[str, ...]) -> tuple[str, ...]:
+    """Return the backends of a composition that the base generates (``available``) and this interpreter can judge.
 
     TypedDict needs the test suite's capability ``typed-dict-validation`` (Pydantic validates ``typing.TypedDict`` from
-    Python 3.12 on); the composition's first backend, Pydantic v2, is judged everywhere.
+    Python 3.12 on).
     """
     lacking = bool(missing(("typed-dict-validation",), expected_environment_facts()))
-    return tuple(backend for backend in backends(chain) if not (lacking and backend == TYPED_DICT))
+    return tuple(
+        backend for backend in backends(chain) if backend in available and not (lacking and backend == TYPED_DICT)
+    )
 
 
-def examples() -> st.SearchStrategy[Example]:
-    """Return the strategy of examples: a composition, then one of the backends it is judged for and a contract."""
-    return levels().flatmap(
-        lambda chain: st.builds(
-            Example, st.just(chain), st.sampled_from(judged_backends(chain)), st.sampled_from(tuple(CONTRACTS))
+def examples(available: tuple[str, ...]) -> st.SearchStrategy[Example]:
+    """Return the strategy of examples: a composition, then one of the backends it is judged for and a contract.
+
+    A composition with no backend in ``available`` that this interpreter can judge is not drawn.
+    """
+    return (
+        levels()
+        .map(lambda chain: (chain, judged_backends(chain, available)))
+        .filter(lambda drawn: bool(drawn[1]))
+        .flatmap(
+            lambda drawn: st.builds(
+                Example, st.just(drawn[0]), st.sampled_from(drawn[1]), st.sampled_from(tuple(CONTRACTS))
+            )
         )
     )
 
@@ -174,6 +191,8 @@ class Explorer:
     base: compare_release.Runner
     compared: frozenset[str]
     """The contracts BASE has the options of."""
+    backends: tuple[str, ...]
+    """The backends BASE generates (`base_backends`); the others are not drawn."""
     scratch: Path
     counts: Counter[str] = field(default_factory=Counter)
 
@@ -265,7 +284,7 @@ def _round(
         verbosity=Verbosity.quiet,
     )
     @seed(ns.seed + number)
-    @given(example=examples())
+    @given(example=examples(explorer.backends))
     def check(example: Example) -> None:
         if not target and (time.monotonic() >= deadline or explorer.counts["judged"] >= ns.examples):
             return
@@ -337,8 +356,16 @@ def main(argv: list[str] | None = None) -> int:
         else compare_release.resolve_base(base_name, candidate_python, ns.cache_dir.absolute())
     )
     inventory = option_inventory(resolved.python, resolved.env())
-    if (absent := opt_in_reason(shared_args(Path("schema.json"), "pydantic.BaseModel"), inventory)) is not None:
-        print(f"the base {ns.base_python or base_name} has no {absent}, which every generation uses", file=sys.stderr)
+    base_label = ns.base_python or base_name
+    if (absent := absent_common_option(inventory)) is not None:
+        print(f"the base {base_label} has no {absent}, which every generation uses", file=sys.stderr)
+        return 2
+    available = base_backends(inventory)
+    for backend in REQUESTED:
+        if backend not in available:
+            print(f"the base {base_label} has no {BACKEND_OPTION} {backend}: its examples are skipped", flush=True)
+    if not available:
+        print(f"the base {base_label} has none of the backends {', '.join(REQUESTED)}", file=sys.stderr)
         return 2
     compared = frozenset(name for name, options in CONTRACTS.items() if opt_in_reason(list(options), inventory) is None)
     started = time.monotonic()
@@ -357,6 +384,7 @@ def main(argv: list[str] | None = None) -> int:
                 timeout=TIMEOUT,
             ),
             compared,
+            available,
             Path(scratch),
         )
         try:
@@ -367,14 +395,16 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = time.monotonic() - started
     counts = dict(sorted(explorer.counts.items()))
     print(
-        f"base: {ns.base_python or base_name}; contracts compared with it: {', '.join(sorted(compared)) or 'none'}\n"
+        f"base: {base_label}; contracts compared with it: {', '.join(sorted(compared)) or 'none'}; "
+        f"backends drawn: {', '.join(available)}\n"
         f"counts: {json.dumps(counts)}\n"
         f"summary: {len(findings)} finding(s) in {elapsed:.0f} s"
     )
     if ns.json is not None:
         data = {
-            "base": str(ns.base_python or base_name),
+            "base": str(base_label),
             "compared": sorted(compared),
+            "backends": list(available),
             "counts": counts,
             "seconds": round(elapsed),
             "findings": [finding.record(compose(finding.example.chain)) for finding in findings],

@@ -16,10 +16,17 @@ from typing import TYPE_CHECKING
 import jsonschema
 import pytest
 from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
-from scripts.behaviour_diff import opt_in_reason
 from scripts.legacy_rows import LEGACY_ROWS
-from scripts.shape_families_random import shared_args
+from scripts.shape_families_random import (
+    BACKEND_OPTION,
+    REQUESTED,
+    absent_common_option,
+    base_backends,
+    common_args,
+    examples,
+)
 from tests.capabilities import needs
 from tests.main.shape_families.compose import (
     COMPOSED,
@@ -183,15 +190,39 @@ def test_compositions_without_a_common_value_are_left_out() -> None:
     )
 
 
+def _inventory(*lacking: str) -> dict[str, list[str] | None]:
+    """Return the option inventory of a base that has every option the random tier uses, but the ``lacking`` ones."""
+    full: dict[str, list[str] | None] = {arg: None for arg in common_args(Path("schema.json")) if arg.startswith("--")}
+    full["--formatters"] = ["builtin"]
+    full[BACKEND_OPTION] = list(REQUESTED)
+    return {
+        name: [choice for choice in choices if choice not in lacking] if choices is not None else None
+        for name, choices in full.items()
+        if name not in lacking
+    }
+
+
 @pytest.mark.allow_direct_assert("The shared options a release lacks are named.")
 def test_shared_options_are_checked_against_the_base_inventory() -> None:
     """A base release without ``--formatters`` is named before any generation, as a contract option it lacks is."""
-    args = shared_args(Path("schema.json"), "pydantic.BaseModel")
-    full = {arg: None for arg in args if arg.startswith("--")}
-    full["--formatters"] = ["builtin"]
-    assert (opt_in_reason(args, full), opt_in_reason(args, {k: v for k, v in full.items() if k != "--formatters"})) == (
+    assert (absent_common_option(_inventory()), absent_common_option(_inventory("--formatters"))) == (
         None,
         "--formatters",
+    )
+
+
+@pytest.mark.allow_direct_assert("The backends drawn against a base without one backend are compared.")
+@settings(max_examples=30, deadline=None, suppress_health_check=list(HealthCheck))
+@given(data=st.data())
+def test_a_backend_the_base_lacks_is_skipped(data: st.DataObject) -> None:
+    """A base without one backend still runs: its shared options pass, and only the other backends are drawn."""
+    inventory = _inventory(PYDANTIC_V2)
+    available = base_backends(inventory)
+    example = data.draw(examples(available))
+    assert (absent_common_option(inventory), available, example.backend in available) == (
+        None,
+        tuple(backend for backend in REQUESTED if backend != PYDANTIC_V2),
+        True,
     )
 
 
