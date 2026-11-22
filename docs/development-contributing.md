@@ -485,9 +485,9 @@ Run `python -m scripts.verify` in your checkout before you commit (inside the de
 or later). It judges the working tree, uncommitted and untracked files included, against the merge base with
 `origin/main` (`--base <ref>` for another one):
 
-1. It runs the tests your diff reaches, the ones `scripts/related_tests.py` selects: the modules of the test suite you
-   changed, the test modules that mirror the modules you changed and the rows of `scripts/related_tests.toml` your diff
-   fires.
+1. It runs the tests your diff reaches, the ones `scripts/related_tests.py` selects: the test functions and classes you
+   changed (the whole module for a new one, a helper or module-level code), the test modules that mirror the modules you
+   changed and the rows of `scripts/related_tests.toml` your diff fires.
 2. Where you changed `src/`, it runs `scripts/behaviour_diff.py gate <merge base> --identity --pick <catalog>` on the
    cells of the cell catalog that run your changed code (see "Comparing output with a release"), and prints every
    difference with its cell, and each changed code object that no compared cell ran.

@@ -34,6 +34,7 @@ from scripts import (
     check_source_rules,
     coverage_exclusions,
     legacy_row_reads,
+    related_tests,
     where,
 )
 from scripts.decision_homes import DecisionHome, Home
@@ -945,6 +946,16 @@ def _coverage_exclusions(form: Path) -> list[Finding]:
     return found
 
 
+def _test_units(form: Path) -> list[Finding]:
+    """Return the top-level test functions and classes of a form's modules, which a change of their lines selects."""
+    return [
+        Finding("test-unit", _site(form, name, lines.start), f"{name}:{lines.start}-{lines.stop - 1}: {unit}")
+        for name, text in _form_files(form)
+        for lines, unit in related_tests.test_units(source_model.SourceModule(text, name))
+        if unit is not None
+    ]
+
+
 def _unbound_names(form: Path) -> list[Finding]:
     """Return the names each module of a form loads that nothing binds in time, as the import closure audit reads."""
     return [
@@ -1231,6 +1242,7 @@ RULES: dict[str, RuleRun] = {
         frozenset({"bindings", "references", "imports", "extents"}),
         _decision_home_callers,
     ),
+    "changed-test-units": RuleRun("scripts.related_tests", frozenset({"extents"}), _test_units),
     "shape-family-client-reads": RuleRun(
         "tests.main.shape_families.relations", frozenset({"references", "imports", "extents"}), _client_reads
     ),
