@@ -2089,7 +2089,36 @@ jobs:
             echo "src/, change records and scripts/ unchanged since the merge base: every cell is equal"; exit 0
           fi
           uv sync --frozen --python 3.14.6 --extra all --group dev
-          .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --check -j 4
+          .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --check -j 4 --verdicts "$RUNNER_TEMP/verdicts.json"
+      - name: Check the change records with the merge base's copy of the check
+        if: steps.base.outputs.sha != ''
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          UV_PYTHON_PREFERENCE: "only-managed"
+        run: |
+          set -euo pipefail
+          # origin/main for the release walk (the checkout's fetch-depth 0 brought the tags); kept current here
+          git fetch --no-tags --quiet origin '+refs/heads/main:refs/remotes/origin/main'
+          BASE=$(git merge-base "$BASE_SHA" HEAD)
+          args=(check --base "$BASE" --head HEAD)
+          if [ "$EVENT_NAME" = push ]; then args+=(--main); fi
+          if [ -f "$RUNNER_TEMP/verdicts.json" ]; then args+=(--verdicts "$RUNNER_TEMP/verdicts.json"); fi
+          if ! git cat-file -e "$BASE:scripts/declared_changes.py" 2>/dev/null; then
+            echo "the merge base has no records check"; exit 0
+          fi
+          # The merge base's copy of the check judges every change: a change cannot weaken the check that judges it.
+          copy="$RUNNER_TEMP/records-check-base"
+          mkdir -p "$copy"
+          git archive "$BASE" scripts tests/__init__.py tests/units.py | tar -x -C "$copy"
+          status=0
+          uv run --no-project --python 3.13 python "$copy/scripts/declared_changes.py" "${args[@]}" || status=$?
+          # A change of the check's files is also judged by its own copy, so a change that tightens the check obeys it.
+          if ! git diff --quiet "$BASE" HEAD -- scripts tests/__init__.py tests/units.py; then
+            echo "the change touches the check's files: its own copy judges it too"
+            uv run --no-project --python 3.13 python scripts/declared_changes.py "${args[@]}" || status=$?
+          fi
+          exit "$status"
 
   test-gate:
     name: test-gate
