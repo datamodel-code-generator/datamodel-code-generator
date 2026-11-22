@@ -1,6 +1,8 @@
 [[change]]
 id = "source-model-decorator-origins-2"
-extends = "public-api-record"
+category = "harness"
+title = "Source model verdicts of two more rules on the decorator origin form"
+summary = "Two more rule reports of the source model list findings on the decorator origin form; the package writes the same output."
 refs = ["#7370"]
 covers = [
     "source_model/every_rule_states_its_verdicts[ci-test-targets].txt",
