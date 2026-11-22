@@ -45,23 +45,13 @@ INVARIANTS: Final[tuple[Kept, ...]] = (
         "#6868",
         "extend",
         ANY_TYPE,
-        BOTH,
+        DEFAULT,
         (
             {"via": ("ref-siblings",), "how": ("narrow",), "leaf": _NARROWED},
             {"via": ("ref-siblings",), "how": ("require",), "child_first": (True,)},
         ),
         "a parent that is a $ref with sibling properties types the inherited property Any where the child narrows it "
         "or requires it before the parent is defined",
-    ),
-    Kept(
-        ISSUE,
-        "#7309",
-        "extend",
-        ANY_TYPE,
-        PRESET,
-        ({"via": ("alias",), "how": ("require",), "form": ("member",)},),
-        "a child that only adds required, as an allOf member, to an alias parent is written as a root model of a dict "
-        "of Any",
     ),
     Kept(
         ISSUE,
