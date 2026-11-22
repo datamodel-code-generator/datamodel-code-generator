@@ -124,6 +124,8 @@ references/posix_only_fixtures_by_pytest: cases.py:3: needs = tests.capabilities
 references/posix_only_fixtures_by_pytest: cases.py:1: needs = tests.capabilities.needs
 references/posix_only_in_tests: posix_only_in_tests.py:20: needs = tests.capabilities.needs
 references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:39: annotated(value: _TYPE)
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:12: fixture = pytest.fixture
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:13: marks = pytest.mark
 references/qualified_enum_receivers: qualified_enum_receivers.py:8: enums = datamodel_code_generator.enums
 references/reexported_names_by_origin: reexported_names_by_origin.py:7: DataModelType = datamodel_code_generator.base_config.DataModelType
 references/reexported_names_by_origin: reexported_names_by_origin.py:8: import_module = datamodel_code_generator.format.import_module

@@ -5,6 +5,99 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.100.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.100.0) - 2026-11-22
+
+## Breaking Changes
+
+### Code Generation Changes
+* Generated clients and servers now include None in container items built from several schemas - This affects the experimental `--generate-client` and `--generate-server` options. Argument and parameter types for an array or map whose items are several schemas now include None inside the container when the item union admits null. This covers `prefixItems`, the OpenAPI 3.0 items-array form such as `items: [{type: string}, {type: integer, nullable: true}]`, and msgspec pattern maps. It matches what the generated models have written since 0.89.0. For example, `prefixItems: [{type: string}, {type: 'null'}]` with `items: {type: string}` now gives the client method argument, the FastAPI endpoint parameter and the generated service Protocol parameter the type `list[str | None]`, where it was `list[str]`. Service implementations written against the old, narrower parameter types may no longer match the regenerated Protocol under a type checker, and code that reads these parameters must handle None items. The wire format is unchanged (#7305)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Name the cells of change records and judge differing cells by them by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7228
+* Hash outside outputs and normalise version lines in compared outcomes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7229
+* Stamp the upgrade guide entries of 0.99.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7233
+* Decide each remaining no-cover site of the package by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7224
+* Pick the catalog cells that run a change's lines by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7236
+* Drop the expected-path arguments of the rest of the OpenAPI tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7237
+* Pin the public API in one record written from source by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7235
+* Drop the expected-path arguments of the rest of the JSON Schema tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7241
+* Judge the gate's differing cells by the change records by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7242
+* Fix the 3.13 rows and the gate's memory cap below the worker by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7244
+* Move the names other modules import from the root and __main__ to leaves by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7245
+* Fail the harness labels the gate refuses in the records check by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7248
+* Drop the expected-path arguments of the CLI, API and parser leftovers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7247
+* Read the uuid6, uuid7 and uuid8 formats under an option by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7246
+* Describe the record cells, categories and verdicts in the guide by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7252
+* Judge the records covering one cell together, by kind and by line by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7254
+* Approve the baseline of the decision-home caller guard by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7260
+* Guard the callers of decision homes against their records by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7256
+* Drop the expected-path arguments of directory and multi-output tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7257
+* Name the files in protoc messages without the run's temporary directory by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7251
+* Move the generation core out of the package root by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7259
+* Declare the protoc message change of #7251 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7262
+* Add name, suffix and stdout arguments to the stored-output helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7263
+* Refuse imports of the package root and __main__ inside the package by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7264
+* Hoist the local imports of modules that are already loaded by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7265
+* Drop the inferred expected-path arguments of the JSON Schema tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7267
+* Drop the expected-path arguments of the scripts, model and codec tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7266
+* Judge changed outputs by cell in the ratchets job by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7255
+* Drop the expected-path arguments of the general, kr and watch tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7268
+* Apply the decided lint rules and make private boolean flags keyword-only by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7270
+* Drop the expected-path arguments of the OpenAPI tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7269
+* Drop the expected-path arguments of more JSON Schema tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7271
+* Drop the expected-path arguments of the parser and dynamic model tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7272
+* Drop the expected paths of the FastAPI API, scope and checkout tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7280
+* Drop the expected paths of the client render tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7283
+* Drop the expected paths of the other client generation tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7284
+* Drop the expected-path arguments of the avro, payload and HTTP tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7282
+* Approve the baseline of the builder-home guard by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7295
+* Record the builder homes of L1 and guard their bypasses by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7294
+* Drop the expected-path arguments of the protobuf tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7290
+* Record the placement table and check its passes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7304
+* Keep the None of a container's item union in client and server types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7305
+* Approve the entries the embedded-source scan restores by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7306
+* Drop the expected paths of the client runtime and typing tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7302
+* Test typing imports and union tags through the public surface by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7307
+* Describe clients and servers in the agent skill and the overview by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7299
+* Move older presets to a history page and update the site description by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7300
+* Break the import cycle between reference and the model base by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7310
+* Drop the expected paths of the model, codec and script test leftovers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7312
+* Test or prove four no-cover guards outside the JSON Schema parser by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7317
+* Drop the expected paths of the JSON Schema test leftovers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7319
+* Describe planned changes in comments instead of internal plan ids by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7321
+* Drop the private re-exports of the parser base and their dead branches by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7322
+* Approve the heki baseline of today's findings by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7328
+* cfeat(msgspec): add --merge-msgspec-str-like-union-members by @markparonyan in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6549
+* Test or prove seven no-cover guards of the JSON Schema parser side by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7329
+* Drop the expected paths of the main and kr test leftovers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7311
+* Check the records' contracts with heki against today's findings by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7325
+* Run the change-record check in CI with the base's copy for check changes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7330
+* Key the gate's cell catalog below a line and pick cells for a change by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7320
+* Approve the heki keys for the environment check move by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7337
+* Drop the run helpers' expected-path parameters and their last callers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7333
+* Name the outputs that tests stored as numbered .2 and .3 files by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7336
+* Check the package's environment reads with heki instead of a ratchet by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7334
+* Compare tracked documents and runtime copies with against=, not paths by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7338
+* Approve the private imports of the decision core tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7350
+* Count only the role-less output of an item as its stored gap list by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7352
+* Compare the payload codegen warnings under the test's own name by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7353
+* Summarise generated documents in the release draft diff copy by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7361
+* Run the heki contract checks as pre-commit hooks by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7351
+* Run the shape families as cells of the behaviour gate by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7339
+* Let pytest name the generate-prompt outputs and retire their script by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7359
+* Check three decision tables exhaustively against the generator by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7347
+* Name the pull request in the records of the str-like union option by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7366
+* Re-measure the CI shard weights from the latest green runs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7367
+
+## New Contributors
+* @markparonyan made their first contribution in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6549
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.99.0...0.100.0
+
+---
+
 ## [0.99.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.99.0) - 2026-11-20
 
 ## Breaking Changes

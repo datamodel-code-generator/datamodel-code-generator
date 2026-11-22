@@ -125,7 +125,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._ci_lanes import WORKFLOWS, Lane, read_lanes
 from scripts._import_cycles import import_cycles
 from scripts._source_model import SourceModule
-from scripts.check_source_rules import RULES
+from scripts.check_source_rules import CHECKOUT_INPUTS, RULES
 from scripts.check_source_rules import Tree as SourceTree
 from scripts.check_source_rules import run as run_source_rules
 from tests.units import (
@@ -1387,17 +1387,31 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
     return json.loads(output.stdout)
 
 
-def _copy_tallies(
-    base_root: Path, head_root: Path, ruff_args: list[str], base_commit: str
-) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
-    """Count both trees with the base revision's copy of this script; nothing where the base has no copy."""
-    copy = base_root / SCRIPT
-    if not copy.is_file():
-        return {}, {}
+def _code_is_unchanged(base_root: Path, head_root: Path) -> bool:
+    """Return whether every file this run loaded from ``head_root`` (this script and its imports) is the base's too.
+
+    The files the source rules read from their own checkout (``CHECKOUT_INPUTS``) must be equal as well, both missing
+    counting as equal: the copy reads the base's where this run reads the head's. The base revision's copy then counts
+    both trees as this run does, so its counts are this run's.
+    """
+    head = head_root.resolve()
+    loaded = {Path(module.__file__).resolve() for module in sys.modules.values() if getattr(module, "__file__", None)}
+    code = sorted(path.relative_to(head) for path in loaded if path.is_relative_to(head))
     return (
-        _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit),
-        _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit),
+        bool(code)
+        and all(
+            (base_root / path).is_file() and (base_root / path).read_bytes() == (head / path).read_bytes()
+            for path in code
+        )
+        and all(_same_file(base_root / name, head / name) for name in CHECKOUT_INPUTS)
     )
+
+
+def _same_file(base: Path, head: Path) -> bool:
+    """Return whether two paths hold equal bytes, or neither is a file."""
+    if base.is_file() and head.is_file():
+        return base.read_bytes() == head.read_bytes()
+    return base.is_file() == head.is_file()
 
 
 def _report_copy(
@@ -1598,7 +1612,18 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(base_root, filter="data")
+        copy = base_root / SCRIPT
         base, head = count_tree(base_root, ruff, historical=True), count_tree(head_root, ruff)
+        if not copy.is_file():
+            copy_counts: tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]] = ({}, {})
+        elif _code_is_unchanged(base_root, head_root):
+            # The copy's code is this run's: its counts are this run's, so it runs no second time.
+            copy_counts = (base.counts(), head.counts())
+        else:
+            copy_counts = (
+                _copy_counts(copy, base_root, ruff_args, "the base revision", fork),
+                _copy_counts(copy, head_root, ruff_args, "the working tree", fork),
+            )
         judging = Judging(ABSOLUTE_KEYS | _absolute_keys(base_root), tuple(read_lanes(head_root)[0]))
         approvals = Approvals(_read_approvals(base_root, judging.absolute)[0], _judged_pull_requests(head_root, fork))
         head_rises = set(_rises(base.counts(), head.counts(), approvals, judging))
@@ -1610,7 +1635,7 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         lines += [*notes, *unreadable, *table_problems]
         seen = head_rises | {key for key in head.counts() if _kind(key) == "unreadable"}
         copy_lines = _report_copy(
-            *_copy_tallies(base_root, head_root, ruff_args, fork),
+            *copy_counts,
             lambda key, total: key in seen or approvals.covering(key, total) is not None,
             judging,
         )

@@ -69,6 +69,11 @@ SLEEP_ALLOWLIST = "scripts/test_sleep_allowlist.toml"
 RERUN_MODULES = frozenset({"flaky", "pytest_rerunfailures", "rerunfailures"})
 TEST_DATA = "tests/data/"
 CAPABILITY_HOME = "tests/capabilities.py"
+CHECKOUT_INPUTS = ("pyproject.toml", CAPABILITY_HOME)
+"""Files this script reads from its own checkout where a counted tree lacks them or they give no answer.
+
+``_floor`` falls back to the ``requires-python`` of that checkout, and ``_table_of`` to its capability table.
+"""
 CAPABILITY_TABLE = "CAPABILITIES"
 NEEDS = "tests.capabilities.needs"
 SKIP_ORIGINS = frozenset({

@@ -34,6 +34,7 @@ from scripts import (
     check_source_rules,
     coverage_exclusions,
     legacy_row_reads,
+    related_tests,
     where,
 )
 from scripts.decision_homes import DecisionHome, Home
@@ -60,7 +61,7 @@ OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
     r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
-    r"|nested-names|assignments|annotations|segments)"
+    r"|nested-names|assignments|annotations|segments|decorators)"
     r": *(.*)$",
     re.MULTILINE,
 )
@@ -308,6 +309,15 @@ def _references(model: source_model.SourceModule, directives: dict[str, str]) ->
     out += _type_positions(model)
     out += _annotations_and_string_reads(model) if directives.get("annotations") else []
     out += [f"constant {name}: {_value(model.constant(name))}" for name in directives.get("constants", "").split()]
+    statements = sorted(
+        (node for node in ast.walk(model.tree) if isinstance(node, ast.stmt) and directives.get("decorators")),
+        key=lambda node: (node.lineno, node.col_offset),
+    )
+    out += [
+        f"decorators @{node.lineno}: {', '.join(origin or '-' for origin in origins)}"
+        for node in statements
+        if (origins := model.decorator_origins(node))
+    ]
     if directives.get("consumers"):
         out += [
             f"use of {model.source(node)} @{node.lineno}:{node.col_offset}: {model.use_of(node)}"
@@ -945,6 +955,16 @@ def _coverage_exclusions(form: Path) -> list[Finding]:
     return found
 
 
+def _test_units(form: Path) -> list[Finding]:
+    """Return the top-level test functions and classes of a form's modules, which a change of their lines selects."""
+    return [
+        Finding("test-unit", _site(form, name, lines.start), f"{name}:{lines.start}-{lines.stop - 1}: {unit}")
+        for name, text in _form_files(form)
+        for lines, unit in related_tests.test_units(source_model.SourceModule(text, name))
+        if unit is not None
+    ]
+
+
 def _unbound_names(form: Path) -> list[Finding]:
     """Return the names each module of a form loads that nothing binds in time, as the import closure audit reads."""
     return [
@@ -1231,6 +1251,7 @@ RULES: dict[str, RuleRun] = {
         frozenset({"bindings", "references", "imports", "extents"}),
         _decision_home_callers,
     ),
+    "changed-test-units": RuleRun("scripts.related_tests", frozenset({"references", "extents"}), _test_units),
     "shape-family-client-reads": RuleRun(
         "tests.main.shape_families.relations", frozenset({"references", "imports", "extents"}), _client_reads
     ),

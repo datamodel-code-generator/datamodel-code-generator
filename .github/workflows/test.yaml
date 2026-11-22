@@ -91,15 +91,21 @@ jobs:
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
         PYTEST_ADDOPTS: -n auto --dist=worksteal
-    - name: Rename coverage report file
+    - name: Collect coverage data
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.${{ matrix.coverage_name }}-{os.environ['OS']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Record coverage provenance
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
       shell: bash
@@ -204,15 +210,21 @@ jobs:
       shell: bash
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
-    - name: Rename coverage report file
+    - name: Collect coverage data
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.${{ matrix.coverage_name }}-{os.environ['OS']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Record coverage provenance
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
       shell: bash
@@ -327,16 +339,22 @@ jobs:
         name: junit.${{ env.RUN_NAME }}
         path: ".tox/junit.*"
         retention-days: 3
-    - name: Rename coverage report file
+    - name: Collect coverage data
       if: matrix.coverage == true
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.{os.environ['RUN_NAME']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ env.RUN_NAME }}
     - name: Record coverage provenance
       if: matrix.coverage == true
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
@@ -446,63 +464,133 @@ jobs:
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 4
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 5
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 6
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 7
-            shard_total: 8
+            shard_total: 18
           - tox_env: py315-parallel
             name: "3.15"
             profile: "3.15"
             os: ubuntu-24.04
             coverage: true
             shard: 8
-            shard_total: 8
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 15
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 16
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 17
+            shard_total: 18
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 18
+            shard_total: 18
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 8
+            shard_total: 14
             extra_tests: tests/cli_doc/test_cli_options_sync.py
           - tox_env: py314-parallel
             name: "3.14"
@@ -510,147 +598,245 @@ jobs:
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 8
+            shard_total: 14
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 8
+            shard_total: 14
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 4
-            shard_total: 8
+            shard_total: 14
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 5
-            shard_total: 8
+            shard_total: 14
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 6
-            shard_total: 8
+            shard_total: 14
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 7
-            shard_total: 8
+            shard_total: 14
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
             os: ubuntu-24.04
             coverage: true
             shard: 8
-            shard_total: 8
+            shard_total: 14
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 14
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 14
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 14
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 14
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 14
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 14
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 4
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 5
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 6
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 7
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 8
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 9
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 10
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 11
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 12
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 13
-            shard_total: 14
+            shard_total: 22
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 14
-            shard_total: 14
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 15
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 16
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 17
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 18
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 19
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 20
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 21
+            shard_total: 22
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 22
+            shard_total: 22
     runs-on: ${{ matrix.os }}
     env: &test-shard-env
       OS: ${{ matrix.os }}
@@ -770,16 +956,22 @@ jobs:
         name: junit.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
         path: ".tox/junit.*"
         retention-days: 3
-    - name: Rename coverage report file
+    - name: Collect coverage data
       if: matrix.coverage == true
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.{os.environ['TOX_ENV']}-shard{os.environ['SHARD_INDEX']}-{os.environ['OS']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
     - name: Record coverage provenance
       if: matrix.coverage == true
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
@@ -812,210 +1004,238 @@ jobs:
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 4
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 5
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 6
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 7
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 8
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 9
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 10
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 11
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 12
-            shard_total: 13
+            shard_total: 16
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 13
-            shard_total: 13
+            shard_total: 16
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 16
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 15
+            shard_total: 16
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 16
+            shard_total: 16
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 4
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 5
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 6
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 7
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 8
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 9
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 10
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 11
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 12
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 13
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 14
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 15
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 16
-            shard_total: 17
+            shard_total: 18
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 17
-            shard_total: 17
+            shard_total: 18
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 18
+            shard_total: 18
     runs-on: ${{ matrix.os }}
     env: *test-shard-env
     steps: *test-shard-steps
@@ -1038,7 +1258,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 6
+            shard_total: 10
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "windows"
@@ -1047,7 +1267,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 6
+            shard_total: 10
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "windows"
@@ -1056,7 +1276,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 6
+            shard_total: 10
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "windows"
@@ -1065,7 +1285,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 6
+            shard_total: 10
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "windows"
@@ -1074,7 +1294,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
-            shard_total: 6
+            shard_total: 10
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "windows"
@@ -1083,7 +1303,43 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
-            shard_total: 6
+            shard_total: 10
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 10
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 8
+            shard_total: 10
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 9
+            shard_total: 10
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 10
+            shard_total: 10
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "windows"
@@ -1092,7 +1348,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 6
+            shard_total: 8
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "windows"
@@ -1101,7 +1357,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 6
+            shard_total: 8
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "windows"
@@ -1110,7 +1366,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 6
+            shard_total: 8
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "windows"
@@ -1119,7 +1375,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 6
+            shard_total: 8
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "windows"
@@ -1128,7 +1384,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
-            shard_total: 6
+            shard_total: 8
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "windows"
@@ -1137,7 +1393,25 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
-            shard_total: 6
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 8
+            shard_total: 8
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "macos"
@@ -1146,7 +1420,7 @@ jobs:
             extra_tests: tests/cli_doc/test_cli_options_sync.py
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 5
+            shard_total: 8
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "macos"
@@ -1155,7 +1429,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 5
+            shard_total: 8
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "macos"
@@ -1164,7 +1438,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 5
+            shard_total: 8
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "macos"
@@ -1173,7 +1447,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 5
+            shard_total: 8
           - tox_env: py315-nocov-parallel
             name: "3.15"
             profile: "macos"
@@ -1182,25 +1456,52 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
+            shard_total: 8
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 8
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 8
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 8
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
             shard_total: 5
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "macos"
             os: macos-latest
             coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 4
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 4
+            shard_total: 5
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "macos"
@@ -1209,7 +1510,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 4
+            shard_total: 5
           - tox_env: py311-nocov-parallel
             name: "3.11"
             profile: "macos"
@@ -1218,7 +1519,16 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 4
+            shard_total: 5
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 5
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1227,7 +1537,7 @@ jobs:
             extra_tests: tests/cli_doc/test_cli_options_sync.py
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 6
+            shard_total: 8
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1236,7 +1546,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 6
+            shard_total: 8
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1245,7 +1555,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 6
+            shard_total: 8
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1254,7 +1564,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 6
+            shard_total: 8
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1263,7 +1573,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
-            shard_total: 6
+            shard_total: 8
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1272,7 +1582,25 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
-            shard_total: 6
+            shard_total: 8
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 8
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 8
+            shard_total: 8
     runs-on: ${{ matrix.os }}
     env: *test-shard-env
     steps: *test-shard-steps
@@ -1350,7 +1678,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 6
+            shard_total: 7
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "windows"
@@ -1359,7 +1687,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 6
+            shard_total: 7
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "windows"
@@ -1368,7 +1696,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 6
+            shard_total: 7
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "windows"
@@ -1377,7 +1705,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 6
+            shard_total: 7
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "windows"
@@ -1386,7 +1714,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
-            shard_total: 6
+            shard_total: 7
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "windows"
@@ -1395,7 +1723,16 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
-            shard_total: 6
+            shard_total: 7
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 7
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "windows"
@@ -1404,7 +1741,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 6
+            shard_total: 7
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "windows"
@@ -1413,7 +1750,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 6
+            shard_total: 7
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "windows"
@@ -1422,7 +1759,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 6
+            shard_total: 7
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "windows"
@@ -1431,7 +1768,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 6
+            shard_total: 7
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "windows"
@@ -1440,7 +1777,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 5
-            shard_total: 6
+            shard_total: 7
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "windows"
@@ -1449,7 +1786,16 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 6
-            shard_total: 6
+            shard_total: 7
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 7
           - tox_env: py314-nocov-parallel
             name: "3.14"
             profile: "macos"
@@ -1503,7 +1849,7 @@ jobs:
             extra_tests: tests/cli_doc/test_cli_options_sync.py
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 4
+            shard_total: 5
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "macos"
@@ -1512,7 +1858,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 4
+            shard_total: 5
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "macos"
@@ -1521,7 +1867,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 4
+            shard_total: 5
           - tox_env: py313-nocov-parallel
             name: "3.13"
             profile: "macos"
@@ -1530,7 +1876,16 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 4
+            shard_total: 5
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 5
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "macos"
@@ -1539,7 +1894,7 @@ jobs:
             extra_tests: tests/cli_doc/test_cli_options_sync.py
             exclude_tests: tests/main/test_payload_validation.py
             shard: 1
-            shard_total: 4
+            shard_total: 5
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "macos"
@@ -1548,7 +1903,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 2
-            shard_total: 4
+            shard_total: 5
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "macos"
@@ -1557,7 +1912,7 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 3
-            shard_total: 4
+            shard_total: 5
           - tox_env: py312-nocov-parallel
             name: "3.12"
             profile: "macos"
@@ -1566,7 +1921,16 @@ jobs:
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py
             shard: 4
-            shard_total: 4
+            shard_total: 5
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 5
     runs-on: ${{ matrix.os }}
     env: *test-shard-env
     steps: *test-shard-steps

@@ -1,6 +1,0 @@
-[[change]]
-id = "merge-msgspec-str-like-union-members-api"
-extends = "uuid-version-formats-api"
-covers = [
-    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
-]
