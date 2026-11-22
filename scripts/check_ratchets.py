@@ -109,7 +109,6 @@ import tarfile
 import tempfile
 import tokenize
 from collections import Counter, defaultdict
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
@@ -126,7 +125,6 @@ from tests.units import RefsIndex, derived_file_name, derived_siblings, is_deriv
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from concurrent.futures import Future
 
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
@@ -1345,35 +1343,6 @@ def _same_file(base: Path, head: Path) -> bool:
     return base.is_file() == head.is_file()
 
 
-def _count_sites(root: Path, ruff: list[str]) -> dict[str, dict[str, list[int]]]:
-    """Count a tree in a worker process; the sites come back as plain dicts, which a process can send."""
-    return {
-        key: {path: list(lines) for path, lines in files.items()} for key, files in count_tree(root, ruff).sites.items()
-    }
-
-
-def _as_tally(sites: dict[str, dict[str, list[int]]]) -> Tally:
-    tally = Tally()
-    for key, files in sites.items():
-        for path, lines in files.items():
-            tally.sites[key][path] = list(lines)
-    return tally
-
-
-def _copy_tallies(
-    jobs: tuple[Future[dict[str, dict[str, int]]], Future[dict[str, dict[str, int]]]] | None,
-    counted: tuple[Tally, Tally],
-) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
-    """Return the counts of both trees by the base revision's copy of this script.
-
-    ``counted`` holds this run's tallies of the base and the head: where the copy's code is this run's (no ``jobs``),
-    they are the copy's counts and the copy runs no second time.
-    """
-    if jobs is None:
-        return counted[0].counts(), counted[1].counts()
-    return jobs[0].result(), jobs[1].result()
-
-
 def _report_copy(
     base: dict[str, dict[str, int]],
     head: dict[str, dict[str, int]],
@@ -1573,19 +1542,17 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(base_root, filter="data")
         copy = base_root / SCRIPT
-        with ProcessPoolExecutor(max_workers=4) as pool:
-            # The four counts are independent: they run side by side, one process each.
-            base_job, head_job = (pool.submit(_count_sites, root, ruff) for root in (base_root, head_root))
-            copy_jobs = (
-                (
-                    pool.submit(_copy_counts, copy, base_root, ruff_args, "the base revision", fork),
-                    pool.submit(_copy_counts, copy, head_root, ruff_args, "the working tree", fork),
-                )
-                if copy.is_file() and not _code_is_unchanged(base_root, head_root)
-                else None
+        base, head = count_tree(base_root, ruff), count_tree(head_root, ruff)
+        if not copy.is_file():
+            copy_counts: tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]] = ({}, {})
+        elif _code_is_unchanged(base_root, head_root):
+            # The copy's code is this run's: its counts are this run's, so it runs no second time.
+            copy_counts = (base.counts(), head.counts())
+        else:
+            copy_counts = (
+                _copy_counts(copy, base_root, ruff_args, "the base revision", fork),
+                _copy_counts(copy, head_root, ruff_args, "the working tree", fork),
             )
-            base, head = _as_tally(base_job.result()), _as_tally(head_job.result())
-            copy_counts = _copy_tallies(copy_jobs, (base, head)) if copy.is_file() else ({}, {})
         absolute = ABSOLUTE_KEYS | _absolute_keys(base_root)
         approvals = Approvals(_read_approvals(base_root, absolute)[0], _judged_pull_requests(head_root, fork))
         head_rises = set(_rises(base.counts(), head.counts(), approvals, absolute))
