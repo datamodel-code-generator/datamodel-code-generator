@@ -80,6 +80,9 @@
 === release notes unreleased (exit 0) ===
 ## Breaking Changes
 
+### Code Generation Changes
+* Avro logical types become dates - Experimental: `input-format.avro`. An Avro `date` logical type is typed `date` instead of `int`. (#5004)
+
 ### Custom Template Update Required
 * Custom templates receive `fields` instead of `model_fields` - Templates of `--custom-template-dir` read the fields as `fields`. No option keeps `model_fields`. Rename `model_fields` to `fields` in your templates. (#5001)
 
@@ -103,6 +106,39 @@
 ## Experimental Features
 
 * `--input-file-type toml` is experimental. TOML input is experimental.
+
+=== release notes draft (exit 0) ===
+## Breaking Changes
+
+### Code Generation Changes
+* Avro logical types become dates - Experimental: `input-format.avro`. An Avro `date` logical type is typed `date` instead of `int`. (#5106, #5004)
+
+### Custom Template Update Required
+* Custom templates receive `fields` instead of `model_fields` - Templates of `--custom-template-dir` read the fields as `fields`. No option keeps `model_fields`. Rename `model_fields` to `fields` in your templates. (#5101, #5001)
+
+### API/CLI Changes
+* `--old-flag` is removed - The option did nothing since 0.3.0. Drop `--old-flag`. (#5002)
+
+## Scheduled Breaking Changes
+
+* `argcomplete installation` is registered without a runtime warning. Planned removal: TBD. argcomplete will become optional.
+
+## New Options
+
+* New option `--new-flag` (`--no-new-flag`): Turn on new things. (#5103)
+* New value `c` of `--output-model-type` (#5103)
+* New option `--quiet-flag`
+
+## New Dated Presets
+
+* `standard-py3XX-20260301` and `practical-py3XX-20260301`: they keep the 20260201 options and add Snake case (`--snake-case-field`): Snake case field names. (#5103)
+
+## Experimental Features
+
+* `--input-file-type toml` is experimental. TOML input is experimental.
+
+=== release notes stamp pending (exit 1) ===
+stamp pending: 0.5.0 is tagged but docs/data/migration/releases.toml does not list it; run 'python scripts/build_migration_docs.py --stamp 0.5.0 --tag-tree <checkout of 0.5.0>'
 
 --- data/migration.json ---
 {
@@ -446,6 +482,23 @@
    "title": "`--old-flag` is removed"
   },
   {
+   "action": "review",
+   "affects": {
+    "experimental": [
+     "input-format.avro"
+    ]
+   },
+   "id": "avro-logical-types",
+   "kind": "experimental",
+   "refs": [
+    "#5004"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "An Avro `date` logical type is typed `date` instead of `int`.",
+   "title": "Avro logical types become dates"
+  },
+  {
    "action": "none",
    "id": "deprecation:dependency.argcomplete-optional",
    "kind": "warning",
@@ -651,6 +704,14 @@ The option did nothing since 0.3.0.
 - **Affects:** only with: `--old-flag`
 - **What to change:** Drop `--old-flag`.
 - **Pull requests and issues:** [#5002](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5002)
+- **Source:** the release notes
+
+### Avro logical types become dates (unreleased) { #avro-logical-types }
+
+An Avro `date` logical type is typed `date` instead of `int`.
+
+- **Affects:** experimental features: `input-format.avro`
+- **Pull requests and issues:** [#5004](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5004)
 - **Source:** the release notes
 
 ### argcomplete installation is scheduled to change (unreleased) { #deprecation-dependency-argcomplete-optional }

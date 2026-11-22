@@ -223,8 +223,8 @@ documentation changes. They can affect users through `action.yml`, packaged
 CLI prompt data, Playground assets, or generated code. A PR that mixes
 maintenance with user-facing changes should stay in the release notes.
 
-The label only filters GitHub's generated change list. Breaking-change
-analysis still runs independently, and the full comparison link remains
+The label only filters GitHub's generated change list. The analysis that
+reports changes no record declares still runs, and the full comparison link remains
 available. Excluded PRs receive no release notification unless they are
 referenced elsewhere in the release body.
 
@@ -321,6 +321,14 @@ files the docs deploy builds and the repository does not commit (`docs/migration
 `docs/data/migration.json`), so a change fragment conflicts with no other; `--check` fails on a stale hub and on invalid
 entries. `--release-notes unreleased` prints the release-note sections of the next release, and
 `--range-pages docs/migration` writes the page of each range of releases locally, as the docs deploy does.
+
+The release draft is rebuilt from these records on every merge: the sections `--release-notes unreleased` prints
+(Breaking Changes by kind, Deprecations, New Warnings, New Options, New Dated Presets, Experimental Features, Changes
+That Need No Action), then GitHub's generated change list. Each item ends with the pull request that added its record
+(`scripts/record_prs.py` reads it from git; a `new-surface` record names the options and presets it adds) and its
+`refs`; a record that extends another adds nothing. `--has-breaking unreleased` decides between a minor and a patch
+release. Write no release notes anywhere else: the draft's text comes from the records alone, and the next rebuild
+replaces any edit of it.
 
 ## Declared changes
 
