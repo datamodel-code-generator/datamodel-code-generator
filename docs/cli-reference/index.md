@@ -8,7 +8,7 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
+| 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 63 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 43 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 74 | Model generation behavior |
@@ -348,6 +348,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members)
+- [`--read-refs-in-their-resources`](base-options.md#read-refs-in-their-resources)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
 - [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)

@@ -24,6 +24,7 @@
 - `--no-read-ids-with-empty-fragment`
 - `--no-read-input-model-dataclass-fields-by-alias`
 - `--no-read-ref-siblings-in-closed-allof-members`
+- `--no-read-refs-in-their-resources`
 - `--no-read-schema-version-per-document`
 - `--no-read-single-allof-refs-in-their-documents`
 - `--no-read-yaml-1-1-numbers-as-text`
@@ -35,6 +36,7 @@
 - `--read-ids-with-empty-fragment`: Read an `$id` that ends with an empty fragment as the document that declares...
 - `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
 - `--read-ref-siblings-in-closed-allof-members`: Read every keyword beside a `$ref` that a closed allOf member e...
+- `--read-refs-in-their-resources`: Read each `$ref` in the schema resource that encloses it, and every `$id`, `...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--read-single-allof-refs-in-their-documents`: Read the target of an allOf of one `$ref` in the document that ...
 - `--read-yaml-1-1-numbers-as-text`: Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...
@@ -636,6 +638,21 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         holds an applicator, if, patternProperties,
                         additionalProperties or unevaluatedProperties, and the
                         model forbids those properties, as in 0.97.0.
+  --read-refs-in-their-resources, --no-read-refs-in-their-resources
+                        Read every $id, $anchor and $dynamicAnchor wherever a
+                        document holds schemas, and read each $ref in the
+                        schema resource that encloses it: a $defs member that
+                        declares a $id is the resource its own $defs pointers
+                        name, a schema an OpenAPI operation, webhook or
+                        component holds inline is a resource of its own, a
+                        plain-name anchor of another document names the schema
+                        that declares it, and a $ref to a resource the run
+                        holds is never fetched. Without it a $defs member
+                        without schema keywords is read for its entries alone,
+                        only components/schemas are OpenAPI resources, an
+                        anchor of another document is found by the released
+                        search, and a URL another document of the run declares
+                        is fetched where that succeeds, as in 0.100.0.
   --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a

@@ -1,0 +1,31 @@
+[[change]]
+id = "resource-ref-inputs"
+extends = "read-refs-in-their-resources"
+covers = [
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_ope~013cce8e.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_ope~676e3338.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~7023c38c.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~b7eeed29.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_external_~73d34483.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_external_~e3a9fcc6.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_held_root_ids_after_z_animal.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_held_root_ids_before_a_pet.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_served_pet_pet.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_external_anc~997bdc86.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_operation_sc~6e2d5188.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_operation_sc~719e2847.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_self_anchor_~9539dfc6.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_external_anchor_declarations_draft7.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_external_anchor_declarations_namespace.json~84421652].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_held_root_ids_after_z_animal.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_held_root_ids_before_a_pet.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_served_pet_pet.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_external_anchor_~e2d7cc7d.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_operation_schema~5dae2ac2.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_operation_schema~f442cedc.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_self_anchor_ref.yaml__components.schemas.Owner~20336e0d].errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_external_anchor_component_api.yaml].txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_external_anchor_component_common.yaml].txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_operation_schema_resources.yaml].txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_self_anchor_ref.yaml].txt",
+]

@@ -1,0 +1,4 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {"v1": {"Pet": {"$anchor": "pet", "type": "object", "properties": {"b": {"type": "integer"}}}}}
+}

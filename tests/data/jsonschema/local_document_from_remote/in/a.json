@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/a.json",
+  "title": "A",
+  "type": "object",
+  "properties": {"b": {"$ref": "b.json"}},
+  "$defs": {
+    "Base": {"$anchor": "base", "type": "object", "properties": {"owner": {"$ref": "#owner"}, "team": {"$ref": "#/$defs/Team"}}},
+    "Owner": {"$anchor": "owner", "type": "object", "properties": {"login": {"type": "string"}}},
+    "Team": {"type": "object", "properties": {"name": {"type": "string"}}}
+  }
+}

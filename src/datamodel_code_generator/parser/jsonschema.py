@@ -3278,7 +3278,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Resolve references relative to the file or URL a reference key names, or to the current one without it."""
         resolver = self.model_resolver
         context = (
-            _schema_refs.schema_document_context(self, _ref_path_parts(file_part), local_base_url=True)
+            _schema_refs.schema_document_context(self, _ref_path_parts(file_part))
             if file_part
             else _schema_documents.base_path_context(self, resolver.current_base_path)
         )
@@ -8153,9 +8153,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.reserved_refs[tuple(document_part(ref).split("/"))].add(ref)
             return reference
 
-        with _schema_refs.schema_document_context(
-            self, relative_paths, root=self.model_resolver.current_root, local_base_url=True
-        ):
+        with _schema_refs.schema_document_context(self, relative_paths, root=self.model_resolver.current_root):
             ref_body = self._get_ref_body(relative_path)
             object_paths, reference_paths = ref_pointer_parts(self, ref_body, ref)
             self._parse_file(
@@ -8227,6 +8225,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         the models specialized for those bindings.
         """
         self._schema_graph = graph = SchemaGraphBuilder()
+        self._input_documents: dict[str, dict[str, YamlValue]] = {}
+        self._url_reads: dict[str, bool] = {}
         self._schema_resource_registry = graph.registry
         self._referring_dialect: DocumentDialect | None = None
         self._document_roles: dict[str, dict[str, None]] = {}
@@ -9130,9 +9130,50 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
 
     def _load_source_dict(self, source: Source) -> dict[str, YamlValue]:
-        """Load a source into a schema dictionary, reading the input as decoded where the run hands it over."""
+        """Load a source into a schema dictionary, reading the input as decoded where the run hands it over.
+
+        A source ``_prepare_input_documents`` read is the dictionary it read.
+        """
+        if (read := self._input_documents.pop(source.path.as_posix(), None)) is not None:
+            return read
         with _decoding_from(self._source_context.decoded_input):
             return _schema_documents.load_source_dict(self, source)
+
+    def _prepare_input_documents(self) -> None:
+        """Prepare the resources of every document of a directory or list input before the first is parsed (L0).
+
+        Under --read-refs-in-their-resources a reference of one input to a resource another declares is read where
+        the registry holds every input, in any file order; each document read here is the one its parse reads (a
+        source that is no dictionary is left to the parse, which reports it). Without the option, row
+        ``legacy-inputs-prepared-as-parsed``: each input is prepared when it is parsed, so the registry holds the
+        inputs parsed before it.
+        """
+        if _schema_documents.resource_row(self, "legacy-inputs-prepared-as-parsed") is not None:
+            return
+        for source, path_parts in _schema_documents.get_context_source_path_parts(self):
+            if not self.model_resolver.after_load_files:
+                return
+            try:
+                raw = self._input_documents[source.path.as_posix()] = self._load_source_dict(source)
+            except TypeError:
+                continue
+            _schema_documents.prepare_schema_resources(self, raw, path_parts)
+
+    def _reads_document(self, url: str) -> bool:
+        """Return whether reading the document at a URL as its load reads it finds one, once per parse.
+
+        The read is the load's (``_get_ref_body``: refused, read from --http-local-ref-path or fetched, and kept for
+        the load); a read that fails finds nothing.
+        """
+        if (found := self._url_reads.get(url)) is None:
+            try:
+                self._get_ref_body(url)
+            except Error:
+                found = False
+            else:
+                found = True
+            self._url_reads[url] = found
+        return found
 
     @contextmanager
     def _parsing_session(self, resolve: Callable[[], None] | None = None) -> Generator[None, None, None]:
@@ -9151,6 +9192,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def parse_raw(self) -> None:
         """Parse all raw input sources into data models."""
         with self._parsing_session():
+            self._prepare_input_documents()
             for source, path_parts in _schema_documents.get_context_source_path_parts(self):
                 try:
                     raw_obj = self._load_source_dict(source)

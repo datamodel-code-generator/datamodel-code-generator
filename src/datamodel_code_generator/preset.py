@@ -1472,6 +1472,16 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first."
         ),
     ),
+    PresetOptionGroup(
+        title="References in their schema resources",
+        config=PresetConfig(read_refs_in_their_resources=True),
+        description=(
+            "Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas ($defs members, inline "
+            "OpenAPI operation and component schemas) and each $ref in the schema resource that encloses it, so a "
+            "pointer inside a bundled $id resource names that resource's definitions, a plain-name anchor of another "
+            "document names its schema, and a resource the run holds is never fetched."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 

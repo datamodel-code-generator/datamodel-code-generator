@@ -117,6 +117,7 @@ __all__ = [
     "get_context_source_path_parts",
     "get_ref_body_from_local_http_path",
     "has_schema_affecting_keywords",
+    "held_resource_location",
     "implicit_schema_resources",
     "index_document",
     "is_input_document_root",
@@ -151,6 +152,7 @@ __all__ = [
     "resolve_lenient_resource_ref",
     "resolve_root_model_name",
     "resolve_schema_resource_ref",
+    "resource_row",
     "rewrite_schema_resource_refs",
     "schema_resource_document",
     "schema_resource_identifier",
@@ -452,6 +454,9 @@ class SchemaResourcesHost(DocumentNamesHost, Protocol):
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Get the body of a reference from URL or remote file."""
 
+    def _reads_document(self, url: str) -> bool:
+        """Return whether reading the document at a URL as its load reads it finds one, once per parse."""
+
     def _is_version_definition_namespace_name(self, name: str) -> bool:
         """Return whether a name of a definitions namespace is a version, like ``v1`` or ``v2_0``."""
 
@@ -618,14 +623,20 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
     ref_body = parser._get_ref_body(relative_path)
     document = schema_resource_document(parser, [relative_path])
     file_part = document_part(ref)
-    if location := duplicate_name_location(
-        parser,
-        parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),
-    ):
+    registry = parser._schema_resource_registry
+    uri = registry.plain_name_uri(document, "", f"#{object_path}")
+    location = duplicate_name_location(parser, uri)
+    legacy = resource_row(parser, "legacy-external-anchor-search")
+    if location is None and legacy is None:
+        declared = registry.location(uri)
+        location = declared if declared is not None and document_part(declared) == document else None
+    if location:
         return keep_resolved_ref(ref, f"{file_part}#{location.partition('#')[2]}")
     if (
-        anchor_pointer := legacy_external_anchor_search(parser._graph.known(document), ref_body, object_path)
-    ) is not None:
+        legacy is not None
+        and (anchor_pointer := legacy_external_anchor_search(parser._graph.known(document), ref_body, object_path))
+        is not None
+    ):
         return keep_resolved_ref(ref, f"{file_part}#{anchor_pointer}")
     return keep_resolved_ref(ref, f"{file_part}#/{object_path}")
 
@@ -783,8 +794,19 @@ def iter_schema_resource_children(
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
     """Visit schema-valued keywords without inspecting examples, defaults or extensions.
 
-    Each `$anchor` on a schema it passes over (``iter_schema_definition_entry``) goes to ``passed`` with its path.
+    Under --read-refs-in-their-resources each member of a definitions container is a schema the walk visits, as JSON
+    Schema reads it, and a version namespace of definitions (``v1``) also holds its other members as schemas
+    (``_definition_members``). Without it, row ``legacy-namespace-declarations-passed``: a member without
+    schema keywords that holds definitions is passed over for its entries (``iter_schema_definition_entry``), and
+    each `$anchor` on a schema it passes over goes to ``passed`` with its path.
     """
+    if resource_row(parser, "legacy-namespace-declarations-passed") is None:
+        for keyword, value in schema.items():
+            if keyword in DEFINITION_KEYS and isinstance(value, dict):
+                yield from _definition_members(parser, (keyword,), value)
+            else:
+                yield from subschema_entries(keyword, value)
+        return
     for keyword, value in schema.items():
         if keyword in DEFINITION_KEYS and isinstance(value, dict):
             for _name, child, path in iter_schema_definition_entries(parser, value, [keyword], passed=passed):
@@ -921,6 +943,38 @@ def resolve_schema_resource_ref(
     return absolute if nested_scope else reference
 
 
+ResourceRow: TypeAlias = Literal[
+    "legacy-component-schema-resources",
+    "legacy-external-anchor-search",
+    "legacy-held-resource-fetched",
+    "legacy-inputs-prepared-as-parsed",
+    "legacy-namespace-declarations-passed",
+]
+"""The rows the reading of schema resources keeps without --read-refs-in-their-resources."""
+
+
+def resource_row(parser: SchemaResourcesHost, row: ResourceRow) -> ResourceRow | None:
+    """Return the row a decision of the schema resources keeps: ``row`` without --read-refs-in-their-resources."""
+    return None if parser.config.read_refs_in_their_resources else row
+
+
+def held_resource_location(parser: SchemaResourcesHost, key: str) -> str | None:
+    """Return the location of the schema a URL key names in another document the run holds, where it is read there.
+
+    A key that is a URL loads its document from that URL. When a document of the run declares the URL instead (an
+    `$id`, an anchor below it), the reference names that schema, without a request, under
+    --read-refs-in-their-resources; without it, row ``legacy-held-resource-fetched``, only where the load finds no
+    document (``loads_document``), and the document at the URL is read where it does, as in 0.100.0.
+    """
+    if not key.startswith(("http://", "https://")) or (location := declared_location(parser, key)) is None:
+        return None
+    if document_part(location) == document_part(key):
+        return None
+    if resource_row(parser, "legacy-held-resource-fetched") is None or not loads_document(parser, key):
+        return location
+    return None
+
+
 def resolve_lenient_resource_ref(parser: SchemaResourcesHost, reference: str, base: str, document: str) -> str:
     """Resolve a reference of a document that resolves references against itself, like OpenAPI.
 
@@ -931,7 +985,8 @@ def resolve_lenient_resource_ref(parser: SchemaResourcesHost, reference: str, ba
     if _is_plain_name_fragment(reference):
         location = declared_location(parser, urljoin(base, reference))
         return reference if location is None else _document_location(location, document)
-    if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:
+    registry = parser._schema_resource_registry
+    if (location := registry.location(urljoin(base, reference))) is None:
         return reference
     if (target := _document_location(location, document)) == reference or not target.startswith("#"):
         return reference
@@ -945,11 +1000,17 @@ def resolve_lenient_resource_ref(parser: SchemaResourcesHost, reference: str, ba
             f"{stable_repr(redact_url(target))}."
         )
     else:
-        if not loads_document(parser, urljoin(parser._schema_resource_registry.root_bases[document], reference)):
+        absolute = urljoin(registry.root_bases[document], reference)
+        if (
+            resource_row(parser, "legacy-held-resource-fetched") is None
+            or not loads_document(parser, absolute)
+            or (parser.allow_remote_refs is False and not absolute.startswith("file://"))
+        ):
             return target
         message = (
             f"$ref {stable_repr(redact_url(reference))} in {source} loads the referenced document for compatibility, "
-            f"but JSON Schema resolves it to the schema with that $id at {stable_repr(redact_url(target))}."
+            f"but JSON Schema resolves it to the schema with that $id at {stable_repr(redact_url(target))}. "
+            "--read-refs-in-their-resources reads it there."
         )
     parser._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")
     return reference
@@ -990,10 +1051,16 @@ def lenient_pointer_exists(parser: SchemaResourcesHost, document: str, reference
 
 
 def loads_document(parser: SchemaResourcesHost, absolute: str) -> bool:
-    """Return whether loading an absolute reference as a document would find one."""
-    if not absolute.startswith("file://"):
-        return is_url(absolute) and parser.allow_remote_refs is not False
-    return file_uri_path(document_part(absolute)).is_file()
+    """Return whether loading an absolute reference as a document would find one.
+
+    A file URI finds the file; a URL is read as its load reads it (``_get_ref_body``: refused, read from
+    --http-local-ref-path or fetched, and kept for that load), once per parse: a read that fails finds nothing.
+    """
+    if absolute.startswith("file://"):
+        return file_uri_path(document_part(absolute)).is_file()
+    if not is_url(absolute):
+        return False
+    return parser._reads_document(document_part(absolute))
 
 
 def rewrite_schema_resource_refs(  # noqa: PLR0917
@@ -1043,22 +1110,29 @@ def implicit_schema_resources(
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
     """Yield the paths and schemas that a document evaluates as schema resources without an $id.
 
-    Formats such as OpenAPI evaluate each component schema independently, and each schema of the object a reference
+    Formats such as OpenAPI evaluate each schema they hold independently, and each schema of the object a reference
     names the document's root as (``_schema_refs.hold_document_root``), such as the schema of a Parameter Object.
+    Under --read-refs-in-their-resources these are every Schema Object the document holds as an OpenAPI Object
+    (``held_schemas`` of its root: the schemas of paths, webhooks and every component kind); without it, row
+    ``legacy-component-schema-resources``, the schemas under ``components/schemas`` alone.
     """
+    roles = dict.fromkeys(parser._document_roles.get(document, ()))
     if parser._component_schemas_are_resources:
+        legacy = resource_row(parser, "legacy-component-schema-resources") is not None
+        if not legacy:
+            roles = {"root": None, **roles}
         match raw.get("components"):
             case {"schemas": dict() as schemas}:
                 for name, schema in schemas.items():
                     if isinstance(schema, dict):
-                        yield ("components", "schemas", name), schema
+                        if legacy:
+                            yield ("components", "schemas", name), schema
                         if (
                             "asyncapi" in raw
                             and (held := held_schema(schema)) is not None
                             and isinstance(held[0], dict)
                         ):
                             yield ("components", "schemas", name, "schema"), held[0]
-    roles = parser._document_roles.get(document, ())
     yield from {path: schema for role in roles for path, schema in held_schemas(raw, role)}.items()
 
 
@@ -1410,12 +1484,35 @@ def iter_definition_namespace_entries(
     if not include_direct_children:
         return
 
+    for key, value in _namespace_members(parser, raw):
+        yield from iter_schema_definition_entry(parser, key, value, [*path, key], passed=passed)
+
+
+def _namespace_members(parser: SchemaResourcesHost, raw: dict[str, YamlValue]) -> Iterator[tuple[str, YamlValue]]:
+    """Yield the members of a version namespace of definitions that hold its entries: no keyword, no extension."""
     known_keys = known_schema_object_raw_keys(parser)
     for key, value in raw.items():
-        key_str = str(key)
-        if key_str in known_keys or key_str.startswith("x-") or not isinstance(value, (dict, bool)):
-            continue
-        yield from iter_schema_definition_entry(parser, key_str, value, [*path, key_str], passed=passed)
+        if (key_str := str(key)) not in known_keys and not key_str.startswith("x-") and isinstance(value, (dict, bool)):
+            yield key_str, value
+
+
+def _definition_members(
+    parser: SchemaResourcesHost, path: tuple[str, ...], members: dict[str, YamlValue]
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, YamlValue]]]:
+    """Yield each member of a definitions container as a schema, with its path, and those a version namespace holds.
+
+    A version namespace of definitions (``v1``, no schema keywords) is a schema whose members are entries too.
+    """
+    for key, member in members.items():
+        if isinstance(member, dict):
+            yield (*path, key), member
+            if _is_version_namespace(parser, key) and not has_schema_affecting_keywords(parser, member):
+                yield from _definition_members(parser, (*path, key), dict(_namespace_members(parser, member)))
+
+
+def _is_version_namespace(parser: SchemaResourcesHost, name: str) -> bool:
+    """Return whether a namespace of definitions at the key ``name`` also holds its entries directly (``v1``)."""
+    return parser._is_version_definition_namespace_name(name)
 
 
 def iter_schema_definition_entry(
@@ -1437,7 +1534,7 @@ def iter_schema_definition_entry(
                 parser,
                 raw,
                 path,
-                include_direct_children=parser._is_version_definition_namespace_name(name),
+                include_direct_children=_is_version_namespace(parser, name),
                 passed=passed,
             )
         )

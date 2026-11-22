@@ -2082,6 +2082,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         Section.BASE,
+        "--read-refs-in-their-resources",
+        help="Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas, and read each $ref in the "
+        "schema resource that encloses it: a $defs member that declares a $id is the resource its own $defs pointers "
+        "name, a schema an OpenAPI operation, webhook or component holds inline is a resource of its own, a plain-name "
+        "anchor of another document names the schema that declares it, and a $ref to a resource the run holds is never "
+        "fetched. Without it a $defs member without schema keywords is read for its entries alone, only "
+        "components/schemas are OpenAPI resources, an anchor of another document is found by the released search, and "
+        "a URL another document of the run declares is fetched where that succeeds, as in 0.100.0.",
+    ),
+    toggle(
+        Section.BASE,
         "--read-single-allof-refs-in-their-documents",
         help="Read the target of the one $ref of an allOf as every other $ref is read: in the document that holds the "
         "schema, a plain-name anchor such as #code included. The target decides whether the schema is typed as the "

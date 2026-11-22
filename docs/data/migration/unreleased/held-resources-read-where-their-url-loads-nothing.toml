@@ -1,0 +1,18 @@
+[[change]]
+id = "held-resources-read-where-their-url-loads-nothing"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Read a held schema where the URL that names it loads nothing"
+summary = "A reference to a URL that another document of the run declares (an embedded OpenAPI component $id, the root $id of a sibling input, a local document a remote one refers back to) reads that schema where reading the URL fails, instead of exiting with an HTTP or store error; a local document entered from a remote one resolves its references from its own location. A URL that serves a document is still read, as in 0.100.0."
+refs = ["#7159", "#6999"]
+decision = ["#7159", "#6999"]
+covers = [
+    "main/jsonschema/main_jsonschema/held_root_ids_named_by_url[before-default]/",
+    "main/jsonschema/main_jsonschema/local_document_entered_from_remote[local_document_from_remote].py",
+    "main/jsonschema/main_jsonschema/local_document_entered_from_remote[local_document_from_remote_embedded].py",
+    "main/openapi/main_openapi/component_embedded_id_absolute_ref[allowed-not-found].py",
+    "main/openapi/main_openapi/component_embedded_id_absolute_ref[not-found].py",
+    "main/openapi/main_openapi/component_embedded_id_absolute_ref[served].py",
+]

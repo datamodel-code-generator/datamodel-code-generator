@@ -126,6 +126,7 @@ The 20261120 presets keep the 20261118 options and add:
 The 20261123 presets keep the 20261120 options and add:
 
 - Mapping keys by the schema's tag type (`--read-mapping-keys-by-schema-tag-type`): Read the keys of a discriminator mapping as values of the type the schema declares for the tag property, such as the integer 2 for the key '2' of an integer enum, also where an earlier discriminated union wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first.
+- References in their schema resources (`--read-refs-in-their-resources`): Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas ($defs members, inline OpenAPI operation and component schemas) and each $ref in the schema resource that encloses it, so a pointer inside a bundled $id resource names that resource's definitions, a plain-name anchor of another document names its schema, and a resource the run holds is never fetched.
 
 ## Older presets
 

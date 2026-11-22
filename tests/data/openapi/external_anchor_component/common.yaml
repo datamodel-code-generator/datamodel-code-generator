@@ -1,0 +1,10 @@
+openapi: 3.1.0
+info: {title: Common, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      $anchor: Pet
+      type: object
+      properties:
+        name: {type: string}
