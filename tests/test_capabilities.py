@@ -31,6 +31,8 @@ CLAUSES = (
     "black!=22",
     "pydantic>=2.5",
     "pydantic==2.0",
+    "black==24.1.0.0",
+    "python==3.1",
     "isort>=6",
     "isort==6",
     "isort!=6",
@@ -48,7 +50,7 @@ MALFORMED = (
 
 
 def test_clauses_hold_by_release_series() -> None:
-    """``==`` matches leading components, an order compares the release cut to the value's length, empty is absent."""
+    """``==`` matches leading components, zero-padded; an order compares the release cut to the value's length."""
     assert_output("".join(f"{clause}: {condition_holds(clause, FACTS)}\n" for clause in CLAUSES))
 
 

@@ -387,7 +387,7 @@ def _historical_clauses(text: str) -> tuple[str, ...]:
     """Parse the ``@`` column of a sidecar from any revision: condition clauses, or the pairs written before them.
 
     Sidecars before condition clauses wrote ``fact=value,...`` (``@formatter=builtin,python=3.12``); such a pair held
-    where the fact equals the value or starts with it and a dot, which is what ``fact==value`` means now.
+    where the fact lay in the value's series, which is what ``fact==value`` means now (`_in_series`).
     """
     try:
         return parse_clauses(text)
@@ -460,12 +460,24 @@ def release(value: str) -> tuple[int, ...]:
     return tuple(int(part) for part in match.group().split(".")) if match else ()
 
 
+def _in_series(actual: str, value: str) -> bool:
+    """Return whether a fact lies in the series a value names: equal to it, or the value and a dot before more.
+
+    Two numeric releases compare as PEP 440 compares them, the shorter padded with zeros: a lane that pins
+    ``pydantic==2`` installs ``2.0``, so its fact ``2`` lies in ``2.0``, while ``3.12`` does not lie in ``3.1``.
+    """
+    if _RELEASE.fullmatch(actual) and _RELEASE.fullmatch(value):
+        wanted = release(value)
+        return (*release(actual), *(0,) * len(wanted))[: len(wanted)] == wanted
+    return actual == value or actual.startswith(f"{value}.")
+
+
 def condition_holds(clause: str, facts: Mapping[str, str]) -> bool:
     """Return whether an environment's facts satisfy a well-formed clause (`condition_problem`): any alternative holds.
 
-    ``==`` and ``!=`` match a version by its leading components, as overrides do (``black==22`` holds for ``22.1.0``).
-    An order compares the actual version's release cut to the length of the value's (``black>=24`` holds for
-    ``24.1.0``). A tool that is not installed (an empty fact) satisfies only ``!=``.
+    ``==`` and ``!=`` match a version by its leading components (`_in_series`): ``black==22`` holds for ``22.1.0``, and
+    ``pydantic==2.0`` for ``2``. An order compares the actual version's release cut to the length of the value's
+    (``black>=24`` holds for ``24.1.0``). A tool that is not installed (an empty fact) satisfies only ``!=``.
     """
     for match in filter(None, map(_CONDITION.fullmatch, clause.split("|"))):
         fact, op, value = match["fact"], match["op"], match["value"]
@@ -475,7 +487,7 @@ def condition_holds(clause: str, facts: Mapping[str, str]) -> bool:
             found = release(actual)[: len(wanted)]
             if found and ORDERS[op](found, wanted):
                 return True
-        elif (actual == value or actual.startswith(f"{value}.")) is (op == "=="):
+        elif _in_series(actual, value) is (op == "=="):
             return True
     return False
 

@@ -17,6 +17,8 @@ black==22: None
 black!=22: None
 pydantic>=2.5: None
 pydantic==2.0: None
+black==24.1.0.0: None
+python==3.1: None
 isort>=6: None
 isort==6: None
 isort!=6: None
