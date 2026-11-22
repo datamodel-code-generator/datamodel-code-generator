@@ -745,6 +745,29 @@ references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py
 references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:22: def reader()
 references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:26: def shadow(_SHADOWED)
 references/private_names_by_string_argument: private_names_by_string_argument.py:9: def read(obj, suffix)
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:55: @marks.usefixtures('test_data')
+    class TestGroup
+        @fixture
+        def test_inner(self)
+        def test_method(self, test_inner)
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:18: either = pytest.fixture  [if pytest.__version__]
+    either = pytest.mark.skip  [else of pytest.__version__]
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:65: @lambda function: function
+    def helper()
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:15: shared = pytest.fixture
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:39: @shared
+    def test_aliased()
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:34: @fixture
+    async def test_bare()
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:24: @pytest.fixture
+    def test_data()
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:44: @either
+    def test_either()
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:29: @pytest.fixture(scope='module')
+    def test_session_data()
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:50: @marks.parametrize('value', [1, 2])
+    @functools.lru_cache(maxsize=1)
+    def test_value(value, test_data)
 references/qualified_enum_receivers: qualified_enum_receivers.py:10: FIRST = datamodel_code_generator.enums.DataModelType.PydanticV2BaseModel
 references/qualified_enum_receivers: qualified_enum_receivers.py:11: SECOND = datamodel_code_generator.enums.DataModelType.PydanticV2BaseModel
 references/reexport_chain_across_modules: reexport_chain_across_modules/__init__.py:7: DEFAULT_LINE_LENGTH = 88

@@ -1,0 +1,9 @@
+exit=0
+verify: TMP/repo (working tree) against the merge base <sha> with <sha>
+verify: tests the diff reaches: 0
+verify: tests done after <n>s
+evidence: incomplete: no input group, changed code objects not measured: 1
+WARN uncovered: 1 of 1 changed code objects no compared cell ran (side, file:lines):
+WARN   head src/datamodel_code_generator/__main__.py:29 (main)
+verify: cells compared 0 of 0, violations 0, flaky 0
+verify: passed (<n>s)

@@ -161,6 +161,7 @@ references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowe
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:10: unused-private-global: _LISTED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:11: unused-private-global: _COUNTER
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:12: unused-private-global: _SECOND
+references/pytest_fixtures_by_decorator_origin: tests/pytest_fixtures_by_decorator_origin.py:20: raw-skip: pytest.mark.skip
 references/skip_markers_by_origin: tests/skip_markers_by_origin.py:14: raw-skip: pytest.mark.skipif
 references/skip_markers_by_origin: tests/skip_markers_by_origin.py:18: raw-skip: pytest.mark.skipif
 references/skip_markers_by_origin: tests/skip_markers_by_origin.py:20: raw-skip: pytest.importorskip

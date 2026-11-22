@@ -1,0 +1,8 @@
+exit=0
+verify: TMP/repo (working tree) against the merge base <sha> with <sha>
+verify: tests the diff reaches: 0
+verify: tests done after <n>s
+pick: cell default tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
+evidence: complete
+verify: cells compared 1 of 1, violations 0, flaky 0
+verify: passed (<n>s)

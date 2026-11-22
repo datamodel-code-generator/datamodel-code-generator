@@ -1,4 +1,9 @@
-"""Print the test node ids and the environments a diff selects: mirrors, fast-path tests and related_tests.toml rows."""
+"""Print the test node ids and the environments a diff selects: changed tests, mirrors and table rows.
+
+A changed test function or class of the test suite selects itself (a new module, a helper module or changed
+module-level code the whole module), a changed source module or script its mirror, a module the stored fast-path
+lists name the fast-path tests, and the rows of related_tests.toml the tests they name.
+"""
 
 from __future__ import annotations
 
@@ -11,10 +16,16 @@ from pathlib import Path
 
 import tomllib
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._source_model import SourceModelError, SourceModule
+
 RULES = Path(__file__).with_name("related_tests.toml")
 SRC = "src/datamodel_code_generator/"
 FAST_PATH_TEST = "tests/main/test_cli_fast_paths.py"
 FAST_PATH_LISTS = "tests/data/expected/main/cli_fast_paths/"
+TESTS = "tests/"
+TEST_INPUTS = "tests/data/"
+HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", re.MULTILINE)
 MODULE_NAME = re.compile(r'"(datamodel_code_generator[\w.]*)"')
 TOX = "tox.ini"
 TOX_SECTION = re.compile(r"^\[testenv:([^\]]+)\]", re.MULTILINE)
@@ -89,6 +100,71 @@ def mirrors(path: str) -> list[str]:
     return []
 
 
+def own_module(path: str) -> bool:
+    """Whether a path is a module of the test suite (a test module or a helper), whose change selects its own tests.
+
+    The suite's inputs under tests/data are no such module: the rows of related_tests.toml select their tests.
+    """
+    return path.startswith(TESTS) and path.endswith(".py") and not path.startswith(TEST_INPUTS)
+
+
+def test_units(model: SourceModule) -> list[tuple[range, str | None]]:
+    """Return the top-level statements of a test module with their lines and the node id suffix they select.
+
+    A `test_*` function and a `Test*` class (the scope whose header the statement starts) are units of their own (a
+    parametrized test is its function); any other statement (imports, fixtures, constants, helpers) is module-level
+    code, None (a fixture too, even one named `test_*`).
+    """
+    units: list[tuple[range, str | None]] = []
+    for node in model.tree.body:
+        scope = model.header_of(node.lineno, node.col_offset)
+        prefix = {"function": "test", "class": "Test"}.get(scope.kind if scope else "")
+        named = scope is not None and prefix is not None and scope.qualname.startswith(prefix)
+        test = named and "pytest.fixture" not in model.decorator_origins(node)
+        units.append((model.extent(node), scope.qualname if test and scope else None))
+    return units
+
+
+def _touched(model: SourceModule, numbers: range) -> set[str | None]:
+    """Return the units the changed lines `numbers` fall in; a changed line of code outside every unit is None.
+
+    Blank and comment-only lines change nothing a test runs.
+    """
+    units = test_units(model)
+    return {
+        next((name for lines, name in units if number in lines), None)
+        for number in numbers
+        if number in model.code_lines
+    }
+
+
+def _changed_tests(root: Path, base: str, head: str | None, path: str, letter: str) -> list[str]:
+    """Return the node ids a change of a test-suite module selects.
+
+    A new module, a helper module (not `test_*.py`), a change of module-level code or a side the source model cannot
+    read selects the module; otherwise the `test_*` functions and `Test*` classes whose lines (on either side) changed.
+    """
+    if letter == "A" or not path.rpartition("/")[2].startswith("test_"):
+        return [path]
+    left = _merge_base(root, base, head)
+    new = (root / path).read_text(encoding="utf-8") if head is None else _git(root, "show", f"{head}:{path}")
+    old = _git(root, "show", f"{left}:{path}")
+    try:
+        sides = [SourceModule(text, path) for text in (old, new)]
+    except (SyntaxError, SourceModelError):
+        return [path]
+    diff = _git(root, "diff", "-U0", "--no-renames", left, *([head] if head else []), "--", path)
+    touched: set[str | None] = set()
+    for match in HUNK.finditer(diff):
+        for side, (start, count) in enumerate(((match[1], match[2]), (match[3], match[4]))):
+            first = int(start)
+            touched |= _touched(sides[side], range(first, first + int(count or "1")))
+    if None in touched:
+        return [path]
+    present = {name for _, name in test_units(sides[1]) if name is not None}
+    return [f"{path}::{name}" for name in sorted(present & {name for name in touched if name is not None})]
+
+
 def _module_name(path: str) -> str | None:
     """Return the dotted name of a package module file (`a/b.py` or `a/b/__init__.py`), or None for other paths."""
     if not (path.startswith(SRC) and path.endswith(".py")):
@@ -131,12 +207,14 @@ def _fired(root: Path, base: str, head: str | None, changed: dict[str, str], rul
 
 
 def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
-    """Return the sorted node ids the diff selects: the mirrors of changed modules and every row that fires."""
+    """Return the sorted node ids the diff selects: changed tests, mirrors and every row that fires."""
     changed = _changes(root, base, head)
     nodes: set[str] = set()
     for path, letter in changed.items():
         if letter == "D":
             continue
+        if own_module(path) and _exists(root, head, path):
+            nodes.update(_changed_tests(root, base, head, path, letter))
         nodes.update(next(([test] for test in mirrors(path) if _exists(root, head, test)), []))
     listed = _fast_path_modules(root, base, head)
     if any(_module_name(path) in listed for path, letter in changed.items() if letter != "D") and _exists(

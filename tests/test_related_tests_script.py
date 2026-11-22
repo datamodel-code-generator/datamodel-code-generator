@@ -124,6 +124,39 @@ CASES: dict[str, dict[str, dict[str, str | None]]] = {
     "fast-path-list-edited": {
         "head": {"tests/data/expected/main/cli_fast_paths/fast_paths_load_these_modules[version].txt": "{}\n"}
     },
+    "added-test-function": {"head": {"tests/test_guide.py": TEST + "\n\ndef test_three() -> None:\n    pass\n"}},
+    "changed-test-function": {"head": {"tests/test_guide.py": TEST.replace("pass\n", "assert True\n", 1)}},
+    "changed-test-class": {
+        "base": {"tests/test_suite.py": "class TestIt:\n    def test_one(self) -> None:\n        pass\n"},
+        "head": {"tests/test_suite.py": "class TestIt:\n    def test_one(self) -> None:\n        assert True\n"},
+    },
+    "changed-parametrized-test": {
+        "base": {"tests/test_cases.py": '@pytest.mark.parametrize("x", [1])\ndef test_x(x: int) -> None:\n    pass\n'},
+        "head": {
+            "tests/test_cases.py": '@pytest.mark.parametrize("x", [1, 2])\ndef test_x(x: int) -> None:\n    pass\n'
+        },
+    },
+    "removed-test-function": {"head": {"tests/test_guide.py": TEST.partition("\n\n\n")[0] + "\n"}},
+    "changed-module-level-code": {"head": {"tests/test_guide.py": "import os\n\n\n" + TEST}},
+    "changed-test-named-fixture": {
+        "base": {
+            "tests/test_guide.py": "import pytest\n\n\n@pytest.fixture\ndef test_data() -> int:\n    return 1\n\n\n"
+            + TEST
+        },
+        "head": {
+            "tests/test_guide.py": "import pytest\n\n\n@pytest.fixture\ndef test_data() -> int:\n    return 2\n\n\n"
+            + TEST
+        },
+    },
+    "changed-blank-line-only": {"head": {"tests/test_guide.py": TEST.replace("\n\n\n", "\n\n\n\n")}},
+    "changed-helper-module": {
+        "base": {"tests/helpers.py": "value = 1\n"},
+        "head": {"tests/helpers.py": "value = 2\n"},
+    },
+    "changed-test-module-with-a-syntax-error": {"head": {"tests/test_guide.py": TEST + "def broken(:\n"}},
+    "added-test-helper": {"head": {"tests/helpers.py": "value = 1\n"}},
+    "deleted-test-module": {"head": {"tests/test_guide.py": None}},
+    "test-input-under-data": {"head": {"tests/data/python/model.py": "value = 1\n"}},
     "nothing-changed": {"head": {}},
 }
 ENV_CASES: dict[str, dict[str, dict[str, str | None]]] = {
@@ -202,6 +235,8 @@ WORKING_TREES = {
     "untracked-without-a-pattern": {f"{SRC}/parser/new.py": "value = 1\n"},
     "untracked-listed-module": {f"{SRC}/parser/listed.py": "value = 3\n"},
     "untracked-non-ascii-path": {"tests/data/\u00e9.json": "{}\n"},
+    "untracked-test-module": {"tests/parser/test_new.py": TEST},
+    "uncommitted-test-function": {"tests/test_guide.py": TEST.replace("pass\n", "assert True\n", 1)},
 }
 
 

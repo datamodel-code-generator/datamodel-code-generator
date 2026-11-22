@@ -8,8 +8,9 @@ A check asks five questions of a module, and this module is the only place that 
 - **references**: what each name occurrence reads (by the language's scoping rules), the dotted origin of a name or an
   attribute chain through imports and simple aliases, how a read is used, the annotations and the type positions in
   them, what a name read in a scope resolves to (`SourceModule.lookup`, for the names a string reads: `string_type`,
-  `name_reads`), literal tables (`SourceModule.constant`), the argument a call passes for a parameter (`argument`) and
-  the parts of a module only type checkers read (`SourceModule.typing_only`);
+  `name_reads`), literal tables (`SourceModule.constant`), the argument a call passes for a parameter (`argument`), the
+  origins of a statement's decorators (`SourceModule.decorator_origins`) and the parts of a module only type checkers
+  read (`SourceModule.typing_only`);
 - **imports**: each import with its absolute target, scope and guard (``TYPE_CHECKING``, version, platform,
   ``ImportError`` fallback, ...), and across modules (`SourceTree`) the definitions names reach and the import graph;
 - **suppressions**: the suppression comments (``noqa``, ``ruff: ignore/disable``, ``type: ignore`` and its siblings,
@@ -38,7 +39,7 @@ kind of each read (local, enclosing, global or builtin). A module the compiler r
 ``from __future__`` import) is a disagreement too.
 The forms in ``tests/data/source_forms/`` alone stand behind the other answers: guards, origins, uses (of names and of
 any expression), the binding of a node, what an assignment target takes, class members, receivers, annotations, type
-positions and expressions, the names a string reads, constants, imports, suppressions and extents.
+positions and expressions, the names a string reads, constants, decorator origins, imports, suppressions and extents.
 
 The compiler differs by version, and the check normalizes the differences in one place (`SourceModule._compare`): on
 3.11 list, set and dict comprehensions have tables of their own, from 3.12 they are inlined into the enclosing table
@@ -1661,6 +1662,18 @@ class _TypingForms(_Reads):
         forms = (self._typing_form(node, inner, position) for node, inner in pairs)
         return next((form for form in forms if form is not None), None)
 
+    def decorator_origins(self, node: ast.stmt) -> tuple[str | None, ...]:
+        """Return the origin of each decorator of a ``def`` or ``class`` statement, in order; none for other statements.
+
+        A decorator call (``@pytest.fixture(scope="module")``) is read by the origin of what it calls; a decorator
+        without one origin (`SourceModule.origin`) is None.
+        """
+        _ask("references")
+        decorators = (
+            node.decorator_list if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) else []
+        )
+        return tuple(self._origin(item.func if isinstance(item, ast.Call) else item) for item in decorators)
+
     def _typing_form(self, node: Positioned, inner: Positioned | None, position: tuple[int, int]) -> str | None:
         """Return the typing-only form `node` makes of its child `inner` (None: `position` itself), if any.
 
@@ -1672,7 +1685,7 @@ class _TypingForms(_Reads):
         if inner is None:
             starts = {self._code_token_before(self._position(item)).start: item for item in decorators}
             inner = starts.get(position)
-        origins = {self._origin(item.func if isinstance(item, ast.Call) else item) for item in decorators}
+        origins = set(self.decorator_origins(function)) if function is not None else set()
         annotation = (function is not None and inner is function.returns) or (
             isinstance(node, ast.arg) and inner is node.annotation
         )
