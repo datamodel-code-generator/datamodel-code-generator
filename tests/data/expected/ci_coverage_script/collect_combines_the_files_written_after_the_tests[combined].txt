@@ -1,0 +1,22 @@
+{
+  "code": 0,
+  "files": [
+    ".coverage.py314-parallel-shard9-ubuntu-24.04"
+  ],
+  "lines": {
+    "sign.py": [
+      1,
+      4,
+      5,
+      6,
+      7,
+      10
+    ]
+  },
+  "stderr": "",
+  "stdout": [
+    "Combined data file .coverage.py314-parallel.late-forkserver",
+    "Combined data file .coverage.py314-parallel.late-tracker",
+    "Combined 2 data files written after the tests ended into .coverage.py314-parallel"
+  ]
+}

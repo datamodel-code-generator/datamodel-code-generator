@@ -1,0 +1,13 @@
+{
+  "code": 1,
+  "files": [
+    ".coverage.py314-parallel",
+    ".coverage.py314-parallel.truncated"
+  ],
+  "lines": {},
+  "stderr": "Could not combine the coverage data files beside .coverage.py314-parallel: .coverage.py314-parallel.truncated\n",
+  "stdout": [
+    "Combined data file .coverage.py314-parallel.late-tracker",
+    "Couldn't combine data file .coverage.py314-parallel.truncated"
+  ]
+}

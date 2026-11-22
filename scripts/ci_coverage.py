@@ -1,4 +1,4 @@
-"""Record and validate this run's complete CI coverage input, then combine and report it.
+"""Collect, record and validate this run's complete CI coverage input, then combine and report it.
 
 The report ends with the lines excluded from coverage that the suite executed (`coverage_exclusions.py`); that list
 never changes the exit code.
@@ -110,6 +110,28 @@ def _run(commands: list[list[str]]) -> tuple[int, str]:
     return 0, output
 
 
+def _collect(data: Path, target: Path) -> None:
+    """Combine the data files left beside a run's data file into it, then move it to the artifact's name.
+
+    pytest-cov combines the files of the run's processes when the tests end, but a process that outlives its test
+    writes its file when it exits: a multiprocessing forkserver or resource tracker that an xdist worker started ends
+    only with that worker, after the combine. Whichever test starts such a process, its data joins the artifact here.
+    """
+    if target.name not in EXPECTED_NAMES or not data.is_file():
+        msg = f"Invalid coverage data: {data.name} for {target.name}"
+        raise ValueError(msg)
+    if leftovers := sorted(data.parent.glob(f"{data.name}.*")):
+        command = [sys.executable, "-m", "coverage", "combine", "--append", f"--data-file={data}"]
+        code, output = _run([[*command, *map(str, leftovers)]])
+        print(output, end="", flush=True)
+        kept = [path.name for path in leftovers if path.exists()]
+        if code or kept:
+            msg = f"Could not combine the coverage data files beside {data.name}: {', '.join(kept) or code}"
+            raise ValueError(msg)
+        print(f"Combined {len(leftovers)} data files written after the tests ended into {data.name}")
+    data.replace(target)
+
+
 def _report(root: Path, compare_branch: str, expected: frozenset[str]) -> int:
     """Combine the prepared inputs in parallel groups, then write the XML and diff report beside the summary gate.
 
@@ -155,6 +177,20 @@ def _report(root: Path, compare_branch: str, expected: frozenset[str]) -> int:
     return code
 
 
+def _act(args: argparse.Namespace) -> int:
+    """Run the parsed action, returning the exit status of a report."""
+    match args.action:
+        case "record":
+            _record(args.path, args.run_id, args.sha)
+        case "collect":
+            _collect(args.data, args.path)
+        case "report":
+            return _report(args.path, args.compare_branch, _expected_names(args.event))
+        case _:
+            _prepare(args.path, args.run_id, args.sha, _expected_names(args.event))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     """Run the artifact CLI, returning errors without a traceback."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -164,21 +200,17 @@ def main(argv: list[str] | None = None) -> None:
         artifact.add_argument("path", type=Path)
         artifact.add_argument("--run-id", required=True)
         artifact.add_argument("--sha", required=True)
+    collect = actions.add_parser("collect", help="run with the Python of the environment that ran the tests")
+    collect.add_argument("data", type=Path, help="the data file the run wrote (its COVERAGE_FILE)")
+    collect.add_argument("path", type=Path, help="the artifact's data file")
     report = actions.add_parser("report")
     report.add_argument("path", type=Path)
     report.add_argument("--compare-branch", required=True)
     for subparser in (actions.choices["prepare"], report):
         subparser.add_argument("--event", default="push", help="GitHub event name of the run (default: push)")
     args = parser.parse_args(argv)
-    code = 0
     try:
-        match args.action:
-            case "record":
-                _record(args.path, args.run_id, args.sha)
-            case "report":
-                code = _report(args.path, args.compare_branch, _expected_names(args.event))
-            case _:
-                _prepare(args.path, args.run_id, args.sha, _expected_names(args.event))
+        code = _act(args)
     except (OSError, ValueError) as error:
         parser.exit(1, f"{error}\n")
     if code:

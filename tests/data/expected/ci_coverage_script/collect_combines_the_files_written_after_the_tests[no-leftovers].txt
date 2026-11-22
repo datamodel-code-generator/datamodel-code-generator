@@ -1,0 +1,17 @@
+{
+  "code": 0,
+  "files": [
+    ".coverage.py314-parallel-shard9-ubuntu-24.04"
+  ],
+  "lines": {
+    "sign.py": [
+      1,
+      4,
+      5,
+      7,
+      10
+    ]
+  },
+  "stderr": "",
+  "stdout": []
+}
