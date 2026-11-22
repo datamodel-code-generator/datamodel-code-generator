@@ -1,0 +1,8 @@
+[[change]]
+id = "heki-pre-commit-hooks"
+category = "harness"
+title = "The heki contract checks run as pre-commit hooks"
+summary = "Only the repository's hook list changes; the package writes the same output."
+covers = [
+    "pre_commit_hooks/local_hooks_run_when_their_scripts_change.txt",
+]
