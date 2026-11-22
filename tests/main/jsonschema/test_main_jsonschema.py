@@ -38200,6 +38200,7 @@ def test_root_alias_constraints(
         args = ["--disable-timestamp"]
         args.extend(f"--{name.replace('_', '-')}" for name, enabled in options.items() if enabled)
         run_main_and_assert(
+            varies_with=("black-before-24",),
             input_path=source,
             output_path=output_file,
             input_file_type="jsonschema",
@@ -38207,6 +38208,7 @@ def test_root_alias_constraints(
         )
     else:
         run_generate_and_assert(
+            varies_with=("black-before-24",),
             input_=json.loads(source.read_text()),
             input_file_type=InputFileType.JsonSchema,
             input_filename=source.name,

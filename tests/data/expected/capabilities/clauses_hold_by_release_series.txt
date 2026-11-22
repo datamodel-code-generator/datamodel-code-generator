@@ -11,6 +11,8 @@ black==22: False
 black!=22: True
 pydantic>=2.5: False
 pydantic==2.0: True
+black==24.1.0.0: True
+python==3.1: False
 isort>=6: False
 isort==6: False
 isort!=6: True

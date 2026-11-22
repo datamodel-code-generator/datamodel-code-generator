@@ -11,4 +11,4 @@ tests/test_module_marks.py:6: never-run: test_windows_in_a_posix_module needs po
 tests/test_module_marks.py:12: never-run: TestWindows.test_method needs posix, windows
 
 rule counts:
-  never-run: 10 (absolute); fix: delete the test, or the capability that excludes every lane; a test no lane of .github/workflows/test.yaml runs checks nothing
+  never-run: 10 (absolute); fix: delete the test, or the capability that excludes every lane; a test no lane of a workflow matrix in .github/workflows runs checks nothing

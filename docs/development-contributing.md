@@ -102,24 +102,33 @@ pytest writes (sorted, with the header), and CI runs never write. Tests with the
 output share one stored file. When a fix changes the output of only some of the
 tests that share a file, those tests get their own file and the others keep
 theirs, so a partial run never changes what other tests compare against; the
-report prints the command that updates the others too. When a CI lane produces
-different output than your environment, its failure ends with a
-`python scripts/fix_expected.py --apply '...'` command (or use
-`--from-ci <run id>`) that writes that lane's output as an override for that
-environment only, so other environments keep the stored file and no other
-interpreter or formatter is needed locally. When lanes that would get
-different overrides send the same output for one stored file (lanes that share
-one override, such as one Python on two platforms, count once), the change is
-common to them and belongs in the stored file itself: the command then writes
-nothing for that file and prints how to go on, either regenerating it locally,
-rerunning with `--as-base`, or rerunning with `--per-environment` (one override
-per lane). `--as-base` writes that output as the stored file and drops the
-overrides equal to what their lanes then compare. Every environment without an
-override of its own then compares that output: yours, and the lanes that sent
-no payload because they passed or did not run. Run the tests here, and check
-those lanes with a dispatch run of the Test workflow on your branch
-(`gh workflow run test.yaml --ref <branch>`), which also runs the lanes pull
-requests skip.
+report prints the command that updates the others too.
+
+Every environment compares one output unless the comparison names the facts its
+output depends on: `varies_with=("windows",)` (on `assert_output`, the run
+helpers and the tree helpers) takes entries of `tests/capabilities.py`, the
+table `@needs(...)` uses too. The `.refs` line of such a comparison keys on the
+clauses of those entries that hold in the environment, its class
+(`@platform==win32`, `@black<24`); where none holds the base line applies. Never
+pick a stored output by version or platform in the test itself. A fix run in an
+environment of a class writes that class's line, never the base line, and a line
+keyed on a clause the test no longer declares fails other runs and goes in a fix
+run. When a CI lane produces different output than your environment, its
+failure ends with a `python scripts/fix_expected.py --apply '...'` command (or
+use `--from-ci <run id>`) that writes that lane's output as the line of its
+class, so no other interpreter or formatter is needed locally. When two equally
+specific recorded lines disagree for a class, the failure prints a local `pytest`
+command and the `dcg-expected-fix:` payload but no `--apply` command; use
+`python scripts/fix_expected.py --from-ci <run id>` to apply it. A payload of your
+environment's class is refused: only a local run changes what your class
+compares, so a comparison with no `varies_with` takes no value payload (a missing payload
+from another environment can still apply). Payloads, in any
+order, change only what their own classes read: every other class keeps the
+output it read under a line of its own clauses, and a batch that would give a
+class that recorded nothing another class's output is refused. Payloads, and
+observations merged with `fix_expected.py --observations`, of one class that
+store different outputs are refused too, naming the facts the environments
+differ in: a difference no declared fact explains needs `varies_with=` or a fix.
 `python scripts/fix_expected.py --where '<test>'` shows where a test's expected
 output is stored.
 

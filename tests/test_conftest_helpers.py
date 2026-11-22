@@ -9,7 +9,8 @@ import subprocess
 import sys
 import textwrap
 import zlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from itertools import combinations, permutations, product, starmap
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
@@ -19,8 +20,8 @@ import pytest
 
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
+from tests import capabilities, units
 from tests import conftest as shared_conftest
-from tests import units
 from tests.capabilities import needs
 from tests.conftest import (
     _refuse_home_directory,
@@ -671,6 +672,11 @@ def kept_modules() -> Generator[dict[str, ModuleType], None, None]:
     _put_back(kept)
 
 
+BUILTIN_FORMATTER_CAPABILITY = (("formatter==builtin",), "the built-in formatter lays out output its own way")
+"""A capability the project's tests may name in ``varies_with=``: a run's variable switches the fact it reads."""
+BUILTIN = {"DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER": "builtin"}
+
+
 @pytest.fixture
 def ledger(
     kept_modules: dict[str, ModuleType], pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
@@ -678,6 +684,7 @@ def ledger(
     """Yield an empty project whose conftest is the shared one and whose tests live in suite/."""
     for name in _ISOLATED_VARIABLES:
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setitem(capabilities.CAPABILITIES, "builtin-formatter", BUILTIN_FORMATTER_CAPABILITY)
     pytester.makepyprojecttoml(
         """
         [tool.pytest.ini_options]
@@ -688,7 +695,10 @@ def ledger(
         default-flags-tui = ["short-report", "create"]
         """
     )
-    pytester.makeconftest("from tests.conftest import *  # noqa: F403\n")
+    pytester.makeconftest(
+        "from tests.conftest import *  # noqa: F403\nfrom tests import capabilities\n\n"
+        f"capabilities.CAPABILITIES.setdefault('builtin-formatter', {BUILTIN_FORMATTER_CAPABILITY!r})\n"
+    )
     (pytester.path / "suite" / "data" / "expected").mkdir(parents=True)
     modules = ImportedModules(pytester.path, frozenset(sys.modules), kept_modules)
     yield LedgerProject(pytester, monkeypatch, modules)
@@ -850,23 +860,180 @@ def test_ledger_reports_missing_line_for_existing_file(ledger: LedgerProject) ->
     assert "suite/test_m.refs has no line for suite/test_m.py::test_z.\n" in result.stdout.str()
 
 
+NEW_VARYING_TEST = (
+    "from tests.conftest import assert_output\n\n\n"
+    "def test_new():\n    assert_output('x\\n', varies_with=('builtin-formatter',))\n"
+)
+"""A new test whose output varies with the formatter: CI's payload for it applies from the built-in class."""
+VARYING_TEST = """
+import os
+
+from tests.conftest import assert_output
+
+FORMATTER = os.environ.get("DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER", "external")
+
+
+def test_new():
+    assert_output(f"{FORMATTER}\\n", varies_with=("builtin-formatter",))
+"""
+
+
 def test_ledger_payload_round_trip(ledger: LedgerProject, tmp_path: Path) -> None:
-    """A CI payload applied locally records CI's output for the environment that produced it."""
-    ledger.write(
-        "test_m.py", "from tests.conftest import assert_output\n\n\ndef test_new():\n    assert_output('x\\n')\n"
-    )
-    failure = ledger.run("suite", env={"CI": "true", "GITHUB_ACTIONS": "true"}).stdout.str()
+    """A CI payload applied locally records CI's output for its class: the declared clauses that hold on its lane."""
+    ledger.write("test_m.py", VARYING_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    failure = ledger.run("suite", env={"CI": "true", "GITHUB_ACTIONS": "true", **BUILTIN}).stdout.str()
     payload = next(line for line in failure.splitlines() if line.startswith("dcg-expected-fix: "))
     decoded = units.decode_payload(payload)
-    assert (decoded["item"], decoded["label"], decoded["value"]) == ("suite/test_m.py::test_new", "m/new.txt", "x\n")
-    apply_file = tmp_path / "apply.json"
-    apply_file.write_text(
-        json.dumps({"payloads": [{**decoded, "facts": _other_platform(decoded["facts"])}]}), encoding="utf-8"
+    assert (decoded["item"], decoded["label"], decoded["value"], decoded["clauses"]) == (
+        "suite/test_m.py::test_new",
+        "m/new.txt",
+        "builtin\n",
+        ["formatter==builtin"],
     )
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [decoded]}), encoding="utf-8")
     ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
-    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
-    assert ledger.files() == {"m/new.txt": "x\n"}
+    assert ledger.refs() == HEADER + (
+        "[test_new]\n\tm/new.txt\n\tm/new.txt\t@formatter==builtin\t= m/new@formatter-eq-builtin.txt\n"
+    )
+    assert ledger.files() == {"m/new.txt": "external\n", "m/new@formatter-eq-builtin.txt": "builtin\n"}
     ledger.run("suite", env={"CI": "true"}).assert_outcomes(passed=1)
+    ledger.run("suite", env={"CI": "true", **BUILTIN}).assert_outcomes(passed=1)
+
+
+def test_ledger_keys_lines_on_the_declared_class(ledger: LedgerProject) -> None:
+    """A fix run in a class writes that class's line beside the base line, never the base line itself.
+
+    A line keyed on a clause the comparison no longer declares fails other runs, saying so, and goes in a fix run.
+    """
+    ledger.write("test_m.py", VARYING_TEST.replace("test_new", "test_a"))
+    ledger.run("suite").assert_outcomes(passed=1)
+    ledger.run("suite", "--inline-snapshot=fix", env=BUILTIN).assert_outcomes(passed=1)
+    storage = "m/a@formatter-eq-builtin.txt"
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@formatter==builtin\t= {storage}\n"
+    assert ledger.files() == {"m/a.txt": "external\n", storage: "builtin\n"}
+    ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=1)
+    ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN).assert_outcomes(passed=1)
+    ledger.write("test_m.py", ONE_TEST.replace("OUT = 'x\\n'", "OUT = 'external\\n'"))
+    failing = ledger.run("suite", "--inline-snapshot=disable")
+    failing.assert_outcomes(failed=1)
+    assert (
+        "suite/test_m.refs records m/a.txt for suite/test_m.py::test_a under @formatter==builtin, which its comparison "
+        "no longer declares (no varies_with).\nFix: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A "
+        "suite"
+    ) in failing.stdout.str()
+    ledger.run("suite", "--inline-snapshot=fix").assert_outcomes(passed=1)
+    assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "external\n"})
+
+
+@pytest.mark.parametrize(
+    ("output", "suffix", "stored", "written"),
+    [
+        pytest.param("'z\\n'", ".txt", ("x\n", "y\n"), "z\n", id="text"),
+        pytest.param("1", ".json", ("1", "true"), "1", id="json-kinds"),
+    ],
+)
+def test_ledger_records_a_class_no_line_records(
+    ledger: LedgerProject,
+    monkeypatch: pytest.MonkeyPatch,
+    output: str,
+    suffix: str,
+    stored: tuple[str, str],
+    written: str,
+) -> None:
+    """Lines of as many clauses that all hold here and store different outputs leave this class unrecorded.
+
+    Other runs fail saying so, CI with a payload for the class; a fix run writes the line of the class, which holds both
+    clauses. JSON values of different kinds are different outputs, although Python finds ``1 == True``.
+    """
+    everywhere = "platform==darwin|platform==linux|platform==win32"
+    monkeypatch.setitem(capabilities.CAPABILITIES, "any-platform", ((everywhere,), "every platform"))
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        f"    assert_output({output}, suffix={suffix!r}, varies_with=('builtin-formatter', 'any-platform'))\n",
+    )
+    label = f"m/a{suffix}"
+    ledger.store(builtin := f"m/a@builtin{suffix}", stored[0])
+    ledger.store(anywhere := f"m/a@any{suffix}", stored[1])
+    lines = [
+        units.RefLine("test_a", "", label, predicate=("formatter==builtin",), storage=builtin),
+        units.RefLine("test_a", "", label, predicate=(everywhere,), storage=anywhere),
+    ]
+    (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
+    failing = ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN)
+    failing.assert_outcomes(failed=1)
+    assert (
+        f"suite/test_m.py::test_a reads {label} under @formatter==builtin and @{everywhere}, which store different "
+        f"outputs: this environment's class (formatter==builtin,{everywhere}) has no line of its own.\n"
+        "Fix: record this environment's class: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
+    ) in failing.stdout.str()
+    ci = ledger.run("suite", env=GITHUB | BUILTIN)
+    ci.assert_outcomes(failed=1)
+    payload = next(line for line in ci.stdout.str().splitlines() if line.startswith("dcg-expected-fix: "))
+    assert units.decode_payload(payload)["clauses"] == ["formatter==builtin", everywhere]
+    ledger.run("suite", "--inline-snapshot=fix", env=BUILTIN).assert_outcomes(passed=1)
+    recorded = {line.predicate: line.stored for line in units.parse_refs(ledger.refs())[0]}
+    assert sorted(recorded) == [("formatter==builtin",), ("formatter==builtin", everywhere), (everywhere,)]
+    assert ledger.files()[recorded["formatter==builtin", everywhere]] == written
+    ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN).assert_outcomes(passed=1)
+
+
+def test_ledger_refuses_observations_no_declared_fact_explains(ledger: LedgerProject, tmp_path: Path) -> None:
+    """Environments of one class that stored different outputs refuse the merge, which names the facts they differ in.
+
+    Observations recorded before comparisons declared what they vary with are refused too; nothing is written.
+    """
+    ledger.write("test_m.py", ENVIRONMENT_TESTS.replace(', varies_with=("builtin-formatter",)', ""))
+    external, builtin = tmp_path / "external", tmp_path / "builtin"
+    ledger.run(f"--expected-observe={external}", "suite").assert_outcomes(passed=5)
+    ledger.run(f"--expected-observe={builtin}", "suite", env=BUILTIN).assert_outcomes(passed=5, skipped=1)
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"observations": [str(external), str(builtin)]}), encoding="utf-8")
+    refused = ledger.run(f"--expected-apply={apply_file}")
+    assert refused.ret == pytest.ExitCode.USAGE_ERROR
+    assert (
+        f"environments {external} and {builtin} are in the same class for m/content.txt of suite/test_m.py::"
+        "test_content but stored different outputs; they differ in formatter (external vs builtin): name the fact the "
+        "output depends on with varies_with="
+    ) in refused.stderr.str()
+    for path in external.glob("observed-*.jsonl"):
+        header, *entries = (json.loads(line) for line in path.read_text(encoding="utf-8").splitlines())
+        for entry in entries:
+            entry["compared"] = [compared[:4] for compared in entry["compared"]]
+        path.write_text("".join(f"{json.dumps(line)}\n" for line in (header, *entries)), encoding="utf-8")
+    old = ledger.run(f"--expected-apply={apply_file}")
+    assert old.ret == pytest.ExitCode.USAGE_ERROR
+    assert (
+        f"{external}: it was observed before comparisons declared what they vary with; observe it again"
+        in old.stderr.str()
+    )
+    assert (ledger.refs(), ledger.files()) == ("", {})
+
+
+def test_ledger_varies_with_names_capabilities(ledger: LedgerProject) -> None:
+    """``varies_with=`` names capabilities of tests/capabilities.py; ``against=``, which stores nothing, takes none."""
+    ledger.write(
+        "test_m.py",
+        """
+        from pathlib import Path
+
+        from tests.conftest import assert_output
+
+
+        def test_against():
+            assert_output("x\\n", against=Path(__file__), varies_with=("windows",))
+
+
+        def test_unknown():
+            assert_output("x\\n", varies_with=("no-such-fact",))
+        """,
+    )
+    result = ledger.run("suite", "--inline-snapshot=disable")
+    result.assert_outcomes(failed=2)
+    assert "against= stores nothing, so it takes no varies_with=" in result.stdout.str()
+    assert "unknown capabilities ['no-such-fact']" in result.stdout.str()
 
 
 def test_ledger_shares_equal_output_and_reports_mismatch(ledger: LedgerProject) -> None:
@@ -1038,9 +1205,19 @@ def test_format_refs_writes_each_line_once() -> None:
         ),
         ("[test_a]\n\tm/a.txt\t?\t?\n", "line 2: unexpected column '?'", units.BROKEN),
         (
-            "[test_a]\n\tm/a.txt\t@os=nt\n",
-            "line 2: unknown predicate 'os=nt'; facts are python, formatter, black, isort, platform, pydantic",
+            "[test_a]\n\tm/a.txt\t@os==nt\n",
+            (
+                "line 2: unknown predicate 'os==nt': 'os==nt' is not <fact><op><value> with a fact of python, "
+                "formatter, black, isort, platform, pydantic"
+            ),
             units.BROKEN,
+        ),
+        pytest.param(
+            "[test_a]\n\tm/a.txt\t@black=22\n",
+            "line 2: unknown predicate 'black=22': 'black=22' is not <fact><op><value> with a fact of python, "
+            "formatter, black, isort, platform, pydantic",
+            units.BROKEN,
+            id="fact-value-override",
         ),
         (
             "[test_a]\n\t/etc/a.txt\n",
@@ -1310,7 +1487,7 @@ def test_label():
 
 
 def test_content():
-    assert_output(f"{FORMATTER}\\n")
+    assert_output(f"{FORMATTER}\\n", varies_with=("builtin-formatter",))
 
 
 @pytest.mark.parametrize("case", ["both", *(["builtin-only"] if FORMATTER == "builtin" else [])])
@@ -1326,7 +1503,11 @@ def test_skipped():
 
 
 def test_ledger_merges_observations_from_environments(ledger: LedgerProject, tmp_path: Path) -> None:
-    """Observations of several environments give conditional lines for their labels and overrides for content."""
+    """Observations of several environments give conditional lines for their labels and a line per declared class.
+
+    ``test_content`` declares that its output varies with the formatter, so the builtin environment's output becomes
+    the line of its class; where no clause holds the base line applies.
+    """
     ledger.write("test_m.py", ENVIRONMENT_TESTS)
     external, builtin = tmp_path / "external", tmp_path / "builtin"
     ledger.run(f"--expected-observe={external}", "suite").assert_outcomes(passed=5)
@@ -1338,7 +1519,7 @@ def test_ledger_merges_observations_from_environments(ledger: LedgerProject, tmp
     assert ledger.refs() == HEADER + (
         "[test_content]\n"
         "\tm/content.txt\n"
-        "\tm/content.txt\t@formatter=builtin\t= m/content@builtin.txt\n"
+        "\tm/content.txt\t@formatter==builtin\t= m/content@formatter-eq-builtin.txt\n"
         "[test_label]\n"
         "\tm/label.builtin.txt\t?\n"
         "\tm/label.external.txt\t?\t= m/label.builtin.txt\n"
@@ -1350,7 +1531,7 @@ def test_ledger_merges_observations_from_environments(ledger: LedgerProject, tmp
         "[test_skipped]\n"
         "\tm/skipped.txt\n"
     )
-    assert ledger.files()["m/content@builtin.txt"] == "builtin\n"
+    assert ledger.files()["m/content@formatter-eq-builtin.txt"] == "builtin\n"
     ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=5)
     ledger.run("suite", "--inline-snapshot=disable", env=builtin_env).assert_outcomes(passed=5, skipped=1)
 
@@ -1406,7 +1587,12 @@ def test_ledger_drops_items_no_environment_collects(ledger: LedgerProject, tmp_p
 
 
 def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) -> None:
-    """A payload from another environment adds an override for different content and marks labels it skips."""
+    """A payload of another class adds the line of its class, and marks the labels its lane skips conditional.
+
+    A label no line records gets the line of the payload's class, conditional since the item has other lines; the line
+    of a class that stores what the class would read without it goes again. A payload that replaces the line this
+    environment's class reads leaves that class what it read, under a line of its own.
+    """
     ledger.write(
         "test_m.py",
         """
@@ -1414,14 +1600,14 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
 
 
         def test_a():
-            assert_output("x\\n")
+            assert_output("x\\n", varies_with=("builtin-formatter",))
             assert_output("y\\n", name="extra")
         """,
     )
     ledger.run("suite").assert_outcomes(passed=1)
     facts = {
         "python": "3.10",
-        "formatter": "external",
+        "formatter": "builtin",
         "black": "22.1.0",
         "isort": "5.13.2",
         "platform": "linux",
@@ -1435,6 +1621,7 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
             "label": "m/a.txt",
             "digest": units.unit_digest("m/a.txt", "x22\n"),
             "value": "x22\n",
+            "clauses": ["formatter==builtin"],
         },
         {"facts": facts, "item": item, "label": "m/a.extra.txt", "missing": True},
         {
@@ -1443,21 +1630,204 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
             "label": "m/a.only.txt",
             "digest": units.unit_digest("m/a.only.txt", "o\n"),
             "value": "o\n",
+            "clauses": ["formatter==builtin"],
         },
     ]
     apply_file = tmp_path / "apply.json"
     apply_file.write_text(json.dumps({"payloads": payloads}), encoding="utf-8")
     ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
+    storage = "m/a@formatter-eq-builtin.txt"
     assert ledger.refs() == HEADER + (
-        "[test_a]\n\tm/a.extra.txt\t?\n\tm/a.only.txt\t?\n\tm/a.txt\n\tm/a.txt\t@black=22\t= m/a@black22.txt\n"
+        "[test_a]\n\tm/a.extra.txt\t?\n\tm/a.only.txt\t?\t@formatter==builtin\n\tm/a.txt\n"
+        f"\tm/a.txt\t@formatter==builtin\t= {storage}\n"
     )
-    assert ledger.files()["m/a@black22.txt"] == "x22\n"
+    assert ledger.files()[storage] == "x22\n"
     payloads[0] |= {"value": "x\n", "digest": units.unit_digest("m/a.txt", "x\n")}
     apply_file.write_text(json.dumps({"payloads": payloads[:1]}), encoding="utf-8")
     ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
-    assert "@" not in ledger.refs()
-    assert "m/a@black22.txt" not in ledger.files()
+    assert "m/a.txt\t@" not in ledger.refs()
+    assert storage not in ledger.files()
     ledger.run("suite").assert_outcomes(passed=1)
+    external = payloads[0] | {
+        "facts": facts | {"formatter": "external"},
+        "value": "z\n",
+        "digest": units.unit_digest("m/a.txt", "z\n"),
+    }
+    apply_file.write_text(json.dumps({"payloads": [external]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN).assert_outcomes()
+    recorded = {line.predicate: line.stored for line in units.parse_refs(ledger.refs())[0] if line.label == "m/a.txt"}
+    assert {predicate: ledger.files()[stored] for predicate, stored in recorded.items()} == {
+        (): "z\n",
+        ("formatter==builtin",): "x\n",
+    }
+    ledger.run("suite", env=BUILTIN).assert_outcomes(passed=1)
+
+
+@pytest.mark.parametrize("reverse", [False, True], ids=["missing-first", "value-first"])
+def test_ledger_applies_payloads_in_any_order(ledger: LedgerProject, tmp_path: Path, *, reverse: bool) -> None:
+    """The lines a batch of payloads writes do not depend on the order of the payloads.
+
+    A lane that reads the base line and compares nothing makes it conditional; the line another class's payload adds
+    takes the flag of the line its class read before the batch.
+    """
+    ledger.write(
+        "test_m.py",
+        """
+        from tests.conftest import assert_output
+
+
+        def test_a():
+            assert_output("x\\n", varies_with=("builtin-formatter",))
+            assert_output("y\\n", name="extra")
+        """,
+    )
+    ledger.run("suite").assert_outcomes(passed=1)
+    lane = {"python": "3.10", "black": "22.1.0", "isort": "5.13.2", "platform": "linux", "pydantic": "2.14.1"}
+    item = "suite/test_m.py::test_a"
+    payloads = [
+        {"facts": lane | {"formatter": "external"}, "item": item, "label": "m/a.txt", "missing": True},
+        {
+            "facts": lane | {"formatter": "builtin"},
+            "item": item,
+            "label": "m/a.txt",
+            "digest": units.unit_digest("m/a.txt", "b\n"),
+            "value": "b\n",
+            "clauses": ["formatter==builtin"],
+        },
+    ]
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": payloads[::-1] if reverse else payloads}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
+    assert ledger.refs() == HEADER + (
+        "[test_a]\n\tm/a.extra.txt\n\tm/a.txt\t?\n\tm/a.txt\t@formatter==builtin\t= m/a@formatter-eq-builtin.txt\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("other", "recorded", "outcome"),
+    [
+        pytest.param("x\n", {"builtin": "x\n", "anywhere": "y\n", "both": "x\n"}, "passed", id="agreeing"),
+        pytest.param("z\n", {"builtin": "x\n", "anywhere": "y\n"}, "failed", id="disagreeing"),
+    ],
+)
+def test_ledger_applies_a_payload_that_breaks_a_tie(
+    ledger: LedgerProject,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    other: str,
+    recorded: dict[str, str],
+    outcome: str,
+) -> None:
+    """A payload that breaks a tie this environment's class reads leaves the class the output its tied lines agree on.
+
+    The kept line holds both clauses, so the next local run passes; lines that already stored different outputs keep
+    nothing, since they recorded no output for this class, which the next local run still reports.
+    """
+    everywhere = "platform==darwin|platform==linux|platform==win32"
+    monkeypatch.setitem(capabilities.CAPABILITIES, "any-platform", ((everywhere,), "every platform"))
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        "    assert_output('x\\n', varies_with=('builtin-formatter', 'any-platform'))\n",
+    )
+    ledger.store(builtin := "m/a@builtin.txt", "x\n")
+    ledger.store(anywhere := "m/a@any.txt", other)
+    lines = [
+        units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin),
+        units.RefLine("test_a", "", "m/a.txt", predicate=(everywhere,), storage=anywhere),
+    ]
+    (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
+    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+    payload = {
+        "facts": facts | {"pydantic": "2.14.1"},
+        "item": "suite/test_m.py::test_a",
+        "label": "m/a.txt",
+        "digest": units.unit_digest("m/a.txt", "y\n"),
+        "value": "y\n",
+        "clauses": ["formatter==builtin", everywhere],
+    }
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [payload]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN).assert_outcomes()
+    names = {("formatter==builtin",): "builtin", (everywhere,): "anywhere", ("formatter==builtin", everywhere): "both"}
+    stored = ledger.files()
+    assert {names[line.predicate]: stored[line.stored] for line in units.parse_refs(ledger.refs())[0]} == recorded
+    ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN).assert_outcomes(**{outcome: 1})
+
+
+def test_ledger_refuses_a_batch_a_class_never_recorded(ledger: LedgerProject, tmp_path: Path) -> None:
+    """A batch that would give a class it does not come from another class's output, where it read none, is refused.
+
+    Nothing is written; ``--from-ci`` skips the batch's payloads and says why.
+    """
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        "    assert_output('x\\n', varies_with=('builtin-formatter', 'linux'))\n",
+    )
+    ledger.store(builtin := "m/a@builtin.txt", "x\n")
+    line = units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin)
+    (ledger.suite / "test_m.refs").write_text(units.format_refs([line]), encoding="utf-8")
+    recorded = (ledger.refs(), ledger.files())
+    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "darwin"}
+    payload = {
+        "facts": facts | {"pydantic": "2.14.1"},
+        "item": "suite/test_m.py::test_a",
+        "label": "m/a.txt",
+        "digest": units.unit_digest("m/a.txt", "y\n"),
+        "value": "y\n",
+        "clauses": ["formatter==builtin", "platform==linux"],
+    }
+    problem = (
+        "suite/test_m.py::test_a m/a.txt: these payloads would give the class platform==linux, which records no output "
+        "of its own, the output of another class; apply them with a payload of that class, or run the test there with "
+        "--inline-snapshot=fix"
+    )
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [payload]}), encoding="utf-8")
+    refused = ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert refused.ret == pytest.ExitCode.USAGE_ERROR
+    assert f"nothing was written:\npayload 1: {problem}" in refused.stderr.str()
+    apply_file.write_text(json.dumps({"payloads": [payload], "skip_rejected": True}), encoding="utf-8")
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert f"expected: skipped a payload: {problem}" in skipped.stdout.str()
+    assert (ledger.refs(), ledger.files()) == recorded
+
+
+def test_ledger_from_ci_refusal_skips_the_whole_item(ledger: LedgerProject, tmp_path: Path) -> None:
+    """A refusal skips every payload of its item, so its stale payloads cannot drop lines the refused value kept.
+
+    A stale payload of an item no lane collects still cleans its lines.
+    """
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        "    assert_output('x\\n', varies_with=('builtin-formatter', 'linux'))\n",
+    )
+    ledger.store(builtin := "m/a@builtin.txt", "x\n")
+    line = units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin)
+    gone = units.RefLine("test_gone", "", "m/g.txt")
+    ledger.store("m/g.txt", "g\n")
+    (ledger.suite / "test_m.refs").write_text(units.format_refs([line, gone]), encoding="utf-8")
+    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "darwin"}
+    value = {
+        "facts": facts | {"pydantic": "2.14.1"},
+        "item": "suite/test_m.py::test_a",
+        "label": "m/a.txt",
+        "digest": units.unit_digest("m/a.txt", "y\n"),
+        "value": "y\n",
+        "clauses": ["formatter==builtin", "platform==linux"],
+    }
+    stale = {"facts": facts | {"pydantic": "2.14.1"}, "item": "suite/test_m.py::test_a", "stale": True}
+    cleanup = {"facts": facts | {"pydantic": "2.14.1"}, "item": "suite/test_m.py::test_gone", "stale": True}
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [value, stale], "skip_rejected": True}), encoding="utf-8")
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert skipped.stdout.str().count("expected: skipped a payload") == 2
+    assert units.parse_refs(ledger.refs())[0] == [line, gone]
+    apply_file.write_text(json.dumps({"payloads": [cleanup]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert [entry.item for entry in units.parse_refs(ledger.refs())[0]] == ["test_a"]
 
 
 def test_ledger_payload_too_large(ledger: LedgerProject) -> None:
@@ -1548,15 +1918,13 @@ def test_fix_expected_script(
     """The script applies payloads printed in CI logs and shows where an item's expected output lives."""
     from scripts import fix_expected
 
-    ledger.write(
-        "test_m.py", "from tests.conftest import assert_output\n\n\ndef test_new():\n    assert_output('x\\n')\n"
-    )
+    ledger.write("test_m.py", NEW_VARYING_TEST)
     log = ledger.run("suite", env={"CI": "true", "GITHUB_ACTIONS": "true"}).stdout.str()
     payloads = fix_expected.payloads_in(f"{log}\n{log}")
     assert len(payloads) == 1
     monkeypatch.setenv("PYTHONPATH", str(Path(__file__).parents[1]))
     assert fix_expected.main(["--root", str(ledger.pytester.path), "--apply", _foreign(payloads[0])]) == 0
-    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
+    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\t@formatter==builtin\n"
     assert fix_expected.main(["--root", str(ledger.pytester.path), "--where", "suite/test_m.py::test_new"]) == 0
     assert "m/new.txt -> suite/data/expected/m/new.txt" in capsys.readouterr().out
     assert fix_expected.main(["--root", str(ledger.pytester.path), "--where", "suite/test_m.py::test_other"]) == 1
@@ -1905,96 +2273,627 @@ def test_ledger_reapplies_observations_and_payloads(ledger: LedgerProject, tmp_p
     assert "expected output" not in applied.stdout.str()
     refs = ledger.refs()
     payload = {
-        "facts": _other_platform(shared_conftest.expected_environment_facts()),
-        "item": "suite/test_m.py::test_same",
-        "label": "m/same.txt",
-        "digest": units.unit_digest("m/same.txt", "same\n"),
-        "value": "same\n",
+        "facts": _foreign_facts(shared_conftest.expected_environment_facts()),
+        "item": "suite/test_m.py::test_content",
+        "label": "m/content.txt",
+        "digest": units.unit_digest("m/content.txt", "builtin\n"),
+        "value": "builtin\n",
+        "clauses": ["formatter==builtin"],
     }
     apply_file.write_text(json.dumps({"payloads": [payload]}), encoding="utf-8")
-    ledger.run(f"--expected-apply={apply_file}", "suite")
+    ledger.run(f"--expected-apply={apply_file}", "suite").assert_outcomes()
     assert ledger.refs() == refs
 
 
-def test_ledger_merge_and_payload_rules() -> None:
-    """Overrides take the smallest separating predicate; payloads from this environment are refused.
+PY311 = {
+    "python": "3.11",
+    "formatter": "builtin",
+    "black": "26.1.0",
+    "isort": "7.0.0",
+    "platform": "linux",
+    "pydantic": "2.14.1",
+}
+PY314 = {**PY311, "python": "3.14"}
+WINDOWS = {**PY311, "platform": "win32"}
+BLACK22 = {**PY311, "python": "3.12", "formatter": "external", "black": "22.1.0", "isort": ""}
+DIFFERENT_CODE = "their lanes ran different test code"
 
-    The platform joins a predicate only when nothing else tells the environments apart.
-    """
-    py310 = {
-        "python": "3.10",
-        "formatter": "builtin",
-        "black": "26.1.0",
-        "isort": "7.0.0",
-        "platform": "linux",
-        "pydantic": "2.14.1",
-    }
-    py311 = {**py310, "python": "3.11"}
-    black22 = {
-        "python": "3.12",
-        "formatter": "external",
-        "black": "22.1.0",
-        "isort": "7.0.0",
-        "platform": "linux",
-        "pydantic": "2.14.1",
-    }
-    windows = {**py310, "platform": "win32"}
-    pydantic20 = {**py311, "formatter": "external", "pydantic": "2.0"}
-    assert units._distinguishing([py310], [py311, black22]) == (("python", "3.10"),)
-    assert units._distinguishing([pydantic20], [py310, py311, black22]) == (("pydantic", "2.0"),)
-    assert units._distinguishing([py310, py311], [black22]) == (("formatter", "builtin"),)
-    assert units._distinguishing([windows], [py310, py311]) == (("platform", "win32"),)
-    with pytest.raises(ValueError, match="no predicate separates"):
-        units._distinguishing([py310], [py310])
-    base = [units.Desired("m/a.txt")]
-    payload = {"facts": py310, "item": "t.py::test_a", "label": "m/a.txt", "digest": "d", "value": "v"}
-    assert [
-        units._fact_value("black", "26.1a1"),
-        units._fact_value("isort", "dev"),
-        units._fact_value("python", "3.10"),
-        units._fact_value("pydantic", "2.0.3"),
-    ] == [
-        "26",
-        "dev",
-        "3.10",
-        "2.0",
-    ]
-    with pytest.raises(ValueError, match="run its test here"):
-        units.apply_payload(base, [], payload, py310, exists=True)
-    assert units.apply_payload(base, [], {**payload, "facts": windows}, py310, exists=True) == [
-        *base,
-        units.Desired(
-            "m/a.txt",
-            predicate=(("formatter", "builtin"), ("platform", "win32"), ("python", "3.10")),
-            value="v",
-            digest="d",
+
+@pytest.mark.parametrize(
+    ("text", "parsed"),
+    [
+        pytest.param("python>=3.14", ("python>=3.14",), id="one"),
+        pytest.param("python>=3.14,black<24", ("black<24", "python>=3.14"), id="sorted"),
+        pytest.param("platform==win32,platform==win32", ("platform==win32",), id="unique"),
+        pytest.param("formatter==builtin|black>=24", ("formatter==builtin|black>=24",), id="alternatives"),
+    ],
+)
+def test_parse_clauses(text: str, parsed: tuple[str, ...]) -> None:
+    """An override's ``@`` column is condition clauses joined by ``,``, read back sorted and once each."""
+    assert units.parse_clauses(text) == parsed
+    assert units.predicate_text(parsed) == ",".join(parsed)
+
+
+@pytest.mark.parametrize(
+    ("clauses", "problem"),
+    [
+        pytest.param(["black<24"], None, id="well-formed"),
+        pytest.param("black<24", "its clauses are not a list of conditions", id="not-a-list"),
+        pytest.param([24], "its clauses are not a list of conditions", id="not-strings"),
+        pytest.param(["black=22"], "'black=22' is not <fact><op><value>", id="fact-value"),
+        pytest.param(["platform<linux"], "'platform<linux' orders a fact that is not a version", id="order"),
+    ],
+)
+def test_clauses_problem(clauses: object, problem: str | None) -> None:
+    """Clauses a payload or observation carries must be a list of well-formed conditions."""
+    found = units.clauses_problem(clauses)
+    assert found == problem if problem is None else found is not None and found.startswith(problem)
+
+
+@pytest.mark.parametrize(
+    ("clauses", "facts", "holding"),
+    [
+        pytest.param(("python>=3.14",), PY314, ("python>=3.14",), id="holds"),
+        pytest.param(("python>=3.14",), PY311, (), id="base-class"),
+        pytest.param(("python<3.12", "python>=3.12"), PY311, ("python<3.12",), id="one-of-two"),
+        pytest.param(("black<24", "platform==win32"), WINDOWS, ("platform==win32",), id="platform"),
+        pytest.param(("black<24", "isort<6"), BLACK22, ("black<24",), id="tool-not-installed"),
+    ],
+)
+def test_holding_clauses(clauses: tuple[str, ...], facts: dict[str, str], holding: tuple[str, ...]) -> None:
+    """An environment's class for a comparison is the declared clauses that hold there."""
+    assert units.holding_clauses(clauses, facts) == holding
+    assert units.clauses_hold(holding, facts)
+
+
+@pytest.mark.parametrize(
+    ("predicates", "facts", "read"),
+    [
+        pytest.param([(), ("python>=3.14",)], PY314, [("python>=3.14",)], id="override"),
+        pytest.param([(), ("python>=3.14",)], PY311, [()], id="base"),
+        pytest.param([("python>=3.14",)], PY311, [], id="none"),
+        pytest.param(
+            [(), ("python>=3.12",), ("formatter==builtin",)],
+            PY314,
+            [("python>=3.12",), ("formatter==builtin",)],
+            id="unrecorded-class",
         ),
+        pytest.param(
+            [("python>=3.12",), ("formatter==builtin",), ("formatter==builtin", "python>=3.12")],
+            PY314,
+            [("formatter==builtin", "python>=3.12")],
+            id="recorded-class",
+        ),
+    ],
+)
+def test_applicable_lines(
+    predicates: list[tuple[str, ...]], facts: dict[str, str], read: list[tuple[str, ...]]
+) -> None:
+    """An environment reads the most specific lines of a label whose clauses all hold; a tie is an unrecorded class."""
+    lines = [units.RefLine("test_a", "", "m/a.txt", predicate=predicate) for predicate in predicates]
+    assert [line.predicate for line in units.applicable_lines(lines, facts)] == read
+
+
+@pytest.mark.parametrize(
+    ("predicate", "slug"),
+    [
+        pytest.param(("black<24.3",), "black-lt-24.3", id="lt"),
+        pytest.param(("platform==win32",), "platform-eq-win32", id="eq"),
+        pytest.param(("python>=3.14",), "python-ge-3.14", id="ge"),
+        pytest.param(("black<=24", "python>3.12"), "black-le-24_python-gt-3.12", id="two"),
+        pytest.param(("platform!=win32|black>=24",), "platform-ne-win32-or-black-ge-24", id="alternatives"),
+    ],
+)
+def test_override_storage_names(predicate: tuple[str, ...], slug: str) -> None:
+    """An override's storage name spells its operators as words, since ``<``, ``>`` and ``|`` are invalid on Windows."""
+    assert units._environment_slug(predicate) == slug
+
+
+def test_fact_difference() -> None:
+    """A refusal names the facts two environments differ in, with both values."""
+    assert units.fact_difference(PY311, BLACK22) == (
+        "python (3.11 vs 3.12), formatter (builtin vs external), black (26.1.0 vs 22.1.0), isort (7.0.0 vs none)"
+    )
+    assert units.fact_difference(PY311, PY311) == "no fact"
+
+
+def _observations(
+    facts: dict[str, str], compared: dict[str, list[list[object]]], collected: list[str] | None = None
+) -> units.Observations:
+    items = [units.ObservedItem(item=item, outcome="passed", compared=entries) for item, entries in compared.items()]
+    return units.Observations(facts=facts, collected=collected or list(compared), items=items)
+
+
+def _compared(label: str, value: str, clauses: list[str]) -> list[object]:
+    return [label, units.unit_digest(label, value), label, value, clauses]
+
+
+def test_merge_environments_writes_a_line_per_class(tmp_path: Path) -> None:
+    """Environments of one class that agree give its line; the class where no declared clause holds is the base line.
+
+    A label one environment that passed the item did not compare is conditional.
+    """
+    declared = ["python>=3.14"]
+    environments = [
+        _observations(PY311, {"t.py::test_a": [_compared("m/a.txt", "old\n", declared)]}),
+        _observations(
+            PY314, {"t.py::test_a": [_compared("m/a.txt", "new\n", declared), _compared("m/b.txt", "b\n", [])]}
+        ),
+        _observations({**PY314, "platform": "darwin"}, {"t.py::test_a": [_compared("m/a.txt", "new\n", declared)]}),
     ]
-    assert units.apply_payload([], [], payload, py310, exists=True) == [units.Desired("m/a.txt", value="v", digest="d")]
-    assert units.apply_payload([], [], payload, py310, exists=False)[0].conditional
-    assert units.payload_predicate(py310, {**py310, "black": "26.1a1"}) is None
-    assert units.facts_fit({**py310, "black": "26.1.0.post1+local.7", "isort": "7.0.0.dev3"})
-    assert not units.facts_fit({**py310, "black": "26.1+a/b"})
-    assert units.payload_predicate({**py310, "black": "22.1.0"}, py310) == (("black", "22"),)
-    assert units.payload_predicate(pydantic20, py311) == (("pydantic", "2.0"),)
-    assert units.payload_predicate({**py310, "pydantic": "2.14.0"}, py310) is None
-    assert units.payload_predicate({**black22, "isort": "5.13.2"}, {**black22, "black": "22.3.0"}) == (("isort", "5"),)
-    assert units.payload_predicate(py311, py310) == (("formatter", "builtin"), ("python", "3.11"))
-    assert units.payload_predicate(black22, {**black22, "black": "22.3.0", "python": "3.14"}) == (
-        ("black", "22"),
-        ("formatter", "external"),
-        ("isort", "7"),
-        ("python", "3.12"),
+    merged = units.merge_environments(environments, tmp_path, ["py311", "py314", "py314-mac"])
+    assert merged == {
+        "t.py::test_a": [
+            units.Desired("m/a.txt", False, (), "old\n", units.unit_digest("m/a.txt", "old\n")),
+            units.Desired("m/a.txt", False, ("python>=3.14",), "new\n", units.unit_digest("m/a.txt", "new\n")),
+            units.Desired("m/b.txt", True, (), "b\n", units.unit_digest("m/b.txt", "b\n")),
+        ]
+    }
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "message"),
+    [
+        pytest.param(
+            ("old\n", ["python>=3.14"]),
+            ("new\n", ["python>=3.14"]),
+            "environments py311 and py311-win are in the same class for m/a.txt of t.py::test_a but stored different "
+            "outputs; they differ in platform (linux vs win32): name the fact the output depends on with varies_with=",
+            id="same-class",
+        ),
+        pytest.param(
+            ("old\n", []),
+            ("old\n", ["platform==win32"]),
+            "t.py::test_a m/a.txt: py311 declares nothing and py311-win declares platform==win32; they ran different "
+            "test code: observe every environment again",
+            id="declarations",
+        ),
+    ],
+)
+def test_merge_environments_refuses_an_unexplained_difference(
+    tmp_path: Path, first: tuple[str, list[str]], second: tuple[str, list[str]], message: str
+) -> None:
+    """Only a declared fact explains a difference: one class with two outputs, or two declarations, refuse a merge."""
+    environments = [
+        _observations(PY311, {"t.py::test_a": [_compared("m/a.txt", *first)]}),
+        _observations(WINDOWS, {"t.py::test_a": [_compared("m/a.txt", *second)]}),
+    ]
+    with pytest.raises(ValueError, match=r"\Aenvironments|declares") as refused:
+        units.merge_environments(environments, tmp_path, ["py311", "py311-win"])
+    assert str(refused.value) == message
+
+
+def _value_payload(facts: dict[str, str], value: str, clauses: list[str], label: str = "m/a.txt") -> units.Payload:
+    return units.Payload(
+        facts=facts,
+        item="t.py::test_a",
+        label=label,
+        digest=units.unit_digest(label, value),
+        value=value,
+        clauses=clauses,
     )
-    py312 = units.Desired("m/a.txt", predicate=(("python", "3.12"),))
-    black_payload = {**payload, "facts": black22}
-    assert units.apply_payload([py312], [], black_payload, py310, exists=True)[-1].predicate == (
-        ("black", "22"),
-        ("python", "3.12"),
+
+
+def test_apply_payloads_write_the_line_of_their_class() -> None:
+    """A value payload writes or replaces its class's line and drops lines of clauses the comparison no longer declares.
+
+    One of this environment's class raises; stale and missing payloads mark the lines their lane reads conditional,
+    and a stale one drops an item that exists nowhere.
+    """
+    base = [units.Desired("m/a.txt"), units.Desired("m/a.txt", predicate=("black<24",))]
+    windows = _value_payload(WINDOWS, "w\n", ["platform==win32"])
+    added = units.apply_payloads(base, [windows], PY311, exists=True)
+    assert added == [
+        units.Desired("m/a.txt"),
+        units.Desired("m/a.txt", False, ("platform==win32",), "w\n", windows["digest"]),
+    ]
+    again = units.apply_payloads(added, [_value_payload(WINDOWS, "v\n", ["platform==win32"])], PY311, exists=True)
+    assert [(want.predicate, want.value) for want in again] == [((), units.KEEP), (("platform==win32",), "v\n")]
+    with pytest.raises(ValueError, match="this environment's class"):
+        units.apply_payloads(base, [_value_payload(PY311, "x\n", ["platform==win32"])], PY311, exists=True)
+    new = units.apply_payloads([], [windows], PY311, exists=False)
+    assert [(want.predicate, want.conditional) for want in new] == [(("platform==win32",), True)]
+    stale = units.Payload(facts=WINDOWS, item="t.py::test_a", stale=True)
+    assert units.apply_payloads(added, [stale], PY311, exists=True) == [
+        units.Desired("m/a.txt", conditional=True),
+        replace(added[1], conditional=True),
+    ]
+    assert units.apply_payloads(added, [stale], PY311, exists=False) == []
+    missing = units.Payload(facts=PY311, item="t.py::test_a", label="m/a.txt", missing=True)
+    assert units.apply_payloads(added, [missing], WINDOWS, exists=True) == [
+        units.Desired("m/a.txt", conditional=True),
+        added[1],
+    ]
+
+
+@pytest.mark.parametrize(
+    ("clauses", "facts", "local", "wanted"),
+    [
+        pytest.param(
+            ["formatter==builtin"],
+            BLACK22,
+            PY311,
+            [((), "y\n"), (("formatter==builtin",), units.KEEP)],
+            id="replacing-the-line-it-reads",
+        ),
+        pytest.param(
+            ["black<24", "platform==win32"],
+            WINDOWS,
+            {**BLACK22, "platform": "win32"},
+            [((), units.KEEP), (("platform==win32",), "y\n"), (("black<24", "platform==win32"), units.KEEP)],
+            id="adding-a-line-it-would-read",
+        ),
+        pytest.param(
+            ["black<24", "platform==win32"],
+            WINDOWS,
+            BLACK22,
+            [((), units.KEEP), (("platform==win32",), "y\n"), (("black<24", "platform==win32"), units.KEEP)],
+            id="adding-a-line-another-class-would-read",
+        ),
+        pytest.param(
+            ["black<24", "platform==win32"],
+            PY311,
+            WINDOWS,
+            [((), "y\n"), (("black<24",), units.KEEP), (("platform==win32",), units.KEEP)],
+            id="replacing-the-line-other-classes-read",
+        ),
+    ],
+)
+def test_apply_payloads_keep_what_this_class_reads(
+    clauses: list[str],
+    facts: dict[str, str],
+    local: dict[str, str],
+    wanted: list[tuple[tuple[str, ...], object]],
+) -> None:
+    """A payload that would change what a class it does not come from reads leaves that class its line.
+
+    That holds for this environment's class and every other one: the kept line has the contents and storage the
+    class read, under the class's own clauses.
+    """
+    current = units.RefLine("test_a", "", "m/a.txt", storage="m/shared.txt")
+    applied = units.apply_payloads(
+        [units.Desired("m/a.txt", current=current)], [_value_payload(facts, "y\n", clauses)], local, exists=True
     )
-    stale = {"facts": py311, "item": "t.py::test_a", "stale": True}
-    assert units.apply_payload(base, [], stale, py310, exists=True) == [units.Desired("m/a.txt", conditional=True)]
-    assert units.apply_payload(base, [], stale, py310, exists=False) == []
+    assert [(want.predicate, want.value) for want in applied] == wanted
+    assert all(want.current is current for want in applied if want.value is units.KEEP)
+
+
+DOMAIN = {
+    "python": ["3.11", "3.12", "3.14"],
+    "formatter": ["builtin", "external"],
+    "black": ["", "22.1.0", "24.1.0", "24.3.0", "26.1.0"],
+    "platform": ["linux", "darwin", "win32"],
+    "pydantic": ["2", "2.0.3", "2.4.2", "2.5.0", "2.14.1"],
+}
+"""Fact values on every side of the clauses the exhaustive resolver test declares."""
+ANY_PLATFORM = "platform==darwin|platform==linux|platform==win32"
+
+
+def test_apply_payloads_refuse_an_output_a_class_never_recorded() -> None:
+    """A batch that would give a class that read no output another class's output is refused: no line can keep none."""
+    start = [units.Desired("m/a.txt", predicate=("platform==win32",))]
+    payload = _value_payload(PY311, "y\n", ["black<24", "platform==win32"])
+    with pytest.raises(ValueError, match="no output") as refused:
+        units.apply_payloads(start, [payload], WINDOWS, exists=True)
+    assert str(refused.value) == (
+        "t.py::test_a m/a.txt: these payloads would give the class black<24, which records no output of its own, the "
+        "output of another class; apply them with a payload of that class, or run the test there with "
+        "--inline-snapshot=fix"
+    )
+
+
+@pytest.mark.parametrize(
+    ("declared", "classes"),
+    [
+        pytest.param(
+            ("black<24", "platform==win32"),
+            [(), ("black<24",), ("platform==win32",), ("black<24", "platform==win32")],
+            id="independent",
+        ),
+        pytest.param(("python<3.12", "python>=3.12"), [("python<3.12",), ("python>=3.12",)], id="exclusive"),
+        pytest.param(("black<24", "black<24.3"), [(), ("black<24.3",), ("black<24", "black<24.3")], id="nested"),
+        pytest.param(
+            ("formatter==builtin", ANY_PLATFORM),
+            [(ANY_PLATFORM,), ("formatter==builtin", ANY_PLATFORM)],
+            id="one-always-holds",
+        ),
+        pytest.param(
+            ("pydantic==2.0", "pydantic<2.5"), [(), ("pydantic<2.5",), ("pydantic<2.5", "pydantic==2.0")], id="series"
+        ),
+    ],
+)
+def test_apply_payloads_keep_what_every_other_class_reads(
+    declared: tuple[str, ...], classes: list[tuple[str, ...]]
+) -> None:
+    """Only the classes a batch's payloads come from change what they read, whatever the records and the order.
+
+    The records of a label are every choice of no line, output a or output b for each set of the declared clauses;
+    a batch is value payloads of any classes, each with a new output or a, in every order, applied in an environment
+    of a class none comes from. Every environment of another class reads the output it read before (one digest, or
+    none when its lines lack or disagree), or the batch is refused because one that read none would read another's.
+    The classes the resolver checks (`declared_classes`) are the ones environments have.
+    """
+    named = [fact for fact in DOMAIN if any(fact in clause for clause in declared)]
+    environments = [PY311 | dict(zip(named, values, strict=True)) for values in product(*(DOMAIN[f] for f in named))]
+    witnesses: dict[tuple[str, ...], dict[str, str]] = {}
+    for facts in environments:
+        witnesses.setdefault(units.holding_clauses(declared, facts), facts)
+    assert units.declared_classes(declared) == classes == sorted(witnesses, key=lambda held: (len(held), held))
+    sets = [held for size in range(len(declared) + 1) for held in combinations(sorted(declared), size)]
+    batches = [
+        dict(zip(sources, values, strict=True))
+        for size in range(1, len(classes))
+        for sources in combinations(classes, size)
+        for values in product(["a\n", "n\n"], repeat=size)
+    ]
+    failures = [
+        f"{contents} {sent}: {failure}"
+        for contents in product([None, "a\n", "b\n"], repeat=len(sets))
+        for sent in batches
+        for failure in _batch_failures(
+            list(declared),
+            [_line(held, value) for held, value in zip(sets, contents, strict=True) if value is not None],
+            sent,
+            witnesses,
+            environments,
+        )
+    ]
+    assert not failures, failures[:5]
+
+
+def _line(held: tuple[str, ...], value: str) -> units.Desired:
+    return units.Desired("m/a.txt", predicate=held, digest=units.unit_digest("m/a.txt", value))
+
+
+def _batch_failures(
+    declared: list[str],
+    start: list[units.Desired],
+    sent: dict[tuple[str, ...], str],
+    witnesses: dict[tuple[str, ...], dict[str, str]],
+    environments: list[dict[str, str]],
+) -> list[str]:
+    """Return how value payloads from the classes in ``sent`` break the resolver's invariant over ``start``.
+
+    The payloads apply in an environment of a class none comes from, the first of ``witnesses``.
+    """
+    local = next(facts for held, facts in witnesses.items() if held not in sent)
+    payloads = [_value_payload(witnesses[held], value, declared) for held, value in sent.items()]
+    applied = _applied(start, payloads, local)
+    orders = [
+        f"order {order} differs" for order in permutations(payloads) if _applied(start, list(order), local) != applied
+    ]
+    if isinstance(applied, str):
+        written = [want for want in start if want.predicate not in sent] + list(starmap(_line, sent.items()))
+        protected = any(
+            not _read_output(start, facts) and _read_output(written, facts)
+            for held, facts in witnesses.items()
+            if held not in sent
+        )
+        return [*orders, *([] if protected else [f"refused without a class to protect: {applied}"])]
+    return orders + [
+        f"{facts} reads {_read_output(applied, facts)}"
+        for facts in environments
+        if _read_output(applied, facts)
+        != (
+            {units.unit_digest("m/a.txt", sent[held])}
+            if (held := units.holding_clauses(declared, facts)) in sent
+            else _read_output(start, facts)
+        )
+    ]
+
+
+def _applied(
+    start: list[units.Desired], payloads: list[units.Payload], local: dict[str, str]
+) -> list[units.Desired] | str:
+    try:
+        return units.apply_payloads(start, payloads, local, exists=True)
+    except ValueError as error:
+        return str(error)
+
+
+def _read_output(lines: list[units.Desired], facts: dict[str, str]) -> set[str | None]:
+    digests = {want.digest for want in units.applicable_lines(lines, facts)}
+    return digests if len(digests) == 1 else set()
+
+
+@pytest.mark.parametrize(
+    ("clauses", "stored", "wanted"),
+    [
+        pytest.param(
+            ["formatter==builtin", "platform==win32"],
+            "x\n",
+            [
+                (("formatter==builtin",), "y\n"),
+                (("platform==win32",), units.KEEP),
+                (("formatter==builtin", "platform==win32"), units.KEEP),
+            ],
+            id="a-tie-that-agrees",
+        ),
+        pytest.param(
+            ["formatter==builtin", "platform==win32"],
+            "z\n",
+            [(("formatter==builtin",), "y\n"), (("platform==win32",), units.KEEP)],
+            id="a-tie-that-disagrees",
+        ),
+    ],
+)
+def test_apply_payloads_keep_a_tie_this_class_reads(
+    clauses: list[str], stored: str, wanted: list[tuple[tuple[str, ...], object]]
+) -> None:
+    """A payload that breaks a tie this environment's class reads keeps the tie's output when its lines agree.
+
+    The kept line holds the class's own clauses; lines that already disagreed tell no output, so nothing is kept.
+    """
+    start = [
+        units.Desired("m/a.txt", predicate=("formatter==builtin",), digest=units.unit_digest("m/a.txt", "x\n")),
+        units.Desired("m/a.txt", predicate=("platform==win32",), digest=units.unit_digest("m/a.txt", stored)),
+    ]
+    applied = units.apply_payloads(start, [_value_payload(PY311, "y\n", clauses)], WINDOWS, exists=True)
+    assert [(want.predicate, want.value) for want in applied] == wanted
+    assert all(want.digest == start[0].digest for want in applied if len(want.predicate) == len(clauses))
+
+
+@pytest.mark.parametrize(
+    ("start", "payloads", "local", "exists", "wanted"),
+    [
+        pytest.param(
+            [units.Desired("m/a.txt"), units.Desired("m/a.extra.txt")],
+            [
+                units.Payload(facts=PY311, item="t.py::test_a", label="m/a.txt", missing=True),
+                _value_payload(WINDOWS, "w\n", ["platform==win32"]),
+            ],
+            BLACK22,
+            True,
+            [("m/a.txt", (), True), ("m/a.extra.txt", (), False), ("m/a.txt", ("platform==win32",), False)],
+            id="missing-and-value",
+        ),
+        pytest.param(
+            [units.Desired("m/a.extra.txt")],
+            [
+                _value_payload(WINDOWS, "w\n", ["black<24", "platform==win32"]),
+                _value_payload(BLACK22, "b\n", ["black<24", "platform==win32"]),
+            ],
+            {**BLACK22, "platform": "win32"},
+            True,
+            [("m/a.extra.txt", (), False), ("m/a.txt", ("black<24",), True), ("m/a.txt", ("platform==win32",), True)],
+            id="two-classes-this-class-read-none-of",
+        ),
+        pytest.param(
+            [units.Desired("m/a.txt")],
+            [
+                units.Payload(facts=WINDOWS, item="t.py::test_a", stale=True),
+                _value_payload(BLACK22, "b\n", ["black<24"]),
+            ],
+            PY311,
+            False,
+            [("m/a.txt", (), True), ("m/a.txt", ("black<24",), False)],
+            id="stale-and-value-of-an-item-absent-here",
+        ),
+    ],
+)
+def test_apply_payloads_do_not_depend_on_their_order(
+    start: list[units.Desired],
+    payloads: list[units.Payload],
+    local: dict[str, str],
+    *,
+    exists: bool,
+    wanted: list[tuple[str, tuple[str, ...], bool]],
+) -> None:
+    """What a batch decides comes from the item's lines before the payloads and the whole batch, in either order.
+
+    A missing payload, from a lane that reads the base line and compares nothing, marks the base line conditional and
+    not the line of a class it is not in; a line a value payload adds takes its flag from the lines before the batch.
+    Lines one payload writes are no read of this environment's class for another payload, so a class that read
+    nothing gets no line. A value payload shows the item still runs on its lane, so a stale payload of another lane
+    marks lines conditional instead of dropping the item that does not exist here.
+    """
+    applied = [units.apply_payloads(start, order, local, exists=exists) for order in (payloads, payloads[::-1])]
+    assert applied[0] == applied[1]
+    assert [(want.label, want.predicate, want.conditional) for want in applied[0]] == wanted
+
+
+@pytest.mark.parametrize(
+    ("payloads", "problems"),
+    [
+        pytest.param(
+            [
+                _value_payload(WINDOWS, "w\n", ["platform==win32"]),
+                _value_payload({**WINDOWS, "python": "3.14"}, "w\n", ["platform==win32"]),
+            ],
+            [],
+            id="one-class-agrees",
+        ),
+        pytest.param(
+            [
+                _value_payload(WINDOWS, "w\n", ["platform==win32"]),
+                _value_payload({**WINDOWS, "python": "3.14"}, "v\n", ["platform==win32"]),
+            ],
+            [
+                (
+                    "two lanes of one class sent different outputs for m/a.txt of t.py::test_a; they differ in python "
+                    "(3.11 vs 3.14): name the fact the output depends on with varies_with="
+                )
+            ],
+            id="one-class-differs",
+        ),
+        pytest.param(
+            [_value_payload(WINDOWS, "w\n", ["platform==win32"]), _value_payload(BLACK22, "b\n", ["black<24"])],
+            [f"t.py::test_a m/a.txt: payloads declare platform==win32 and black<24; {DIFFERENT_CODE}"],
+            id="declarations",
+        ),
+        pytest.param(
+            [units.Payload(facts=WINDOWS, item="t.py::test_a", stale=True), _value_payload(WINDOWS, "w\n", [])],
+            [],
+            id="stale",
+        ),
+    ],
+)
+def test_conflicting_payloads(payloads: list[units.Payload], problems: list[str]) -> None:
+    """Payloads of one apply must agree: one declaration per label, one output per class."""
+    assert units.conflicting_payloads(payloads) == problems
+
+
+@pytest.mark.parametrize(
+    ("contents", "kept", "optional"),
+    [
+        pytest.param({(): "x\n", ("black<24",): "x\n"}, [()], (), id="equal-to-base"),
+        pytest.param({(): "x\n", ("black<24",): "y\n"}, [(), ("black<24",)], (), id="different"),
+        pytest.param({("black<24",): "y\n"}, [("black<24",)], (), id="no-base"),
+        pytest.param(
+            {(): "x\n", ("black<24",): "x\n", ("platform==win32",): "y\n"},
+            [(), ("black<24",), ("platform==win32",)],
+            (),
+            id="keeps-an-unrecorded-class-ambiguous",
+        ),
+        pytest.param(
+            {(): "x\n", ("black<24",): "y\n", ("black<24", "platform==win32"): "y\n"},
+            [(), ("black<24",)],
+            (),
+            id="equal-to-a-broader-override",
+        ),
+        pytest.param(
+            {(): "x\n", ("platform==win32",): "x\n"},
+            [(), ("platform==win32",)],
+            ((),),
+            id="keeps-a-comparison-the-base-makes-optional",
+        ),
+        pytest.param(
+            {(): "x\n", ("platform==win32",): "x\n"}, [()], (("platform==win32",),), id="optional-under-a-required-base"
+        ),
+    ],
+)
+def test_collapse_drops_overrides_no_class_needs(
+    tmp_path: Path,
+    contents: dict[tuple[str, ...], str],
+    kept: list[tuple[str, ...]],
+    optional: tuple[tuple[str, ...], ...],
+) -> None:
+    """An override goes only when every class of the label's clauses compares the same contents without it.
+
+    Every class must also compare the label exactly where it had to: a class compares it when one of its lines is not
+    conditional (``optional`` lists the conditional ones).
+    """
+    sidecar = tmp_path / "test_m.refs"
+    storages = {predicate: f"m/a@{index}.txt" for index, predicate in enumerate(contents)}
+    for predicate, text in contents.items():
+        (tmp_path / storages[predicate]).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / storages[predicate]).write_text(text, encoding="utf-8")
+    lines = [
+        units.RefLine("test_a", "", "m/a.txt", predicate in optional, predicate, storages[predicate])
+        for predicate in contents
+    ]
+    updates = {
+        sidecar: {
+            ("test_a", ""): [
+                units.Desired("m/a.txt", line.conditional, predicate, current=line)
+                for predicate, line in zip(contents, lines, strict=True)
+            ]
+        }
+    }
+    plan = units.resolve({sidecar: lines}, updates, tmp_path)
+    assert [
+        line.predicate for line in units.parse_refs(plan.sidecars.get(sidecar, units.format_refs(lines)))[0]
+    ] == kept
 
 
 GENERATION_TESTS = """
@@ -2326,9 +3225,7 @@ def test_fix_expected_from_ci_and_all_environments(
 
     from scripts import fix_expected
 
-    ledger.write(
-        "test_m.py", "from tests.conftest import assert_output\n\n\ndef test_new():\n    assert_output('x\\n')\n"
-    )
+    ledger.write("test_m.py", NEW_VARYING_TEST)
     failure = ledger.run("suite", env={"CI": "true", "GITHUB_ACTIONS": "true"}).stdout.str()
     log = f"dcg-expected-fix: {_foreign(fix_expected.payloads_in(failure)[0])}\n"
     in_progress = "run 9 is still in progress; logs will be available when it is complete"
@@ -2367,7 +3264,7 @@ def test_fix_expected_from_ci_and_all_environments(
     monkeypatch.setattr(fix_expected, "tox_command", lambda: ["tox"])
     root = ["--root", str(ledger.pytester.path)]
     assert fix_expected.main([*root, "--from-ci", "#42"]) == 0
-    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
+    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\t@formatter==builtin\n"
     assert any(command[1:4] == ["run", "view", "7"] for command in commands)
     assert fix_expected.main([*root, "--from-ci", "99"]) == 1
     assert "No dcg-expected-fix payloads to apply." in capsys.readouterr().out
@@ -2377,7 +3274,7 @@ def test_fix_expected_from_ci_and_all_environments(
         "If the run is still in progress, wait for it to finish and run this command again, or paste the "
         "dcg-expected-fix: lines of its log into: python scripts/fix_expected.py --apply '<payload>' ...\n"
     )
-    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
+    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\t@formatter==builtin\n"
     output = ledger.pytester.path / "observed"
     environments = ["--environment", "py314", "--environment", "pydantic214", "--environment", "pydantic212"]
     assert (
@@ -2401,7 +3298,7 @@ def test_fix_expected_from_ci_and_all_environments(
     assert list((output / "lane" / "pydantic214").glob("observed-*.jsonl"))
     (ledger.suite / "test_m.refs").unlink()
     assert fix_expected.main([*root, "--observations", str(output / "py314")]) == 0
-    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
+    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\t@formatter==builtin\n"
     (ledger.suite / "test_m.refs").unlink()
     assert (
         fix_expected.main([
@@ -2417,7 +3314,7 @@ def test_fix_expected_from_ci_and_all_environments(
         ])
         == 0
     )
-    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
+    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\t@formatter==builtin\n"
     monkeypatch.setattr(fix_expected.shutil, "which", lambda name: f"/bin/{name}" if name == "tox" else None)
     assert tox_command() == ["/bin/tox"]
     monkeypatch.setattr(fix_expected.shutil, "which", lambda _name: None)
@@ -2526,7 +3423,11 @@ def test_ledger_ci_never_writes_even_with_explicit_flags(ledger: LedgerProject, 
 
 
 def test_ledger_ci_mismatch_leads_with_the_lane_fix(ledger: LedgerProject) -> None:
-    """A CI lane's content mismatch names its environment and puts the payload command first; colour follows --color."""
+    """A CI lane's content mismatch names its environment and how to fix it; colour follows --color.
+
+    A test that declares no fact its output varies with compares one output everywhere: the failure says to name the
+    deciding fact. One that declares it puts the payload command first, which stores the output for its class.
+    """
     ledger.write("test_m.py", ONE_TEST)
     ledger.run("suite").assert_outcomes(passed=1)
     ledger.write("test_m.py", ONE_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
@@ -2539,12 +3440,12 @@ def test_ledger_ci_mismatch_leads_with_the_lane_fix(ledger: LedgerProject) -> No
         "Content mismatch: suite/test_m.py::test_a expects m/a.txt.",
         f"This environment ({facts}) produces different output than the stored one.",
     ]
-    assert lines[2].startswith(
-        "Fix, if pytest suite/test_m.py::test_a passes on your machine (adds an override for this environment only; "
-        "other environments keep m/a.txt): python scripts/fix_expected.py --apply '"
-    )
-    assert lines[2].endswith("' && git add -A suite  (or --from-ci 7)")
-    assert lines[3:] == [
+    assert lines[2:] == [
+        (
+            "suite/test_m.py::test_a declares no fact its output varies with, so every environment compares one "
+            "output: if it rightly differs here, name the deciding fact with varies_with= (an entry of "
+            "tests/capabilities.py) and run the test again."
+        ),
         (
             "Or, if the new output is intended everywhere: pytest suite/test_m.py::test_a --inline-snapshot=fix "
             "&& git add -A suite"
@@ -2554,29 +3455,30 @@ def test_ledger_ci_mismatch_leads_with_the_lane_fix(ledger: LedgerProject) -> No
     assert "-x" in output
     assert "\x1b[" not in output
     assert "\x1b[" in ledger.run("suite", "--color=yes").stdout.str()
-    python = shared_conftest.expected_environment_facts()["python"]
-    override = f"m/a@python{python}.txt"
+    ledger.write("test_m.py", VARYING_TEST.replace("test_new", "test_a"))
+    override = "m/a@formatter-eq-builtin.txt"
     ledger.store(override, "z\n")
     (ledger.suite / "test_m.refs").write_text(
-        f"{HEADER}[test_a]\n\tm/a.txt\n\tm/a.txt\t@python={python}\t= {override}\n", encoding="utf-8"
+        f"{HEADER}[test_a]\n\tm/a.txt\n\tm/a.txt\t@formatter==builtin\t= {override}\n", encoding="utf-8"
     )
-    lines = _message(ledger.run("suite", "--color=no", env=GITHUB).stdout.str(), "Content mismatch")
+    lines = _message(ledger.run("suite", "--color=no", env=GITHUB | BUILTIN).stdout.str(), "Content mismatch")
     assert lines[0] == f"Content mismatch: suite/test_m.py::test_a expects {override}."
     assert lines[2].startswith(
-        "Fix, if pytest suite/test_m.py::test_a passes on your machine (adds an override for this environment only; "
-        "other environments keep their stored files): python scripts/fix_expected.py --apply '"
+        "Fix, if pytest suite/test_m.py::test_a passes on your machine (stores this output for the class "
+        "formatter==builtin only; other classes keep their stored files): python scripts/fix_expected.py --apply '"
     )
+    assert lines[2].endswith("' && git add -A suite  (or --from-ci 7)")
 
 
-def _other_platform(facts: dict[str, str]) -> dict[str, str]:
-    """Return an environment's facts on another platform, as a Windows lane with the same tools reports them."""
-    return {**facts, "platform": "linux" if facts["platform"] == "win32" else "win32"}
+def _foreign_facts(facts: dict[str, str]) -> dict[str, str]:
+    """Return an environment's facts with the built-in formatter: a lane of another class for ``builtin-formatter``."""
+    return {**facts, "formatter": "builtin"}
 
 
 def _foreign(line: str) -> str:
-    """Return a payload CI printed here as the lane on the other platform prints it."""
+    """Return a payload CI printed here (external formatter) as a lane of the built-in formatter prints it."""
     payload = units.decode_payload(line)
-    return units.encode_payload({**payload, "facts": _other_platform(payload["facts"])}, 1 << 20) or ""
+    return units.encode_payload({**payload, "facts": _foreign_facts(payload["facts"])}, 1 << 20) or ""
 
 
 def _encoded(fields: object) -> str:
@@ -2588,6 +3490,8 @@ def _payload(**fields: object) -> dict[str, object]:
     payload |= fields
     if isinstance(payload.get("label"), str) and "value" in payload and "digest" not in payload:
         payload["digest"] = units.unit_digest(str(payload["label"]), payload["value"])
+    if payload.get("value") is not None:
+        payload.setdefault("clauses", [])
     return {key: value for key, value in payload.items() if value is not None}
 
 
@@ -2689,7 +3593,7 @@ def test_ledger_apply_session_checks_its_input(ledger: LedgerProject, tmp_path: 
         encoding="utf-8",
     )
     assert f"{observed}: its environment is malformed" in ledger.run(f"--expected-apply={apply_file}").stderr.str()
-    entry["compared"] = [["../outside.txt", "0" * 64, "../outside.txt", None]]
+    entry["compared"] = [["../outside.txt", "0" * 64, "../outside.txt", None, []]]
     (observed / "observed-main-1.jsonl").write_text(
         f"{json.dumps({'facts': LANE, 'collected': []})}\n{json.dumps(entry)}\n", encoding="utf-8"
     )
@@ -2958,29 +3862,40 @@ def test_ledger_fix_over_a_module_keeps_lines_of_other_environments(ledger: Ledg
     assert (ledger.refs(), ledger.files()) == (refs, {"m/a.txt": "y\n", "m/b.txt": "other environments\n"})
 
 
+ONE_VARYING_TEST = ONE_TEST.replace("assert_output(OUT)", "assert_output(OUT, varies_with=('builtin-formatter',))")
+"""`ONE_TEST` declaring that its output varies with the formatter."""
+
+
 def test_ledger_payload_from_this_environment_is_refused(
     ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
-    """A payload with this environment's facts is refused; the same tools on another platform add an override."""
+    """A payload of this environment's class is refused, and so is a stale one with its facts; another class's applies.
+
+    A comparison that declares nothing has one class, so a payload for it never applies: only a local run changes it.
+    """
     from scripts import fix_expected
 
-    ledger.write("test_m.py", ONE_TEST)
+    ledger.write("test_m.py", ONE_VARYING_TEST)
     ledger.run("suite").assert_outcomes(passed=1)
-    ledger.write("test_m.py", ONE_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
+    ledger.write("test_m.py", ONE_VARYING_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
     payload = fix_expected.payloads_in(ledger.run("suite", env=GITHUB).stdout.str())[0]
-    ledger.write("test_m.py", ONE_TEST)
-    capfd.readouterr()
-    assert _fix_expected(ledger, monkeypatch, "--apply", payload) == pytest.ExitCode.USAGE_ERROR
-    assert (
-        "payload 1: it comes from this environment, so there is no other environment to add an override for; "
-        "this environment is yours, run: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
-    ) in capfd.readouterr().err
+    ledger.write("test_m.py", ONE_VARYING_TEST)
+    refusal = (
+        "it comes from the base class, where no declared fact holds, which is this environment's too, so only a local "
+        "run changes its output: run: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
+    )
+    undeclared = units.decode_payload(_foreign(payload)) | {"clauses": []}
+    for text in (payload, units.encode_payload(undeclared, 1 << 20) or ""):
+        capfd.readouterr()
+        assert _fix_expected(ledger, monkeypatch, "--apply", text) == pytest.ExitCode.USAGE_ERROR
+        assert f"payload 1: {refusal}" in capfd.readouterr().err
     apply_file = tmp_path / "apply.json"
     local = shared_conftest.expected_environment_facts()
     apply_file.write_text(json.dumps({"payloads": [_payload(facts=local, label=None, value=None, stale=True)]}))
-    assert "this environment is yours, run: pytest suite/test_m.py --inline-snapshot=fix" in (
-        ledger.run(f"--expected-apply={apply_file}", "suite").stderr.str()
-    )
+    assert (
+        "it comes from this environment, so a local run sees the same: run: pytest suite/test_m.py "
+        "--inline-snapshot=fix"
+    ) in ledger.run(f"--expected-apply={apply_file}", "suite").stderr.str()
     assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
     skipping = json.loads(apply_file.read_text()) | {"skip_rejected": True}
     apply_file.write_text(json.dumps(skipping))
@@ -2988,235 +3903,42 @@ def test_ledger_payload_from_this_environment_is_refused(
     assert "expected: skipped a payload: it comes from this environment" in skipped
     assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
     assert _fix_expected(ledger, monkeypatch, "--apply", _foreign(payload)) == 0
-    predicate = units.payload_predicate(foreign := _other_platform(local), local)
-    assert ("platform", foreign["platform"]) in predicate
-    storage = f"m/a@{units._environment_slug(predicate)}.txt"
-    assert (
-        ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@{units.predicate_text(predicate)}\t= {storage}\n"
-    )
+    storage = "m/a@formatter-eq-builtin.txt"
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@formatter==builtin\t= {storage}\n"
     assert ledger.files() == {"m/a.txt": "x\n", storage: "y\n"}
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=1)
 
 
-TWO_TESTS = ONE_TEST + "\n\ndef test_b():\n    assert_output('b\\n')\n"
+def test_fix_expected_refuses_lanes_of_one_class_that_disagree(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """Two lanes of one class that sent different outputs refuse the apply: no declared fact explains the difference.
 
-
-def _lanes(count: int) -> list[dict[str, str]]:
-    """Return the facts of lanes on the other platform that differ from each other and from here by Python.
-
-    No lane runs this environment's Python, so each lane's override predicate is its tools and Python on every
-    interpreter, platform and black the module runs with, and the lanes come in the order of their sidecar lines.
+    Lanes of one class that agree write its line once.
     """
-    local = shared_conftest.expected_environment_facts()
-    minors = [minor for minor in range(10, 20) if f"3.{minor}" != local["python"]]
-    return [{**_other_platform(local), "python": f"3.{minor}"} for minor in minors[:count]]
-
-
-def _storage(facts: dict[str, str], label: str = "m/a.txt") -> str:
-    """Return where a lane's override of a label is stored."""
-    predicate = units.payload_predicate(facts, shared_conftest.expected_environment_facts())
-    stem, _, suffix = label.rpartition(".")
-    return f"{stem}@{units._environment_slug(predicate)}.{suffix}"
-
-
-def _override(facts: dict[str, str], label: str = "m/a.txt", storage: str | None = None) -> str:
-    """Return the sidecar line of a lane's override of a label, by default stored under the lane's name."""
-    predicate = units.payload_predicate(facts, shared_conftest.expected_environment_facts())
-    return f"\t{label}\t@{units.predicate_text(predicate)}\t= {storage or _storage(facts, label)}\n"
-
-
-def _apply_in_process(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Run the apply sessions of scripts/fix_expected.py in this process, so coverage records them."""
-    from scripts import fix_expected
-
-    monkeypatch.setattr(
-        fix_expected.subprocess, "run", lambda command, **_: SimpleNamespace(returncode=ledger.run(*command[3:]).ret)
-    )
-
-
-def _held(*labels: str) -> str:
-    """Return the report of an apply session that held labels of test_a, each sent alike by the lanes given."""
-    advice = (
-        "or rerun this command with --as-base, which writes the common content as the base file and removes the "
-        "overrides equal to it. Every environment without an override of its own then compares that content: this "
-        "one, and the lanes that sent no payload because they passed or did not run. Check this environment with: "
-        "pytest suite/test_m.py::test_a; check those lanes with a dispatch run of the Test workflow on your branch (gh "
-        "workflow run test.yaml --ref <branch>), which also runs the lanes pull requests skip. Keep one override per "
-        "lane instead: rerun this command with --per-environment.\n"
-    )
-    return "\n".join([
-        (
-            "expected: not applied: lanes of different overrides sent the same content for these labels, a change "
-            "common to them that belongs in the base file rather than in one override per lane:"
-        ),
-        *labels,
-        (
-            "Nothing was written for these labels or the stale payloads of their tests. Store the content as the base "
-            "file: regenerate it here, if this environment produces it too, with"
-        ),
-        "  pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite",
-        advice,
-    ])
-
-
-def test_fix_expected_stores_a_change_common_to_lanes_once(
-    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Lanes of different overrides sending the same content for a label stop the run, which says how to store it.
-
-    Labels whose payloads differ are applied as before, and so are stale payloads of other tests; a stale payload of a
-    held label's test is held with it. ``--as-base`` stores the content most lanes sent as the base file, keeps
-    overrides of other content, and drops the overrides that now equal what their lanes compare.
-    """
-    ledger.write("test_m.py", TWO_TESTS)
-    ledger.run("suite").assert_outcomes(passed=2)
-    _apply_in_process(ledger, monkeypatch)
-    lanes = _lanes(4)
-    common = [_encoded(_payload(facts=facts)) for facts in lanes[:3]]
-    other = _encoded(_payload(facts=lanes[3], value="z\n"))
-    second = _encoded(_payload(facts=lanes[0], item="suite/test_m.py::test_b", label="m/b.txt", value="c\n"))
-    stale = _encoded(_payload(facts=lanes[1], item="suite/test_m.py::test_b", label=None, value=None, stale=True))
-    gone = _encoded(_payload(facts=lanes[3], label=None, value=None, stale=True))
-    stored = (ledger.refs(), ledger.files())
-    capsys.readouterr()
-    assert _fix_expected(ledger, monkeypatch, "--apply", *common, gone) == 1
-    message = _held("  suite/test_m.py::test_a m/a.txt (3 lanes)")
-    assert (message in capsys.readouterr().out, ledger.refs(), ledger.files()) == (True, *stored)
-    assert _fix_expected(ledger, monkeypatch, "--apply", *common, other, second, stale, gone) == 1
-    assert f"stage them all: git add -A suite\n{message}" in capsys.readouterr().out
-    test_b = f"[test_b]\n\tm/b.txt\t?\n{_override(lanes[0], 'm/b.txt')}"
-    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{test_b}"
-    assert _fix_expected(ledger, monkeypatch, "--apply", *common, other, second, stale, "--as-base") == 0
-    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{_override(lanes[3])}{test_b}"
-    assert ledger.files() == {
-        "m/a.txt": "y\n",
-        _storage(lanes[3]): "z\n",
-        "m/b.txt": "b\n",
-        _storage(lanes[0], "m/b.txt"): "c\n",
-    }
-    everyone = [_encoded(_payload(facts=facts, value="q\n")) for facts in lanes]
-    assert _fix_expected(ledger, monkeypatch, "--apply", *everyone, "--as-base") == 0
-    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{test_b}"
-    assert ledger.files() == {"m/a.txt": "q\n", "m/b.txt": "b\n", _storage(lanes[0], "m/b.txt"): "c\n"}
-    with pytest.raises(SystemExit):
-        _fix_expected(ledger, monkeypatch, "--where", "suite/test_m.py::test_a", "--per-environment")
-    assert "--as-base and --per-environment only go with --apply and --from-ci" in capsys.readouterr().err
-
-
-@pytest.mark.parametrize(
-    ("values", "option"),
-    [
-        pytest.param(("y\n", "y\n", "y\n"), ("--per-environment",), id="equal-per-environment"),
-        pytest.param(("y\n", "z\n", "w\n"), (), id="different"),
-    ],
-)
-def test_fix_expected_stores_one_override_per_lane(
-    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, values: tuple[str, ...], option: tuple[str, ...]
-) -> None:
-    """Content the lanes differ in, or any content with --per-environment, becomes one override per lane."""
-    ledger.write("test_m.py", ONE_TEST)
+    ledger.write("test_m.py", ONE_VARYING_TEST)
     ledger.run("suite").assert_outcomes(passed=1)
-    _apply_in_process(ledger, monkeypatch)
-    lanes = _lanes(3)
-    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip(lanes, values, strict=True)]
-    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, *option) == 0
-    stored = {value: _storage(facts) for facts, value in reversed(list(zip(lanes, values, strict=True)))}
-    lines = "".join(_override(facts, storage=stored[value]) for facts, value in zip(lanes, values, strict=True))
-    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{lines}"
-    assert ledger.files() == {"m/a.txt": "x\n", **{storage: value for value, storage in stored.items()}}
-
-
-def test_fix_expected_stores_lanes_of_one_override_once(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Lanes that share one override, one Python on two platforms, are one lane: their content is that override."""
-    ledger.write("test_m.py", ONE_TEST)
-    ledger.run("suite").assert_outcomes(passed=1)
-    _apply_in_process(ledger, monkeypatch)
-    lane = _lanes(1)[0]
-    payloads = [_encoded(_payload(facts={**lane, "platform": platform})) for platform in ("linux", "darwin")]
-    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads) == 0
-    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{_override(lane)}"
-    assert ledger.files() == {"m/a.txt": "x\n", _storage(lane): "y\n"}
-
-
-@pytest.mark.parametrize("values", [("a\n", "a\n", "b\n", "b\n"), ("b\n", "b\n", "a\n", "a\n")])
-def test_fix_expected_breaks_a_tie_by_the_lowest_predicate(
-    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], values: tuple[str, ...]
-) -> None:
-    """Of contents as many lanes sent, the one whose lowest predicate sorts first is the common content."""
-    ledger.write("test_m.py", ONE_TEST)
-    ledger.run("suite").assert_outcomes(passed=1)
-    _apply_in_process(ledger, monkeypatch)
-    lanes = _lanes(4)
-    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip(lanes, values, strict=True)]
-    capsys.readouterr()
-    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads) == 1
-    assert _held("  suite/test_m.py::test_a m/a.txt (2 lanes)") in capsys.readouterr().out
-    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, "--as-base") == 0
-    shared = _storage(lanes[2])
-    lines = "".join(_override(facts, storage=shared) for facts in lanes[2:])
-    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{lines}"
-    assert ledger.files() == {"m/a.txt": values[0], shared: values[2]}
-
-
-@pytest.mark.parametrize(
-    ("values", "option", "lines", "files"),
-    [
-        pytest.param(("q\n", "q\n"), "--as-base", {"broad": "w", "near": "base"}, {"m/a.txt": "q\n"}, id="as-base"),
-        pytest.param(
-            ("x\n", "z\n"),
-            "--per-environment",
-            {"broad": "w", "near": "base", "far": "z"},
-            {"m/a.txt": "x\n"},
-            id="base-content",
-        ),
-        pytest.param(
-            ("w\n", "z\n"), "--per-environment", {"broad": "w", "far": "z"}, {"m/a.txt": "x\n"}, id="broader-content"
-        ),
-    ],
-)
-def test_fix_expected_keeps_a_lane_off_a_broader_override(
-    ledger: LedgerProject,
-    monkeypatch: pytest.MonkeyPatch,
-    values: tuple[str, str],
-    option: str,
-    lines: dict[str, str],
-    files: dict[str, str],
-) -> None:
-    """A lane a broader override matches keeps an override of the content it sent unless that override stores it.
-
-    The lane's override goes only when it equals what the lane compares without it: the broader override, not the
-    base. The expected sidecar is written in the order pytest writes, whatever the facts of this environment.
-    """
-    ledger.write("test_m.py", ONE_TEST)
-    ledger.run("suite").assert_outcomes(passed=1)
-    _apply_in_process(ledger, monkeypatch)
-    near, far = _lanes(2)
-    local = shared_conftest.expected_environment_facts()
-    broad = (("python", near["python"]),)
-    stored = {"w": f"m/a@python{near['python']}.txt", "base": "m/a.txt", "z": _storage(far)}
-    ledger.store(stored["w"], "w\n")
-    ledger.suite.joinpath("test_m.refs").write_text(
-        units.format_refs([
-            units.RefLine("test_a", "", "m/a.txt"),
-            units.RefLine("test_a", "", "m/a.txt", False, broad, stored["w"]),
-        ]),
-        encoding="utf-8",
-    )
-    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip((near, far), values, strict=True)]
-    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, option) == 0
-    predicates = {
-        "broad": broad,
-        "near": units.payload_predicate(near, local),
-        "far": units.payload_predicate(far, local),
-    }
-    expected = [units.RefLine("test_a", "", "m/a.txt")] + [
-        units.RefLine("test_a", "", "m/a.txt", False, predicates[name] or (), stored[content])
-        for name, content in lines.items()
+    lanes = [
+        _foreign_facts({**shared_conftest.expected_environment_facts(), "python": python})
+        for python in ("3.11", "3.15")
     ]
-    assert ledger.refs() == units.format_refs(expected)
-    assert ledger.files() == files | {
-        stored[content]: f"{content}\n" for content in lines.values() if content != "base"
-    }
+    clauses = ["formatter==builtin"]
+    disagreeing = [
+        _encoded(_payload(facts=facts, value=value, clauses=clauses))
+        for facts, value in zip(lanes, ("y\n", "z\n"), strict=True)
+    ]
+    capfd.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--apply", *disagreeing) == pytest.ExitCode.USAGE_ERROR
+    assert (
+        "two lanes of one class sent different outputs for m/a.txt of suite/test_m.py::test_a; they differ in python "
+        "(3.11 vs 3.15): name the fact the output depends on with varies_with="
+    ) in capfd.readouterr().err
+    assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n"
+    agreeing = [_encoded(_payload(facts=facts, clauses=clauses)) for facts in lanes]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *agreeing) == 0
+    storage = "m/a@formatter-eq-builtin.txt"
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@formatter==builtin\t= {storage}\n"
+    assert ledger.files() == {"m/a.txt": "x\n", storage: "y\n"}
 
 
 def test_ledger_refuses_writes_outside_its_files(ledger: LedgerProject) -> None:
@@ -3456,7 +4178,7 @@ def test_reader(tmp_path):
 
 
 def test_override():
-    assert_output("here\\n", EXPECTED / "o.txt")
+    assert_output("here\\n", EXPECTED / "o.txt", varies_with=("sys-monitoring", "no-sys-monitoring"))
     assert stored_expected(EXPECTED / "o.txt").read_text() == "here\\n"
 
 
@@ -3477,9 +4199,9 @@ def test_pair(name):
 def test_stored_expected_follows_the_index(ledger: LedgerProject) -> None:
     """A test reads an expected file where the index stores it: its own applicable line first, then any test's line.
 
-    Its own line is the one that applies here (``@python`` overrides) and covers files its tree labels select
-    (``pair``); other tests read a label's base line, stored at the label first (``o.txt``), and each pattern of a
-    directory (``mixed``). A file of a tree label's directory that the pattern does not select, an unrecorded path, a
+    Its own line is the one that applies here (the Python class of ``test_override``) and covers files its tree labels
+    select (``pair``); other tests read a label's base line, stored at the label first (``o.txt``), and each pattern of
+    a directory (``mixed``). A file of a tree label's directory that the pattern does not select, an unrecorded path, a
     path outside the expected root, and a read at import time (no running test; this project is not the
     repository's) stay as named.
     """
@@ -3499,15 +4221,17 @@ def test_stored_expected_follows_the_index(ledger: LedgerProject) -> None:
     }.items():
         ledger.store(label, text)
     line = units.RefLine
-    python = (("python", shared_conftest.expected_environment_facts()["python"]),)
+    declared = capabilities.clauses_of(("sys-monitoring", "no-sys-monitoring"))
+    here = units.holding_clauses(declared, shared_conftest.expected_environment_facts())
+    other = tuple(clause for clause in declared if clause not in here)
     (ledger.suite / "test_r.refs").write_text(
         units.format_refs([
             line("test_a", "", "m/a.txt"),
             line("test_b", "", "m/a.txt", storage="m/a~b.txt"),
             line("test_tree", "", "tree//*.py", storage="copy//*.py"),
             line("test_override", "", "o.txt"),
-            line("test_override", "", "o.txt", predicate=python, storage="o@here.txt"),
-            line("test_override", "", "o.txt", predicate=(("python", "2.7"),), storage="o@old.txt"),
+            line("test_override", "", "o.txt", predicate=here, storage="o@here.txt"),
+            line("test_override", "", "o.txt", predicate=other, storage="o@old.txt"),
             line("test_mixed", "", "mixed//*.py", storage="pyfiles//*.py"),
             line("test_mixed", "", "mixed//*.md"),
             line("test_pair", "one", "pair//*.py", storage="pair-one//*.py"),
@@ -4089,31 +4813,87 @@ def test_ledger_merges_a_copy_into_its_label(ledger: LedgerProject) -> None:
     assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/a.txt\n"
 
 
+def _refused_value_item(ledger: LedgerProject, refusal: str) -> tuple[dict[str, object], dict[str, object]]:
+    """Record ``ONE_VARYING_TEST`` and return a value payload refused for ``refusal`` and a stale one of its item."""
+    from scripts import fix_expected
+
+    ledger.write("test_m.py", ONE_VARYING_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    ledger.write("test_m.py", ONE_VARYING_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
+    value = units.decode_payload(fix_expected.payloads_in(ledger.run("suite", env=GITHUB).stdout.str())[0])
+    ledger.write("test_m.py", ONE_VARYING_TEST)
+    stale = {"facts": _foreign_facts(value["facts"]), "item": value["item"], "stale": True}
+    if refusal == "malformed":
+        value = {**value, "facts": _foreign_facts(value["facts"]), "digest": "0" * 40}
+    return value, stale
+
+
+@pytest.mark.parametrize("refusal", ["own-class", "malformed"])
+def test_ledger_refused_value_payload_takes_the_stale_payloads_of_its_item(
+    ledger: LedgerProject, tmp_path: Path, refusal: str
+) -> None:
+    """A value payload refused for any reason takes every payload of its item with it, under ``skip_rejected`` too.
+
+    The stale payload alone would mark the item's recorded line conditional although the refused value is what shows
+    the item runs; the recorded lines and files stay as they are.
+    """
+    value, stale = _refused_value_item(ledger, refusal)
+    recorded = (ledger.refs(), ledger.files())
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [value, stale]}), encoding="utf-8")
+    refused = ledger.run(f"--expected-apply={apply_file}", "suite")
+    assert refused.ret == pytest.ExitCode.USAGE_ERROR
+    assert "payload 2: a value payload of its item is refused (" in refused.stderr.str()
+    apply_file.write_text(json.dumps({"payloads": [value, stale], "skip_rejected": True}), encoding="utf-8")
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite").stdout.str()
+    assert skipped.count("expected: skipped a payload") == 2
+    assert (ledger.refs(), ledger.files()) == recorded
+    apply_file.write_text(json.dumps({"payloads": [stale]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite")
+    assert ledger.refs() != recorded[0]
+
+
+def test_from_ci_refused_value_payload_takes_the_stale_payloads_of_its_item(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """The script drops a payload that is not a payload of this suite by the same rule: its item's payloads go too."""
+    from scripts import fix_expected
+
+    value, stale = _refused_value_item(ledger, "malformed")
+    recorded = (ledger.refs(), ledger.files())
+    texts = [units.encode_payload(payload, 1 << 20) or "" for payload in (value, stale)]
+    monkeypatch.setattr(fix_expected, "ci_logs", lambda _run: "".join(f"dcg-expected-fix: {text}\n" for text in texts))
+    capfd.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--from-ci", "7") == 1
+    output = capfd.readouterr().out
+    assert output.startswith("Skipped:\npayload 1: its digest does not match its value\npayload 2: a value payload of")
+    assert (ledger.refs(), ledger.files()) == recorded
+
+
 @pytest.mark.parametrize("value", ["y\n", "z\n"], ids=["same-content", "other-content"])
-def test_ledger_refuses_payloads_no_predicate_tells_apart(
+def test_ledger_refuses_payloads_of_this_class(
     ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str], value: str
 ) -> None:
-    """A payload differing from here only in what override predicates ignore (minor tool versions) is refused.
+    """A payload whose lane is in this environment's class is refused, whatever its tool versions.
 
-    --apply then writes nothing; --from-ci reports it and applies the run's other payloads, whose tool versions may
-    carry PEP 440 suffixes. Sending the same content as another lane does not make it a lane of a common change.
+    --apply then writes nothing; --from-ci reports it and skips every payload of its item, whose tool versions may
+    carry PEP 440 suffixes; the other class's payload applies alone.
     """
     from scripts import fix_expected
 
-    ledger.write("test_m.py", ONE_TEST)
+    ledger.write("test_m.py", ONE_VARYING_TEST)
     ledger.run("suite").assert_outcomes(passed=1)
-    ledger.write("test_m.py", ONE_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
+    ledger.write("test_m.py", ONE_VARYING_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
     payload = units.decode_payload(fix_expected.payloads_in(ledger.run("suite", env=GITHUB).stdout.str())[0])
-    ledger.write("test_m.py", ONE_TEST)
+    ledger.write("test_m.py", ONE_VARYING_TEST)
     local = payload["facts"]
     minor = {tool: f"{local[tool]}.post1+ci" if local[tool] else "" for tool in ("black", "isort")}
     near = units.encode_payload({**payload, "facts": {**local, **minor}}, 1 << 20) or ""
-    foreign = {**_other_platform(local), **minor}
     other = {"value": value, "digest": units.unit_digest(payload["label"], value)}
-    far = units.encode_payload({**payload, **other, "facts": foreign}, 1 << 20) or ""
+    far = units.encode_payload({**payload, **other, "facts": {**_foreign_facts(local), **minor}}, 1 << 20) or ""
     refusal = (
-        "it comes from this environment, so there is no other environment to add an override for; "
-        "this environment is yours, run: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
+        "it comes from the base class, where no declared fact holds, which is this environment's too, so only a local "
+        "run changes its output: run: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
     )
     capfd.readouterr()
     assert _fix_expected(ledger, monkeypatch, "--apply", near, far) == pytest.ExitCode.USAGE_ERROR
@@ -4121,12 +4901,13 @@ def test_ledger_refuses_payloads_no_predicate_tells_apart(
     assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
     monkeypatch.setattr(fix_expected, "ci_logs", lambda _run: f"dcg-expected-fix: {near}\ndcg-expected-fix: {far}\n")
     assert _fix_expected(ledger, monkeypatch, "--from-ci", "7") == 0
-    assert f"expected: skipped a payload: {refusal}" in capfd.readouterr().out
-    predicate = units.payload_predicate(foreign, local) or ()
-    storage = f"m/a@{units._environment_slug(predicate)}.txt"
-    assert (
-        ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@{units.predicate_text(predicate)}\t= {storage}\n"
-    )
+    skipped = capfd.readouterr().out
+    assert f"expected: skipped a payload: {refusal}" in skipped
+    assert "a value payload of its item is refused" in skipped
+    assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
+    assert _fix_expected(ledger, monkeypatch, "--apply", far) == 0
+    storage = "m/a@formatter-eq-builtin.txt"
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@formatter==builtin\t= {storage}\n"
     assert ledger.files() == {"m/a.txt": "x\n", storage: value}
 
 

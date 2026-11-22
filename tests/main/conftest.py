@@ -362,6 +362,7 @@ def _assert_captured_output(
     derived_stdout: bool = False,
     stdout_suffix: str = ".txt",
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     if not any((
         expected_stderr is not None,
@@ -375,7 +376,10 @@ def _assert_captured_output(
     captured = capsys.readouterr()
     if derived_stdout:
         _compare_derived(
-            _normalize_line_endings(captured.out), role=_derived_output_role(".stdout", name), suffix=stdout_suffix
+            _normalize_line_endings(captured.out),
+            role=_derived_output_role(".stdout", name),
+            suffix=stdout_suffix,
+            varies_with=varies_with,
         )
     if expected_stderr is not None and captured.err != expected_stderr:  # pragma: no cover
         pytest.fail(f"Expected stderr:\n{expected_stderr}\n\nActual stderr:\n{captured.err}")
@@ -720,6 +724,7 @@ def run_main_with_args(
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
     stdout_suffix: str = ".txt",
+    varies_with: tuple[str, ...] = (),
     use_parsed_source_cache: bool = True,
     use_builtin_default_formatter: bool = True,
     isolate_model_template_cache: bool = False,
@@ -735,6 +740,7 @@ def run_main_with_args(
         assert_no_stderr: Assert stderr is empty
         derived_stdout: Compare stdout with the output pytest stores for the test
         stdout_suffix: Suffix of the stored stdout for derived_stdout (default: ".txt")
+        varies_with: Capabilities of tests/capabilities.py whose facts decide the stored stdout
         use_parsed_source_cache: Enable the process-local parsed source cache for generation-style commands
         use_builtin_default_formatter: Add the test-suite builtin formatter default when applicable
         isolate_model_template_cache: Clear cached Jinja model templates before and after execution
@@ -765,6 +771,7 @@ def run_main_with_args(
         assert_no_stderr=assert_no_stderr,
         derived_stdout=derived_stdout,
         stdout_suffix=stdout_suffix,
+        varies_with=varies_with,
     )
     return return_code
 
@@ -856,11 +863,13 @@ def run_generate_file_and_assert(
     expected_warnings: Sequence[str] | None = None,
     unchanged_inputs: Mapping[str, object] | None = None,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
     **generate_kwargs: Any,
 ) -> None:
     """Execute generate() for a path input and assert file or directory output.
 
-    ``name`` names the output pytest stores; two runs under one name must write equal output.
+    ``name`` names the output pytest stores; two runs under one name must write equal output. ``varies_with`` names
+    the capabilities of ``tests/capabilities.py`` whose facts decide it.
     """
     __tracebackhide__ = True
 
@@ -895,7 +904,7 @@ def run_generate_file_and_assert(
                 )
             assert_warnings_contain(warning_records, *expected_warnings)
 
-    _compare_output(output_path, transform, name=name)
+    _compare_output(output_path, transform, name=name, varies_with=varies_with)
     with _enable_test_parsed_source_cache(), assert_inputs_not_mutated(unchanged_inputs):
         _assert_builtin_generate_formatter_parity(
             input_=input_,
@@ -913,12 +922,14 @@ def run_generate_and_assert(
     assert_input_unchanged: bool = False,
     unchanged_inputs: Mapping[str, object] | None = None,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
     **generate_kwargs: Any,
 ) -> None:
     """Execute generate() and assert returned text, written text, or an expected error.
 
     An expected error without ``expected_error_match`` compares the error text with the output pytest stores for the
-    test. ``name`` names a stored output; two runs under one name must give equal output.
+    test. ``name`` names a stored output; two runs under one name must give equal output. ``varies_with`` names the
+    capabilities of ``tests/capabilities.py`` whose facts decide it.
     """
     __tracebackhide__ = True
 
@@ -933,7 +944,10 @@ def run_generate_and_assert(
                 generate(input_=input_, **options)
             if expected_error_match is None:
                 _compare_derived(
-                    _normalize_line_endings(f"{error.value}\n"), role=_derived_output_role(name=name), suffix=".txt"
+                    _normalize_line_endings(f"{error.value}\n"),
+                    role=_derived_output_role(name=name),
+                    suffix=".txt",
+                    varies_with=varies_with,
                 )
             return
         result = generate(input_=input_, **options)
@@ -946,7 +960,9 @@ def run_generate_and_assert(
         result = output_path.read_text(encoding=encoding)
     if not isinstance(result, str):  # pragma: no cover
         pytest.fail(f"Expected generate() to return str, got {type(result).__name__}")
-    _compare_derived(_normalize_line_endings(result), role=_derived_output_role(name=name), suffix=".py")
+    _compare_derived(
+        _normalize_line_endings(result), role=_derived_output_role(name=name), suffix=".py", varies_with=varies_with
+    )
 
 
 def _compare_output(
@@ -955,6 +971,7 @@ def _compare_output(
     encoding: str = "utf-8",
     *,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Compare a generated file or directory with the output stored under the test's name.
 
@@ -971,11 +988,11 @@ def _compare_output(
             relative: _normalize_line_endings(transform(text)) if transform else text
             for relative, text in _output_tree(output_path, "*", encoding).items()
         }
-        _compare_derived(tree, role=role, tree=True)
+        _compare_derived(tree, role=role, tree=True, varies_with=varies_with)
         return
     content = output_path.read_text(encoding=encoding)
     value = _normalize_line_endings(transform(content) if transform else content)
-    _compare_derived(value, role=role, suffix=output_path.suffix)
+    _compare_derived(value, role=role, suffix=output_path.suffix, varies_with=varies_with)
 
 
 def run_main_and_assert(  # noqa: PLR0912
@@ -997,8 +1014,9 @@ def run_main_and_assert(  # noqa: PLR0912
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
     stdout_suffix: str = ".txt",
-    # Name of the outputs pytest stores for the test
+    # Name of the outputs pytest stores for the test, and the facts they vary with
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
     # Other options
     copy_files: CopyFilesMapping | None = None,
     # stdin options
@@ -1051,6 +1069,8 @@ def run_main_and_assert(  # noqa: PLR0912
     Stored output names:
         name: Names the outputs pytest stores for this run (``<test>.<name><suffix>``) instead of numbering them;
             two runs of one test under one name must give equal output
+        varies_with: The capabilities of tests/capabilities.py whose facts decide this run's outputs; their stored
+            lines key on the clauses that hold
 
     Code validation options:
         skip_code_validation: Skip all code validation (compile and exec)
@@ -1133,7 +1153,10 @@ def run_main_and_assert(  # noqa: PLR0912
     _assert_exit_code(return_code, expected_exit, f"Input: {input_path}")
     if stdout is not None:
         _compare_derived(
-            _normalize_line_endings(stdout.getvalue()), role=_derived_output_role(".stdout", name), suffix=stdout_suffix
+            _normalize_line_endings(stdout.getvalue()),
+            role=_derived_output_role(".stdout", name),
+            suffix=stdout_suffix,
+            varies_with=varies_with,
         )
 
     _assert_captured_output(
@@ -1144,6 +1167,7 @@ def run_main_and_assert(  # noqa: PLR0912
         derived_stdout=(compare_stdout and capsys is not None) or (derived_stdout and stdout is None),
         stdout_suffix=stdout_suffix,
         name=name,
+        varies_with=varies_with,
     )
 
     if output_should_not_exist:
@@ -1171,6 +1195,7 @@ def run_main_and_assert(  # noqa: PLR0912
             transform,
             _get_argument_value(extra_args, "--encoding") or "utf-8",
             name=name,
+            varies_with=varies_with,
         )
 
     with _enable_test_parsed_source_cache():
@@ -1617,6 +1642,7 @@ def run_main_url_and_assert(
     transform: Callable[[str], str] | None = None,
     force_exec_validation: bool = False,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Execute main() with URL input and assert output.
 
@@ -1629,6 +1655,7 @@ def run_main_url_and_assert(
         force_exec_validation: Run exec() even when target Python version differs from
             the test environment (only effective when target <= runtime).
         name: Names the output pytest stores (``<test>.<name><suffix>``) instead of numbering it
+        varies_with: The capabilities of tests/capabilities.py whose facts decide the output
     """
     __tracebackhide__ = True
     return_code = _run_main_url(url, output_path, input_file_type, extra_args=extra_args)
@@ -1638,6 +1665,7 @@ def run_main_url_and_assert(
         transform,
         _get_argument_value(extra_args, "--encoding") or "utf-8",
         name=name,
+        varies_with=varies_with,
     )
 
     _validate_output_files(output_path, extra_args, force_exec_validation=force_exec_validation)

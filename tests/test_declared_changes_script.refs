@@ -57,6 +57,7 @@ revert of a change the base does not declare, declared	declared_changes_script/d
 reverted to the tag and pruned	declared_changes_script/declared_changes_check[reverted to the tag and pruned].txt
 reverted to the tag, still covered	declared_changes_script/declared_changes_check[reverted to the tag, still covered].txt
 same units in another form	declared_changes_script/declared_changes_check[same units in another form].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
+selectors of an older revision in the old spelling	declared_changes_script/declared_changes_check[selectors of an older revision in the old spelling].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
 split of a shared unit	declared_changes_script/declared_changes_check[split of a shared unit].txt
 stamp pending	declared_changes_script/declared_changes_check[stamp pending].txt
 storage renamed, content kept	declared_changes_script/declared_changes_check[storage renamed, content kept].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt

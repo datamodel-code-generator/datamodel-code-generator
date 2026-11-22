@@ -167,7 +167,7 @@ version-per-document-root	api_generation/fastapi_generation/fastapi_render[versi
 version-per-document-root	api_generation/fastapi_generation/fastapi_render[version-per-document-root].report.txt	= main/generation_platform/client/version-per-document-root.txt
 [test_fastapi_scope]
 	api_generation/fastapi_generation/fastapi_scope.txt
-	api_generation/fastapi_generation/fastapi_scope.txt	@black=22	= api_generation/fastapi_generation/fastapi_scope@black22.txt
+	api_generation/fastapi_generation/fastapi_scope.txt	@black<22.6	= api_generation/fastapi_generation/fastapi_scope@black-lt-22.6.txt
 [test_fastapi_template_fallback]
 bodies-True	api_generation/fastapi_generation/fastapi_template_fallback[bodies-True].package/	= api_generation/fastapi_generation/fastapi_render[bodies].package/
 bodies-True	api_generation/fastapi_generation/fastapi_template_fallback[bodies-True].report.txt	= api_generation/fastapi_generation/fastapi_render[bodies].report.txt

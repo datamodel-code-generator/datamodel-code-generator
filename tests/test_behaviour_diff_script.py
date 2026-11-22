@@ -1960,7 +1960,9 @@ def test_gate_against_a_git_revision(case: str, tmp_path: Path) -> None:
         f"second run, from the extracted tree and the cached base outputs: {'same' if runs[1] == runs[0] else runs[1]}"
     )
     text = "\n".join([*runs[0], rerun, *(tree.read_text(encoding="utf-8") for tree in trees)])
-    assert_output(text.replace(commits[base][:9], "<sha>").replace(commits[base][:7], "<sha>"))
+    assert_output(
+        text.replace(commits[base][:9], "<sha>").replace(commits[base][:7], "<sha>"), varies_with=("no-sys-monitoring",)
+    )
 
 
 FAKE_FAILS_AFTER_WRITING = (
@@ -2968,8 +2970,8 @@ SECOND_FLOAT = {SECOND_REFS: SECOND_OWN[SECOND_REFS], SECOND_MODULE: CELLS_MODUL
 SECOND_VARIANTS = {
     SECOND_REFS: _cells_refs({
         "test_second": [
-            "\tmain/jsonschema/second.py\t@python=3.14",
-            "\tmain/jsonschema/second.py\t@python=3.15\t= main/jsonschema/plain.py",
+            "\tmain/jsonschema/second.py\t@python==3.14",
+            "\tmain/jsonschema/second.py\t@python==3.15\t= main/jsonschema/plain.py",
         ]
     })
 }

@@ -299,7 +299,7 @@ class Side:
             if (key := (sidecar, self.files[sidecar])) in _PARSED:
                 continue
             found: dict[Reference, list[Line]] = {}
-            for line in parse_refs(self.read(sidecar).decode("utf-8").replace("\r\n", "\n"))[0]:
+            for line in parse_refs(self.read(sidecar).decode("utf-8").replace("\r\n", "\n"), historical=True)[0]:
                 reference = Reference(sidecar, line.function, line.param, line.label)
                 found.setdefault(reference, []).append((predicate_text(line.predicate), line.conditional, line.stored))
             _PARSED[key] = {reference: tuple(sorted(lines)) for reference, lines in found.items()}

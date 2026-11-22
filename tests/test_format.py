@@ -1672,7 +1672,7 @@ def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(
         else:
             formatted_cases.append(f"[{name}]\n{source}")
 
-    assert_output("\n".join(formatted_cases))
+    assert_output("\n".join(formatted_cases), varies_with=("no-type-statements",))
 
 
 def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_python() -> None:

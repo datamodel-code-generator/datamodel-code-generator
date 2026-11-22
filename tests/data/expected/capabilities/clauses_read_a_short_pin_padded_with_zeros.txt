@@ -1,0 +1,6 @@
+pydantic==2.0: True
+pydantic!=2.0: False
+pydantic>=2.0: True
+pydantic<2.0: False
+pydantic<2.5: True
+pydantic>2: False

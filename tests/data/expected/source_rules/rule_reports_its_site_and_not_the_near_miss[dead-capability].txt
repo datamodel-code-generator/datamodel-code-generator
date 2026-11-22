@@ -8,4 +8,4 @@ tests/capabilities.py:10: dead-capability: empty: every lane has it, so no skip 
 tests/capabilities.py:11: dead-capability: pydantic-2.1: only subset lanes (fixed lists of tests) lack it, so no test of the suite is skipped
 
 rule counts:
-  dead-capability: 7 (absolute); fix: delete the capability and its uses (no lane of .github/workflows/test.yaml has it, so the tests it guards always run, or never), or fix the clause or the lane the message names
+  dead-capability: 7 (absolute); fix: delete the capability and its uses (no lane of a workflow matrix in .github/workflows has it, so the tests it guards always run, or never), or fix the clause or the lane the message names
