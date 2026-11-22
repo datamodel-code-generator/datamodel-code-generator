@@ -1,8 +1,0 @@
-[[change]]
-id = "release-draft-generated-docs"
-category = "harness"
-title = "The release draft diff copy summarises whole-file generated documents"
-summary = "Only the note in Claude's release draft diff copy changes; the package writes the same output."
-covers = [
-    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[over_budget].txt",
-]

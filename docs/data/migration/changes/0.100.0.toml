@@ -1,0 +1,80 @@
+# The changes of 0.100.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "fix-client-item-none-api"
+category = "api"
+title = "Public name for the None of a container's item union"
+summary = "DataType.items_admit_none tells whether the union a container writes of its several items includes None, inside the container, as the model's hint writes it; the client and server targets read it. Nothing is removed or changed."
+refs = ["#7305"]
+source = "release-note"
+decision = ["#7305"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.types.DataType"] }
+
+[[change]]
+id = "fix-client-item-none"
+category = "experimental"
+title = "Generated clients and servers keep the None of an array's or map's items when the items are several schemas"
+summary = "Client argument types and server parameter types now keep the None of the items of an array or map whose items are several schemas (`prefixItems`, the OpenAPI 3.0 items-array form, msgspec pattern maps), as the models write them since 0.89.0: `prefixItems: [{type: string}, {type: 'null'}]` with `items: {type: string}` now types the argument `list[str | None]`, where it was `list[str]` and rejected the values the model accepts. The wire is unchanged."
+kind = "experimental"
+action = "review"
+affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
+refs = ["#7305"]
+source = "release-note"
+
+[[change]]
+id = "generation-core-warning-location"
+category = "notice"
+title = "Warnings of a parse name the generation module that runs it"
+summary = "A warning that names the caller of a parse or of the input reading, such as the unresolved local $ref, duplicate anchor and deprecated YAML bool warnings, names datamodel_code_generator/_generation.py, where the generation run now lives, instead of the package's __init__.py; its text is unchanged. Filters by module still match them as datamodel_code_generator."
+refs = ["#7259"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "preset-history-page-api"
+category = "api"
+title = "Public renderers for the preset history page"
+summary = "datamodel_code_generator.preset gains render_preset_history and render_preset_history_markdown, beside render_presets and render_presets_markdown; nothing is removed or changed."
+refs = ["#7300"]
+decision = ["#7300"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.preset.render_preset_history", "datamodel_code_generator.preset.render_preset_history_markdown"] }
+source = "release-note"
+
+[[change]]
+id = "protobuf-protoc-messages"
+category = "notice"
+title = "Protoc's warnings and errors name the input file without the run's temporary directory"
+summary = "A warning or an error of protoc, such as the unused import warning, names the input file as the schema is named instead of by a path inside the run's temporary directory, and an invalid schema's error carries protoc's details."
+refs = ["#7251"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "reference-field-protocols-api"
+category = "api"
+title = "Annotate the explicit alias methods of the reference module with structural field types"
+summary = "FieldNameResolver.prepare_explicit_field_aliases, explicit_field_alias and validate_explicit_field_aliases, and the ModelResolver methods of the same names, annotate their fields as Sequence[_AliasField] or _AliasField, a protocol of the reference module, instead of list[model_base.DataModelFieldBase] or model_base.DataModelFieldBase, so that the reference module no longer imports the model layer. The methods, their parameters and what they accept and do stay the same."
+refs = ["#7310"]
+decision = ["#7310"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.reference.FieldNameResolver", "datamodel_code_generator.reference.ModelResolver"] }
+source = "release-note"
+
+[[change]]
+id = "uuid-version-formats-api"
+category = "api"
+title = "Public names for the uuid6, uuid7 and uuid8 formats"
+summary = "The option adds its config fields, the Types members uuid6, uuid7 and uuid8, the Pydantic imports IMPORT_UUID6, IMPORT_UUID7 and IMPORT_UUID8, DataTypeManager.use_target_pydantic_version (called after construction, as use_untyped_value_type is) the requirement row of UUID6, UUID7 and UUID8 (Pydantic 2.11), and the PresetName members and preset_names entries of the 20261120 presets; nothing is removed or changed."
+refs = ["#7246"]
+decision = ["#7246"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.types.Types", "datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"

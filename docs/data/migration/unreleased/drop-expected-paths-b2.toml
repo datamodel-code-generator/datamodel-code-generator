@@ -1,8 +1,0 @@
-[[change]]
-id = "drop-expected-paths-b2"
-category = "harness"
-title = "Name the codec typing test output by its test"
-summary = "The test stores the same bytes under its own name; the package writes the same output"
-covers = [
-    "main/generation_platform/codecs/typing.txt",
-]

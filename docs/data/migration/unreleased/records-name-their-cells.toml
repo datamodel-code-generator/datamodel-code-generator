@@ -1,9 +1,0 @@
-[[change]]
-id = "records-name-their-cells"
-category = "docs-text"
-title = "The migration build's test no longer reports the allowlist's migration ids and reports the records' cells"
-covers = [
-    "build_migration_docs_script/build_migration_docs_invalid_data[no surface].txt",
-    "build_migration_docs_script/build_migration_docs_invalid_data[records].txt",
-    "build_migration_docs_script/build_migration_docs_invalid_data[surface and allowlist].txt",
-]

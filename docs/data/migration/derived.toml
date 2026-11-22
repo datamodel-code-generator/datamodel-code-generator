@@ -15,9 +15,11 @@
 "20261112" = "0.95.0"
 "20261113" = "0.97.0"
 "20261118" = "0.98.0"
+"20261120" = "0.100.0"
 
 [options]
 "--infer-union-discriminators" = "0.97.0"
+"--merge-msgspec-str-like-union-members" = "0.100.0"
 "--open-enum-base-class-map" = "0.97.0"
 "--open-enums" = "0.97.0"
 "--read-format-as-annotation" = "0.97.0"
@@ -27,6 +29,7 @@
 "--read-kubernetes-extensions" = "0.97.0"
 "--read-ref-siblings-in-closed-allof-members" = "0.98.0"
 "--read-single-allof-refs-in-their-documents" = "0.97.0"
+"--read-uuid6-uuid7-uuid8-formats" = "0.100.0"
 "--read-yaml-1-1-numbers-as-text" = "0.97.0"
 "--untyped-value-type" = "0.97.0"
 "--use-unmapped-variant-tag-values" = "0.98.0"
