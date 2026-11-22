@@ -1553,10 +1553,15 @@ def test_lanes_are_read_from_the_matrix_and_tox(tmp_path: Path) -> None:
     assert_output("".join(f"{lane.name}: {lane.facts}\n" for lane in lanes) + f"problems: {problems}\n")
 
 
-def _beyond_include(jobs: dict[str, dict[str, dict[str, dict[str, object]]]]) -> list[str]:
-    """Return ``job: key`` for every key but ``include`` and a lone ``tox_env`` axis of a job matrix that runs tox.
+SHARD_AXES = frozenset({"shard", "shard_total"})
+"""The matrix keys of the workflows that number a shard of one lane's tests."""
 
-    Neither reader expands other axes, several axes or excludes; a matrix of no tox environment holds no lane.
+
+def _beyond_include(jobs: dict[str, dict[str, dict[str, dict[str, object]]]]) -> list[str]:
+    """Return ``job: key`` for every key but ``include``, a lone ``tox_env`` axis and the shard axes of a tox matrix.
+
+    Neither reader expands other axes, several axes or excludes; a matrix of no tox environment holds no lane. The shard
+    axes (``SHARD_AXES``) split the tests of each lane of the ``tox_env`` axis and change no lane, so they are skipped.
     """
     matrices = {name: job.get("strategy", {}).get("matrix", {}) for name, job in jobs.items()}
     return [
@@ -1564,12 +1569,15 @@ def _beyond_include(jobs: dict[str, dict[str, dict[str, dict[str, object]]]]) ->
         for name, matrix in matrices.items()
         if "tox_env" in matrix or any("tox_env" in entry for entry in matrix.get("include", []))
         for key in matrix
-        if key != "include" and (key != "tox_env" or len(matrix) > 1)
+        if key not in {"include", *SHARD_AXES} and (key != "tox_env" or len(set(matrix) - SHARD_AXES) > 1)
     ]
 
 
 def test_a_matrix_key_but_include_is_found() -> None:
-    """A plain axis or an ``exclude`` would drop lanes silently from both readers, so it is reported."""
+    """A plain axis or an ``exclude`` would drop lanes silently from both readers, so it is reported.
+
+    The shard axes only split the tests of each lane, so they are not.
+    """
     text = """
 jobs:
   axes:
@@ -1577,6 +1585,12 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
         tox_env: [py312-parallel]
+  sharded:
+    strategy:
+      matrix:
+        tox_env: [py312-parallel]
+        shard: [1, 2]
+        shard_total: [2]
   mixed:
     strategy:
       matrix:
@@ -1629,8 +1643,8 @@ def test_joined_entries_keep_their_own_exclusions() -> None:
 def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
     """The matrix entries of every workflow read line by line equal those of a YAML parse, runner included.
 
-    Neither reader expands other matrix axes or excludes, so no matrix has a key but ``include`` and a lone ``tox_env``
-    axis.
+    Neither reader expands other matrix axes or excludes, so no matrix has a key but ``include``, a lone ``tox_env``
+    axis and the shard axes.
     """
     workflows = sorted((Path(__file__).parents[1] / WORKFLOWS).glob("*.y*ml"))
     texts = {workflow.name: workflow.read_text(encoding="utf-8") for workflow in workflows}
