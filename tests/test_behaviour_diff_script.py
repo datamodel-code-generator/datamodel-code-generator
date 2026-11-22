@@ -911,7 +911,7 @@ def test_families_key_refuses_another_value(tmp_path: Path) -> None:
     path.write_text('families = "warn"\n', encoding="utf-8")
     with pytest.raises(SystemExit) as refused:
         behaviour_diff.families_judged(path)
-    assert_output(f"{refused.value}\n".replace(str(tmp_path), "TMP"))
+    assert_output(f"{refused.value}\n".replace(str(path), "<allowlist>"))
 
 
 SIGNATURE_CASES: dict[str, tuple[str, dict[str, str], list[dict[str, Any]] | None]] = {
