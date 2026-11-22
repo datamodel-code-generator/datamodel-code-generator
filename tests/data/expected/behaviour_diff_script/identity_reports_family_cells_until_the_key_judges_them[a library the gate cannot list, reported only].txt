@@ -1,0 +1,8 @@
+exit=0
+families: TMP/repo: the library could not be listed: AttributeError: 'Shape' object has no attribute 'openapi'
+family (report only) violation: family:library |  | default
+    TMP/repo: the library could not be listed: AttributeError: 'Shape' object has no attribute 'openapi'
+families (report only, the allowlist file's families key): 1 cells, violation=1
+summary: same=1, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
+evidence: complete
+cell: tests/data/jsonschema/plain.json | jsonschema | same

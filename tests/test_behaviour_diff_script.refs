@@ -211,6 +211,8 @@ a shape the library dropped is left out	behaviour_diff_script/identity_picks_fam
 	behaviour_diff_script/identity_refuses_a_shard.txt
 [test_identity_reports_family_cells_until_the_key_judges_them]
 a candidate without the library	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[a candidate without the library].txt
+a library the gate cannot list, judged	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[a library the gate cannot list, judged].txt
+a library the gate cannot list, reported only	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[a library the gate cannot list, reported only].txt
 the family cells fail	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[the family cells fail].txt
 the family cells report only	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[the family cells report only].txt
 [test_identity_with_a_pick]

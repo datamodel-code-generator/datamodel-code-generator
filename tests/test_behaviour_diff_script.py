@@ -874,8 +874,8 @@ FAMILY_CELL_CASES = {
 def test_family_cells_of_each_tier(case: str) -> None:
     """The PR tier runs a shape for its types with default options, the nightly tier the full product of each type.
 
-    The client and the server of the shape's OpenAPI spelling run for pydantic_v2.BaseModel with default options in
-    both tiers, and not at all where the types lack it.
+    The client (its body's fields as arguments too) and the server of the shape's OpenAPI spelling run for
+    pydantic_v2.BaseModel with no other option in both tiers, and not at all where the types lack it.
     """
     tier, types = FAMILY_CELL_CASES[case]
     presets = ["standard-py310-20261017", "standard-py312-20260909", "standard-py314-20261017"]
@@ -2096,13 +2096,23 @@ FAKE_RAW = FAKE_FIRST.replace(
 """A candidate that changes the output of a `bytes` field only, which the stand-in family library has and no fixture."""
 
 
-def _family_library(repo: Path, documents: dict[str, dict[str, str]]) -> None:
-    """Write a stand-in family library into a checkout, in the packages the gate imports it from."""
+FAKE_UNLISTED_LIBRARY = FAKE_FAMILY_LIBRARY.replace(
+    "\n    @property\n    def openapi(self):\n"
+    '        """The OpenAPI spelling: the same document, marked."""\n'
+    '        return {**self.document, "openapi": "3.1.0"}\n',
+    "",
+)
+"""A stand-in library the gate cannot list: its shapes have no OpenAPI spelling, as the library had before the gate's
+family cells."""
+
+
+def _family_library(repo: Path, documents: dict[str, dict[str, str]], text: str = FAKE_FAMILY_LIBRARY) -> None:
+    """Write a stand-in family library (`text`) into a checkout, in the packages the gate imports it from."""
     library = repo / "tests" / "main" / "shape_families"
     library.mkdir(parents=True, exist_ok=True)
     for package in (repo / "tests", repo / "tests" / "main", library):
         (package / "__init__.py").write_text("", encoding="utf-8")
-    (library / "families.py").write_text(FAKE_FAMILY_LIBRARY.replace("{DOCUMENTS}", repr(documents)), encoding="utf-8")
+    (library / "families.py").write_text(text.replace("{DOCUMENTS}", repr(documents)), encoding="utf-8")
 
 
 def _family_lines(argv: list[str], cells: Path, prefixes: tuple[str, ...]) -> list[str]:
@@ -2119,11 +2129,13 @@ def _family_lines(argv: list[str], cells: Path, prefixes: tuple[str, ...]) -> li
 
 
 FAMILY_REPORT_CASES = {
-    "the family cells report only": ("report", True),
-    "the family cells fail": ("fail", True),
-    "a candidate without the library": ("fail", False),
+    "the family cells report only": ("report", FAKE_FAMILY_LIBRARY),
+    "the family cells fail": ("fail", FAKE_FAMILY_LIBRARY),
+    "a candidate without the library": ("fail", None),
+    "a library the gate cannot list, reported only": ("report", FAKE_UNLISTED_LIBRARY),
+    "a library the gate cannot list, judged": ("fail", FAKE_UNLISTED_LIBRARY),
 }
-"""The `families` key of each identity run of a candidate that changes a family cell, and whether it has the library."""
+"""The `families` key of each identity run of a candidate that changes a family cell, and the candidate's library."""
 
 
 @needs("posix")
@@ -2135,14 +2147,15 @@ def test_identity_reports_family_cells_until_the_key_judges_them(case: str, tmp_
     The candidate changes the output of the family cell that has a `bytes` field. With `families = "report"` the run
     prints that cell and the classes of the family cells apart and passes; their rows stay out of `--json`. With
     `fail` the cell is a violation of the run. The targets need options the stand-in generator lacks (`opt-in`). A
-    candidate without the library has no family cells, and says so.
+    candidate without the library has no family cells, and says so. A library the gate cannot list is one family cell
+    that fails, with the listing's error: reported only, it leaves the run passing; judged, it fails the run.
     """
     mode, library = FAMILY_REPORT_CASES[case]
     repo = tmp_path / "repo"
     commits = _fake_generator(repo, ["first"], None)
     (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(FAKE_RAW, encoding="utf-8")
-    if library:
-        _family_library(repo, FAKE_FAMILY_DOCUMENTS)
+    if library is not None:
+        _family_library(repo, FAKE_FAMILY_DOCUMENTS, library)
     allowlist = tmp_path / "allowlist.toml"
     allowlist.write_text(f'base = "0.1.0"\nfamilies = "{mode}"\n', encoding="utf-8")
     argv = ["gate", commits[0], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]

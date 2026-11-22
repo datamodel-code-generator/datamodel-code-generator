@@ -189,6 +189,16 @@ paths = [
 tests = ["tests/test_behaviour_diff_script.py"]
 
 [[rule]]
+id = "shape-family-listing"
+incident = "a family library the behaviour gate cannot list (no `Shape.openapi`) crashed the gate's family cells, and no selected test ran the gate's listing of the real library"
+paths = ["tests/main/shape_families/*", "scripts/behaviour_diff.py"]
+tests = [
+  "tests/main/test_shape_families.py::test_gate_lists_every_shape_of_the_library",
+  "tests/main/test_shape_families.py::test_families_enumerate_their_stated_bound",
+  "tests/main/test_shape_families.py::test_openapi_spelling_carries_each_shape",
+]
+
+[[rule]]
 id = "source-model-importers"
 prs = [7170]
 incident = "a new importer of the source model failed the test that wants a rule for every importer only on hosted CI"

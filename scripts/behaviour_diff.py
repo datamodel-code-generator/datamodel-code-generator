@@ -42,12 +42,13 @@ A cell is one input x output model type x option set. Tiers:
 Family cells are the shapes of the candidate's family library (`tests/main/shape_families/families.py`, `FAMILIES`:
 ordinary modelling idioms enumerated completely within a stated bound), written once per run into the cache
 directory (`family_cases`) and labelled `family:<family>/<parameter>=<value>,...`. Each shape is generated as JSON
-Schema for the tier's output model types and option sets, and its OpenAPI spelling with a client and with a server
-(`FAMILY_TARGETS`) for pydantic_v2.BaseModel with default options where the tier has that type (`family_cells`). A
-candidate without the library (a revision before it) has none. They join every tier; `--select` runs them where one
-of its patterns names them (`family:*`). The `families` key of the allowlist file decides what they do: `report`
-(until the family cells have run for a cycle) prints their differences and their classes apart and leaves them out of
-the verdict, the evidence and `--json`; `fail` judges them as every other cell. `guide` runs none.
+Schema for the tier's output model types and option sets, and its OpenAPI spelling with a client (its body's fields as
+arguments too) and with a server (`FAMILY_TARGETS`, no other option) for pydantic_v2.BaseModel where the tier has that
+type (`family_cells`). A candidate without the library (a revision before it) has none; a library the gate cannot
+list is one family cell that fails. They join every tier; `--select` runs them where one of its patterns names them
+(`family:*`). The `families` key of the allowlist file decides what they do: `report` (until the family cells have
+run for a cycle) prints their differences and their classes apart and leaves them out of the verdict, the evidence
+and `--json`; `fail` judges them as every other cell. `guide` runs none.
 
 Cells whose bytes differ get a behaviour signature per side (scripts/_behaviour_signature.py, a fresh process per
 tree; each module of a package is also imported first in a process of its own) with a validation probe per name
@@ -287,7 +288,15 @@ FAMILY_TARGETS = (
     ),
 )
 """The client and the server of a family shape's OpenAPI spelling, each a package beside the run's models (`model`,
-the run's `--output`); the client also takes the body's fields as arguments, so their annotations are compared."""
+the run's `--output`).
+
+The client also takes the body's fields as arguments (`--client-body-arguments both`): a field argument's annotation
+is where a target decision on a field shows (#7114 changed one), and with the default `body` the client takes the
+model whole and has no such annotation. The server runs with its defaults. The bound: dcg's one client (httpx2) and
+one server (fastapi), OpenAPI 3.1, the shape as the JSON body of one operation, pydantic_v2.BaseModel. Not covered:
+the OpenAPI 3.0 spelling (`nullable: true`), shapes as parameters and non-JSON bodies, pydantic_v2.dataclass targets,
+other target options (the client's `body` mode and deep objects; the server's body and handler modes, layout,
+request inclusion), and presets and `OPTION_SETS` on the targets."""
 FAMILIES_KEY = "families"
 FAMILY_MODES = ("report", "fail")
 """The values of the allowlist file's `families` key: report the family cells only (the default), or judge them."""
@@ -355,6 +364,10 @@ class FamilyCase(TypedDict):
 
     label: str
     key: str
+
+
+ListedShape = tuple[str, list[tuple[str, str]], dict[str, object], dict[str, object]]
+"""A shape as `FAMILY_SHAPES` lists it: its family, its parameters as text and its two spellings."""
 
 
 class StoredSide(TypedDict, total=False):
@@ -519,6 +532,7 @@ class Gate:
     family_root: Path = Path()
     families_judged: bool = False
     family_index: list[FamilyCase] | None = None
+    family_problem: str = ""
     base_version: str = ""
     signature_python: Path | None = None
     projects: dict[str, Project] = field(default_factory=dict)
@@ -769,26 +783,44 @@ def payload_cells(gate: Gate, types: list[str]) -> list[Cell]:
     ]
 
 
-def family_cases(python: Path, candidate: Candidate, out: Path) -> list[FamilyCase]:
-    """Write every shape of a checkout's family library in both spellings under `out` and return their index.
+def family_cases(python: Path, candidate: Candidate, out: Path) -> tuple[list[FamilyCase], str]:
+    """Write every shape of a checkout's family library in both spellings under `out`; return their index and a problem.
 
     The checkout's interpreter lists the shapes (`FAMILY_SHAPES`); each gets a directory of its own, named by its
     label, so the cache of a base output covers that shape only. A checkout without the library (a revision before
-    it) has no family cells: the run says so.
+    it) has no family cells: the run says so. A library the listing cannot read (an interpreter error, an output that
+    is no JSON: a library without a name the listing reads, such as `Shape.openapi` before the gate's cells) gives no
+    cells and the problem, which the run turns into one family cell (`family_problem`), so the `families` key decides
+    whether it fails the run.
     """
     if not (candidate.root / FAMILY_LIBRARY).is_file():
         print(f"families: {candidate.root} has no {FAMILY_LIBRARY}: no family cells")
-        return []
+        return [], ""
     listed = subprocess.run(
         [str(python), "-c", FAMILY_SHAPES],
         cwd=candidate.root,
         env=candidate.env,
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
+    detail = (listed.stderr.strip().splitlines() or [f"exit status {listed.returncode}"])[-1]
+    if listed.returncode == 0:
+        try:
+            shapes = json.loads(listed.stdout)
+        except json.JSONDecodeError as error:
+            detail = f"the listing is no JSON ({error})"
+        else:
+            return _written_family_cases(shapes, out), ""
+    problem = f"{candidate.root}: the library could not be listed: {detail}"
+    print(f"families: {problem}")
+    return [], problem
+
+
+def _written_family_cases(shapes: list[ListedShape], out: Path) -> list[FamilyCase]:
+    """Write each listed shape (family, parameters, both spellings) into a directory named by its label."""
     index: list[FamilyCase] = []
-    for family, params, *documents in json.loads(listed.stdout):
+    for family, params, *documents in shapes:
         label = f"{FAMILY_PREFIX}{family}/" + ",".join(f"{name}={value}" for name, value in params)
         directory = out / (key := _stable(label)[:16])
         directory.mkdir(parents=True, exist_ok=True)
@@ -802,8 +834,22 @@ def family_index(gate: Gate) -> list[FamilyCase]:
     """Write the shapes of the candidate's family library once and return their index (`family_cases`)."""
     with gate.lock:
         if gate.family_index is None:
-            gate.family_index = family_cases(gate.candidate_python, gate.candidate_info, gate.family_root)
+            gate.family_index, gate.family_problem = family_cases(
+                gate.candidate_python, gate.candidate_info, gate.family_root
+            )
         return gate.family_index
+
+
+def family_problem(gate: Gate) -> list[Result]:
+    """Return the family cell of a library the run could not list (`family_cases`), none where it listed or ran none."""
+    if not gate.family_problem:
+        return []
+    return [
+        Result(
+            Cell(Path(), f"{FAMILY_PREFIX}library", "", "", (), FAMILY_KIND),
+            Verdict("violation", (gate.family_problem,)),
+        )
+    ]
 
 
 def tier_product(tier: str, types: Sequence[str], presets: list[str]) -> list[tuple[str, tuple[str, ...]]]:
@@ -823,7 +869,7 @@ def family_cells(cases: Sequence[FamilyCase], root: Path, pairs: Sequence[tuple[
     """Return the family cells of (output model type, options) `pairs`.
 
     Each shape as JSON Schema x the pairs, and, where the pairs hold the targets' type with default options, its
-    OpenAPI spelling with each target (`FAMILY_TARGETS`) with default options. A target's output carries its whole
+    OpenAPI spelling with each target (`FAMILY_TARGETS`) and no other option. A target's output carries its whole
     runtime (about 200 KB a cell in the base-output cache), so the targets do not multiply by option sets: the full
     product would put about 10 GB of target outputs into the nightly tier's caches.
     """
@@ -2378,6 +2424,7 @@ def gate_main(ns: argparse.Namespace) -> int:
         else Result(cell, Verdict("violation", (f"the base has no {reason}, the candidate has it",)))
         for cell, reason in reasons.items()
     ]
+    results += family_problem(gate) if ns.shard_index == 1 else []
     report_families([result for result in results if not in_verdict(gate, result.cell)])
     results = [result for result in results if in_verdict(gate, result.cell)]
     code = _report(results, gate, ns, run)
@@ -2523,7 +2570,7 @@ def catalog_main(ns: argparse.Namespace) -> int:
     ]
     if any(pattern.startswith(FAMILY_PREFIX) for pattern in ns.select):
         root = ns.cache_dir.absolute() / "family-inputs" / _stable(str(candidate.root))[:12]
-        named = family_cells(family_cases(python, candidate, root), root, pairs)
+        named = family_cells(family_cases(python, candidate, root)[0], root, pairs)
         cells += [cell for cell in named if _selected(cell.label, ns.select)]
     side = compare_release.Side("catalog", base.python, base.package)
     runner = compare_release.Runner(side, base.env(), import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb)
