@@ -707,7 +707,7 @@ def test_main_asyncapi_reference_to_multi_format_schema_object(output_file: Path
     assert_generated_model_json_validation(
         output_file,
         module_name="asyncapi_multi_format_schema_refs",
-        model_name="Note",
+        model_name="NotesNotePayload",
         valid_json='{"text": "a"}',
         invalid_json='{"text": 5}',
         expected_error_type="string_type",
@@ -731,4 +731,22 @@ def test_main_asyncapi_plain_name_anchor_in_multi_format_schema_object(output_fi
         output_path=output_file,
         input_file_type="asyncapi",
         extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_component_aliases_of_multi_format_schema_object(output_file: Path) -> None:
+    """Keep each component alias of a Multi Format Schema Object as its own class over the schema it holds (#6936)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "multi-format-schema-component-aliases.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_multi_format_schema_component_aliases",
+        model_name="LegacyLabel",
+        valid_json='{"name": "a"}',
+        invalid_json='{"name": 5}',
+        expected_error_type="string_type",
     )

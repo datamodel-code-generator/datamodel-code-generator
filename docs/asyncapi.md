@@ -100,7 +100,7 @@ generates models for the schema-bearing binding fields used by the official bind
 
 ## Schema Formats
 
-AsyncAPI 3.x Multi Format Schema Objects are unwrapped through `schemaFormat` before model generation. A `$ref` that names one (a message `payload` or `headers`, a component schema) is read as the schema it holds.
+AsyncAPI 3.x Multi Format Schema Objects are unwrapped through `schemaFormat` before model generation. A `$ref` that names one holding JSON Schema in `components.schemas` (from a message `payload` or `headers`, or a component schema that is a `$ref`) is read as a `$ref` to the schema it holds, so it keeps its own class.
 AsyncAPI 2.x message-level `schemaFormat` is applied to the message payload.
 
 Supported embedded schema formats are:

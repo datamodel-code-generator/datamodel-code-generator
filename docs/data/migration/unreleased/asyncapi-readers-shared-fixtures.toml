@@ -5,6 +5,7 @@ title = "AsyncAPI fixtures in the YAML fast constructor test"
 summary = "The YAML fast constructor test reads the new AsyncAPI fixtures; the package writes the same output."
 refs = ["#6841"]
 covers = [
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[asyncapi_multi-format-schema-component-aliases.yaml].txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[asyncapi_multi-format-schema-ref-external-schemas.yaml].txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[asyncapi_multi-format-schema-ref-external.yaml].txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[asyncapi_multi-format-schema-refs.yaml].txt",

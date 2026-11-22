@@ -444,12 +444,20 @@ class AsyncAPIParser(OpenAPIParser):
             return None
         if self._resolve_external_ref_mapping(self._ref_path(ref)) is not None:
             return None
-        if (resolved := self._read_ref_object(value, set(seen_paths))) is None:
-            return None
-        if resolved.path[-3:-1] != ["#/components", "schemas"]:
+        resolved = self._read_ref_object(value, set(seen_paths))
+        if resolved is None or resolved.path[-3:-1] != ["#/components", "schemas"]:
             return None
         with self._asyncapi_context(resolved.context):
             return self._component_reference_target(resolved.value, seen_paths | {tuple(resolved.path)}) or resolved
+
+    def _held_schema_reference(
+        self, reference: dict[str, YamlValue], location: SchemaLocation | None
+    ) -> dict[str, YamlValue]:
+        """Return a Reference Object to a component Multi Format Schema Object as one to the schema it holds.
+
+        It is located at ``location``, where the reference is, and resolves where the reference does.
+        """
+        return _schema_documents.mount_converted_schema(self, {"$ref": f"{reference['$ref']}/schema"}, location)
 
     def _iter_schema_format_schemas(
         self,
@@ -463,18 +471,27 @@ class AsyncAPIParser(OpenAPIParser):
         """Return the schemas of a payload, header, parameter or binding value located at ``location``.
 
         A schema in another format is converted to JSON Schema, which is mounted at the value's location. A key on
-        ``path`` that is no string, such as a YAML key ``1``, is an error.
+        ``path`` that is no string, such as a YAML key ``1``, is an error. A Reference Object whose component references
+        end at a component Multi Format Schema Object that holds JSON Schema is read as the schemas of the component it
+        names, parsed where that component is, then as itself under its own name and path, naming the schema the
+        wrapper holds (``_held_schema_reference``). A schema converted from another format is mounted in a document of
+        its own that no reference names, so a reference to its wrapper is read as a schema.
         """
         string_keys(path, "name", lambda _: _named_path(location, list(map(str, path))))
-        if (target := self._component_reference_target(raw_schema)) is not None and held_schema(target.value):
-            with self._asyncapi_context(target.context):
-                return self._iter_schema_format_schemas(
-                    _make_model_name(target.path[-1]),
-                    target.value,
-                    target.path,
-                    inherited_schema_format,
-                    location=self._raw_location(target.value),
+        if (
+            isinstance(raw_schema, dict)
+            and (wrapper := self._component_reference_target(raw_schema)) is not None
+            and (hop := self._read_ref_object(raw_schema, set())) is not None
+            and (wrapped := held_schema(wrapper.value, inherited_schema_format)) is not None
+            and schema_format_kind(wrapped[1] if isinstance(wrapped[1], str) else None)
+            in {"asyncapi", "jsonschema", "openapi"}
+        ):
+            read_as = raw_schema if hop.path != wrapper.path else self._held_schema_reference(raw_schema, location)
+            with self._asyncapi_context(hop.context):
+                schemas = self._iter_schema_format_schemas(
+                    hop.path[-1], hop.value, hop.path, inherited_schema_format, location=self._raw_location(hop.value)
                 )
+            return [*schemas, self._schema(name, read_as, path, location=location)]
         schema_format = inherited_schema_format
         if (held := held_schema(raw_schema, schema_format)) is not None:
             _check_multi_format_schema_object(raw_schema, path)

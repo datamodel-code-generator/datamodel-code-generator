@@ -12,6 +12,8 @@
 	main/asyncapi/main_asyncapi/auto_inference.py	= main/asyncapi/main_asyncapi/generate_asyncapi.py
 [test_main_asyncapi_avro_named_types]
 	main/asyncapi/main_asyncapi/avro_named_types.py
+[test_main_asyncapi_component_aliases_of_multi_format_schema_object]
+	main/asyncapi/main_asyncapi/component_aliases_of_multi_format_schema_object.py
 [test_main_asyncapi_component_schema_plain_name_anchors]
 	main/asyncapi/main_asyncapi/component_schema_plain_name_anchors.py
 [test_main_asyncapi_components_that_are_not_an_object]

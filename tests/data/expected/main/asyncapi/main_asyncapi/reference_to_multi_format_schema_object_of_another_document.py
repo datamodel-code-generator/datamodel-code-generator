@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 
 class Note(BaseModel):
     text: str
+
+
+class NotesNotePayload(RootModel[Note]):
+    root: Note

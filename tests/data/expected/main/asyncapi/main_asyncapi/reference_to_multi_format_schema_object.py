@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 
 class Note(BaseModel):
@@ -17,3 +17,19 @@ class NoteHeaders(BaseModel):
 
 class Tag(BaseModel):
     label: str
+
+
+class TagAlias(RootModel[Tag]):
+    root: Tag
+
+
+class NotesNotePayload(RootModel[Note]):
+    root: Note
+
+
+class NotesNoteHeaders(RootModel[NoteHeaders]):
+    root: NoteHeaders
+
+
+class TagsTagPayload(RootModel[TagAlias]):
+    root: TagAlias
