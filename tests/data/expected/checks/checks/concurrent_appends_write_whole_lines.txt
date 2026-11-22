@@ -1,0 +1,9 @@
+exit statuses [0, 0, 0, 0]
+process 0: 300
+process 1: 300
+process 2: 300
+process 3: 300
+thread 0: 300
+thread 1: 300
+thread 2: 300
+thread 3: 300

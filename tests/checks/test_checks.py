@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from itertools import count
 from pathlib import Path
 from typing import Any
@@ -48,6 +51,61 @@ try:
 except CheckFailure as error:
     print(error)
 """
+
+
+_APPENDS_ONCE_STARTED = """
+import sys
+from pathlib import Path
+
+from tests.checks.areas import Area, Mode
+
+print("ready", flush=True)
+sys.stdin.read()
+mode = Mode(Area.STORE_WRITES, Path(sys.argv[1]))
+for index in range(int(sys.argv[3])):
+    mode.record("appended", writer=sys.argv[2], index=index, padding="x" * 8192)
+"""
+"""Says it is ready, then appends lines to a report once every writer has started: when the test closes the pipe of
+its standard input."""
+
+
+def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
+    """Processes and threads that append to one report at once each write every line of theirs whole (#7374).
+
+    The determinism tests run two generator processes that report into the file of their test process. On Windows an
+    append is a seek to the end and then a write, so without the report's lock two writers wrote at the same offset.
+    """
+    report, lines = tmp_path / "report.jsonl", 300
+    start_read, start_write = os.pipe()
+    ready_read, ready_write = os.pipe()
+    processes = [
+        subprocess.Popen(
+            [sys.executable, "-c", _APPENDS_ONCE_STARTED, str(report), f"process {number}", str(lines)],
+            cwd=Path(__file__).parents[2],
+            stdin=start_read,
+            stdout=ready_write,
+        )
+        for number in range(4)
+    ]
+    os.close(start_read)
+    os.close(ready_write)
+    mode = Mode(Area.STORE_WRITES, report)
+
+    def append(writer: str) -> None:
+        for index in range(lines):
+            mode.record("appended", writer=writer, index=index, padding="x" * 8192)
+
+    ready = b""
+    while ready.count(b"\n") < len(processes) and (chunk := os.read(ready_read, 64)):
+        ready += chunk
+    os.close(start_write)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        list(executor.map(append, [f"thread {number}" for number in range(4)]))
+    statuses = [process.wait() for process in processes]
+    os.close(ready_read)
+    records = [json.loads(line) for line in report.read_text(encoding="utf-8").splitlines()]
+    counts = Counter(record["writer"] for record in records)
+    assert_output(f"exit statuses {statuses}\n" + "".join(f"{writer}: {counts[writer]}\n" for writer in sorted(counts)))
 
 
 def test_check_seams() -> None:

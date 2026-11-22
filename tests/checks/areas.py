@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import threading
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
@@ -11,11 +14,40 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, cast, final
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Generator, Mapping
+    from io import FileIO
 
 _OFF_VALUES: Final = frozenset({"", "0"})
 _RAISE_VALUE: Final = "1"
 _REPORT_PREFIX: Final = "report:"
+_APPENDS: Final = threading.Lock()
+"""Serializes the appends of this process's threads, so that only other processes wait on the file's lock."""
+
+if sys.platform != "win32":
+    import fcntl
+
+    @contextmanager
+    def _locked(report: FileIO) -> Generator[None, None, None]:
+        """Hold the report's exclusive lock; closing the report releases it."""
+        fcntl.flock(report.fileno(), fcntl.LOCK_EX)
+        yield
+
+else:  # pragma: win32 cover
+    import msvcrt
+
+    @contextmanager
+    def _locked(report: FileIO) -> Generator[None, None, None]:
+        """Hold the lock of the report's first byte, which ``msvcrt.locking`` takes from the file's position.
+
+        Every append moves the position to the end before it writes, so the lock is taken and released at byte 0.
+        """
+        os.lseek(report.fileno(), 0, os.SEEK_SET)
+        msvcrt.locking(report.fileno(), msvcrt.LK_LOCK, 1)
+        try:
+            yield
+        finally:
+            os.lseek(report.fileno(), 0, os.SEEK_SET)
+            msvcrt.locking(report.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 class Area(Enum):
@@ -109,9 +141,15 @@ class Mode:
         self.record(text, **details)
 
     def record(self, message: str, **details: object) -> None:
-        """Append the message and its details to the report as one JSON line; only a report mode calls it."""
-        with cast("Path", self.report_path).open("a", encoding="utf-8") as report:
-            report.write(f"{json.dumps({'area': self.area.name, 'message': message, **details}, ensure_ascii=False)}\n")
+        """Append the message and its details to the report as one JSON line; only a report mode calls it.
+
+        Generations on threads and the generator processes a test starts append to one report at once: the line is
+        written whole, in one write under the report's lock. An append alone is a seek to the end and then a write on
+        Windows, where two processes write at the same offset and break each other's lines.
+        """
+        line = f"{json.dumps({'area': self.area.name, 'message': message, **details}, ensure_ascii=False)}\n"
+        with _APPENDS, cast("Path", self.report_path).open("ab", buffering=0) as report, _locked(report):
+            report.write(line.encode())
 
 
 MODES: Final[ContextVar[Mapping[Area, Mode] | None]] = ContextVar("check_modes", default=None)
