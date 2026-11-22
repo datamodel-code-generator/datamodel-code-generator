@@ -30,6 +30,7 @@ extend-exclude-swapped	check_ratchets_script/check_ratchets_against_base[extend-
 extended-per-file-ignores	check_ratchets_script/check_ratchets_against_base[extended-per-file-ignores].txt
 fix-enabled	check_ratchets_script/check_ratchets_against_base[fix-enabled].txt
 form-swap	check_ratchets_script/check_ratchets_against_base[form-swap].txt
+heki-baseline-environment-swap	check_ratchets_script/check_ratchets_against_base[heki-baseline-environment-swap].txt
 heki-baseline-grows	check_ratchets_script/check_ratchets_against_base[heki-baseline-grows].txt
 heki-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[heki-baseline-shrinks].txt
 heki-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable].txt

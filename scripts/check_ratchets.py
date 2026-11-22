@@ -54,11 +54,12 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
-  (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (``allowlist:heki-baseline``, the
-  sum of the site counts of its entries), and the allowlists of the test style and architecture checks, the callers
-  of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the bypasses of builder homes
-  (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot
-  read).
+  (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (the sum of the site counts of
+  its entries: ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other
+  key budgets, ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture
+  checks, the callers of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the bypasses of builder
+  homes (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a form this script
+  cannot read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -129,6 +130,15 @@ SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
 HEKI_BASELINE = "scripts/heki_baseline.toml"
+HEKI_OWN_KEY_RULES = frozenset({"EFF201"})
+"""The heki rules whose baseline sites count under a key of their own: no other key budgets them, so a new site cannot
+be paid for by a site of another rule."""
+ENVIRONMENT_ADVICE = (
+    "Output must not depend on the environment the generator runs in: key the decision on an option or a static rule, "
+    "not on the interpreter, the platform, a variable or an installed package. A read that belongs to the runtime "
+    "itself (an optional dependency) is paid for by removing another one."
+)
+"""How to fix a read of the environment: the advice of its key, and the help of heki's environment boundary."""
 EXPECTED_ROOT = "tests/data/expected"
 TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
@@ -319,6 +329,7 @@ ADVICE = {
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
     "type-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "heki-ignore": "Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.",
+    "allowlist:heki-baseline:EFF201": ENVIRONMENT_ADVICE,
     "cast": "Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().",
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
@@ -952,15 +963,19 @@ def _host_baseline_tally(tally: Tally, root: Path) -> None:
 
 
 def _heki_baseline_tally(tally: Tally, root: Path) -> None:
-    """Count the sites of heki's baseline; a file that is not entries with integer counts is unreadable."""
+    """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule.
+
+    A file that is not entries with integer counts is unreadable.
+    """
     file = root / HEKI_BASELINE
     try:
         entries = tomllib.loads(file.read_text(encoding="utf-8")).get("entries", []) if file.is_file() else []
-        counts = [entry.get("count") for entry in entries]
+        counted = [(entry.get("count"), entry.get("rule_code")) for entry in entries]
     except (tomllib.TOMLDecodeError, AttributeError, TypeError):
-        counts = [None]
-    for count in counts:
-        key = "allowlist:heki-baseline" + ("" if type(count) is int else ":unreadable")
+        counted = [(None, None)]
+    for count, rule in counted:
+        own = f":{rule}" if rule in HEKI_OWN_KEY_RULES else ""
+        key = "allowlist:heki-baseline" + (own if type(count) is int else ":unreadable")
         for _ in range(count if type(count) is int else 1):
             tally.add(key, HEKI_BASELINE)
 

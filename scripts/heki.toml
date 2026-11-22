@@ -5839,3 +5839,4 @@ name = "no-environment-reads"
 scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*", "datamodel_code_generator.*:<module>", "datamodel_code_generator:<module>"]
 forbid = ["reads-environment"]
 import-probes = "report"
+message = "Output must not depend on the environment the generator runs in: key the decision on an option or a static rule, not on the interpreter, the platform, a variable or an installed package. A read that belongs to the runtime itself (an optional dependency) is paid for by removing another one."

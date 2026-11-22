@@ -139,6 +139,15 @@ rule_code = "MUT201"
 target = "Model.fields"
 count = 1
 """
+HEKI_ENVIRONMENT = """
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+"""
+"""A baseline entry of the environment boundary, whose sites count under their own key."""
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -634,6 +643,11 @@ def show(flag: bool) -> None:
             "scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2")
             + HEKI_BASELINE.removeprefix("version = 2\n").replace('"run"', '"stop"')
         },
+        "args": ["--enforce"],
+    },
+    "heki-baseline-environment-swap": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2") + HEKI_ENVIRONMENT},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT.replace("count = 1", "count = 2")},
         "args": ["--enforce"],
     },
     "heki-baseline-shrinks": {
