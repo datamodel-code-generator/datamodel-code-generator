@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from msgspec import UNSET, Struct, UnsetType
 
 
@@ -19,3 +21,4 @@ class Row(Struct):
     other: Item | UnsetType = UNSET
     tags: list[str] | UnsetType = UNSET
     plain: str | UnsetType = UNSET
+    anything: Any | UnsetType = UNSET

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -19,3 +21,4 @@ class Row(BaseModel):
     other: Item | None = None
     tags: list[str] | None = None
     plain: str | None = None
+    anything: Any | None = None

@@ -43,3 +43,4 @@ components:
           nullable: true
           items: {type: string}
         plain: {type: string}
+        anything: {nullable: true}

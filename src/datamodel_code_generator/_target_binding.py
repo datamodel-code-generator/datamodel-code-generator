@@ -2583,7 +2583,8 @@ class _Models:
         """Return whether a field's own type accepts None before the field adds optionality.
 
         A reference accepts the null of the schema it names (``DataType.names_nullable_model``), an alias that of its
-        value, and a root model that of its root as well.
+        value, and a root model that of its root as well. A field of an emitted model holds the variant or terminal of
+        each model it names, which is emitted, so every reference binds a symbol.
         """
         pending = [data_type]
         references: dict[int, tuple[Reference, bool]] = {}
@@ -2612,10 +2613,9 @@ class _Models:
         unknown = opaque
         for reference, named in references.values():
             binding = self.binder.reference(reference, "neutral")
+            assert binding is not None
             nullable: bool | None = named
-            if binding is None:
-                nullable = None
-            elif binding.is_alias:
+            if binding.is_alias:
                 nullable = self.alias_nullable(binding.symbol, set())
             elif not named and self.binder.models[binding.symbol].IS_ROOT_MODEL:
                 nullable = self.alias_nullable(binding.symbol, set()) is True

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 
 class Item(TypedDict):
@@ -19,3 +19,4 @@ class Row(TypedDict):
     other: NotRequired[Item | None]
     tags: NotRequired[list[str] | None]
     plain: NotRequired[str]
+    anything: NotRequired[Any | None]

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from functools import cached_property
-from typing import Literal, overload
+from typing import Any, Literal, overload
 
 import models
 
@@ -53,6 +53,7 @@ class DefaultResource:
         other: UNSET = UNSET,
         tags: UNSET = UNSET,
         plain: UNSET = UNSET,
+        anything: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SendRowsResponse: ...
@@ -69,6 +70,7 @@ class DefaultResource:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SendRowsResponse: ...
@@ -84,6 +86,7 @@ class DefaultResource:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SendRowsResponse:
@@ -94,7 +97,7 @@ class DefaultResource:
             _operations.OPERATION_0,
             (),
             body=body,
-            fields=(text, note, labels, extra, item, other, tags, plain),
+            fields=(text, note, labels, extra, item, other, tags, plain, anything),
             media_type=media_type,
             options=options,
         ).data
@@ -120,6 +123,7 @@ class DefaultWithResponse:
         other: UNSET = UNSET,
         tags: UNSET = UNSET,
         plain: UNSET = UNSET,
+        anything: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SendRowsResponse]: ...
@@ -136,6 +140,7 @@ class DefaultWithResponse:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SendRowsResponse]: ...
@@ -151,6 +156,7 @@ class DefaultWithResponse:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SendRowsResponse]:
@@ -161,7 +167,7 @@ class DefaultWithResponse:
             _operations.OPERATION_0,
             (),
             body=body,
-            fields=(text, note, labels, extra, item, other, tags, plain),
+            fields=(text, note, labels, extra, item, other, tags, plain, anything),
             media_type=media_type,
             options=options,
         )
@@ -187,6 +193,7 @@ class DefaultWithRawResponse:
         other: UNSET = UNSET,
         tags: UNSET = UNSET,
         plain: UNSET = UNSET,
+        anything: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -203,6 +210,7 @@ class DefaultWithRawResponse:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -218,6 +226,7 @@ class DefaultWithRawResponse:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -228,7 +237,7 @@ class DefaultWithRawResponse:
             _operations.OPERATION_0,
             (),
             body=body,
-            fields=(text, note, labels, extra, item, other, tags, plain),
+            fields=(text, note, labels, extra, item, other, tags, plain, anything),
             media_type=media_type,
             options=options,
         )
@@ -254,6 +263,7 @@ class DefaultWithStreamingResponse:
         other: UNSET = UNSET,
         tags: UNSET = UNSET,
         plain: UNSET = UNSET,
+        anything: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -270,6 +280,7 @@ class DefaultWithStreamingResponse:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -285,6 +296,7 @@ class DefaultWithStreamingResponse:
         other: models.Item | UNSET = UNSET,
         tags: list[str] | UNSET = UNSET,
         plain: str | UNSET = UNSET,
+        anything: Any | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -295,7 +307,7 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_0,
             (),
             body=body,
-            fields=(text, note, labels, extra, item, other, tags, plain),
+            fields=(text, note, labels, extra, item, other, tags, plain, anything),
             media_type=media_type,
             options=options,
         )
