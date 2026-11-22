@@ -37,6 +37,7 @@ nightly job.
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
 import os
 import re
@@ -209,8 +210,40 @@ def _shape_jobs(family: str) -> list[Job]:
     ]
 
 
-SAMPLED_CASES: Final = sorted(SCHEMA_CASES, key=lambda case: case.id)[::10]
-"""The fixed sample of the payload suite's schemas of ``tests/data``: every tenth case by id."""
+DUMP_WARNS: Final = "dump-warns"
+DUMP_REJECTED: Final = "dump-rejected"
+DUMP_CHANGES: Final = "dump-changes"
+ROUND_TRIP_KINDS: Final = (DUMP_WARNS, DUMP_REJECTED, DUMP_CHANGES)
+"""How a dump fails the round trip: it warns, the model rejects (or raises on) it, or validates it to another value."""
+
+_NESTED_TAGGED_UNION: Final = {DUMP_WARNS: "#7326"}
+SCHEMA_ROUND_TRIP_KEPT: Final[Mapping[tuple[str, str], Mapping[str, str]]] = {
+    (PayloadBackend.PYDANTIC_V2.value, f"openapi/{case}"): _NESTED_TAGGED_UNION
+    for case in (
+        "discriminator_duplicate_value.yaml::components.schemas.GroupedItem",
+        "discriminator_enum_tag_variants.yaml::components.schemas.Pets",
+        "discriminator_merged_variant_tags_nested_clash.yaml::components.schemas.Pond",
+    )
+}
+"""The known round trip differences, by backend and case: each kind with its issue. Every case named here is sampled.
+
+A discriminated union that lists a ``RootModel`` of a union with the same discriminator warns on every dump (#7326).
+"""
+SAMPLE_BUCKETS: Final = 10
+"""The sample takes one bucket of this many: about a tenth of the cases."""
+
+
+def _sampled(case_id: str) -> bool:
+    """Whether a case is in the sample: a hash of its id falls in the first bucket, so adding a case moves no other."""
+    return int.from_bytes(hashlib.sha256(case_id.encode()).digest()[:8], "big") % SAMPLE_BUCKETS == 0
+
+
+KEPT_CASE_IDS: Final = frozenset(case_id for _, case_id in SCHEMA_ROUND_TRIP_KEPT)
+SAMPLED_CASES: Final = sorted(
+    (case for case in SCHEMA_CASES if case.id in KEPT_CASE_IDS or _sampled(case.id)), key=lambda case: case.id
+)
+"""The fixed sample of the payload suite's schemas of ``tests/data``: the cases whose id hashes into one bucket of ten,
+and every case ``SCHEMA_ROUND_TRIP_KEPT`` names. Adding an input never moves another case in or out."""
 
 
 def _case_jobs() -> list[Job]:
@@ -423,12 +456,6 @@ def test_run_differences_show_the_first_differing_file(other: dict[str, str], ex
     assert run_differences([job], {"first": [first], "second": [other], "reordered": [first]}) == expected
 
 
-DUMP_WARNS: Final = "dump-warns"
-DUMP_REJECTED: Final = "dump-rejected"
-DUMP_CHANGES: Final = "dump-changes"
-ROUND_TRIP_KINDS: Final = (DUMP_WARNS, DUMP_REJECTED, DUMP_CHANGES)
-"""How a dump fails the round trip: it warns, the model rejects (or raises on) it, or validates it to another value."""
-
 DUMPS: Final[Mapping[PayloadBackend, Callable[[PayloadRuntime, object], object]]] = {
     PayloadBackend.MSGSPEC: lambda _runtime, value: msgspec.to_builtins(value),
 }
@@ -515,19 +542,6 @@ def test_shape_family_dumps_validate_back_equal(family: str, backend: str, contr
 
 ROUND_TRIP_BACKENDS: Final = (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC)
 """The payload suite's backends that dump."""
-_NESTED_TAGGED_UNION: Final = {DUMP_WARNS: "#7326"}
-SCHEMA_ROUND_TRIP_KEPT: Final[Mapping[tuple[str, str], Mapping[str, str]]] = {
-    (PayloadBackend.PYDANTIC_V2.value, f"openapi/{case}"): _NESTED_TAGGED_UNION
-    for case in (
-        "discriminator_duplicate_value.yaml::components.schemas.GroupedItem",
-        "discriminator_enum_tag_variants.yaml::components.schemas.Pets",
-        "discriminator_merged_variant_tags_nested_clash.yaml::components.schemas.Pond",
-    )
-}
-"""The known round trip differences of the sampled cases, by backend and case: each kind with its issue.
-
-A discriminated union that lists a ``RootModel`` of a union with the same discriminator warns on every dump (#7326).
-"""
 ROUND_TRIP_CASES: Final = [
     pytest.param(backend, case, id=f"{backend.value}:{case.id}")
     for case in SAMPLED_CASES
