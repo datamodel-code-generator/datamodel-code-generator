@@ -2220,12 +2220,12 @@ def _watch_dependencies(
 def _rerun_copy(config: Config, dependencies: WatchDependencies | None) -> tuple[Config, WatchDependencies | None]:
     """Return the copy of a resolved config that runs once more, as a batch job or in the transaction of a remote lock.
 
-    Generation adjusts a few fields while it resolves templates and stdout behaviour, so each run takes a copy. Row
-    `lock-reentry-watch-values-pyproject-only`: ``--watch`` is configured again from the pyproject.toml values alone, so
-    a path an argument gives is watched where pyproject.toml names it.
+    Generation adjusts a few fields while it resolves templates and stdout behaviour, so each run takes a copy.
+    ``--watch`` is configured again from the values the command read paths from (``RunOptions.merged``), so a path an
+    argument gives is watched, not the one pyproject.toml names.
     """
     copy = config.model_copy(deep=True)
-    return copy, _watch_dependencies(copy, dependencies, config._run_options.pyproject)  # noqa: SLF001
+    return copy, _watch_dependencies(copy, dependencies, config._run_options.merged)  # noqa: SLF001
 
 
 def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915

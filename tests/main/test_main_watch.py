@@ -3740,6 +3740,40 @@ def test_watch_cli_update_lock_does_not_trigger_its_own_regeneration(
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+def test_watch_cli_update_lock_watches_the_input_an_argument_gives(tmp_path: Path) -> None:
+    """A run that holds the remote lock watches the input an argument gives, not the one pyproject.toml names."""
+    (tmp_path / "pyproject.toml").write_text('[tool.datamodel-codegen]\ninput = "first.json"\n', encoding="utf-8")
+    (tmp_path / "first.json").write_text('{"title": "First", "type": "object"}\n', encoding="utf-8")
+    input_file = tmp_path / "second.json"
+    output_file = tmp_path / "output.py"
+    input_file.write_text('{"title": "Second", "type": "object"}\n', encoding="utf-8")
+    process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _wait_for_watch_cli_ready(
+        *_start_watch_process(
+            [
+                *_watch_cli_prefix(),
+                *("--watch", "--watch-delay", "0.1", "--formatters", "builtin", "--disable-timestamp"),
+                *("--input", str(input_file), "--output", str(output_file)),
+                *("--update-lock", "--lockfile", str(tmp_path / "remote.lock")),
+            ],
+            tmp_path,
+        )
+    )
+
+    try:
+        _write_watch_cli_input_and_wait(
+            process,
+            stdout_lines,
+            stderr_lines,
+            input_file,
+            '{"title": "Second", "type": "object", "properties": {"added": {"type": "string"}}}\n',
+            lambda: _file_contains(output_file, "added: str | None = None"),
+            "the input of the argument to be regenerated",
+        )
+        assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
+    finally:
+        _stop_watch_cli(process, stdout_thread, stderr_thread)
+
+
 def test_watch_initial_remote_lock_errors_discard_the_open_transaction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
