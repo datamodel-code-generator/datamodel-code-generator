@@ -91,15 +91,21 @@ jobs:
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
         PYTEST_ADDOPTS: -n auto --dist=worksteal
-    - name: Rename coverage report file
+    - name: Collect coverage data
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.${{ matrix.coverage_name }}-{os.environ['OS']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Record coverage provenance
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
       shell: bash
@@ -204,15 +210,21 @@ jobs:
       shell: bash
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
-    - name: Rename coverage report file
+    - name: Collect coverage data
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.${{ matrix.coverage_name }}-{os.environ['OS']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Record coverage provenance
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
       shell: bash
@@ -327,16 +339,22 @@ jobs:
         name: junit.${{ env.RUN_NAME }}
         path: ".tox/junit.*"
         retention-days: 3
-    - name: Rename coverage report file
+    - name: Collect coverage data
       if: matrix.coverage == true
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.{os.environ['RUN_NAME']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ env.RUN_NAME }}
     - name: Record coverage provenance
       if: matrix.coverage == true
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
@@ -938,16 +956,22 @@ jobs:
         name: junit.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
         path: ".tox/junit.*"
         retention-days: 3
-    - name: Rename coverage report file
+    - name: Collect coverage data
       if: matrix.coverage == true
       run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.{os.environ['TOX_ENV']}-shard{os.environ['SHARD_INDEX']}-{os.environ['OS']}",
-        )
-      shell: python
+        # A process that outlives its test (the multiprocessing forkserver of an xdist worker) writes its coverage
+        # data when it exits, after pytest-cov combined the run: wait for the environment's Pythons to end first.
+        for _ in {1..60}; do
+          pgrep -f "[.]tox/$TOX_ENV/bin/python" > /dev/null || break
+          sleep 1
+        done
+        if pgrep -af "[.]tox/$TOX_ENV/bin/python"; then
+          echo "::warning::Processes of $TOX_ENV still run; data they write later is not in the artifact."
+        fi
+        ".tox/$TOX_ENV/bin/python" scripts/ci_coverage.py collect ".tox/.coverage.$TOX_ENV" ".tox/$COVERAGE_NAME"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
     - name: Record coverage provenance
       if: matrix.coverage == true
       run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
