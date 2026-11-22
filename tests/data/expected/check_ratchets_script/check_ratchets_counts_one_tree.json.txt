@@ -93,12 +93,6 @@ exit status 0
  "source-rule:raw-skip": {
   "tests/test_d.py": 1
  },
- "store-allowlist:counted": {
-  "scripts/generation_store_allowlist.toml": 2
- },
- "store-allowlist:witness": {
-  "scripts/generation_store_allowlist.toml": 1
- },
  "ty-config:deprecated": {
   "pyproject.toml": 1
  },

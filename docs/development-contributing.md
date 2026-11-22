@@ -615,11 +615,12 @@ new ones: delete `scripts/heki_baseline.toml` and run the command with
 `--update-baseline` again; the keys must not rise. The sites of the
 environment boundary count under a key of their own,
 `allowlist:heki-baseline:EFF201`, so a new read of the environment is never
-paid for by another finding. Each other site of the baseline repeats a
-violation that another key already budgets (`allowlist:UNLISTED_CALLERS`,
-`allowlist:host-private-access`, the generation store allowlist,
-`allowlist:BUILDER_BYPASSES`), so a new violation of a recorded rule raises
-both keys and needs both `[[approved]]` entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
+paid for by another finding. Each other site of the baseline, except the
+writes outside the store operations that only heki checks, repeats a violation
+that another key already budgets (`allowlist:UNLISTED_CALLERS`,
+`allowlist:host-private-access`, `allowlist:BUILDER_BYPASSES`), so a new
+violation of such a rule raises both keys and needs both `[[approved]]`
+entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
 comments that name a heki rule count as `heki-ignore:<rule>` keys.
 
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
@@ -724,42 +725,36 @@ Parser code should not directly assign `data_type.reference`, `model.fields`,
 helpers. Read dependency information through `GenerationIndex` queries instead
 of using `Reference.children` as a reverse index.
 
-The local pre-commit hook `generation-store-usage` runs
-`scripts/check_generation_store_usage.py`, which checks `parser/`, the
-parser-facing hooks in `model/` and `types.py`, and caches kept in the
-`__dict__` of data types, fields and models, against the attribute-to-fact
-table in `scripts/fact_tables.py`. The hook runs when a
-parser file changes; after editing `model/`, `types.py` or the table, run the
-script yourself (the test suite runs it too).
-
-Writes that bypassed the store when the checker learned them are listed in
-`scripts/generation_store_allowlist.toml`, by path, function and target with a
-count. The list only shrinks:
+heki checks every write of a fact, presentation or cache attribute of the
+graph: `scripts/build_heki_contracts.py` writes a `write-owners` contract of
+`scripts/heki.toml` for the rows of `scripts/fact_tables.py` (and for the model
+lists of the parser run state, `Parser.results` and `ModuleContext.models`)
+that only the store operations the rows name may write. Each write is judged in
+the function that makes it. Writes that bypassed the store when the contracts
+were written are recorded in `scripts/heki_baseline.toml` (see the heki
+paragraph above), which only shrinks:
 
 - A new write outside a store operation fails. Route it through a store
-  operation instead of adding an entry.
-- When you route a write, the entry no longer matches and the check fails
-  until you remove it or lower its count. `python
-  scripts/check_generation_store_usage.py --write-allowlist` does that for you;
-  it refuses to add entries or raise counts.
-- A refactor that moves a write to another function renames its entry by
-  hand (path, function or target) without raising the total count.
-- A new attribute on `DataType`, a field or a model needs a row in
-  `ATTRIBUTE_FACTS`; a model method that parser code calls and that reaches a
-  fact write needs an entry in `PARSER_HOOK_METHODS` of the checker, or in
-  `CONSTRUCTION_METHODS` or `RENDER_ENTRY_POINTS` with a reason.
+  operation instead of recording it.
+- When you route a write, the baseline entry no longer matches: run `heki
+  check --config scripts/heki.toml --baseline scripts/heki_baseline.toml
+  --update-baseline src`, which only removes entries.
+- A refactor that moves a write to another function moves its entry: delete
+  the baseline and run the same command again; the keys must not rise.
 
-The runtime write guard (the `STORE_WRITES` debug check below) sees the same
-writes while the generator runs, also where the scan cannot follow them. Every
-test runs it, and a test fails when its generations write outside a store
-operation at a place the allowlist does not list. A write that only the guard
-sees is listed with a witness instead of a count: `target = "arguments"`, the
-`datamodel-codegen` arguments of one run that makes the write.
-`python scripts/check_generation_store_usage.py --witnesses` runs every witness
-and reports the entries whose witness no longer makes their write; remove those.
-Witness entries are never added for new writes either. When the scan learns to
-find a write that a witness covers, `--write-allowlist` turns the witness into a
-count entry; that move is the only one that may raise the counted total.
+The local pre-commit hook `generation-store-usage` runs
+`scripts/check_generation_store_usage.py`, which checks the table itself: a new
+attribute on `DataType`, a field or a model, and a new `__dict__` key that
+`parser/`, `model/` or `types.py` writes, needs a row in `ATTRIBUTE_FACTS`, and
+a row that names nothing the sources declare or write fails. heki can judge a
+write only of an attribute or key that a row names. The hook runs when a parser
+file changes; after editing `model/`, `types.py` or the table, run the script
+yourself (the test suite runs it too).
+
+The runtime write guard (the `STORE_WRITES` debug check below) sees the writes
+while the generator runs, also where heki cannot follow them. Every test runs
+it, and a test fails when its generations write outside a store operation in a
+function where the heki baseline records no such write of the attribute.
 
 If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
 `NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in
@@ -799,9 +794,9 @@ script checks the declarations, `scripts/check_pass_pipeline.py` checks the tabl
 made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
-`scripts/generation_store_allowlist.toml` lists, so `1` would stop every generation. Unless you set the variable,
+`scripts/heki_baseline.toml` records, so `1` would stop every generation. Unless you set the variable,
 `tests/conftest.py` (`StoreWritesCheck`) sets it to `report:<file>` during each test, with one file per test process,
-and fails the test for a write of the package that the allowlist does not list.
+and fails the test for a write of the package that the baseline does not record.
 
 | Area | Checks |
 | --- | --- |

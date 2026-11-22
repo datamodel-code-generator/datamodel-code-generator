@@ -10,9 +10,11 @@ so the file is never edited by hand. The contracts of homes, builders and tables
 that holds it (``attribution = "lexical"``), as the guards of those records do:
 
 - ``write-owners`` (``MUT201``, ``MUT205``): the ``fact``, ``presentation`` and ``cache`` rows of
-  ``scripts/fact_tables.py`` outside the parser run state, one contract per kind and set of store operations; the
-  operations and the generation store module may write the attributes. A ``__dict__`` key row names the value of its
-  constant; a cached-property row also forbids the decorator on its owner.
+  ``scripts/fact_tables.py`` outside the parser run state, and the run-state rows that name store operations (the
+  model lists ``Parser.results`` and ``ModuleContext.models``), one contract per kind and set of store operations; the
+  operations and the generation store module may write the attributes, and each write is judged in the scope that
+  holds it, as the runtime write guard names it. A ``__dict__`` key row names the value of its constant; a
+  cached-property row also forbids the decorator on its owner.
 - ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py`` that the caller guard checks
   (`scripts._decision_home_reads.checked_homes`), callable by the home modules and the adapter sites of their rows; the
   parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
@@ -145,7 +147,7 @@ def write_owner_contracts(repo: Repo) -> list[str]:
     groups: dict[tuple[str, tuple[str, ...]], list[str]] = defaultdict(list)
     cached_on: set[str] = set()
     for row in ATTRIBUTE_FACTS:
-        if row.owner in PARSER_STATE_OWNERS or row.kind not in WRITE_KINDS:
+        if row.kind not in WRITE_KINDS or (row.owner in PARSER_STATE_OWNERS and not row.store_ops):
             continue
         if row.access is Access.CACHED_PROPERTY:
             cached_on.add(row.owner)
@@ -164,6 +166,7 @@ def write_owner_contracts(repo: Repo) -> list[str]:
                 **({"forbid_cached_property_on": cached} if cached else {}),
                 unresolved="report",
                 fresh_objects="report",
+                attribution="lexical",
             )
         )
     return contracts

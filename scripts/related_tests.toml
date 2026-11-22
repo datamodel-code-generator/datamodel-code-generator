@@ -28,7 +28,7 @@ tests = ["tests/test_legacy_rows.py"]
 id = "fact-tables"
 prs = [6197]
 incident = "a new row in the fact tables failed the test that pins the row counts"
-paths = ["scripts/fact_tables.py", "scripts/generation_store_allowlist.toml"]
+paths = ["scripts/fact_tables.py", "scripts/heki_baseline.toml"]
 tests = ["tests/parser/test_generation_store_usage.py"]
 
 [[rule]]

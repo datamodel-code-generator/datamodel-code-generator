@@ -1,0 +1,18 @@
+[[change]]
+id = "heki-replace-store-scan"
+category = "internal"
+title = "Check the store writes with heki instead of the store scan"
+summary = "only the repository checks and their tests change; the package writes the same output"
+refs = ["#7388"]
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
+    "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",
+    "check_ratchets_script/check_ratchets_counts_one_tree.table.txt",
+    "parser/generation_store_usage/allowlist_matches_counts_per_function_and_target.txt",
+    "parser/generation_store_usage/checker_follows_aliases_through_rebinding_and_entries.txt",
+    "parser/generation_store_usage/checker_forgets_skipped_names_when_they_are_rebound.txt",
+    "parser/generation_store_usage/checker_reports_fact_presentation_and_cache_writes_in_parser_code.txt",
+    "parser/generation_store_usage/checker_scans_model_hooks_helpers_and_caches.txt",
+    "parser/generation_store_usage/dict_key_writes_name_every_write_form.txt",
+    "source_model/every_rule_states_its_verdicts[generation-store-usage].txt",
+]

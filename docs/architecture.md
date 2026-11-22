@@ -1251,40 +1251,29 @@ kind rules (plan rows, rendered nullability, the schema-validator plan cache). T
 library and `typing_extensions` (`scripts/check_architecture_boundaries.py` registers it as the `facts` leaf layer), so
 the checkers can read it without importing the package.
 
-`scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads that table and
-the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) through `scripts/_source_model.py` and reports every write that
-does not go through a store operation (a module the source model cannot read is a finding of its own):
+heki checks the writes against that table: `scripts/build_heki_contracts.py` turns the `fact`, `presentation` and
+`cache` rows of model-graph owners, and the model lists of the parser run state (`Parser.results`,
+`ModuleContext.models`), into `write-owners` contracts of `scripts/heki.toml` that only the store operations a row
+names, and the store module, may write. heki judges each write in the function that makes it (`attribution =
+"lexical"`): an assignment, `del`, augmented assignment, `setattr` with a literal name, an item write or a list, dict
+or set mutator, also through an alias, a `__dict__` entry whose key a row names, and a `cached_property` on an owner of
+a cache row; a write through an object or a name it cannot resolve is a finding of its own. Construction writes to
+the object being built are allowed. `scripts/heki_baseline.toml` records the writes that bypass the store today by
+path, function, rule and target, with a count each; it only shrinks, so a change that routes a write through the store
+removes its entry, and a new write outside the store fails.
 
-- in `parser/`: writes of fact and presentation attributes of model-graph classes (assignment, `del`, augmented
-  assignment, `setattr` and `object.__setattr__` (and an alias of either) with a literal name, item writes and list,
-  dict and set mutators, also through an alias: a name holds what the latest binding, in source order, of the scope
-  the language resolves it to holds, so every binding form replaces it and a nested function writes through its
-  enclosing function's alias), `__dict__` writes, the direct `.data_type`, `.fields`, `.base_classes` and
-  `.reference` writes, list mutators on model collections and `Reference.children` reads. A `setattr` with a
-  computed name is reported too. Writes to the parser itself (`self`) and to schema objects (parameters annotated
-  `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from them) are not model
-  writes;
-- in `model/` and `types.py`: the same writes inside the parser-facing hooks (`PARSER_HOOK_METHODS`), the private
-  helpers that write rendered state when a pass reads `type_hint` or collects imports (`RENDER_STATE_WRITERS`), and
-  every model function these reach through calls on any receiver, at any depth, including writes to `self`. The
-  closure stops at construction (`CONSTRUCTION_METHODS`), reference bookkeeping (`REFERENCE_METHODS`) and render
-  entry points (`RENDER_ENTRY_POINTS`, each with its reason);
-- in all three: caches kept on model objects: `__dict__` entries, cache attributes and `cached_property`.
-
-Every finding is keyed by path, function and target, without line numbers, and
-`scripts/generation_store_allowlist.toml` holds the findings that existed when the checker learned them, with a count
-each. A new finding fails, and so does an entry that no longer matches, so the list only shrinks: a change that routes
-a write through the store removes its entry. The checker also fails when a model-graph class sets an attribute (in
-any method) without a row, when a row names nothing the sources declare or write, when a model method that parser
-code calls (directly, or by name through `getattr`/`hasattr`) reaches a fact write that no hook covers, and when a
-hook, construction or render-entry list names a function that no model module defines.
-
-The checker does not follow these forms, so they must not be used for model writes: `obj.__setattr__("name", value)`,
-`obj.extras.__setitem__(key, value)` and other dunder calls, unbound method calls such as `list.append(obj.fields,
-field)`, and `functools.partial(setattr, obj)`.
+`scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads the table and
+the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) through `scripts/_source_model.py` and checks the table itself:
+it fails when a row's kind, facts, freeze point or store operations contradict each other, when a model-graph class
+sets an attribute (in any method) without a row, when `parser/`, `model/` or `types.py` writes a `__dict__` key without
+a row (heki can judge a write only of a key some row names; a key the store writes needs none), and when a row names
+nothing the sources declare or write. Writes through the parser itself (`self`) and through schema objects
+(parameters annotated `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from
+them) write no model-graph key. A module the source model cannot read is a problem of its own.
 
 The runtime write guard (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same
-rule while the generator runs in the test suite, for writes the scan cannot follow. It arms at the end of L1:
+rule while the generator runs in the test suite, for writes heki cannot follow (for example an alias that an in-place
+operator rebinds, or a receiver that no binding of the function holds). It arms at the end of L1:
 `DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
 `ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared where the originals were shared; they
 are not `list` exactly and outlive the parse, acting as plain lists afterwards), each store operation named in a row's
@@ -1304,14 +1293,11 @@ of one parse (`parse_checks`, armed by `ParseChecks.arm`), which the finality ch
 `STORE_WRITES` is on, while the finality check uses them to learn which models a pass touched.
 
 The test suite runs the guard in every test (`tests/conftest.py:StoreWritesCheck`): it reports into a file of the test
-process, and after each test the checker names each write of the package by the function that contains the reported
-line and by the target the scan gives that write (`runtime_writes`), and the test fails for a write the allowlist
-does not list. Most writes the guard sees are findings of the scan. A write only the guard sees (a method the hook
-closure does not reach, a write made inside a helper the scan stops at) has an entry whose value is its witness, the
-`datamodel-codegen` arguments of one run that makes it; `python scripts/check_generation_store_usage.py --witnesses`
-(and the test suite) run them, and an entry whose witness no longer writes it is stale. The entries only shrink, like
-the counted ones. When the scan learns to find a write a witness covers, the witness becomes a count entry
-(`--write-allowlist` makes that move); it is the only move that may raise the counted total.
+process, and after each test the checker names each write of the package by its path, the function that contains the
+reported line, named as heki names its findings (`<locals>` after an enclosing function; lambdas and comprehensions
+belong to the function around them), and the attribute (`runtime_writes`). The test fails for a write that the heki
+baseline does not record: a `MUT201` entry records writes of its attribute in its function, a `MUT205` entry (an
+object or name heki cannot resolve) writes of any attribute there.
 
 Current behaviour that a decision reading the index must allow for:
 
@@ -1342,11 +1328,9 @@ Current behaviour that a decision reading the index must allow for:
   gives, when it is made (`_copy_data_model_field` with `identity` and `FieldCopyFacts`); the writes on a copy's
   type and raw schema default before it is installed (`_copy_resolved_inherited_field`, `apply_override_to_field`)
   stay outside the store.
-- Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
-  function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list, which
-  changes through `set_module_models` instead), writes to module imports (`ModuleContext.imports`, which go through
-  the import ledger and its runtime check instead, see L6 above), or writes in model methods that the hook closure
-  does not reach; the runtime guard sees the last kind, and the allowlist lists them with a witness.
+- Most fact writes after parsing still bypass the store; `scripts/heki_baseline.toml` records them by function.
+  Writes to module imports (`ModuleContext.imports`) have no store operation and no contract: they go through the
+  import ledger and its runtime check instead, see L6 above.
 - Dedup keys (cached on the model, read through `ModelShapes.key`) and model shapes are separate caches, not store facts.
 
 ### Placement Guide

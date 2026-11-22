@@ -1673,8 +1673,6 @@ class _FieldRender:
 
     ``ready`` is the parse's ``RenderReady``, or None outside a parse. Each part is computed when it is read, so a read
     of the plan builds no imports and a read of the imports where the parse keeps nothing for the field builds no plan.
-    The plan is a method, not a property: ``scripts/check_generation_store_usage.py`` follows calls, not attributes,
-    from the parser's hooks to the plan builders.
     """
 
     field: DataModelFieldBase

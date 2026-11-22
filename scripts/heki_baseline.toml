@@ -3559,13 +3559,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/_target_binding.py"
-qualname = "_Hints.leaf"
-rule_code = "MUT201"
-target = "DataType._runtime_expression_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/_target_binding.py"
 qualname = "_Models.declaration"
 rule_code = "MUT204"
 target = "datamodel_code_generator._mro.collect_members"
@@ -4273,41 +4266,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/_render_plan.py"
-qualname = "RenderReady.refreshed"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/_render_plan.py"
-qualname = "RenderReady.refreshed"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/_render_plan.py"
-qualname = "RenderReady.refreshed"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/_render_plan.py"
-qualname = "RenderReady.refreshed"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/_render_plan.py"
-qualname = "RenderReady.refreshed"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/_render_plan.py"
 qualname = "_field_argument_text"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.keyword_argument"
@@ -4336,9 +4294,44 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel._append_internal_template_data"
+rule_code = "MUT201"
+target = "DataModel._internal_template_data"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel._pop_internal_template_data"
+rule_code = "MUT201"
+target = "DataModel._internal_template_data"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel._set_internal_template_data"
+rule_code = "MUT201"
+target = "DataModel._internal_template_data"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel._uses_custom_root_template"
 rule_code = "MUT201"
 target = "DataModel._uses_custom_root_template"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel._write_additional_properties_type"
+rule_code = "MUT201"
+target = "DataModel.extra_template_data"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel.assign_forward_reference_fields"
+rule_code = "MUT201"
+target = "DataModelFieldBase.use_annotated"
 count = 1
 
 [[entries]]
@@ -4364,13 +4357,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel.enable_identity_hash"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel.finalize_required_inherited_field"
 rule_code = "MUT201"
 target = "DataModelFieldBase.extras"
@@ -4392,6 +4378,20 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel.set_base_class"
+rule_code = "MUT201"
+target = "DataModel._additional_imports"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel.set_base_class"
+rule_code = "MUT201"
+target = "DataModel.base_classes"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel.set_field_name_bindings"
 rule_code = "MUT201"
 target = "DataModel._field_name_bindings"
@@ -4402,6 +4402,20 @@ path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel.set_item_hash"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._decisions.hashability.set_items_may_keep_builtin_hash"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel.set_reference_path"
+rule_code = "MUT201"
+target = "DataModel.path"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel.set_reference_path"
+rule_code = "MUT201"
+target = "Reference.path"
 count = 1
 
 [[entries]]
@@ -4427,59 +4441,17 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.base_type_hint"
+qualname = "DataModelFieldBase._process_const_as_literal"
 rule_code = "MUT201"
-target = "DataType._type_null"
+target = "DataModelFieldBase.const"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModelFieldBase._set_runtime_expression_imports"
+rule_code = "MUT201"
+target = "DataModelFieldBase._runtime_expression_imports"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.base_type_hint"
-rule_code = "MUT201"
-target = "DataType.import_"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.base_type_hint"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.copy_owning"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.copy_owning"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.copy_owning"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.copy_owning"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.copy_owning"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
@@ -4490,37 +4462,9 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.imports"
+qualname = "DataModelFieldBase.force_field_assignment"
 rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.imports"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.imports"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.imports"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.imports"
-rule_code = "MUT201"
-target = "DataType.literals"
+target = "DataModelFieldBase._forced_field_assignment"
 count = 1
 
 [[entries]]
@@ -4567,24 +4511,10 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.type_hint"
+qualname = "DataModelFieldBase.replace_data_type"
 rule_code = "MUT201"
-target = "DataType._type_null"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.type_hint"
-rule_code = "MUT201"
-target = "DataType.import_"
+target = "DataModelFieldBase.data_type"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.type_hint"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
@@ -4630,37 +4560,51 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "live_render_plan"
+qualname = "_apply_literal_default"
 rule_code = "MUT201"
-target = "DataType.data_types"
+target = "DataModelFieldBase.default"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "live_render_plan"
+qualname = "_apply_literal_default"
 rule_code = "MUT201"
-target = "DataType.dict_key"
+target = "DataModelFieldBase.nullable"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "live_render_plan"
+qualname = "_apply_literal_default"
 rule_code = "MUT201"
-target = "DataType.enum_member_literals"
+target = "DataModelFieldBase.required"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "live_render_plan"
+qualname = "_set_nested_model_default_factory_order"
 rule_code = "MUT201"
-target = "DataType.kwargs"
+target = "DataModel._nested_model_default_factory_order"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "live_render_plan"
+qualname = "_set_nested_model_default_factory_order"
 rule_code = "MUT201"
-target = "DataType.literals"
+target = "DataModel._nested_model_default_factory_recursive_keys"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/dataclass.py"
+qualname = "DataClass.restore_required_inherited_field_state"
+rule_code = "MUT201"
+target = "DataModelFieldBase.extras"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/dataclass.py"
+qualname = "DataClass.restore_required_inherited_field_state"
+rule_code = "MUT201"
+target = 'DataModelFieldBase.extras["init"]'
 count = 1
 
 [[entries]]
@@ -4770,6 +4714,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/msgspec.py"
+qualname = "DataModelField._record_unconstrained_union_members"
+rule_code = "MUT201"
+target = "DataModelFieldBase._unconstrained_union_members"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/msgspec.py"
 qualname = "DataModelField._shape_meta_keywords"
 rule_code = "MUT204"
 target = "datamodel_code_generator._constraint_applicability.shape_meta_keywords"
@@ -4784,9 +4735,16 @@ count = 3
 
 [[entries]]
 path = "src/datamodel_code_generator/model/msgspec.py"
-qualname = "DataModelField.inherit_unconstrained_union_members"
+qualname = "DataModelField.process_const"
 rule_code = "MUT201"
-target = "DataModelFieldBase._unconstrained_union_members"
+target = "DataModelFieldBase.const"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/msgspec.py"
+qualname = "DataModelField.unconstrain_union_members"
+rule_code = "MUT201"
+target = "DataType.data_types"
 count = 1
 
 [[entries]]
@@ -4973,97 +4931,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.imports"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.imports"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.imports"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.imports"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.imports"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType._type_null"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.import_"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
-qualname = "DataModelField.type_hint"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_base.py"
 qualname = "DataModelField.type_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
@@ -5092,9 +4959,30 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
+qualname = "BaseModel._add_schema_runtime_validation_helper_imports"
+rule_code = "MUT201"
+target = "DataModel._additional_imports"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
+qualname = "BaseModel._get_schema_runtime_validation_module_plan"
+rule_code = "MUT201"
+target = "DataModel._schema_runtime_validation_module_plan"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
 qualname = "BaseModel._get_unique_schema_runtime_validation_base_class_name"
 rule_code = "MUT204"
 target = "datamodel_code_generator._free_names.first_free"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
+qualname = "BaseModel._neutralize_generic_extra_config_for_runtime_root_models"
+rule_code = "MUT201"
+target = "DataModel._additional_imports"
 count = 1
 
 [[entries]]
@@ -5162,69 +5050,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.prepare_module_code"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.prepare_module_code"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.prepare_module_code"
-rule_code = "MUT201"
-target = "DataModel._schema_runtime_validation_module_plan"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.refresh_field_config"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.refresh_field_config"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.refresh_field_config"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.render_module_code"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.render_module_code"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.render_module_code"
-rule_code = "MUT201"
-target = "DataModel._schema_runtime_validation_module_plan"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
 qualname = "DataModelField._put_validation_aliases"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.call_text"
@@ -5246,27 +5071,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "DataModelField.pydantic_extra_type_hint"
-rule_code = "MUT201"
-target = "DataType._type_null"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "DataModelField.pydantic_extra_type_hint"
-rule_code = "MUT201"
-target = "DataType.import_"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "DataModelField.pydantic_extra_type_hint"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
 qualname = "_LegacyPydanticExtraTemplate._warn_template_update"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
@@ -5274,28 +5078,14 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_PydanticV2Model.finalize_type_alias_users"
-rule_code = "MUT201"
-target = "DataClass._lookaround_regex_engine_checked"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_PydanticV2Model.finalize_type_alias_users"
+qualname = "_PydanticV2Model._store_config"
 rule_code = "MUT201"
 target = "DataModel._additional_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_PydanticV2Model.finalize_type_alias_users"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_PydanticV2Model.finalize_type_alias_users"
+qualname = "_PydanticV2Model._store_config"
 rule_code = "MUT201"
 target = "DataModel.extra_template_data"
 count = 1
@@ -5316,6 +5106,27 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
+qualname = "_copy_alias_data_type"
+rule_code = "MUT201"
+target = "DataType.data_types"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
+qualname = "_copy_alias_data_type"
+rule_code = "MUT201"
+target = "DataType.dict_key"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
+qualname = "_copy_alias_data_type"
+rule_code = "MUT201"
+target = "DataType.kwargs"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
 qualname = "_followed_fields"
 rule_code = "MUT204"
 target = "datamodel_code_generator._graph.reach"
@@ -5330,14 +5141,7 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_python_patterns"
-rule_code = "MUT201"
-target = "DataModelFieldBase._runtime_expression_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_python_patterns"
+qualname = "_prepare_field_python_pattern"
 rule_code = "MUT201"
 target = "DataModelFieldBase.extras"
 count = 1
@@ -5345,55 +5149,6 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
 qualname = "_prepare_python_patterns"
-rule_code = "MUT201"
-target = "DataType._runtime_expression_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_python_patterns"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_type_alias_field"
-rule_code = "MUT201"
-target = "DataModelFieldBase._runtime_expression_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_type_alias_field"
-rule_code = "MUT201"
-target = "DataModelFieldBase.extras"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_type_alias_field"
-rule_code = "MUT201"
-target = "DataType._runtime_expression_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_type_alias_field"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_type_alias_field"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "_prepare_type_alias_field"
 rule_code = "MUT201"
 target = "DataType.kwargs"
 count = 1
@@ -5442,58 +5197,16 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.imports"
+qualname = "DataClass._apply_lookaround_regex_engine"
 rule_code = "MUT201"
 target = "DataClass._lookaround_regex_engine_checked"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.imports"
+qualname = "DataClass.assign_forward_reference_fields"
 rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.imports"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.imports"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.render"
-rule_code = "MUT201"
-target = "DataClass._lookaround_regex_engine_checked"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.render"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.render"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.render"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
+target = "DataModel.fields"
 count = 1
 
 [[entries]]
@@ -5501,6 +5214,27 @@ path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
 qualname = "DataModelFieldBackport.alias_form"
 rule_code = "MUT204"
 target = "datamodel_code_generator._target_unicode.is_python_name"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
+qualname = "RootModel._decide_config_items_outside_a_parse"
+rule_code = "MUT201"
+target = "DataModel._additional_imports"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
+qualname = "RootModel._decide_config_items_outside_a_parse"
+rule_code = "MUT201"
+target = "DataModel.extra_template_data"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
+qualname = "RootModel._keep_string_pattern_aliases_out_of_bases"
+rule_code = "MUT201"
+target = "DataModel._additional_imports"
 count = 1
 
 [[entries]]
@@ -5516,13 +5250,6 @@ qualname = "RootModel.add_literal_validation"
 rule_code = "MUT201"
 target = "DataModel._additional_imports"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
-qualname = "RootModel.add_literal_validation"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
@@ -5554,51 +5281,16 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
-qualname = "RootModel.add_sequence_interface"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
 qualname = "RootModel.finalize_sequence_interface"
 rule_code = "MUT201"
 target = "DataModel._additional_imports"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
-qualname = "RootModel.finalize_sequence_interface"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
 qualname = "RootModel.finalize_sequence_interface"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
-qualname = "RootModel.render"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
-qualname = "RootModel.render"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/root_model.py"
-qualname = "RootModel.render"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
 count = 1
 
 [[entries]]
@@ -5649,13 +5341,6 @@ qualname = "DataTypeManager._encoded_str_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator._constraint_applicability.strict_encoded_str"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
-qualname = "DataTypeManager.get_data_str_type"
-rule_code = "MUT201"
-target = "DataType._runtime_expression_imports"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
@@ -5771,9 +5456,9 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/typed_dict.py"
-qualname = "TypedDict.create_reuse_model"
+qualname = "TypedDict._write_additional_properties_type"
 rule_code = "MUT201"
-target = "DataModel._internal_template_data"
+target = "DataModel.extra_template_data"
 count = 1
 
 [[entries]]
@@ -5802,20 +5487,6 @@ path = "src/datamodel_code_generator/model/types.py"
 qualname = "DataTypeManager.get_data_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/types.py"
-qualname = "type_map_factory"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/types.py"
-qualname = "type_map_factory"
-rule_code = "MUT201"
-target = "DataType.is_optional"
 count = 1
 
 [[entries]]
@@ -6030,6 +5701,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_apply_inherited_field_nullability"
+rule_code = "MUT201"
+target = "DataType.is_optional"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
 qualname = "_copy_resolved_inherited_field"
 rule_code = "MUT201"
 target = "DataModelFieldBase._raw_schema_default"
@@ -6040,97 +5718,6 @@ path = "src/datamodel_code_generator/parser/_field_copies.py"
 qualname = "_copy_resolved_inherited_field"
 rule_code = "MUT201"
 target = "DataType.data_types"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_dict"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_frozen_set"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_list"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_mapping"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_sequence"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_set"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.is_tuple"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 3
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT201"
-target = "DataType.tuple_item_count"
 count = 1
 
 [[entries]]
@@ -6166,6 +5753,76 @@ path = "src/datamodel_code_generator/parser/_field_copies.py"
 qualname = "_get_inherited_type_modifiers"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_dict"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_frozen_set"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_list"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_mapping"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_optional"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_sequence"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_set"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.is_tuple"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.kwargs"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_merge_data_type_modifiers"
+rule_code = "MUT201"
+target = "DataType.tuple_item_count"
 count = 1
 
 [[entries]]
@@ -6320,41 +5977,6 @@ path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
 qualname = "is_partial_inherited_property"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._intersection.inherited_positional_tail"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "mark_partial_inherited_fields"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "mark_partial_inherited_fields"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "mark_partial_inherited_fields"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "mark_partial_inherited_fields"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "mark_partial_inherited_fields"
-rule_code = "MUT201"
-target = "DataType.literals"
 count = 1
 
 [[entries]]
@@ -6562,17 +6184,10 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_import_aliases.py"
-qualname = "alias_shadowed_imports"
+qualname = "_alias_additional_imports"
 rule_code = "MUT201"
 target = "DataModel._additional_imports"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_import_aliases.py"
-qualname = "alias_shadowed_imports"
-rule_code = "MUT201"
-target = "DataModelFieldBase._runtime_expression_imports"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_import_aliases.py"
@@ -6699,13 +6314,6 @@ qualname = "alias_loops"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModel._*"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_reference_users.py"
-qualname = "type_additional_properties_users"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_reference_users.py"
@@ -7515,13 +7123,6 @@ count = 2
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "alias_reused_variant_literal"
-rule_code = "MUT201"
-target = "DataType._literal_import"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "alias_reused_variant_literal"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference._BaseModel._*"
 count = 1
@@ -7580,13 +7181,6 @@ path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "check_import_reads"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModel._*"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "decide_config_items"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
 count = 2
 
 [[entries]]
@@ -7669,13 +7263,6 @@ count = 2
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "name_final_classes_of_additional_properties"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "name_final_classes_of_additional_properties"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModel._*"
 count = 4
@@ -7692,34 +7279,6 @@ path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "name_final_classes_of_additional_properties"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModel._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "record_pydantic_floor"
-rule_code = "MUT201"
-target = "DataClass._lookaround_regex_engine_checked"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "record_pydantic_floor"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "record_pydantic_floor"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "record_pydantic_floor"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
 count = 1
 
 [[entries]]
@@ -7805,41 +7364,6 @@ qualname = "reject_unimportable_imports"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 3
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "remove_unused_imports"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "remove_unused_imports"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "remove_unused_imports"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "remove_unused_imports"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "remove_unused_imports"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
@@ -8011,16 +7535,16 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "_tag_discriminator_unions"
-rule_code = "MUT204"
-target = "datamodel_code_generator.python_literal.stable_repr"
+qualname = "_replace_default_enum_list_members"
+rule_code = "MUT201"
+target = "Member.alias"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "apply_discriminator_type"
-rule_code = "MUT201"
-target = "DataType._enum_member_literal_reference"
+qualname = "_tag_discriminator_unions"
+rule_code = "MUT204"
+target = "datamodel_code_generator.python_literal.stable_repr"
 count = 1
 
 [[entries]]
@@ -8077,13 +7601,6 @@ path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "change_from_import"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModel._*"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "collapse_root_models_in_scope"
-rule_code = "MUT201"
-target = "DataModelFieldBase._runtime_expression_imports"
 count = 2
 
 [[entries]]
@@ -8162,13 +7679,6 @@ qualname = "collapse_site_facts"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference._BaseModel._*"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "const_narrowed_data_type"
-rule_code = "MUT201"
-target = "DataType._enum_member_literal_reference"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
@@ -8278,41 +7788,6 @@ count = 2
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "root_key_data_type"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "root_key_data_type"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "root_key_data_type"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "root_key_data_type"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "root_key_data_type"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "root_key_data_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
 count = 1
@@ -8329,13 +7804,6 @@ path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "same_named_fields"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference._BaseModel._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "set_default_enum_member"
-rule_code = "MUT201"
-target = "Member.alias"
 count = 1
 
 [[entries]]
@@ -8600,69 +8068,6 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType._is_forward_reference"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType._type_null"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.import_"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "defer_recursive_containers"
 rule_code = "MUT203"
 target = "datamodel_code_generator.reference._BaseModel._*"
 count = 9
@@ -8680,13 +8085,6 @@ qualname = "defer_recursive_containers"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "deserialize_decimal_default"
-rule_code = "MUT201"
-target = "DataModelFieldBase._runtime_expression_imports"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
@@ -8763,41 +8161,6 @@ path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "fix_tag_opt_out_field_ordering"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModel._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "freeze_field_render_plans"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "freeze_field_render_plans"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "freeze_field_render_plans"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "freeze_field_render_plans"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "freeze_field_render_plans"
-rule_code = "MUT201"
-target = "DataType.literals"
 count = 1
 
 [[entries]]
@@ -8971,13 +8334,6 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "quote_forward_enum_member_literals"
-rule_code = "MUT201"
-target = "DataType._is_forward_reference"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_enum_member_literals"
 rule_code = "MUT203"
 target = "datamodel_code_generator.reference._BaseModel._*"
 count = 2
@@ -8988,13 +8344,6 @@ qualname = "quote_forward_enum_member_literals"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference._BaseModel._*"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
@@ -9015,48 +8364,6 @@ path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "quote_forward_rule_types"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.runtime_validation.SchemaRuntimeValidation._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types.<locals>.quoted"
-rule_code = "MUT201"
-target = "DataType._is_forward_reference"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types.<locals>.quoted"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types.<locals>.quoted"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types.<locals>.quoted"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types.<locals>.quoted"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "quote_forward_rule_types.<locals>.quoted"
-rule_code = "MUT201"
-target = "DataType.literals"
 count = 1
 
 [[entries]]
@@ -9805,27 +9112,6 @@ count = 1
 path = "src/datamodel_code_generator/parser/_type_overrides.py"
 qualname = "apply_override_to_field"
 rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_type_overrides.py"
-qualname = "apply_override_to_field"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_type_overrides.py"
-qualname = "apply_override_to_field"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_type_overrides.py"
-qualname = "apply_override_to_field"
-rule_code = "MUT201"
 target = "DataType.import_"
 count = 1
 
@@ -9834,13 +9120,6 @@ path = "src/datamodel_code_generator/parser/_type_overrides.py"
 qualname = "apply_override_to_field"
 rule_code = "MUT201"
 target = "DataType.kwargs"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_type_overrides.py"
-qualname = "apply_override_to_field"
-rule_code = "MUT201"
-target = "DataType.literals"
 count = 1
 
 [[entries]]
@@ -10064,13 +9343,6 @@ count = 1
 path = "src/datamodel_code_generator/parser/avro.py"
 qualname = "AvroParser._finalize_structured_imports"
 rule_code = "MUT201"
-target = "DataModelFieldBase._runtime_expression_imports"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/avro.py"
-qualname = "AvroParser._finalize_structured_imports"
-rule_code = "MUT201"
 target = "DataModelFieldBase.default"
 count = 1
 
@@ -10153,41 +9425,6 @@ count = 3
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._merge_runtime_expression_imports"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._merge_runtime_expression_imports"
-rule_code = "MUT201"
-target = "DataType.dict_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._merge_runtime_expression_imports"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._merge_runtime_expression_imports"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._merge_runtime_expression_imports"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._model_shapes"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._model_shapes.ModelShapes"
@@ -10212,20 +9449,6 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._refuse_untrusted_code"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._set_nested_model_default_factory_metadata"
-rule_code = "MUT201"
-target = "DataModel._nested_model_default_factory_order"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._set_nested_model_default_factory_metadata"
-rule_code = "MUT201"
-target = "DataModel._nested_model_default_factory_recursive_keys"
 count = 1
 
 [[entries]]
@@ -10338,13 +9561,6 @@ path = "src/datamodel_code_generator/parser/graphql.py"
 qualname = "GraphQLParser.parse_field"
 rule_code = "MUT201"
 target = "DataType.type"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/graphql.py"
-qualname = "GraphQLParser.parse_object_like"
-rule_code = "MUT201"
-target = "DataModel._internal_template_data"
 count = 1
 
 [[entries]]
@@ -10525,6 +9741,13 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser._parse_object_common_part"
+rule_code = "MUT201"
+target = "DataModelFieldBase.target_python_version"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/jsonschema.py"
+qualname = "JsonSchemaParser._parse_object_common_part"
 rule_code = "MUT204"
 target = "datamodel_code_generator._user_keys.class_key"
 count = 1
@@ -10693,13 +9916,6 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser.parse_all_of"
-rule_code = "MUT201"
-target = "DataModelFieldBase.target_python_version"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser.parse_all_of"
 rule_code = "MUT203"
 target = "datamodel_code_generator.parser._schema_reading._IntersectionReader._*"
 count = 1
@@ -10716,13 +9932,6 @@ path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser.parse_array"
 rule_code = "MUT204"
 target = "datamodel_code_generator._user_keys.class_key"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser.parse_combined_schema"
-rule_code = "MUT201"
-target = "DataModelFieldBase.target_python_version"
 count = 1
 
 [[entries]]
@@ -11133,31 +10342,31 @@ count = 4
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver._add_affixed"
-rule_code = "MUT201"
-target = "Reference.duplicate_name"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver._add_affixed"
-rule_code = "MUT201"
-target = "Reference.name"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver._add_affixed"
-rule_code = "MUT201"
-target = "Reference.original_name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
 qualname = "ModelResolver._ensure_model_name_map_value"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 4
+
+[[entries]]
+path = "src/datamodel_code_generator/reference.py"
+qualname = "ModelResolver._register_reference"
+rule_code = "MUT201"
+target = "Reference.duplicate_name"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/reference.py"
+qualname = "ModelResolver._register_reference"
+rule_code = "MUT201"
+target = "Reference.name"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/reference.py"
+qualname = "ModelResolver._register_reference"
+rule_code = "MUT201"
+target = "Reference.original_name"
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
@@ -11168,23 +10377,16 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.add"
+qualname = "ModelResolver._rename_reference"
 rule_code = "MUT201"
 target = "Reference.duplicate_name"
-count = 2
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.add"
+qualname = "ModelResolver._rename_reference"
 rule_code = "MUT201"
 target = "Reference.name"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.add"
-rule_code = "MUT201"
-target = "Reference.original_name"
 count = 1
 
 [[entries]]
@@ -11193,27 +10395,6 @@ qualname = "ModelResolver.add"
 rule_code = "MUT203"
 target = "datamodel_code_generator.reference.ModelResolver._*"
 count = 3
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.add_ref"
-rule_code = "MUT201"
-target = "Reference.duplicate_name"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.add_ref"
-rule_code = "MUT201"
-target = "Reference.name"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.add_ref"
-rule_code = "MUT201"
-target = "Reference.original_name"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
@@ -11227,20 +10408,6 @@ path = "src/datamodel_code_generator/reference.py"
 qualname = "ModelResolver.record_model_names"
 rule_code = "MUT204"
 target = "datamodel_code_generator._user_keys.ModelNameRecord"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.settle_yielding_names"
-rule_code = "MUT201"
-target = "Reference.duplicate_name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver.settle_yielding_names"
-rule_code = "MUT201"
-target = "Reference.name"
 count = 1
 
 [[entries]]
@@ -11323,20 +10490,55 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
 qualname = "DataType.__deepcopy__"
-rule_code = "MUT201"
-target = "DataType._type_null"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataType.__deepcopy__"
 rule_code = "MUT205"
 target = "DataType"
 count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
-qualname = "DataType._strip_null"
+qualname = "DataType._materialize_render_state"
+rule_code = "MUT201"
+target = "DataType.import_"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "DataType._materialize_render_state"
+rule_code = "MUT201"
+target = "DataType.is_optional"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "DataType._set_enum_member_literal_reference"
+rule_code = "MUT201"
+target = "DataType._enum_member_literal_reference"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "DataType._set_forward_reference"
+rule_code = "MUT201"
+target = "DataType._is_forward_reference"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "DataType._set_literal_import"
+rule_code = "MUT201"
+target = "DataType._literal_import"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "DataType._set_runtime_expression_imports"
+rule_code = "MUT201"
+target = "DataType._runtime_expression_imports"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "DataType._set_type_null"
 rule_code = "MUT201"
 target = "DataType._type_null"
 count = 2
@@ -11434,41 +10636,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
-qualname = "DataTypeManager.copy_data_type"
-rule_code = "MUT201"
-target = "DataType.enum_member_literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataTypeManager.copy_data_type"
-rule_code = "MUT201"
-target = "DataType.kwargs"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataTypeManager.copy_data_type"
-rule_code = "MUT201"
-target = "DataType.literals"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataTypeManager.use_untyped_value_type"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataTypeManager.use_untyped_value_type"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
 qualname = "_annotation_base_path"
 rule_code = "MUT204"
 target = "datamodel_code_generator._module_paths.dotted_name"
@@ -11476,9 +10643,58 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
+qualname = "_copied_node"
+rule_code = "MUT201"
+target = "DataType.enum_member_literals"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "_copied_node"
+rule_code = "MUT201"
+target = "DataType.kwargs"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "_copied_node"
+rule_code = "MUT201"
+target = "DataType.literals"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "_copy_data_type"
+rule_code = "MUT201"
+target = "DataType.data_types"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "_copy_data_type"
+rule_code = "MUT201"
+target = "DataType.dict_key"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
 qualname = "_import_paths"
 rule_code = "MUT204"
 target = "datamodel_code_generator.imports._import_path"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "_link_parts"
+rule_code = "MUT201"
+target = "DataType.data_types"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/types.py"
+qualname = "_link_parts"
+rule_code = "MUT201"
+target = "DataType.is_optional"
 count = 1
 
 [[entries]]
@@ -11543,27 +10759,6 @@ qualname = "get_optional_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "render_type_expr"
-rule_code = "MUT201"
-target = "DataType._type_null"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "render_type_expr"
-rule_code = "MUT201"
-target = "DataType.import_"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "render_type_expr"
-rule_code = "MUT201"
-target = "DataType.is_optional"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/types.py"

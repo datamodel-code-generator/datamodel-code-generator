@@ -22,9 +22,9 @@ Columns of a row:
   its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts), after which no pass may write the attribute
   in the target pipeline. The finality checks still check each ``Fact`` at B1 unless a pass declares an exception.
   ``None`` for caches and bookkeeping.
-* ``store_ops``: the ``GenerationStore`` operations allowed to write it; every other write is listed in
-  ``scripts/generation_store_allowlist.toml`` until a later change routes it. Bookkeeping rows name none: holder
-  edges are enforced separately.
+* ``store_ops``: the ``GenerationStore`` operations allowed to write it (``scripts/build_heki_contracts.py`` makes them
+  the writers of a heki contract); every other write is recorded in ``scripts/heki_baseline.toml`` until a later
+  change routes it. Bookkeeping rows name none: holder edges are enforced separately.
 
 The checker enforces the kind rules: a fact row names a ``Fact``, a presentation row names only ``RenderFact``
 members, a cache row names no ``Fact``. Three exceptions are allowed: plan rows (``Parser`` snapshots that later

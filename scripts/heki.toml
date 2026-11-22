@@ -11,6 +11,7 @@ allowed-writers = ["datamodel_code_generator.parser.generation:*"]
 forbid-cached-property-on = ["ConstraintsBase", "DataModel", "TemplateBase"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:no store operation"
@@ -18,6 +19,7 @@ targets = ["AnnotatedConstraintDataType.constrained_base", "DataModel._nullable"
 allowed-writers = ["datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:append_field|insert_field|set_fields|use_assignment_for_forward_references"
@@ -25,6 +27,7 @@ targets = ["DataModel.fields"]
 allowed-writers = ["GenerationStore.append_field", "GenerationStore.insert_field", "GenerationStore.set_fields", "GenerationStore.use_assignment_for_forward_references", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:apply_const|replace_field_type|swap_data_type"
@@ -32,6 +35,7 @@ targets = ["DataModelFieldBase.data_type"]
 allowed-writers = ["GenerationStore.apply_const", "GenerationStore.replace_field_type", "GenerationStore.swap_data_type", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:apply_literal_default|omit_field_default"
@@ -39,6 +43,7 @@ targets = ["DataModelFieldBase.nullable"]
 allowed-writers = ["GenerationStore.apply_literal_default", "GenerationStore.omit_field_default", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:apply_literal_default|omit_field_default|set_field_default"
@@ -46,6 +51,7 @@ targets = ["DataModelFieldBase.default"]
 allowed-writers = ["GenerationStore.apply_literal_default", "GenerationStore.omit_field_default", "GenerationStore.set_field_default", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:apply_literal_default|record_nullable_without_default"
@@ -53,6 +59,7 @@ targets = ["DataModelFieldBase._nullable_without_default"]
 allowed-writers = ["GenerationStore.apply_literal_default", "GenerationStore.record_nullable_without_default", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:apply_literal_default|require_field"
@@ -60,6 +67,7 @@ targets = ["DataModelFieldBase.required"]
 allowed-writers = ["GenerationStore.apply_literal_default", "GenerationStore.require_field", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:collapse_root_data_type|detach_data_type_ref|detach_model_data_type_refs|redirect_model_reference_users|redirect_reference_users|replace_data_type_ref"
@@ -67,6 +75,7 @@ targets = ["DataType.reference"]
 allowed-writers = ["GenerationStore.collapse_root_data_type", "GenerationStore.detach_data_type_ref", "GenerationStore.detach_model_data_type_refs", "GenerationStore.redirect_model_reference_users", "GenerationStore.redirect_reference_users", "GenerationStore.replace_data_type_ref", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:drop_field_discriminator|set_field_extra"
@@ -74,6 +83,7 @@ targets = ['DataModelFieldBase.extras["discriminator"]']
 allowed-writers = ["GenerationStore.drop_field_discriminator", "GenerationStore.set_field_extra", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:drop_field_discriminator|set_field_extra|set_field_extras"
@@ -81,6 +91,7 @@ targets = ["DataModelFieldBase.extras"]
 allowed-writers = ["GenerationStore.drop_field_discriminator", "GenerationStore.set_field_extra", "GenerationStore.set_field_extras", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:drop_field_discriminator|set_type_discriminator"
@@ -88,6 +99,7 @@ targets = ["DataType.discriminator"]
 allowed-writers = ["GenerationStore.drop_field_discriminator", "GenerationStore.set_type_discriminator", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:drop_held_null|write_rendered_null"
@@ -95,6 +107,7 @@ targets = ["DataType.is_optional"]
 allowed-writers = ["GenerationStore.drop_held_null", "GenerationStore.write_rendered_null", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:drop_union_member_constraints|replace_nested_data_type|set_nested_data_types|swap_data_type"
@@ -102,6 +115,7 @@ targets = ["DataType.data_types"]
 allowed-writers = ["GenerationStore.drop_union_member_constraints", "GenerationStore.replace_nested_data_type", "GenerationStore.set_nested_data_types", "GenerationStore.swap_data_type", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:mark_serialized_as_any"
@@ -109,6 +123,7 @@ targets = ["DataModel.serialized_as_any"]
 allowed-writers = ["GenerationStore.mark_serialized_as_any", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:name_enum_member_literal_class"
@@ -116,6 +131,7 @@ targets = ["DataType.enum_member_literals"]
 allowed-writers = ["GenerationStore.name_enum_member_literal_class", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:override_type_import|set_type_expressions"
@@ -123,6 +139,7 @@ targets = ["DataType.import_"]
 allowed-writers = ["GenerationStore.override_type_import", "GenerationStore.set_type_expressions", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:record_site_constraints"
@@ -130,6 +147,15 @@ targets = ["DataType._site_constraints"]
 allowed-writers = ["GenerationStore.record_site_constraints", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
+
+[[write-owners]]
+name = "fact:register_model"
+targets = ["Parser.results"]
+allowed-writers = ["GenerationStore.register_model", "datamodel_code_generator.parser.generation:*"]
+unresolved = "report"
+fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:rename_field|set_field_identity"
@@ -137,6 +163,7 @@ targets = ["DataModelFieldBase.alias", "DataModelFieldBase.name"]
 allowed-writers = ["GenerationStore.rename_field", "GenerationStore.set_field_identity", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:replace_nested_data_type"
@@ -144,6 +171,7 @@ targets = ["DataType.dict_key"]
 allowed-writers = ["GenerationStore.replace_nested_data_type", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:require_field"
@@ -151,6 +179,7 @@ targets = ["DataModelFieldBase.use_default_with_required"]
 allowed-writers = ["GenerationStore.require_field", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:reset_base_classes|set_base_classes"
@@ -158,6 +187,7 @@ targets = ["DataModel.base_classes"]
 allowed-writers = ["GenerationStore.reset_base_classes", "GenerationStore.set_base_classes", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:set_field_constraints"
@@ -165,6 +195,7 @@ targets = ["DataModelFieldBase._type_dependent_constraints", "DataModelFieldBase
 allowed-writers = ["GenerationStore.set_field_constraints", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:set_field_identity"
@@ -172,6 +203,7 @@ targets = ["DataModelFieldBase.original_name", "DataModelFieldBase.serialization
 allowed-writers = ["GenerationStore.set_field_identity", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "fact:set_type_expressions"
@@ -179,6 +211,7 @@ targets = ["DataType.kwargs", "DataType.python_type", "DataType.type"]
 allowed-writers = ["GenerationStore.set_type_expressions", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:no store operation"
@@ -186,6 +219,7 @@ targets = ["BaseModel._validator_bindings", "DataModel._custom_template_dir", "D
 allowed-writers = ["datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:add_model_import"
@@ -193,6 +227,7 @@ targets = ["DataModel._additional_imports"]
 allowed-writers = ["GenerationStore.add_model_import", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:bind_builtin_names"
@@ -200,6 +235,7 @@ targets = ["DataModel._builtin_name_bindings"]
 allowed-writers = ["GenerationStore.bind_builtin_names", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:clear_target_null|drop_held_null|mark_target_null|redirect_model_reference_users|redirect_reference_users|write_rendered_null"
@@ -207,6 +243,7 @@ targets = ["DataType._type_null"]
 allowed-writers = ["GenerationStore.clear_target_null", "GenerationStore.drop_held_null", "GenerationStore.mark_target_null", "GenerationStore.redirect_model_reference_users", "GenerationStore.redirect_reference_users", "GenerationStore.write_rendered_null", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:drop_union_operator"
@@ -214,6 +251,7 @@ targets = ["DataType.use_union_operator"]
 allowed-writers = ["GenerationStore.drop_union_operator", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:mark_forward_references"
@@ -221,6 +259,7 @@ targets = ["DataModel.has_forward_reference"]
 allowed-writers = ["GenerationStore.mark_forward_references", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:name_enum_member"
@@ -228,6 +267,7 @@ targets = ["Member.alias"]
 allowed-writers = ["GenerationStore.name_enum_member", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:name_reference"
@@ -235,6 +275,7 @@ targets = ["DataType.alias"]
 allowed-writers = ["GenerationStore.name_reference", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:rename_model"
@@ -242,6 +283,7 @@ targets = ["DataModel.class_name", "Reference.duplicate_name", "Reference.name"]
 allowed-writers = ["GenerationStore.rename_model", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:rename_model|update_model_reference"
@@ -249,6 +291,7 @@ targets = ["DataModel.file_path", "Reference.path"]
 allowed-writers = ["GenerationStore.rename_model", "GenerationStore.update_model_reference", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:set_field_identity"
@@ -256,6 +299,15 @@ targets = ["DataModelFieldBase.use_serialization_alias"]
 allowed-writers = ["GenerationStore.set_field_identity", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
+
+[[write-owners]]
+name = "presentation:set_module_models"
+targets = ["ModuleContext.models"]
+allowed-writers = ["GenerationStore.set_module_models", "datamodel_code_generator.parser.generation:*"]
+unresolved = "report"
+fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:use_typing_generics"
@@ -263,6 +315,7 @@ targets = ["DataType.use_standard_collections"]
 allowed-writers = ["GenerationStore.use_typing_generics", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[write-owners]]
 name = "presentation:write_field_call_in_annotated"
@@ -270,6 +323,7 @@ targets = ["DataModelFieldBase.use_annotated"]
 allowed-writers = ["GenerationStore.write_field_call_in_annotated", "datamodel_code_generator.parser.generation:*"]
 unresolved = "report"
 fresh-objects = "report"
+attribution = "lexical"
 
 [[call-owners]]
 name = "home:__main__.py:_imply_remote_refs"

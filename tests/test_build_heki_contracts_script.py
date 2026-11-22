@@ -97,16 +97,23 @@ SEEDED_PACKAGE = {
         "class GenerationStore:\n"
         "    def set_fields(self, model: DataModel, fields: list[str]) -> None:\n        model.fields = fields\n"
     ),
+    f"{PACKAGE}/parser/base.py": (
+        "class Parser:\n    def __init__(self) -> None:\n        self.results: list[str] = []\n"
+    ),
     f"{PACKAGE}/parser/seeded.py": (
-        "from datamodel_code_generator.model.base import DataModel\n\n\n"
-        'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n'
+        "from datamodel_code_generator.model.base import DataModel\n"
+        "from datamodel_code_generator.parser.base import Parser\n\n\n"
+        'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n\n\n'
+        'def register(parser: Parser) -> None:\n    parser.results.append("model")\n'
     ),
     f"{PACKAGE}/parser/seeded_env.py": SEEDED_ENVIRONMENT,
 }
-"""A package whose ``seeded.py`` writes ``DataModel.fields`` outside the store operations that the fact row names.
+"""A package whose ``seeded.py`` writes ``DataModel.fields`` and the run-state list ``Parser.results`` outside the
+store operations that their rows name.
 
-``GenerationStore.set_fields``, one of those operations, writes it too: heki allows that write. ``seeded_env.py``
-holds `SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
+``GenerationStore.set_fields``, one of those operations, writes ``DataModel.fields`` too, and ``Parser.__init__``
+builds ``results``: heki allows both writes. ``seeded_env.py`` holds `SEEDED_ENVIRONMENT`, which the environment
+boundary forbids in functions and module bodies.
 """
 
 
@@ -174,6 +181,7 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
     assert (result.returncode, found) == (
         1,
         [
+            (f"{PACKAGE}/parser/seeded.py", "register", "MUT201", "Parser.results", 1),
             (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields", 1),
             (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", environment, 14),
             (f"{PACKAGE}/parser/seeded_env.py", "old_python", "EFF201", environment, 1),
@@ -205,20 +213,29 @@ attribution = "lexical"
 
 @pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
-    """Homes, builders, held parse methods and dispatch tables are judged where the call or read is written.
+    """Homes, builders, held parse methods, dispatch tables and fact rows are judged where the access is written.
 
     The guards of the records (`scripts/_decision_home_reads.py`) report the scope that holds each read, so a call
-    handed to a private helper is the helper's, not its caller's.
+    handed to a private helper is the helper's, not its caller's; the runtime write guard names a write by the
+    function that makes it, as heki names it with lexical attribution.
     """
     contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
     judged = [
         (table["name"], table.get("attribution"))
-        for kind in ("call-owners", "read-owners")
+        for kind in ("call-owners", "read-owners", "write-owners")
         for table in contracts[kind]
-        if table["name"].startswith(("home:", "builder:", "held:", "table:"))
+        if table["name"].startswith(("home:", "builder:", "held:", "table:", "fact:", "presentation:", "cache:"))
     ]
 
-    assert judged
+    assert {name.partition(":")[0] for name, _ in judged} == {
+        "home",
+        "builder",
+        "held",
+        "table",
+        "fact",
+        "presentation",
+        "cache",
+    }
     assert [name for name, attribution in judged if attribution != "lexical"] == []
 
 
