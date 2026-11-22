@@ -69,15 +69,15 @@ typed_dict_closed.json-typing.TypedDict	main_kr/generate_cli_command_reconstruct
 [test_generate_cli_command_writes_an_empty_list_as_the_option_off]
 	main_kr/generate_cli_command_writes_an_empty_list_as_the_option_off.stdout.txt
 [test_generate_prompt_basic]
-	main_kr/generate_prompt/basic.txt
+	main_kr/generate_prompt_basic.stdout.txt
 [test_generate_prompt_json]
-	main_kr/generate_prompt/json_output.txt
+	main_kr/generate_prompt_json.stdout.txt
 [test_generate_prompt_with_list_options]
-	main_kr/generate_prompt/with_list_options.txt
+	main_kr/generate_prompt_with_list_options.stdout.txt
 [test_generate_prompt_with_options]
-	main_kr/generate_prompt/with_options.txt
+	main_kr/generate_prompt_with_options.stdout.txt
 [test_generate_prompt_with_question]
-	main_kr/generate_prompt/with_question.txt
+	main_kr/generate_prompt_with_question.stdout.txt
 [test_generate_pyproject_config_basic]
 	main_kr/generate_pyproject_config_basic.stdout.txt
 [test_generate_pyproject_config_escapes_toml_strings]
