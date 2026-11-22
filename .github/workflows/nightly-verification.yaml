@@ -1,0 +1,261 @@
+name: Nightly verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      composition_budget:
+        description: "Seconds of drawing for each random composition job"
+        required: false
+        default: "720"
+        type: string
+  schedule:
+    - cron: "30 14 * * *"
+
+concurrency:
+  group: nightly-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UV_PYTHON_PREFERENCE: "only-managed"
+
+jobs:
+  shape-families:
+    name: Shape families, every cell (shard ${{ matrix.shard }}/4)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: nightly-verification
+          save-cache: ${{ matrix.shard == 1 }}
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Setup the suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e nightly-verification
+      - name: Run the shape families with every cell
+        run: >-
+          tox run --skip-uv-sync --skip-pkg-install -e nightly-verification --
+          --test-shard=${{ matrix.shard }}/4 tests/main/test_shape_families.py
+
+  shape-family-invariants:
+    name: Shape family invariants and ty
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: nightly-verification
+          save-cache: false
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Setup the suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e nightly-verification
+      - name: Check the invariants and the ty errors of every redeclaring family
+        run: tox run --skip-uv-sync --skip-pkg-install -e nightly-verification -- tests/main/test_shape_family_invariants.py
+
+  decision-tables:
+    name: Decision tables, every row
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: nightly-verification
+          save-cache: false
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Setup the suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e nightly-verification
+      - name: Run the decision tables with every row
+        run: tox run --skip-uv-sync --skip-pkg-install -e nightly-verification -- tests/main/test_decision_tables.py
+
+  generation-properties:
+    name: Generation properties, every input
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: nightly-verification
+          save-cache: false
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Setup the suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e nightly-verification
+      - name: Check determinism and the dump round trip on every input
+        run: tox run --skip-uv-sync --skip-pkg-install -e nightly-verification -- tests/main/test_generation_properties.py
+
+  shape-compositions:
+    name: Random shape compositions (draw ${{ matrix.shard }}/2)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      SHAPE_COMPOSITIONS_CACHE: ${{ github.workspace }}/.cache/shape-compositions
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: nightly-verification-compositions
+          save-cache: ${{ matrix.shard == 1 }}
+      - name: Resolve the base release
+        id: base
+        run: echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+      - name: Restore the base environment and the failing examples
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.SHAPE_COMPOSITIONS_CACHE }}
+          key: shape-compositions-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-${{ github.run_id }}
+          restore-keys: |
+            shape-compositions-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-
+            shape-compositions-
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+      - name: Draw compositions against the base release
+        env:
+          BASE: ${{ steps.base.outputs.tag }}
+          BUDGET: ${{ inputs.composition_budget || '720' }}
+          RUN_NUMBER: ${{ github.run_number }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -o pipefail
+          .venv/bin/python -m scripts.shape_families_random "$BASE" --budget "$BUDGET" --seed "$((RUN_NUMBER * 1000 + SHARD * 500))" \
+            --cache-dir "$SHAPE_COMPOSITIONS_CACHE" --database "$SHAPE_COMPOSITIONS_CACHE/database-$SHARD" \
+            --json "shape-compositions-$SHARD.json" --out "shape-compositions-schemas-$SHARD" \
+            | tee "shape-compositions-$SHARD.txt"
+      - name: Write job summary
+        if: always()
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          [ -f "shape-compositions-$SHARD.txt" ] || exit 0
+          {
+            echo "## Random shape compositions (draw $SHARD of 2)"
+            echo
+            echo '```text'
+            grep -v '^  schema: ' "shape-compositions-$SHARD.txt" | head -c 60000
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the findings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: shape-compositions-${{ matrix.shard }}
+          path: |
+            shape-compositions-${{ matrix.shard }}.json
+            shape-compositions-${{ matrix.shard }}.txt
+            shape-compositions-schemas-${{ matrix.shard }}
+          if-no-files-found: ignore
+
+  cell-catalog:
+    name: Cell catalog
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BEHAVIOUR_DIFF_CACHE: ${{ github.workspace }}/.cache/behaviour-diff
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: behaviour-diff
+          save-cache: false
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+      - name: Record the catalog of the fixtures' default cells
+        run: >-
+          .venv/bin/python scripts/behaviour_diff.py catalog "$GITHUB_SHA.json.gz" "$GITHUB_SHA"
+          -j 4 --cache-dir "$BEHAVIOUR_DIFF_CACHE"
+      - name: Upload the catalog
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cell-catalog
+          path: ${{ github.sha }}.json.gz
+          retention-days: 14
+          if-no-files-found: error
+
+  notify-failure:
+    name: Notify scheduled failure
+    if: failure() && github.event_name == 'schedule'
+    needs:
+      - shape-families
+      - shape-family-invariants
+      - decision-tables
+      - generation-properties
+      - shape-compositions
+      - cell-catalog
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open tracking issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = "Nightly verification failed";
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+            if (issues.some((issue) => issue.title === title)) {
+              core.info(`Open issue already exists: ${title}`);
+              return;
+            }
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body: [
+                "The scheduled nightly verification workflow failed.",
+                "",
+                `Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              ].join("\n"),
+            });
