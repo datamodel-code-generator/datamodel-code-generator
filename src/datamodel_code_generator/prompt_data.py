@@ -222,7 +222,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--strict-dotted-module-names": "Require canonical Python identifiers when inferring dotted module paths.",
     "--strict-nullable": "Treat default field as a non-nullable field.",
     "--strict-refs": "Treat unresolved local `$ref` JSON pointers as errors.",
-    "--strict-types": "Enable strict type validation for specified Python types.",
+    "--strict-types": "Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.",
     "--strip-default-none": "Remove fields with None as default value from generated models.",
     "--tag-msgspec-by-payload-name": "Tag the structs of a msgspec discriminated union with the property name of th...",
     "--target-pydantic-version": "Target Pydantic version for generated code compatibility.",

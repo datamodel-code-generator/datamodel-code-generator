@@ -526,7 +526,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.
-  --strict-types {str,bytes,int,float,bool} [{str,bytes,int,float,bool} ...]
+  --strict-types {str,bytes,int,float,bool,datetime,date,time} [{str,bytes,int,float,bool,datetime,date,time} ...]
                         Use strict types
   --type-mappings TYPE_MAPPINGS [TYPE_MAPPINGS ...]
                         Override default type mappings. Format:

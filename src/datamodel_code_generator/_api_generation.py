@@ -74,7 +74,7 @@ from datamodel_code_generator._target_documents import (
     shown,
 )
 from datamodel_code_generator._target_naming import fold_key
-from datamodel_code_generator.enums import DataModelType, InputFileType, OpenAPIScope
+from datamodel_code_generator.enums import DataModelType, InputFileType, OpenAPIScope, StrictTypes
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -273,6 +273,8 @@ def prepare_target(
     _check_facade_outputs(effective)
     if (requirement := model_requirement(effective, generator.selector)) is not None:
         raise Error(requirement)
+    if (problem := strict_date_time_problem(effective, generator)) is not None:
+        raise Error(problem)
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = english_list(
             (stable_repr(item.value) for item in DataModelType if item in generator.backends), "or", "each"
@@ -376,6 +378,23 @@ def model_requirement(config: GenerateConfig, selector: str) -> str | None:
     ):
         return None
     return f"{selector} requires --openapi-scopes to include api"
+
+
+_DATE_TIME_STRICT_TYPES = (StrictTypes.datetime, StrictTypes.date, StrictTypes.time)
+
+
+def strict_date_time_problem(config: GenerateConfig, generator: TargetGenerator) -> str | None:
+    """Say why a target cannot use the date and time values of `--strict-types`, or None.
+
+    A target reads date and time values from text, which `Strict()` rejects, so it refuses the first value given.
+    """
+    if (given := next((item for item in config.strict_types or () if item in _DATE_TIME_STRICT_TYPES), None)) is None:
+        return None
+    target = generator.selector.removeprefix("--generate-")
+    return (
+        f"--strict-types {given.value} is not supported with {generator.selector}: the generated {target} "
+        "reads date and time values from text, which strict mode rejects"
+    )
 
 
 def _root_problem(input_: _GenerationInput) -> tuple[str, str] | None:

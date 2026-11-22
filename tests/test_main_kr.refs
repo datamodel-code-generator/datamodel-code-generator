@@ -105,7 +105,7 @@ typed_dict_closed.json-typing.TypedDict	main_kr/generate_cli_command_reconstruct
 command	main_kr/generated_config_leaves_out_the_option_only_the_command_line_reads[command].stdout.txt
 config	main_kr/generated_config_leaves_out_the_option_only_the_command_line_reads[config].stdout.txt
 [test_help_shows_new_options]
-	main_kr/help_shows_new_options.txt	= main/help/color.txt
+	main_kr/help_shows_new_options.txt
 [test_http_ignore_tls]
 	main_kr/http_ignore_tls.py
 [test_http_local_ref_path_cli_doc]

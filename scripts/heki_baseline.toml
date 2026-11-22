@@ -5624,13 +5624,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
-qualname = "AnnotatedConstraintDataType.type_hint"
-rule_code = "MUT204"
-target = "datamodel_code_generator._python_syntax.subscript_text"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
 qualname = "AnnotatedStringDataType.type_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
@@ -5680,13 +5673,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
-qualname = "EncodedTextDataType.type_hint"
-rule_code = "MUT204"
-target = "datamodel_code_generator._python_syntax.subscript_text"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
 qualname = "PydanticV2DataType._get_wrapped_alias_type_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
@@ -5711,6 +5697,13 @@ path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
 qualname = "PydanticV2DataType._wrap_discriminator_type_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/pydantic_v2/types.py"
+qualname = "_RuntimeAnnotatedDataType._annotated"
+rule_code = "MUT204"
+target = "datamodel_code_generator._python_syntax.subscript_text"
 count = 1
 
 [[entries]]

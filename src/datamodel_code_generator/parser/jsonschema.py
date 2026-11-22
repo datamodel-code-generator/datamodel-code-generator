@@ -997,6 +997,18 @@ def _validate_external_ref(ref: str) -> None:
 
 
 json_schema_data_formats: dict[str, dict[str, Types]] = get_data_formats(is_openapi=True)
+_DATE_TIME_TYPES: frozenset[Types] = frozenset({
+    Types.date,
+    Types.date_time,
+    Types.date_time_local,
+    Types.time,
+    Types.time_local,
+})
+"""The date and time types, which the type manager is told sit on a string (``string_format``).
+
+A number of format ``time`` is a float, and only a string takes ``--strict-types datetime``, ``date`` or ``time``: an
+integer or number of format ``date-time`` is a Unix time, which strict mode refuses.
+"""
 _UUID_VERSION_DATA_FORMATS: dict[str, dict[str, Types]] = {
     **json_schema_data_formats,
     "string": {**json_schema_data_formats["string"], "uuid6": Types.uuid6, "uuid7": Types.uuid7, "uuid8": Types.uuid8},
@@ -1370,10 +1382,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return False
 
     def _get_format_type_kwargs(self, type_: str, format_: str, types: Types) -> dict[str, bool]:
-        """Keep bytes mapped from base64 text decoded, and string time formats out of float strictness."""
+        """Keep bytes mapped from base64 text decoded, and mark the date and time formats of a string.
+
+        A string time format stays out of float strictness, and only the date and time formats of a string take the
+        strict date and time types (``_DATE_TIME_TYPES``).
+        """
         if self._format_bytes(types, type_, format_) == "base64":
             return {"base64_encoded": True}
-        if types == Types.time and type_ == "string":
+        if types in _DATE_TIME_TYPES and type_ == "string":
             return {"string_format": True}
         return {}
 

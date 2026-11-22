@@ -170,7 +170,9 @@ ServerLayout: TypeAlias = Literal['routers', 'single']
 ServerType: TypeAlias = Literal['fastapi']
 
 
-StrictTypesModel: TypeAlias = Literal['str', 'bytes', 'int', 'float', 'bool']
+StrictTypesModel: TypeAlias = Literal[
+    'str', 'bytes', 'int', 'float', 'bool', 'datetime', 'date', 'time'
+]
 
 
 TargetPydanticVersion: TypeAlias = Literal['2', '2.11', '2.12', '2.14']
