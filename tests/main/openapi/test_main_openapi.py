@@ -2071,6 +2071,31 @@ def test_main_openapi_allof_with_anyof_ref(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "msgspec.Struct", "--disable-warnings"], id="msgspec"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--infer-union-discriminators"],
+            id="inferred-discriminators",
+        ),
+    ],
+)
+def test_main_openapi_allof_with_anyof_ref_inferred_tags(extra_args: list[str], output_file: Path) -> None:
+    """Infer the discriminator of an anyOf that an allOf member names by ``$ref`` without writing it into that schema.
+
+    The inferred discriminator was written into the schema object the ``$ref`` names, which every reader of the
+    target shares, so the schema graph check of the suite failed (#7249); the output stays the same. msgspec warns
+    that it cannot decode the untagged union of ``ItemPostRequest``, as it did before.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_with_anyof_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=extra_args,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--base-class"],
     option_description="""Specify a custom base class for generated models.
