@@ -2103,7 +2103,9 @@ jobs:
           BASE=$(git merge-base "$BASE_SHA" HEAD)
           args=(check --base "$BASE" --head HEAD)
           if [ "$EVENT_NAME" = push ]; then args+=(--main); fi
-          if [ -f "$RUNNER_TEMP/verdicts.json" ]; then args+=(--verdicts "$RUNNER_TEMP/verdicts.json"); fi
+          head_args=("${args[@]}")
+          base_args=("${args[@]}")
+          if [ -f "$RUNNER_TEMP/verdicts.json" ]; then head_args+=(--verdicts "$RUNNER_TEMP/verdicts.json"); fi
           if ! git cat-file -e "$BASE:scripts/declared_changes.py" 2>/dev/null; then
             echo "the merge base has no records check"; exit 0
           fi
@@ -2111,12 +2113,17 @@ jobs:
           copy="$RUNNER_TEMP/records-check-base"
           mkdir -p "$copy"
           git archive "$BASE" scripts tests/__init__.py tests/units.py | tar -x -C "$copy"
+          # A merge base older than the verdicts option judges without the gate's verdicts instead of rejecting the option.
+          if [ -f "$RUNNER_TEMP/verdicts.json" ] \
+            && uv run --no-project --python 3.13 python "$copy/scripts/declared_changes.py" check --help | grep -q -- '--verdicts'; then
+            base_args+=(--verdicts "$RUNNER_TEMP/verdicts.json")
+          fi
           status=0
-          uv run --no-project --python 3.13 python "$copy/scripts/declared_changes.py" "${args[@]}" || status=$?
+          uv run --no-project --python 3.13 python "$copy/scripts/declared_changes.py" "${base_args[@]}" || status=$?
           # A change of the check's files is also judged by its own copy, so a change that tightens the check obeys it.
           if ! git diff --quiet "$BASE" HEAD -- scripts tests/__init__.py tests/units.py; then
             echo "the change touches the check's files: its own copy judges it too"
-            uv run --no-project --python 3.13 python scripts/declared_changes.py "${args[@]}" || status=$?
+            uv run --no-project --python 3.13 python scripts/declared_changes.py "${head_args[@]}" || status=$?
           fi
           exit "$status"
 
