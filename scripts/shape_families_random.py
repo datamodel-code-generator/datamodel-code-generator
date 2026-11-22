@@ -83,8 +83,8 @@ MOVED: Final = "moved"
 RULES: Final = (*KEPT, *COMPOSED)
 
 
-def generation_args(schema: Path, backend: str, contract: str) -> list[str]:
-    """Return the arguments both sides generate a composition with (the runner adds `--output`)."""
+def shared_args(schema: Path, backend: str) -> list[str]:
+    """Return the arguments every generation has, whatever the contract."""
     return [
         "--input",
         str(schema),
@@ -95,8 +95,12 @@ def generation_args(schema: Path, backend: str, contract: str) -> list[str]:
         "--disable-timestamp",
         "--formatters",
         "builtin",
-        *CONTRACTS[contract],
     ]
+
+
+def generation_args(schema: Path, backend: str, contract: str) -> list[str]:
+    """Return the arguments both sides generate a composition with (the runner adds `--output`)."""
+    return [*shared_args(schema, backend), *CONTRACTS[contract]]
 
 
 @dataclass(frozen=True)
@@ -333,6 +337,9 @@ def main(argv: list[str] | None = None) -> int:
         else compare_release.resolve_base(base_name, candidate_python, ns.cache_dir.absolute())
     )
     inventory = option_inventory(resolved.python, resolved.env())
+    if (absent := opt_in_reason(shared_args(Path("schema.json"), "pydantic.BaseModel"), inventory)) is not None:
+        print(f"the base {ns.base_python or base_name} has no {absent}, which every generation uses", file=sys.stderr)
+        return 2
     compared = frozenset(name for name, options in CONTRACTS.items() if opt_in_reason(list(options), inventory) is None)
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="shape-compositions-") as scratch:

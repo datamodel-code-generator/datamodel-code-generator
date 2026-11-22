@@ -95,6 +95,11 @@ class Level:
     """The checked definition of the level's family."""
 
 
+def _no_params(_params: Mapping[str, object]) -> Mapping[str, object]:
+    """Return no fixed parameters: the placement varies every parameter it holds."""
+    return {}
+
+
 @dataclass(frozen=True)
 class Placement:
     """How a family holds an inner definition: its slot, the parameters it fixes and the dimensions it varies."""
@@ -103,7 +108,7 @@ class Placement:
     slot: str
     """The definition whose place the inner checked definition takes, or which extends it (``wraps``)."""
     dimensions: tuple[tuple[str, tuple[object, ...]], ...]
-    fixed: Callable[[Mapping[str, object]], Mapping[str, object]] = lambda _params: {}
+    fixed: Callable[[Mapping[str, object]], Mapping[str, object]] = field(default_factory=lambda: _no_params)
     """The family parameters the placement holds, from the ones it varies: the slot's own, which the inner replaces."""
     shown: Mapping[str, object] = field(default_factory=dict)
     """The fixed parameters that still describe the composed shape (the container element stays a reference)."""
@@ -330,12 +335,32 @@ def facts(definitions: Mapping[str, Schema], schema: Schema, seen: frozenset[str
     )
 
 
+def _instance(definitions: Mapping[str, Schema], name: str) -> list[Schema]:
+    """Return the schemas that describe one instance of ``name``: itself and what it extends or is a branch of.
+
+    That follows ``$ref``, ``allOf``, ``oneOf`` and ``anyOf`` only; a definition held by a property, container item or
+    container value describes another object.
+    """
+    found: list[Schema] = []
+    seen: set[str] = set()
+    pending: list[Schema] = [definitions[name]]
+    seen.add(name)
+    while pending:
+        schema = pending.pop()
+        found.append(schema)
+        members = [_schema(member) for key in ("allOf", "oneOf", "anyOf") for member in _items(schema.get(key))]
+        if isinstance(target := schema.get("$ref"), str) and (ref := target.removeprefix(REF)) not in seen:
+            seen.add(ref)
+            members.append(definitions[ref])
+        pending.extend(members)
+    return found
+
+
 def _declarations(definitions: Mapping[str, Schema], name: str, prop: str) -> list[Schema]:
-    """Return every schema the definitions ``name`` reaches give the property ``prop``."""
-    reached = _reachable(dict(definitions), name)
+    """Return every schema the same instance of ``name`` gives the property ``prop``."""
     return [
         _schema(_schema(schema.get("properties")).get(prop))
-        for schema in reached.values()
+        for schema in _instance(definitions, name)
         if prop in _schema(schema.get("properties"))
     ]
 

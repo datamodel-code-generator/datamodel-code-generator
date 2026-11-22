@@ -10,13 +10,16 @@ tier compares two generators with (``shape_families/moves.py``) run on generated
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import jsonschema
 import pytest
 from hypothesis import HealthCheck, given, settings
 
+from scripts.behaviour_diff import opt_in_reason
 from scripts.legacy_rows import LEGACY_ROWS
+from scripts.shape_families_random import shared_args
 from tests.capabilities import needs
 from tests.main.shape_families.compose import (
     COMPOSED,
@@ -39,8 +42,6 @@ from tests.main.shape_families.moves import moved, verdicts
 from tests.main.shape_families.verdict import CONTRACTS, KINDS, judge
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from tests.main.shape_families.compose import Level
     from tests.main.shape_families.kept import Kept
 
@@ -164,6 +165,8 @@ def test_compositions_without_a_common_value_are_left_out() -> None:
     """A mix declaring ``p`` an integer around a mix whose ``p`` is a string has no valid ``p``: no author writes it.
 
     The same mix around a string ``p`` is kept, as is a level that declares nothing beside its inner (``container``).
+    A ``p`` inside the elements of a container is another object's: the integer mix around a container of the string
+    mix is kept (``{"p": 1, "f": [{"p": "a"}]}`` is valid).
     """
     mixes = {dict(level.params)["second"]: level for level in placed_levels() if level.family == "mixin"}
     strings = next(level for level in plain_levels() if level.family == "mixin")
@@ -171,10 +174,24 @@ def test_compositions_without_a_common_value_are_left_out() -> None:
         fits((mixes["int"], strings)),
         fits((mixes["str"], strings)),
         fits((_first("container", placed_levels()), strings)),
+        fits((mixes["int"], _first("container", placed_levels()), strings)),
     ) == (
         False,
         True,
         True,
+        True,
+    )
+
+
+@pytest.mark.allow_direct_assert("The shared options a release lacks are named.")
+def test_shared_options_are_checked_against_the_base_inventory() -> None:
+    """A base release without ``--formatters`` is named before any generation, as a contract option it lacks is."""
+    args = shared_args(Path("schema.json"), "pydantic.BaseModel")
+    full = {arg: None for arg in args if arg.startswith("--")}
+    full["--formatters"] = ["builtin"]
+    assert (opt_in_reason(args, full), opt_in_reason(args, {k: v for k, v in full.items() if k != "--formatters"})) == (
+        None,
+        "--formatters",
     )
 
 
