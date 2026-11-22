@@ -1290,7 +1290,7 @@ def iter_local_source_paths(parser: SchemaDocumentsHost) -> Iterator[Path]:
         return
     match parser.source:
         case Path() as path if path.is_dir():
-            yield from input_files_under(path, order="name")
+            yield from input_files_under(path, order="name", encoding=parser.encoding)
         case list() as paths:
             yield from ((parser.base_path / path) for path in paths)
 

@@ -177,34 +177,37 @@ def _ordered(files: Iterable[Path], order: FileOrder) -> list[Path]:
     return sorted(files, key=attrgetter("name")) if order == "name" else sorted(files)
 
 
-def is_hidden_binary(path: Path, directory: Path) -> bool:
+def is_hidden_binary(path: Path, directory: Path, encoding: str = "utf-8") -> bool:
     """Return whether ``path`` below ``directory`` is a hidden file that is not text: it cannot be a schema.
 
     A name that starts with a dot, or a directory of the path below ``directory`` that does, makes a file hidden. A
-    file is not text where its head holds a NUL byte (the rule of ``git``), which no input format reads: Finder's
-    ``.DS_Store`` is one. A hidden file that reads as text stays an input, as it always was.
+    file is not text where its head, read in ``encoding``, holds a NUL character (the rule of ``git``), which no
+    input format reads: Finder's ``.DS_Store`` is one. A hidden file that reads as text stays an input, as it always
+    was: a UTF-16 schema holds NUL bytes and is text in ``utf-16``.
     """
     if not any(part.startswith(".") for part in path.relative_to(directory).parts):
         return False
     head = b""
     with contextlib.suppress(OSError), path.open("rb") as file:
         head = file.read(_BINARY_HEAD_SIZE)
-    return b"\0" in head
+    return "\0" in head.decode(encoding, errors="replace")
 
 
-def iter_input_files(directory: Path, pattern: str = "*") -> Iterator[Path]:
+def iter_input_files(directory: Path, pattern: str = "*", encoding: str = "utf-8") -> Iterator[Path]:
     """Yield the files of a directory input whose names match ``pattern``, in the order ``Path.rglob`` yields them.
 
-    A hidden file that is not text is not an input (``is_hidden_binary``).
+    A hidden file that is not text in ``encoding`` is not an input (``is_hidden_binary``).
     """
     for path in directory.rglob(pattern):
-        if path.is_file() and not is_hidden_binary(path, directory):
+        if path.is_file() and not is_hidden_binary(path, directory, encoding):
             yield path
 
 
-def input_files_under(directory: Path, pattern: str = "*", *, order: FileOrder = "path") -> list[Path]:
+def input_files_under(
+    directory: Path, pattern: str = "*", *, order: FileOrder = "path", encoding: str = "utf-8"
+) -> list[Path]:
     """Return the files of a directory input in path or file-name order (``iter_input_files``, ``files_under``)."""
-    return _ordered(iter_input_files(directory, pattern), order)
+    return _ordered(iter_input_files(directory, pattern, encoding), order)
 
 
 def output_layout(path: Path) -> OutputLayout | None:

@@ -47,8 +47,8 @@ datamodel-codegen --input schema.json --output model.py \
 ```
 
 A formatter runs in the directory of the output file (the output directory for an output without a suffix), the working
-directory without `--output`. A relative path in the keyword arguments is read from there, also under `--check` and
-`--output-format json`.
+directory without `--output`. When that directory does not exist yet, the formatter runs in its nearest existing
+parent. A relative path in the keyword arguments is read from there, also under `--check` and `--output-format json`.
 
 ---
 

@@ -1302,11 +1302,12 @@ def _validate_output_files(
     """
     if _should_skip_compile(extra_arguments):
         return
-    should_exec = not _should_skip_exec(extra_arguments, force_exec=force_exec_validation)
+    encoding = _get_argument_value(extra_arguments, "--encoding") or "utf-8"
+    should_exec = not _should_skip_exec(extra_arguments, force_exec=force_exec_validation) and encoding == "utf-8"
     if output_path.is_file() and output_path.suffix == ".py":
         _export_older_target_output(output_path, [output_path], extra_arguments, force_exec=force_exec_validation)
         validate_generated_code(
-            output_path.read_text(encoding="utf-8"),
+            output_path.read_text(encoding=encoding),
             str(output_path),
             do_exec=should_exec and not force_exec_validation,
         )
@@ -1319,7 +1320,7 @@ def _validate_output_files(
     python_files = sorted(output_path.rglob("*.py"))
     _export_older_target_output(output_path, python_files, extra_arguments, force_exec=force_exec_validation)
     for python_file in python_files:
-        validate_generated_code(python_file.read_text(encoding="utf-8"), str(python_file), do_exec=False)
+        validate_generated_code(python_file.read_text(encoding=encoding), str(python_file), do_exec=False)
     if should_exec:
         _import_generated_output(output_path)
 

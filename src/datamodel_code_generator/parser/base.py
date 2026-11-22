@@ -1690,7 +1690,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         The generator's own output and model metadata inside the directory are not inputs (``DirectoryInputFilter``).
         """
-        files = input_files_under(directory, order="name")
+        files = input_files_under(directory, order="name", encoding=self.encoding)
         if (input_filter := self._source_context.directory_input_filter) is None:
             return ((path, None) for path in files)
         return input_filter.iter_files(files, self.encoding)

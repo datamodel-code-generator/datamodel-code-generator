@@ -1,0 +1,7 @@
+[[change]]
+id = "bug-cli-hidden-text-encoding"
+extends = "bug-cli-hidden-binary-inputs"
+refs = ["#7128"]
+covers = [
+    "main/directory_input_hidden_files/directory_input_keeps_hidden_files_that_are_text_in_the_encoding/",
+]

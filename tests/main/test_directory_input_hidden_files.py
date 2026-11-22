@@ -18,15 +18,15 @@ HIDDEN_BINARY_PLACES = ["a/.DS_Store", "a/b/.DS_Store", ".cache/thumbnail.bin", 
 COMMON_ARGS = ("--formatters", "builtin", "--disable-timestamp")
 
 
-def _write_schemas(input_dir: Path) -> None:
+def _write_schemas(input_dir: Path, encoding: str = "utf-8") -> None:
     """Write two schema files, the second naming the first by a reference."""
     (input_dir / "a").mkdir(parents=True)
     (input_dir / "a" / "pet.json").write_text(
-        json.dumps({"title": "Pet", "type": "object", "properties": {"name": {"type": "string"}}}), encoding="utf-8"
+        json.dumps({"title": "Pet", "type": "object", "properties": {"name": {"type": "string"}}}), encoding=encoding
     )
     (input_dir / "owner.json").write_text(
         json.dumps({"title": "Owner", "type": "object", "properties": {"pet": {"$ref": "a/pet.json"}}}),
-        encoding="utf-8",
+        encoding=encoding,
     )
 
 
@@ -75,4 +75,20 @@ def test_directory_input_keeps_hidden_text_files(tmp_path: Path) -> None:
         output_path=tmp_path / "models",
         input_file_type="jsonschema",
         extra_args=COMMON_ARGS,
+    )
+
+
+def test_directory_input_keeps_hidden_files_that_are_text_in_the_encoding(tmp_path: Path) -> None:
+    """Keep a hidden UTF-16 schema an input with ``--encoding utf-16``, though its bytes hold NUL."""
+    input_dir = tmp_path / "schemas"
+    _write_schemas(input_dir, "utf-16")
+    (input_dir / ".schemas").mkdir()
+    (input_dir / ".schemas" / "draft.json").write_text(
+        json.dumps({"title": "Draft", "type": "object"}), encoding="utf-16"
+    )
+    run_main_and_assert(
+        input_path=input_dir,
+        output_path=tmp_path / "models",
+        input_file_type="jsonschema",
+        extra_args=(*COMMON_ARGS, "--encoding", "utf-16"),
     )

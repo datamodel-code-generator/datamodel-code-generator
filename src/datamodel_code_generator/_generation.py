@@ -451,8 +451,13 @@ _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096
 
 def get_first_file(path: Path) -> Path:
     """Find and return the first file in a path: the path itself unless it is a directory, else its first file."""
+    return _first_file(path, "utf-8")
+
+
+def _first_file(path: Path, encoding: str) -> Path:
+    """Return ``get_first_file`` of a directory input whose hidden files are read as text in ``encoding``."""
     if path.is_dir():
-        if (first := next(iter_input_files(path), None)) is not None:
+        if (first := next(iter_input_files(path, encoding=encoding), None)) is not None:
             return first
     elif path.exists():
         return path
@@ -1711,7 +1716,12 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
         try:
             match input_:
                 case Path() as input_path if (input_filter := config._directory_input_filter) is not None:  # noqa: SLF001
-                    detected_input = next(input_filter.iter_files(iter_input_files(input_path), config.encoding), None)
+                    detected_input = next(
+                        input_filter.iter_files(
+                            iter_input_files(input_path, encoding=config.encoding), config.encoding
+                        ),
+                        None,
+                    )
                     if detected_input is None:
                         msg = f"No file found in: {input_path}"
                         raise FileNotFoundError(msg)  # noqa: TRY301
@@ -1721,9 +1731,9 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
                     prefetched_source = (detected_input_path, input_data)
                     input_text_ = input_data.decode(config.encoding)
                 case Path() as input_path:
-                    input_text_ = _input_text(get_first_file(input_path), config.encoding, read_once_data)
+                    input_text_ = _input_text(_first_file(input_path, config.encoding), config.encoding, read_once_data)
                 case [Path(), *_] as input_paths:
-                    detected_input_path = get_first_file(input_paths[0])
+                    detected_input_path = _first_file(input_paths[0], config.encoding)
                     input_data = detected_input_path.read_bytes()
                     # Retain original bytes for parsing and content-based cache keys without another read.
                     prefetched_source = (detected_input_path, input_data)
