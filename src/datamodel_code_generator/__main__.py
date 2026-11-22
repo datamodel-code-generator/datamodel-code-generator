@@ -2390,8 +2390,6 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         is_directory_output = False
         compare_output = None
 
-    # A run that generates into a staging directory (a check, JSON output, a batch job) reads the context of the
-    # output it stands for: where its custom formatter, template directory and class name generator run.
     real_output = _batch_original_output or config.output
     logical_output = None if generate_output == real_output else real_output
     config.repair_invalid_dotted_stdout = _repairs_invalid_dotted_stdout(config, namespace, generate_output)
