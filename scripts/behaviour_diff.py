@@ -818,14 +818,20 @@ def family_cases(python: Path, candidate: Candidate, out: Path) -> tuple[list[Fa
 
 
 def _written_family_cases(shapes: list[ListedShape], out: Path) -> list[FamilyCase]:
-    """Write each listed shape (family, parameters, both spellings) into a directory named by its label."""
+    """Write each listed shape (family, parameters, both spellings) into a directory named by its label.
+
+    Each file is written beside its place and moved there (`Path.replace`), so another gate run that shares the cache
+    directory reads the whole old file or the whole new one, never one cut short.
+    """
     index: list[FamilyCase] = []
     for family, params, *documents in shapes:
         label = f"{FAMILY_PREFIX}{family}/" + ",".join(f"{name}={value}" for name, value in params)
         directory = out / (key := _stable(label)[:16])
         directory.mkdir(parents=True, exist_ok=True)
         for name, document in zip(FAMILY_SPELLINGS.values(), documents, strict=True):
-            (directory / name).write_text(json.dumps(document, indent=2), encoding="utf-8")
+            written = directory / f".{name}.{os.getpid()}.{threading.get_ident()}.tmp"
+            written.write_text(json.dumps(document, indent=2), encoding="utf-8")
+            written.replace(directory / name)
         index.append({"label": label, "key": key})
     return index
 
