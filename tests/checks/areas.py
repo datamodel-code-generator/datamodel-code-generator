@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
@@ -16,6 +17,53 @@ if TYPE_CHECKING:
 _OFF_VALUES: Final = frozenset({"", "0"})
 _RAISE_VALUE: Final = "1"
 _REPORT_PREFIX: Final = "report:"
+
+if sys.platform != "win32":
+
+    def _append(path: Path, line: bytes) -> None:
+        """Append the line to the file in one write, which ``O_APPEND`` puts at the end whole.
+
+        A regular file takes the whole write, so the loop for the rest of a short write runs once.
+        """
+        descriptor = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT)
+        try:
+            while line:
+                line = line[os.write(descriptor, line) :]
+        finally:
+            os.close(descriptor)
+
+else:  # pragma: win32 cover
+    import _winapi
+
+    _FILE_APPEND_DATA: Final = 0x0004
+    _FILE_SHARE_READ: Final = 0x0001
+    _FILE_SHARE_WRITE: Final = 0x0002
+    _OPEN_ALWAYS: Final = 4
+    _FILE_ATTRIBUTE_NORMAL: Final = 0x0080
+
+    def _append(path: Path, line: bytes) -> None:
+        """Append the line to the file in one write through a handle that may only append.
+
+        The CRT's ``O_APPEND`` seeks to the end and then writes, so two processes can write at the same offset; a handle
+        opened with ``FILE_APPEND_DATA`` alone writes each write at the end of the file in one step. ``_winapi`` names
+        neither that right nor the share, creation and attribute values, so they are the values of the Windows headers.
+        A synchronous write to a file writes all of it or fails, so the loop for the rest of a short write runs once.
+        """
+        handle = _winapi.CreateFile(
+            str(path),
+            _FILE_APPEND_DATA | _winapi.SYNCHRONIZE,
+            _FILE_SHARE_READ | _FILE_SHARE_WRITE,
+            _winapi.NULL,
+            _OPEN_ALWAYS,
+            _FILE_ATTRIBUTE_NORMAL,
+            _winapi.NULL,
+        )
+        try:
+            while line:
+                written, _ = _winapi.WriteFile(handle, line)
+                line = line[written:]
+        finally:
+            _winapi.CloseHandle(handle)
 
 
 class Area(Enum):
@@ -109,9 +157,13 @@ class Mode:
         self.record(text, **details)
 
     def record(self, message: str, **details: object) -> None:
-        """Append the message and its details to the report as one JSON line; only a report mode calls it."""
-        with cast("Path", self.report_path).open("a", encoding="utf-8") as report:
-            report.write(f"{json.dumps({'area': self.area.name, 'message': message, **details}, ensure_ascii=False)}\n")
+        """Append the message and its details to the report as one JSON line; only a report mode calls it.
+
+        Generations on threads and the generator processes a test starts append to one report at once, so the line is
+        written whole in one append that the system puts at the end of the file.
+        """
+        line = f"{json.dumps({'area': self.area.name, 'message': message, **details}, ensure_ascii=False)}\n"
+        _append(cast("Path", self.report_path), line.encode())
 
 
 MODES: Final[ContextVar[Mapping[Area, Mode] | None]] = ContextVar("check_modes", default=None)
