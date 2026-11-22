@@ -1267,7 +1267,7 @@ def test_generated_models_decide_value_neighbours_like_the_schema(
         if neighbour.keyword == SEED_KEYWORD:
             break
     assert not asserted, f"{case.id}: the models decide asserted value neighbours otherwise:\n" + "\n".join(asserted)
-    assert_output(json.dumps(unasserted, indent=2))
+    assert_output(json.dumps(unasserted, indent=2), varies_with=("pydantic-before-2.5",))
 
 
 def _raise_type_error(value: int) -> int:

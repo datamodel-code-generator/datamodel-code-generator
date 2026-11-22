@@ -91,6 +91,7 @@ def test_convert_avro_schema_data_isolates_raw_lists() -> None:
 def test_main_avro_constructs(output_file: Path) -> None:
     """Generate models for Avro primitive, complex, named, union, default, and logical types."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
         input_file_type="avro",
@@ -878,6 +879,7 @@ def test_main_avro_output_model_types(
 def test_main_avro_infer_input_file_type(output_file: Path) -> None:
     """Infer Avro schema input and generate a model."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
         extra_args=get_current_version_args("--use-field-description"),
@@ -889,6 +891,7 @@ def test_main_avro_infer_input_file_type(output_file: Path) -> None:
 def test_main_avro_namespace_collisions(output_file: Path) -> None:
     """Resolve Avro fullname collisions by namespace."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / "namespace_collisions.avsc",
         output_path=output_file,
         input_file_type="avro",
@@ -951,6 +954,7 @@ def test_avro_namespace_reference_precedence(output_file: Path, entrypoint: str)
 def test_main_avro_official_spec_long_list(output_file: Path) -> None:
     """Generate the recursive LongList record from the Apache Avro specification."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / "official_long_list.avsc",
         output_path=output_file,
         input_file_type="avro",
@@ -963,6 +967,7 @@ def test_main_avro_official_spec_long_list(output_file: Path) -> None:
 def test_main_avro_single_value_enum_as_const_keeps_converted_enums(output_file: Path) -> None:
     """Keep one-symbol Avro enums as Enum classes, as Avro is converted rather than read as a JSON Schema document."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
         output_path=output_file,
         input_file_type="avro",
@@ -974,6 +979,7 @@ def test_main_avro_single_value_enum_as_const_keeps_converted_enums(output_file:
 def test_main_avro_spec_matrix(output_file: Path) -> None:
     """Generate models for Avro specification schema forms and edge-case attributes."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
         output_path=output_file,
         input_file_type="avro",
@@ -1036,6 +1042,7 @@ def test_main_avro_spec_matrix(output_file: Path) -> None:
 def test_main_avro_schema_declaration_forms(output_file: Path, fixture_name: str, explicit_type: bool) -> None:
     """Generate importable code for Avro schema string/object/array declaration forms."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=AVRO_DATA_PATH / fixture_name,
         output_path=output_file,
         input_file_type="avro" if explicit_type else None,
@@ -1052,6 +1059,7 @@ OFFICIAL_SCHEMA_PASS_FIXTURES = tuple(sorted((AVRO_DATA_PATH / "official_schema_
 def test_main_avro_official_c_schema_pass_corpus(output_file: Path, fixture_path: Path) -> None:
     """Generate importable code for Apache Avro release-1.12.1 C schema pass fixtures."""
     run_main_and_assert(
+        varies_with=("native-deferred-annotations",),
         input_path=fixture_path,
         output_path=output_file,
         input_file_type="avro",

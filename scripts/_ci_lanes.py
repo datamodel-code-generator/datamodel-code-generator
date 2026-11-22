@@ -41,7 +41,7 @@ TOX = "tox.ini"
 PYPROJECT = "pyproject.toml"
 LOCK = "uv.lock"
 FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
-"""The variable that makes the tests use the built-in formatter (``tests.conftest.TEST_DEFAULT_FORMATTER_ENV``)."""
+"""The variable that makes the tests use the built-in formatter (``tests.capabilities.TEST_DEFAULT_FORMATTER_ENV``)."""
 RUNNERS = (("ubuntu", "linux"), ("macos", "darwin"), ("windows", "win32"))
 _JOB = re.compile(r"^  (?P<name>[A-Za-z0-9_-]+):\s*$")
 _RUNS_ON = re.compile(r"^    runs-on:\s*(?P<value>.+?)\s*$")

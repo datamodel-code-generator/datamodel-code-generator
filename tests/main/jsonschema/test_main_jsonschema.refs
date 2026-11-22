@@ -13417,10 +13417,10 @@ False-True-True-number-api	main/jsonschema/main_jsonschema/root_alias_constraint
 False-True-True-number-cli	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-number-cli].py	= main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-number-api].py
 False-True-True-number-cli	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-number-cli].runtime.txt	= main/jsonschema/main_jsonschema/root_alias_constraints[False-False-False-number-api].runtime.txt
 False-True-True-plain-api	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api].py
-False-True-True-plain-api	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api].py	@black=22	= main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api]@black22.py
+False-True-True-plain-api	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api].py	@black<24	= main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api]@black-lt-24.py
 False-True-True-plain-api	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api].runtime.txt	= main/jsonschema/main_jsonschema/root_alias_constraints[False-False-False-plain-api].runtime.txt
 False-True-True-plain-cli	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-cli].py	= main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api].py
-False-True-True-plain-cli	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-cli].py	@black=22	= main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api]@black22.py
+False-True-True-plain-cli	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-cli].py	@black<24	= main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-api]@black-lt-24.py
 False-True-True-plain-cli	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-plain-cli].runtime.txt	= main/jsonschema/main_jsonschema/root_alias_constraints[False-False-False-plain-api].runtime.txt
 False-True-True-string-api	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-string-api].py
 False-True-True-string-api	main/jsonschema/main_jsonschema/root_alias_constraints[False-True-True-string-api].runtime.txt	= main/jsonschema/main_jsonschema/root_alias_constraints[False-False-False-string-api].runtime.txt

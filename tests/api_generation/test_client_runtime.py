@@ -45,7 +45,7 @@ def test_client_runtime(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         assert_generated_modules_output(modules)
         assert_output(report)
         return
-    assert_output(client_runtime_report(case, tmp_path))
+    assert_output(client_runtime_report(case, tmp_path), varies_with=("windows",))
 
 
 @pytest.mark.parametrize("case", ["pets", "auth", "streams", "sockets", "ndjson-split", "asyncapi-market-v3"])

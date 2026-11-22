@@ -119,8 +119,12 @@ def run_input_model_and_assert(
     output_path: Path,
     extra_args: Sequence[str] | None = None,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
-    """Run main with --input-model and assert results; ``name`` names the stored output of a second run."""
+    """Run main with --input-model and assert results.
+
+    ``name`` names the stored output of a second run, and ``varies_with`` the capabilities whose facts decide it.
+    """
     __tracebackhide__ = True
     with freeze_time(TIMESTAMP):
         run_main_with_args(
@@ -129,7 +133,7 @@ def run_input_model_and_assert(
             use_builtin_default_formatter=False,
             isolate_model_template_cache=True,
         )
-    assert_output(output_path.read_text(encoding="utf-8"), name=name)
+    assert_output(output_path.read_text(encoding="utf-8"), name=name, varies_with=varies_with)
 
 
 def run_input_model_error_and_assert(
@@ -3048,6 +3052,7 @@ def test_python_generic_reuse(  # noqa: PLR0912, PLR0914
     paths = ["tests.data.python.input_model." + source for source in record["sources"]]
     (tmp_path / "pyproject.toml").write_text((INPUT_GENERIC_FIXTURES / "collision_settings/pyproject.toml").read_text())
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
+    varies_with = ("pydantic-before-2.5",) if formatter == "builtin" else ("black-before-24", "pydantic-before-2.5")
     output = tmp_path / "output.py"
     if entrypoint == "cli":
         extra_args = [
@@ -3064,12 +3069,14 @@ def test_python_generic_reuse(  # noqa: PLR0912, PLR0914
                 input_file_type="jsonschema",
                 output_path=output,
                 extra_args=extra_args,
+                varies_with=varies_with,
             )
         else:
             run_input_model_and_assert(
                 input_model=paths[0],
                 output_path=output,
                 extra_args=[*_input_model_args(paths[1:]), *extra_args],
+                varies_with=varies_with,
             )
     else:
         schema = (
@@ -3097,6 +3104,7 @@ def test_python_generic_reuse(  # noqa: PLR0912, PLR0914
                 settings_path=tmp_path,
                 formatters=[Formatter(value) for value in formatters],
             ),
+            varies_with=varies_with,
         )
     with _generated_model(output, "generic_output", record["sources"][0].split(":")[1]):  # noqa: PLR1702
         rows = []

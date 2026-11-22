@@ -34,6 +34,12 @@ from typing_extensions import Required
 
 from datamodel_code_generator import MIN_VERSION
 from datamodel_code_generator.http import _get_httpx
+from tests.capabilities import (
+    BUILTIN_FORMATTER_VALUE,
+    TEST_DEFAULT_FORMATTER_ENV,
+    clauses_of,
+    expected_environment_facts,
+)
 from tests.units import (
     AT_HOME,
     BROKEN,
@@ -48,22 +54,25 @@ from tests.units import (
     RefLine,
     RefsIndex,
     UnsafeWriteError,
+    applicable_lines,
     apply_payload,
-    common_contents,
+    clauses_hold,
+    clauses_problem,
+    conflicting_payloads,
     derived_directory,
     derived_file_name,
     derived_siblings,
     encode_payload,
     facts_fit,
     format_refs,
+    holding_clauses,
     item_problem,
     label_path,
     label_problem,
     merge_environments,
     nodeid_key,
-    payload_predicate,
     payload_problem,
-    predicate_matches,
+    predicate_text,
     read_unit,
     resolve,
     split_label,
@@ -83,7 +92,6 @@ pytest_plugins = ("tests.checks.plugin",)
 CLI_DOC_COLLECTION_OUTPUT = Path(__file__).parent / "cli_doc" / ".cli_doc_collection.json"
 CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weights.json"
 CLI_DOC_SCHEMA_VERSION = 1
-TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 CHECK_SCHEMA_LOCATIONS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
 CHECK_MODEL_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
 CHECK_SCHEMA_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
@@ -122,7 +130,6 @@ default. Every other Python a test starts gets the same core through `CHILD_COVE
 """
 CHILD_COVERAGE_CONFIG_ENV = "COVERAGE_PROCESS_CONFIG"
 """The configuration that coverage's ``run.patch = ["subprocess"]`` hands every Python started by a measured process."""
-BUILTIN_FORMATTER_VALUE = "builtin"
 _VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 _MOCK_PUBLIC_IP = "93.184.216.34"
 
@@ -883,21 +890,6 @@ _CURRENT_ITEMS: list[pytest.Item] = []
 _LEDGER = pytest.StashKey["_Ledger"]()
 CLI_DOC_ITEMS = pytest.StashKey[list[dict[str, Any]]]()
 _UPDATE_CATEGORIES = frozenset({"create", "fix", "fix-assert", "trim", "update"})
-_PLATFORMS = ("linux", "darwin", "win32")
-
-
-def expected_environment_facts() -> dict[str, str]:
-    """Return the facts of this environment that expected-output overrides (``@black=22``) can select."""
-    from importlib.metadata import distributions
-
-    builtin = os.environ.get(TEST_DEFAULT_FORMATTER_ENV) == BUILTIN_FORMATTER_VALUE
-    return {
-        "python": f"{sys.version_info[0]}.{sys.version_info[1]}",
-        "formatter": BUILTIN_FORMATTER_VALUE if builtin else "external",
-        **{tool: next((found.version for found in distributions(name=tool)), "") for tool in ("black", "isort")},
-        "platform": next((name for name in _PLATFORMS if sys.platform.startswith(name)), sys.platform),
-        "pydantic": next((found.version for found in distributions(name="pydantic")), ""),
-    }
 
 
 class CiEnvironment(NamedTuple):
@@ -929,9 +921,11 @@ def _item_key(item: pytest.Item) -> tuple[str, str]:
 
 
 def _applicable(lines: Sequence[RefLine], facts: Mapping[str, str]) -> RefLine | None:
-    """Return the line that applies in this environment: the most specific matching override, else the base line."""
-    matching = [line for line in lines if predicate_matches(line.predicate, facts)]
-    return max(matching, key=lambda line: len(line.predicate), default=None)
+    """Return the line an environment reads: the most specific one whose clauses all hold, else None.
+
+    Where lines of as many clauses hold (a class no environment recorded), the first in sidecar order.
+    """
+    return next(iter(applicable_lines(lines, facts)), None)
 
 
 def _quote(argument: str) -> str:
@@ -986,6 +980,10 @@ class _Observation:
     value: object
     line: RefLine | None
     status: str
+    declared: tuple[str, ...] = ()
+    """The condition clauses of the facts the comparison declares its output varies with."""
+    target: tuple[str, ...] = ()
+    """The class the comparison has here: the declared clauses that hold, which the line it writes keys on."""
 
     @cached_property
     def digest(self) -> str:
@@ -1052,8 +1050,7 @@ class _Ledger:
         self.rerun: list[str] = []
         self.report: list[str] = []
         self.refused = False
-        self.held: dict[tuple[str, str], tuple[str, int]] = {}
-        self.as_base: set[tuple[str, str, str]] = set()
+        self.merged: dict[str, list[Desired]] = {}
         self.check_apply()
 
     @property
@@ -1071,7 +1068,9 @@ class _Ledger:
     def check_apply(self) -> None:
         """Refuse an apply session whose payloads or observations name anything but this suite's tests and labels.
 
-        With ``skip_rejected`` (``--from-ci``), refused payloads are reported and the others applied.
+        Value payloads of one item and label must agree (`conflicting_payloads`), and observations must merge: every
+        environment of a class stored the same output (`merge_environments`). With ``skip_rejected`` (``--from-ci``),
+        refused payloads are reported and the others applied.
         """
         if self.apply_file is None:
             return
@@ -1091,11 +1090,22 @@ class _Ledger:
             self.report += [f"expected: skipped a payload: {problem}" for problem in refused.values()]
             refused = {}
         problems = [f"payload {number}: {problem}" for number, problem in refused.items()]
+        if not problems:
+            problems += conflicting_payloads(self.apply_data.get("payloads", []))
+        directories = self.apply_data.get("observations", [])
         problems += [
             f"{directory}: its environment is malformed"
-            for directory, observations in zip(self.apply_data.get("observations", []), self.observations, strict=True)
+            for directory, observations in zip(directories, self.observations, strict=True)
             if observations["items"] and not facts_fit(observations["facts"])
         ]
+        problems += [
+            f"{directory}: it was observed before comparisons declared what they vary with; observe it again"
+            for directory, observations in zip(directories, self.observations, strict=True)
+            if any(len(compared) != 5 for entry in observations["items"] for compared in entry["compared"])
+        ]
+        if problems:
+            msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
+            raise pytest.UsageError(msg)
         listings: dict[Path, set[str]] = {}
         problems += [
             problem
@@ -1108,75 +1118,43 @@ class _Ledger:
             f"{entry['item']}: {problem}"
             for observations in self.observations
             for entry in observations["items"]
-            for label, _, storage, _ in entry["compared"]
-            for name in dict.fromkeys((label, storage))
-            if (problem := label_problem(name))
+            for label, _, storage, _, clauses in entry["compared"]
+            for problem in (*map(label_problem, dict.fromkeys((label, storage))), clauses_problem(clauses))
+            if problem
         ]
+        if not problems and self.observations and self.apply_data.get("merge", True):
+            try:
+                self.merged = merge_environments(self.observations, self.expected_root, directories)
+            except ValueError as error:
+                problems.append(str(error))
         if problems:
             msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
             raise pytest.UsageError(msg)
-        self.hold_common_changes()
-
-    def hold_common_changes(self) -> None:
-        """Set aside the payloads of labels whose content lanes of different overrides sent alike, unless told how.
-
-        Such content is a change common to those lanes: ``common`` ``as-base`` stores it as the label's base line,
-        ``per-environment`` as one override per lane, and without it nothing is written for the label (nor for the
-        stale payloads of its test, which would change its lines) and the session fails, saying how to go on. Payloads
-        of this environment are refused or skipped before, so they neither count as a lane nor hide that refusal.
-        """
-        payloads = self.apply_data.get("payloads", [])
-        match self.apply_data.get("common"):
-            case "per-environment":
-                return
-            case "as-base":
-                self.as_base = {(*key, digest) for key, (digest, _) in common_contents(payloads, self.facts).items()}
-                return
-        if not (held := common_contents(payloads, self.facts)):
-            return
-        self.held = held
-        items = {item for item, _ in held}
-        self.apply_data["payloads"] = [
-            payload
-            for payload in payloads
-            if (payload["item"], payload.get("label")) not in held
-            and not (payload.get("stale") and payload["item"] in items)
-        ]
-
-    def common_change_message(self) -> list[str]:
-        """Say which labels lanes sent the same content for, what each way of storing it does, and what to check."""
-        items = sorted({item for item, _ in self.held})
-        selection = " ".join(_quote(item) for item in items)
-        listed = [f"  {item} {label} ({count} lanes)" for (item, label), (_, count) in sorted(self.held.items())]
-        return [
-            (
-                "expected: not applied: lanes of different overrides sent the same content for these labels, a change "
-                "common to them that belongs in the base file rather than in one override per lane:"
-            ),
-            *listed,
-            (
-                "Nothing was written for these labels or the stale payloads of their tests. Store the content as the "
-                "base file: regenerate it here, if this environment produces it too, with"
-            ),
-            f"  pytest {selection} --inline-snapshot=fix && {self.stage}",
-            (
-                "or rerun this command with --as-base, which writes the common content as the base file and removes "
-                "the overrides equal to it. Every environment without an override of its own then compares that "
-                "content: this one, and the lanes that sent no payload because they passed or did not run. Check this "
-                f"environment with: pytest {selection}; check those lanes with a dispatch run of the Test workflow on "
-                "your branch (gh workflow run test.yaml --ref <branch>), which also runs the lanes pull requests skip. "
-                "Keep one override per lane instead: rerun this command with --per-environment."
-            ),
-        ]
 
     def own_payload(self, payload: Mapping[str, Any]) -> str | None:
-        """Refuse a payload no override predicate tells apart from this environment: only a local run changes it."""
-        if payload_predicate(payload["facts"], self.facts) is not None:
+        """Refuse a payload only a local run should apply: one of this environment's class, or of its very facts.
+
+        A value payload writes the line of the class its comparison has on its lane (the declared clauses that hold
+        there); in this environment's class only a local run changes the output. A stale or missing payload, which
+        compares nothing, is this environment's when every fact is the same.
+        """
+        if "digest" in payload:
+            target = holding_clauses(payload["clauses"], payload["facts"])
+            if target != holding_clauses(payload["clauses"], self.facts):
+                return None
+            where = (
+                f"its class ({predicate_text(target)})" if target else "the base class, where no declared fact holds"
+            )
+            return (
+                f"it comes from {where}, which is this environment's too, so only a local run changes its output: "
+                f"run: pytest {_quote(payload['item'])} --inline-snapshot=fix && {self.stage}"
+            )
+        if payload["facts"] != self.facts:
             return None
         target = payload["item"].partition("::")[0] if payload.get("stale") else payload["item"]
         return (
-            "it comes from this environment, so there is no other environment to add an override for; "
-            f"this environment is yours, run: pytest {_quote(target)} --inline-snapshot=fix && {self.stage}"
+            "it comes from this environment, so a local run sees the same: "
+            f"run: pytest {_quote(target)} --inline-snapshot=fix && {self.stage}"
         )
 
     def label(self, path: Path, pattern: str | None) -> str | None:
@@ -1458,29 +1436,53 @@ class _Ledger:
                 pytrace=False,
             )
 
-    def choose(self, state: _Sidecar, key: tuple[str, str], lines: list[RefLine], value: object) -> RefLine | None:
-        """Return the line a comparison uses; a creating run sets aside lines pytest would not have written.
+    def choose(self, state: _Sidecar, key: tuple[str, str], lines: list[RefLine], value: object) -> list[RefLine]:
+        """Return the lines a comparison reads (`applicable_lines`), setting aside lines pytest would not have written.
 
-        Of two lines a merge left for one label, the one whose stored content matches the output is kept.
+        A creating run keeps, of two lines a merge left for one label, the one whose stored content matches the output.
         """
-        applicable = [line for line in lines if predicate_matches(line.predicate, self.facts)]
-        if self.observing or not self.can_create or not any(line in state.flagged for line in applicable):
-            return _applicable(applicable, self.facts)
+        holding = [line for line in lines if clauses_hold(line.predicate, self.facts)]
+        if self.observing or not self.can_create or not any(line in state.flagged for line in holding):
+            return applicable_lines(holding, self.facts)
         matching = next(
             (
                 line
-                for line in applicable
+                for line in holding
                 if state.flagged.get(line) == CONFLICT
                 and read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1]) == value
             ),
             None,
         )
-        dropped = {line for line in applicable if line in state.flagged and line is not matching}
+        dropped = {line for line in holding if line in state.flagged and line is not matching}
         self.repairs.setdefault((state.path, *key), set()).update(dropped)
-        return _applicable([line for line in applicable if line not in dropped], self.facts)
+        return applicable_lines([line for line in holding if line not in dropped], self.facts)
 
-    def compare(self, item: pytest.Item, label: str, value: object, hint: str) -> None:
-        """Compare a value with the stored unit this item's line for the label resolves to, recording the result."""
+    def stale_lines(self, item: pytest.Item, state: _Sidecar, lines: list[RefLine], declared: tuple[str, ...]) -> None:
+        """Drop, in a fixing run, the lines of a label whose clauses the comparison no longer declares; else fail.
+
+        Such a line keys on a fact the test stopped naming (``varies_with=``), so no environment may read it.
+        """
+        __tracebackhide__ = True
+        if self.observing or not lines:
+            return
+        if self.can_fix:
+            self.repairs.setdefault((state.path, *self.key(item)), set()).update(lines)
+            return
+        recorded = ", ".join(f"@{predicate_text(line.predicate)}" for line in lines)
+        names = f"varies_with clauses {predicate_text(declared)}" if declared else "no varies_with"
+        pytest.fail(
+            f"{self.relative(state.path)} records {lines[0].label} for {item.nodeid} under {recorded}, which its "
+            f"comparison no longer declares ({names}).\n"
+            f"Fix: pytest {_quote(item.nodeid)} --inline-snapshot=fix && {self.stage}",
+            pytrace=False,
+        )
+
+    def compare(self, item: pytest.Item, label: str, value: object, hint: str, declared: tuple[str, ...] = ()) -> None:
+        """Compare a value with the stored unit this item's line for the label resolves to, recording the result.
+
+        ``declared`` holds the clauses of the facts the comparison says its output varies with: the line it reads and
+        writes keys on those that hold here, its class.
+        """
         __tracebackhide__ = True
         state = self.sidecar(item.path.with_suffix(REFS_SUFFIX))
         function, param = key = self.key(item)
@@ -1494,22 +1496,71 @@ class _Ledger:
                 pytrace=False,
             )
         seen[label] = value
-        line = self.choose(state, key, [line for line in state.items.get(key, ()) if line.label == label], value)
-        storage = line.stored if line is not None else label
-        name, pattern = split_label(storage)
-        stored = read_unit(label_path(name, self.expected_root), pattern)
-        observation = _Observation(state.path, function, param, item.nodeid, label, value, line, "ok")
-        status = self._status(observation, stored)
-        observation.status = status
+        lines = [line for line in state.items.get(key, ()) if line.label == label]
+        self.stale_lines(item, state, [line for line in lines if not set(line.predicate) <= set(declared)], declared)
+        read = self.choose(state, key, [line for line in lines if set(line.predicate) <= set(declared)], value)
+        target = holding_clauses(declared, self.facts)
+        observation = _Observation(state.path, function, param, item.nodeid, label, value, None, "ok", declared, target)
+        if self.unrecorded_class(read):
+            storage, stored = label, None
+            observation.status = self.unrecorded_class_status(observation, read)
+        else:
+            observation.line = read[0] if read else None
+            storage = observation.line.stored if observation.line is not None else label
+            name, pattern = split_label(storage)
+            stored = read_unit(label_path(name, self.expected_root), pattern)
+            observation.status = self._status(observation, stored)
         if self.observing:
             self.observed_items.setdefault(item.nodeid, []).append([
                 label,
                 observation.digest,
                 storage,
-                None if status in {"ok", "home"} else value,
+                None if observation.status in {"ok", "home"} else value,
+                list(declared),
             ])
-        if status != "ok":
+        if observation.status != "ok":
             self.changes.append(observation)
+
+    def unrecorded_class(self, read: list[RefLine]) -> bool:
+        """Return whether lines of different clauses, as many of each, hold here and store different contents.
+
+        That is a class no environment recorded: the lines tell nothing about which output it has.
+        """
+        if len({line.predicate for line in read}) < 2:
+            return False
+        contents = [
+            read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1]) for line in read
+        ]
+        return any(content != contents[0] for content in contents)
+
+    def unrecorded_class_status(self, observation: _Observation, read: list[RefLine]) -> str:
+        """Record the output of a class no environment recorded in a fixing or observing run; else fail saying how."""
+        __tracebackhide__ = True
+        if self.observing or self.can_fix:
+            return "new"
+        recorded = " and ".join(sorted({f"@{predicate_text(line.predicate)}" for line in read}))
+        target, nodeid = predicate_text(observation.target), _quote(observation.nodeid)
+        lines = [
+            (
+                f"{observation.nodeid} reads {observation.label} under {recorded}, which store different outputs: "
+                f"this environment's class ({target}) has no line of its own."
+            ),
+            f"Fix: record this environment's class: pytest {nodeid} --inline-snapshot=fix && {self.stage}",
+        ]
+        if self.ci.variable is not None:
+            lines += self.lane_lines(observation.nodeid, self.encode(self.value_payload(observation)))
+        pytest.fail("\n".join(lines), pytrace=False)
+
+    @staticmethod
+    def value_payload(observation: _Observation) -> dict[str, object]:
+        """Return what this lane compared for a label, with the clauses its comparison declares."""
+        return {
+            "item": observation.nodeid,
+            "label": observation.label,
+            "digest": observation.digest,
+            "value": observation.value,
+            "clauses": list(observation.declared),
+        }
 
     def _status(self, observation: _Observation, stored: object | None) -> str:
         """Decide what a comparison means: equal (``ok``/``home``), ``changed`` or ``new``, or fail with the fix."""
@@ -1567,16 +1618,7 @@ class _Ledger:
         record = f"{command} && {self.stage}"
         recorded = bool(self.sidecar(observation.sidecar).items.get((observation.function, observation.param)))
         ci = self.ci
-        encoded = (
-            self.encode({
-                "item": nodeid,
-                "label": observation.label,
-                "digest": observation.digest,
-                "value": observation.value,
-            })
-            if ci.variable is not None
-            else None
-        )
+        encoded = self.encode(self.value_payload(observation)) if ci.variable is not None else None
         if self.disabled_reason == "xdist" and ci.variable is None:
             lines = [f"Expected output for {nodeid} was not created because pytest ran with -n.", f"Fix: {record}"]
         elif ci.variable is not None and not ci.github_actions:
@@ -1584,7 +1626,7 @@ class _Ledger:
                 f"No expected output recorded for {nodeid}; expected files are not written while {ci.variable} is set.",
                 f"Fix: {ci.variable}= {record}",
             ]
-        elif recorded and ci.variable is not None and encoded is not None:
+        elif recorded and ci.variable is not None and encoded is not None and observation.declared:
             lines = [
                 (
                     f"This environment ({_describe_facts(self.facts)}) compares {observation.label}, "
@@ -1624,20 +1666,21 @@ class _Ledger:
         if self.ci.variable is None:
             lines += [f"If the new output is intended: {fix}", f"Otherwise: git checkout HEAD -- {relative}"]
         else:
-            encoded = self.encode({
-                "item": observation.nodeid,
-                "label": observation.label,
-                "digest": observation.digest,
-                "value": observation.value,
-            })
+            encoded = self.encode(self.value_payload(observation))
             lines.append(
                 f"This environment ({_describe_facts(self.facts)}) produces different output than the stored one."
             )
-            if encoded is not None:
-                kept = "their stored files" if observation.line is not None and observation.line.predicate else storage
+            if not observation.declared:
                 lines.append(
-                    f"Fix, if pytest {nodeid} passes on your machine (adds an override for this environment only; "
-                    f"other environments keep {kept}): {self.apply_command([encoded])}"
+                    f"{observation.nodeid} declares no fact its output varies with, so every environment compares one "
+                    "output: if it rightly differs here, name the deciding fact with varies_with= (an entry of "
+                    "tests/capabilities.py) and run the test again."
+                )
+            elif encoded is not None:
+                target = predicate_text(observation.target) or "the base class, where no declared fact holds"
+                lines.append(
+                    f"Fix, if pytest {nodeid} passes on your machine (stores this output for the class {target} "
+                    f"only; other classes keep their stored files): {self.apply_command([encoded])}"
                 )
             lines += [
                 f"Or, if the new output is intended everywhere: {fix}",
@@ -1658,7 +1701,7 @@ class _Ledger:
         state = self.sidecar(item.path.with_suffix(REFS_SUFFIX))
         function, param = key = self.key(item)
         compared = self.compared.get(item.nodeid, {})
-        applicable = [line for line in state.items.get(key, ()) if predicate_matches(line.predicate, self.facts)]
+        applicable = [line for line in state.items.get(key, ()) if clauses_hold(line.predicate, self.facts)]
         if self.can_create and (
             flagged := {line for line in applicable if line in state.flagged and line.label not in compared}
         ):
@@ -1752,7 +1795,12 @@ class _Ledger:
             path, function, param = key
             lines = self.sidecar(path).items.get((function, param), [])
             dropped, repaired = self.drops.get(key, set()), self.repairs.get(key, set())
-            by_line = {id(observation.line): observation for observation in changed.get(key, []) if observation.line}
+            observations = changed.get(key, [])
+            by_line = {
+                id(observation.line): observation
+                for observation in observations
+                if observation.line is not None and observation.line.predicate == observation.target
+            }
             desired = [
                 Desired(line.label, line.conditional, line.predicate, observation.value, observation.digest, line)
                 if (observation := by_line.get(id(line))) is not None
@@ -1763,11 +1811,13 @@ class _Ledger:
             desired += [
                 Desired(
                     observation.label,
+                    observation.line is not None and observation.line.conditional,
+                    observation.target,
                     value=AT_HOME if observation.status == "home" else observation.value,
                     digest=observation.digest,
                 )
-                for observation in changed.get(key, [])
-                if observation.line is None
+                for observation in observations
+                if observation.line is None or observation.line.predicate != observation.target
             ]
             updates.setdefault(path, {})[function, param] = desired
         for path, keys in self.stale.items():
@@ -1785,9 +1835,7 @@ class _Ledger:
 
     def finish(self, session: pytest.Session) -> None:
         self.write_updates(session)
-        if self.held:
-            self.report += self.common_change_message()
-        if self.refused or self.held:
+        if self.refused:
             session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
     def write_updates(self, session: pytest.Session) -> None:
@@ -1894,17 +1942,16 @@ class _Ledger:
     def apply_updates(self, session: pytest.Session) -> dict[Path, dict[tuple[str, str], list[Desired]]]:
         """Merge observations from other environments or CI payloads into the lines of the items they name.
 
-        With ``drop_uncollected``, the lines of recorded items that no observed environment collects, although one of
-        them collected their whole module, go too; ``merge`` false applies only that. The payloads ``as_base`` names
-        by item, label and digest also become their label's base line.
+        The observations were merged when the session started (`check_apply`). With ``drop_uncollected``, the lines of
+        recorded items that no observed environment collects, although one of them collected their whole module, go
+        too; ``merge`` false applies only that.
         """
         rootpath = self.config.rootpath
         local = {nodeid_key(rootpath, item.nodeid) for item in session.items}
         updates: dict[Path, dict[tuple[str, str], list[Desired]]] = {}
-        if self.observations and self.apply_data.get("merge", True):
-            for nodeid, desired in merge_environments(self.observations, self.expected_root, self.facts).items():
-                sidecar, function, param = nodeid_key(rootpath, nodeid)
-                updates.setdefault(sidecar, {})[function, param] = desired
+        for nodeid, desired in self.merged.items():
+            sidecar, function, param = nodeid_key(rootpath, nodeid)
+            updates.setdefault(sidecar, {})[function, param] = desired
         if self.apply_data.get("drop_uncollected"):
             recorded = [
                 self.nodeid(sidecar, f"{function}[{param}]" if param else function)
@@ -1924,12 +1971,7 @@ class _Ledger:
                 else [Desired(line.label, line.conditional, line.predicate) for line in lines]
             )
             updates.setdefault(sidecar, {})[function, param] = apply_payload(
-                base,
-                lines,
-                payload,
-                self.facts,
-                exists=(sidecar, function, param) in local,
-                as_base=(payload["item"], payload.get("label"), payload.get("digest")) in self.as_base,
+                base, lines, payload, self.facts, exists=(sidecar, function, param) in local
             )
         return updates
 
@@ -2192,12 +2234,18 @@ def _refuse_home_directory(value: object) -> None:
 
 
 def _compare_expected(
-    expected_path: Path, value: object, *, pattern: str | None = None, hint: str = _OWN_FILE_HINT
+    expected_path: Path,
+    value: object,
+    *,
+    pattern: str | None = None,
+    hint: str = _OWN_FILE_HINT,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Compare a file value, or a tree's files when ``pattern`` is given, with the expected output stored at a path.
 
     Paths under the tests root go through the ``.refs`` index of the running item; other paths, such as a second
-    generated tree, are compared directly. ``hint`` says how to keep two different outputs apart.
+    generated tree, are compared directly. ``hint`` says how to keep two different outputs apart; ``varies_with``
+    names the capabilities (`tests.capabilities.CAPABILITIES`) whose facts the output depends on.
     """
     __tracebackhide__ = True
     if pattern is not None and isinstance(value, dict):
@@ -2209,11 +2257,17 @@ def _compare_expected(
     if ledger is None or label is None:
         _compare_direct(expected_path, value, pattern)
         return
-    ledger.compare(_CURRENT_ITEMS[-1], label, value, hint)
+    ledger.compare(_CURRENT_ITEMS[-1], label, value, hint, clauses_of(varies_with))
 
 
 def _compare_derived(
-    value: object, *, role: str = "", suffix: str = "", tree: bool = False, hint: str = _OWN_FILE_HINT
+    value: object,
+    *,
+    role: str = "",
+    suffix: str = "",
+    tree: bool = False,
+    hint: str = _OWN_FILE_HINT,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Compare output a test gives without an expected path against the one stored under its derived label."""
     __tracebackhide__ = True
@@ -2221,7 +2275,7 @@ def _compare_derived(
     if ledger is None:  # pragma: no cover
         pytest.fail("Expected output without a path can only be compared inside a test", pytrace=False)
     path = ledger.derived_path(_CURRENT_ITEMS[-1], role=role, suffix=suffix)
-    _compare_expected(path, value, pattern="*" if tree else None, hint=hint)
+    _compare_expected(path, value, pattern="*" if tree else None, hint=hint, varies_with=varies_with)
 
 
 def default_output_count(role: str = "") -> int:
@@ -2244,14 +2298,20 @@ def _derived_output_role(role: str = "", name: str | None = None) -> str:
     return role if count == 1 else f".{count}{role}"
 
 
-def _compare_tree(tree: dict[str, str], expected_dir: Path | None, pattern: str, name: str | None) -> None:
+def _compare_tree(
+    tree: dict[str, str],
+    expected_dir: Path | None,
+    pattern: str,
+    name: str | None,
+    varies_with: tuple[str, ...] = (),
+) -> None:
     """Compare the files of a tree a pattern selects with ``expected_dir``, or as the test's derived whole tree."""
     __tracebackhide__ = True
     if expected_dir is not None:
-        _compare_expected(expected_dir, tree, pattern=pattern)
+        _compare_expected(expected_dir, tree, pattern=pattern, varies_with=varies_with)
         return
     selected = {path: text for path, text in tree.items() if PurePosixPath(path).match(pattern)}
-    _compare_derived(selected, role=_derived_output_role(name=name), tree=True)
+    _compare_derived(selected, role=_derived_output_role(name=name), tree=True, varies_with=varies_with)
 
 
 _AGAINST_REFUSAL = (
@@ -2260,17 +2320,26 @@ _AGAINST_REFUSAL = (
 )
 
 
-def _compare_against(against: Path, value: object, pattern: str | None, output_dir: Path | None = None) -> None:
+def _compare_against(
+    against: Path,
+    value: object,
+    pattern: str | None,
+    output_dir: Path | None = None,
+    varies_with: tuple[str, ...] = (),
+) -> None:
     """Compare a value with a document or tree read at test time, storing nothing.
 
     ``against`` resolves outside the tests root and is tracked by git (a docs page, the skill sources), or it and the
     compared ``output_dir`` are both ``_runtime`` directories: copies of the package runtime generation puts into a
     client. Anything else is a run's output, which a test compares under one ``name=``. Where git cannot tell, as in
-    a source distribution, a document is a file or tree below the root that exists.
+    a source distribution, a document is a file or tree below the root that exists. Nothing is stored, so nothing
+    can vary by environment: ``varies_with`` is refused.
     """
     __tracebackhide__ = True
     ledger = _ledger()
     assert ledger is not None, "against= needs a running test"
+    if varies_with:
+        pytest.fail("against= stores nothing, so it takes no varies_with=", pytrace=False)
     resolved = against.resolve()
     root = ledger.config.rootpath
     runtime_copies = output_dir is not None and output_dir.name == resolved.name == "_runtime"
@@ -2299,6 +2368,7 @@ def assert_output(
     name: str | None = None,
     suffix: str = ".txt",
     against: Path | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Assert that output matches the expected output stored for it.
 
@@ -2308,12 +2378,16 @@ def assert_output(
         name: Distinguishes several outputs of one test that pass no path, e.g. ``name="warnings"``.
         suffix: The suffix of the file pytest names, e.g. ``suffix=".py"``.
         against: A git-tracked document outside the tests root to compare with instead; nothing is stored.
+        varies_with: The capabilities of ``tests/capabilities.py`` whose facts decide the output, e.g.
+            ``("windows",)``; the stored lines key on the clauses that hold. Without it every environment compares
+            one output.
 
     Usage:
         assert_output(captured.out, EXPECTED_PATH / "output.py")
         assert_output(parser.parse(), suffix=".py")
         assert_output(captured.err, name="warnings")
         assert_output(rendered_page, against=DOCS / "page.md")
+        assert_output(report, varies_with=("windows",))
     """
     __tracebackhide__ = True
     path = expected_path or against
@@ -2323,10 +2397,10 @@ def assert_output(
         pytest.fail(f"Expected generated output to be str, got {type(output).__name__}")
     value = output if is_json_value else _normalize_line_endings(cast("str", output))
     if against is not None:
-        _compare_against(against, value, None)
+        _compare_against(against, value, None, varies_with=varies_with)
         return
     if expected_path is not None:
-        _compare_expected(expected_path, value)
+        _compare_expected(expected_path, value, varies_with=varies_with)
         return
     if name is None and (ledger := _ledger()) is not None:
         ledger.unnamed_output(_CURRENT_ITEMS[-1])
@@ -2335,6 +2409,7 @@ def assert_output(
         role=f".{name}" if name else "",
         suffix=suffix,
         hint='otherwise name the second: assert_output(text, name="second")',
+        varies_with=varies_with,
     )
 
 
@@ -2396,6 +2471,7 @@ def assert_directory_content(
     encoding: str = "utf-8",
     name: str | None = None,
     against: Path | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Assert all files in output_dir match expected files in expected_dir.
 
@@ -2408,6 +2484,7 @@ def assert_directory_content(
         name: Distinguishes several trees of one test that pass no expected directory, e.g. ``name="client"``.
         against: A git-tracked tree outside the tests root, or another ``_runtime`` copy when ``output_dir`` is one,
             to compare the selected files with instead; nothing is stored.
+        varies_with: The capabilities whose facts decide the tree, as for `assert_output`.
 
     Usage:
         assert_directory_content(tmp_path / "model")
@@ -2416,9 +2493,9 @@ def assert_directory_content(
     __tracebackhide__ = True
     tree = _output_tree(output_dir, pattern, encoding)
     if against is not None:
-        _compare_against(against, tree, pattern, output_dir)
+        _compare_against(against, tree, pattern, output_dir, varies_with)
         return
-    _compare_tree(tree, expected_dir, pattern, name)
+    _compare_tree(tree, expected_dir, pattern, name, varies_with)
 
 
 def assert_exact_directory_content(
@@ -2428,6 +2505,7 @@ def assert_exact_directory_content(
     encoding: str = "utf-8",
     name: str | None = None,
     against: Path | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Assert all files in output_dir match exactly, with no file missing or extra on either side.
 
@@ -2435,7 +2513,9 @@ def assert_exact_directory_content(
     `assert_directory_content` does.
     """
     __tracebackhide__ = True
-    assert_directory_content(output_dir, pattern=pattern, encoding=encoding, name=name, against=against)
+    assert_directory_content(
+        output_dir, pattern=pattern, encoding=encoding, name=name, against=against, varies_with=varies_with
+    )
 
 
 def _get_full_body(result: object) -> str:
@@ -2450,6 +2530,7 @@ def assert_parser_results(
     *,
     pattern: str = "*.py",
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Assert parser results match the test's own stored tree.
 
@@ -2457,6 +2538,7 @@ def assert_parser_results(
         results: Dictionary with string keys mapping to objects with .body attribute.
         pattern: Glob pattern for files to compare (default: "*.py").
         name: Distinguishes several trees of one test.
+        varies_with: The capabilities whose facts decide the tree, as for `assert_output`.
 
     Usage:
         results = {delimiter.join(p): r for p, r in parser.parse().items()}
@@ -2464,26 +2546,28 @@ def assert_parser_results(
     """
     __tracebackhide__ = True
     tree = {Path(key).as_posix(): _normalize_line_endings(_get_full_body(result)) for key, result in results.items()}
-    _compare_tree(tree, None, pattern, name)
+    _compare_tree(tree, None, pattern, name, varies_with)
 
 
 def assert_parser_modules(
     modules: dict,
     *,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Assert parser modules match the test's own stored tree.
 
     Args:
         modules: Dictionary with tuple keys mapping to objects with .body attribute.
         name: Distinguishes several trees of one test.
+        varies_with: The capabilities whose facts decide the tree, as for `assert_output`.
 
     Usage:
         modules = parser.parse()
         assert_parser_modules(modules)
     """
     __tracebackhide__ = True
-    assert_generated_modules_output(modules, name=name)
+    assert_generated_modules_output(modules, name=name, varies_with=varies_with)
 
 
 def assert_generated_modules_output(
@@ -2493,18 +2577,20 @@ def assert_generated_modules_output(
     transform: Callable[[str], str] | None = None,
     pattern: str = "*.py",
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Assert generate(output=None) module output matches expected files exactly.
 
     ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree. Without ``expected_dir``
-    the selected modules are stored as the test's own tree; ``name`` tells several such trees of one test apart.
+    the selected modules are stored as the test's own tree; ``name`` tells several such trees of one test apart and
+    ``varies_with`` names the capabilities whose facts decide them, as for `assert_output`.
     """
     __tracebackhide__ = True
     tree = {}
     for paths, result in modules.items():
         content = _get_full_body(result)
         tree[Path(*paths).as_posix()] = _normalize_line_endings(transform(content) if transform else content)
-    _compare_tree(tree, expected_dir, pattern, name)
+    _compare_tree(tree, expected_dir, pattern, name, varies_with)
 
 
 def write_generated_modules(output_dir: Path, modules: dict[tuple[str, ...], Any]) -> None:
@@ -2531,9 +2617,11 @@ def assert_runtime_result_model(output_dir: Path) -> None:
             del sys.modules[name]
 
 
-def assert_runtime_import_package(output_dir: Path, *, name: str | None = None) -> None:
+def assert_runtime_import_package(
+    output_dir: Path, *, name: str | None = None, varies_with: tuple[str, ...] = ()
+) -> None:
     """Assert generated modular package matches the test's own stored tree and imports correctly at runtime."""
-    assert_exact_directory_content(output_dir, name=name)
+    assert_exact_directory_content(output_dir, name=name, varies_with=varies_with)
     assert_runtime_result_model(output_dir)
 
 
@@ -2542,10 +2630,11 @@ def assert_generated_runtime_package(
     modules: dict[tuple[str, ...], Any],
     *,
     name: str | None = None,
+    varies_with: tuple[str, ...] = (),
 ) -> None:
     """Write parser-generated modules, compare the package tree, and verify runtime imports."""
     write_generated_modules(output_dir, modules)
-    assert_runtime_import_package(output_dir, name=name)
+    assert_runtime_import_package(output_dir, name=name, varies_with=varies_with)
 
 
 def assert_error_message(

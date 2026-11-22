@@ -26,9 +26,9 @@ import posixpath
 import re
 import zlib
 from dataclasses import dataclass, field, replace
-from itertools import starmap
+from itertools import combinations, starmap
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict
+from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -56,10 +56,13 @@ __all__ = [
     "RefLine",
     "RefsIndex",
     "UnsafeWriteError",
+    "applicable_lines",
     "apply_payload",
-    "common_contents",
+    "clauses_hold",
+    "clauses_problem",
     "condition_holds",
     "condition_problem",
+    "conflicting_payloads",
     "decode_payload",
     "deduplicate",
     "derived_directory",
@@ -71,8 +74,10 @@ __all__ = [
     "duplicates",
     "encode_payload",
     "encode_value",
+    "fact_difference",
     "facts_fit",
     "format_refs",
+    "holding_clauses",
     "input_duplicates",
     "is_derived_label",
     "item_problem",
@@ -81,11 +86,10 @@ __all__ = [
     "label_storages",
     "merge_environments",
     "nodeid_key",
-    "parse_predicate",
+    "parse_clauses",
     "parse_refs",
-    "payload_predicate",
+    "payload_class",
     "payload_problem",
-    "predicate_matches",
     "predicate_text",
     "read_unit",
     "refs_sections",
@@ -337,14 +341,21 @@ def unit_digest(label: str, value: object) -> str:
     return f"tree:{digest.hexdigest()}"
 
 
-def predicate_text(predicate: tuple[tuple[str, str], ...]) -> str:
-    """Return the ``fact=value,...`` form of a predicate."""
-    return ",".join(f"{fact}={value}" for fact, value in predicate)
+def predicate_text(predicate: Sequence[str]) -> str:
+    """Return the ``@`` column of an override without its ``@``: its condition clauses joined by ``,``."""
+    return ",".join(predicate)
 
 
-def _environment_slug(predicate: tuple[tuple[str, str], ...]) -> str:
-    """Return the ``<env>`` of an override's storage name: ``black22``, ``builtin-python3.10``, ``win32``."""
-    return "-".join(value if fact in {"formatter", "platform"} else f"{fact}{value}" for fact, value in predicate)
+_SLUG_WORDS = {"<=": "le", ">=": "ge", "==": "eq", "!=": "ne", "<": "lt", ">": "gt", "|": "or"}
+_SLUG_OPERATOR = re.compile(r"<=|>=|==|!=|<|>|\|")
+
+
+def _environment_slug(predicate: Sequence[str]) -> str:
+    """Return the ``<env>`` of an override's storage name: ``black-lt-24.3``, ``platform-eq-win32``.
+
+    Operators become words, since ``<``, ``>`` and ``|`` are invalid in Windows file names; clauses join with ``_``.
+    """
+    return "_".join(_SLUG_OPERATOR.sub(lambda match: f"-{_SLUG_WORDS[match.group()]}-", clause) for clause in predicate)
 
 
 def _fact_fits(fact: str, value: object) -> bool:
@@ -352,18 +363,52 @@ def _fact_fits(fact: str, value: object) -> bool:
     return fact in _FACT_SHAPES and isinstance(value, str) and _FACT_SHAPES[fact].fullmatch(value) is not None
 
 
-def parse_predicate(text: str) -> tuple[tuple[str, str], ...]:
-    """Parse ``fact=value,...``; facts are sorted, must be known, and their values must have the fact's shape."""
-    pairs = [part.split("=", 1) for part in text.split(",")]
-    if any(len(pair) != 2 or not pair[1] or not _fact_fits(*pair) for pair in pairs):
-        msg = f"unknown predicate {text!r}; facts are {', '.join(FACTS)}"
+def clauses_problem(clauses: object) -> str | None:
+    """Return why a value is not a list of well-formed condition clauses (`condition_problem`), or None."""
+    if not isinstance(clauses, (list, tuple)) or not all(isinstance(clause, str) for clause in clauses):
+        return "its clauses are not a list of conditions"
+    return next(filter(None, map(condition_problem, clauses)), None)
+
+
+def parse_clauses(text: str) -> tuple[str, ...]:
+    """Parse the ``@`` column of an override: condition clauses joined by ``,``, returned sorted and unique.
+
+    Each clause is one of `condition_problem`'s form (``black<24.3``, ``platform==win32``); an environment reads the
+    line where every clause holds.
+    """
+    clauses = text.split(",")
+    if problem := clauses_problem(clauses):
+        msg = f"unknown predicate {text!r}: {problem}"
         raise ValueError(msg)
-    return tuple(sorted((fact, value) for fact, value in pairs))
+    return tuple(sorted(set(clauses)))
 
 
-def predicate_matches(predicate: tuple[tuple[str, str], ...], facts: Mapping[str, str]) -> bool:
-    """Return whether an environment's facts satisfy a predicate; versions match by their leading components."""
-    return all((actual := facts.get(fact, "")) == value or actual.startswith(f"{value}.") for fact, value in predicate)
+def clauses_hold(clauses: Iterable[str], facts: Mapping[str, str]) -> bool:
+    """Return whether every condition clause holds in an environment with these facts."""
+    return all(condition_holds(clause, facts) for clause in clauses)
+
+
+def holding_clauses(clauses: Iterable[str], facts: Mapping[str, str]) -> tuple[str, ...]:
+    """Return the clauses of a comparison's declaration that hold in an environment, sorted: its class.
+
+    A comparison that declares the facts its output depends on (``varies_with=``) stores one line per class it was
+    recorded in; the class where no declared clause holds reads the base line.
+    """
+    return tuple(sorted({clause for clause in clauses if condition_holds(clause, facts)}))
+
+
+_Line = TypeVar("_Line", "RefLine", "Desired")
+
+
+def applicable_lines(lines: Iterable[_Line], facts: Mapping[str, str]) -> list[_Line]:
+    """Return the lines of one label an environment reads: of those whose every clause holds, the most specific.
+
+    Usually one line; none when no line applies, and several when lines of as many clauses all hold (``@A`` and
+    ``@B`` in an environment of class ``A,B``), a class no environment recorded.
+    """
+    holding = [line for line in lines if clauses_hold(line.predicate, facts)]
+    most = max((len(line.predicate) for line in holding), default=0)
+    return [line for line in holding if len(line.predicate) == most]
 
 
 VERSION_FACTS = frozenset({"python", "black", "isort", "pydantic"})
@@ -415,20 +460,9 @@ def condition_holds(clause: str, facts: Mapping[str, str]) -> bool:
             found = release(actual)[: len(wanted)]
             if found and ORDERS[op](found, wanted):
                 return True
-        elif predicate_matches(((fact, value),), facts) is (op == "=="):
+        elif (actual == value or actual.startswith(f"{value}.")) is (op == "=="):
             return True
     return False
-
-
-def _overlap(first: tuple[tuple[str, str], ...], second: tuple[tuple[str, str], ...]) -> bool:
-    """Return whether one environment can satisfy both predicates: each fact they share names one release series."""
-    facts = dict(second)
-    return all(
-        fact not in facts
-        or predicate_matches(((fact, value),), facts)
-        or predicate_matches(((fact, facts[fact]),), {fact: value})
-        for fact, value in first
-    )
 
 
 @dataclass(frozen=True)
@@ -439,7 +473,8 @@ class RefLine:
     param: str
     label: str
     conditional: bool = False
-    predicate: tuple[tuple[str, str], ...] = ()
+    predicate: tuple[str, ...] = ()
+    """The condition clauses of an environment class's override, sorted; empty for the base line."""
     storage: str | None = None
 
     @property
@@ -453,7 +488,7 @@ class RefLine:
         return self.storage or self.label
 
     @property
-    def key(self) -> tuple[str, str, str, tuple[tuple[str, str], ...]]:
+    def key(self) -> tuple[str, str, str, tuple[str, ...]]:
         """The identity of the line within its sidecar."""
         return self.function, self.param, self.label, self.predicate
 
@@ -499,7 +534,7 @@ def _parse_columns(function: str, columns: list[str]) -> RefLine:
         if flag == "?" and not conditional and not predicate and storage is None:
             conditional = True
         elif flag.startswith("@") and not predicate and storage is None:
-            predicate = parse_predicate(flag[1:])
+            predicate = parse_clauses(flag[1:])
         elif flag.startswith("= ") and storage is None and flag[2:]:
             storage = flag[2:]
         else:
@@ -560,7 +595,7 @@ def parse_refs(text: str) -> tuple[list[RefLine], list[Problem]]:
     if problems:
         return lines, problems
     unique = list(dict.fromkeys(lines))
-    keys: dict[tuple[str, str, str, tuple[tuple[str, str], ...]], int] = {}
+    keys: dict[tuple[str, str, str, tuple[str, ...]], int] = {}
     for line in unique:
         keys[line.key] = keys.get(line.key, 0) + 1
     problems = [
@@ -743,7 +778,7 @@ def item_problem(
 _PAYLOAD_KEYS = (
     {"facts", "item", "stale"},
     {"facts", "item", "label", "missing"},
-    {"facts", "item", "label", "digest", "value"},
+    {"facts", "item", "label", "digest", "value", "clauses"},
 )
 
 
@@ -753,15 +788,19 @@ def facts_fit(facts: object) -> bool:
 
 
 def _payload_shape(payload: dict[str, Any]) -> str | None:
-    """Return why a decoded mapping is not a stale, missing or value payload, or None."""
+    """Return why a decoded mapping is not a stale, missing or value payload, or None.
+
+    A value payload carries the condition clauses its comparison declares, so the line it writes keys on its class.
+    """
     if set(payload) not in _PAYLOAD_KEYS:
         return "it is not a dcg-expected-fix payload"
     malformed = (
         not facts_fit(payload["facts"]),
         not isinstance(payload["item"], str),
         payload.get("stale", True) is not True or payload.get("missing", True) is not True,
+        clauses_problem(payload.get("clauses", [])) is not None,
     )
-    return "its environment, item or flags are malformed" if any(malformed) else None
+    return "its environment, item, flags or clauses are malformed" if any(malformed) else None
 
 
 def _payload_label_problem(payload: dict[str, Any]) -> str | None:
@@ -889,7 +928,7 @@ class Desired:
 
     label: str
     conditional: bool = False
-    predicate: tuple[tuple[str, str], ...] = ()
+    predicate: tuple[str, ...] = ()
     value: object = KEEP
     digest: str | None = None
     current: RefLine | None = None
@@ -1399,27 +1438,36 @@ class _Resolution:
                 Event("moved", storage, tuple((sidecar, line.item) for sidecar, line in users), (), label)
             )
 
-    def collapse_overrides(self) -> None:
-        """Drop each override that stores what the environments it matches would compare without it.
+    def class_reads(self, lines: Sequence[RefLine], clauses: Collection[str]) -> tuple[str | None, ...]:
+        """Return what a class (the clauses that hold in it) compares among a label's lines: the stored digests.
 
-        Without the override, such an environment compares the most specific other line of the label it matches: the
-        most specific line the override's predicate implies, or a line no less specific that it may match too. The
-        override goes only when every one of those lines stores the same content, so no lane falls back to an older,
-        broader override; the most specific overrides are decided first.
+        One digest for the line it reads; none without a line; several when its most specific lines store different
+        contents, a class no environment recorded, which fails until one records it.
+        """
+        read = [line for line in lines if set(line.predicate) <= set(clauses)]
+        most = max((len(line.predicate) for line in read), default=0)
+        return tuple(sorted({self.digest(line.stored) or "" for line in read if len(line.predicate) == most}))
+
+    def collapse_overrides(self) -> None:
+        """Drop each override without which no environment class compares anything else.
+
+        A class is a set of the clauses the label's lines name (each one that could hold in some environment); it reads
+        the most specific lines whose clauses it holds. An override goes when every class reads the same contents with
+        and without it: the class it names then reads an equal line, and no class that holds more clauses falls back
+        to another line or loses its ambiguity. The most specific overrides are decided first.
         """
         for lines in self.kept.values():
-            for line in sorted((line for line in lines if line.predicate), key=lambda line: -len(line.predicate)):
-                others = [other for other in lines if other is not line and other.key[:3] == line.key[:3]]
-                implied = [other for other in others if predicate_matches(other.predicate, dict(line.predicate))]
-                floor = max((len(other.predicate) for other in implied), default=0)
-                fallbacks = [
-                    other
-                    for other in others
-                    if floor <= len(other.predicate) <= len(line.predicate)
-                    and _overlap(other.predicate, line.predicate)
-                ]
-                if implied and all(self.digest(other.stored) == self.digest(line.stored) for other in fallbacks):
-                    lines.remove(line)
+            labels: dict[tuple[str, str, str], list[RefLine]] = {}
+            for line in lines:
+                labels.setdefault(line.key[:3], []).append(line)
+            for group in labels.values():
+                universe = sorted({clause for line in group for clause in line.predicate})
+                classes = [clauses for size in range(len(universe) + 1) for clauses in combinations(universe, size)]
+                for line in sorted((line for line in group if line.predicate), key=lambda line: -len(line.predicate)):
+                    rest = [other for other in group if other is not line]
+                    if all(self.class_reads(rest, clauses) == self.class_reads(group, clauses) for clauses in classes):
+                        group.remove(line)
+                        lines.remove(line)
 
     def collect_garbage(self) -> None:
         after = {line.stored for lines in self.kept.values() for line in lines}
@@ -1710,56 +1758,6 @@ def deduplicate(
     return _Resolution(lines, {}, expected_root).merge_duplicates(scope, keep)
 
 
-def _fact_value(fact: str, value: str) -> str:
-    """Return the value a predicate keys on: the release series of a tool, else the value.
-
-    A formatter's series is its major version (``26`` for ``26.1a1``); Pydantic changes output within a major version,
-    so its series is the minor version (``2.0`` for ``2.0.3``).
-    """
-    if fact in {"black", "isort"} and (major := re.match(r"\d+", value)):
-        return major.group()
-    if fact == "pydantic" and (minor := re.match(r"\d+\.\d+", value)):
-        return minor.group()
-    return value
-
-
-def _distinguishing(
-    group: Sequence[Mapping[str, str]], others: Sequence[Mapping[str, str]]
-) -> tuple[tuple[str, str], ...]:
-    """Return the smallest predicate every environment of a group satisfies and no other environment does."""
-    from itertools import combinations
-
-    for size in range(1, len(FACTS) + 1):
-        for facts in combinations(FACTS, size):
-            values = {tuple(_fact_value(fact, env[fact]) for fact in facts) for env in group}
-            if len(values) != 1:
-                continue
-            predicate = tuple(sorted(zip(facts, next(iter(values)), strict=True)))
-            if not any(predicate_matches(predicate, env) for env in others):
-                return predicate
-    msg = f"no predicate separates {group} from {others}"
-    raise ValueError(msg)
-
-
-def payload_predicate(facts: Mapping[str, str], local: Mapping[str, str]) -> tuple[tuple[str, str], ...] | None:
-    """Return the predicate of a foreign environment's override, or None when no predicate tells it apart from here.
-
-    A tool pinned to another release series than here (``black=22``, ``pydantic=2.0``) names its lane alone. Otherwise
-    the predicate is the lane's formatter and Python, and its tools when the formatter is external: Python and formatter
-    alone are shared by several lanes, which would pick the override up and then disagree with it. The platform joins
-    the predicate only when it is what tells the lane apart from here. Predicates key on release series, so a lane that
-    differs from here only within a tool's series is this environment.
-    """
-    for tool in ("black", "isort", "pydantic"):
-        if (series := _fact_value(tool, facts[tool])) and series != _fact_value(tool, local[tool]):
-            return ((tool, series),)
-    chosen = ("formatter", "python", "black", "isort") if facts["formatter"] == "external" else ("formatter", "python")
-    predicate = tuple(sorted((fact, _fact_value(fact, facts[fact])) for fact in chosen if facts[fact]))
-    if predicate_matches(predicate, local) and facts["platform"] != local["platform"]:
-        predicate = tuple(sorted((*predicate, ("platform", facts["platform"]))))
-    return None if predicate_matches(predicate, local) else predicate
-
-
 def _observed_value(label: str, storage: str, value: object, expected_root: Path) -> object:
     if value is not None:
         return value
@@ -1770,7 +1768,10 @@ def _observed_value(label: str, storage: str, value: object, expected_root: Path
 
 
 class ObservedItem(TypedDict):
-    """What one environment observed for a test item: its outcome and [label, digest, storage, value] lists."""
+    """What one environment observed for a test item: its outcome and [label, digest, storage, value, clauses] lists.
+
+    ``clauses`` are the condition clauses of the capabilities the comparison declares (``varies_with=``).
+    """
 
     item: str
     outcome: str
@@ -1793,21 +1794,39 @@ class Payload(TypedDict, total=False):
     label: str
     digest: str
     value: Any
+    clauses: list[str]
     missing: bool
     stale: bool
 
 
+def fact_difference(first: Mapping[str, str], second: Mapping[str, str]) -> str:
+    """Return the facts two environments differ in, with both values: ``black (22.1.0 vs 26.10.1)``."""
+    differing = [
+        f"{fact} ({first.get(fact) or 'none'} vs {second.get(fact) or 'none'})"
+        for fact in FACTS
+        if first.get(fact) != second.get(fact)
+    ]
+    return ", ".join(differing) or "no fact"
+
+
+def _declared_text(clauses: Sequence[str]) -> str:
+    return predicate_text(clauses) or "nothing"
+
+
 def merge_environments(
-    environments: list[Observations], expected_root: Path, local: Mapping[str, str]
+    environments: Sequence[Observations], expected_root: Path, names: Sequence[str]
 ) -> dict[str, list[Desired]]:
     """Return the lines of every item that passed somewhere, from what each environment compared.
 
+    Each comparison carries the clauses its test declares (``varies_with=``). Per item and label, every environment
+    that compared it must have declared the same clauses, and the environments of one class (the declared clauses
+    that hold in them) must have stored the same output; then the label gets one line per observed class, the base
+    line for the class where no clause holds. Anything else raises ``ValueError`` naming the environments (``names``,
+    in the order of ``environments``) and the facts they differ in, since only a declared fact may explain a difference.
     A line is conditional (``?``) when some environment passed the item without comparing the label, or collected the
-    item's module without the item. Environments that store different content for a label get overrides. An
-    environment whose output differs from a stored unit that another environment matches fails that test today, so
-    it is left out for the item.
+    item's module without the item.
     """
-    compared: dict[str, dict[int, dict[str, tuple[str, str, object]]]] = {}
+    compared: dict[str, dict[int, dict[str, tuple[str, str, object, tuple[str, ...]]]]] = {}
     facts = [dict(environment["facts"]) for environment in environments]
     collections: list[tuple[set[str], set[str]]] = []
     for index, environment in enumerate(environments):
@@ -1816,44 +1835,73 @@ def merge_environments(
         for entry in environment["items"]:
             if entry["outcome"] == "passed":
                 compared.setdefault(entry["item"], {})[index] = {
-                    label: (digest, storage, value) for label, digest, storage, value in entry["compared"]
+                    label: (digest, storage, value, tuple(sorted(set(clauses))))
+                    for label, digest, storage, value, clauses in entry["compared"]
                 }
-    stored: dict[str, str | None] = {}
-
-    def stored_digest(storage: str) -> str | None:
-        if storage not in stored:
-            name, pattern = split_label(storage)
-            value = read_unit(label_path(name, expected_root), pattern)
-            stored[storage] = None if value in (None, {}) else unit_digest(storage, value)
-        return stored[storage]
-
     result: dict[str, list[Desired]] = {}
+    problems: list[str] = []
     for nodeid, by_env in compared.items():
-        failing = {
-            index
-            for label in {label for labels in by_env.values() for label in labels}
-            if (observed := {index: labels[label] for index, labels in by_env.items() if label in labels})
-            and any(stored_digest(storage) == digest for digest, storage, _ in observed.values())
-            for index, (digest, storage, _) in observed.items()
-            if stored_digest(storage) != digest
-        }
-        envs = [index for index in by_env if index not in failing]
         absent = any(
             nodeid.partition("::")[0] in modules and nodeid not in collected for collected, modules in collections
         )
-        desired: list[Desired] = []
-        for label in sorted({label for index in envs for label in by_env[index]}):
-            per_env = {index: by_env[index][label] for index in envs if label in by_env[index]}
-            desired += _merged_lines(
-                label,
-                per_env,
-                facts,
-                local,
-                conditional=absent or len(per_env) != len(envs),
-                expected_root=expected_root,
-            )
-        result[nodeid] = desired
+        result[nodeid] = []
+        for label in sorted({label for labels in by_env.values() for label in labels}):
+            per_env = {index: labels[label] for index, labels in by_env.items() if label in labels}
+            where = _Merge(nodeid, label, facts, names, expected_root)
+            result[nodeid] += where.lines(per_env, conditional=absent or len(per_env) != len(by_env))
+            problems += where.problems
+    if problems:
+        raise ValueError("\n".join(problems))
     return result
+
+
+@dataclass
+class _Merge:
+    """The merge of one item's label from the environments that compared it, and why it is refused."""
+
+    item: str
+    label: str
+    facts: Sequence[Mapping[str, str]]
+    names: Sequence[str]
+    expected_root: Path
+    problems: list[str] = field(default_factory=list)
+
+    def lines(
+        self, per_env: Mapping[int, tuple[str, str, object, tuple[str, ...]]], *, conditional: bool
+    ) -> list[Desired]:
+        """Return one line per class the environments observed, or none with the problems that refuse them."""
+        declared: dict[tuple[str, ...], int] = {}
+        for index, (_, _, _, clauses) in per_env.items():
+            declared.setdefault(clauses, index)
+        if len(declared) > 1:
+            (first, one), (second, other) = sorted(declared.items(), key=operator.itemgetter(1))[:2]
+            self.problems.append(
+                f"{self.item} {self.label}: {self.names[one]} declares {_declared_text(first)} and "
+                f"{self.names[other]} declares {_declared_text(second)}; they ran different test code: observe every "
+                "environment again"
+            )
+            return []
+        classes: dict[tuple[str, ...], dict[str, list[int]]] = {}
+        for index, (digest, _, _, clauses) in per_env.items():
+            classes.setdefault(holding_clauses(clauses, self.facts[index]), {}).setdefault(digest, []).append(index)
+        lines = []
+        for clauses, by_digest in sorted(classes.items()):
+            if len(by_digest) > 1:
+                (one, *_), (other, *_) = sorted(by_digest.values())[:2]
+                self.problems.append(
+                    f"environments {self.names[one]} and {self.names[other]} are in the same class for {self.label} "
+                    f"of {self.item} but stored different outputs; they differ in "
+                    f"{fact_difference(self.facts[one], self.facts[other])}: name the fact the output depends on with "
+                    "varies_with="
+                )
+                continue
+            ((digest, members),) = by_digest.items()
+            _, storage, value, _ = next(
+                (per_env[index] for index in members if per_env[index][2] is not None), per_env[members[0]]
+            )
+            merged = _observed_value(self.label, storage, value, self.expected_root)
+            lines.append(Desired(self.label, conditional, clauses, merged, digest))
+        return lines
 
 
 def uncollected_items(environments: Sequence[Observations], recorded: Iterable[str]) -> list[str]:
@@ -1867,102 +1915,74 @@ def uncollected_items(environments: Sequence[Observations], recorded: Iterable[s
     return sorted({nodeid for nodeid in recorded if nodeid.partition("::")[0] in modules} - collected)
 
 
-def _merged_lines(
-    label: str,
-    per_env: Mapping[int, tuple[str, str, object]],
-    facts: list[dict[str, str]],
-    local: Mapping[str, str],
-    *,
-    conditional: bool,
-    expected_root: Path,
-) -> list[Desired]:
-    """Return the base line of a label and one override per predicate of the environments with other content."""
-    groups: dict[str, list[int]] = {}
-    for index, (digest, _, _) in per_env.items():
-        groups.setdefault(digest, []).append(index)
-    local_digest = next((digest for digest, members in groups.items() if facts[members[0]] == local), "")
-    base = max(groups, key=lambda digest: (len(groups[digest]), digest == local_digest, digest))
-    lines = []
-    for digest, members in sorted(groups.items(), key=lambda entry: (entry[0] != base, entry[0])):
-        _, storage, value = next(
-            (per_env[index] for index in members if per_env[index][2] is not None), per_env[members[0]]
-        )
-        merged = _observed_value(label, storage, value, expected_root)
-        others = [facts[index] for index in per_env if index not in members]
-        predicates = [()] if digest == base else sorted({_distinguishing([facts[index]], others) for index in members})
-        lines += [Desired(label, conditional, predicate, merged, digest) for predicate in predicates]
-    return lines
+def payload_class(payload: Payload, facts: Mapping[str, str]) -> tuple[str, ...]:
+    """Return the class a value payload's comparison has in an environment: its declared clauses that hold there."""
+    return holding_clauses(payload["clauses"], facts)
 
 
-def common_contents(payloads: Iterable[Payload], local: Mapping[str, str]) -> dict[tuple[str, str], tuple[str, int]]:
-    """Return the content that lanes of different overrides sent alike for an item's label, by item and label.
+def conflicting_payloads(payloads: Iterable[Payload]) -> list[str]:
+    """Return why value payloads of one apply contradict each other, or nothing.
 
-    Lanes count by the predicate of the override their payload is stored under (``payload_predicate``), the facts a
-    stored file can tell apart: lanes that share one override, such as one Python on two platforms, count once, and
-    payloads no predicate tells apart from here count not at all (an apply session refuses or skips them). Each entry
-    holds the digest the most lanes sent, on a tie the one whose lowest predicate's text sorts first, and how many
-    lanes sent it; labels whose content no two lanes share are left out.
+    Payloads for one item and label must declare the same clauses (else their lanes ran different test code), and
+    payloads of one class must carry the same output: one lane stands for its declared class.
     """
-    senders: dict[tuple[str, str], dict[str, set[str]]] = {}
+    first: dict[tuple[str, str], Payload] = {}
+    by_class: dict[tuple[str, str, tuple[str, ...]], Payload] = {}
+    problems = []
     for payload in payloads:
-        if "digest" not in payload or (predicate := payload_predicate(payload["facts"], local)) is None:
+        if "digest" not in payload:
             continue
-        by_digest = senders.setdefault((payload["item"], payload["label"]), {})
-        by_digest.setdefault(payload["digest"], set()).add(predicate_text(predicate))
-    common = {}
-    for key, by_digest in senders.items():
-        digest = min(by_digest, key=lambda name: (-len(by_digest[name]), min(by_digest[name])))
-        if (count := len(by_digest[digest])) > 1:
-            common[key] = digest, count
-    return common
+        key = (payload["item"], payload["label"])
+        declared = tuple(sorted(set(payload["clauses"])))
+        seen = first.setdefault(key, payload)
+        if tuple(sorted(set(seen["clauses"]))) != declared:
+            problems.append(
+                f"{payload['item']} {payload['label']}: payloads declare {_declared_text(seen['clauses'])} and "
+                f"{_declared_text(declared)}; their lanes ran different test code"
+            )
+            continue
+        other = by_class.setdefault((*key, payload_class(payload, payload["facts"])), payload)
+        if other["digest"] != payload["digest"]:
+            problems.append(
+                f"two lanes of one class sent different outputs for {payload['label']} of {payload['item']}; they "
+                f"differ in {fact_difference(other['facts'], payload['facts'])}: name the fact the output depends on "
+                "with varies_with="
+            )
+    return problems
 
 
 def apply_payload(
-    base: list[Desired],
-    lines: list[RefLine],
-    payload: Payload,
-    local: Mapping[str, str],
-    *,
-    exists: bool,
-    as_base: bool = False,
+    base: list[Desired], lines: list[RefLine], payload: Payload, local: Mapping[str, str], *, exists: bool
 ) -> list[Desired]:
     """Merge one CI payload, what another environment compared for an item, into the item's desired lines.
 
-    A stale payload (the lane lacks the item) marks the item's lines for that lane conditional when the item exists
-    here, and drops them when it exists nowhere. A value payload from this environment raises ``ValueError``: apply
-    sessions refuse it before, since only a local run may change what this environment compares. With ``as_base``
-    the value also becomes the label's base line, so the lane's override equals it and the resolution drops it.
+    A stale payload (the lane lacks the item) marks the item's lines that lane reads conditional when the item exists
+    here, and drops them when it exists nowhere; a missing payload marks the label's lines it reads conditional. A
+    value payload writes or replaces the line of its class (`payload_class`) and drops the label's lines whose
+    clauses the comparison no longer declares. One of this environment's class raises ``ValueError``: apply sessions
+    refuse it before, since only a local run changes what this class compares.
     """
     facts = payload["facts"]
     if payload.get("stale"):
-        marked = [
-            replace(want, conditional=True) if predicate_matches(want.predicate, facts) else want for want in base
-        ]
+        marked = [replace(want, conditional=True) if clauses_hold(want.predicate, facts) else want for want in base]
         return marked if exists else []
     label = payload["label"]
-    desired = list(base)
     if payload.get("missing"):
         return [
-            replace(want, conditional=True)
-            if want.label == label and predicate_matches(want.predicate, facts)
-            else want
-            for want in desired
+            replace(want, conditional=True) if want.label == label and clauses_hold(want.predicate, facts) else want
+            for want in base
         ]
-    value, digest = payload["value"], payload["digest"]
-    if as_base:
-        desired = [
-            replace(want, value=value, digest=digest) if want.label == label and not want.predicate else want
-            for want in desired
-        ]
-    candidates = [want for want in desired if want.label == label and predicate_matches(want.predicate, facts)]
-    applicable = max(candidates, key=lambda want: len(want.predicate), default=None)
-    if applicable is None:
-        conditional = bool(lines) or bool(desired) or not exists
-        return [*desired, Desired(label, conditional, (), value, digest)]
-    if (predicate := payload_predicate(facts, local)) is None:
-        msg = "the payload comes from this environment; run its test here with --inline-snapshot=fix instead"
+    value, digest, target = payload["value"], payload["digest"], payload_class(payload, facts)
+    if target == payload_class(payload, local):
+        msg = "the payload comes from this environment's class; run its test here with --inline-snapshot=fix instead"
         raise ValueError(msg)
-    if applicable.predicate == predicate:
-        return [replace(want, value=value, digest=digest) if want is applicable else want for want in desired]
-    merged = tuple(sorted(dict((*applicable.predicate, *predicate)).items()))
-    return [*desired, Desired(label, applicable.conditional, merged, value, digest)]
+    declared = set(payload["clauses"])
+    desired = [want for want in base if want.label != label or set(want.predicate) <= declared]
+    if any(want.label == label and want.predicate == target for want in desired):
+        return [
+            replace(want, value=value, digest=digest) if want.label == label and want.predicate == target else want
+            for want in desired
+        ]
+    read = applicable_lines((want for want in desired if want.label == label), facts)
+    conditional = read[0].conditional if read else bool(lines) or bool(desired) or not exists
+    return [*desired, Desired(label, conditional, target, value, digest)]

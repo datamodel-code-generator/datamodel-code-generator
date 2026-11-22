@@ -101,7 +101,7 @@ native-boundaries	api_generation/client_runtime/client_runtime[native-boundaries
 native-codec-backends	api_generation/client_runtime/client_runtime[native-codec-backends].txt
 native-faults	api_generation/client_runtime/client_runtime[native-faults].txt
 native-wire	api_generation/client_runtime/client_runtime[native-wire].txt
-native-wire	api_generation/client_runtime/client_runtime[native-wire].txt	@black=26,formatter=external,isort=8,platform=win32,python=3.14	= api_generation/client_runtime/client_runtime[native-wire]@black26-external-isort8-win32-python3.14.txt
+native-wire	api_generation/client_runtime/client_runtime[native-wire].txt	@platform==win32	= api_generation/client_runtime/client_runtime[native-wire]@platform-eq-win32.txt
 ndjson	api_generation/client_runtime/client_runtime[ndjson].txt
 ndjson-backends	api_generation/client_runtime/client_runtime[ndjson-backends].txt
 ndjson-split	api_generation/client_runtime/client_runtime[ndjson-split].txt

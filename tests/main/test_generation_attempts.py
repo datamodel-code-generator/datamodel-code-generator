@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import operator
 import shutil
-import sys
 from pathlib import Path
 
 import pytest
@@ -14,7 +13,6 @@ from tests.conftest import assert_output
 from tests.data.python.generation_session_inputs import run_generation_session
 
 DATA = Path(__file__).parents[1] / "data"
-EXPECTED = DATA / "expected/main/generation_platform"
 CASES = json.loads((DATA / "generation_platform/attempts.json").read_text())
 
 
@@ -38,6 +36,5 @@ def test_generation_attempt_lifetime(case: dict[str, str], tmp_path: Path, monke
         api_scope=case.get("api") != "false",
         typed_nullable_map_values=case.get("typed_nullable_map_values") == "true",
     )
-    expected = EXPECTED / ("windows" if sys.platform == "win32" and failure == "emit" else "")
-    assert_output(json.dumps(observation, indent=2) + "\n", expected / f"attempt_{case['name']}.txt")
-    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+    assert_output(json.dumps(observation, indent=2) + "\n")
+    assert_output(f"{retained}\n", name="retained")

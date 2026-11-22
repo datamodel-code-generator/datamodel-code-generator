@@ -288,8 +288,7 @@ temporal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict_datetime-D
 {"type": ["null", "string"]}	main/avro/main_avro/auto_detection_leaves_json_schema_shapes_as_json_schema[{_type__ [_null_, _string_]}].py
 [test_main_avro_constructs]
 	main/avro/main_avro/constructs.py
-	main/avro/main_avro/constructs.py	@python=3.14	= main/avro/main_avro/constructs@python3.14.py
-	main/avro/main_avro/constructs.py	@python=3.15	= main/avro/main_avro/constructs@python3.14.py
+	main/avro/main_avro/constructs.py	@python>=3.14	= main/avro/main_avro/constructs@python-ge-3.14.py
 [test_main_avro_decimal_default_controls]
 decimal_default_controls	main/avro/main_avro/decimal_default_controls[decimal_default_controls].py
 logical_override_mapping-deserialized	main/avro/main_avro/decimal_default_controls[logical_override_mapping-deserialized].py	= main/avro/decimal_defaults_logical_override_mapping.py
@@ -307,102 +306,72 @@ collapsed	main/avro/main_avro/fixed_type_overrides_keep_physical_defaults[collap
 named	main/avro/main_avro/fixed_type_overrides_keep_physical_defaults[named].py	= main/avro/main_avro/fixed_type_overrides_keep_physical_defaults[collapsed].py
 [test_main_avro_infer_input_file_type]
 	main/avro/main_avro/infer_input_file_type.py	= main/avro/main_avro/constructs.py
-	main/avro/main_avro/infer_input_file_type.py	@python=3.14	= main/avro/main_avro/constructs@python3.14.py
-	main/avro/main_avro/infer_input_file_type.py	@python=3.15	= main/avro/main_avro/constructs@python3.14.py
+	main/avro/main_avro/infer_input_file_type.py	@python>=3.14	= main/avro/main_avro/constructs@python-ge-3.14.py
 [test_main_avro_named_type_field_defaults]
 default	main/avro/main_avro/named_type_field_defaults[default].py
 ignore-ref-siblings	main/avro/main_avro/named_type_field_defaults[ignore-ref-siblings].py	= main/avro/main_avro/named_type_field_defaults[default].py
 per-document	main/avro/main_avro/named_type_field_defaults[per-document].py	= main/avro/main_avro/named_type_field_defaults[default].py
 [test_main_avro_namespace_collisions]
 	main/avro/main_avro/namespace_collisions.py
-	main/avro/main_avro/namespace_collisions.py	@python=3.14	= main/avro/main_avro/namespace_collisions@python3.14.py
-	main/avro/main_avro/namespace_collisions.py	@python=3.15	= main/avro/main_avro/namespace_collisions@python3.14.py
+	main/avro/main_avro/namespace_collisions.py	@python>=3.14	= main/avro/main_avro/namespace_collisions@python-ge-3.14.py
 [test_main_avro_official_c_schema_pass_corpus]
 array	main/avro/main_avro/official_c_schema_pass_corpus[array].py
-array	main/avro/main_avro/official_c_schema_pass_corpus[array].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[array]@python3.14.py
-array	main/avro/main_avro/official_c_schema_pass_corpus[array].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[array]@python3.14.py
+array	main/avro/main_avro/official_c_schema_pass_corpus[array].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[array]@python-ge-3.14.py
 boolean_full	main/avro/main_avro/official_c_schema_pass_corpus[boolean_full].py
-boolean_full	main/avro/main_avro/official_c_schema_pass_corpus[boolean_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[boolean_full]@python3.14.py
-boolean_full	main/avro/main_avro/official_c_schema_pass_corpus[boolean_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[boolean_full]@python3.14.py
+boolean_full	main/avro/main_avro/official_c_schema_pass_corpus[boolean_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[boolean_full]@python-ge-3.14.py
 bytes_full	main/avro/main_avro/official_c_schema_pass_corpus[bytes_full].py
-bytes_full	main/avro/main_avro/official_c_schema_pass_corpus[bytes_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[bytes_full]@python3.14.py
-bytes_full	main/avro/main_avro/official_c_schema_pass_corpus[bytes_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[bytes_full]@python3.14.py
+bytes_full	main/avro/main_avro/official_c_schema_pass_corpus[bytes_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[bytes_full]@python-ge-3.14.py
 double_full	main/avro/main_avro/official_c_schema_pass_corpus[double_full].py
-double_full	main/avro/main_avro/official_c_schema_pass_corpus[double_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[double_full]@python3.14.py
-double_full	main/avro/main_avro/official_c_schema_pass_corpus[double_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[double_full]@python3.14.py
+double_full	main/avro/main_avro/official_c_schema_pass_corpus[double_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[double_full]@python-ge-3.14.py
 enum	main/avro/main_avro/official_c_schema_pass_corpus[enum].py
-enum	main/avro/main_avro/official_c_schema_pass_corpus[enum].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[enum]@python3.14.py
-enum	main/avro/main_avro/official_c_schema_pass_corpus[enum].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[enum]@python3.14.py
+enum	main/avro/main_avro/official_c_schema_pass_corpus[enum].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[enum]@python-ge-3.14.py
 extra_attributes	main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes].py
-extra_attributes	main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes]@python3.14.py
-extra_attributes	main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes]@python3.14.py
+extra_attributes	main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[extra_attributes]@python-ge-3.14.py
 fixed	main/avro/main_avro/official_c_schema_pass_corpus[fixed].py
-fixed	main/avro/main_avro/official_c_schema_pass_corpus[fixed].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[fixed]@python3.14.py
-fixed	main/avro/main_avro/official_c_schema_pass_corpus[fixed].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[fixed]@python3.14.py
+fixed	main/avro/main_avro/official_c_schema_pass_corpus[fixed].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[fixed]@python-ge-3.14.py
 float_full	main/avro/main_avro/official_c_schema_pass_corpus[float_full].py
-float_full	main/avro/main_avro/official_c_schema_pass_corpus[float_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[float_full]@python3.14.py
-float_full	main/avro/main_avro/official_c_schema_pass_corpus[float_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[float_full]@python3.14.py
+float_full	main/avro/main_avro/official_c_schema_pass_corpus[float_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[float_full]@python-ge-3.14.py
 int_full	main/avro/main_avro/official_c_schema_pass_corpus[int_full].py
-int_full	main/avro/main_avro/official_c_schema_pass_corpus[int_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[int_full]@python3.14.py
-int_full	main/avro/main_avro/official_c_schema_pass_corpus[int_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[int_full]@python3.14.py
+int_full	main/avro/main_avro/official_c_schema_pass_corpus[int_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[int_full]@python-ge-3.14.py
 interop	main/avro/main_avro/official_c_schema_pass_corpus[interop].py
-interop	main/avro/main_avro/official_c_schema_pass_corpus[interop].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[interop]@python3.14.py
-interop	main/avro/main_avro/official_c_schema_pass_corpus[interop].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[interop]@python3.14.py
+interop	main/avro/main_avro/official_c_schema_pass_corpus[interop].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[interop]@python-ge-3.14.py
 long_full	main/avro/main_avro/official_c_schema_pass_corpus[long_full].py
-long_full	main/avro/main_avro/official_c_schema_pass_corpus[long_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[long_full]@python3.14.py
-long_full	main/avro/main_avro/official_c_schema_pass_corpus[long_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[long_full]@python3.14.py
+long_full	main/avro/main_avro/official_c_schema_pass_corpus[long_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[long_full]@python-ge-3.14.py
 map	main/avro/main_avro/official_c_schema_pass_corpus[map].py
-map	main/avro/main_avro/official_c_schema_pass_corpus[map].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[map]@python3.14.py
-map	main/avro/main_avro/official_c_schema_pass_corpus[map].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[map]@python3.14.py
+map	main/avro/main_avro/official_c_schema_pass_corpus[map].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[map]@python-ge-3.14.py
 namespace_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum].py
-namespace_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum]@python3.14.py
-namespace_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum]@python3.14.py
+namespace_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_enum]@python-ge-3.14.py
 namespace_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed].py
-namespace_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed]@python3.14.py
-namespace_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed]@python3.14.py
+namespace_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_fixed]@python-ge-3.14.py
 namespace_fullname	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname].py
-namespace_fullname	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname]@python3.14.py
-namespace_fullname	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname]@python3.14.py
+namespace_fullname	main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_fullname]@python-ge-3.14.py
 namespace_null_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum].py
-namespace_null_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum]@python3.14.py
-namespace_null_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum]@python3.14.py
+namespace_null_enum	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_enum]@python-ge-3.14.py
 namespace_null_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed].py
-namespace_null_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed]@python3.14.py
-namespace_null_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed]@python3.14.py
+namespace_null_fixed	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_fixed]@python-ge-3.14.py
 namespace_null_record	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record].py
-namespace_null_record	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record]@python3.14.py
-namespace_null_record	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record]@python3.14.py
+namespace_null_record	main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_null_record]@python-ge-3.14.py
 namespace_recursive	main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive].py
-namespace_recursive	main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive]@python3.14.py
-namespace_recursive	main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive]@python3.14.py
+namespace_recursive	main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_recursive]@python-ge-3.14.py
 namespace_simple	main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple].py
-namespace_simple	main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple]@python3.14.py
-namespace_simple	main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple]@python3.14.py
+namespace_simple	main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[namespace_simple]@python-ge-3.14.py
 null_full	main/avro/main_avro/official_c_schema_pass_corpus[null_full].py
-null_full	main/avro/main_avro/official_c_schema_pass_corpus[null_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[null_full]@python3.14.py
-null_full	main/avro/main_avro/official_c_schema_pass_corpus[null_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[null_full]@python3.14.py
+null_full	main/avro/main_avro/official_c_schema_pass_corpus[null_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[null_full]@python-ge-3.14.py
 record	main/avro/main_avro/official_c_schema_pass_corpus[record].py
-record	main/avro/main_avro/official_c_schema_pass_corpus[record].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[record]@python3.14.py
-record	main/avro/main_avro/official_c_schema_pass_corpus[record].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[record]@python3.14.py
+record	main/avro/main_avro/official_c_schema_pass_corpus[record].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[record]@python-ge-3.14.py
 record_fields_with_defaults	main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults].py
-record_fields_with_defaults	main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults]@python3.14.py
-record_fields_with_defaults	main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults]@python3.14.py
+record_fields_with_defaults	main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[record_fields_with_defaults]@python-ge-3.14.py
 record_no_fields	main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields].py
-record_no_fields	main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields]@python3.14.py
-record_no_fields	main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields]@python3.14.py
+record_no_fields	main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[record_no_fields]@python-ge-3.14.py
 recursive_record	main/avro/main_avro/official_c_schema_pass_corpus[recursive_record].py
-recursive_record	main/avro/main_avro/official_c_schema_pass_corpus[recursive_record].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[recursive_record]@python3.14.py
-recursive_record	main/avro/main_avro/official_c_schema_pass_corpus[recursive_record].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[recursive_record]@python3.14.py
+recursive_record	main/avro/main_avro/official_c_schema_pass_corpus[recursive_record].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[recursive_record]@python-ge-3.14.py
 string_full	main/avro/main_avro/official_c_schema_pass_corpus[string_full].py
-string_full	main/avro/main_avro/official_c_schema_pass_corpus[string_full].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[string_full]@python3.14.py
-string_full	main/avro/main_avro/official_c_schema_pass_corpus[string_full].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[string_full]@python3.14.py
+string_full	main/avro/main_avro/official_c_schema_pass_corpus[string_full].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[string_full]@python-ge-3.14.py
 union	main/avro/main_avro/official_c_schema_pass_corpus[union].py
-union	main/avro/main_avro/official_c_schema_pass_corpus[union].py	@python=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[union]@python3.14.py
-union	main/avro/main_avro/official_c_schema_pass_corpus[union].py	@python=3.15	= main/avro/main_avro/official_c_schema_pass_corpus[union]@python3.14.py
+union	main/avro/main_avro/official_c_schema_pass_corpus[union].py	@python>=3.14	= main/avro/main_avro/official_c_schema_pass_corpus[union]@python-ge-3.14.py
 [test_main_avro_official_spec_long_list]
 	main/avro/main_avro/official_spec_long_list.py
-	main/avro/main_avro/official_spec_long_list.py	@python=3.14	= main/avro/main_avro/official_spec_long_list@python3.14.py
-	main/avro/main_avro/official_spec_long_list.py	@python=3.15	= main/avro/main_avro/official_spec_long_list@python3.14.py
+	main/avro/main_avro/official_spec_long_list.py	@python>=3.14	= main/avro/main_avro/official_spec_long_list@python-ge-3.14.py
 [test_main_avro_output_model_types]
 dataclass	main/avro/main_avro/output_model_types[dataclass].py
 msgspec	main/avro/main_avro/output_model_types[msgspec].py
@@ -412,46 +381,33 @@ typed-dict	main/avro/main_avro/output_model_types[typed-dict].py
 	main/avro/main_avro/record_default_with_a_key_the_record_does_not_declare.py
 [test_main_avro_schema_declaration_forms]
 name_suffix_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True].py
-name_suffix_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True]@python3.14.py
-name_suffix_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True]@python3.14.py
+name_suffix_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[name_suffix_collision.avsc-True]@python-ge-3.14.py
 namespace_null_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True].py
-namespace_null_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True]@python3.14.py
-namespace_null_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True]@python3.14.py
+namespace_null_collision.avsc-True	main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[namespace_null_collision.avsc-True]@python-ge-3.14.py
 root_array.avsc-True	main/avro/main_avro/schema_declaration_forms[root_array.avsc-True].py
-root_array.avsc-True	main/avro/main_avro/schema_declaration_forms[root_array.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_array.avsc-True]@python3.14.py
-root_array.avsc-True	main/avro/main_avro/schema_declaration_forms[root_array.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_array.avsc-True]@python3.14.py
+root_array.avsc-True	main/avro/main_avro/schema_declaration_forms[root_array.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_array.avsc-True]@python-ge-3.14.py
 root_enum.avsc-True	main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True].py
-root_enum.avsc-True	main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True]@python3.14.py
-root_enum.avsc-True	main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True]@python3.14.py
+root_enum.avsc-True	main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_enum.avsc-True]@python-ge-3.14.py
 root_fixed.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True].py
-root_fixed.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True]@python3.14.py
-root_fixed.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True]@python3.14.py
+root_fixed.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_fixed.avsc-True]@python-ge-3.14.py
 root_fixed_uuid.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True].py
-root_fixed_uuid.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True]@python3.14.py
-root_fixed_uuid.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True]@python3.14.py
+root_fixed_uuid.avsc-True	main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_fixed_uuid.avsc-True]@python-ge-3.14.py
 root_map.avsc-False	main/avro/main_avro/schema_declaration_forms[root_map.avsc-False].py
-root_map.avsc-False	main/avro/main_avro/schema_declaration_forms[root_map.avsc-False].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_map.avsc-False]@python3.14.py
-root_map.avsc-False	main/avro/main_avro/schema_declaration_forms[root_map.avsc-False].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_map.avsc-False]@python3.14.py
+root_map.avsc-False	main/avro/main_avro/schema_declaration_forms[root_map.avsc-False].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_map.avsc-False]@python-ge-3.14.py
 root_string.avsc-False	main/avro/main_avro/schema_declaration_forms[root_string.avsc-False].py
-root_string.avsc-False	main/avro/main_avro/schema_declaration_forms[root_string.avsc-False].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_string.avsc-False]@python3.14.py
-root_string.avsc-False	main/avro/main_avro/schema_declaration_forms[root_string.avsc-False].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_string.avsc-False]@python3.14.py
+root_string.avsc-False	main/avro/main_avro/schema_declaration_forms[root_string.avsc-False].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_string.avsc-False]@python-ge-3.14.py
 root_type_object.avsc-False	main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False].py
-root_type_object.avsc-False	main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False]@python3.14.py
-root_type_object.avsc-False	main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False]@python3.14.py
+root_type_object.avsc-False	main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_type_object.avsc-False]@python-ge-3.14.py
 root_type_union.avsc-True	main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True].py
-root_type_union.avsc-True	main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True]@python3.14.py
-root_type_union.avsc-True	main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True]@python3.14.py
+root_type_union.avsc-True	main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_type_union.avsc-True]@python-ge-3.14.py
 root_union_named.avsc-False	main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False].py
-root_union_named.avsc-False	main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False].py	@python=3.14	= main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False]@python3.14.py
-root_union_named.avsc-False	main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False].py	@python=3.15	= main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False]@python3.14.py
+root_union_named.avsc-False	main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False].py	@python>=3.14	= main/avro/main_avro/schema_declaration_forms[root_union_named.avsc-False]@python-ge-3.14.py
 [test_main_avro_single_value_enum_as_const_keeps_converted_enums]
 	main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums.py
-	main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums.py	@python=3.14	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums@python3.14.py
-	main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums.py	@python=3.15	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums@python3.14.py
+	main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums.py	@python>=3.14	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums@python-ge-3.14.py
 [test_main_avro_spec_matrix]
 	main/avro/main_avro/spec_matrix.py	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums.py
-	main/avro/main_avro/spec_matrix.py	@python=3.14	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums@python3.14.py
-	main/avro/main_avro/spec_matrix.py	@python=3.15	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums@python3.14.py
+	main/avro/main_avro/spec_matrix.py	@python>=3.14	= main/avro/main_avro/single_value_enum_as_const_keeps_converted_enums@python-ge-3.14.py
 	main/avro/main_avro/spec_matrix.txt
 [test_main_avro_temporal_default_controls]
 	main/avro/main_avro/temporal_default_controls.py

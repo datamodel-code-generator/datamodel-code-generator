@@ -1,9 +1,11 @@
-"""The capabilities a test may need of its environment: one table of names, each a predicate over facts with its reason.
+"""The facts of a test's environment a test may need or its output may vary with: one table of names, each a predicate.
 
 A test that runs only where its environment has something says so by name, ``@needs("symlinks")`` (or in
-``pytestmark``, or ``pytest.param(..., marks=needs(...))``), and is skipped elsewhere with the capability's reason.
-The facts are those that expected-output overrides select (`tests.units.FACTS`: ``python``, ``formatter``, ``black``,
-``isort``, ``platform``, ``pydantic``), read once from the running environment.
+``pytestmark``, or ``pytest.param(..., marks=needs(...))``), and is skipped elsewhere with the capability's reason. A
+comparison whose output depends on the environment names the deciding facts the same way, ``assert_output(text,
+varies_with=("windows",))``: its stored lines key on the clauses of those entries that hold (`clauses_of`). The facts
+are those stored output keys on (`tests.units.FACTS`: ``python``, ``formatter``, ``black``, ``isort``, ``platform``,
+``pydantic``), read from the running environment (`expected_environment_facts`).
 
 Each entry is ``name: (clauses, reason)``. The capability holds where every clause holds; a clause is one or more
 alternatives joined by ``|``, each ``<fact><op><value>`` (``platform!=win32``, ``black>=24``,
@@ -15,16 +17,21 @@ outside this module, ``dead-capability`` fails on a capability that no lane of t
 
 from __future__ import annotations
 
+import os
+import sys
 from functools import cache
 from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.conftest import expected_environment_facts
 from tests.units import condition_holds
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
+
+TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
+BUILTIN_FORMATTER_VALUE = "builtin"
+_PLATFORMS = ("linux", "darwin", "win32")
 
 CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
     "posix": (
@@ -52,20 +59,72 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
     "native-deferred-annotations": (("python>=3.14",), "Python defers annotations natively from 3.14 on"),
     "target-newer-than-runtime": (("python<3.14",), "the test needs a target Python version newer than the runtime"),
     "black-before-24": (("black<24",), "the test checks how black before 24 formats the output"),
+    "black-before-24.3": (
+        ("black<24.3",),
+        "black before 24.3.0 is below the version datamodel-code-generator will require; generation says so",
+    ),
+    "black-without-py311-target": (
+        ("black<22.6",),
+        "black before 22.6.0 has no Python 3.11 target version (TargetVersion.PY311), so it cannot format for 3.11",
+    ),
+    "isort-before-6": (("isort<6",), "isort before 6 is below the version datamodel-code-generator will require"),
+    "pydantic-before-2.5": (
+        ("pydantic<2.5",),
+        (
+            "Pydantic 2.0.3 builds and validates models differently from 2.5.3; no lane pins 2.1 to 2.4, so the "
+            "release in between that changed it is unknown and the bound is the first pinned release that agrees "
+            "with later ones"
+        ),
+    ),
+    "pydantic-before-2.8.2": (
+        ("pydantic<2.8.2",),
+        "Pydantic before 2.8.2 is below the version datamodel-code-generator will require; generation says so",
+    ),
+    "no-type-statements": (
+        ("python<3.12",),
+        "Python 3.11 has no type statements (PEP 695): their errors read differently there",
+    ),
+    "windows": (("platform==win32",), "Windows reports paths, processes and network errors in its own way"),
 }
-"""Every capability a test may need: its clauses over the environment facts and why a test needs it."""
+"""Every capability a test may need or its output may vary with: its clauses over the facts and why."""
+
+
+def expected_environment_facts() -> dict[str, str]:
+    """Return the facts of this environment that stored output keys on (``black<24``, ``platform==win32``)."""
+    from importlib.metadata import distributions
+
+    builtin = os.environ.get(TEST_DEFAULT_FORMATTER_ENV) == BUILTIN_FORMATTER_VALUE
+    return {
+        "python": f"{sys.version_info[0]}.{sys.version_info[1]}",
+        "formatter": BUILTIN_FORMATTER_VALUE if builtin else "external",
+        **{tool: next((found.version for found in distributions(name=tool)), "") for tool in ("black", "isort")},
+        "platform": next((name for name in _PLATFORMS if sys.platform.startswith(name)), sys.platform),
+        "pydantic": next((found.version for found in distributions(name="pydantic")), ""),
+    }
+
+
+def _known(names: Iterable[str]) -> None:
+    """Raise for a name that is no capability of the table."""
+    if unknown := sorted(set(names) - set(CAPABILITIES)):
+        msg = f"unknown capabilities {unknown}: name one of CAPABILITIES in tests/capabilities.py, or add it there"
+        raise ValueError(msg)
 
 
 def missing(names: tuple[str, ...], facts: Mapping[str, str]) -> list[str]:
     """Return the capabilities of ``names`` that an environment with ``facts`` lacks, each with its reason."""
-    if unknown := sorted(set(names) - set(CAPABILITIES)):
-        msg = f"unknown capabilities {unknown}: name one of CAPABILITIES in tests/capabilities.py, or add it there"
-        raise ValueError(msg)
+    _known(names)
     return [
         f"{name}: {CAPABILITIES[name][1]}"
         for name in names
         if not all(condition_holds(clause, facts) for clause in CAPABILITIES[name][0])
     ]
+
+
+def clauses_of(names: Iterable[str]) -> tuple[str, ...]:
+    """Return the condition clauses of the named capabilities, sorted and unique: what a comparison varies with."""
+    names = tuple(names)
+    _known(names)
+    return tuple(sorted({clause for name in names for clause in CAPABILITIES[name][0]}))
 
 
 @cache

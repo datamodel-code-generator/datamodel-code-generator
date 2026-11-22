@@ -154,7 +154,7 @@ VARIANTS_B = {
             "test_model": [
                 line
                 if line != "b\tmodels/b.py"
-                else "\tmodels/b.py\t@python=3.14\n\tmodels/b.py\t@python=3.15\t= models/a.py"
+                else "\tmodels/b.py\t@python==3.14\n\tmodels/b.py\t@python==3.15\t= models/a.py"
                 for line in REFS["test_model"]
             ]
         }
@@ -244,7 +244,7 @@ CASES: dict[str, dict[str, Any]] = {
                 REFS
                 | {
                     "test_warn": [REFS["test_warn"][0], "\tmodels/w.txt"],
-                    "test_tree": [REFS["test_tree"][0], "py\tmodels/pkg//*.py\t@python=3.11"],
+                    "test_tree": [REFS["test_tree"][0], "py\tmodels/pkg//*.py\t@python==3.11"],
                 }
             ),
         },
