@@ -319,6 +319,11 @@ def inherited_schema(parser: InheritedSchemasHost, resolved_ref: str) -> _Inheri
     return found
 
 
+def _keeps_row(parser: InheritedSchemasHost, row: str) -> bool:
+    """Return whether the parse keeps a row of ``parser/_intersection.py:LEGACY_ROWS``: its option is off."""
+    return row in parser._legacy_intersection
+
+
 def model_schema_at(parser: InheritedSchemasHost, resolved_ref: str) -> JsonSchemaObject:
     """Return the schema the readers of inherited schemas read at a reference key, loading it at the first ask.
 
@@ -330,7 +335,7 @@ def model_schema_at(parser: InheritedSchemasHost, resolved_ref: str) -> JsonSche
     by its sibling keywords alone. The readers that need the schema as written read ``load_inherited_schema_object``.
     """
     found = inherited_schema(parser, resolved_ref)
-    if "legacy-ref-sibling-parent-read-alone" in parser._legacy_intersection or not _merges_ref_siblings(found.schema):
+    if _keeps_row(parser, "legacy-ref-sibling-parent-read-alone") or not _merges_ref_siblings(found.schema):
         return found.schema
     if found.as_model is None:
         with parser._inherited_ref_context(resolved_ref), quiet():
@@ -609,7 +614,7 @@ def get_inherited_type_shape(
         shape["minItems"] = shape["maxItems"] = len(fixed_items)
     elif (
         positional_items
-        and "legacy-type-shape-length-from-max-items" not in parser._legacy_intersection
+        and not _keeps_row(parser, "legacy-type-shape-length-from-max-items")
         and get_effective_array_length(type(parser), schema) == len(positional_items)
     ):
         shape["minItems"] = schema.minItems
@@ -1270,7 +1275,7 @@ def override_row(parser: InheritedSchemasHost, parent: dict[str, Any], child: di
         child,
         merge_mode=parser.allof_merge_mode.value,
         drops_null=_dump_drops_inherited_null,
-        maps_by_name="legacy-schema-maps-merged-as-schemas" not in parser._legacy_intersection,
+        maps_by_name=not _keeps_row(parser, "legacy-schema-maps-merged-as-schemas"),
     )
 
 
@@ -1290,7 +1295,7 @@ def inherited_override_schema(
     child = override.child
     if parser.allof_merge_mode == AllOfMergeMode.NoMerge:
         if not override.partial or (
-            "legacy-type-narrowing-override-deferred" in parser._legacy_intersection
+            _keeps_row(parser, "legacy-type-narrowing-override-deferred")
             and not has_inherited_constraints(parser, child)
         ):
             return child
@@ -1415,7 +1420,7 @@ def get_deferred_inherited_property_names(
                 )
                 if not override.partial or has_inherited_constraints(parser, normalized_child):
                     continue
-                if "legacy-type-narrowing-override-deferred" not in parser._legacy_intersection and not (
+                if not _keeps_row(parser, "legacy-type-narrowing-override-deferred") and not (
                     copy_carries_override(parser, normalized_child, effective_parent, (effective_ref, active))
                 ):
                     continue
