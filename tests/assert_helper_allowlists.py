@@ -22,6 +22,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "embedded-source:tests/data/expected/api_generation/fastapi_cli/generation_json[models-in-package].payload.txt",
         "embedded-source:tests/data/expected/api_generation/fastapi_cli/generation_json[package-in-models].payload.txt",
     ),
+    "decision-cores": ("private-import:tests/model/test_decision_cores.py",),
     "fixture-inputs": (
         "assertion-helper:tests/data/python/input_model/same_schema_a.py",
         "assertion-helper:tests/data/python/input_model/same_schema_b.py",
@@ -1100,6 +1101,12 @@ ALLOWLISTS = {
 ALLOWLIST_GROUP_REASONS = {
     "command-output": (
         "Command-line output that prints generated files, as a user sees it, compared with what the command prints."
+    ),
+    "decision-cores": (
+        "The cores of the decision tables (constraint applicability, null facts, msgspec struct tags) are pure "
+        "functions that no public entry point reaches alone; the decision cores check enumerates each one's domain "
+        "against its oracle, the validator or msgspec, beside the tables that read the same decisions through whole "
+        "generations."
     ),
     "fixture-inputs": (
         "Modules that stand in for source, plugin, or user model code inside a fixture, which the code under test "

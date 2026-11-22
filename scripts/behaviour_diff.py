@@ -30,12 +30,25 @@ single output file included). Refactoring steps use it against their base commit
 A cell is one input x output model type x option set. Tiers:
   pr       inputs changed since BASE (with `--allowlist`, also the inputs its `[[accepted]]` entries name) and a
            fixed sample of 300 fixtures,
-           x {pydantic_v2.BaseModel, msgspec.Struct}, default options
+           x {pydantic_v2.BaseModel, msgspec.Struct}, default options; and every family cell of those types
   nightly  every fixture and payload case x 5 types (default options), every fixture x the released presets,
-           every fixture x 5 types x each option set of OPTION_SETS, every `@pytest.mark.cli_doc` example, and the
+           every fixture x 5 types x each option set of OPTION_SETS, every `@pytest.mark.cli_doc` example, the
            projects tier: each job of scripts/behaviour_diff_projects.json (a project's own arguments on its own
-           schemas, checked out shallowly at the pinned commit into the cache directory)
+           schemas, checked out shallowly at the pinned commit into the cache directory), and the full product of
+           the family cells: each shape x 5 types x (default options, the released presets, OPTION_SETS), and its
+           client and server
   release  nightly (the option tiers of the design come later)
+
+Family cells are the shapes of the candidate's family library (`tests/main/shape_families/families.py`, `FAMILIES`:
+ordinary modelling idioms enumerated completely within a stated bound), written once per run into the cache
+directory (`family_cases`) and labelled `family:<family>/<parameter>=<value>,...`. Each shape is generated as JSON
+Schema for the tier's output model types and option sets, and its OpenAPI spelling with a client (its body's fields as
+arguments too) and with a server (`FAMILY_TARGETS`, no other option) for pydantic_v2.BaseModel where the tier has that
+type (`family_cells`). A candidate without the library (a revision before it) has none; a library the gate cannot
+list is one family cell that fails. They join every tier; `--select` runs them where one of its patterns names them
+(`family:*`). The `families` key of the allowlist file decides what they do: `report` (until the family cells have
+run for a cycle) prints their differences and their classes apart and leaves them out of the verdict, the evidence
+and `--json`; `fail` judges them as every other cell. `guide` runs none.
 
 Cells whose bytes differ get a behaviour signature per side (scripts/_behaviour_signature.py, a fresh process per
 tree; each module of a package is also imported first in a process of its own) with a validation probe per name
@@ -56,14 +69,14 @@ values drawn from their models' schemas (`_stored-module`); `--verdicts OUT` (sh
 `harness` labels by their base and head contents, which `declared_changes.py check --verdicts OUT` reads. The
 report lists the uncovered cells with a starting `[[change.cells]]` block.
 
-scripts/behaviour_diff_allowlist.toml holds `base` and `[[base_skip]]` entries (a test keeps it free of `[[accepted]]`
-entries: the records judge changes, see docs/development-contributing.md "Declared changes"). A `[[base_skip]]` entry
-(`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`, `reason`, `issue`) names an
-input a release is known to hang on: the release does not run for those cells, which are `base-skipped` once the
-candidate generated and imported (a candidate failure is a violation). `--check` also fails on a `[[base_skip]]` entry
-without those keys, and, in a run of the whole tier, on one that names BASE (`bases`) and covers no cell (an entry for
-another release is not judged), and, where the table has `[[accepted]]` entries, on a table whose base is neither BASE
-nor an older release. The PR tier is a sample, so it never judges staleness.
+scripts/behaviour_diff_allowlist.toml holds `base`, `families` and `[[base_skip]]` entries (a test keeps it free of
+`[[accepted]]` entries: the records judge changes, see docs/development-contributing.md "Declared changes"). A
+`[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
+`reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
+`base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails on
+a `[[base_skip]]` entry without those keys, and, in a run of the whole tier, on one that names BASE (`bases`) and
+covers no cell (an entry for another release is not judged), and, where the table has `[[accepted]]` entries, on a
+table whose base is neither BASE nor an older release. The PR tier is a sample, so it never judges staleness.
 `--shard I/N` runs the cells of shard I by input hash; the cells a `[[base_skip]]` entry covers all run in one shard
 with those of each entry that shares a cell with them, the shard of their first input. So the N shards report the
 stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also the entries that
@@ -73,9 +86,11 @@ cover no cell. `--select` narrows the inputs, so a selection may leave an entry'
 BASE revision (`scripts/_cell_catalog.py`): it only adds cells, it never drops one, and the evidence stays the judge of
 what the run compared. It prints the pick (the requirements no catalog cell meets too); where it cannot pick (a
 release base, no catalog file, another format, a catalog revision that is no ancestor of BASE) it says so and the tier
-runs alone. `catalog OUT [REVISION]` records the catalog of the fixtures x `--types` x `--options` (option sets
-separated by ';', `default` for none) on a revision of this repository (default: HEAD), with what each cell ran; its
-`-j` defaults to 2, as each recording worker imports the whole package first.
+runs alone. A picked family cell is the shape of that label in the candidate's library. `catalog OUT [REVISION]`
+records the catalog of the fixtures x `--types` x `--options` (option sets separated by ';', `default` for none) on a
+revision of this repository (default: HEAD), with what each cell ran, and of the family cells of this checkout's
+library where `--select` names them (`family:*`); its `-j` defaults to 2, as each recording worker imports the whole
+package first. A pick only adds cells, so the PR tier runs every family cell, recorded in the catalog or not.
 
 `record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
 `merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
@@ -115,7 +130,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts import _cell_catalog, compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts import _behaviour_signature, _cell_catalog, compare_release, declared_changes  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
     CLASSES,
     LINE_ASPECT,
@@ -236,6 +251,57 @@ HEAD_STOPPED = (
 )
 """Set in the environment of the base's gate, so that it does not run its own base's gate again."""
 UNCOVERED = "no record's [[change.cells]] covers the cell"
+FAMILY_KIND = "family"
+FAMILY_PREFIX = f"{FAMILY_KIND}:"
+FAMILY_LIBRARY = "tests/main/shape_families/families.py"
+FAMILY_SPELLINGS = {"jsonschema": "schema.json", "openapi": "openapi.json"}
+"""The file of each spelling of a family shape, by its input file type."""
+FAMILY_TARGET_TYPE = "pydantic_v2.BaseModel"
+FAMILY_TARGETS = (
+    (
+        "--openapi-scopes",
+        "schemas",
+        "api",
+        "--generate-client",
+        "httpx2",
+        "--client-output",
+        "client",
+        "--client-package",
+        "client",
+        "--client-model-package",
+        "model",
+        "--client-body-arguments",
+        "both",
+    ),
+    (
+        "--openapi-scopes",
+        "schemas",
+        "api",
+        "--generate-server",
+        "fastapi",
+        "--server-output",
+        "server",
+        "--server-package",
+        "server",
+        "--server-model-package",
+        "model",
+    ),
+)
+"""The client and the server of a family shape's OpenAPI spelling, each a package beside the run's models (`model`,
+the run's `--output`).
+
+The client also takes the body's fields as arguments (`--client-body-arguments both`): a field argument's annotation
+is where a target decision on a field shows (#7114 changed one), and with the default `body` the client takes the
+model whole and has no such annotation. The server runs with its defaults. The bound: dcg's one client (httpx2) and
+one server (fastapi), OpenAPI 3.1, the shape as the JSON body of one operation, pydantic_v2.BaseModel. Not covered:
+the OpenAPI 3.0 spelling (`nullable: true`), shapes as parameters and non-JSON bodies, pydantic_v2.dataclass targets,
+other target options (the client's `body` mode and deep objects; the server's body and handler modes, layout,
+request inclusion), and presets and `OPTION_SETS` on the targets."""
+TARGET_OPTIONS = ("--generate-client", "--generate-server")
+"""The options that make a run write target packages beside its models, which its signature covers."""
+FAMILIES_KEY = "families"
+FAMILY_MODES = ("report", "fail")
+"""The values of the allowlist file's `families` key: report the family cells only (the default), or judge them."""
 VERDICTS_OPTION = "--verdicts"
 PICK_OPTION = "--pick"
 HEAD_ONLY_OPTIONS = (VERDICTS_OPTION, PICK_OPTION)
@@ -276,6 +342,13 @@ except ImportError:  # releases before 0.21 define the parser in __main__
 options = {o: sorted(map(str, a.choices)) if a.choices else None for a in arg_parser._actions for o in a.option_strings}
 print(json.dumps(options))
 """
+FAMILY_SHAPES = """
+import json
+from tests.main.shape_families.families import FAMILIES
+shapes = (shape for family in FAMILIES.values() for shape in family.shapes())
+print(json.dumps([[s.family, [[n, str(v)] for n, v in s.params], s.document, s.openapi] for s in shapes]))
+"""
+"""Print every shape of the family library of the working directory: family, parameters and both spellings."""
 
 
 class PayloadCase(TypedDict):
@@ -286,6 +359,17 @@ class PayloadCase(TypedDict):
     input: str
     file_type: str
     args: dict[str, list[str]]
+
+
+class FamilyCase(TypedDict):
+    """One shape of the candidate's family library, as `family_cases` writes it: its label and its directory."""
+
+    label: str
+    key: str
+
+
+ListedShape = tuple[str, list[tuple[str, str]], dict[str, object], dict[str, object]]
+"""A shape as `FAMILY_SHAPES` lists it: its family, its parameters as text and its two spellings."""
 
 
 class StoredSide(TypedDict, total=False):
@@ -447,6 +531,10 @@ class Gate:
     payload_dir: Path
     payload_root: Path
     candidate_info: Candidate
+    family_root: Path = Path()
+    families_judged: bool = False
+    family_index: list[FamilyCase] | None = None
+    family_problem: str = ""
     base_version: str = ""
     signature_python: Path | None = None
     projects: dict[str, Project] = field(default_factory=dict)
@@ -697,6 +785,125 @@ def payload_cells(gate: Gate, types: list[str]) -> list[Cell]:
     ]
 
 
+def family_cases(python: Path, candidate: Candidate, out: Path) -> tuple[list[FamilyCase], str]:
+    """Write every shape of a checkout's family library in both spellings under `out`; return their index and a problem.
+
+    The checkout's interpreter lists the shapes (`FAMILY_SHAPES`); each gets a directory of its own, named by its
+    label, so the cache of a base output covers that shape only. A checkout without the library (a revision before
+    it) has no family cells: the run says so. A library the listing cannot read (an interpreter error, an output that
+    is no JSON: a library without a name the listing reads, such as `Shape.openapi` before the gate's cells) gives no
+    cells and the problem, which the run turns into one family cell (`family_problem`), so the `families` key decides
+    whether it fails the run.
+    """
+    if not (candidate.root / FAMILY_LIBRARY).is_file():
+        print(f"families: {candidate.root} has no {FAMILY_LIBRARY}: no family cells")
+        return [], ""
+    listed = subprocess.run(
+        [str(python), "-c", FAMILY_SHAPES],
+        cwd=candidate.root,
+        env=candidate.env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    detail = (listed.stderr.strip().splitlines() or [f"exit status {listed.returncode}"])[-1]
+    if listed.returncode == 0:
+        try:
+            shapes = json.loads(listed.stdout)
+        except json.JSONDecodeError as error:
+            detail = f"the listing is no JSON ({error})"
+        else:
+            return _written_family_cases(shapes, out), ""
+    problem = f"{candidate.root}: the library could not be listed: {detail}"
+    print(f"families: {problem}")
+    return [], problem
+
+
+def _written_family_cases(shapes: list[ListedShape], out: Path) -> list[FamilyCase]:
+    """Write each listed shape (family, parameters, both spellings) into a directory named by its label.
+
+    Each file is written beside its place and moved there (`Path.replace`), so another gate run that shares the cache
+    directory reads the whole old file or the whole new one, never one cut short.
+    """
+    index: list[FamilyCase] = []
+    for family, params, *documents in shapes:
+        label = f"{FAMILY_PREFIX}{family}/" + ",".join(f"{name}={value}" for name, value in params)
+        directory = out / (key := _stable(label)[:16])
+        directory.mkdir(parents=True, exist_ok=True)
+        for name, document in zip(FAMILY_SPELLINGS.values(), documents, strict=True):
+            written = directory / f".{name}.{os.getpid()}.{threading.get_ident()}.tmp"
+            written.write_text(json.dumps(document, indent=2), encoding="utf-8")
+            written.replace(directory / name)
+        index.append({"label": label, "key": key})
+    return index
+
+
+def family_index(gate: Gate) -> list[FamilyCase]:
+    """Write the shapes of the candidate's family library once and return their index (`family_cases`)."""
+    with gate.lock:
+        if gate.family_index is None:
+            gate.family_index, gate.family_problem = family_cases(
+                gate.candidate_python, gate.candidate_info, gate.family_root
+            )
+        return gate.family_index
+
+
+def family_problem(gate: Gate) -> list[Result]:
+    """Return the family cell of a library the run could not list (`family_cases`), none where it listed or ran none."""
+    if not gate.family_problem:
+        return []
+    return [
+        Result(
+            Cell(Path(), f"{FAMILY_PREFIX}library", "", "", (), FAMILY_KIND),
+            Verdict("violation", (gate.family_problem,)),
+        )
+    ]
+
+
+def tier_product(tier: str, types: Sequence[str], presets: list[str]) -> list[tuple[str, tuple[str, ...]]]:
+    """Return the (output model type, options) pairs of a tier's family cells.
+
+    The PR tier: each type with default options. The nightly and release tiers, the full product: each type with
+    default options, the released presets (`preset_option_sets`) and each option set of `OPTION_SETS`.
+    """
+    pairs: list[tuple[str, tuple[str, ...]]] = [(backend, ()) for backend in types]
+    if tier == "pr":
+        return pairs
+    others = [(backend, options) for options in OPTION_SETS for backend in types]
+    return [*pairs, *preset_option_sets(presets, list(types)), *others]
+
+
+def family_cells(cases: Sequence[FamilyCase], root: Path, pairs: Sequence[tuple[str, tuple[str, ...]]]) -> list[Cell]:
+    """Return the family cells of (output model type, options) `pairs`.
+
+    Each shape as JSON Schema x the pairs, and, where the pairs hold the targets' type with default options, its
+    OpenAPI spelling with each target (`FAMILY_TARGETS`) and no other option. A target's output carries its whole
+    runtime (about 200 KB a cell in the base-output cache), so the targets do not multiply by option sets: the full
+    product would put about 10 GB of target outputs into the nightly tier's caches.
+    """
+    models = [(case, "jsonschema", backend, options) for case in cases for backend, options in pairs]
+    targets = FAMILY_TARGETS if (FAMILY_TARGET_TYPE, ()) in pairs else ()
+    targeted = [(case, "openapi", FAMILY_TARGET_TYPE, target) for case in cases for target in targets]
+    return [
+        Cell(root / case["key"] / FAMILY_SPELLINGS[file_type], case["label"], file_type, backend, options, FAMILY_KIND)
+        for case, file_type, backend, options in (*models, *targeted)
+    ]
+
+
+def families_judged(path: Path) -> bool:
+    """Return whether the allowlist file's `families` key judges the family cells (`fail`) or reports them only."""
+    mode = tomllib.loads(path.read_text(encoding="utf-8")).get(FAMILIES_KEY, "report") if path.exists() else "report"
+    if mode not in FAMILY_MODES:
+        msg = f"{path}: {FAMILIES_KEY} = {mode!r}: write {' or '.join(map(repr, FAMILY_MODES))}"
+        raise SystemExit(msg)
+    return mode == "fail"
+
+
+def in_verdict(gate: Gate, cell: Cell) -> bool:
+    """Return whether a cell counts in the run's verdict: every cell but a family cell the run reports only."""
+    return cell.kind != FAMILY_KIND or gate.families_judged
+
+
 @dataclass(frozen=True)
 class Placement:
     """Where the cells of a run go, and the allowlist entries that cover a cell of it."""
@@ -764,19 +971,44 @@ def _write_tree(tree: dict[str, str], directory: Path) -> Path:
     return directory / "model.py" if "model.py" in tree else directory / "pkg"
 
 
-def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
-    """Compute a behaviour signature in a fresh process of the candidate's interpreter."""
-    return signature_of(gate.signature_python or gate.candidate_python, gate.timeout, target, backend, payloads)
+def cell_signature(
+    gate: Gate, cell: Cell, tree: dict[str, str], directory: Path, payloads: Path | None
+) -> dict[str, object]:
+    """Write a cell's output tree (with its project's stubs) under `directory` and return its behaviour signature.
+
+    A run that writes target packages (`TARGET_OPTIONS`: a client, a server) is signed as one tree, its models and
+    each target package with its callables (`_behaviour_signature.run_signature`), so a change of a target alone
+    shows; any other run by its models module or package.
+    """
+    models = _write_tree(tree | dict(cell.stubs), directory)
+    targets = any(option in cell.options for option in TARGET_OPTIONS)
+    return signature(gate, directory if targets else models, cell.backend, payloads, targets=targets)
+
+
+def signature(
+    gate: Gate, target: Path, backend: str, payloads: Path | None, *, targets: bool = False
+) -> dict[str, Any]:
+    """Compute a behaviour signature in a fresh process of the candidate's interpreter.
+
+    With `targets`, `target` is a run's directory whose target packages are signed beside its models.
+    """
+    flags = [_behaviour_signature.TARGETS_FLAG] if targets else []
+    arguments = [backend, *([str(payloads)] if payloads else []), *flags]
+    return _signed(gate.signature_python or gate.candidate_python, gate.timeout, target, arguments)
 
 
 def signature_of(python: Path, timeout: int, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
     """Compute the behaviour signature of a generated module or package in a fresh process of `python`."""
+    return _signed(python, timeout, target, [backend, *([str(payloads)] if payloads else [])])
+
+
+def _signed(python: Path, timeout: int, target: Path, arguments: list[str]) -> dict[str, object]:
+    """Run `scripts/_behaviour_signature.py` on `target` with `arguments` in a fresh process of `python`."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("DATAMODEL_CODE_GENERATOR")}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    command = [str(python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
     try:
         result = subprocess.run(
-            [*command, *([str(payloads)] if payloads else [])],
+            [str(python), "-I", str(SIGNATURE_SCRIPT), str(target), *arguments],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -828,11 +1060,7 @@ def run_base_skipped(gate: Gate, cell: Cell, index: int) -> Result:
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
         candidate = gate.candidate.generate(cell.args(), tmp)
-        sig = (
-            signature(gate, _write_tree(candidate.tree | dict(cell.stubs), tmp / "sig-cand"), cell.backend, None)
-            if candidate.ok
-            else None
-        )
+        sig = cell_signature(gate, cell, candidate.tree, tmp / "sig-cand", None) if candidate.ok else None
     return Result(cell, classify_base_skipped(Side(candidate.ok, candidate.error, sig), note=note), index)
 
 
@@ -841,7 +1069,8 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
 
     The release's output is signed where the candidate refuses it too, so a refusal of an output that failed to
     import is told from one of an output that worked. A release that `[[base_skip]]` names for the input does not
-    run at all.
+    run at all. A family cell the run reports only (`in_verdict`) adds nothing to the evidence, and no change record
+    judges it.
     """
     if (project := project_of(gate, cell)) is not None:
         try:
@@ -860,7 +1089,9 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             base = gate.base.generate(args, tmp)
             gate.cache.put(cell.input, args, base, import_check=False)
         candidate = gate.candidate.generate(args, tmp)
-        gate.evidence.add(input_group(cell), f"{cell.label} | {cell.backend} | {cell.option_label}", base, candidate)
+        if in_verdict(gate, cell):
+            run = f"{cell.label} | {cell.backend} | {cell.option_label}"
+            gate.evidence.add(input_group(cell), run, base, candidate)
         if gate.identity:
             return Result(cell, identity_verdict(base, candidate))
         same = base.ok and candidate.ok and base.tree == candidate.tree
@@ -874,9 +1105,7 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             sides = [
                 Side(
                     generated=True,
-                    signature=signature(
-                        gate, _write_tree(outcome.tree | dict(cell.stubs), tmp / f"sig-{side}"), cell.backend, payloads
-                    ),
+                    signature=cell_signature(gate, cell, outcome.tree, tmp / f"sig-{side}", payloads),
                 )
                 if outcome.ok
                 else failed
@@ -891,7 +1120,7 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         same_bytes=same,
         valid_payloads=valid,
     )
-    if gate.plan is None:
+    if gate.plan is None or not in_verdict(gate, cell):
         return Result(cell, verdict)
     plain = classify_cell(
         sides[0],
@@ -1700,6 +1929,9 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
         cells += [cell for cell in projects if cell.backend in types and _selected(cell.label, ns.select)]
         if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
             cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
+    if ns.families and (not ns.select or any(pattern.startswith(FAMILY_PREFIX) for pattern in ns.select)):
+        named = family_cells(family_index(gate), gate.family_root, tier_product(ns.tier, types, presets))
+        cells += [cell for cell in named if _selected(cell.label, ns.select)]
     cells += picked_cells(gate)
     unique: dict[tuple[str, str, str, tuple[str, ...]], Cell] = {}
     for cell in cells:
@@ -1708,15 +1940,28 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
 
 
 def picked_cells(gate: Gate) -> list[Cell]:
-    """Return the cells of the pick (`--pick`) whose input the candidate has; `--select` narrows only the tier."""
-    root = gate.candidate_info.root
-    cells = [
-        Cell(root / row.label, row.label, row.file_type, row.backend, row.options, row.kind) for row in gate.picked
-    ]
-    for cell in cells:
-        if not cell.input.exists():
-            print(f"pick: cell {cell.label} has no input in the candidate: left out")
-    return [cell for cell in cells if cell.input.exists()]
+    """Return the cells of the pick (`--pick`) whose input the candidate has; `--select` narrows only the tier.
+
+    A family cell's input is the spelling of its shape in the candidate's family library (`family_index`).
+    """
+    families = any(row.kind == FAMILY_KIND for row in gate.picked)
+    keys = {case["label"]: case["key"] for case in family_index(gate)} if families else {}
+    cells = []
+    for row in gate.picked:
+        if (path := _picked_input(gate, row, keys)) is None or not path.exists():
+            print(f"pick: cell {row.label} has no input in the candidate: left out")
+        else:
+            cells.append(Cell(path, row.label, row.file_type, row.backend, row.options, row.kind))
+    return cells
+
+
+def _picked_input(gate: Gate, row: _cell_catalog.CatalogCell, keys: dict[str, str]) -> Path | None:
+    """Return the input of a picked row: a fixture below the candidate, a family shape's spelling of its file type."""
+    if row.kind != FAMILY_KIND:
+        return gate.candidate_info.root / row.label
+    if (key := keys.get(row.label)) is None or row.file_type not in FAMILY_SPELLINGS:
+        return None
+    return gate.family_root / key / FAMILY_SPELLINGS[row.file_type]
 
 
 def pick_rows(
@@ -1787,7 +2032,7 @@ def _gate_args(parser: argparse.ArgumentParser) -> None:
         action="append",
         default=[],
         help="only cells whose input or label matches this glob (payload cases: 'payload:<case id>'; project jobs: "
-        "'project:<project>/<job>'); replaces the PR sample",
+        "'project:<project>/<job>'; family cells: 'family:<family>/<parameter>=<value>,...'); replaces the PR sample",
     )
     parser.add_argument("--allowlist", type=Path, default=DEFAULT_ALLOWLIST)
     parser.add_argument(
@@ -1827,12 +2072,18 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=Path,
         help="cell catalog (`catalog`): add its cells that run the change against a BASE revision to the run",
     )
+    gate.set_defaults(families=True)
     catalog = commands.add_parser("catalog", help="record a cell catalog: the fixtures' cells and what each ran")
     catalog.add_argument("out", type=Path, help="catalog file to write (gzip JSON)")
     catalog.add_argument("revision", nargs="?", default="HEAD", help="revision of this repository (default: HEAD)")
     catalog.add_argument("--types", default="pydantic_v2.BaseModel", help="comma-separated --output-model-type values")
     catalog.add_argument("--options", default="default", help="option sets separated by ';' ('default' = none)")
-    catalog.add_argument("--select", action="append", default=[], help="only fixtures whose path matches this glob")
+    catalog.add_argument(
+        "--select",
+        action="append",
+        default=[],
+        help="only fixtures whose path matches this glob; family cells where one names them ('family:*')",
+    )
     _environment_args(catalog)
     catalog.set_defaults(j=2)
     record = commands.add_parser("record", help="write the behaviour record of one release")
@@ -1859,7 +2110,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     guide.add_argument("version", help="the release the page describes")
     guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
     _gate_args(guide)
-    guide.set_defaults(tier="release", identity=False, verdicts=None, pick=None)
+    guide.set_defaults(tier="release", identity=False, verdicts=None, pick=None, families=False)
     guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
     guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
     guide.add_argument("--notes", type=Path, help="release-note fragment to write")
@@ -1949,6 +2200,23 @@ def cells_block(results: list[Result]) -> list[str]:
             lines += [f"# a decision names: aspects = {json.dumps(aspects)}", f"# match = {json.dumps(match)}"]
         lines.append("")
     return lines
+
+
+def report_families(results: list[Result]) -> None:
+    """Print the family cells of a run that reports them only (`families = "report"`) apart from its verdict.
+
+    Each cell that is neither the same on both sides nor opt-in, with its notes, and the count of each class.
+    """
+    if not results:
+        return
+    for result in results:
+        if (verdict := result.verdict).cls not in {"same", "opt-in"}:
+            cell = result.cell
+            print(f"family (report only) {verdict.cls}: {cell.label} | {cell.backend} | {cell.option_label}")
+            print("".join(f"    {note[:240]}\n" for note in verdict.notes[:6]), end="")
+    counts = Counter(result.verdict.cls for result in results)
+    classes = ", ".join(f"{name}={counts[name]}" for name in CLASSES if counts[name])
+    print(f"families (report only, the allowlist file's {FAMILIES_KEY} key): {len(results)} cells, {classes}")
 
 
 def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Placement | None = None) -> int:
@@ -2086,6 +2354,8 @@ def build_gate(ns: argparse.Namespace) -> Gate:
         payload_dir=cache_dir / "payloads",
         payload_root=cache_dir / "payload-inputs" / _stable(str(candidate.root))[:12],
         candidate_info=candidate,
+        family_root=cache_dir / "family-inputs" / _stable(str(candidate.root))[:12],
+        families_judged=families_judged(ns.allowlist),
         base_version=ns.base,
         identity=ns.identity,
         evidence=compare_release.Evidence(units),
@@ -2181,6 +2451,9 @@ def gate_main(ns: argparse.Namespace) -> int:
         else Result(cell, Verdict("violation", (f"the base has no {reason}, the candidate has it",)))
         for cell, reason in reasons.items()
     ]
+    results += family_problem(gate) if ns.shard_index == 1 else []
+    report_families([result for result in results if not in_verdict(gate, result.cell)])
+    results = [result for result in results if in_verdict(gate, result.cell)]
     code = _report(results, gate, ns, run)
     if plan is not None and base_gate(plan, ns, gate.candidate_info.repo) and ns.check:
         code = 1
@@ -2290,8 +2563,7 @@ def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path, environment:
         key = _stable(json.dumps([outcome.tree, cell.backend, payload_text, environment]))[:24]
         path = out / "signatures" / f"{key}.json"
         if not path.exists():
-            target = _write_tree(outcome.tree, tmp / "sig")
-            _write_json(path, signature(gate, target, cell.backend, payloads))
+            _write_json(path, cell_signature(gate, cell, outcome.tree, tmp / "sig", payloads))
     entry: dict[str, Any] = {"gen": "ok", "sig": key}
     if payload_text:
         valid = [e["id"] for e in json.loads(payload_text) if e.get("kind") == "valid" and e.get("expect") == "accept"]
@@ -2301,6 +2573,8 @@ def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path, environment:
 
 def catalog_main(ns: argparse.Namespace) -> int:
     """Record the cell catalog of the fixtures x types x option sets on a revision (`_cell_catalog.record`).
+
+    The family cells of this checkout's library join where `--select` names them (`family:*`), as in the gate.
 
     The workers record with `sys.monitoring`: an interpreter without it (Python 3.11) would write a catalog of no keys.
     """
@@ -2314,12 +2588,16 @@ def catalog_main(ns: argparse.Namespace) -> int:
     inputs = [
         (name, file_type) for name, file_type in fixture_inputs(candidate, revision) if _selected(name, ns.select)
     ]
+    pairs = [(backend, options) for options in _cell_catalog.option_sets(ns.options) for backend in ns.types.split(",")]
     cells = [
         Cell(candidate.root / name, name, file_type, backend, options, "option-set" if options else "default")
-        for options in _cell_catalog.option_sets(ns.options)
-        for backend in ns.types.split(",")
+        for backend, options in pairs
         for name, file_type in inputs
     ]
+    if any(pattern.startswith(FAMILY_PREFIX) for pattern in ns.select):
+        root = ns.cache_dir.absolute() / "family-inputs" / _stable(str(candidate.root))[:12]
+        named = family_cells(family_cases(python, candidate, root)[0], root, pairs)
+        cells += [cell for cell in named if _selected(cell.label, ns.select)]
     side = compare_release.Side("catalog", base.python, base.package)
     runner = compare_release.Runner(side, base.env(), import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb)
     catalog = _cell_catalog.record(runner, cells, revision, ns.j)
@@ -2516,7 +2794,7 @@ def _restoring_options(gate: Gate, cell: Cell, old: compare_release.Outcome, ns:
     candidate = gate.candidate_info
     new = _generate(gate.candidate, cell.args())
     with tempfile.TemporaryDirectory() as name:
-        old_signature = signature(gate, _write_tree(old.tree, Path(name) / "old"), cell.backend, None)
+        old_signature = cell_signature(gate, cell, old.tree, Path(name) / "old", None)
 
     def restores(option: list[str]) -> str | None:
         args = cell.args() + option
@@ -2526,7 +2804,7 @@ def _restoring_options(gate: Gate, cell: Cell, old: compare_release.Outcome, ns:
         if outcome.tree == old.tree:
             return " ".join(option)
         with tempfile.TemporaryDirectory() as name:
-            tried = signature(gate, _write_tree(outcome.tree, Path(name) / "new"), cell.backend, None)
+            tried = cell_signature(gate, cell, outcome.tree, Path(name) / "new", None)
         return " ".join(option) if not [c for c in diff(old_signature, tried) if c.behaviour] else None
 
     options = restore_candidates(candidate.python, candidate.env)

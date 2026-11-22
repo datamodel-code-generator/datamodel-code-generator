@@ -37,7 +37,7 @@ from scripts._behaviour_classify import (
     kinds,
     rule_b,
 )
-from scripts._behaviour_signature import Context, _pydantic_item, canonical, example_value, meta_items
+from scripts._behaviour_signature import TARGETS_FLAG, Context, _pydantic_item, canonical, example_value, meta_items
 from scripts._change_records import Category, CellKind, CellSelector, Record, covers_block, read_records
 from tests.capabilities import needs
 from tests.conftest import assert_output
@@ -862,6 +862,58 @@ def test_preset_option_sets() -> None:
     assert_output("".join(f"{backend} {' '.join(options)}\n" for backend, options in sets))
 
 
+FAMILY_CELL_CASES = {
+    "the PR tier": ("pr", ("pydantic_v2.BaseModel", "msgspec.Struct")),
+    "the nightly tier": ("nightly", ("pydantic_v2.BaseModel", "msgspec.Struct")),
+    "types without the targets' type": ("pr", ("msgspec.Struct",)),
+}
+"""The tier and the output model types of each family cell case."""
+
+
+@pytest.mark.parametrize("case", sorted(FAMILY_CELL_CASES))
+def test_family_cells_of_each_tier(case: str) -> None:
+    """The PR tier runs a shape for its types with default options, the nightly tier the full product of each type.
+
+    The client (its body's fields as arguments too) and the server of the shape's OpenAPI spelling run for
+    pydantic_v2.BaseModel with no other option in both tiers, and not at all where the types lack it.
+    """
+    tier, types = FAMILY_CELL_CASES[case]
+    presets = ["standard-py310-20261017", "standard-py312-20260909", "standard-py314-20261017"]
+    shapes: list[behaviour_diff.FamilyCase] = [{"label": "family:f/k=v", "key": "k"}]
+    pairs = behaviour_diff.tier_product(tier, types, presets)
+    cells = behaviour_diff.family_cells(shapes, Path("root"), pairs)
+    assert_output("".join(f"{c.input.as_posix()} | {c.backend} | {c.option_label} | {c.kind}\n" for c in cells))
+
+
+FAMILY_MODE_CASES = {
+    "fail": ('families = "fail"\n', "fail"),
+    "report": ('families = "report"\n', "report"),
+    "no key": ("", "report"),
+    "no file": (None, "report"),
+}
+"""The text of the allowlist file of each case (None: no file) and the mode its family cells take."""
+
+
+@pytest.mark.allow_direct_assert("the mode is the oracle of the key, never a stored output a fix run accepts")
+@pytest.mark.parametrize("case", sorted(FAMILY_MODE_CASES))
+def test_families_key_judges_or_reports_the_family_cells(case: str, tmp_path: Path) -> None:
+    """The `families` key judges the family cells with `fail`; `report`, no key and no file report them only."""
+    text, mode = FAMILY_MODE_CASES[case]
+    path = tmp_path / "allowlist.toml"
+    if text is not None:
+        path.write_text(f'base = "0.1.0"\n{text}', encoding="utf-8")
+    assert behaviour_diff.families_judged(path) == (mode == "fail")
+
+
+def test_families_key_refuses_another_value(tmp_path: Path) -> None:
+    """A `families` value other than `report` or `fail` stops the gate."""
+    path = tmp_path / "allowlist.toml"
+    path.write_text('families = "warn"\n', encoding="utf-8")
+    with pytest.raises(SystemExit) as refused:
+        behaviour_diff.families_judged(path)
+    assert_output(f"{refused.value}\n".replace(str(path), "<allowlist>"))
+
+
 SIGNATURE_CASES: dict[str, tuple[str, dict[str, str], list[dict[str, Any]] | None]] = {
     "alias_none_union": (
         "dataclasses.dataclass",
@@ -1364,13 +1416,13 @@ TREE_CASES: dict[str, tuple[str, dict[str, str], dict[str, str]]] = {
 }
 
 
-def _tree_signature(files: dict[str, str], backend: str, directory: Path) -> dict[str, Any]:
+def _tree_signature(files: dict[str, str], backend: str, directory: Path, *, targets: bool = False) -> dict[str, Any]:
     for name, text in files.items():
         (directory / name).parent.mkdir(parents=True, exist_ok=True)
         (directory / name).write_text(text, encoding="utf-8")
-    target = directory / ("model.py" if "model.py" in files else "pkg")
+    target = directory if targets else directory / ("model.py" if "model.py" in files else "pkg")
     result = subprocess.run(
-        [sys.executable, "-I", str(SIGNATURE_SCRIPT), str(target), backend],
+        [sys.executable, "-I", str(SIGNATURE_SCRIPT), str(target), backend, *([TARGETS_FLAG] if targets else [])],
         capture_output=True,
         text=True,
         check=True,
@@ -1391,6 +1443,49 @@ def test_classify_trees(case: str, tmp_path: Path) -> None:
         for name, files in (("base", base_files), ("cand", candidate_files))
     ]
     verdict = classify_cell(*sides, input_path=case, backend=backend, allowlist=Allowlist("0.86.0"))
+    assert_output(json.dumps({**asdict(verdict), "accepted_by": sorted(verdict.accepted_by)}, indent=2) + "\n")
+
+
+TARGET_MODEL = "from pydantic import BaseModel\n\n\nclass Holder(BaseModel):\n    f: list[str | None] | None = None\n"
+TARGET_RESOURCE = (
+    "from __future__ import annotations\n\nimport model\n\n\nclass Resource:\n"
+    '    """The operations of a stand-in client."""\n\n'
+    "    def check(self, *, f: list[str | None] | None = None) -> model.Holder:\n"
+    '        """Send a holder."""\n'
+    "        return model.Holder(f=f)\n"
+)
+TARGET_TREE = {
+    "model.py": TARGET_MODEL,
+    "client/__init__.py": "from .resource import Resource\n",
+    "client/resource.py": TARGET_RESOURCE,
+}
+"""A run's models and the stand-in client package the run writes beside them, which imports them as `model`."""
+TARGET_TREE_CASES = {
+    "a client argument whose annotation drops the None of its items": {
+        **TARGET_TREE,
+        "client/resource.py": TARGET_RESOURCE.replace("f: list[str | None] | None", "f: list[str] | None"),
+    },
+    "a client module that no longer imports": {
+        **TARGET_TREE,
+        "client/resource.py": TARGET_RESOURCE.replace("import model\n", "import model\n\nmodel.Missing\n"),
+    },
+    "the same client": TARGET_TREE,
+}
+"""The candidate tree of each case; the base is `TARGET_TREE`."""
+
+
+@pytest.mark.parametrize("case", sorted(TARGET_TREE_CASES))
+def test_classify_target_trees(case: str, tmp_path: Path) -> None:
+    """A run that writes a target package beside its models is signed with it: a change of the target alone shows.
+
+    The client's callables are part of its signature, so an argument's annotation that changes is a `signature`
+    change and a client module that no longer imports an import error, while the models stay the same.
+    """
+    sides = [
+        Side(generated=True, signature=_tree_signature(files, "pydantic_v2.BaseModel", tmp_path / name, targets=True))
+        for name, files in (("base", TARGET_TREE), ("cand", TARGET_TREE_CASES[case]))
+    ]
+    verdict = classify_cell(*sides, input_path=case, backend="pydantic_v2.BaseModel", allowlist=Allowlist("0.86.0"))
     assert_output(json.dumps({**asdict(verdict), "accepted_by": sorted(verdict.accepted_by)}, indent=2) + "\n")
 
 
@@ -1998,6 +2093,170 @@ def test_identity_with_a_pick(case: str, tmp_path: Path, monkeypatch: pytest.Mon
     assert verdict == wanted, stdout.getvalue()
     text = "\n".join([f"exit={code}", *lines, *sorted(row["input"] for row in rows)]) + "\n"
     assert_output(text.replace(commit[:12], "<sha>").replace(str(tmp_path), "TMP"))
+
+
+FAKE_FAMILY_LIBRARY = '''"""A stand-in family library: one family, a shape per document of the stand-in generator."""
+
+from dataclasses import dataclass
+
+DOCUMENTS = {DOCUMENTS}
+
+
+@dataclass(frozen=True)
+class Shape:
+    """A shape: its family, its parameters and its document."""
+
+    family: str
+    params: tuple
+    document: dict
+
+    @property
+    def openapi(self):
+        """The OpenAPI spelling: the same document, marked."""
+        return {**self.document, "openapi": "3.1.0"}
+
+
+class Family:
+    """The one family of the stand-in library."""
+
+    def shapes(self):
+        """Return a shape per document."""
+        return tuple(Shape("fake", (("kind", kind),), document) for kind, document in DOCUMENTS.items())
+
+
+FAMILIES = {"fake": Family()}
+'''
+FAKE_FAMILY_DOCUMENTS = {
+    "plain": {"type": "str"},
+    "raw": {"type": "bytes"},
+    "deprecated": {"type": "int", "deprecated": "old"},
+}
+"""The shapes of the stand-in family library: a plain one, one whose output the candidate of a case changes, and one
+that takes the deprecation branch."""
+FAKE_RAW = FAKE_FIRST.replace(
+    'MODEL.format(spec["type"]),', 'MODEL.format(spec["type"]).replace(": bytes", ": bytes  # raw"),'
+)
+"""A candidate that changes the output of a `bytes` field only, which the stand-in family library has and no fixture."""
+
+
+FAKE_UNLISTED_LIBRARY = FAKE_FAMILY_LIBRARY.replace(
+    "\n    @property\n    def openapi(self):\n"
+    '        """The OpenAPI spelling: the same document, marked."""\n'
+    '        return {**self.document, "openapi": "3.1.0"}\n',
+    "",
+)
+"""A stand-in library the gate cannot list: its shapes have no OpenAPI spelling, as the library had before the gate's
+family cells."""
+
+
+def _family_library(repo: Path, documents: dict[str, dict[str, str]], text: str = FAKE_FAMILY_LIBRARY) -> None:
+    """Write a stand-in family library (`text`) into a checkout, in the packages the gate imports it from."""
+    library = repo / "tests" / "main" / "shape_families"
+    library.mkdir(parents=True, exist_ok=True)
+    for package in (repo / "tests", repo / "tests" / "main", library):
+        (package / "__init__.py").write_text("", encoding="utf-8")
+    (library / "families.py").write_text(text.replace("{DOCUMENTS}", repr(documents)), encoding="utf-8")
+
+
+def _family_lines(argv: list[str], cells: Path, prefixes: tuple[str, ...]) -> list[str]:
+    """Run the gate and return its exit status, the lines that start with `prefixes`, and each `--json` cell."""
+    stdout = StringIO()
+    with redirect_stdout(stdout), redirect_stderr(StringIO()):
+        code = behaviour_diff.main(argv)
+    rows = [json.loads(line) for line in cells.read_text(encoding="utf-8").splitlines()]
+    return [
+        f"exit={code}",
+        *(line for line in stdout.getvalue().splitlines() if line.startswith(prefixes)),
+        *sorted(f"cell: {row['input']} | {row['file_type']} | {row['class']}" for row in rows),
+    ]
+
+
+FAMILY_REPORT_CASES = {
+    "the family cells report only": ("report", FAKE_FAMILY_LIBRARY),
+    "the family cells fail": ("fail", FAKE_FAMILY_LIBRARY),
+    "a candidate without the library": ("fail", None),
+    "a library the gate cannot list, reported only": ("report", FAKE_UNLISTED_LIBRARY),
+    "a library the gate cannot list, judged": ("fail", FAKE_UNLISTED_LIBRARY),
+}
+"""The `families` key of each identity run of a candidate that changes a family cell, and the candidate's library."""
+
+
+@needs("posix")
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", sorted(FAMILY_REPORT_CASES))
+def test_identity_reports_family_cells_until_the_key_judges_them(case: str, tmp_path: Path) -> None:
+    """A selection that names the family cells runs each shape of the candidate's library, its targets too.
+
+    The candidate changes the output of the family cell that has a `bytes` field. With `families = "report"` the run
+    prints that cell and the classes of the family cells apart and passes; their rows stay out of `--json`. With
+    `fail` the cell is a violation of the run. The targets need options the stand-in generator lacks (`opt-in`). A
+    candidate without the library has no family cells, and says so. A library the gate cannot list is one family cell
+    that fails, with the listing's error: reported only, it leaves the run passing; judged, it fails the run.
+    """
+    mode, library = FAMILY_REPORT_CASES[case]
+    repo = tmp_path / "repo"
+    commits = _fake_generator(repo, ["first"], None)
+    (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(FAKE_RAW, encoding="utf-8")
+    if library is not None:
+        _family_library(repo, FAKE_FAMILY_DOCUMENTS, library)
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text(f'base = "0.1.0"\nfamilies = "{mode}"\n', encoding="utf-8")
+    argv = ["gate", commits[0], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]
+    argv += ["--cache-dir", str(tmp_path / "cache"), "--allowlist", str(allowlist), "--identity", "-j", "1"]
+    argv += ["--select", "tests/data/jsonschema/plain.json", "--select", "family:*"]
+    prefixes = ("family", "families", "violation:", "    ", "summary:", "evidence: complete", "evidence: incomplete")
+    lines = _family_lines([*argv, "--json", str(tmp_path / "cells.jsonl")], tmp_path / "cells.jsonl", prefixes)
+    assert_output("\n".join(lines).replace(str(tmp_path), "TMP").replace(commits[0][:9], "<sha>") + "\n")
+
+
+PICK_FAMILY_CASES = {
+    "a judged family cell runs the change": ("fail", FAKE_FAMILY_DOCUMENTS, "complete"),
+    "a family cell the run reports only adds no evidence": ("report", FAKE_FAMILY_DOCUMENTS, "incomplete"),
+    "a shape the library dropped is left out": ("fail", {"plain": {"type": "str"}}, "incomplete"),
+}
+"""The `families` key of each identity run with a pick, the candidate's family library and the run's verdict."""
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", sorted(PICK_FAMILY_CASES))
+def test_identity_picks_family_cells(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A catalog records the family cells its selection names, and `--pick` reads them like the fixture cells.
+
+    Only the family shape that takes the deprecation branch runs the change; the selection of the plain fixture does
+    not. A judged family cell the pick adds completes the evidence; one the run reports only adds none, and a picked
+    shape the candidate's library no longer has is left out.
+    """
+    mode, documents, wanted = PICK_FAMILY_CASES[case]
+    argv, commit = _identity_argv(tmp_path, "tests/data/jsonschema/plain.json")
+    repo = tmp_path / "repo"
+    _family_library(repo, FAKE_FAMILY_DOCUMENTS)
+    monkeypatch.setenv(behaviour_diff.REPOSITORY_ENV, str(repo))
+    catalog = tmp_path / "catalog.json.gz"
+    selects = ["--select", "tests/data/jsonschema/plain.json", "--select", "family:*"]
+    with redirect_stdout(StringIO()):
+        behaviour_diff.main([
+            "catalog",
+            str(catalog),
+            commit,
+            *selects,
+            "-j",
+            "1",
+            "--cache-dir",
+            str(tmp_path / "cache"),
+        ])
+    _family_library(repo, documents)
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text(f'families = "{mode}"\n', encoding="utf-8")
+    prefixes = ("pick: cell", "pick: no", "families", "evidence: complete", "evidence: incomplete")
+    argv += ["--pick", str(catalog), "--allowlist", str(allowlist)]
+    lines = _family_lines(argv, tmp_path / "cells.jsonl", prefixes)
+    verdict = "complete" if "evidence: complete" in lines else "incomplete" if lines[0] == "exit=1" else lines[0]
+    assert verdict == wanted, lines
+    assert_output("\n".join(lines).replace(commit[:12], "<sha>").replace(str(tmp_path), "TMP") + "\n")
 
 
 @needs("posix", "no-sys-monitoring")
@@ -3288,9 +3547,9 @@ def test_guide_runs_the_gate_of_the_release(tmp_path: Path) -> None:
 
 @pytest.mark.allow_direct_assert("the shipped table's keys are the oracle, never a stored output a fix run accepts")
 def test_shipped_allowlist_accepts_nothing() -> None:
-    """Change records judge every differing cell: the shipped table keeps its `base` and `[[base_skip]]` only."""
+    """Change records judge every differing cell: the shipped table keeps its `base`, `[[base_skip]]` and `families`."""
     table = tomllib.loads(behaviour_diff.DEFAULT_ALLOWLIST.read_text(encoding="utf-8"))
-    assert set(table) <= {"base", "base_skip"}, sorted(table)
+    assert set(table) <= {"base", "base_skip", behaviour_diff.FAMILIES_KEY}, sorted(table)
 
 
 @pytest.mark.allow_direct_assert(

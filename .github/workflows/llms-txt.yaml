@@ -26,7 +26,6 @@ on:
       - 'scripts/build_prompt_data.py'
       - 'scripts/build_schema_docs.py'
       - 'scripts/update_command_help_on_markdown.py'
-      - 'scripts/update_generate_prompt_snapshots.py'
       - 'tests/data/expected/main/jsonschema/**'
       - 'tests/data/expected/main/openapi/**'
       - 'tests/data/jsonschema/**'

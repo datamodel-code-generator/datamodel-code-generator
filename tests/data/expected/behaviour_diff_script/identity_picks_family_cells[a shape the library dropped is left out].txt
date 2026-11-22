@@ -1,0 +1,5 @@
+exit=1
+pick: cell family family:fake/kind=deprecated | pydantic_v2.BaseModel | default
+pick: cell family:fake/kind=deprecated has no input in the candidate: left out
+evidence: incomplete: changed code objects no compared cell ran: 1
+cell: tests/data/jsonschema/plain.json | jsonschema | same

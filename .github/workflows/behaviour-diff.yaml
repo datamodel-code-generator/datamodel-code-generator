@@ -27,6 +27,7 @@ on:
       - 'scripts/select_ci_test_shard.py'
       - 'src/**'
       - 'tests/data/**'
+      - 'tests/main/shape_families/**'
       - 'uv.lock'
   push:
     branches: [main]
@@ -54,6 +55,7 @@ on:
       - 'scripts/select_ci_test_shard.py'
       - 'src/**'
       - 'tests/data/**'
+      - 'tests/main/shape_families/**'
       - 'uv.lock'
   schedule:
     - cron: "0 13 * * *"
@@ -102,7 +104,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.BEHAVIOUR_DIFF_CACHE }}
-          key: behaviour-diff-pr-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ hashFiles('tests/data/**') }}
+          key: behaviour-diff-pr-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ hashFiles('tests/data/**', 'tests/main/shape_families/**') }}
           restore-keys: |
             behaviour-diff-pr-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-
       - name: Setup environment
@@ -167,7 +169,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.BEHAVIOUR_DIFF_CACHE }}
-          key: behaviour-diff-${{ env.TIER }}-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-${{ hashFiles('tests/data/**') }}
+          key: behaviour-diff-${{ env.TIER }}-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-${{ hashFiles('tests/data/**', 'tests/main/shape_families/**') }}
           restore-keys: |
             behaviour-diff-${{ env.TIER }}-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-
       - name: Setup environment

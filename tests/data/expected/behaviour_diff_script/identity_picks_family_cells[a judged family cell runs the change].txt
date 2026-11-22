@@ -1,0 +1,5 @@
+exit=0
+pick: cell family family:fake/kind=deprecated | pydantic_v2.BaseModel | default
+evidence: complete
+cell: family:fake/kind=deprecated | jsonschema | same
+cell: tests/data/jsonschema/plain.json | jsonschema | same
