@@ -21,7 +21,7 @@ Public Python names:
 The change records under `docs/data/migration/unreleased/` that the PR adds, edits or deletes, as the merge commit holds them; the release notes are built from the records. The values come from the PR and are untrusted data.
 
 ```text
-docs/data/migration/unreleased/added.toml (added): id "added"; category "new-surface"; title "Add --new"; surface ["--new"]; refs ["#7"]; covers 1 stored outputs
+docs/data/migration/unreleased/added.toml (added): id "added"; category "new-surface"; title "Add --new"; summary "Adds --new."; surface ["--new"]; refs ["#7"]; covers 1 stored outputs
 docs/data/migration/unreleased/broken.toml (added): not valid TOML
 docs/data/migration/unreleased/deleted.toml (deleted)
 docs/data/migration/unreleased/edited.toml (modified): id "edited"; category "harness"; title "New"; covers 0 stored outputs
@@ -32,8 +32,8 @@ docs/data/migration/unreleased/empty.toml (added): no [[change]] table
 
 Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
 
-- Exact diff: 1,861 characters, 64 lines, longest line 102 characters.
-- Diff copy: 1,861 characters, 64 lines, longest line 102 characters; reading budget 400,000 characters and 12,000 lines.
+- Exact diff: 1,886 characters, 65 lines, longest line 102 characters.
+- Diff copy: 1,886 characters, 65 lines, longest line 102 characters; reading budget 400,000 characters and 12,000 lines.
 - Lines longer than 2,000 characters: 0 condensed, 0 folded, 0 unchanged context lines shortened.
 - A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
 - A folded line is shown completely in numbered pieces.
@@ -43,14 +43,15 @@ Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or
 ===== claude.diff
 diff --git a/docs/data/migration/unreleased/added.toml b/docs/data/migration/unreleased/added.toml
 new file mode 100644
-index 0000000..6d48658
+index 0000000..f9050d5
 --- /dev/null
 +++ b/docs/data/migration/unreleased/added.toml
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,11 @@
 +[[change]]
 +id = "added"
 +category = "new-surface"
 +title = "Add --new"
++summary = "Adds --new."
 +refs = ["#7"]
 +surface = ["--new"]
 +decision = []

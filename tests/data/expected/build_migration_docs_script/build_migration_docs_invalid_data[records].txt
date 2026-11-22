@@ -15,6 +15,9 @@ Invalid migration data:
 - entry cells-of-harness: category harness names no cells
 - entry cells-unknown-key: cells 1: unknown key colour
 - entry decided-without-keep has no keep
+- unreleased/derived-id-fragment.toml: a fragment holds exactly one [[change]] whose id is the file name
+- entry option:--no-such-entry: an entry that extends a derived entry has no category and no cells
+- unreleased/derived-id-fragment.toml: option:--no-such-entry extends no derived entry
 - entry extends-missing: an extending record holds only extends, covers, refs and cells, not title
 - entry features has no refs
 - entry features has no decision

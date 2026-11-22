@@ -705,7 +705,7 @@ def _note_entries(record: Record, unreleased: set[str]) -> list[str]:
     a later pull request (a stack layer, a test move) may add, so it adds nothing.
     """
     if record.guide:
-        return [record.id]
+        return [record.id] if record.id in unreleased else []
     if record.category != Category.NEW_SURFACE:
         return []
     ids = [

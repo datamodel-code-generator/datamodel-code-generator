@@ -161,7 +161,8 @@ CASES = {
             "src/module.py": b"value = 2\n",
             f"{RECORDS}/edited.toml": b'[[change]]\nid = "edited"\ncategory = "harness"\ntitle = "New"\n',
             f"{RECORDS}/added.toml": (
-                b'[[change]]\nid = "added"\ncategory = "new-surface"\ntitle = "Add --new"\nrefs = ["#7"]\n'
+                b'[[change]]\nid = "added"\ncategory = "new-surface"\ntitle = "Add --new"\n'
+                b'summary = "Adds --new."\nrefs = ["#7"]\n'
                 b'surface = ["--new"]\ndecision = []\ncovers = [\n    "main/help/no_color.txt",\n]\n'
             ),
             f"{RECORDS}/broken.toml": b"[[change]\n",

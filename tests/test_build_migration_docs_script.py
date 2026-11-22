@@ -725,6 +725,18 @@ affects = { options = ["--old-flag"] }
 refs = ["#1"]
 source = "release-note"
 """,
+            "derived-id-fragment": """
+[[change]]
+id = "option:--no-such-entry"
+category = "api"
+kind = "cli"
+action = "review"
+title = "t"
+summary = "s"
+affects = { options = ["--old-flag"] }
+refs = ["#1"]
+source = "release-note"
+""",
             "decided-without-keep": """
 [[change]]
 id = "decided-without-keep"

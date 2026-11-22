@@ -5,6 +5,7 @@ title = "Build the release draft from the change records"
 summary = "The release notes name the pull request of each record and the release analysis context lists the PR records; the package writes the same output."
 refs = ["#1"]
 covers = [
+    "build_migration_docs_script/build_migration_docs_invalid_data[records].txt",
     "build_migration_docs_script/build_migration_docs_outputs.txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[baseline_facts].txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[fold_fallback].txt",
