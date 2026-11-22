@@ -1133,6 +1133,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         Section.TYPING,
+        "--read-allof-parents-as-their-models",
+        help="Read each allOf parent as its model holds it: a parent written as a $ref beside sibling keywords with "
+        "the schema its $ref names, so a model written before that parent types and requires an inherited property as "
+        "it does when written after it; every property some parent requires stays required where a parent the model "
+        "also inherits it from declares it optional (allOf: [PetBase, Named] with only Named requiring name); and an "
+        "allOf of a $ref alias and a member that adds only a type or required names reads the alias as "
+        "--intersect-combined-schema-keywords reads alias members; without it such properties can be Any or optional "
+        "and such a model a dict, as in 0.100.0",
+    ),
+    toggle(
+        Section.TYPING,
         "--read-allof-parents-in-mro-order",
         help="Read the allOf parents of every inherited schema in the order of the class bases (the MRO), so a "
         "property that several bases declare takes the nearer base's constraints and description, as the class does, "

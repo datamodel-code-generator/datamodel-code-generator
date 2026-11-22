@@ -65,6 +65,7 @@
 - `--no-intersect-combined-schema-keywords`
 - `--no-intersect-merged-allof-members`
 - `--no-keep-enum-member-values`
+- `--no-read-allof-parents-as-their-models`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
 - `--no-read-format-as-annotation`
@@ -99,6 +100,7 @@
 - `--open-enums`: Accept the values an enum does not list.
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
+- `--read-allof-parents-as-their-models`: Read each allOf parent as its model holds it.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
@@ -889,6 +891,20 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         class, else as Literal[...] joined with its type
                         (Literal['red', 'green'] | str), whatever the options
                         say about Literals
+  --read-allof-parents-as-their-models, --no-read-allof-parents-as-their-models
+                        Read each allOf parent as its model holds it: a parent
+                        written as a $ref beside sibling keywords with the
+                        schema its $ref names, so a model written before that
+                        parent types and requires an inherited property as it
+                        does when written after it; every property some parent
+                        requires stays required where a parent the model also
+                        inherits it from declares it optional (allOf:
+                        [PetBase, Named] with only Named requiring name); and
+                        an allOf of a $ref alias and a member that adds only a
+                        type or required names reads the alias as --intersect-
+                        combined-schema-keywords reads alias members; without
+                        it such properties can be Any or optional and such a
+                        model a dict, as in 0.100.0
   --read-allof-parents-in-mro-order, --no-read-allof-parents-in-mro-order
                         Read the allOf parents of every inherited schema in
                         the order of the class bases (the MRO), so a property

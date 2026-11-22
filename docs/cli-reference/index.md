@@ -332,6 +332,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### R {#r}
 
+- [`--read-allof-parents-as-their-models`](typing-customization.md#read-allof-parents-as-their-models)
 - [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order)
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)

@@ -42,10 +42,11 @@ A parse keeps the rows of ``LEGACY_ROWS`` whose option is off (``kept_legacy_row
 ``--intersect-allof-keywords`` the output of 0.86.0 where parts meet, and without
 ``--intersect-combined-schema-keywords`` (which turns ``--intersect-allof-keywords`` on) the output of 0.88.0 where an
 ``enum`` meets a ``type`` that rejects some of its values, and in each branch of an ``anyOf`` or ``oneOf`` beside
-keywords, and without ``--distribute-allof-over-unions`` the output of 0.89.0 where an ``allOf`` meets an ``anyOf`` or
-``oneOf``. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value that the
-merged ``type`` rejects is removed (``{"$ref": I, "enum": [1, 2.5, "x"]}`` with an ``integer`` target keeps ``1``),
-and an ``enum`` none of whose values it admits is a keyword without a common value; without it they are kept.
+keywords, without ``--distribute-allof-over-unions`` the output of 0.89.0 where an ``allOf`` meets an ``anyOf`` or
+``oneOf``, and without ``--read-allof-parents-as-their-models`` the output of 0.100.0 where a model reads the allOf
+parents it inherits from. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value
+that the merged ``type`` rejects is removed (``{"$ref": I, "enum": [1, 2.5, "x"]}`` with an ``integer`` target keeps
+``1``), and an ``enum`` none of whose values it admits is a keyword without a common value; without it they are kept.
 """
 
 from __future__ import annotations
@@ -202,6 +203,20 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
         "legacy-all-of-required-names-dropped": (
             "a field, an item or a branch whose allOf names one model and adds only `required` names to it, through a "
             "member or beside the allOf, is that model, which does not require them"
+        ),
+    },
+    "read_allof_parents_as_their_models": {
+        "legacy-ref-sibling-parent-read-alone": (
+            "an inherited schema that is a `$ref` with sibling keywords is read by its siblings alone, not as the "
+            "merge its model is built from"
+        ),
+        "legacy-inherited-required-names-unwritten": (
+            "a name only the inherited schemas require is not written in the model, which takes the field its bases "
+            "give it, optional where the base it takes it from declares it optional"
+        ),
+        "legacy-root-site-members-as-written": (
+            "the allOf root model row reads the members as written, so an alias of an object model beside a member "
+            "that adds only a type or required names is a root model of the type"
         ),
     },
     "distribute_allof_over_unions": {

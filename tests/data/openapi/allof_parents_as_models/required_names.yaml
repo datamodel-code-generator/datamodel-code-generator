@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info: {title: Pets, version: "1"}
+paths: {}
+components:
+  schemas:
+    NewPetFirst:
+      allOf:
+        - $ref: "#/components/schemas/PetBase"
+        - $ref: "#/components/schemas/Named"
+    PetBase:
+      type: object
+      properties:
+        name:
+          type: string
+        tag:
+          type: string
+    Named:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    NewPet:
+      allOf:
+        - $ref: "#/components/schemas/PetBase"
+        - $ref: "#/components/schemas/Named"
+    NamedFirst:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - $ref: "#/components/schemas/PetBase"
+    Owner:
+      type: object
+      properties:
+        pet:
+          allOf:
+            - $ref: "#/components/schemas/PetBase"
+            - $ref: "#/components/schemas/Named"

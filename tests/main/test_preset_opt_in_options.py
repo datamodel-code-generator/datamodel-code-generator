@@ -142,7 +142,7 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 """The options the 20261120 presets set beyond the 20261118 presets."""
 
-OPT_IN_OPTIONS_20261123: tuple[str, ...] = ("--intersect-merged-allof-members",)
+OPT_IN_OPTIONS_20261123: tuple[str, ...] = ("--intersect-merged-allof-members", "--read-allof-parents-as-their-models")
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
 WARNINGS_WITH_OPTION: dict[str, str] = {
@@ -604,6 +604,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="intersect-merged-allof-members",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "allof_parents_as_models" / "ref_sibling_parents.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-allof-parents-as-their-models",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -959,6 +965,13 @@ def test_preset_sets_opt_in_option(
             "--intersect-merged-allof-members",
             "--no-intersect-merged-allof-members",
             id="intersect-merged-allof-members",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "allof_parents_as_models" / "ref_sibling_parents.json",
+            [],
+            "--read-allof-parents-as-their-models",
+            "--no-read-allof-parents-as-their-models",
+            id="read-allof-parents-as-their-models",
         ),
     ],
 )

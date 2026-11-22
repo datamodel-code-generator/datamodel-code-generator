@@ -1932,6 +1932,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "intersect_combined_schema_keywords",
         "distribute_allof_over_unions",
         "intersect_merged_allof_members",
+        "read_allof_parents_as_their_models",
         "read_allof_parents_in_mro_order",
         "read_inherited_property_schemas_in_mro_order",
         "omit_redundant_constraints",

@@ -905,6 +905,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
     name: str,
     site: ValueSite,
     path: list[str],
+    members: Sequence[JsonSchemaObject | bool],
 ) -> DataType | None:
     """Handle allOf that combines a root model $ref with additional constraints.
 
@@ -913,12 +914,16 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
     Only applies to named schema definitions, not inline properties. The merged root is the intersection of the
     site's parts (``_merged_root_intersection``) unless row ``legacy-all-of-root-first-typed-member`` is kept, and is
     parsed as the same schema written without allOf (``_parse_merged_value_root``).
+    ``members`` are the members of the allOf as the caller reads them: as ``all_of_members`` reads them under
+    --read-allof-parents-as-their-models, so an alias member names the schema the alias names where alias members are
+    followed; as written without it (row ``legacy-root-site-members-as-written``), where an alias of an object model
+    and a member that adds a type or required names are read as a root model of the type.
     """
     obj = site.obj
     if any(_is_special_path(path_element) for path_element in path):
         return None
 
-    ref_items = [item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]
+    ref_items = [item for item in members if isinstance(item, JsonSchemaObject) and item.ref]
 
     if len(ref_items) != 1:
         return None
@@ -933,7 +938,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
         return None
 
     constraint_items: list[JsonSchemaObject] = []
-    for item in obj.allOf:
+    for item in members:
         if not isinstance(item, JsonSchemaObject):  # pragma: no cover - not proven unreachable
             continue
         if item.ref:

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "required_name": {"$ref": "#/$defs/RequiredName"},
+    "narrowed": {"$ref": "#/$defs/Narrowed"},
+    "target_requires": {"$ref": "#/$defs/TargetRequires"},
+    "chain": {"$ref": "#/$defs/Chain"},
+    "inline": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]}
+  },
+  "$defs": {
+    "RequiredName": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
+    "Narrowed": {"allOf": [{"$ref": "#/$defs/Parent"}], "properties": {"name": {"minLength": 3}}},
+    "TargetRequires": {
+      "allOf": [{"$ref": "#/$defs/RequiringParent"}],
+      "properties": {"name": {"type": "string", "minLength": 3}}
+    },
+    "Chain": {"allOf": [{"$ref": "#/$defs/ChainParent"}], "required": ["name"]},
+    "ChainParent": {"$ref": "#/$defs/Parent", "properties": {"more": {"type": "integer"}}},
+    "Parent": {"$ref": "#/$defs/Base", "properties": {"extra": {"type": "string"}}},
+    "RequiringParent": {"$ref": "#/$defs/RequiringBase", "properties": {"extra": {"type": "string"}}},
+    "Base": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "RequiringBase": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+  }
+}

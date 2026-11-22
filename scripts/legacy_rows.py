@@ -362,6 +362,66 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--read-inherited-property-schemas-in-mro-order",
     ),
     LegacyRow(
+        "legacy-ref-sibling-parent-read-alone",
+        (
+            "without `--read-allof-parents-as-their-models`, the readers of the schemas a model inherits "
+            "(`model_schema_at`) read a parent that is a `$ref` with sibling keywords by its sibling keywords alone, "
+            "while its model is built from their merge with the schema its `$ref` names: a model written before such "
+            "a parent types a property it only requires `Any`, a property it narrows `Any`, and leaves optional a "
+            "property the `$ref` target requires (#6868)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_parents_as_models/ref_sibling_parents.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-allof-parents-as-their-models",
+    ),
+    LegacyRow(
+        "legacy-inherited-required-names-unwritten",
+        (
+            "without `--read-allof-parents-as-their-models`, a model writes no field for a name that only the schemas "
+            "it inherits require (`JsonSchemaParser._optional_inherited_required_names`), so the class takes the field "
+            "from a base as the output collects fields, optional where that base declares it optional: `allOf: "
+            "[PetBase, Named]` with only `Named` requiring `name` accepts a payload without `name` (#7331)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/allof_parents_as_models/required_names.yaml",
+            "--input-file-type",
+            "openapi",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-allof-parents-as-their-models",
+    ),
+    LegacyRow(
+        "legacy-root-site-members-as-written",
+        (
+            "without `--read-allof-parents-as-their-models`, the allOf root model row "
+            "(`handle_allof_root_model_with_constraints`) reads the members as written, not as `all_of_members` reads "
+            "them, so under `--intersect-combined-schema-keywords` an allOf of a `$ref` alias of an object model and "
+            "a member that adds only a `type` or `required` names is a root model of a dict, without the fields of "
+            "the schema the alias names (#7309)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_parents_as_models/alias_parent.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--intersect-combined-schema-keywords",
+        ),
+        option="--read-allof-parents-as-their-models",
+    ),
+    LegacyRow(
         "legacy-inherited-reads-at-first-ask",
         (
             "the ancestors of an inherited schema (`get_inherited_schema_ancestor_paths`), the C3 order of a list of "

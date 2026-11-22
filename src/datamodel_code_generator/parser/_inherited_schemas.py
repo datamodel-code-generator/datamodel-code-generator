@@ -81,6 +81,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _get_json_value_type,
     _intersect_dumps,
     _intersect_parts,
+    _merges_ref_siblings,
     _schema_dump,
     _without_contains_keywords,
 )
@@ -163,6 +164,7 @@ __all__ = [
     "model_declarations",
     "normalize_inherited_constraint_compositions",
     "normalize_inherited_nested_schema_value",
+    "optional_inherited_required_names",
     "override_row",
     "parse_fields_beside_parents",
     "parse_inherited_schema_fields",
@@ -251,14 +253,16 @@ parents the reader goes on with and the path of the walk (``legacy-direct-then-g
 class _InheritedSchema:
     """The inherited schema at a reference key (``inherited_schema``) and what is read from it.
 
-    ``schema`` is the object the share returns for the key and ``ancestors`` the keys of its ancestors
-    (``get_inherited_schema_ancestor_paths``): both keep the answer of their first ask until L1 ends, whatever document
-    asks later (row ``legacy-inherited-reads-at-first-ask``). ``parts`` (``inline_all_of_parts``) and ``conjunctions``
+    ``schema`` is the object the share returns for the key, ``as_model`` the schema the model of the key is built
+    from (``model_schema_at``) and ``ancestors`` the keys of its ancestors (``get_inherited_schema_ancestor_paths``):
+    they keep the answer of their first ask until L1 ends, whatever document asks later (row
+    ``legacy-inherited-reads-at-first-ask``). ``parts`` (``inline_all_of_parts``) and ``conjunctions``
     (``property_conjunctions``, read quiet) are kept only where they are functions of the schema object alone
     (``_reads_schemas_alone``); elsewhere each ask computes them.
     """
 
     schema: JsonSchemaObject
+    as_model: JsonSchemaObject | None = None
     ancestors: frozenset[str] | None = None
     parts: tuple[JsonSchemaObject, ...] | None = None
     conjunctions: Mapping[str, Sequence[JsonSchemaObject | None]] | None = None
@@ -315,6 +319,25 @@ def inherited_schema(parser: InheritedSchemasHost, resolved_ref: str) -> _Inheri
     return found
 
 
+def model_schema_at(parser: InheritedSchemasHost, resolved_ref: str) -> JsonSchemaObject:
+    """Return the schema the readers of inherited schemas read at a reference key, loading it at the first ask.
+
+    With --read-allof-parents-as-their-models, the schema the model of the key is built from, so a
+    definition that is a ``$ref`` with sibling keywords it merges (``_merges_ref_siblings``, the ``ref-siblings`` step
+    of a definition) is that merge, which holds the properties, the required names and the allOf parents of the schema
+    its ``$ref`` names too; the merge resolves in the key's document and reports nothing, as the parse of that
+    definition does. Row ``legacy-ref-sibling-parent-read-alone``: the schema as written, so such a definition is read
+    by its sibling keywords alone. The readers that need the schema as written read ``load_inherited_schema_object``.
+    """
+    found = inherited_schema(parser, resolved_ref)
+    if "legacy-ref-sibling-parent-read-alone" in parser._legacy_intersection or not _merges_ref_siblings(found.schema):
+        return found.schema
+    if found.as_model is None:
+        with parser._inherited_ref_context(resolved_ref), quiet():
+            found.as_model = parser._merge_ref_with_schema(found.schema)
+    return found.as_model
+
+
 def _base_list(parser: InheritedSchemasHost, refs: tuple[str, ...]) -> _BaseList:
     """Return the record of a tuple of reference keys."""
     if (found := parser._inherited_base_lists.get(refs)) is None:
@@ -326,9 +349,9 @@ def _parts_at(parser: InheritedSchemasHost, resolved_ref: str) -> tuple[JsonSche
     """Return the parts of the inherited schema at a reference key (``inline_all_of_parts``): the schema first."""
     found = inherited_schema(parser, resolved_ref)
     if not _reads_schemas_alone(parser):
-        return tuple(inline_all_of_parts(parser, found.schema))
+        return tuple(inline_all_of_parts(parser, model_schema_at(parser, resolved_ref)))
     if found.parts is None:
-        found.parts = tuple(inline_all_of_parts(parser, found.schema))
+        found.parts = tuple(inline_all_of_parts(parser, model_schema_at(parser, resolved_ref)))
     return found.parts
 
 
@@ -342,10 +365,10 @@ def _conjunctions_at(
     found = inherited_schema(parser, resolved_ref)
     if not _reads_schemas_alone(parser):
         with quiet():
-            return property_conjunctions(parser, found.schema)
+            return property_conjunctions(parser, model_schema_at(parser, resolved_ref))
     if found.conjunctions is None:
         with quiet():
-            found.conjunctions = property_conjunctions(parser, found.schema)
+            found.conjunctions = property_conjunctions(parser, model_schema_at(parser, resolved_ref))
     return found.conjunctions
 
 
@@ -395,7 +418,7 @@ def _walk_inline_first(
         if not isinstance(item, JsonSchemaObject) or not item.ref:
             continue
         parent_ref = _schema_refs.ref_path(parser, item.ref)
-        parent_schema = load_inherited_schema_object(parser, parent_ref)
+        parent_schema = model_schema_at(parser, parent_ref)
         if (node := _schema_node(parent_schema, parent_ref)) not in path:
             yield from _walk_inline_first(parser, parent_schema, parent_ref, path | {node})
 
@@ -406,7 +429,7 @@ def _walk_ancestors_first(
     """Yield the parts of the ancestors of the schema at a key, then its own parts, members first; each schema once."""
     if _is_special_path(resolved_ref):
         return
-    schema = load_inherited_schema_object(parser, resolved_ref)
+    schema = model_schema_at(parser, resolved_ref)
     if (node := _schema_node(schema, resolved_ref)) in entered:
         return
     entered.add(node)
@@ -1825,7 +1848,7 @@ def get_inherited_schema_ancestor_paths(
     if _is_special_path(resolved_ref):
         return frozenset()
     found = inherited_schema(parser, resolved_ref)
-    schema = found.schema
+    schema = model_schema_at(parser, resolved_ref)
     if (node := _schema_node(schema, resolved_ref)) in active:
         return frozenset()
     ancestors: set[str] = set()
@@ -1861,8 +1884,7 @@ def inherited_schema_parents(parser: InheritedSchemasHost, ref: str) -> list[str
     ``allOf: [A, B]`` and ``B = allOf: [A, ...]`` the merge finds no free head and takes the farther base ``A`` first.
     """
     parents = [
-        _schema_refs.ref_path(parser, parent)
-        for parent in iter_allof_refs(parser, load_inherited_schema_object(parser, ref))
+        _schema_refs.ref_path(parser, parent) for parent in iter_allof_refs(parser, model_schema_at(parser, ref))
     ]
     if parser._inherited_parent_row == "legacy-document-order":
         return parents
@@ -2016,6 +2038,30 @@ def _required_names(parser: InheritedSchemasHost, refs: Iterable[str]) -> frozen
     return frozenset(name for ref in refs for source in _parts_at(parser, ref) for name in source.required)
 
 
+def optional_inherited_required_names(
+    parser: InheritedSchemasHost, base_classes: list[Reference], required_names: frozenset[str]
+) -> tuple[str, ...]:
+    """Return the names of ``required_names`` that the model of a direct base of ``base_classes`` holds optional.
+
+    Such a base declares the property (``get_inherited_property_map``) and does not require it (``required_names_at``,
+    which is where the model of a base holds it required under --read-allof-parents-as-their-models). A class takes the
+    field of one of its bases, which one depends on the output (Pydantic and dataclasses the first in their method
+    resolution order, a TypedDict the last), so a model that inherits a name some parent requires restates it where
+    any base holds it optional. In the order the fields of request and response variants take
+    (``get_inherited_property_order``).
+    """
+    bases = [base for base in base_classes if base.path and not _is_special_path(base.path)]
+    return tuple(
+        name
+        for name in get_inherited_property_order(parser, bases)
+        if name in required_names
+        and any(
+            name in get_inherited_property_map(parser, [base]) and name not in required_names_at(parser, base.path)
+            for base in bases
+        )
+    )
+
+
 def get_inline_required_names(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> tuple[str, ...]:
     """Collect required names in declaration order from one schema and inline allOf items."""
     return tuple(dict.fromkeys(name for source in inline_all_of_parts(parser, schema) for name in source.required))
@@ -2154,7 +2200,7 @@ def iter_inherited_schema_objects(
             continue
         resolved_ref = base.path
         try:
-            parent_schema = load_inherited_schema_object(parser, resolved_ref)
+            parent_schema = model_schema_at(parser, resolved_ref)
         except RecursionError:  # pragma: no cover - a RecursionError must pass the broad guard below
             raise
         except Exception:  # noqa: BLE001, S112  # pragma: no cover - a broken inherited base is skipped
