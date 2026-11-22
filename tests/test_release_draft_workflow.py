@@ -260,6 +260,10 @@ case "$*" in
   "release list"*--exclude-drafts*) echo v0.99.0 ;;
   "release list"*) ;;
   "api"*/commits/*) echo 2026-11-21T20:00:00Z ;;
+  "api"*/compare/failing...*) exit 1 ;;
+  "api"*/compare/tag...*) echo identical ;;
+  "api"*/compare/before...*) echo ahead ;;
+  "api"*/compare/after...*) echo behind ;;
   "pr list"*) cat "$FAKE_PRS" ;;
   "pr view"*) echo "$FAKE_TITLE" ;;
   "api"*) echo "GENERATED NOTES" ;;
@@ -275,6 +279,7 @@ UNDECLARED_CASES = {
         "false",
         "4\ttag\tIn the tagged commit\n5\tbefore\tBefore the tag\n9\tafter\tAfter the tag, same second\n",
     ),
+    "compare call fails": ("false", "false", "4\tfailing\tUnknown to the API\n"),
     "label not searchable yet": ("false", "true", ""),
 }
 
@@ -299,26 +304,6 @@ def test_update_draft_lists_the_undeclared_changes(case: str, tmp_path: Path) ->
     (bin_dir / "gh").chmod(0o755)
     (notes / "has-breaking.txt").write_text(has_breaking + "\n", encoding="utf-8")
     (notes / "notes.md").write_text("## Record Notes\n", encoding="utf-8")
-    environment = {
-        **os.environ,
-        "GIT_AUTHOR_NAME": "Test",
-        "GIT_AUTHOR_EMAIL": "test@example.com",
-        "GIT_COMMITTER_NAME": "Test",
-        "GIT_COMMITTER_EMAIL": "test@example.com",
-    }
-    subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True, env=environment)
-    shas: dict[str, str] = {}
-    for name in ("before", "tag", "after"):
-        subprocess.run(
-            ["git", "commit", "--quiet", "--allow-empty", "-m", name], cwd=tmp_path, check=True, env=environment
-        )
-        shas[name] = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, env=environment, capture_output=True, text=True
-        ).stdout.strip()
-        if name == "tag":
-            subprocess.run(["git", "tag", "v0.99.0"], cwd=tmp_path, check=True, env=environment)
-    for name, sha in shas.items():
-        labelled = labelled.replace(f"\t{name}\t", f"\t{sha}\t")
     (tmp_path / "prs.txt").write_text(labelled, encoding="utf-8")
     result = subprocess.run(
         ["bash", "-c", step["run"].replace("${{ github.repository }}", "owner/repository")],
@@ -345,8 +330,8 @@ def test_update_draft_lists_the_undeclared_changes(case: str, tmp_path: Path) ->
                 "returncode": result.returncode,
                 "stderr": result.stderr,
                 "search": next(call for call in calls if call.startswith("pr list")),
-                "created": next(call for call in calls if call.startswith("release create")),
-                "body": (tmp_path / "body.md").read_text(encoding="utf-8"),
+                "created": next((call for call in calls if call.startswith("release create")), None),
+                "body": (tmp_path / "body.md").read_text(encoding="utf-8") if (tmp_path / "body.md").exists() else None,
             },
             indent=2,
             sort_keys=True,

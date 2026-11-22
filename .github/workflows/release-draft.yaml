@@ -572,15 +572,19 @@ jobs:
             UNDECLARED_QUERY="$UNDECLARED_QUERY merged:>=$TAGGED_AT"
           fi
           # The timestamp search only finds candidates: a pull request whose merge commit is the tagged commit, or is
-          # in the tag, shares its merge time with the tag. Drop the candidates the tag already contains.
+          # in the tag, shares its merge time with the tag. Drop the candidates the tag already contains (the tag is ahead of,
+          # or identical to, the merge commit).
           CANDIDATES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --search "$UNDECLARED_QUERY" --limit 100 \
             --json number,title,mergeCommit --jq 'sort_by(.number) | .[] | [.number, (.mergeCommit.oid // "none"), (.title | gsub("[\r\n\t]+"; " "))] | @tsv')
           UNDECLARED=""
           while IFS=$'\t' read -r CANDIDATE_NUMBER CANDIDATE_SHA CANDIDATE_TITLE; do
             [ -n "$CANDIDATE_NUMBER" ] || continue
-            if [ -n "$LATEST_TAG_RAW" ] && [ "$LATEST_TAG" != "0.0.0" ] \
-              && git merge-base --is-ancestor "$CANDIDATE_SHA" "refs/tags/$LATEST_TAG_RAW^{commit}" 2>/dev/null; then
-              continue
+            if [ -n "$LATEST_TAG_RAW" ] && [ "$LATEST_TAG" != "0.0.0" ] && [ "$CANDIDATE_SHA" != "none" ]; then
+              # An API error fails the step: it must not read as "not in the tag". The job has no checkout.
+              COMPARE_STATUS=$(gh api "/repos/$GITHUB_REPOSITORY/compare/$CANDIDATE_SHA...$LATEST_TAG_RAW" --jq '.status')
+              if [ "$COMPARE_STATUS" = "ahead" ] || [ "$COMPARE_STATUS" = "identical" ]; then
+                continue
+              fi
             fi
             UNDECLARED="${UNDECLARED:+$UNDECLARED$'\n'}* $CANDIDATE_TITLE (#$CANDIDATE_NUMBER)"
           done <<<"$CANDIDATES"
