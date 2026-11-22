@@ -41,9 +41,10 @@ import itertools
 import json
 import sys
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -484,25 +485,37 @@ def smallest(texts: Iterable[str]) -> str:
     return min(texts, key=lambda text: (len(text), text))
 
 
+Witnesses: TypeAlias = Callable[[PayloadRuntime, Truth, tuple[str, ...]], dict[str, list[object]]]
+"""A reading of a model against the pool of its shape and its lax verdicts: the payloads of each kind found, by kind."""
+
+
 def _findings(witnesses: Mapping[str, list[object]]) -> dict[str, str]:
     """Return the smallest witness of each kind, as JSON."""
     return {kind: smallest(json.dumps(payload) for payload in payloads) for kind, payloads in witnesses.items()}
 
 
 def judge(
-    shape: Shape, backend: str, contract: str, directory: Path, *, extra: tuple[str, ...] = (), strict: bool = False
+    shape: Shape,
+    backend: str,
+    contract: str,
+    directory: Path,
+    *,
+    extra: tuple[str, ...] = (),
+    strict: bool = False,
+    witnesses_of: Witnesses = _witnesses,
 ) -> Cell:
     """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings.
 
     The cell keeps the model's verdict on every payload of the pool: lax, or strict over JSON text with ``strict``.
-    ``extra`` are more generation arguments (see ``_generate``).
+    ``extra`` are more generation arguments (see ``_generate``). ``witnesses_of`` reads the model against the pool; by
+    default it finds the kinds of ``KINDS``.
     """
     known = truth(shape)
     output = _generate(shape.document, "jsonschema", backend, contract, directory, extra)
     try:
         with _loaded(output, [shape.name], backend) as (runtime,):
             verdicts = lax_verdicts(runtime, known)
-            witnesses = _witnesses(runtime, known, verdicts)
+            witnesses = witnesses_of(runtime, known, verdicts)
             if strict:
                 verdicts = strict_verdicts(runtime, known)
     except _UnusableCellError as unusable:
