@@ -64,7 +64,7 @@ PR_TIER: Final[Mapping[str, Callable[[Batch], bool]]] = {
 }
 """The rows the pull request tier runs: the constraint rows but those in array items, every null row, and the tag rows
 of two variants under ``oneOf``."""
-ISSUE_REFERENCE: Final = re.compile(r"#[1-9][0-9]*|draft:[a-z0-9-]+")
+ISSUE_REFERENCE: Final = re.compile(r"#[1-9][0-9]*")
 SLUG: Final = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 LEGACY_ROW_NAMES: Final = frozenset(row.name for row in LEGACY_ROWS)
 
@@ -82,7 +82,7 @@ def _enumerated(table: str) -> list[Cell]:
 
 
 def _reference_holds(rule: Kept) -> bool:
-    """Return whether a rule's reference is a record of its basis: ``#n`` or a draft, a legacy row, or a name."""
+    """Return whether a rule's reference is a record of its basis: ``#n``, a legacy row, or a name."""
     if rule.basis == ISSUE:
         return ISSUE_REFERENCE.fullmatch(rule.reference) is not None
     if rule.basis == LEGACY_ROW:

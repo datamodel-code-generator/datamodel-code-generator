@@ -1,9 +1,9 @@
 """The known differences of the decision tables, as rules over their row parameters (the form of ``shape_families``).
 
 A rule (``Kept`` of ``shape_families/kept.py``) covers the cells of one table, one kind and the contracts it names
-whose parameters lie in one of its boxes, and states its basis: an issue (``#n``, or ``draft:<name>`` for a draft the
-lane wrote until it is filed), a legacy row, by design or a library limit (a short name of the decision, with the
-reason). ``differences`` of that module holds the cells against the rules both ways.
+whose parameters lie in one of its boxes, and states its basis: an issue (``#n``), a legacy row, by design or a library
+limit (a short name of the decision, with the reason). ``differences`` of that module holds the cells against the
+rules both ways.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:pydantic-format-str-constraints",
+        "#7345",
         constraints.TABLE,
         "accepts-invalid",
         DEFAULT,
@@ -126,7 +126,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:union-member-map-counts",
+        "#7346",
         constraints.TABLE,
         "accepts-invalid",
         BOTH,
@@ -135,7 +135,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:all-of-member-map-counts",
+        "#7340",
         constraints.TABLE,
         "accepts-invalid",
         BOTH,
@@ -145,7 +145,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:msgspec-ip-address-types",
+        "#7342",
         constraints.TABLE,
         "rejects-valid",
         PRESET,
@@ -154,7 +154,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:msgspec-ip-address-types",
+        "#7342",
         constraints.TABLE,
         "model-raises",
         PRESET,
@@ -163,7 +163,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:base64-all-of-member-constraints",
+        "#7341",
         constraints.TABLE,
         "accepts-invalid",
         PRESET,
@@ -182,7 +182,7 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:base64-all-of-member-constraints",
+        "#7341",
         constraints.TABLE,
         "rejects-valid",
         PRESET,
@@ -346,7 +346,7 @@ NULLS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:nullable-array-item",
+        "#7343",
         nulls.TABLE,
         "rejects-valid",
         PRESET,
@@ -508,7 +508,7 @@ TAGS: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "draft:typed-dict-plain-tag",
+        "#7344",
         tags.TABLE,
         "accepts-invalid",
         BOTH,
