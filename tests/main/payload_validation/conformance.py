@@ -508,7 +508,16 @@ BACKEND_FULL_MATRIX_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] 
     },
 }
 BACKEND_ACCEPTANCE_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = BACKEND_FULL_MATRIX_EXCLUDED_CASES
-BACKEND_REJECTION_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = BACKEND_FULL_MATRIX_EXCLUDED_CASES
+BACKEND_REJECTION_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = {
+    **BACKEND_FULL_MATRIX_EXCLUDED_CASES,
+    PayloadBackend.MSGSPEC: {
+        **BACKEND_FULL_MATRIX_EXCLUDED_CASES[PayloadBackend.MSGSPEC],
+        "jsonschema/nested_unique_item_sets.json": (
+            "the payloads of arrays of unique arrays of objects are large enough that Hypothesis stops the run with "
+            "its data_too_large health check (9 of 29 inputs fit), which the msgspec rejection test does not suppress"
+        ),
+    },
+}
 DATACLASSES_FULL_MATRIX_EXCLUSION_REASON: Final[str] = (
     "plain dataclasses remain representative because native construction has no JSON Schema runtime validation"
 )
