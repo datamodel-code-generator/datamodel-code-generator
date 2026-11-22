@@ -14,14 +14,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 SHARD_COUNTS = {
-    "py315-parallel": 8,
-    "py314-parallel": 8,
-    "py311-parallel": 14,
+    "py315-parallel": 18,
+    "py314-parallel": 14,
+    "py311-parallel": 22,
     "client-e2e": 3,
 }
 MAIN_ONLY_SHARD_COUNTS = {
-    "py313-parallel": 13,
-    "py312-parallel": 17,
+    "py313-parallel": 16,
+    "py312-parallel": 18,
 }
 """The shards of `test-shard-main`, which pull requests skip."""
 COVERAGE_ENVS = (
