@@ -173,7 +173,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "disguised-assert:tests/main/test_parsed_source_cache_parity.py::_input_file_type_option",
         "disguised-assert:tests/main/test_parsed_source_cache_parity.py::_mutate_cached_schema",
         "disguised-assert:tests/main/test_payload_validation.py::test_generated_payload_backend_rejects_representative_schema_invalid_payloads",
-        "disguised-assert:tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_rejects_schema_invalid_payloads",
         "disguised-assert:tests/main/test_payload_validation.py::test_payload_backend_full_matrix_exclusions_are_classified",
         "disguised-assert:tests/main/test_payload_validation.py::test_payload_backend_representative_matrix_is_classified",
         "disguised-assert:tests/main/test_payload_validation.py::test_payload_rejection_oracle_covers_supported_policy_constraints",

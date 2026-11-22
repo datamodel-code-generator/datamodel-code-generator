@@ -1094,36 +1094,42 @@ def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_REJECTION_CASES)
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@settings(
-    database=None,
-    deadline=None,
-    derandomize=True,
-    max_examples=MAX_EXAMPLES,
-    suppress_health_check=[
-        HealthCheck.filter_too_much,
-        HealthCheck.function_scoped_fixture,
-        HealthCheck.too_slow,
-    ],
-)
-@given(data=st.data())
 def test_generated_pydantic_v2_model_rejects_schema_invalid_payloads(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
-    data: st.DataObject,
 ) -> None:
-    """Near-miss payloads rejected by the source schema should fail generated validation."""
-    payload = data.draw(payload_strategy(case), label=f"{case.id}:valid")
-    validate_with_source_schema(case, payload)
-    mutations = invalid_payload_mutations(case, payload)
-    assume(bool(mutations))
+    """Check every schema with fresh Hypothesis settings, avoiding parametrization parent chains."""
 
-    mutation = data.draw(st.sampled_from(mutations), label=f"{case.id}:invalid")
-    if source_schema_validator(case).is_valid(mutation.payload):  # pragma: no cover
-        pytest.fail(f"{case.id}: mutation stayed source-valid for {mutation.constraint} at {mutation.path}")
+    @settings(
+        database=None,
+        deadline=None,
+        derandomize=True,
+        max_examples=MAX_EXAMPLES,
+        suppress_health_check=[
+            HealthCheck.data_too_large,
+            HealthCheck.filter_too_much,
+            HealthCheck.function_scoped_fixture,
+            HealthCheck.too_slow,
+        ],
+    )
+    @given(data=st.data())
+    def check_rejection(data: st.DataObject) -> None:
+        """Near-miss payloads rejected by the source schema should fail generated validation."""
+        payload = data.draw(payload_strategy(case), label=f"{case.id}:valid")
+        validate_with_source_schema(case, payload)
+        mutations = invalid_payload_mutations(case, payload)
+        assume(bool(mutations))
 
-    adapter = load_generated_payload_adapter(case, generated_model_cache)
-    with pytest.raises(ValidationError):
-        adapter.validate_python(mutation.payload)
+        mutation = data.draw(st.sampled_from(mutations), label=f"{case.id}:invalid")
+        if source_schema_validator(case).is_valid(mutation.payload):  # pragma: no cover
+            message = f"{case.id}: mutation stayed source-valid for {mutation.constraint} at {mutation.path}"
+            raise ValueError(message)
+
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        with pytest.raises(ValidationError):
+            adapter.validate_python(mutation.payload)
+
+    check_rejection()
 
 
 @pytest.mark.parametrize(("backend", "case"), BACKEND_ACCEPTANCE_CASES)
