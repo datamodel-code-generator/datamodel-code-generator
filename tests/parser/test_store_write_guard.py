@@ -22,7 +22,10 @@ from tests.checks.areas import CheckFailure
 from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_STORE_WRITES_ENV, assert_output
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from datamodel_code_generator.parser.base import ModuleContext
+    from datamodel_code_generator.reference import Reference
 
 SCHEMA = Path(__file__).parents[1] / "data" / "jsonschema" / "person.json"
 REPORTED = ("owner", "attribute", "operation", "key", "scope", "phase")
@@ -110,19 +113,44 @@ class SharingParser(JsonSchemaParser):
 
 
 class RedirectingParser(JsonSchemaParser):
-    """Points every referencing data type at its own reference again, through the store or directly."""
+    """Runs ``write`` on every referencing data type of a module with its model and reference."""
 
-    direct: bool
+    write: Callable[[RedirectingParser, DataModel, DataType, Reference], object]
 
     def _process_single_module(self, module_: object, models: list[DataModel], *args: object) -> ModuleContext:
-        for data_type in (field.data_type for model in models for field in model.fields):
-            if (reference := data_type.reference) is None:
-                continue
-            if self.direct:
-                data_type.replace_reference(reference)
-            else:
-                type(self.generation_store)._replace_data_type_reference(data_type, reference)
+        for model in models:
+            for data_type in (field.data_type for field in model.fields):
+                if (reference := data_type.reference) is not None:
+                    self.write(self, model, data_type, reference)
         return super()._process_single_module(module_, models, *args)
+
+
+def process_const(owner: DataModel) -> bool:
+    """Write the bases of a model as a pass; the name is the one of a method only the store runs."""
+    owner.base_classes = list(owner.base_classes)
+    return False
+
+
+def _through_the_store(parser: RedirectingParser, _model: DataModel, data_type: DataType, reference: Reference) -> None:
+    type(parser.generation_store)._replace_data_type_reference(data_type, reference)
+
+
+def _directly(_parser: RedirectingParser, _model: DataModel, data_type: DataType, reference: Reference) -> None:
+    data_type.replace_reference(reference)
+
+
+def _member_callback(parser: RedirectingParser, model: DataModel, _data_type: DataType, reference: Reference) -> object:
+    return parser.generation_store.index.root_collapse_reference_usage(
+        reference, excluded_model=model, is_root_model=lambda owner: owner.set_base_class() or False
+    )
+
+
+def _same_name_callback(
+    parser: RedirectingParser, model: DataModel, _data_type: DataType, reference: Reference
+) -> object:
+    return parser.generation_store.index.root_collapse_reference_usage(
+        reference, excluded_model=model, is_root_model=process_const
+    )
 
 
 def _reported(report: Path) -> str:
@@ -224,24 +252,39 @@ def test_store_write_guard_keeps_what_the_parsed_graph_shares(monkeypatch: pytes
     assert_output(json.dumps({"shared while processing modules": parser.shared}) + "\n", name="shared")
 
 
-@pytest.mark.parametrize("direct", [False, True], ids=["store", "pass"])
+@pytest.mark.parametrize(
+    ("write", "writers"),
+    [
+        (_through_the_store, []),
+        (_directly, [("DataType.replace_reference", "reference")]),
+        (
+            _member_callback,
+            [("DataModel.set_base_class", "_additional_imports"), ("DataModel.set_base_class", "base_classes")],
+        ),
+        (_same_name_callback, [("process_const", "base_classes")]),
+    ],
+    ids=["store", "pass", "member callback", "same-name callback"],
+)
 @pytest.mark.allow_direct_assert("which writer the guard reports is its verdict, not a stored output")
 def test_store_write_guard_leaves_a_store_method_to_the_store(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, direct: bool
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    write: Callable[[RedirectingParser, DataModel, DataType, Reference], object],
+    writers: list[tuple[str, str]],
 ) -> None:
     """A method only the store runs writes for the store under a store function; a pass calling it is reported.
 
-    ``STORE_MEMBERS`` lists the method; the store function runs it outside the window of a named operation.
+    ``STORE_MEMBERS`` lists the method; the store function runs it outside the window of a named operation. A
+    callback a pass hands a store function is the pass's, also when it calls such a method or shares its name.
     """
     report = tmp_path / "writes.jsonl"
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{report}")
     monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
 
     parser = RedirectingParser(SCHEMA.with_name("nullable_reuse.json"), formatters=[Formatter.BUILTIN])
-    parser.direct = direct
+    parser.write = write
 
     parser.parse()
 
     lines = report.read_text(encoding="utf-8").splitlines() if report.exists() else []
-    writers = [(write["function"], write["attribute"]) for write in map(json.loads, lines)]
-    assert writers == ([("DataType.replace_reference", "reference")] if direct else [])
+    assert [(item["function"], item["attribute"]) for item in map(json.loads, lines)] == writers

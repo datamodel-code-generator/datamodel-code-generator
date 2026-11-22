@@ -18,8 +18,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
 - ``call-owners``, ``read-owners`` and ``write-owners`` of the members of the graph only the store may use
   (``STORE_MEMBERS`` of ``scripts/fact_tables.py``): each method that writes the graph for the store operations that
   run it is callable by the store module, its own class (through its own receiver too) and the other such methods,
-  and may write whatever the store module may write, in every override; the bookkeeping attributes of a reference are
-  read or written only by the store module, their class's module and the modules their row names.
+  and may write whatever the store module may write, in every override; a call on a receiver heki cannot tie to a
+  class is reported (``MUT207``), as untyped callbacks reach these methods so; the bookkeeping attributes of a
+  reference are read or written only by the store module, their class's module and the modules their row names.
 - ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py`` that the caller guard checks
   (`scripts._decision_home_reads.checked_homes`), callable by the home modules and the adapter sites of their rows; the
   parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
@@ -252,6 +253,7 @@ def store_member_contracts(repo: Repo) -> list[str]:
                     allowed_callers=owners,
                     references="calls",
                     own_receiver="allow",
+                    unresolved="report",
                     attribution="lexical",
                 )
             )
