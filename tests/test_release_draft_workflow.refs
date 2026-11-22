@@ -23,6 +23,7 @@ $(touch sentinel)	release_draft_workflow/manual_release_analysis_rejects_unsafe_
 breaking records	release_draft_workflow/update_draft_lists_the_undeclared_changes[breaking records].txt
 label not searchable yet	release_draft_workflow/update_draft_lists_the_undeclared_changes[label not searchable yet].txt
 labelled pull requests	release_draft_workflow/update_draft_lists_the_undeclared_changes[labelled pull requests].txt
+merged in or after the tag	release_draft_workflow/update_draft_lists_the_undeclared_changes[merged in or after the tag].txt
 records only	release_draft_workflow/update_draft_lists_the_undeclared_changes[records only].txt
 [test_update_draft_runs_without_the_analysis]
 	release_draft_workflow/update_draft_runs_without_the_analysis.txt

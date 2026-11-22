@@ -571,8 +571,19 @@ jobs:
             TAGGED_AT=$(gh api "/repos/$GITHUB_REPOSITORY/commits/$LATEST_TAG_RAW" --jq '.commit.committer.date')
             UNDECLARED_QUERY="$UNDECLARED_QUERY merged:>=$TAGGED_AT"
           fi
-          UNDECLARED=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --search "$UNDECLARED_QUERY" --limit 100 \
-            --json number,title --jq 'sort_by(.number) | .[] | "* \(.title | gsub("[\r\n]+"; " ")) (#\(.number))"')
+          # The timestamp search only finds candidates: a pull request whose merge commit is the tagged commit, or is
+          # in the tag, shares its merge time with the tag. Drop the candidates the tag already contains.
+          CANDIDATES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --search "$UNDECLARED_QUERY" --limit 100 \
+            --json number,title,mergeCommit --jq 'sort_by(.number) | .[] | [.number, (.mergeCommit.oid // "none"), (.title | gsub("[\r\n\t]+"; " "))] | @tsv')
+          UNDECLARED=""
+          while IFS=$'\t' read -r CANDIDATE_NUMBER CANDIDATE_SHA CANDIDATE_TITLE; do
+            [ -n "$CANDIDATE_NUMBER" ] || continue
+            if [ -n "$LATEST_TAG_RAW" ] && [ "$LATEST_TAG" != "0.0.0" ] \
+              && git merge-base --is-ancestor "$CANDIDATE_SHA" "refs/tags/$LATEST_TAG_RAW^{commit}" 2>/dev/null; then
+              continue
+            fi
+            UNDECLARED="${UNDECLARED:+$UNDECLARED$'\n'}* $CANDIDATE_TITLE (#$CANDIDATE_NUMBER)"
+          done <<<"$CANDIDATES"
           # The label this run added may not be searchable yet.
           if [ "${HAS_BC:-}" = "true" ] && ! grep -qF "(#$PR_NUMBER)" <<<"$UNDECLARED"; then
             PR_TITLE=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq '.title | gsub("[\r\n]+"; " ")')

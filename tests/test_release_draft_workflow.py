@@ -269,7 +269,12 @@ esac
 UNDECLARED_CASES = {
     "records only": ("false", "false", ""),
     "breaking records": ("true", "false", ""),
-    "labelled pull requests": ("false", "false", "* Change one (#5)\n* Change two (#9)\n"),
+    "labelled pull requests": ("false", "false", "5\tafter\tChange one\n9\tafter\tChange two\n"),
+    "merged in or after the tag": (
+        "false",
+        "false",
+        "4\ttag\tIn the tagged commit\n5\tbefore\tBefore the tag\n9\tafter\tAfter the tag, same second\n",
+    ),
     "label not searchable yet": ("false", "true", ""),
 }
 
@@ -294,6 +299,26 @@ def test_update_draft_lists_the_undeclared_changes(case: str, tmp_path: Path) ->
     (bin_dir / "gh").chmod(0o755)
     (notes / "has-breaking.txt").write_text(has_breaking + "\n", encoding="utf-8")
     (notes / "notes.md").write_text("## Record Notes\n", encoding="utf-8")
+    environment = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "Test",
+        "GIT_AUTHOR_EMAIL": "test@example.com",
+        "GIT_COMMITTER_NAME": "Test",
+        "GIT_COMMITTER_EMAIL": "test@example.com",
+    }
+    subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True, env=environment)
+    shas: dict[str, str] = {}
+    for name in ("before", "tag", "after"):
+        subprocess.run(
+            ["git", "commit", "--quiet", "--allow-empty", "-m", name], cwd=tmp_path, check=True, env=environment
+        )
+        shas[name] = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, env=environment, capture_output=True, text=True
+        ).stdout.strip()
+        if name == "tag":
+            subprocess.run(["git", "tag", "v0.99.0"], cwd=tmp_path, check=True, env=environment)
+    for name, sha in shas.items():
+        labelled = labelled.replace(f"\t{name}\t", f"\t{sha}\t")
     (tmp_path / "prs.txt").write_text(labelled, encoding="utf-8")
     result = subprocess.run(
         ["bash", "-c", step["run"].replace("${{ github.repository }}", "owner/repository")],
