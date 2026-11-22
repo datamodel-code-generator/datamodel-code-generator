@@ -19,4 +19,5 @@ covers = [
     "input_model/reuse_same_named_classes[overridden-reuse-all].txt",
     "input_model/reuse_same_named_classes[overridden-reuse-foreign].txt",
     "input_model/reuse_same_named_classes[two-models-reuse-all].txt",
+    "input_model/reuse_same_named_discriminator_mapping.txt",
 ]

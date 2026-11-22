@@ -1078,6 +1078,8 @@ nested-class-reuse-all	input_model/reuse_same_named_classes[nested-class-reuse-a
 overridden-reuse-all	input_model/reuse_same_named_classes[overridden-reuse-all].txt
 overridden-reuse-foreign	input_model/reuse_same_named_classes[overridden-reuse-foreign].txt	= input_model/reuse_same_named_classes[overridden-reuse-all].txt
 two-models-reuse-all	input_model/reuse_same_named_classes[two-models-reuse-all].txt
+[test_input_model_reuse_same_named_discriminator_mapping]
+	input_model/reuse_same_named_discriminator_mapping.txt
 [test_input_model_single_multi_level_inheritance]
 	input_model/single_multi_level_inheritance.txt
 [test_input_model_single_no_inheritance]

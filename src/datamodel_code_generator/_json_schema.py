@@ -418,7 +418,10 @@ def _rewrite_schema_refs(
     *,
     strip_root_definitions: bool = False,
 ) -> Any:
-    """Copy a schema, rewriting references only at schema-bearing keywords."""
+    """Copy a schema, rewriting references only at schema-bearing keywords and in ``discriminator.mapping``.
+
+    A mapping target names a definition as a ``$ref`` does, so a local one follows the same renames.
+    """
     if isinstance(value, Mapping):
         rewritten: dict[str, Any] = {}
         for key, item in value.items():
@@ -426,6 +429,17 @@ def _rewrite_schema_refs(
                 continue
             if key in {"$ref", "$dynamicRef"} and isinstance(item, str):
                 rewritten[key] = _rewrite_local_definition_ref(item, ref_map, references)
+                continue
+            if key == "discriminator" and isinstance(item, Mapping) and isinstance(item.get("mapping"), Mapping):
+                rewritten[key] = {
+                    **deepcopy(item),
+                    "mapping": {
+                        tag: _rewrite_local_definition_ref(target, ref_map, references)
+                        if isinstance(target, str)
+                        else deepcopy(target)
+                        for tag, target in item["mapping"].items()
+                    },
+                }
                 continue
             if key in SCHEMA_MAP_KEYS and isinstance(item, Mapping):
                 rewritten[key] = {

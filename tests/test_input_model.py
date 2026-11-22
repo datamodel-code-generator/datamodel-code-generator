@@ -1435,6 +1435,44 @@ def test_input_model_reuse_same_named_classes(
     )
 
 
+def test_input_model_reuse_same_named_discriminator_mapping(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A discriminator mapping names the definition its union branch names after a same-named class is renamed.
+
+    ``Kennel.pet`` is a discriminated union of ``legacy_pets.Cat`` and ``Dog``, and ``Pound`` redeclares it with
+    ``pets.Cat``, so reuse names the parent's ``Cat`` definition ``Cat_2``. The mapping of the parent's union names
+    ``Cat_2`` as its ``oneOf`` branch does; it named the child's ``Cat`` before. The generated module is the same
+    either way, as each variant carries its tag, so the loaded schema is compared.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for module in ("pets", "legacy_pets"):
+        monkeypatch.delitem(sys.modules, module, raising=False)
+    (tmp_path / "legacy_pets.py").write_text(
+        "from typing import Literal\n\n"
+        "from pydantic import BaseModel\n\n\n"
+        "class Cat(BaseModel):\n"
+        "    kind: Literal['cat']\n"
+        "    name: str\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "pets.py").write_text(
+        "from typing import Annotated, Literal\n\n"
+        "from pydantic import BaseModel, Field\n\n"
+        "import legacy_pets\n\n\n"
+        "class Cat(BaseModel):\n"
+        "    kind: Literal['kitten']\n\n\n"
+        "class Dog(BaseModel):\n"
+        "    kind: Literal['dog']\n\n\n"
+        "class Kennel(BaseModel):\n"
+        "    pet: Annotated[legacy_pets.Cat | Dog, Field(discriminator='kind')]\n\n\n"
+        "class Pound(Kennel):\n"
+        "    pet: Annotated[Cat | Dog, Field(discriminator='kind')]\n",
+        encoding="utf-8",
+    )
+    schema = load_model_schema(["pets:Pound"], InputFileType.JsonSchema, InputModelRefStrategy.ReuseAll)
+    assert_output(json.dumps(schema, indent=2))
+
+
 # ============================================================================
 # --input-model-ref-strategy tests
 # ============================================================================
