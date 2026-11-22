@@ -100,7 +100,7 @@ generates models for the schema-bearing binding fields used by the official bind
 
 ## Schema Formats
 
-AsyncAPI 3.x Multi Format Schema Objects are unwrapped through `schemaFormat` before model generation.
+AsyncAPI 3.x Multi Format Schema Objects are unwrapped through `schemaFormat` before model generation. A `$ref` that names one (a message `payload` or `headers`, a component schema) is read as the schema it holds.
 AsyncAPI 2.x message-level `schemaFormat` is applied to the message payload.
 
 Supported embedded schema formats are:
@@ -108,7 +108,7 @@ Supported embedded schema formats are:
 | `schemaFormat` family | Behavior |
 |-----------------------|----------|
 | `application/vnd.aai.asyncapi...` or omitted | Parsed as an AsyncAPI Schema Object |
-| `application/schema+json` / `application/schema+yaml` | Parsed with the JSON Schema/OpenAPI schema stack |
+| `application/schema` / `application/schema+json` / `application/schema+yaml` | Parsed with the JSON Schema/OpenAPI schema stack |
 | `application/vnd.oai.openapi...` | Parsed with the OpenAPI schema stack |
 | `application/vnd.apache.avro...` | Converted with the Avro parser, then generated as Python models |
 | `application/vnd.google.protobuf` | Converted with the Protocol Buffers parser, then generated as Python models |

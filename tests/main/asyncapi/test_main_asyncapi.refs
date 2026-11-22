@@ -12,6 +12,8 @@
 	main/asyncapi/main_asyncapi/auto_inference.py	= main/asyncapi/main_asyncapi/generate_asyncapi.py
 [test_main_asyncapi_avro_named_types]
 	main/asyncapi/main_asyncapi/avro_named_types.py
+[test_main_asyncapi_component_schema_plain_name_anchors]
+	main/asyncapi/main_asyncapi/component_schema_plain_name_anchors.py
 [test_main_asyncapi_components_that_are_not_an_object]
 list	main/asyncapi/main_asyncapi/components_that_are_not_an_object[list].py	= main/asyncapi/non_object_components.py
 null	main/asyncapi/main_asyncapi/components_that_are_not_an_object[null].py	= main/asyncapi/non_object_components.py
@@ -31,6 +33,8 @@ v3-merged	main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-merged].py
 v3-released	main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-released].py
 [test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits]
 	main/asyncapi/main_asyncapi/merge_message_trait_headers_of_two_inline_traits.py
+[test_main_asyncapi_message_payload_plain_name_anchor]
+	main/asyncapi/main_asyncapi/message_payload_plain_name_anchor.py
 [test_main_asyncapi_multi_format_schema_objects]
 	main/asyncapi/main_asyncapi/multi_format_schema_objects.py
 [test_main_asyncapi_name_converted_payloads_by_message]
@@ -47,6 +51,8 @@ dataclass	main/asyncapi/main_asyncapi/output_model_types[dataclass].py
 msgspec	main/asyncapi/main_asyncapi/output_model_types[msgspec].py
 pydantic-v2	main/asyncapi/main_asyncapi/output_model_types[pydantic-v2].py	= main/asyncapi/main_asyncapi/3_json.py
 typed-dict	main/asyncapi/main_asyncapi/output_model_types[typed-dict].py
+[test_main_asyncapi_plain_name_anchor_in_multi_format_schema_object]
+	main/asyncapi/main_asyncapi/plain_name_anchor_in_multi_format_schema_object.py
 [test_main_asyncapi_protobuf_schema_format]
 	main/asyncapi/main_asyncapi/protobuf_schema_format.py
 [test_main_asyncapi_protobuf_schema_format_local_import]
@@ -54,8 +60,14 @@ typed-dict	main/asyncapi/main_asyncapi/output_model_types[typed-dict].py
 [test_main_asyncapi_read_schema_version_per_document_external_ref_siblings]
 first-read	main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[first-read].py
 per-document	main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[per-document].py	= main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[first-read].py
+[test_main_asyncapi_reference_to_multi_format_schema_object]
+	main/asyncapi/main_asyncapi/reference_to_multi_format_schema_object.py
+[test_main_asyncapi_reference_to_multi_format_schema_object_of_another_document]
+	main/asyncapi/main_asyncapi/reference_to_multi_format_schema_object_of_another_document.py
 [test_main_asyncapi_root_message_ref]
 	main/asyncapi/main_asyncapi/root_message_ref.py
+[test_main_asyncapi_schema_format_bare_json_schema_media_type]
+	main/asyncapi/main_asyncapi/schema_format_bare_json_schema_media_type.py
 [test_main_asyncapi_schema_version]
 	main/asyncapi/main_asyncapi/schema_version.py	= main/asyncapi/main_asyncapi/3_json.py
 [test_main_asyncapi_single_value_enum_as_const]

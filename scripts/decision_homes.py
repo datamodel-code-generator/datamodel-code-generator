@@ -7921,7 +7921,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the schemas generation reads (`parser/asyncapi.py:AsyncAPIParser._iter_schema_format_schemas`, which "
             "refuses a wrapper without a `schema` or with a `schemaFormat` that is no string, "
-            "`_check_multi_format_schema_object`), the schemas the recommender measures "
+            "`_check_multi_format_schema_object`), the schemas a document declares as schema resources "
+            "(`parser/_schema_documents.py:implicit_schema_resources`: the schema a component wrapper holds), "
+            "the schemas the recommender measures "
             "(`_recommend/_signals.py:_unwrap`: the component schemas of an AsyncAPI document, and the payloads and "
             "headers of its messages), and the `schemaFormat` of the payload a client codes "
             "(`_asyncapi_connections.py:_Reader.message`; where its schema is, the walk records)"
@@ -7929,6 +7931,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         sites=(
             Home("parser/asyncapi.py", "AsyncAPIParser._iter_schema_format_schemas"),
             Home("parser/asyncapi.py", "_check_multi_format_schema_object"),
+            Home("parser/_schema_documents.py", "implicit_schema_resources"),
             Home("_recommend/_signals.py", "_unwrap"),
             Home("_asyncapi_connections.py", "_Reader.message"),
         ),

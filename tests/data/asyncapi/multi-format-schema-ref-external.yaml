@@ -1,0 +1,9 @@
+asyncapi: 3.0.0
+info: {title: A reference to a Multi Format Schema Object of another document, version: 1.0.0}
+channels:
+  notes:
+    address: /notes
+    messages:
+      note:
+        payload:
+          $ref: 'multi-format-schema-ref-external-schemas.yaml#/components/schemas/Note'
