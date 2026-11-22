@@ -19,8 +19,10 @@ row-pattern-absent	related_tests_script/related_tests_print_the_environments_of_
 row-with-tests-only	related_tests_script/related_tests_print_the_environments_of_the_diff[row-with-tests-only].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 [test_related_tests_read_the_working_tree_without_a_head]
 tracked-and-untracked	related_tests_script/related_tests_read_the_working_tree_without_a_head[tracked-and-untracked].txt
+uncommitted-test-function	related_tests_script/related_tests_read_the_working_tree_without_a_head[uncommitted-test-function].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 untracked-listed-module	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
 untracked-non-ascii-path	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-non-ascii-path].txt	= related_tests_script/related_tests_select_the_diff[row-by-added-path].txt
+untracked-test-module	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-test-module].txt
 untracked-with-a-pattern	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-with-a-pattern].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 untracked-without-a-pattern	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-without-a-pattern].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 [test_related_tests_rows_follow_the_stored_outputs_where_they_live]
@@ -33,7 +35,18 @@ platform-observations-of-the-test-modules	related_tests_script/related_tests_row
 [test_related_tests_rows_select_with_the_repository_rules]
 	related_tests_script/related_tests_rows_select_with_the_repository_rules.txt
 [test_related_tests_select_the_diff]
+added-test-function	related_tests_script/related_tests_select_the_diff[added-test-function].txt
+added-test-helper	related_tests_script/related_tests_select_the_diff[added-test-helper].txt
+changed-blank-line-only	related_tests_script/related_tests_select_the_diff[changed-blank-line-only].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+changed-helper-module	related_tests_script/related_tests_select_the_diff[changed-helper-module].txt	= related_tests_script/related_tests_select_the_diff[added-test-helper].txt
+changed-module-level-code	related_tests_script/related_tests_select_the_diff[changed-module-level-code].txt	= related_tests_script/related_tests_select_the_diff[row-by-path].txt
+changed-parametrized-test	related_tests_script/related_tests_select_the_diff[changed-parametrized-test].txt
+changed-test-class	related_tests_script/related_tests_select_the_diff[changed-test-class].txt
+changed-test-function	related_tests_script/related_tests_select_the_diff[changed-test-function].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
+changed-test-module-with-a-syntax-error	related_tests_script/related_tests_select_the_diff[changed-test-module-with-a-syntax-error].txt	= related_tests_script/related_tests_select_the_diff[row-by-path].txt
+changed-test-named-fixture	related_tests_script/related_tests_select_the_diff[changed-test-named-fixture].txt	= related_tests_script/related_tests_select_the_diff[row-by-path].txt
 deleted-module	related_tests_script/related_tests_select_the_diff[deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+deleted-test-module	related_tests_script/related_tests_select_the_diff[deleted-test-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-deleted-module	related_tests_script/related_tests_select_the_diff[fast-path-deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-list-edited	related_tests_script/related_tests_select_the_diff[fast-path-list-edited].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-listed-module	related_tests_script/related_tests_select_the_diff[fast-path-listed-module].txt	= related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
@@ -45,6 +58,7 @@ mirror-of-a-private-module	related_tests_script/related_tests_select_the_diff[mi
 mirror-of-a-script	related_tests_script/related_tests_select_the_diff[mirror-of-a-script].txt
 module-without-a-mirror	related_tests_script/related_tests_select_the_diff[module-without-a-mirror].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 nothing-changed	related_tests_script/related_tests_select_the_diff[nothing-changed].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+removed-test-function	related_tests_script/related_tests_select_the_diff[removed-test-function].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 row-by-a-non-ascii-path	related_tests_script/related_tests_select_the_diff[row-by-a-non-ascii-path].txt	= related_tests_script/related_tests_select_the_diff[row-by-added-path].txt
 row-by-added-path	related_tests_script/related_tests_select_the_diff[row-by-added-path].txt
 row-by-path	related_tests_script/related_tests_select_the_diff[row-by-path].txt
@@ -54,3 +68,4 @@ row-pattern-added-line	related_tests_script/related_tests_select_the_diff[row-pa
 row-pattern-removed-line	related_tests_script/related_tests_select_the_diff[row-pattern-removed-line].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 row-status-modified	related_tests_script/related_tests_select_the_diff[row-status-modified].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 script-without-a-mirror	related_tests_script/related_tests_select_the_diff[script-without-a-mirror].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+test-input-under-data	related_tests_script/related_tests_select_the_diff[test-input-under-data].txt	= related_tests_script/related_tests_select_the_diff[row-by-added-path].txt

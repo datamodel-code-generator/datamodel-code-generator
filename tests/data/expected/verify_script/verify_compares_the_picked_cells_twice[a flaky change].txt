@@ -1,0 +1,11 @@
+exit=1
+verify: TMP/repo (working tree) against the merge base <sha> with <sha>
+verify: tests the diff reaches: 0
+verify: tests done after <n>s
+pick: cell default tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
+violation: tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
+    warnings differ: ["builtins.DeprecationWarning", "old option", "datamodel_code_generator.__main__"] -> ["builtins.DeprecationWarning", "old option-<random>", "datamodel_code_generator.__main__"]
+evidence: complete
+verify: flaky cell, its two runs differ: tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
+verify: cells compared 1 of 1, violations 1, flaky 1
+verify: FAILED: violations: 1; flaky cells: 1 (<n>s)

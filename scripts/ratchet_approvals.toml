@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "pragma:conditional-cover@tests"
+head = 1
+pr = 7377
+decision = ["#7374"]
+reason = "tests/checks/areas.py takes the report's lock with msvcrt on Windows and fcntl elsewhere; the Windows branch runs only on the Windows lanes, which measure no coverage"
