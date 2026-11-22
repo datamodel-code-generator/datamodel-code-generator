@@ -557,7 +557,7 @@ def test_struct_tag_values_are_the_ones_msgspec_takes() -> None:
     so the generator gives it no bool tag.
     """
     assert [
-        value
+        (type(value), value)
         for value in TAG_VALUES
         if (is_tag_kind(literal_value_kind(value)) and not struct_tag_refused(value)) != _msgspec_takes_tag(value)
-    ] == [True]
+    ] == [(bool, True)]
