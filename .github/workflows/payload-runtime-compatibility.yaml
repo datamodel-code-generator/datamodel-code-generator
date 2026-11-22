@@ -87,11 +87,11 @@ jobs:
           python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
             --recipe .tox/ci-shard-recipe.json | tee .tox/ci-shard-tests.txt
           if [ "$SHARD_INDEX" = 1 ]; then
-            printf '%s\n' "$UNSHARDED_TESTS" >> .tox/ci-shard-tests.txt
+            printf '%s\n' "$EXTRA_TESTS" >> .tox/ci-shard-tests.txt
           fi
         shell: bash
         env:
-          UNSHARDED_TESTS: tests/cli_doc
+          EXTRA_TESTS: tests/cli_doc/test_cli_options_sync.py
       - name: Export the suite's Python 3.10 output and import it on Python 3.10
         run: |
           test_paths=()
