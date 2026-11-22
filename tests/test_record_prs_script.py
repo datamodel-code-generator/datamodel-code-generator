@@ -32,6 +32,9 @@ HISTORY = (
     ("Rename a record (#14)", {"renamed.toml": None, "new-name.toml": "c"}),
     ("Add and remove a record (#15)", {"gone.toml": "g"}),
     ("Remove it (#16)", {"gone.toml": None}),
+    ("Add a record (#17)", {"suffixless.toml": "h"}),
+    ("Stamp 0.2.0 (#18)", {"suffixless.toml": None}),
+    ("Add the record again without a pull request", {"suffixless.toml": "i"}),
 )
 """Commits of the default branch: the pull request of a record is the last one that added its file."""
 
@@ -46,8 +49,9 @@ def test_record_prs(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypa
     """Each fragment the revision holds maps to the pull request of the last commit that added it.
 
     An edit does not change it, a record stamped away and written again belongs to the later pull request, a renamed
-    one to the pull request that renamed it; a commit without a pull request number, a removed fragment and a file
-    that is no record give nothing. An earlier revision lists its own fragments.
+    one to the pull request that renamed it. A record whose latest addition has no pull request number gives nothing,
+    even if an earlier addition had one; so do a removed fragment and a file that is no record. An earlier revision
+    lists its own fragments.
     """
     _git(tmp_path, "init", "--quiet", "--initial-branch=main")
     for subject, files in HISTORY:
@@ -63,7 +67,7 @@ def test_record_prs(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypa
     for environment in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"):
         monkeypatch.setenv(environment, ENVIRONMENT[environment])
     outputs = []
-    for revision in ("HEAD", "HEAD~4"):
+    for revision in ("HEAD", "HEAD~7"):
         main(["--repository", str(tmp_path), "--revision", revision])
         outputs.append(f"=== {revision} ===\n{capsys.readouterr().out}")
     assert_output("".join(outputs))

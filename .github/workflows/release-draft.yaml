@@ -567,8 +567,9 @@ jobs:
           # every run, so removing the label clears it.
           UNDECLARED_QUERY="label:undeclared-change"
           if [ -n "$LATEST_TAG_RAW" ] && [ "$LATEST_TAG" != "0.0.0" ]; then
-            PUBLISHED_AT=$(gh release view "$LATEST_TAG_RAW" --repo "$GITHUB_REPOSITORY" --json publishedAt --jq '.publishedAt')
-            UNDECLARED_QUERY="$UNDECLARED_QUERY merged:>=$PUBLISHED_AT"
+            # The date of the tagged commit, not of the publication: a pull request merged between them is not in the tag.
+            TAGGED_AT=$(gh api "/repos/$GITHUB_REPOSITORY/commits/$LATEST_TAG_RAW" --jq '.commit.committer.date')
+            UNDECLARED_QUERY="$UNDECLARED_QUERY merged:>=$TAGGED_AT"
           fi
           UNDECLARED=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --search "$UNDECLARED_QUERY" --limit 100 \
             --json number,title --jq 'sort_by(.number) | .[] | "* \(.title | gsub("[\r\n]+"; " ")) (#\(.number))"')

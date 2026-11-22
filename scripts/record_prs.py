@@ -53,13 +53,15 @@ def record_prs(repository: Path, revision: str = "HEAD") -> dict[str, int]:
         text=True,
     ).stdout
     prs: dict[str, int] = {}
+    seen: set[str] = set()
     for commit in log.split(COMMIT)[1:]:
         subject, *paths = commit.strip("\n").split("\n")
-        if not (number := PR_SUFFIX.search(subject.rstrip())):
-            continue
+        number = PR_SUFFIX.search(subject.rstrip())
         for path in paths:
-            if path in held and path.endswith(".toml"):
-                prs.setdefault(Path(path).stem, int(number[1]))
+            if path in held and path.endswith(".toml") and path not in seen:
+                seen.add(path)
+                if number:
+                    prs[Path(path).stem] = int(number[1])
     return dict(sorted(prs.items()))
 
 

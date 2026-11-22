@@ -259,7 +259,7 @@ echo "$*" >> "$FAKE_LOG"
 case "$*" in
   "release list"*--exclude-drafts*) echo v0.99.0 ;;
   "release list"*) ;;
-  "release view"*) echo 2026-11-22T04:00:00Z ;;
+  "api"*/commits/*) echo 2026-11-21T20:00:00Z ;;
   "pr list"*) cat "$FAKE_PRS" ;;
   "pr view"*) echo "$FAKE_TITLE" ;;
   "api"*) echo "GENERATED NOTES" ;;

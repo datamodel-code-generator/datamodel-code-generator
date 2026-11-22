@@ -2,6 +2,6 @@
   "body": "## Record Notes\n\nGENERATED NOTES\n",
   "created": "release create 0.100.0 --repo owner/repository --title 0.100.0 --notes-file - --draft",
   "returncode": 0,
-  "search": "pr list --repo owner/repository --state merged --search label:undeclared-change merged:>=2026-11-22T04:00:00Z --limit 100 --json number,title --jq sort_by(.number) | .[] | \"* \\(.title | gsub(\"[\\r\\n]+\"; \" \")) (#\\(.number))\"",
+  "search": "pr list --repo owner/repository --state merged --search label:undeclared-change merged:>=2026-11-21T20:00:00Z --limit 100 --json number,title --jq sort_by(.number) | .[] | \"* \\(.title | gsub(\"[\\r\\n]+\"; \" \")) (#\\(.number))\"",
   "stderr": ""
 }
