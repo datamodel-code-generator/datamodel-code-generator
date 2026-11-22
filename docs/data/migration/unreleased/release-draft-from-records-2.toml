@@ -1,6 +1,0 @@
-[[change]]
-id = "release-draft-from-records-2"
-extends = "release-draft-generated-docs"
-covers = [
-    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[over_budget].txt",
-]

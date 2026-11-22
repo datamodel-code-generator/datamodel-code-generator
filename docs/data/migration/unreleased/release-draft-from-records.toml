@@ -14,6 +14,7 @@ covers = [
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[no_baseline].txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[non_utf8_bytes].txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[one_segment].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[over_budget].txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[several_segments].txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[unpaired_long_lines].txt",
     "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[unreadable_registries].txt",
