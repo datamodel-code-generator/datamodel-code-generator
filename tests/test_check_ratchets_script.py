@@ -210,11 +210,17 @@ GAP = "/k const {}: invalid, model accepts"
 LANES = {
     ".github/workflows/test.yaml": (
         "jobs:\n  test:\n    runs-on: ubuntu-24.04\n    strategy:\n      matrix:\n        include:\n"
-        "          - tox_env: py312\n          - tox_env: pydantic20\n"
+        "          - tox_env: py312\n          - tox_env: py313\n            os: windows-latest\n"
+        f"            exclude_tests: {STORED_REFS.removesuffix('.refs')}.py\n"
+    ),
+    ".github/workflows/nightly.yaml": (
+        "jobs:\n  payload:\n    runs-on: ubuntu-24.04\n    strategy:\n      matrix:\n        tox_env:\n"
+        "          - pydantic20\n"
     ),
     "tox.ini": "[testenv:pydantic20]\nbase_python = python3.11\ndeps =\n    pydantic==2\n",
 }
-"""The CI matrix that judges the stored lists: Python 3.12 without Pydantic, and Python 3.11 pinning ``pydantic==2``."""
+"""The workflow matrices that judge the stored lists: Python 3.12 without Pydantic, Python 3.11 pinning ``pydantic==2``
+(a nightly ``tox_env`` axis), and Windows, which leaves the stored lists' module out."""
 
 
 def _stored_lists(lists: dict[str, object]) -> dict[str, str]:
@@ -892,13 +898,28 @@ def show(flag: bool) -> None:
         "args": ["--enforce"],
     },
     "stored-lists-lane-gains": {
-        "base": _stored_lists({**STORED_LANES, "odd": [GAP.format(8)]}),
+        "base": _stored_lists({
+            **STORED_LANES,
+            "odd": [GAP.format(8)],
+            "moved": [GAP.format(10)],
+            "moved@pydantic==2.0": [GAP.format(10), GAP.format(11)],
+            "old": [GAP.format(12)],
+            "old@pydantic=2.0": [GAP.format(12)],
+        }),
         "head": _stored_lists({
             **STORED_RELABELED,
             "relabel@pydantic<2.5": [GAP.format(1), GAP.format(2), GAP.format(7)],
             "odd": [GAP.format(8)],
             "odd@pydantic~2": [GAP.format(8), GAP.format(9)],
+            "moved": [GAP.format(10), GAP.format(11)],
+            "moved@pydantic==2.0": [GAP.format(10)],
+            "old": [GAP.format(12)],
+            "old@pydantic=2.0": [GAP.format(12)],
         }),
+        "args": ["--enforce"],
+    },
+    "stored-lists-without-lanes": {
+        "head": {name: text for name, text in _stored_lists({"one": [GAP.format(1)]}).items() if name not in LANES},
         "args": ["--enforce"],
     },
     "stored-lists-new-test": {

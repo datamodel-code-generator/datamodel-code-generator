@@ -66,6 +66,7 @@ stored-lists-lane-gains	check_ratchets_script/check_ratchets_against_base[stored
 stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
 stored-lists-relabeled	check_ratchets_script/check_ratchets_against_base[stored-lists-relabeled].txt
 stored-lists-shrink	check_ratchets_script/check_ratchets_against_base[stored-lists-shrink].txt
+stored-lists-without-lanes	check_ratchets_script/check_ratchets_against_base[stored-lists-without-lanes].txt
 top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top-level-extended-ignores].txt	= check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt
 unreadable-arguments	check_ratchets_script/check_ratchets_against_base[unreadable-arguments].txt

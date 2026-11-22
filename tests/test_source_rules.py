@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from scripts import check_source_rules
-from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, matrix_entries, read_lanes
+from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, WORKFLOWS, matrix_entries, read_lanes
 from tests.capabilities import needs
 from tests.conftest import TEST_DEFAULT_FORMATTER_ENV, assert_output
 
@@ -1554,12 +1554,17 @@ def test_lanes_are_read_from_the_matrix_and_tox(tmp_path: Path) -> None:
 
 
 def _beyond_include(jobs: dict[str, dict[str, dict[str, dict[str, object]]]]) -> list[str]:
-    """Return ``job: key`` for every key of a job matrix but ``include``: neither reader expands axes or excludes."""
+    """Return ``job: key`` for every key but ``include`` and a lone ``tox_env`` axis of a job matrix that runs tox.
+
+    Neither reader expands other axes, several axes or excludes; a matrix of no tox environment holds no lane.
+    """
+    matrices = {name: job.get("strategy", {}).get("matrix", {}) for name, job in jobs.items()}
     return [
         f"{name}: {key}"
-        for name, job in jobs.items()
-        for key in job.get("strategy", {}).get("matrix", {})
-        if key != "include"
+        for name, matrix in matrices.items()
+        if "tox_env" in matrix or any("tox_env" in entry for entry in matrix.get("include", []))
+        for key in matrix
+        if key != "include" and (key != "tox_env" or len(matrix) > 1)
     ]
 
 
@@ -1612,28 +1617,40 @@ jobs:
 
 
 def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
-    """The workflow's matrix entries read line by line equal those of a YAML parse, runner included.
+    """The matrix entries of every workflow read line by line equal those of a YAML parse, runner included.
 
-    Neither reader expands matrix axes or excludes, so no matrix has a key but ``include``.
+    Neither reader expands other matrix axes or excludes, so no matrix has a key but ``include`` and a lone ``tox_env``
+    axis.
     """
-    root = Path(__file__).parents[1]
-    text = (root / WORKFLOW).read_text(encoding="utf-8")
-    jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
+    workflows = sorted((Path(__file__).parents[1] / WORKFLOWS).glob("*.y*ml"))
+    texts = {workflow.name: workflow.read_text(encoding="utf-8") for workflow in workflows}
+    every = {f"{workflow}:{name}": job for workflow, text in texts.items() for name, job in _jobs(text).items()}
+    matrices = {name: job.get("strategy", {}).get("matrix", {}) for name, job in every.items()}
     parsed = sorted(
-        (name, entry["tox_env"], entry.get("os", job["runs-on"]))
-        for name, job in jobs.items()
-        for entry in job.get("strategy", {}).get("matrix", {}).get("include", [])
+        (name, entry["tox_env"], entry.get("os", every[name]["runs-on"]))
+        for name, matrix in matrices.items()
+        for entry in [*matrix.get("include", []), *({"tox_env": env} for env in matrix.get("tox_env", []))]
     )
-    read = sorted((entry["job"], entry["tox_env"], entry.get("os", entry["runs-on"])) for entry in matrix_entries(text))
+    read = sorted(
+        (f"{workflow}:{entry['job']}", entry["tox_env"], entry.get("os", entry["runs-on"]))
+        for workflow, text in texts.items()
+        for entry in matrix_entries(text)
+    )
+
     same_variable = FORMATTER_ENV == TEST_DEFAULT_FORMATTER_ENV
 
     assert_output(
         f"missed by the line reader: {sorted(set(parsed) - set(read))}\n"
         f"added by the line reader: {sorted(set(read) - set(parsed))}\n"
         f"entries equal: {parsed == read}\n"
-        f"matrix keys but include: {_beyond_include(jobs)}\n"
+        f"matrix keys but include: {_beyond_include(every)}\n"
         f"formatter variable equal to the suite's: {same_variable}\n"
     )
+
+
+def _jobs(text: str) -> dict[str, dict[str, dict[str, dict[str, object]]]]:
+    """Return the jobs of a workflow as a YAML parser reads them."""
+    return yaml.load(text, Loader=yaml.BaseLoader).get("jobs", {})
 
 
 def test_a_full_suite_command_with_the_tox_default_target_is_no_subset_lane(

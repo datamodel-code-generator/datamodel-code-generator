@@ -2,6 +2,8 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_clauses_hold_by_release_series]
 	capabilities/clauses_hold_by_release_series.txt
+[test_clauses_read_a_short_pin_padded_with_zeros]
+	capabilities/clauses_read_a_short_pin_padded_with_zeros.txt
 [test_malformed_clauses_say_why]
 	capabilities/malformed_clauses_say_why.txt
 [test_missing_names_the_capabilities_an_environment_lacks]

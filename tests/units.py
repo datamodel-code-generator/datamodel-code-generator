@@ -468,24 +468,29 @@ def _in_series(actual: str, value: str) -> bool:
     ``pydantic==2`` installs ``2.0``, so its fact ``2`` lies in ``2.0``, while ``3.12`` does not lie in ``3.1``.
     """
     if _RELEASE.fullmatch(actual) and _RELEASE.fullmatch(value):
-        wanted = release(value)
-        return (*release(actual), *(0,) * len(wanted))[: len(wanted)] == wanted
+        return _padded_release(actual, len(release(value))) == release(value)
     return actual == value or actual.startswith(f"{value}.")
+
+
+def _padded_release(actual: str, length: int) -> tuple[int, ...]:
+    """Return the release a version starts with, padded with zeros and cut to ``length`` (PEP 440); empty for none."""
+    return (*found, *(0,) * length)[:length] if (found := release(actual)) else ()
 
 
 def condition_holds(clause: str, facts: Mapping[str, str]) -> bool:
     """Return whether an environment's facts satisfy a well-formed clause (`condition_problem`): any alternative holds.
 
     ``==`` and ``!=`` match a version by its leading components (`_in_series`): ``black==22`` holds for ``22.1.0``, and
-    ``pydantic==2.0`` for ``2``. An order compares the actual version's release cut to the length of the value's
-    (``black>=24`` holds for ``24.1.0``). A tool that is not installed (an empty fact) satisfies only ``!=``.
+    ``pydantic==2.0`` for ``2``. An order compares the actual version's release padded with zeros and cut to the length
+    of the value's (``black>=24`` holds for ``24.1.0``, ``pydantic>=2.0`` for ``2``). A tool that is not installed (an
+    empty fact) satisfies only ``!=``.
     """
     for match in filter(None, map(_CONDITION.fullmatch, clause.split("|"))):
         fact, op, value = match["fact"], match["op"], match["value"]
         actual = facts.get(fact, "")
         if op in ORDERS:
             wanted = release(value)
-            found = release(actual)[: len(wanted)]
+            found = _padded_release(actual, len(wanted))
             if found and ORDERS[op](found, wanted):
                 return True
         elif _in_series(actual, value) is (op == "=="):

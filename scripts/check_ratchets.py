@@ -63,17 +63,19 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
-  counts each line under its item, its text and its environment's predicate, split by tabs. Each lane of the CI
-  matrix (`scripts/_ci_lanes.py`, read from the head) reads in the head and in the base the records of an item that
-  the harness selects for its facts (`applicable_lines`, each ``@`` column read as a sidecar of any revision reads it,
+  counts each line under its item, its text and its environment's predicate, split by tabs. Each lane of the
+  workflow matrices that runs the test (`scripts/_ci_lanes.py`, read from the head; `Lane.runs`) reads in the head
+  and in the base the records of an item that the harness selects for its facts (`applicable_lines`; the head's
+  ``@`` columns read as the harness reads them, `parse_clauses`, the base's as a sidecar of any revision,
   `historical_clauses`): it rises with a line the head's records hold and the base's do not, while a new item, and a
   lane whose base record is a blind line (its checks did not run), starts at the lines it stores. A relabel or a
-  respelling of a record that every lane reads the same way is no rise, and a record no lane reads is not judged (a
-  tree without the matrix judges none); an ``@`` column that reads as no clauses counts under
-  ``stored-list:<test>:unreadable``. ``blind`` counts the lines of ``BLIND_LINES``, which say that the item
-  checked nothing (a seed the model rejects): it rises with a blind line the base record does not hold, in a new item
-  too, once the base stores the test. These keys rise by their lines, not their totals, so a fix that drops one line
-  does not pay for a regression that adds another, nor one lane's fix for another's regression.
+  respelling of a record that every lane reads the same way is no rise, and a record no lane reads is not judged.
+  ``stored-list:<test>:unreadable`` counts an ``@`` column that reads as no clauses, and, in a tree that stores the
+  list, a lane whose facts cannot be read or the absence of any lane that runs the test. ``blind`` counts the lines
+  of ``BLIND_LINES``, which say that the item checked nothing (a seed the model rejects): it rises with a blind line
+  the base record does not hold, in a new item too, once the base stores the test. These keys rise by their lines,
+  not their totals, so a fix that drops one line does not pay for a regression that adds another, nor one lane's fix
+  for another's regression.
 - ``source-rule:unreadable``: a file that parses and that the source model refuses, with its error, which no source
   rule can read.
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
@@ -120,7 +122,7 @@ from typing import TYPE_CHECKING
 import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts._ci_lanes import read_lanes
+from scripts._ci_lanes import WORKFLOWS, Lane, read_lanes
 from scripts._import_cycles import import_cycles
 from scripts._source_model import SourceModule
 from scripts.check_source_rules import RULES
@@ -134,6 +136,7 @@ from tests.units import (
     derived_siblings,
     historical_clauses,
     is_derived_label,
+    parse_clauses,
 )
 
 if TYPE_CHECKING:
@@ -159,6 +162,8 @@ STORED_LISTS = (
     ("tests/main/test_payload_validation.refs", "test_generated_models_decide_value_neighbours_like_the_schema"),
 )
 """The ``.refs`` files and tests whose stored outputs are lists of known gaps that may only shrink."""
+STORED_NODES = {test: f"{sidecar.removesuffix('.refs')}.py::{test}" for sidecar, test in STORED_LISTS}
+"""The node id of each test of ``STORED_LISTS``, which a lane runs or not (`Lane.runs`)."""
 NO_SEED_LINE = "no source-valid seed"
 REJECTED_SEED_LINE = "seed: valid, model rejects"
 BLIND_LINES = frozenset({NO_SEED_LINE, REJECTED_SEED_LINE})
@@ -401,7 +406,8 @@ ADVICE = {
     ),
     "unreadable-stored-list": (
         "Store the list as a JSON list of strings at the storage its `.refs` line names, with an `@` column of "
-        "condition clauses (pytest writes both), so that the counter can read it."
+        "condition clauses (pytest writes both), and run the test in a workflow matrix whose lanes "
+        "scripts/_ci_lanes.py reads, so that the counter can read it."
     ),
     "unreadable-source-rule": (
         "The source model refuses the file (the error is named), so no source rule can read its sites. Fix the file, "
@@ -461,8 +467,8 @@ class Judging:
 
     absolute: frozenset[str]
     """The keys of the rules absolute in the head or in the base revision (`_absolute_keys`): any site fails."""
-    lanes: tuple[Mapping[str, str], ...]
-    """The facts of each lane of the head's CI matrix (`scripts/_ci_lanes.py`), which judge the stored lists."""
+    lanes: tuple[Lane, ...]
+    """The lanes of the head's workflow matrices (`scripts/_ci_lanes.py`); those that run a test judge its list."""
 
 
 @dataclass(frozen=True)
@@ -1057,12 +1063,15 @@ def _stored_lines(path: Path) -> list[str] | None:
     return value if isinstance(value, list) and all(isinstance(line, str) for line in value) else None
 
 
-def _stored_list_tally(tally: Tally, root: Path) -> None:
+def _stored_list_tally(tally: Tally, root: Path, *, historical: bool) -> None:
     """Count the items and lines of the stored lists, reading each record's storage through its ``.refs`` file.
 
     Only the records of the test's own list count, the output the harness names after the item with no role: the
     other outputs it stores for an item under a role, such as the ``warnings`` of its generation, are no list of gaps.
+    ``historical`` reads the ``@`` columns as a sidecar of any revision (a base), else as the harness reads them.
     """
+    parse = historical_clauses if historical else parse_clauses
+    lanes, problems = read_lanes(root)
     for sidecar, test in STORED_LISTS:
         path = root / sidecar
         stem = PurePosixPath(sidecar).stem.removeprefix("test_")
@@ -1079,7 +1088,7 @@ def _stored_list_tally(tally: Tally, root: Path) -> None:
             storage = next((flag.removeprefix("= ") for flag in flags if flag.startswith("= ")), label)
             environment = next((flag for flag in flags if flag.startswith("@")), "")
             tally.add(f"{STORED_LIST}:{test}:items", "\t".join(filter(None, (item, environment))))
-            if _environment_clauses(environment) is None:
+            if _environment_clauses(environment, parse) is None:
                 tally.add(f"{STORED_LIST}:{test}:unreadable", f"{sidecar}\t{item}\t{environment}")
             if (lines := _stored_lines(root / EXPECTED_ROOT / storage)) is None:
                 tally.add(f"{STORED_LIST}:{test}:unreadable", f"{EXPECTED_ROOT}/{storage}")
@@ -1088,6 +1097,12 @@ def _stored_list_tally(tally: Tally, root: Path) -> None:
                     f"{STORED_LIST}:{test}:{'blind' if line in BLIND_LINES else 'lines'}",
                     "\t".join(filter(None, (item, line, environment))),
                 )
+        if f"{STORED_LIST}:{test}:items" not in tally.sites:
+            continue
+        node = STORED_NODES[test]
+        unread = [] if any(lane.runs(node) for lane in lanes) else [f"no lane runs {node}"]
+        for problem in [*problems, *unread]:
+            tally.add(f"{STORED_LIST}:{test}:unreadable", f"{WORKFLOWS}: {problem}")
 
 
 def _module_tests(root: Path, module: Path) -> list[str]:
@@ -1173,8 +1188,8 @@ def _candidate_lines(base_root: Path, head_root: Path) -> list[str]:
     return lines
 
 
-def count_tree(root: Path, ruff: list[str]) -> Tally:
-    """Count every escape hatch of the tree at ``root``."""
+def count_tree(root: Path, ruff: list[str], *, historical: bool = False) -> Tally:
+    """Count every escape hatch of the tree at ``root``; ``historical`` for a base revision (`_stored_list_tally`)."""
     path = root / "pyproject.toml"
     pyproject = tomllib.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     tally = Tally()
@@ -1185,7 +1200,7 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _comment_tally(tally, root, files)
     _expected_tally(tally, root)
     _config_tally(tally, root, pyproject)
-    _stored_list_tally(tally, root)
+    _stored_list_tally(tally, root, historical=historical)
     _named_output_tally(tally, root)
     _import_cycle_tally(tally, root, files)
     _source_rule_tally(tally, root, files)
@@ -1223,26 +1238,31 @@ def _rises(
 
 
 def _risen(
-    key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], lanes: Sequence[Mapping[str, str]]
+    key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], lanes: Sequence[Lane]
 ) -> list[tuple[str, int, int]]:
-    """Return the files (for a stored list, the lines some lane reads anew) of a key whose count rose,, both counts."""
+    """Return the files (for a stored list, the lines some lane reads anew) of a key whose count rose, both counts.
+
+    A stored list is judged by the lanes that run its test; a list this copy does not know, by every lane.
+    """
     if _kind(key) != STORED_LIST:
         return _file_rises(base.get(key, {}), head[key])
     test, _, part = key.rpartition(":")
     if part not in {"lines", "blind"}:
         return []
+    node = STORED_NODES.get(test.removeprefix(f"{STORED_LIST}:"))
+    readers = [lane.facts for lane in lanes if node is None or lane.runs(node)]
     base_lists, head_lists = _environment_lists(base, test), _environment_lists(head, test)
     new: set[tuple[str, str, str]] = set()
     for item, head_records in head_lists.items():
         if (base_records := base_lists.get(item)) is None and (part == "lines" or not base_lists):
             continue
-        for facts in lanes:
-            was = _read_records(base_records or {}, facts).values()
+        for facts in readers:
+            was = _read_records(base_records or {}, facts, historical_clauses).values()
             if part == "lines" and any(record["blind"] for record in was):
                 continue
             new.update(
                 (item, environment, line)
-                for environment, record in _read_records(head_records, facts).items()
+                for environment, record in _read_records(head_records, facts, parse_clauses).items()
                 for line in record[part].difference(*(old[part] for old in was))
             )
     return [(_stored_path(item, line, environment), 0, 1) for item, environment, line in sorted(new)]
@@ -1269,26 +1289,28 @@ def _environment_lists(counts: dict[str, dict[str, int]], test: str) -> dict[str
     return lists
 
 
-def _environment_clauses(environment: str) -> tuple[str, ...] | None:
-    """Return the clauses of a record's ``@`` column as a sidecar of any revision reads them, or None."""
+def _environment_clauses(environment: str, parse: Callable[[str], tuple[str, ...]]) -> tuple[str, ...] | None:
+    """Return the clauses of a record's ``@`` column read with ``parse``, or None where it reads as none."""
     if not environment:
         return ()
     try:
-        return historical_clauses(environment.removeprefix("@"))
+        return parse(environment.removeprefix("@"))
     except ValueError:
         return None
 
 
-def _read_records(records: dict[str, _StoredRecord], facts: Mapping[str, str]) -> dict[str, _StoredRecord]:
+def _read_records(
+    records: dict[str, _StoredRecord], facts: Mapping[str, str], parse: Callable[[str], tuple[str, ...]]
+) -> dict[str, _StoredRecord]:
     """Return the records of an item that a lane with these facts reads, by ``@`` column, as the harness selects them.
 
     The harness reads the most specific records whose clauses all hold (`applicable_lines`): an override, else the
-    default. A column that reads as no clauses is read by no lane; the tally counts it unreadable.
+    default. A column that ``parse`` reads as no clauses is read by no lane; the tally counts it unreadable.
     """
     lines = {
         RefLine("", "", environment, predicate=clauses): environment
         for environment in records
-        if (clauses := _environment_clauses(environment)) is not None
+        if (clauses := _environment_clauses(environment, parse)) is not None
     }
     return {lines[line]: records[lines[line]] for line in applicable_lines(lines, facts)}
 
@@ -1575,10 +1597,8 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(base_root, filter="data")
-        base, head = count_tree(base_root, ruff), count_tree(head_root, ruff)
-        judging = Judging(
-            ABSOLUTE_KEYS | _absolute_keys(base_root), tuple(lane.facts for lane in read_lanes(head_root)[0])
-        )
+        base, head = count_tree(base_root, ruff, historical=True), count_tree(head_root, ruff)
+        judging = Judging(ABSOLUTE_KEYS | _absolute_keys(base_root), tuple(read_lanes(head_root)[0]))
         approvals = Approvals(_read_approvals(base_root, judging.absolute)[0], _judged_pull_requests(head_root, fork))
         head_rises = set(_rises(base.counts(), head.counts(), approvals, judging))
         lines = [f"Escape hatches: {base_ref} (merge-base {fork}) -> working tree", ""]

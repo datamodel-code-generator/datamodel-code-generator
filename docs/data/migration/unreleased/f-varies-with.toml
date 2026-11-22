@@ -2,7 +2,7 @@
 id = "f-varies-with"
 category = "harness"
 title = "Stored outputs that vary by environment key on declared facts"
-summary = "Comparisons whose output depends on the environment name the deciding fact (varies_with=), so their .refs lines key on condition clauses (@python>=3.14, @black<24, @pydantic<2.5, @platform==win32) instead of observed fact values; the stored contents are unchanged and only their predicates, storage names and the generation tests' labels move. A version clause compares numeric releases padded with zeros (a lane that pins pydantic==2 reads @pydantic==2.0), and the ratchet judges a stored list by the records each CI lane reads."
+summary = "Comparisons whose output depends on the environment name the deciding fact (varies_with=), so their .refs lines key on condition clauses (@python>=3.14, @black<24, @pydantic<2.5, @platform==win32) instead of observed fact values; the stored contents are unchanged and only their predicates, storage names and the generation tests' labels move. A version clause compares numeric releases padded with zeros (a lane that pins pydantic==2 reads @pydantic==2.0), and the ratchet judges a stored list by the records each lane of the workflow matrices that runs its test reads."
 refs = ["#7369"]
 covers = [
     "api_generation/client_runtime/client_runtime[native-wire].txt",
@@ -254,4 +254,11 @@ covers = [
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~ef1411b6.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~f433cb7f.txt",
     "main/protobuf/main_protobuf/directory_output_importable/",
+    "source_rules/a_full_suite_command_with_the_tox_default_target_is_no_subset_lane.txt",
+    "source_rules/a_table_that_cannot_be_read_holds_no_capability[entry-shape].txt",
+    "source_rules/a_table_that_cannot_be_read_holds_no_capability[no-table].txt",
+    "source_rules/a_table_that_cannot_be_read_holds_no_capability[not-a-dict].txt",
+    "source_rules/a_table_that_cannot_be_read_holds_no_capability[not-a-literal].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[dead-capability].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[never-run].txt",
 ]
