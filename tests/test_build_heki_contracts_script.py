@@ -25,6 +25,65 @@ CONTRACTS = ROOT / "scripts" / "heki.toml"
 BASELINE = ROOT / "scripts" / "heki_baseline.toml"
 PACKAGE = "src/datamodel_code_generator"
 
+SEEDED_ENVIRONMENT = """\
+import os
+import platform
+import sys
+from importlib import import_module, util
+
+try:
+    import tomllib
+except ImportError:
+    tomllib = None
+try:
+    from yaml import CDumper, CSafeLoader
+except ImportError:
+    CDumper = CSafeLoader = None
+try:
+    import_module("orjson")
+except ModuleNotFoundError:
+    pass
+try:
+    import ujson
+except (ImportError, AttributeError):
+    ujson = None
+try:
+    import tomli
+except ImportError:
+    import tomllib as tomli
+
+HOME = os.environ.get("HOME")
+EDITOR = os.getenv("EDITOR")
+FOUND = util.find_spec("yaml")
+WINDOWS = sys.platform == "win32" or os.name == "nt"
+HEX = sys.hexversion
+SYSTEM = platform.system()
+
+
+def old_python() -> bool:
+    return sys.version_info < (3, 12)
+
+
+class Platform:
+    DARWIN = sys.platform == "darwin"
+
+
+def lazy_import() -> None:
+    try:
+        import csv
+    except Exception:
+        return
+    csv.reader([])
+"""
+"""The forms of reading the environment, in a module body, a function and a class body: 14 sites of ``<module>``.
+
+Guarded imports (an import, a ``from`` import of two names, which are two probes, an ``import_module`` call under
+``ModuleNotFoundError``, an import under a tuple of handlers, one more import whose fallback import in the handler is
+none), ``os.environ``, ``os.getenv``, ``importlib.util.find_spec``, ``sys.platform``, ``os.name``, ``sys.hexversion``,
+``platform.system()``, and ``sys.platform`` in a class body; ``old_python`` reads ``sys.version_info``. The lazy
+import of ``lazy_import`` under ``except Exception`` reads nothing.
+"""
+
 SEEDED_PACKAGE = {
     "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
     f"{PACKAGE}/__init__.py": "",
@@ -42,12 +101,12 @@ SEEDED_PACKAGE = {
         "from datamodel_code_generator.model.base import DataModel\n\n\n"
         'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n'
     ),
-    f"{PACKAGE}/parser/seeded_env.py": "import sys\n\nOLD = sys.version_info < (3, 12)\n",
+    f"{PACKAGE}/parser/seeded_env.py": SEEDED_ENVIRONMENT,
 }
 """A package whose ``seeded.py`` writes ``DataModel.fields`` outside the store operations that the fact row names.
 
-``GenerationStore.set_fields``, one of those operations, writes it too: heki allows that write. The module body of
-``seeded_env.py`` reads the interpreter's version, which the environment boundary forbids in module bodies too.
+``GenerationStore.set_fields``, one of those operations, writes it too: heki allows that write. ``seeded_env.py``
+holds `SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
 """
 
 
@@ -77,11 +136,13 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
     baseline = tmp_path / BASELINE.name
     shutil.copyfile(BASELINE, baseline)
 
-    result = _heki("--baseline", str(baseline), "--update-baseline", "--output-format", "concise", cwd=ROOT)
+    result = _heki("--baseline", str(baseline), "--update-baseline", "--output-format", "full", cwd=ROOT)
 
     assert result.returncode == 0, (
         "heki findings the baseline does not record: keep the write, read or call inside its owners "
-        "(scripts/build_heki_contracts.py names the records each contract comes from). If the findings only moved "
+        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of the "
+        "environment (EFF201), key the decision on an option or a static rule (the help of each report). If the "
+        "findings only moved "
         "(a function was renamed or moved), delete scripts/heki_baseline.toml and run heki check --config "
         "scripts/heki.toml --baseline scripts/heki_baseline.toml --update-baseline src; allowlist:heki-baseline "
         "of scripts/check_ratchets.py must not rise\n" + result.stdout + result.stderr
@@ -96,7 +157,8 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_reads(tmp_path: Path) -> None:
     """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none.
 
-    A module body that reads the environment the package runs in is a finding too.
+    A read of the environment the package runs in is a finding too, in a function and in a module body, counted per
+    site.
     """
     for name, text in SEEDED_PACKAGE.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -104,15 +166,17 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
 
     result = _heki("--output-format", "json", cwd=tmp_path)
 
-    found = [
-        (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"], item["target"])
+    found = sorted(
+        (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"], item["target"], item.get("sites") or 1)
         for item in json.loads(result.stdout)
-    ]
+    )
+    environment = "no-environment-reads:reads-environment"
     assert (result.returncode, found) == (
         1,
         [
-            (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields"),
-            (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", "no-environment-reads:reads-environment"),
+            (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields", 1),
+            (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", environment, 14),
+            (f"{PACKAGE}/parser/seeded_env.py", "old_python", "EFF201", environment, 1),
         ],
     ), result.stderr
 
