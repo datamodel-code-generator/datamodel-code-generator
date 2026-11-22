@@ -213,13 +213,13 @@ def _stored_lists(lists: dict[str, object]) -> dict[str, str]:
     """Return a ``.refs`` file whose test stores one list per item, and the lists; a string names another's list.
 
     A key ``<item>@<predicate>`` is the item's override for the environments of the predicate, and ``<item>#<name>``
-    another output the test stores for the item under ``<name>``.
+    another output the test stores for the item under the role ``<name>``.
     """
     records, files = [], {}
     for key, value in lists.items():
         key_item, _, other = key.partition("#")
         item, _, predicate = key_item.partition("@")
-        label = f"lists/{other}[{item}].txt" if other else f"lists/{STORED_NAME}[{item}].txt"
+        label = f"lists/{STORED_NAME}[{item}]{f'.{other}' if other else ''}.txt"
         storage = f"lists/{STORED_NAME}[{value}].txt" if isinstance(value, str) else label.replace(item, key_item, 1)
         environment = f"\t@{predicate}" if predicate else ""
         shared = f"\t= {storage}" if storage != label else ""

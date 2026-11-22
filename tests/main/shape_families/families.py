@@ -41,6 +41,7 @@ cells in all.
 
 from __future__ import annotations
 
+import functools
 import itertools
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, TypeAlias
@@ -291,7 +292,9 @@ def _admitting_null(tag: Schema) -> Schema:
     return nullable
 
 
-def _tagged(*, tag: str, nullable: bool, mapping: bool, kind: str) -> tuple[Schema, str, tuple[object, ...]] | None:
+def _tagged(
+    *, tag: str, nullable: bool, mapping: bool, kind: str, inline: bool = False
+) -> tuple[Schema, str, tuple[object, ...]] | None:
     cat_tag, dog_tag, keys = _TAGS[tag]
     if nullable and "const" in cat_tag:
         return None
@@ -300,10 +303,13 @@ def _tagged(*, tag: str, nullable: bool, mapping: bool, kind: str) -> tuple[Sche
     discriminator: Schema = {"propertyName": "kind"}
     if mapping:
         discriminator["mapping"] = {key: REF + value for key, value in keys.items()}
+    variants: list[Schema] = [{"$ref": REF + "Cat"}, {"$ref": REF + "Dog"}]
+    if inline:
+        variants = [{"allOf": [variant, {"properties": {"note": {"type": "string"}}}]} for variant in variants]
     definitions = {
         "Cat": {"type": "object", "required": ["kind"], "properties": {"kind": cat_tag, "name": {"type": "string"}}},
         "Dog": {"type": "object", "required": ["kind"], "properties": {"kind": dog_tag, "bark": {"type": "boolean"}}},
-        "Pet": {kind: [{"$ref": REF + "Cat"}, {"$ref": REF + "Dog"}], "discriminator": discriminator},
+        "Pet": {kind: variants, "discriminator": discriminator},
     }
     return definitions, "Pet", (tag, nullable)
 
@@ -370,3 +376,65 @@ FAMILIES: Final[Mapping[str, Family]] = {
 """Every family by name, each with its dimensions and the backends it is generated for by default."""
 
 FAMILY_BACKENDS: Final[Mapping[str, tuple[str, ...]]] = {name: family.backends for name, family in FAMILIES.items()}
+
+
+_REDECLARED: Final[Mapping[str, tuple[Schema, Schema]]] = {
+    "model": (
+        {"type": "object", "properties": {"name": {"type": "string"}}},
+        {"allOf": [{"$ref": REF + "Pet"}, {"type": "object", "properties": {"bark": {"type": "boolean"}}}]},
+    ),
+    "enum": ({"type": "string", "enum": ["cat", "dog"]}, {"type": "string", "enum": ["dog"]}),
+}
+"""The definitions ``Pet`` and ``Dog`` of ``redeclare``: an object and an object that extends it, or a string enum and
+an enum of some of its members, so that ``Dog`` narrows ``Pet``."""
+
+
+def _redeclare(*, inherited: str, name: str, override: str, form: str) -> tuple[Schema, str, tuple[object, ...]]:
+    pet, dog = _REDECLARED[inherited]
+    addition: Schema = {"properties": {name: {"$ref": REF + ("Pet" if override == "same" else "Dog")}}}
+    definitions: Schema = {
+        "Pet": pet,
+        "Dog": dog,
+        "Base": {"type": "object", "properties": {name: {"$ref": REF + "Pet"}, "q": {"type": "boolean"}}},
+        "Owner": (
+            {"allOf": [{"$ref": REF + "Base"}, {"type": "object", **addition}]}
+            if form == "member"
+            else {"allOf": [{"$ref": REF + "Base"}], **addition}
+        ),
+    }
+    return definitions, "Owner", (inherited, name, override)
+
+
+REDECLARING_FAMILIES: Final[Mapping[str, Family]] = {
+    family.name: family
+    for family in (
+        Family(
+            "redeclare",
+            (
+                ("inherited", tuple(_REDECLARED)),
+                ("name", ("pet", "Pet")),
+                ("override", ("same", "other")),
+                ("form", ("member", "beside")),
+            ),
+            _redeclare,
+            (PYDANTIC_V2, TYPED_DICT, DATACLASSES, MSGSPEC),
+        ),
+        Family(
+            "tagged-allof",
+            FAMILIES["tagged"].dimensions,
+            functools.partial(_tagged, inline=True),
+            FAMILIES["tagged"].backends,
+        ),
+    )
+}
+"""The families whose classes redeclare a field they inherit, which the invariants check beside ``FAMILIES``.
+
+``redeclare`` (16 shapes)
+    An object ``Owner`` extends ``Base``, whose property ``pet`` or ``Pet`` (named like the definition it references)
+    is a ``$ref`` to ``Pet``, and redeclares that property as a ``$ref`` to ``Pet`` again or to ``Dog``, which narrows
+    ``Pet``, as a second ``allOf`` member or beside the ``allOf``; ``Pet`` and ``Dog`` are objects (``Dog`` extends
+    ``Pet``) or string enums (``Dog`` has some of the members of ``Pet``). 2 x 2 x 2 x 2.
+``tagged-allof`` (32 shapes)
+    ``tagged`` with each variant written inline as an ``allOf`` of the reference to ``Cat`` or ``Dog`` and a member that
+    adds an optional ``note``: the generated variants subclass ``Cat`` and ``Dog`` and redeclare the tag.
+"""

@@ -19,11 +19,10 @@ from pydantic import TypeAdapter, ValidationError
 from datamodel_code_generator import enable_parsed_source_cache
 from datamodel_code_generator.__main__ import Exit, main
 from tests.conftest import assert_output
-from tests.main.conftest import EXPECTED_MAIN_PATH
 
 from .constants import (
     PAYLOAD_CLASS_NAME,
-    PAYLOAD_CODEGEN_WARNING_FILES,
+    PAYLOAD_CODEGEN_WARNING_CASES,
     PAYLOAD_RUNS_UNSET_TARGET_PYDANTIC_VERSION,
     PAYLOAD_TARGET_PYDANTIC_VERSION,
     PAYLOAD_TARGET_PYTHON_VERSION,
@@ -249,14 +248,14 @@ def _payload_runtime(payload_type: Any, backend: PayloadBackend) -> PayloadRunti
             raise PayloadAdapterError(msg)
 
 
-def _assert_codegen_warnings(messages: list[str], warning_file: str) -> None:
-    """Compare the warnings of a case's generation, other than the floor statement, with its warning file.
+def _assert_codegen_warnings(messages: list[str]) -> None:
+    """Compare the warnings of a case's generation, other than the floor statement, as the test's ``warnings``.
 
     Each test that loads the case compares them, also when an earlier test of the session generated it.
     """
     assert_output(
         json.dumps([message for message in messages if not _PYDANTIC_FLOOR_STATEMENT.match(message)], indent=2) + "\n",
-        EXPECTED_MAIN_PATH / warning_file,
+        name="warnings",
     )
 
 
@@ -277,10 +276,10 @@ def generate_payload_runtime(
     """
     runtimes: dict[tuple[str, ...], PayloadRuntime] = generated_model_cache["adapters"]
     cache_key = _cache_key(case, backend)
-    warning_file = PAYLOAD_CODEGEN_WARNING_FILES.get(case.id)
+    compare_warnings = case.id in PAYLOAD_CODEGEN_WARNING_CASES
     if (runtime := runtimes.get(cache_key)) is not None:
-        if warning_file:
-            _assert_codegen_warnings(generated_model_cache["warnings"][cache_key], warning_file)
+        if compare_warnings:
+            _assert_codegen_warnings(generated_model_cache["warnings"][cache_key])
         return runtime
 
     module_digest = hashlib.sha256("\0".join(cache_key).encode()).hexdigest()
@@ -291,7 +290,7 @@ def generate_payload_runtime(
     input_path = _write_input_schema(case, case_dir)
     output_path = case_dir / "model.py"
     with warnings.catch_warnings(record=True) as captured:
-        if warning_file:
+        if compare_warnings:
             warnings.simplefilter("always", UserWarning)
         else:
             if backend is PayloadBackend.MSGSPEC:
@@ -301,10 +300,10 @@ def generate_payload_runtime(
         return_code = _run_payload_codegen(_payload_codegen_args(case, input_path, output_path, backend))
     generated_model_cache.setdefault("floors", {})[cache_key] = _stated_floor(captured)
     generated_model_cache.setdefault("limits", {})[cache_key] = _stated_msgspec_limit(captured, backend)
-    if warning_file:
+    if compare_warnings:
         messages = [str(record.message) for record in captured]
         generated_model_cache.setdefault("warnings", {})[cache_key] = messages
-        _assert_codegen_warnings(messages, warning_file)
+        _assert_codegen_warnings(messages)
     if return_code != Exit.OK:
         msg = f"Generation failed with exit code {return_code!r}"
         raise PayloadAdapterError(msg)
