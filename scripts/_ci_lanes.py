@@ -75,6 +75,8 @@ class Lane:
     """The test paths the lane selects (``tests/x.py``, ``tests/x.py::test_y``, a directory); None for the suite."""
     excluded: tuple[str, ...] = ()
     """The test paths the lane leaves out of what it selects."""
+    entries: tuple[tuple[tuple[str, ...] | None, tuple[str, ...]], ...] = ()
+    """The (selection, exclusions) pair of each workflow entry that runs the lane; empty for a lane of one entry."""
 
     @property
     def subset(self) -> bool:
@@ -82,20 +84,31 @@ class Lane:
         return self.tests is not None
 
     def runs(self, node: str) -> bool:
-        """Return whether the lane runs a test (``tests/x.py::test_y``): it selects it and does not leave it out."""
-        return not any(_covers(path, node) for path in self.excluded) and (
-            self.tests is None or any(_covers(path, node) for path in self.tests)
+        """Return whether some entry of the lane runs a test (``tests/x.py::test_y``): selects it, leaves it not out."""
+        return any(
+            not any(_covers(path, node) for path in excluded)
+            and (tests is None or any(_covers(path, node) for path in tests))
+            for tests, excluded in self._entries
         )
 
+    @property
+    def _entries(self) -> tuple[tuple[tuple[str, ...] | None, tuple[str, ...]], ...]:
+        return self.entries or ((self.tests, self.excluded),)
+
     def joined(self, other: Lane) -> Lane:
-        """Return the lane as two entries of its environment run it: what either selects and not both leave out."""
+        """Return the lane as two entries of its environment run it: each keeps its own selection and exclusions."""
         tests = None if self.tests is None or other.tests is None else tuple(sorted({*self.tests, *other.tests}))
-        return replace(self, tests=tests, excluded=tuple(sorted(set(self.excluded) & set(other.excluded))))
+        return replace(
+            self,
+            tests=tests,
+            excluded=tuple(sorted(set(self.excluded) & set(other.excluded))),
+            entries=(*self._entries, *other._entries),
+        )
 
 
 def _covers(path: str, node: str) -> bool:
     """Return whether a test path holds a node: the node itself, its directory or module, or one of its parameters."""
-    return node == path or node.startswith((f"{path}/", f"{path}::")) or path.startswith(f"{node}[")
+    return node == path or node.startswith((f"{path}/", f"{path}::", f"{path}[")) or path.startswith(f"{node}[")
 
 
 def _value(text: str) -> str:

@@ -223,6 +223,15 @@ LANES = {
 (a nightly ``tox_env`` axis), and Windows, which leaves the stored lists' module out."""
 
 
+ITEM_EXCLUDED = {
+    **LANES,
+    ".github/workflows/test.yaml": LANES[".github/workflows/test.yaml"].replace(
+        f"{STORED_REFS.removesuffix('.refs')}.py\n", f"{STORED_REFS.removesuffix('.refs')}.py::{STORED_TEST}[unread]\n"
+    ),
+}
+"""`LANES` with Windows leaving out only the item ``unread``: it still runs the test's other items."""
+
+
 def _stored_lists(lists: dict[str, object]) -> dict[str, str]:
     """Return a ``.refs`` file whose test stores one list per item, and the lists; a string names another's list.
 
@@ -916,6 +925,11 @@ def show(flag: bool) -> None:
             "old": [GAP.format(12)],
             "old@pydantic=2.0": [GAP.format(12)],
         }),
+        "args": ["--enforce"],
+    },
+    "stored-lists-item-excluded": {
+        "base": {**_stored_lists(STORED_LANES), **ITEM_EXCLUDED},
+        "head": {**_stored_lists(STORED_RELABELED), **ITEM_EXCLUDED},
         "args": ["--enforce"],
     },
     "stored-lists-without-lanes": {

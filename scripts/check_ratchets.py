@@ -1099,8 +1099,9 @@ def _stored_list_tally(tally: Tally, root: Path, *, historical: bool) -> None:
                 )
         if f"{STORED_LIST}:{test}:items" not in tally.sites:
             continue
-        node = STORED_NODES[test]
-        unread = [] if any(lane.runs(node) for lane in lanes) else [f"no lane runs {node}"]
+        items = dict.fromkeys(record.partition("\t")[0] for record in tally.sites[f"{STORED_LIST}:{test}:items"])
+        nodes = [f"{STORED_NODES[test]}[{item}]" for item in items]
+        unread = [f"no lane runs {node}" for node in nodes if not any(lane.runs(node) for lane in lanes)]
         for problem in [*problems, *unread]:
             tally.add(f"{STORED_LIST}:{test}:unreadable", f"{WORKFLOWS}: {problem}")
 
@@ -1250,13 +1251,13 @@ def _risen(
     if part not in {"lines", "blind"}:
         return []
     node = STORED_NODES.get(test.removeprefix(f"{STORED_LIST}:"))
-    readers = [lane.facts for lane in lanes if node is None or lane.runs(node)]
     base_lists, head_lists = _environment_lists(base, test), _environment_lists(head, test)
     new: set[tuple[str, str, str]] = set()
     for item, head_records in head_lists.items():
         if (base_records := base_lists.get(item)) is None and (part == "lines" or not base_lists):
             continue
-        for facts in readers:
+        item_node = None if node is None else f"{node}[{item}]"
+        for facts in (lane.facts for lane in lanes if item_node is None or lane.runs(item_node)):
             was = _read_records(base_records or {}, facts, historical_clauses).values()
             if part == "lines" and any(record["blind"] for record in was):
                 continue

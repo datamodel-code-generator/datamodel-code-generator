@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from scripts import check_source_rules
-from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, WORKFLOWS, matrix_entries, read_lanes
+from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, WORKFLOWS, Lane, matrix_entries, read_lanes
 from tests.capabilities import needs
 from tests.conftest import TEST_DEFAULT_FORMATTER_ENV, assert_output
 
@@ -1614,6 +1614,16 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
 """
     assert_output("".join(f"{entry['job']}: {entry['selection']}\n" for entry in matrix_entries(text)))
+
+
+def test_joined_entries_keep_their_own_exclusions() -> None:
+    """A node one entry leaves out is not run because another entry selects a path that covers it."""
+    first = Lane("lane", {}, ("tests/a.py",), ("tests/a.py::test_x",))
+    second = Lane("lane", {}, ("tests/b.py", "tests/a.py::test_y[one]"), ())
+    lane = first.joined(second)
+    nodes = ["tests/a.py::test_x", "tests/a.py::test_z", "tests/b.py::test_x", "tests/a.py::test_y[one]", "tests/c.py"]
+
+    assert_output("".join(f"{node}: {lane.runs(node)}\n" for node in nodes))
 
 
 def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
