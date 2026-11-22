@@ -6762,13 +6762,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/base.py:Parser._run_with_suppressed_warnings` (the hook the settle passes call for a retry "
             "parse), `_generation.py:_parse_again` (the category its caller names, or none), "
             "`_recommend/_trial.py:_run_candidate`, `parser/jsonschema.py:JsonSchemaParser._typed_model_children` (the "
-            "extra items type of a key model)"
+            "extra items type of a key model), `parser/_inherited_schemas.py:model_schema_at` (the merge an inherited "
+            "`$ref` with siblings is read as, whose parse reports its warnings)"
         ),
         sites=(
             Home("parser/base.py", "Parser._run_with_suppressed_warnings"),
             Home("_generation.py", "_parse_again"),
             Home("_recommend/_trial.py", "_run_candidate"),
             Home("parser/jsonschema.py", "JsonSchemaParser._typed_model_children"),
+            Home("parser/_inherited_schemas.py", "model_schema_at"),
         ),
     ),
     DecisionHome(

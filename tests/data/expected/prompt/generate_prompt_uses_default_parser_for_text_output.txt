@@ -63,6 +63,7 @@
 - `--no-intersect-combined-schema-keywords`
 - `--no-intersect-merged-allof-members`
 - `--no-keep-enum-member-values`
+- `--no-read-allof-parents-as-their-models`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
 - `--no-read-format-as-annotation`
@@ -97,6 +98,7 @@
 - `--open-enums`: Accept the values an enum does not list.
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
+- `--read-allof-parents-as-their-models`: Read each allOf parent as its model holds it.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.

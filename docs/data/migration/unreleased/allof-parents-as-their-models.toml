@@ -68,5 +68,6 @@ covers = [
     "main_kr/generate_prompt_with_question.stdout.txt",
     "main_kr/help_shows_new_options.txt",
     "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+    "prompt/generate_prompt_uses_default_parser_for_text_output.txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_allof_parents_as_models_required_names.yaml].txt",
 ]

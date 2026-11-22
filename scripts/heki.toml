@@ -3410,7 +3410,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:_warning_control.py:quiet"
 targets = ["datamodel_code_generator._warning_control.quiet"]
-allowed-callers = ["datamodel_code_generator._generation:_parse_again", "datamodel_code_generator._generation:_parse_again.*", "datamodel_code_generator._recommend._trial:_run_candidate", "datamodel_code_generator._recommend._trial:_run_candidate.*", "datamodel_code_generator._warning_control:*", "datamodel_code_generator.parser.base:Parser._run_with_suppressed_warnings", "datamodel_code_generator.parser.base:Parser._run_with_suppressed_warnings.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._typed_model_children", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._typed_model_children.*"]
+allowed-callers = ["datamodel_code_generator._generation:_parse_again", "datamodel_code_generator._generation:_parse_again.*", "datamodel_code_generator._recommend._trial:_run_candidate", "datamodel_code_generator._recommend._trial:_run_candidate.*", "datamodel_code_generator._warning_control:*", "datamodel_code_generator.parser._inherited_schemas:model_schema_at", "datamodel_code_generator.parser._inherited_schemas:model_schema_at.*", "datamodel_code_generator.parser.base:Parser._run_with_suppressed_warnings", "datamodel_code_generator.parser.base:Parser._run_with_suppressed_warnings.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._typed_model_children", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._typed_model_children.*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"
