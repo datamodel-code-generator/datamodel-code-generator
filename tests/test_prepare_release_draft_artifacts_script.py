@@ -29,6 +29,7 @@ ENVIRONMENT = {
 HELP = " ".join(f"--option-{index} Describe option {index}." for index in range(400))
 WORDS = " ".join(f"word{index}" for index in range(600))
 HELP_LABEL = "main/main_general/show_help[True].txt"
+RECORDS = "docs/data/migration/unreleased"
 
 
 def _help_refs(label: str) -> str:
@@ -149,6 +150,26 @@ CASES = {
         {"docs/bytes.txt": b"short \xff old\n" + HELP.encode() + b" \xfe\n"},
         {"docs/bytes.txt": b"short \xff new\n" + HELP.encode().replace(b"option 5.", b"option \xff 5.") + b" \xfe\n"},
     ),
+    "declared_records": (
+        "0.1.0",
+        {
+            "src/module.py": b"value = 1\n",
+            f"{RECORDS}/edited.toml": b'[[change]]\nid = "edited"\ncategory = "harness"\ntitle = "Old"\n',
+            f"{RECORDS}/deleted.toml": b'[[change]]\nid = "deleted"\ncategory = "internal"\ntitle = "Gone"\n',
+        },
+        {
+            "src/module.py": b"value = 2\n",
+            f"{RECORDS}/edited.toml": b'[[change]]\nid = "edited"\ncategory = "harness"\ntitle = "New"\n',
+            f"{RECORDS}/added.toml": (
+                b'[[change]]\nid = "added"\ncategory = "new-surface"\ntitle = "Add --new"\n'
+                b'summary = "Adds --new."\nrefs = ["#7"]\n'
+                b'surface = ["--new"]\ndecision = []\ncovers = [\n    "main/help/no_color.txt",\n]\n'
+            ),
+            f"{RECORDS}/broken.toml": b"[[change]\n",
+            f"{RECORDS}/empty.toml": b'title = "no table"\n',
+            f"{RECORDS}/notes.md": b"Not a record.\n",
+        },
+    ),
     "forged_annotation": (
         "0.1.0",
         {"src/module.py": b"value = 1\n"},
@@ -233,7 +254,11 @@ def _prepare(repository: Path, base: str, merge: str, tag: str, tmp_path: Path) 
 def test_prepare_release_draft_artifacts(
     case: str, tmp_path: Path, history: tuple[Path, dict[str, tuple[str, str]]]
 ) -> None:
-    """Claude's copy keeps short lines byte for byte and names the baseline release's missing surfaces."""
+    """Claude's copy keeps short lines byte for byte and names the baseline release's missing surfaces.
+
+    The context also lists the change records the PR adds, edits or deletes, so the analysis reports only the changes
+    none of them declares.
+    """
     repository, commits = history
     base, merge = commits[case]
     artifacts.main(_prepare(repository, base, merge, CASES[case][0], tmp_path))

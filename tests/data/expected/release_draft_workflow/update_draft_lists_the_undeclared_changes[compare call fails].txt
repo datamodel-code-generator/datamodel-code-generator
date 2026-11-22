@@ -1,0 +1,7 @@
+{
+  "body": null,
+  "created": null,
+  "returncode": 1,
+  "search": "pr list --repo owner/repository --state merged --search label:undeclared-change merged:>=2026-11-21T20:00:00Z --limit 100 --json number,title,mergeCommit --jq sort_by(.number) | .[] | [.number, (.mergeCommit.oid // \"none\"), (.title | gsub(\"[\\r\\n\\t]+\"; \" \"))] | @tsv",
+  "stderr": ""
+}

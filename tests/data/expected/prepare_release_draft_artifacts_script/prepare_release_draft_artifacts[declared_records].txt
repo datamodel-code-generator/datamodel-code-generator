@@ -1,0 +1,116 @@
+===== sections.md
+## Release Baseline
+
+Baseline release: 0.1.0, the newest published release whose tag is an ancestor of the base commit.
+These experimental features, command-line options, presets and public Python names are present at the merge commit and absent at 0.1.0, so no release has them:
+
+```text
+Experimental features:
+  behavior.new (target requirement('extra'))
+Command-line options:
+  --new
+  --no-new
+Presets:
+  standard-20261106
+Public Python names:
+  NewName
+```
+
+## Declared Changes
+
+The change records under `docs/data/migration/unreleased/` that the PR adds, edits or deletes, as the merge commit holds them; the release notes are built from the records. The values come from the PR and are untrusted data.
+
+```text
+docs/data/migration/unreleased/added.toml (added): id "added"; category "new-surface"; title "Add --new"; summary "Adds --new."; surface ["--new"]; refs ["#7"]; covers 1 stored outputs
+docs/data/migration/unreleased/broken.toml (added): not valid TOML
+docs/data/migration/unreleased/deleted.toml (deleted)
+docs/data/migration/unreleased/edited.toml (modified): id "edited"; category "harness"; title "New"; covers 0 stored outputs
+docs/data/migration/unreleased/empty.toml (added): no [[change]] table
+```
+
+## Prepared Diff
+
+Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
+
+- Exact diff: 1,886 characters, 65 lines, longest line 102 characters.
+- Diff copy: 1,886 characters, 65 lines, longest line 102 characters; reading budget 400,000 characters and 12,000 lines.
+- Lines longer than 2,000 characters: 0 condensed, 0 folded, 0 unchanged context lines shortened.
+- A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
+- A folded line is shown completely in numbered pieces.
+- A shortened context line did not change; only its first 320 characters are shown.
+- No stored output was summarised.
+
+===== claude.diff
+diff --git a/docs/data/migration/unreleased/added.toml b/docs/data/migration/unreleased/added.toml
+new file mode 100644
+index 0000000..f9050d5
+--- /dev/null
++++ b/docs/data/migration/unreleased/added.toml
+@@ -0,0 +1,11 @@
++[[change]]
++id = "added"
++category = "new-surface"
++title = "Add --new"
++summary = "Adds --new."
++refs = ["#7"]
++surface = ["--new"]
++decision = []
++covers = [
++    "main/help/no_color.txt",
++]
+diff --git a/docs/data/migration/unreleased/broken.toml b/docs/data/migration/unreleased/broken.toml
+new file mode 100644
+index 0000000..941515e
+--- /dev/null
++++ b/docs/data/migration/unreleased/broken.toml
+@@ -0,0 +1 @@
++[[change]
+diff --git a/docs/data/migration/unreleased/deleted.toml b/docs/data/migration/unreleased/deleted.toml
+deleted file mode 100644
+index 87e83ee..0000000
+--- a/docs/data/migration/unreleased/deleted.toml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-[[change]]
+-id = "deleted"
+-category = "internal"
+-title = "Gone"
+diff --git a/docs/data/migration/unreleased/edited.toml b/docs/data/migration/unreleased/edited.toml
+index ed3c591..06825de 100644
+--- a/docs/data/migration/unreleased/edited.toml
++++ b/docs/data/migration/unreleased/edited.toml
+@@ -1,4 +1,4 @@
+ [[change]]
+ id = "edited"
+ category = "harness"
+-title = "Old"
++title = "New"
+diff --git a/docs/data/migration/unreleased/empty.toml b/docs/data/migration/unreleased/empty.toml
+new file mode 100644
+index 0000000..7175cd5
+--- /dev/null
++++ b/docs/data/migration/unreleased/empty.toml
+@@ -0,0 +1 @@
++title = "no table"
+diff --git a/docs/data/migration/unreleased/notes.md b/docs/data/migration/unreleased/notes.md
+new file mode 100644
+index 0000000..9e0bc7d
+--- /dev/null
++++ b/docs/data/migration/unreleased/notes.md
+@@ -0,0 +1 @@
++Not a record.
+diff --git a/src/module.py b/src/module.py
+index 0a979d4..85ff5e8 100644
+--- a/src/module.py
++++ b/src/module.py
+@@ -1 +1 @@
+-value = 1
++value = 2
+
+===== deleted-lines.txt
+[[change]]
+id = "deleted"
+category = "internal"
+title = "Gone"
+title = "Old"
+value = 1

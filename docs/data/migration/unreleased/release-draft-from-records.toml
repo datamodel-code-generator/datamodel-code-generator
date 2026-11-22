@@ -1,0 +1,25 @@
+[[change]]
+id = "release-draft-from-records"
+category = "harness"
+title = "Build the release draft from the change records"
+summary = "The release notes name the pull request of each record and the release analysis context lists the PR records; the package writes the same output."
+refs = ["#7381"]
+covers = [
+    "build_migration_docs_script/build_migration_docs_invalid_data[records].txt",
+    "build_migration_docs_script/build_migration_docs_outputs.txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[baseline_facts].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[fold_fallback].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[forged_annotation].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[generated_documents].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[long_context_line].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[no_baseline].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[non_utf8_bytes].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[one_segment].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[over_budget].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[several_segments].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[unpaired_long_lines].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[unreadable_registries].txt",
+    "release_draft_workflow/maintenance_exclusion_is_wired_before_note_generation.txt",
+    "release_draft_workflow/manual_release_analysis_uses_validated_pr_outputs.txt",
+    "release_draft_workflow/trusted_checkout_rejects_other_commits.txt",
+]

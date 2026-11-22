@@ -21,6 +21,7 @@
     "env": {
       "GH_TOKEN": "${{ github.token }}"
     },
+    "if": "needs.analyze.result == 'success'",
     "name": "Add breaking-change-analyzed label",
     "run": "gh api \\\n  --method POST \\\n  -H \"Accept: application/vnd.github+json\" \\\n  \"/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels\" \\\n  -f labels[]=\"breaking-change-analyzed\" \\\n  --silent\n"
   },
@@ -87,7 +88,8 @@
   },
   "update_needs": [
     "resolve-pr",
-    "analyze"
+    "analyze",
+    "build-notes"
   ],
   "validator_pr": "${{ needs.resolve-pr.outputs.pr_number }}"
 }

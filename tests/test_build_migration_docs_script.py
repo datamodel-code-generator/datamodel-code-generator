@@ -421,21 +421,54 @@ source = "release-note"
 """Hand entries of new warnings that deprecate nothing, beside the deprecation the registry gives in 0.3.0."""
 
 
+EXPERIMENTAL_RECORD = """
+[[change]]
+id = "avro-logical-types"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Avro logical types become dates"
+summary = "An Avro `date` logical type is typed `date` instead of `int`."
+affects = { experimental = ["input-format.avro"] }
+refs = ["#5004"]
+decision = ["#5000"]
+source = "release-note"
+"""
+"""A change of a released experimental feature: its release-note item names the feature."""
+RECORD_PRS = {
+    "custom-template-root": 5101,
+    "new-flag": 5103,
+    "more-new-flag-outputs": 5104,
+    "help-wording": 5105,
+    "avro-logical-types": 5106,
+}
+"""The pull requests that added the fragments: an item names those of its own and `new-surface` records only."""
+
+
 def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """The pages, the per-release Markdown and the release notes come from the hand entries and the registries.
 
     The steps from a release older than `complete_from` are marked incomplete with a pointer to the changelog, and a
     hand entry extends the derived entry of an option value by its id. A hand-written new warning is listed apart
     from the deprecations, under a heading and a release-note section that plan no removal. Records without a guide
-    entry, and one that extends another record, are left out.
+    entry, and one that extends another record, are left out. With the pull requests of the fragments, each item of
+    the next release first names the one that added its record, a `new-surface` record's on the options and the
+    preset it names, and an item of an experimental feature names the feature; the notes refuse a tag that
+    releases.toml does not list yet.
     """
     _write_data(
         tmp_path,
         CHANGES | {"0.3.0": CHANGES["0.3.0"] + OPTION_VALUE_ENTRY + NEW_WARNING_ENTRIES},
-        UNRELEASED | RECORDS,
+        UNRELEASED | RECORDS | {"avro-logical-types": EXPERIMENTAL_RECORD},
         releases=COMPLETE_RELEASES,
         derived=DERIVED + '"--output-model-type=b" = "0.3.0"\n',
     )
+    prs = tmp_path / "record-prs.json"
+    prs.write_text(json.dumps(RECORD_PRS), encoding="utf-8")
+    drafts = {
+        "draft": [*_args(tmp_path), "--release-notes", "unreleased", "--record-prs", str(prs), "--latest-tag", "0.4.0"],
+        "stamp pending": [*_args(tmp_path), "--release-notes", "unreleased", "--latest-tag", "0.5.0"],
+    }
     (tmp_path / "docs" / "output-changes").mkdir(parents=True)
     (tmp_path / "docs" / "output-changes" / "0.3.0.md").write_text("# Output changes in 0.3.0\n", encoding="utf-8")
     codes = {
@@ -451,6 +484,8 @@ def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixt
         release: (main([*_args(tmp_path), "--release-notes", release], REGISTRIES), capsys.readouterr().out)
         for release in ("0.2.0", "0.3.0", "0.4.0", "unreleased")
     }
+    for name, arguments in drafts.items():
+        notes[name] = main(arguments, REGISTRIES), "".join(capsys.readouterr())
     output = [json.dumps(codes, indent=1)]
     output += [f"=== release notes {release} (exit {code}) ===\n{text}" for release, (code, text) in notes.items()]
     output += [_files(tmp_path / "docs"), _files(tmp_path / "ranges"), _files(tmp_path / "site")]
@@ -681,6 +716,18 @@ source = "release-note"
             "api-unscheduled": """
 [[change]]
 id = "api-unscheduled"
+category = "api"
+kind = "cli"
+action = "review"
+title = "t"
+summary = "s"
+affects = { options = ["--old-flag"] }
+refs = ["#1"]
+source = "release-note"
+""",
+            "derived-id-fragment": """
+[[change]]
+id = "option:--no-such-entry"
 category = "api"
 kind = "cli"
 action = "review"

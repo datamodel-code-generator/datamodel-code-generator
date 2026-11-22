@@ -1,0 +1,7 @@
+{
+  "body": "## Undeclared Changes\n\nThese merged pull requests carry the undeclared-change label: they changed behaviour and no change record declares it. Add the record and remove the label before the release.\n\n* Change one (#5)\n* Change two (#9)\n\n## Record Notes\n\nGENERATED NOTES\n",
+  "created": "release create 0.100.0 --repo owner/repository --title 0.100.0 --notes-file - --draft",
+  "returncode": 0,
+  "search": "pr list --repo owner/repository --state merged --search label:undeclared-change merged:>=2026-11-21T20:00:00Z --limit 100 --json number,title,mergeCommit --jq sort_by(.number) | .[] | [.number, (.mergeCommit.oid // \"none\"), (.title | gsub(\"[\\r\\n\\t]+\"; \" \"))] | @tsv",
+  "stderr": ""
+}

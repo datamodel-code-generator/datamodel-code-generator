@@ -167,7 +167,7 @@ def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tm
 
 @needs("posix")
 def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
-    """Both checkout jobs stop before repository scripts run unless HEAD is the workflow commit."""
+    """Every checkout job stops before repository scripts run unless HEAD is the workflow commit."""
     root = Path(__file__).parents[1]
     workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
     environment = {
@@ -209,7 +209,12 @@ def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
         ("non_git", workspace, commits["workflow"]),
     )
     results = {}
-    for job in ("resolve-pr", "analyze"):
+    jobs = [
+        name
+        for name, job in workflow["jobs"].items()
+        if any(step["name"] == "Verify trusted checkout" for step in job["steps"])
+    ]
+    for job in jobs:
         step = next(step for step in workflow["jobs"][job]["steps"] if step["name"] == "Verify trusted checkout")
         for case, cwd, trusted_sha in cases:
             result = subprocess.run(
@@ -227,4 +232,109 @@ def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
             }
     assert_output(
         json.dumps(results, indent=2, sort_keys=True) + "\n",
+    )
+
+
+def test_update_draft_runs_without_the_analysis() -> None:
+    """The rebuild needs only the notes: each step is gated on the outcome of the job whose output it reads."""
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
+    update = workflow["jobs"]["update-draft"]
+    assert_output(
+        json.dumps(
+            {
+                "if": update["if"],
+                "needs": update["needs"],
+                "steps": {step["name"]: step.get("if") for step in update["steps"]},
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+    )
+
+
+FAKE_GH = """#!/bin/bash
+echo "$*" >> "$FAKE_LOG"
+case "$*" in
+  "release list"*--exclude-drafts*) echo v0.99.0 ;;
+  "release list"*) ;;
+  "api"*/commits/*) echo 2026-11-21T20:00:00Z ;;
+  "api"*/compare/failing...*) exit 1 ;;
+  "api"*/compare/tag...*) echo identical ;;
+  "api"*/compare/before...*) echo ahead ;;
+  "api"*/compare/after...*) echo behind ;;
+  "pr list"*) cat "$FAKE_PRS" ;;
+  "pr view"*) echo "$FAKE_TITLE" ;;
+  "api"*) echo "GENERATED NOTES" ;;
+  "release create"*) cat > "$FAKE_BODY" ;;
+esac
+"""
+UNDECLARED_CASES = {
+    "records only": ("false", "false", ""),
+    "breaking records": ("true", "false", ""),
+    "labelled pull requests": ("false", "false", "5\tafter\tChange one\n9\tafter\tChange two\n"),
+    "merged in or after the tag": (
+        "false",
+        "false",
+        "4\ttag\tIn the tagged commit\n5\tbefore\tBefore the tag\n9\tafter\tAfter the tag, same second\n",
+    ),
+    "compare call fails": ("false", "false", "4\tfailing\tUnknown to the API\n"),
+    "label not searchable yet": ("false", "true", ""),
+}
+
+
+@pytest.mark.parametrize("case", sorted(UNDECLARED_CASES))
+@needs("posix")
+def test_update_draft_lists_the_undeclared_changes(case: str, tmp_path: Path) -> None:
+    """The draft starts with the merged pull requests labelled undeclared-change and a minor bump follows them."""
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
+    step = next(
+        step
+        for step in workflow["jobs"]["update-draft"]["steps"]
+        if step["name"] == "Calculate version and update draft release"
+    )
+    has_breaking, has_bc, labelled = UNDECLARED_CASES[case]
+    bin_dir = tmp_path / "bin"
+    notes = tmp_path / "notes"
+    bin_dir.mkdir()
+    notes.mkdir()
+    (bin_dir / "gh").write_text(FAKE_GH, encoding="utf-8")
+    (bin_dir / "gh").chmod(0o755)
+    (notes / "has-breaking.txt").write_text(has_breaking + "\n", encoding="utf-8")
+    (notes / "notes.md").write_text("## Record Notes\n", encoding="utf-8")
+    (tmp_path / "prs.txt").write_text(labelled, encoding="utf-8")
+    result = subprocess.run(
+        ["bash", "-c", step["run"].replace("${{ github.repository }}", "owner/repository")],
+        cwd=tmp_path,
+        env={
+            "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+            "NOTES_DIR": str(notes),
+            "HAS_BC": has_bc,
+            "PR_NUMBER": "12",
+            "GITHUB_REPOSITORY": "owner/repository",
+            "FAKE_LOG": str(tmp_path / "gh.log"),
+            "FAKE_PRS": str(tmp_path / "prs.txt"),
+            "FAKE_TITLE": "Change three",
+            "FAKE_BODY": str(tmp_path / "body.md"),
+        },
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    calls = (tmp_path / "gh.log").read_text(encoding="utf-8").splitlines()
+    assert_output(
+        json.dumps(
+            {
+                "returncode": result.returncode,
+                "stderr": result.stderr,
+                "search": next(call for call in calls if call.startswith("pr list")),
+                "created": next((call for call in calls if call.startswith("release create")), None),
+                "body": (tmp_path / "body.md").read_text(encoding="utf-8") if (tmp_path / "body.md").exists() else None,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
     )
