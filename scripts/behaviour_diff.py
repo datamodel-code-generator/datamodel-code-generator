@@ -1406,6 +1406,17 @@ def surface_problems(plan: Plan, inventory: dict[str, list[str] | None]) -> list
     return list(dict.fromkeys(found))
 
 
+def plan_surface_problems(gate: Gate, inventory: dict[str, list[str] | None], cache_dir: Path) -> list[str]:
+    """Return the selectors of the gate's records that name a surface the latest tag lacks (`surface_problems`).
+
+    `inventory` is the base's options: the released ones for a release plan, else the latest tag's are read.
+    """
+    plan = gate.plan
+    if plan is None or not any(selector.options or selector.input_file_type for *_, selector in plan.selectors()):
+        return []
+    return surface_problems(plan, inventory if plan.release else tag_inventory(gate, cache_dir))
+
+
 def tag_inventory(gate: Gate, cache_dir: Path) -> dict[str, list[str] | None]:
     """Return the options of the latest tag's datamodel-codegen, run from its tree with the candidate's interpreter."""
     plan, candidate = gate.plan, gate.candidate_info
@@ -2437,9 +2448,8 @@ def gate_main(ns: argparse.Namespace) -> int:
         return shortcut(gate, plan, ns)
     inventory = option_inventory(gate.base.side.python, gate.base.env)
     offered = option_inventory(gate.candidate.side.python, gate.candidate.env) if gate.identity else inventory
-    if plan is not None and any(selector.options or selector.input_file_type for *_, selector in plan.selectors()):
-        released = inventory if plan.release else tag_inventory(gate, ns.cache_dir.absolute())
-        plan.problems += surface_problems(plan, released)
+    if plan is not None:
+        plan.problems += plan_surface_problems(gate, inventory, ns.cache_dir.absolute())
     cells = build_cells(ns, gate, inventory)
     if plan is not None:
         plan.groups = [

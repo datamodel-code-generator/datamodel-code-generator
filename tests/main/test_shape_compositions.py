@@ -42,6 +42,7 @@ from scripts.shape_families_random import (
     examples,
     explorer_of,
     generation_args,
+    run,
 )
 from tests.capabilities import needs
 from tests.main.shape_families.compose import (
@@ -465,3 +466,31 @@ def test_a_run_refuses_what_the_gate_would_fail(tmp_path: Path, monkeypatch: pyt
     with pytest.raises(RefusedError, match="--base-python"):
         explorer_of(ns, tmp_path)
     assert COMPARISONS.isdisjoint(rule.kind for rule in RULES)
+
+
+@pytest.mark.allow_direct_assert("The refusal of a record that names an unreleased option is compared.")
+@needs("posix")
+def test_a_run_refuses_a_selector_that_names_an_unreleased_option(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A selector naming an option the latest tag lacks is a problem of the gate and refuses the run as well."""
+    record = OUTPUT_TEXT_RECORD.replace('options = "*"', 'options = [["--no-such-option"]]')
+    ns = _seeded_run(tmp_path, monkeypatch, record=record)
+    with pytest.raises(RefusedError, match="--no-such-option"):
+        explorer_of(ns, tmp_path)
+
+
+@pytest.mark.allow_direct_assert(
+    "The exit status and the message of an identity run that compared nothing are compared."
+)
+@needs("posix")
+def test_an_identity_run_that_compared_nothing_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An identity run whose evidence has no compared input group exits 1 with its own message, as the gate does."""
+    ns = _seeded_run(tmp_path, monkeypatch, identity=True)
+    ns.examples, ns.budget, ns.seed = 0, 1.0, 0
+    ns.database = ns.json = ns.out = None
+    code = run(ns)
+    out = capsys.readouterr().out
+    assert (code, "not compared: no input group" in out, "0 finding(s)" in out) == (1, True, True)

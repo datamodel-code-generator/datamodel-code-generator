@@ -54,7 +54,8 @@ Hypothesis draws `ROUND` examples per round, round `n` with the seed `SEED + n`,
 round that meets a new finding shrinks it (towards fewer levels and the first value of each dimension) and prints the
 smallest composition with its witness, schema and command; the round's later examples and its shrinking only count
 findings of that kind and family chain, and each kind and family chain is reported once a run. `--database` keeps the
-failing examples, so the next run replays them first. Exit 1 on a finding.
+failing examples, so the next run replays them first. Exit 1 on a finding, and in `--identity`
+when the run's evidence is incomplete (an input group compared nothing, `compare_release.Evidence.group_problems`).
 """
 
 from __future__ import annotations
@@ -86,6 +87,7 @@ from scripts.behaviour_diff import (
     judge_outcomes,
     opt_in_reason,
     option_inventory,
+    plan_surface_problems,
     repository,
 )
 from tests.capabilities import missing
@@ -468,29 +470,31 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def explorer_of(ns: argparse.Namespace, scratch: Path) -> Explorer:
     """Return the explorer of a run: the gate of its base (`behaviour_diff.gate_of`), its contracts and backends.
 
-    Raises `RefusedError` where a change record the gate judges by has a problem (as the gate fails its run, no
-    composition is approved by such a record), where the base lacks an option every generation uses or every backend,
-    or, for `--identity`, a contract's options, a merge base with HEAD, or `--base-python` (the merge base is built).
+    Raises `RefusedError` where a change record the gate judges by has a problem or names a surface the latest
+    tag lacks (as the gate fails its run, no composition is approved by such a record), where the base lacks an
+    option every generation uses or every backend, or, for `--identity`, a contract's options, a merge base with
+    HEAD, or `--base-python` (the merge base is built).
     """
     if ns.identity and ns.base_python is not None:
         msg = "--identity compares with the merge base, built by the run: --base-python names another base"
         raise RefusedError(msg)
     base = base_of(ns)
+    cache_dir = ns.cache_dir.absolute()
     gate = gate_of([
         base,
         "--timeout",
         str(TIMEOUT),
         "--cache-dir",
-        str(ns.cache_dir.absolute()),
+        str(cache_dir),
         "--candidate-python",
         str(Path(sys.executable).absolute()),
         *(["--identity"] if ns.identity else []),
         *(["--base-python", str(ns.base_python.absolute())] if ns.base_python is not None else []),
     ])
-    if problems := gate.plan.problems if gate.plan is not None else ():
+    inventory = option_inventory(gate.base.side.python, gate.base.env)
+    if problems := [*(gate.plan.problems if gate.plan else ()), *plan_surface_problems(gate, inventory, cache_dir)]:
         msg = "the change records have problems:\n" + "\n".join(f"records: {problem}" for problem in problems)
         raise RefusedError(msg)
-    inventory = option_inventory(gate.base.side.python, gate.base.env)
     label = str(ns.base_python or base)
     if (absent := absent_common_option(inventory)) is not None:
         msg = f"the base {label} has no {absent}, which every generation uses"
@@ -510,12 +514,17 @@ def explorer_of(ns: argparse.Namespace, scratch: Path) -> Explorer:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the random composition tier."""
+    """Run the random composition tier of this checkout."""
     ns = _parse_args(argv)
     package = Path(datamodel_code_generator.__file__).resolve().parent
     if not package.is_relative_to(ROOT / "src"):
         print(f"datamodel_code_generator is imported from {package}, not from {ROOT / 'src'}", file=sys.stderr)
         return 2
+    return run(ns)
+
+
+def run(ns: argparse.Namespace) -> int:
+    """Run the tier for parsed arguments; return 1 on a finding or on incomplete identity evidence, else 0."""
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="shape-compositions-") as scratch:
         try:
@@ -537,6 +546,9 @@ def main(argv: list[str] | None = None) -> int:
         f"counts: {json.dumps(counts)}\n"
         f"summary: {len(findings)} finding(s) in {elapsed:.0f} s"
     )
+    unseen = explorer.gate.evidence.group_problems() if ns.identity else []
+    if unseen:
+        print(f"not compared: {', '.join(unseen)}")
     if ns.json is not None:
         data = {
             "base": explorer.label,
@@ -548,7 +560,7 @@ def main(argv: list[str] | None = None) -> int:
             "findings": [finding.record(compose(finding.example.chain)) for finding in findings],
         }
         ns.json.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    return 1 if findings else 0
+    return 1 if findings or unseen else 0
 
 
 if __name__ == "__main__":
