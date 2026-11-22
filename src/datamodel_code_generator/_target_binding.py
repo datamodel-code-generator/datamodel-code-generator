@@ -2231,6 +2231,7 @@ def _field_facts(
         explicit_name,
         field.required if backend == "typeddict" else in_init and default_kind == "absent",
         in_init,
+        _default(field.default) if _default_state(field.default) == "value" else None,
     )
 
 
@@ -4409,6 +4410,7 @@ class _Contracts(_Octets):
                     member.model_facts.type,
                     declared,
                     self.documents.borrow(declared),
+                    member.model_facts.default,
                 )
             )
         return tuple(found)
@@ -4418,14 +4420,16 @@ class _Contracts(_Octets):
     ) -> WireDeclaration:
         """Bind a query or header parameter of a channel's handshake, typed as the models type its property.
 
-        The binding's object is a model, so each of its properties is a field, whose type is the parameter's, as a
-        model gives an OpenAPI parameter's schema its type, and whose default, description and keywords, through its
-        reference chain, are the parameter's. It is used at the channel's binding of its protocol, `binding`.
+        The binding's object is a model, so each of its properties is a field, whose type and default are the
+        parameter's, as a model gives an OpenAPI parameter's schema its type, and whose description and keywords,
+        through its reference chain, are the parameter's. It is used at the channel's binding of its protocol,
+        `binding`.
         """
         member = parameter.member
         declared = member.schema
         self.binder.declaration_types.setdefault(declared, member.type)
-        written = self._recorded(declared)
+        written = self._annotations(declared)
+        self.parser.schema_records[declared] = _SchemaRecord(member.default, _keywords(written))
         used = use_site.child("bindings", binding, parameter.location, member.name)
         use = self.use_id(owner, "parameter", declared, used, declared, location=parameter.location, name=member.name)
         facts: dict[str, YamlValue] = {"name": member.name, "in": parameter.location, "required": member.required}
@@ -4440,17 +4444,19 @@ class _Contracts(_Octets):
             self.media_facts((self.use(use, declared),), declared, "parameter", None),
         )
 
-    def _recorded(self, declared: SchemaLocation) -> dict[str, YamlValue]:
-        """Record the default and keywords a schema of a channel gives through its reference chain, and return them.
+    def _recorded(self, declared: SchemaLocation) -> None:
+        """Record the default and keywords a schema of a channel gives through its reference chain."""
+        self.parser.schema_records.setdefault(declared, _record(self._annotations(declared)))
+
+    def _annotations(self, declared: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the default and keywords a schema of a channel gives through its reference chain.
 
         Each location is read from its loaded document (``site_facts_of``), its reference resolved as the parser
         resolves it (``loaded_target``).
         """
-        written = self.parser.ref_annotations(
+        return self.parser.ref_annotations(
             declared, lambda location: site_facts_of(self.documents.borrow(location), location, self.loaded_target)
         )
-        self.parser.schema_records.setdefault(declared, _record(written))
-        return written
 
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""

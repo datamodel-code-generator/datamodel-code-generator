@@ -6827,6 +6827,18 @@
     "config": {"body_arguments": "both"},
     "modules": [["client", "resources", "default", "_sync.py"], ["models.py"]]
   },
+  "asyncapi-handshake-defaults-v2": {
+    "input": "asyncapi-handshake-defaults-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "typing.TypedDict"],
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-defaults-v3": {
+    "input": "asyncapi-handshake-defaults-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel"],
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
   "protocols-pagination-nullable-false": {
     "input": "pagination-nullable-false.yaml",
     "references": ["protocols/pagination-nullable-false.json"],
@@ -6852,5 +6864,15 @@
     "model": {"use_type_alias": true},
     "config": {"protocols": "protocols/pagination-nullable-false-ends.json"},
     "modules": false
+  },
+  "asyncapi-handshake-defaults-v2-collapsed": {
+    "input": "asyncapi-handshake-defaults-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "collapse_root_models": true},
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-defaults-v2-ignored": {
+    "input": "asyncapi-handshake-defaults-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "ignore_ref_siblings_by_schema_version": true},
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
   }
 }

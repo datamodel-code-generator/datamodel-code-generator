@@ -154,6 +154,15 @@ asyncapi-foreign-operations	api_generation/client_generation/client_render[async
 asyncapi-handshake	api_generation/client_generation/client_render[asyncapi-handshake].msgspec_Struct/
 asyncapi-handshake	api_generation/client_generation/client_render[asyncapi-handshake].pydantic_v2_BaseModel/
 asyncapi-handshake	api_generation/client_generation/client_render[asyncapi-handshake].txt
+asyncapi-handshake-defaults-v2	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2].pydantic_v2_BaseModel/
+asyncapi-handshake-defaults-v2	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2].txt
+asyncapi-handshake-defaults-v2	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2].typing_TypedDict/
+asyncapi-handshake-defaults-v2-collapsed	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-collapsed].pydantic_v2_BaseModel/
+asyncapi-handshake-defaults-v2-collapsed	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-collapsed].txt
+asyncapi-handshake-defaults-v2-ignored	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-ignored].pydantic_v2_BaseModel/
+asyncapi-handshake-defaults-v2-ignored	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-ignored].txt
+asyncapi-handshake-defaults-v3	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v3].pydantic_v2_BaseModel/
+asyncapi-handshake-defaults-v3	api_generation/client_generation/client_render[asyncapi-handshake-defaults-v3].txt
 asyncapi-handshake-models	api_generation/client_generation/client_render[asyncapi-handshake-models].pydantic_v2_BaseModel/
 asyncapi-handshake-models	api_generation/client_generation/client_render[asyncapi-handshake-models].txt
 asyncapi-handshake-siblings-v2	api_generation/client_generation/client_render[asyncapi-handshake-siblings-v2].pydantic_v2_BaseModel/

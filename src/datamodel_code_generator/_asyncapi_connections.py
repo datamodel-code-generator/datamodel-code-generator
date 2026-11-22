@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator._target_contract import TypeView
+    from datamodel_code_generator._target_contract import LiteralScalar, TypeView
     from datamodel_code_generator.types import DataType
 
 __all__ = (
@@ -169,8 +169,8 @@ class ReadMember:
 
     `required` is whether the model requires the field, `fixed` the values its type admits where it admits literal
     values alone, else None (``TypeTables.fixed``), `type` the field's type, `bound` that type as the models bind it
-    (``ModelFieldFacts.type``), `schema` where the models declare the property, and `written` its schema there as
-    written.
+    (``ModelFieldFacts.type``), `schema` where the models declare the property, `written` its schema there as
+    written, and `default` the model field's default (``ModelFieldFacts.default``).
     """
 
     name: str
@@ -180,6 +180,7 @@ class ReadMember:
     bound: TypeView
     schema: SchemaLocation
     written: YamlValue
+    default: LiteralScalar | None = None
 
 
 Members: TypeAlias = "Callable[[SchemaLocation], tuple[ReadMember, ...] | str]"
