@@ -8,3 +8,17 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline"
+head = 3093
+pr = 7334
+decision = ["#7334"]
+reason = "the environment check moves to heki's effect-boundaries with module scopes: the 6 module-body environment reads the old ratchet counted join the heki baseline (34 sites in all), so the total rises once while env-probe@src goes away"
+
+[[approved]]
+key = "allowlist:heki-baseline:EFF201"
+head = 43
+pr = 7334
+decision = ["#7334"]
+reason = "the environment reads get their own heki key so a new read cannot hide behind a removed other heki site; it starts at today's 43 sites"
