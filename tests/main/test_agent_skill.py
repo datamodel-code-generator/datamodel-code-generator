@@ -65,7 +65,7 @@ def test_install_skill_copies_bundled_files_for_supported_agents(
 
     target = (tmp_path if scope == "project" else home) / skill_directory / "datamodel-code-generator"
     captured = capsys.readouterr()
-    assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
+    assert_exact_directory_content(target, pattern="*.md", against=SKILL_DIR)
     assert_output(captured.out.replace(str(target), "<target>"), name="stdout")
     assert_output(captured.err, name="stderr")
 
@@ -78,7 +78,7 @@ def test_install_skill_fast_path_uses_the_packaged_resource(tmp_path: Path) -> N
         pytest.fail(f"skill installation failed\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}")
 
     target = tmp_path / ".agents" / "skills" / "datamodel-code-generator"
-    assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
+    assert_exact_directory_content(target, pattern="*.md", against=SKILL_DIR)
     assert_output(result.stdout.replace(str(target), "<target>"), name="stdout")
     assert_output(result.stderr, name="stderr")
 
@@ -95,7 +95,7 @@ def test_install_skill_fast_path_parser(
 
     target = tmp_path / ".claude" / "skills" / "datamodel-code-generator"
     captured = capsys.readouterr()
-    assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
+    assert_exact_directory_content(target, pattern="*.md", against=SKILL_DIR)
     assert_output(f"{return_code}\n", name="exit_code")
     assert_output(captured.out.replace(str(target), "<target>"), name="stdout")
     assert_output(captured.err, name="stderr")
@@ -127,7 +127,7 @@ def test_install_skill_requires_explicit_overwrite_and_replaces_stale_files(
     with chdir(tmp_path):
         run_main_with_args([*install_args, "--overwrite-skill"])
     captured = capsys.readouterr()
-    assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
+    assert_exact_directory_content(target, pattern="*.md", against=SKILL_DIR)
     installed_files = "\n".join(sorted(path.relative_to(target).as_posix() for path in target.rglob("*")))
     assert_output(f"{installed_files}\n", name="installed_files")
     assert_output(captured.out.replace(str(target), "<target>"), name="stdout")

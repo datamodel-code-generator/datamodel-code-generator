@@ -32,19 +32,16 @@ def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) 
     )
 
 
-def test_pagination_docs_example(tmp_path: Path) -> None:
+def test_pagination_docs_example() -> None:
     """Pagination renders its tested client recipe with the exact committed documentation text."""
     example = next(
         example
         for example in build_docs_examples.docs_examples()
         if example.example_id == "python-client.pagination.helper"
     )
-    content = example.path.read_text(encoding="utf-8")
-    expected_path = tmp_path / "pagination-docs.txt"
-    expected_path.write_text(content, encoding="utf-8")
-    updated, _ = build_docs_examples.replace_example(content, example)
+    updated, _ = build_docs_examples.replace_example(example.path.read_text(encoding="utf-8"), example)
 
-    assert_output(updated, expected_path)
+    assert_output(updated, against=example.path)
 
 
 def test_docs_examples_registry() -> None:
