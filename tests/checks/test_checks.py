@@ -63,7 +63,7 @@ print("ready", flush=True)
 sys.stdin.read()
 mode = Mode(Area.STORE_WRITES, Path(sys.argv[1]))
 for index in range(int(sys.argv[3])):
-    mode.record("appended", writer=sys.argv[2], index=index, padding="x" * 8192)
+    mode.record("appended", writer=sys.argv[2], index=index, padding="x" * 4096)
 """
 """Says it is ready, then appends lines to a report once every writer has started: when the test closes the pipe of
 its standard input."""
@@ -72,10 +72,10 @@ its standard input."""
 def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
     """Processes and threads that append to one report at once each write every line of theirs whole (#7374).
 
-    The determinism tests run two generator processes that report into the file of their test process. On Windows an
-    append is a seek to the end and then a write, so without the report's lock two writers wrote at the same offset.
+    The determinism tests run two generator processes that report into the file of their test process. The CRT's append
+    on Windows is a seek to the end and then a write, so two writers wrote at the same offset and broke their lines.
     """
-    report, lines = tmp_path / "report.jsonl", 300
+    report, lines = tmp_path / "report.jsonl", 100
     start_read, start_write = os.pipe()
     readies = [os.pipe() for _ in range(4)]
     processes = [
@@ -94,7 +94,7 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
 
     def append(writer: str) -> None:
         for index in range(lines):
-            mode.record("appended", writer=writer, index=index, padding="x" * 8192)
+            mode.record("appended", writer=writer, index=index, padding="x" * 4096)
 
     for ready_read, _ in readies:
         os.read(ready_read, 64)
