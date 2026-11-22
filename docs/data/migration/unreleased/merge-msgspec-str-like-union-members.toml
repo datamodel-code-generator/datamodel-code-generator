@@ -3,7 +3,7 @@ id = "merge-msgspec-str-like-union-members"
 category = "new-surface"
 title = "Write one str for the str-like members of a msgspec union under an option"
 summary = "msgspec.Struct output: --merge-msgspec-str-like-union-members writes one str in place of the str-like members of a union (str, UUID, the dates and times, Decimal, bytes, the str values of a Literal, and aliases of them) when it holds more than one of them, which msgspec refuses to decode; the union then accepts every string as str, without the formats and constraints of those members, with a warning. Unions with an Enum of str values, a member typed by x-python-type, a member built for an integer or number schema (a number of format decimal, time-delta or date-time, whose JSON numbers one str would refuse) or an alias of a union that mixes str-like and other members stay as they are, with their warning. Without the option the output is that of 0.99.0."
-refs = ["#1"]
+refs = ["#6549"]
 surface = ["--merge-msgspec-str-like-union-members"]
 covers = [
     "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge].payloads.txt",
