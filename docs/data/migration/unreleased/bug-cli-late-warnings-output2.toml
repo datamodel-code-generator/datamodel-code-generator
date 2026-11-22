@@ -1,0 +1,10 @@
+[[change]]
+id = "bug-cli-late-warnings-output2"
+category = "harness"
+title = "The stored warnings of a repaired stdout run"
+summary = "The stored warning text of the tests that pin the warnings of a repaired dotted schema name; the module is the same."
+refs = ["#6926"]
+covers = [
+    "main/openapi/main_openapi/main_invalid_dotted_schema_name_stdout_late_pass_warnings.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_invalid_dotted_schema_name_late_warnings.yaml].txt",
+]

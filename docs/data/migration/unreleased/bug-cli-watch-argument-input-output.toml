@@ -1,0 +1,9 @@
+[[change]]
+id = "bug-cli-watch-argument-input-output"
+category = "harness"
+title = "The stored module of the watch test"
+summary = "The stored module of the test that pins the input a watch with the remote lock watches; the package writes the same output."
+refs = ["#7047"]
+covers = [
+    "main/main_watch/watch_cli_update_lock_watches_the_input_an_argument_gives.py",
+]

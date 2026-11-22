@@ -1,22 +1,10 @@
 [[change]]
 id = "bug-cli-hidden-binary-inputs"
-category = "crash-fix"
+category = "api"
 title = "A directory input skips hidden files that are not text"
 summary = "A hidden file of a directory input (a name or a directory below the input that starts with a dot) whose first bytes hold a NUL byte, such as the .DS_Store file Finder writes, is no longer read as a schema, so generation no longer stops with Invalid file format; a hidden file that reads as text stays an input."
 refs = ["#7128"]
-kind = "default-output"
-action = "none"
+decision = ["#7398"]
+kind = "cli"
+action = "review"
 source = "release-note"
-covers = [
-    "main/directory_input_hidden_files/directory_input_keeps_hidden_text_files/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[.cache_thumbnail.bin-None]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[.cache_thumbnail.bin-jsonschema]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_.DS_Store-None]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_.DS_Store-jsonschema]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_.hidden_.DS_Store-None]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_.hidden_.DS_Store-jsonschema]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_b_.DS_Store-None]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_b_.DS_Store-jsonschema]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files_beside_the_output[None]/",
-    "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files_beside_the_output[jsonschema]/",
-]
