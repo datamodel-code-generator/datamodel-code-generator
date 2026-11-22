@@ -10,6 +10,7 @@ import sys
 import textwrap
 import zlib
 from dataclasses import dataclass, replace
+from itertools import combinations, permutations, product, starmap
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
@@ -1754,6 +1755,45 @@ def test_ledger_applies_a_payload_that_breaks_a_tie(
     ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN).assert_outcomes(**{outcome: 1})
 
 
+def test_ledger_refuses_a_batch_a_class_never_recorded(ledger: LedgerProject, tmp_path: Path) -> None:
+    """A batch that would give a class it does not come from another class's output, where it read none, is refused.
+
+    Nothing is written; ``--from-ci`` skips the batch's payloads and says why.
+    """
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        "    assert_output('x\\n', varies_with=('builtin-formatter', 'linux'))\n",
+    )
+    ledger.store(builtin := "m/a@builtin.txt", "x\n")
+    line = units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin)
+    (ledger.suite / "test_m.refs").write_text(units.format_refs([line]), encoding="utf-8")
+    recorded = (ledger.refs(), ledger.files())
+    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "darwin"}
+    payload = {
+        "facts": facts | {"pydantic": "2.14.1"},
+        "item": "suite/test_m.py::test_a",
+        "label": "m/a.txt",
+        "digest": units.unit_digest("m/a.txt", "y\n"),
+        "value": "y\n",
+        "clauses": ["formatter==builtin", "platform==linux"],
+    }
+    problem = (
+        "suite/test_m.py::test_a m/a.txt: these payloads would give the class platform==linux, which records no output "
+        "of its own, the output of another class; apply them with a payload of that class, or run the test there with "
+        "--inline-snapshot=fix"
+    )
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [payload]}), encoding="utf-8")
+    refused = ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert refused.ret == pytest.ExitCode.USAGE_ERROR
+    assert f"nothing was written:\npayload 1: {problem}" in refused.stderr.str()
+    apply_file.write_text(json.dumps({"payloads": [payload], "skip_rejected": True}), encoding="utf-8")
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert f"expected: skipped a payload: {problem}" in skipped.stdout.str()
+    assert (ledger.refs(), ledger.files()) == recorded
+
+
 def test_ledger_payload_too_large(ledger: LedgerProject) -> None:
     """Output too large for a payload names the lane to run locally instead."""
     ledger.write(
@@ -2451,8 +2491,15 @@ def test_apply_payloads_write_the_line_of_their_class() -> None:
             ["black<24", "platform==win32"],
             WINDOWS,
             BLACK22,
-            [((), units.KEEP), (("platform==win32",), "y\n")],
-            id="adding-a-line-it-does-not-read",
+            [((), units.KEEP), (("platform==win32",), "y\n"), (("black<24", "platform==win32"), units.KEEP)],
+            id="adding-a-line-another-class-would-read",
+        ),
+        pytest.param(
+            ["black<24", "platform==win32"],
+            PY311,
+            WINDOWS,
+            [((), "y\n"), (("black<24",), units.KEEP), (("platform==win32",), units.KEEP)],
+            id="replacing-the-line-other-classes-read",
         ),
     ],
 )
@@ -2462,9 +2509,10 @@ def test_apply_payloads_keep_what_this_class_reads(
     local: dict[str, str],
     wanted: list[tuple[tuple[str, ...], object]],
 ) -> None:
-    """A payload of another class that would change what this environment's class reads leaves that class its line.
+    """A payload that would change what a class it does not come from reads leaves that class its line.
 
-    The kept line has the contents and storage the class read, under the class's own clauses.
+    That holds for this environment's class and every other one: the kept line has the contents and storage the
+    class read, under the class's own clauses.
     """
     current = units.RefLine("test_a", "", "m/a.txt", storage="m/shared.txt")
     applied = units.apply_payloads(
@@ -2472,6 +2520,144 @@ def test_apply_payloads_keep_what_this_class_reads(
     )
     assert [(want.predicate, want.value) for want in applied] == wanted
     assert all(want.current is current for want in applied if want.value is units.KEEP)
+
+
+DOMAIN = {
+    "python": ["3.11", "3.12", "3.14"],
+    "formatter": ["builtin", "external"],
+    "black": ["", "22.1.0", "24.1.0", "24.3.0", "26.1.0"],
+    "platform": ["linux", "darwin", "win32"],
+    "pydantic": ["2", "2.0.3", "2.4.2", "2.5.0", "2.14.1"],
+}
+"""Fact values on every side of the clauses the exhaustive resolver test declares."""
+ANY_PLATFORM = "platform==darwin|platform==linux|platform==win32"
+
+
+def test_apply_payloads_refuse_an_output_a_class_never_recorded() -> None:
+    """A batch that would give a class that read no output another class's output is refused: no line can keep none."""
+    start = [units.Desired("m/a.txt", predicate=("platform==win32",))]
+    payload = _value_payload(PY311, "y\n", ["black<24", "platform==win32"])
+    with pytest.raises(ValueError, match="no output") as refused:
+        units.apply_payloads(start, [payload], WINDOWS, exists=True)
+    assert str(refused.value) == (
+        "t.py::test_a m/a.txt: these payloads would give the class black<24, which records no output of its own, the "
+        "output of another class; apply them with a payload of that class, or run the test there with "
+        "--inline-snapshot=fix"
+    )
+
+
+@pytest.mark.parametrize(
+    ("declared", "classes"),
+    [
+        pytest.param(
+            ("black<24", "platform==win32"),
+            [(), ("black<24",), ("platform==win32",), ("black<24", "platform==win32")],
+            id="independent",
+        ),
+        pytest.param(("python<3.12", "python>=3.12"), [("python<3.12",), ("python>=3.12",)], id="exclusive"),
+        pytest.param(("black<24", "black<24.3"), [(), ("black<24.3",), ("black<24", "black<24.3")], id="nested"),
+        pytest.param(
+            ("formatter==builtin", ANY_PLATFORM),
+            [(ANY_PLATFORM,), ("formatter==builtin", ANY_PLATFORM)],
+            id="one-always-holds",
+        ),
+        pytest.param(
+            ("pydantic==2.0", "pydantic<2.5"), [(), ("pydantic<2.5",), ("pydantic<2.5", "pydantic==2.0")], id="series"
+        ),
+    ],
+)
+def test_apply_payloads_keep_what_every_other_class_reads(
+    declared: tuple[str, ...], classes: list[tuple[str, ...]]
+) -> None:
+    """Only the classes a batch's payloads come from change what they read, whatever the records and the order.
+
+    The records of a label are every choice of no line, output a or output b for each set of the declared clauses;
+    a batch is value payloads of any classes, each with a new output or a, in every order, applied in an environment
+    of a class none comes from. Every environment of another class reads the output it read before (one digest, or
+    none when its lines lack or disagree), or the batch is refused because one that read none would read another's.
+    The classes the resolver checks (`declared_classes`) are the ones environments have.
+    """
+    named = [fact for fact in DOMAIN if any(fact in clause for clause in declared)]
+    environments = [PY311 | dict(zip(named, values, strict=True)) for values in product(*(DOMAIN[f] for f in named))]
+    witnesses: dict[tuple[str, ...], dict[str, str]] = {}
+    for facts in environments:
+        witnesses.setdefault(units.holding_clauses(declared, facts), facts)
+    assert units.declared_classes(declared) == classes == sorted(witnesses, key=lambda held: (len(held), held))
+    sets = [held for size in range(len(declared) + 1) for held in combinations(sorted(declared), size)]
+    batches = [
+        dict(zip(sources, values, strict=True))
+        for size in range(1, len(classes))
+        for sources in combinations(classes, size)
+        for values in product(["a\n", "n\n"], repeat=size)
+    ]
+    failures = [
+        f"{contents} {sent}: {failure}"
+        for contents in product([None, "a\n", "b\n"], repeat=len(sets))
+        for sent in batches
+        for failure in _batch_failures(
+            list(declared),
+            [_line(held, value) for held, value in zip(sets, contents, strict=True) if value is not None],
+            sent,
+            witnesses,
+            environments,
+        )
+    ]
+    assert not failures, failures[:5]
+
+
+def _line(held: tuple[str, ...], value: str) -> units.Desired:
+    return units.Desired("m/a.txt", predicate=held, digest=units.unit_digest("m/a.txt", value))
+
+
+def _batch_failures(
+    declared: list[str],
+    start: list[units.Desired],
+    sent: dict[tuple[str, ...], str],
+    witnesses: dict[tuple[str, ...], dict[str, str]],
+    environments: list[dict[str, str]],
+) -> list[str]:
+    """Return how value payloads from the classes in ``sent`` break the resolver's invariant over ``start``.
+
+    The payloads apply in an environment of a class none comes from, the first of ``witnesses``.
+    """
+    local = next(facts for held, facts in witnesses.items() if held not in sent)
+    payloads = [_value_payload(witnesses[held], value, declared) for held, value in sent.items()]
+    applied = _applied(start, payloads, local)
+    orders = [
+        f"order {order} differs" for order in permutations(payloads) if _applied(start, list(order), local) != applied
+    ]
+    if isinstance(applied, str):
+        written = [want for want in start if want.predicate not in sent] + list(starmap(_line, sent.items()))
+        protected = any(
+            not _read_output(start, facts) and _read_output(written, facts)
+            for held, facts in witnesses.items()
+            if held not in sent
+        )
+        return [*orders, *([] if protected else [f"refused without a class to protect: {applied}"])]
+    return orders + [
+        f"{facts} reads {_read_output(applied, facts)}"
+        for facts in environments
+        if _read_output(applied, facts)
+        != (
+            {units.unit_digest("m/a.txt", sent[held])}
+            if (held := units.holding_clauses(declared, facts)) in sent
+            else _read_output(start, facts)
+        )
+    ]
+
+
+def _applied(
+    start: list[units.Desired], payloads: list[units.Payload], local: dict[str, str]
+) -> list[units.Desired] | str:
+    try:
+        return units.apply_payloads(start, payloads, local, exists=True)
+    except ValueError as error:
+        return str(error)
+
+
+def _read_output(lines: list[units.Desired], facts: dict[str, str]) -> set[str | None]:
+    digests = {want.digest for want in units.applicable_lines(lines, facts)}
+    return digests if len(digests) == 1 else set()
 
 
 @pytest.mark.parametrize(

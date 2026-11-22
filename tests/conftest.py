@@ -1084,6 +1084,7 @@ class _Ledger:
             for number, payload in enumerate(payloads, start=1)
             if (problem := payload_problem(payload, self.config.rootpath, self.index) or self.own_payload(payload))
         }
+        refused |= self.batch_refusals(payloads, refused)
         if refused and self.apply_data.get("skip_rejected"):
             self.apply_data["payloads"] = [
                 payload for number, payload in enumerate(payloads, start=1) if number not in refused
@@ -1131,6 +1132,34 @@ class _Ledger:
         if problems:
             msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
             raise pytest.UsageError(msg)
+
+    def batch_refusals(self, payloads: Sequence[Payload], refused: Mapping[int, str]) -> dict[int, str]:
+        """Return the value payloads, by number, of each item whose batch the resolver refuses (`apply_payloads`).
+
+        The batch of an item is every payload of it not refused alone; the resolver refuses one that would give a
+        class it does not come from another class's output where that class recorded none.
+        """
+        batches: dict[tuple[Path, str, str], list[int]] = {}
+        for number, payload in enumerate(payloads, start=1):
+            if number not in refused:
+                batches.setdefault(nodeid_key(self.config.rootpath, payload["item"]), []).append(number)
+        found: dict[int, str] = {}
+        for key, numbers in batches.items():
+            batch = [payloads[number - 1] for number in numbers]
+            try:
+                apply_payloads(self.start_lines(*key), batch, self.facts, exists=True)
+            except ValueError as error:
+                found |= {
+                    number: str(error) for number, payload in zip(numbers, batch, strict=True) if "digest" in payload
+                }
+        return found
+
+    def start_lines(self, sidecar: Path, function: str, param: str) -> list[Desired]:
+        """Return an item's recorded lines as lines a run keeps, each with the digest of what it stores."""
+        return [
+            Desired(line.label, line.conditional, line.predicate, digest=self.stored_digest(line), current=line)
+            for line in self.index.item_lines(sidecar).get((function, param), [])
+        ]
 
     def own_payload(self, payload: Mapping[str, Any]) -> str | None:
         """Refuse a payload only a local run should apply: one of this environment's class, or of its very facts.
@@ -1969,14 +1998,7 @@ class _Ledger:
             by_item.setdefault(nodeid_key(rootpath, payload["item"]), []).append(payload)
         for (sidecar, function, param), payloads in by_item.items():
             current = updates.get(sidecar, {}).get((function, param))
-            start = (
-                current
-                if current is not None
-                else [
-                    Desired(line.label, line.conditional, line.predicate, digest=self.stored_digest(line), current=line)
-                    for line in self.index.item_lines(sidecar).get((function, param), [])
-                ]
-            )
+            start = current if current is not None else self.start_lines(sidecar, function, param)
             updates.setdefault(sidecar, {})[function, param] = apply_payloads(
                 start, payloads, self.facts, exists=(sidecar, function, param) in local
             )

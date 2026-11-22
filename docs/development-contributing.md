@@ -118,9 +118,10 @@ failure ends with a `python scripts/fix_expected.py --apply '...'` command (or
 use `--from-ci <run id>`) that writes that lane's output as the line of its
 class, so no other interpreter or formatter is needed locally. A payload of your
 environment's class is refused: only a local run changes what your class
-compares, so a test that declares nothing takes no payload, and payloads that
-would change the output your class reads leave your class that output under its
-own clauses, whatever their order. Payloads, and
+compares, so a test that declares nothing takes no payload. Payloads, in any
+order, change only what their own classes read: every other class keeps the
+output it read under a line of its own clauses, and a batch that would give a
+class that recorded nothing another class's output is refused. Payloads, and
 observations merged with `fix_expected.py --observations`, of one class that
 store different outputs are refused too, naming the facts the environments
 differ in: a difference no declared fact explains needs `varies_with=` or a fix.

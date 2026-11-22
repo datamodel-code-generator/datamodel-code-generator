@@ -26,7 +26,7 @@ import posixpath
 import re
 import zlib
 from dataclasses import dataclass, field, replace
-from itertools import combinations, starmap
+from itertools import combinations, product, starmap
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, TypeVar
 
@@ -58,11 +58,13 @@ __all__ = [
     "UnsafeWriteError",
     "applicable_lines",
     "apply_payloads",
+    "class_lines",
     "clauses_hold",
     "clauses_problem",
     "condition_holds",
     "condition_problem",
     "conflicting_payloads",
+    "declared_classes",
     "decode_payload",
     "deduplicate",
     "derived_directory",
@@ -422,9 +424,55 @@ def applicable_lines(lines: Iterable[_Line], facts: Mapping[str, str]) -> list[_
     Usually one line; none when no line applies, and several when lines of as many clauses all hold (``@A`` and
     ``@B`` in an environment of class ``A,B``), a class no environment recorded.
     """
-    holding = [line for line in lines if clauses_hold(line.predicate, facts)]
+    return _most_specific([line for line in lines if clauses_hold(line.predicate, facts)])
+
+
+def class_lines(lines: Iterable[_Line], clauses: Collection[str]) -> list[_Line]:
+    """Return the lines of one label a class (the declared clauses that hold in it) reads, as `applicable_lines`."""
+    return _most_specific([line for line in lines if set(line.predicate) <= set(clauses)])
+
+
+def _most_specific(holding: Sequence[_Line]) -> list[_Line]:
     most = max((len(line.predicate) for line in holding), default=0)
     return [line for line in holding if len(line.predicate) == most]
+
+
+def _witness_values(fact: str, values: Iterable[str]) -> list[str]:
+    """Return values of a fact around every value clauses compare it with: equal, in its series, just above and below.
+
+    A fact that is no version takes every value of its shape; a tool may also be missing (an empty fact). A version
+    value starts with a release, as its shape requires; below it lies each release with one component lowered.
+    """
+    if fact not in VERSION_FACTS:
+        return _FACT_SHAPES[fact].pattern.split("|")
+    found = set() if fact == "python" else {""}
+    for value in values:
+        parts = release(value)
+        found |= {value, f"{value}.1", ".".join(map(str, (*parts[:-1], parts[-1] + 1)))}
+        found |= {
+            ".".join(map(str, (*parts[:index], part - 1, *parts[index + 1 :])))
+            for index, part in enumerate(parts)
+            if part
+        }
+    return sorted(found)
+
+
+def declared_classes(clauses: Collection[str]) -> list[tuple[str, ...]]:
+    """Return the classes a declaration has: each set of its clauses that hold together in some environment.
+
+    Witness environments combine, for every fact the clauses name, values around each value they compare it with
+    (`_witness_values`), so clauses that exclude each other (``python<3.12`` and ``python>=3.12``) or imply each other
+    (``black<24`` and ``black<24.3``) give only the classes environments can have. Fewest clauses first.
+    """
+    named: dict[str, set[str]] = {}
+    for match in filter(None, (_CONDITION.fullmatch(part) for clause in clauses for part in clause.split("|"))):
+        named.setdefault(match["fact"], set()).add(match["value"])
+    facts = sorted(named)
+    found = {
+        holding_clauses(clauses, dict(zip(facts, values, strict=True)))
+        for values in product(*(_witness_values(fact, named[fact]) for fact in facts))
+    }
+    return sorted(found, key=lambda held: (len(held), held))
 
 
 VERSION_FACTS = frozenset({"python", "black", "isort", "pydantic"})
@@ -1484,8 +1532,7 @@ class _Resolution:
         reads them.
         """
         read = [line for line in lines if set(line.predicate) <= set(clauses)]
-        most = max((len(line.predicate) for line in read), default=0)
-        digests = sorted({self.digest(line.stored) or "" for line in read if len(line.predicate) == most})
+        digests = sorted({self.digest(line.stored) or "" for line in class_lines(read, clauses)})
         return any(not line.conditional for line in read), tuple(digests)
 
     def collapse_overrides(self) -> None:
@@ -2001,10 +2048,11 @@ def apply_payloads(
     the result does not depend on the order of the payloads. Per label, a value payload writes or replaces the line of
     its class (`payload_class`) and drops the label's lines whose clauses the comparison no longer declares. A line it
     adds takes the conditional flag of the line its class read in `start`; without one it is conditional when the item
-    has other lines or does not exist here. When the label's writes change the output this environment's class read
-    in `start` (one line, or tied lines that agree), that class keeps it under a line of its own, since only a local
-    run changes what this class compares; a class that read nothing, or tied lines that disagree, gets no line. A value
-    payload of this environment's class raises ``ValueError`` (apply sessions refuse it before). Then a stale payload
+    has other lines or does not exist here. Only the classes the payloads come from change what they read: every
+    other class of the declaration, this environment's too, keeps the output it read in `start` (one line, or tied
+    lines that agree) under a line of its own clauses, and a batch that would give a class that read none another
+    class's output raises ``ValueError``, as a value payload of this environment's class does (apply sessions refuse
+    both before writing). Then a stale payload
     (its lane lacks the item) marks the item's lines that lane reads conditional when the item runs here or a value or
     missing payload of the batch shows it runs on another lane, and drops them when it runs nowhere; a missing payload
     marks the label's lines it reads conditional.
@@ -2037,9 +2085,12 @@ def _apply_values(
 ) -> list[Desired]:
     """Write the value payloads of one label into an item's desired lines (`apply_payloads`).
 
-    What each class read, and which lines exist, come from `start`: one write per class, then one check of what this
-    environment's class reads afterwards. Outputs compare by digest, a line that keeps its storage by the digest of
-    what it stores (None when unknown or missing).
+    What each class read, and which lines exist, come from `start`: one write per class. Then every class of the
+    declaration (`declared_classes`, this environment's among them) that no payload came from must read what it read
+    in `start`, fewest clauses first, since a line of a class changes only what classes holding more clauses read:
+    one that read an output keeps it under a line of its own clauses, and one that read none (no line, or lines that
+    disagree) and would read another class's output refuses the batch with ``ValueError``. Outputs compare by digest,
+    a line that keeps its storage by the digest of what it stores (None when unknown or missing).
     """
     label, declared = payloads[0]["label"], set(payloads[0]["clauses"])
     home = payload_class(payloads[0], local)
@@ -2065,8 +2116,29 @@ def _apply_values(
             read = applicable_lines(lines, payload["facts"])
             conditional = read[0].conditional if read else bool(recorded) or not exists
             desired.append(Desired(label, conditional, target, value, digest))
-    before = applicable_lines(lines, local)
-    after = applicable_lines((want for want in desired if want.label == label), local)
-    if len(output := {want.digest for want in before}) == 1 and {want.digest for want in after} != output:
-        desired.append(replace(before[0], predicate=home))
+    for clauses in dict.fromkeys([*declared_classes(declared), home]):
+        if clauses in writes:
+            continue
+        read = class_lines(lines, clauses)
+        if (output := _class_output(read)) == _class_output(class_lines(_of_label(desired, label), clauses)):
+            continue
+        if not output:
+            where = f"the class {predicate_text(clauses)}" if clauses else "the class where no declared fact holds"
+            msg = (
+                f"{payloads[0]['item']} {label}: these payloads would give {where}, which records no output of its "
+                "own, the output of another class; apply them with a payload of that class, or run the test there "
+                "with --inline-snapshot=fix"
+            )
+            raise ValueError(msg)
+        desired.append(replace(read[0], predicate=clauses))
     return desired
+
+
+def _of_label(lines: Iterable[Desired], label: str) -> list[Desired]:
+    return [want for want in lines if want.label == label]
+
+
+def _class_output(read: Sequence[Desired]) -> frozenset[str | None]:
+    """Return what a class reads from its lines (`class_lines`): one digest, or none when they disagree or lack."""
+    digests = frozenset(want.digest for want in read)
+    return digests if len(digests) == 1 else frozenset()
