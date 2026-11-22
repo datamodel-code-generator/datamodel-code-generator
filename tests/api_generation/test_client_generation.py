@@ -145,6 +145,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "validation-ambiguous",
         "union-value-kinds",
         "union-value-kinds-literals",
+        "union-value-kinds-enums",
+        "codec-wrapped-discriminator",
         "discriminator-copies",
         "discriminator-variants",
         "discriminator-reuse",

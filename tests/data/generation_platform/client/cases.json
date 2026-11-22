@@ -6797,5 +6797,15 @@
     "input": "asyncapi-missing-messages-external.yaml",
     "references": ["asyncapi-missing-messages-library.yaml"],
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "codec-wrapped-discriminator": {
+    "input": "codec-wrapped-discriminator.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "modules": [["client", "_generated", "model_bindings.py"], ["models.py"]]
+  },
+  "union-value-kinds-enums": {
+    "input": "union-value-kinds-enums.yaml",
+    "backends": ["dataclasses.dataclass", "typing.TypedDict"],
+    "modules": [["client", "_generated", "model_bindings.py"], ["models.py"]]
   }
 }

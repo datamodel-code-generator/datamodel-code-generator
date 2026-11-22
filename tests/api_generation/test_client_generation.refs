@@ -257,6 +257,11 @@ child-collision	api_generation/client_generation/client_render[child-collision].
 codec-docstrings	api_generation/client_generation/client_render[codec-docstrings].pydantic_v2_BaseModel/
 codec-docstrings	api_generation/client_generation/client_render[codec-docstrings].txt
 codec-errors	api_generation/client_generation/client_render[codec-errors].txt
+codec-wrapped-discriminator	api_generation/client_generation/client_render[codec-wrapped-discriminator].dataclasses_dataclass/
+codec-wrapped-discriminator	api_generation/client_generation/client_render[codec-wrapped-discriminator].msgspec_Struct/
+codec-wrapped-discriminator	api_generation/client_generation/client_render[codec-wrapped-discriminator].pydantic_v2_BaseModel/
+codec-wrapped-discriminator	api_generation/client_generation/client_render[codec-wrapped-discriminator].txt
+codec-wrapped-discriminator	api_generation/client_generation/client_render[codec-wrapped-discriminator].typing_TypedDict/
 compression	api_generation/client_generation/client_render[compression].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/compression/pydantic_v2_BaseModel//*.py
 compression	api_generation/client_generation/client_render[compression].txt	= main/generation_platform/client/compression.txt
 container-item-nulls	api_generation/client_generation/client_render[container-item-nulls].dataclasses_dataclass/
@@ -593,6 +598,9 @@ typeddict-target-keys	api_generation/client_generation/client_render[typeddict-t
 typeddict-target-keys	api_generation/client_generation/client_render[typeddict-target-keys].typing_TypedDict/
 union-value-kinds	api_generation/client_generation/client_render[union-value-kinds].dataclasses_dataclass/
 union-value-kinds	api_generation/client_generation/client_render[union-value-kinds].txt
+union-value-kinds-enums	api_generation/client_generation/client_render[union-value-kinds-enums].dataclasses_dataclass/
+union-value-kinds-enums	api_generation/client_generation/client_render[union-value-kinds-enums].txt
+union-value-kinds-enums	api_generation/client_generation/client_render[union-value-kinds-enums].typing_TypedDict/
 union-value-kinds-literals	api_generation/client_generation/client_render[union-value-kinds-literals].dataclasses_dataclass/
 union-value-kinds-literals	api_generation/client_generation/client_render[union-value-kinds-literals].txt
 uploads	api_generation/client_generation/client_render[uploads].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/uploads/pydantic_v2_BaseModel//*.py
