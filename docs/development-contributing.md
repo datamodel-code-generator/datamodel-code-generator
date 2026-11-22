@@ -328,7 +328,10 @@ That Need No Action), then GitHub's generated change list. Each item ends with t
 (`scripts/record_prs.py` reads it from git; a `new-surface` record names the options and presets it adds) and its
 `refs`; a record that extends another adds nothing. `--has-breaking unreleased` decides between a minor and a patch
 release. Write no release notes anywhere else: the draft's text comes from the records alone, and the next rebuild
-replaces any edit of it.
+replaces any edit of it. The analysis of each merged pull request looks for breaking changes that no record declares
+and labels the pull request `undeclared-change`; the draft then starts with an Undeclared Changes block that lists
+every merged pull request since the latest release with that label, and its version is a minor release. Add the
+record and remove the label: the next rebuild clears the block.
 
 ## Declared changes
 
