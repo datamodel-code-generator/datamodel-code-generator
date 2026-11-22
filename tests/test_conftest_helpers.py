@@ -1794,6 +1794,42 @@ def test_ledger_refuses_a_batch_a_class_never_recorded(ledger: LedgerProject, tm
     assert (ledger.refs(), ledger.files()) == recorded
 
 
+def test_ledger_from_ci_refusal_skips_the_whole_item(ledger: LedgerProject, tmp_path: Path) -> None:
+    """A refusal skips every payload of its item, so its stale payloads cannot drop lines the refused value kept.
+
+    A stale payload of an item no lane collects still cleans its lines.
+    """
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        "    assert_output('x\\n', varies_with=('builtin-formatter', 'linux'))\n",
+    )
+    ledger.store(builtin := "m/a@builtin.txt", "x\n")
+    line = units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin)
+    gone = units.RefLine("test_gone", "", "m/g.txt")
+    ledger.store("m/g.txt", "g\n")
+    (ledger.suite / "test_m.refs").write_text(units.format_refs([line, gone]), encoding="utf-8")
+    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "darwin"}
+    value = {
+        "facts": facts | {"pydantic": "2.14.1"},
+        "item": "suite/test_m.py::test_a",
+        "label": "m/a.txt",
+        "digest": units.unit_digest("m/a.txt", "y\n"),
+        "value": "y\n",
+        "clauses": ["formatter==builtin", "platform==linux"],
+    }
+    stale = {"facts": facts | {"pydantic": "2.14.1"}, "item": "suite/test_m.py::test_a", "stale": True}
+    cleanup = {"facts": facts | {"pydantic": "2.14.1"}, "item": "suite/test_m.py::test_gone", "stale": True}
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [value, stale], "skip_rejected": True}), encoding="utf-8")
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert skipped.stdout.str().count("expected: skipped a payload") == 2
+    assert units.parse_refs(ledger.refs())[0] == [line, gone]
+    apply_file.write_text(json.dumps({"payloads": [cleanup]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN)
+    assert [entry.item for entry in units.parse_refs(ledger.refs())[0]] == ["test_a"]
+
+
 def test_ledger_payload_too_large(ledger: LedgerProject) -> None:
     """Output too large for a payload names the lane to run locally instead."""
     ledger.write(

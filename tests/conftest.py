@@ -1134,10 +1134,12 @@ class _Ledger:
             raise pytest.UsageError(msg)
 
     def batch_refusals(self, payloads: Sequence[Payload], refused: Mapping[int, str]) -> dict[int, str]:
-        """Return the value payloads, by number, of each item whose batch the resolver refuses (`apply_payloads`).
+        """Return every payload, by number, of each item whose batch the resolver refuses (`apply_payloads`).
 
         The batch of an item is every payload of it not refused alone; the resolver refuses one that would give a
-        class it does not come from another class's output where that class recorded none.
+        class it does not come from another class's output where that class recorded none. The stale payloads of such an
+        item go with its value payloads: the refused value may be what shows the item runs, and without it they would
+        drop the item's lines.
         """
         batches: dict[tuple[Path, str, str], list[int]] = {}
         for number, payload in enumerate(payloads, start=1):
@@ -1149,9 +1151,7 @@ class _Ledger:
             try:
                 apply_payloads(self.start_lines(*key), batch, self.facts, exists=True)
             except ValueError as error:
-                found |= {
-                    number: str(error) for number, payload in zip(numbers, batch, strict=True) if "digest" in payload
-                }
+                found |= dict.fromkeys(numbers, str(error))
         return found
 
     def start_lines(self, sidecar: Path, function: str, param: str) -> list[Desired]:
