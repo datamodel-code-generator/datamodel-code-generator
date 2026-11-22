@@ -67,6 +67,7 @@ stored-lists-shrink	check_ratchets_script/check_ratchets_against_base[stored-lis
 top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top-level-extended-ignores].txt	= check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt
 unchanged-counter	check_ratchets_script/check_ratchets_against_base[unchanged-counter].txt	= check_ratchets_script/check_ratchets_against_base[unchanged].txt
+unchanged-counter-other-checkout-input	check_ratchets_script/check_ratchets_against_base[unchanged-counter-other-checkout-input].txt
 unreadable-arguments	check_ratchets_script/check_ratchets_against_base[unreadable-arguments].txt
 unreadable-hook	check_ratchets_script/check_ratchets_against_base[unreadable-hook].txt
 weakened-absolute-rule	check_ratchets_script/check_ratchets_against_base[weakened-absolute-rule].txt

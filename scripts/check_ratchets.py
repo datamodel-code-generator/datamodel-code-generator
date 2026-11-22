@@ -119,7 +119,7 @@ import tomllib
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._import_cycles import import_cycles
 from scripts._source_model import SourceModule
-from scripts.check_source_rules import RULES
+from scripts.check_source_rules import CHECKOUT_INPUTS, RULES
 from scripts.check_source_rules import Tree as SourceTree
 from scripts.check_source_rules import run as run_source_rules
 from tests.units import RefsIndex, derived_file_name, derived_siblings, is_derived_label
@@ -1321,14 +1321,28 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
 def _code_is_unchanged(base_root: Path, head_root: Path) -> bool:
     """Return whether every file this run loaded from ``head_root`` (this script and its imports) is the base's too.
 
-    The base revision's copy then counts both trees as this run does, so its counts are this run's.
+    The files the source rules read from their own checkout (``CHECKOUT_INPUTS``) must be equal as well, both missing
+    counting as equal: the copy reads the base's where this run reads the head's. The base revision's copy then counts
+    both trees as this run does, so its counts are this run's.
     """
     head = head_root.resolve()
     loaded = {Path(module.__file__).resolve() for module in sys.modules.values() if getattr(module, "__file__", None)}
     code = sorted(path.relative_to(head) for path in loaded if path.is_relative_to(head))
-    return bool(code) and all(
-        (base_root / path).is_file() and (base_root / path).read_bytes() == (head / path).read_bytes() for path in code
+    return (
+        bool(code)
+        and all(
+            (base_root / path).is_file() and (base_root / path).read_bytes() == (head / path).read_bytes()
+            for path in code
+        )
+        and all(_same_file(base_root / name, head / name) for name in CHECKOUT_INPUTS)
     )
+
+
+def _same_file(base: Path, head: Path) -> bool:
+    """Return whether two paths hold equal bytes, or neither is a file."""
+    if base.is_file() and head.is_file():
+        return base.read_bytes() == head.read_bytes()
+    return base.is_file() == head.is_file()
 
 
 def _count_sites(root: Path, ruff: list[str]) -> dict[str, dict[str, list[int]]]:

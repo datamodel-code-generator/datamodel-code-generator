@@ -804,6 +804,19 @@ def show(flag: bool) -> None:
         "args": ["--enforce"],
         "subprocess": True,
     },
+    "unchanged-counter-other-checkout-input": {
+        "base": {
+            **COUNTER,
+            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = ">=3.11"\n',
+            "tests/test_a.py": "type Alias = int\n",
+        },
+        "head": {
+            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = "~=3.11"\n',
+            "tests/test_b.py": "type Alias = int\n",
+        },
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
     "weakened-counter": {
         "base": COUNTER,
         "head": {
