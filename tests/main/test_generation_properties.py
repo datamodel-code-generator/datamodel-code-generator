@@ -349,14 +349,19 @@ def generate_runs(jobs: list[Job], directory: Path) -> dict[str, list[dict[str, 
     inputs["second"] = inputs["first"]
     outputs = {run: [directory / run / str(index) for index in range(len(jobs))] for run in RUNS}
     argvs = {run: list(starmap(_argv, zip(jobs, inputs[run], outputs[run], strict=True))) for run in RUNS}
-    first = _start(argvs["first"] + argvs["reordered"], HASH_SEEDS[0], directory / "first.json")
-    second = _start(argvs["second"][::-1], HASH_SEEDS[1], directory / "second.json")
-    first_trees = _trees(first, outputs["first"] + outputs["reordered"])
-    return {
-        "first": first_trees[: len(jobs)],
-        "reordered": first_trees[len(jobs) :],
-        "second": _trees(second, outputs["second"][::-1])[::-1],
-    }
+    processes: list[subprocess.Popen[str]] = []
+    try:
+        first = _start(argvs["first"] + argvs["reordered"], HASH_SEEDS[0], directory / "first.json")
+        processes.append(first)
+        second = _start(argvs["second"][::-1], HASH_SEEDS[1], directory / "second.json")
+        processes.append(second)
+        first_trees = _trees(first, outputs["first"] + outputs["reordered"])
+        second_trees = _trees(second, outputs["second"][::-1])[::-1]
+    finally:
+        for process in processes:
+            process.kill()
+            process.wait()
+    return {"first": first_trees[: len(jobs)], "reordered": first_trees[len(jobs) :], "second": second_trees}
 
 
 def run_differences(jobs: list[Job], trees: Mapping[str, list[dict[str, str]]]) -> list[str]:
