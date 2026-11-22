@@ -10,6 +10,8 @@ infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 intersect-merged-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
 intersect-merged-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
+read-allof-parents-as-their-models-command-line	main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-command-line].model.py
+read-allof-parents-as-their-models-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-command-line].model.py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-inherited-property-schemas-in-mro-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].model.py
@@ -115,6 +117,8 @@ order-constructor-fields-by-written-defaults-practical	main/preset_opt_in_option
 order-constructor-fields-by-written-defaults-standard	main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-written-defaults-standard].model.py
 pin-aliases-with-alias-generator-practical	main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-practical].model.py
 pin-aliases-with-alias-generator-standard	main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-practical].model.py
+read-allof-parents-as-their-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-as-their-models-practical].model.py
+read-allof-parents-as-their-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-as-their-models-standard].model.py
 read-allof-parents-in-mro-order-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-in-mro-order-practical].model.py
 read-allof-parents-in-mro-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-in-mro-order-standard].model.py
 read-const-beside-enum-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-practical].model.py

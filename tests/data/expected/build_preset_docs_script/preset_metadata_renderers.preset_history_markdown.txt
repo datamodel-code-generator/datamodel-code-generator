@@ -126,6 +126,7 @@ The 20261120 presets keep the 20261118 options and add:
 The 20261123 presets keep the 20261120 options and add:
 
 - Merged allOf members intersected (`--intersect-merged-allof-members`): Read the allOf members the generator merges into one schema keyword by keyword, as JSON Schema validates them: a property several merged object members declare takes the type, null and multipleOf they all admit and the members' own allOf members, a named allOf of a $ref and value members keeps the enum of every member, a map $ref beside property counts stays a map with the counts, and a length or pattern beside a $ref to base64 text is checked on the text.
+- allOf parents read as their models (`--read-allof-parents-as-their-models`): Read each allOf parent as its model holds it: a parent written as a $ref beside sibling keywords with the schema its $ref names, so a model written before that parent types and requires an inherited property as it does after it; keep every property some parent requires required where another parent declares it optional; and read an alias member beside a member that adds only a type or required names as alias members are read elsewhere, so such a model keeps the fields of the schema the alias names.
 
 ## Older presets
 

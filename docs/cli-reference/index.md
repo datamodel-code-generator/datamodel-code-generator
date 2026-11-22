@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 64 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 65 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 42 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 74 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
