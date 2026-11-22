@@ -1,0 +1,13 @@
+[[change]]
+id = "bug-cli-late-warnings-once"
+category = "notice"
+title = "A stdout run with a repaired dotted schema name shows the warnings of the last passes once"
+summary = "Output to stdout that needs the repair of a dotted schema name parses the input again; that parse no longer repeats the warnings of the last passes, such as the dropped pattern of an AnyUrl or the serialized Decimal default."
+refs = ["#6926"]
+kind = "warning"
+action = "none"
+source = "release-note"
+covers = [
+    "main/openapi/main_openapi/main_invalid_dotted_schema_name_stdout_late_pass_warnings.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_invalid_dotted_schema_name_late_warnings.yaml].txt",
+]

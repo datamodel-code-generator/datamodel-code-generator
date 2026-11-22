@@ -2252,6 +2252,29 @@ def test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings(capsys: 
 
 
 @pytest.mark.isolate_builtin_formatter_config
+def test_main_invalid_dotted_schema_name_stdout_late_pass_warnings(capsys: pytest.CaptureFixture[str]) -> None:
+    """Report the warnings of the last passes once, though stdout output parses the input again (#6926)."""
+    with freeze_time(TIMESTAMP), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name_late_warnings.yaml",
+            output_path=None,
+            input_file_type="openapi",
+            extra_args=["--field-constraints"],
+            stdout_suffix=".py",
+            capsys=capsys,
+            assert_no_stderr=True,
+        )
+    assert_output(
+        "".join(
+            f"{record.category.__name__}: {record.message}\n"
+            for record in recorded
+            if issubclass(record.category, UserWarning)
+        )
+    )
+
+
+@pytest.mark.isolate_builtin_formatter_config
 def test_main_collapse_root_models_recursive_invalid_dotted_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Carry the circular-root fallback into the invalid-dotted stdout repair."""
     run_main_with_args([

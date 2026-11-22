@@ -41,7 +41,6 @@ from urllib.parse import ParseResult
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
-    DanglingRefWarning,
     DefaultPutDict,
     Error,
     GeneratedModules,
@@ -2180,7 +2179,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
             )
             retry_parsed = None
             with contextlib.suppress(Exception):
-                retry_parsed = _parse_again(retry_run, retry_context, retry_caches, ignored_warnings=DanglingRefWarning)
+                retry_parsed = _parse_again(retry_run, retry_context, retry_caches)
 
             retry_accepted = False
             if retry_parsed is not None:
