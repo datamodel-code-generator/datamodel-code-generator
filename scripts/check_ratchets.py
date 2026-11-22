@@ -188,6 +188,8 @@ HEKI_RULES = {
     "conditional-ownership-mutation": "MUT112",
     "iterated-container-mutation": "MUT113",
     "cached-result-mutation": "MUT114",
+    "shallow-copy-nested-mutation": "MUT115",
+    "sentinel-lost-in-deepcopy": "MUT118",
     "write-owner-violation": "MUT201",
     "readonly-return-mutation": "MUT202",
     "read-owner-violation": "MUT203",
@@ -218,7 +220,7 @@ HEKI_RULES = {
     "list-front-insert": "OPT121",
     "loop-invariant-container-rebuild": "OPT130",
 }
-"""The rules of heki 0.2.0 by name (``heki rule --all``): a suppression may name a rule by its code or its name."""
+"""The rules of the pinned heki by name (``heki rule --all``): a suppression may name a rule by its code or its name."""
 HEKI_CODE = re.compile(r"(?:EFF|MUT|DATA|OPT)\d{3}", re.IGNORECASE)
 COMMENT_HINT = re.compile(r"pragma:|ignore|noqa", re.IGNORECASE)
 CALL_HINT = re.compile(
