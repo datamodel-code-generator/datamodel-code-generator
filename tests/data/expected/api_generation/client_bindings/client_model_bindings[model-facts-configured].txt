@@ -1,6 +1,5 @@
 # model-facts-configured
 render pydantic_v2.BaseModel default
-  warning UserWarning: The config of Record sets 'strict', which this model leaves out of model_config. It writes only extra, title, populate_by_name, validate_by_name, validate_by_alias, alias_generator, allow_extra_fields, extra_fields, from_attributes, frozen, arbitrary_types_allowed, protected_namespaces, regex_engine, use_enum_values, coerce_numbers_to_str, use_attribute_docstrings, json_schema_extra. pydantic_v2.dataclass writes every key as given.
   models.py
   model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
