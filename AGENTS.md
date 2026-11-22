@@ -6,9 +6,8 @@ the ones failures print, inside the development environment (`.tox/dev` from `to
 
 ## Tests
 
-- Add e2e tests with the existing helpers (`run_main_and_assert`, `assert_output`, ...); no expected path is needed.
-- Never add or change an expected path to create, split, share or rename stored output: pytest names, shares and
-  splits stored files itself.
+- Add e2e tests with the existing helpers (`run_main_and_assert`, `assert_output`, ...). No helper takes an expected
+  path or directory: pytest names, shares and splits stored files itself.
 - A module-local helper that takes a stored-output name does not change this rule: pass none.
 - `name=` is an output's role in its test: a literal saying what it is (`stdout`, `warnings`, `model`) or the loop
   variable of a literal tuple, never a value of the case (the test id carries it); `suffix=` keeps `.py` or `.json`.

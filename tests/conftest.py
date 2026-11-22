@@ -1016,7 +1016,6 @@ class _Ledger:
         root = config.getini("expected_tests_root")
         self.tests_root = (config.rootpath / root).resolve() if root else Path(__file__).parent
         self.expected_root = self.tests_root / "data" / "expected"
-        self.expected_prefix = f"{self.expected_root}{os.sep}"
         self.index = RefsIndex(self.tests_root)
         self.facts = expected_environment_facts()
         self.ci = _ci_environment()
@@ -1190,15 +1189,9 @@ class _Ledger:
             f"run: pytest {_quote(target)} --inline-snapshot=fix && {self.stage}"
         )
 
-    def label(self, path: Path, pattern: str | None) -> str | None:
-        """Return the label of an expected path, or None for paths outside the tests root (compared directly)."""
-        absolute = os.path.abspath(path)  # noqa: PTH100
-        if absolute.startswith(self.expected_prefix):
-            name = absolute[len(self.expected_prefix) :].replace(os.sep, "/")
-        elif Path(absolute).is_relative_to(self.tests_root):
-            name = Path(os.path.relpath(absolute, self.expected_root)).as_posix()
-        else:
-            return None
+    def label(self, path: Path, pattern: str | None) -> str:
+        """Return the label of a derived expected path below the expected root."""
+        name = Path(os.path.relpath(path, self.expected_root)).as_posix()
         return name if pattern is None else tree_label(name, pattern)
 
     def key(self, item: pytest.Item) -> tuple[str, str]:
@@ -1608,12 +1601,6 @@ class _Ledger:
             if self.observing or (self.can_fix if present else self.can_create):
                 return "changed"
             self.fail_mismatch(observation, stored)
-        if observation.label.startswith("../"):
-            pytest.fail(
-                "Expected outputs live under tests/data/expected. "
-                "Fix: remove the path argument (pytest names the file)",
-                pytrace=False,
-            )
         if self.observing:
             return "home" if equal else "new"
         if not self.can_create:
@@ -2224,7 +2211,7 @@ def stored_expected(path: Path) -> Path:
     return path if storage is None else index.expected_root / storage
 
 
-_OWN_FILE_HINT = "otherwise compare the second against its own expected file"
+_NAME_HINT = 'otherwise name the second: name="second"'
 _MIN_HOME_LENGTH = 6
 
 
@@ -2265,49 +2252,28 @@ def _refuse_home_directory(value: object) -> None:
             )
 
 
-def _compare_expected(
-    expected_path: Path,
-    value: object,
-    *,
-    pattern: str | None = None,
-    hint: str = _OWN_FILE_HINT,
-    varies_with: tuple[str, ...] = (),
-) -> None:
-    """Compare a file value, or a tree's files when ``pattern`` is given, with the expected output stored at a path.
-
-    Paths under the tests root go through the ``.refs`` index of the running item; other paths, such as a second
-    generated tree, are compared directly. ``hint`` says how to keep two different outputs apart; ``varies_with``
-    names the capabilities (`tests.capabilities.CAPABILITIES`) whose facts the output depends on.
-    """
-    __tracebackhide__ = True
-    if pattern is not None and isinstance(value, dict):
-        # The stored tree holds only the files the pattern selects; compare the same files of the output.
-        value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
-    _refuse_home_directory(value)
-    ledger = _ledger()
-    label = ledger.label(expected_path, pattern) if ledger is not None else None
-    if ledger is None or label is None:
-        _compare_direct(expected_path, value, pattern)
-        return
-    ledger.compare(_CURRENT_ITEMS[-1], label, value, hint, clauses_of(varies_with))
-
-
 def _compare_derived(
     value: object,
     *,
     role: str = "",
     suffix: str = "",
     tree: bool = False,
-    hint: str = _OWN_FILE_HINT,
+    hint: str = _NAME_HINT,
     varies_with: tuple[str, ...] = (),
 ) -> None:
-    """Compare output a test gives without an expected path against the one stored under its derived label."""
+    """Compare the output of the running test with the one stored under its derived label.
+
+    ``tree`` compares a dict of files as the test's whole stored tree; ``hint`` says how to keep two different outputs
+    apart; ``varies_with`` names the capabilities (`tests.capabilities.CAPABILITIES`) whose facts the output depends on.
+    """
     __tracebackhide__ = True
     ledger = _ledger()
     if ledger is None:  # pragma: no cover
-        pytest.fail("Expected output without a path can only be compared inside a test", pytrace=False)
+        pytest.fail("Expected output can only be compared inside a test", pytrace=False)
     path = ledger.derived_path(_CURRENT_ITEMS[-1], role=role, suffix=suffix)
-    _compare_expected(path, value, pattern="*" if tree else None, hint=hint, varies_with=varies_with)
+    _refuse_home_directory(value)
+    label = ledger.label(path, "*" if tree else None)
+    ledger.compare(_CURRENT_ITEMS[-1], label, value, hint, clauses_of(varies_with))
 
 
 def default_output_count(role: str = "") -> int:
@@ -2332,16 +2298,12 @@ def _derived_output_role(role: str = "", name: str | None = None) -> str:
 
 def _compare_tree(
     tree: dict[str, str],
-    expected_dir: Path | None,
     pattern: str,
     name: str | None,
     varies_with: tuple[str, ...] = (),
 ) -> None:
-    """Compare the files of a tree a pattern selects with ``expected_dir``, or as the test's derived whole tree."""
+    """Compare the files of a tree a pattern selects as the test's derived whole tree."""
     __tracebackhide__ = True
-    if expected_dir is not None:
-        _compare_expected(expected_dir, tree, pattern=pattern, varies_with=varies_with)
-        return
     selected = {path: text for path, text in tree.items() if PurePosixPath(path).match(pattern)}
     _compare_derived(selected, role=_derived_output_role(name=name), tree=True, varies_with=varies_with)
 
@@ -2395,7 +2357,6 @@ def _compare_direct(expected_path: Path, value: object, pattern: str | None) -> 
 
 def assert_output(
     output: object,
-    expected_path: Path | None = None,
     *,
     name: str | None = None,
     suffix: str = ".txt",
@@ -2406,8 +2367,8 @@ def assert_output(
 
     Args:
         output: The output string to compare (e.g., captured.out, parser.parse()), or a JSON value for a .json file.
-        expected_path: Path to the expected file. Without it, pytest names the file after the test item.
-        name: Distinguishes several outputs of one test that pass no path, e.g. ``name="warnings"``.
+        name: Distinguishes several outputs of one test, e.g. ``name="warnings"``; pytest names the file after the
+            test item and the name.
         suffix: The suffix of the file pytest names, e.g. ``suffix=".py"``.
         against: A git-tracked document outside the tests root to compare with instead; nothing is stored.
         varies_with: The capabilities of ``tests/capabilities.py`` whose facts decide the output, e.g.
@@ -2415,24 +2376,20 @@ def assert_output(
             one output.
 
     Usage:
-        assert_output(captured.out, EXPECTED_PATH / "output.py")
+        assert_output(captured.out)
         assert_output(parser.parse(), suffix=".py")
         assert_output(captured.err, name="warnings")
         assert_output(rendered_page, against=DOCS / "page.md")
         assert_output(report, varies_with=("windows",))
     """
     __tracebackhide__ = True
-    path = expected_path or against
-    stored_suffix = suffix if path is None else path.suffix
+    stored_suffix = suffix if against is None else against.suffix
     is_json_value = stored_suffix == ".json" and not isinstance(output, str)
     if not isinstance(output, str) and not is_json_value:  # pragma: no cover
         pytest.fail(f"Expected generated output to be str, got {type(output).__name__}")
     value = output if is_json_value else _normalize_line_endings(cast("str", output))
     if against is not None:
         _compare_against(against, value, None, varies_with=varies_with)
-        return
-    if expected_path is not None:
-        _compare_expected(expected_path, value, varies_with=varies_with)
         return
     if name is None and (ledger := _ledger()) is not None:
         ledger.unnamed_output(_CURRENT_ITEMS[-1])
@@ -2497,7 +2454,6 @@ def _output_tree(output_dir: Path, pattern: str, encoding: str = "utf-8") -> dic
 
 def assert_directory_content(
     output_dir: Path,
-    expected_dir: Path | None = None,
     *,
     pattern: str = "*.py",
     encoding: str = "utf-8",
@@ -2505,15 +2461,13 @@ def assert_directory_content(
     against: Path | None = None,
     varies_with: tuple[str, ...] = (),
 ) -> None:
-    """Assert all files in output_dir match expected files in expected_dir.
+    """Assert all files in output_dir match the stored tree of the test.
 
     Args:
         output_dir: Directory containing generated output files.
-        expected_dir: Directory containing expected files. Without it, pytest stores the selected files as a tree
-            named after the test item.
         pattern: Glob pattern for files to compare (default: "*.py").
         encoding: File encoding (default: "utf-8").
-        name: Distinguishes several trees of one test that pass no expected directory, e.g. ``name="client"``.
+        name: Distinguishes several trees of one test, e.g. ``name="client"``.
         against: A git-tracked tree outside the tests root, or another ``_runtime`` copy when ``output_dir`` is one,
             to compare the selected files with instead; nothing is stored.
         varies_with: The capabilities whose facts decide the tree, as for `assert_output`.
@@ -2527,7 +2481,7 @@ def assert_directory_content(
     if against is not None:
         _compare_against(against, tree, pattern, output_dir, varies_with)
         return
-    _compare_tree(tree, expected_dir, pattern, name, varies_with)
+    _compare_tree(tree, pattern, name, varies_with)
 
 
 def assert_exact_directory_content(
@@ -2578,7 +2532,7 @@ def assert_parser_results(
     """
     __tracebackhide__ = True
     tree = {Path(key).as_posix(): _normalize_line_endings(_get_full_body(result)) for key, result in results.items()}
-    _compare_tree(tree, None, pattern, name, varies_with)
+    _compare_tree(tree, pattern, name, varies_with)
 
 
 def assert_parser_modules(
@@ -2604,7 +2558,6 @@ def assert_parser_modules(
 
 def assert_generated_modules_output(
     modules: Mapping[tuple[str, ...], Any],
-    expected_dir: Path | None = None,
     *,
     transform: Callable[[str], str] | None = None,
     pattern: str = "*.py",
@@ -2613,8 +2566,8 @@ def assert_generated_modules_output(
 ) -> None:
     """Assert generate(output=None) module output matches expected files exactly.
 
-    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree. Without ``expected_dir``
-    the selected modules are stored as the test's own tree; ``name`` tells several such trees of one test apart and
+    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree. The selected modules are
+    stored as the test's own tree; ``name`` tells several such trees of one test apart and
     ``varies_with`` names the capabilities whose facts decide them, as for `assert_output`.
     """
     __tracebackhide__ = True
@@ -2622,7 +2575,7 @@ def assert_generated_modules_output(
     for paths, result in modules.items():
         content = _get_full_body(result)
         tree[Path(*paths).as_posix()] = _normalize_line_endings(transform(content) if transform else content)
-    _compare_tree(tree, expected_dir, pattern, name, varies_with)
+    _compare_tree(tree, pattern, name, varies_with)
 
 
 def write_generated_modules(output_dir: Path, modules: dict[tuple[str, ...], Any]) -> None:

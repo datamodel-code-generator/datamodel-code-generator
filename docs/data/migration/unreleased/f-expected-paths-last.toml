@@ -1,0 +1,19 @@
+[[change]]
+id = "f-expected-paths-last"
+category = "harness"
+title = "The migration notice tests store their outputs under derived names"
+summary = "The migration notice tests name no expected files any more: their notices key on the dependency versions with varies_with=, and the stored files follow the test names; the stored contents are unchanged."
+covers = [
+    "main/migration_warnings/batch-both-old-pydantic-old-black-old-isort.txt",
+    "main/migration_warnings/batch-both-pydantic-black-isort.txt",
+    "main/migration_warnings/batch-both-pydantic-old-black-isort.txt",
+    "main/migration_warnings/batch-implicit-old-pydantic-old-black-old-isort.txt",
+    "main/migration_warnings/batch-implicit-pydantic-black-isort.txt",
+    "main/migration_warnings/batch-implicit-pydantic-old-black-isort.txt",
+    "main/migration_warnings/batch-new-preset-old-pydantic-old-black-old-isort.txt",
+    "main/migration_warnings/batch-new-preset-pydantic-black-isort.txt",
+    "main/migration_warnings/batch-new-preset-pydantic-old-black-isort.txt",
+    "main/migration_warnings/black.txt",
+    "main/migration_warnings/isort.txt",
+    "main/migration_warnings/pydantic.txt",
+]

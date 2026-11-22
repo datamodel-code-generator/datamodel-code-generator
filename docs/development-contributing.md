@@ -66,8 +66,8 @@ Use helpers such as `run_main_and_assert`, `run_main_url_and_assert`,
 `assert_warnings_contain` where they fit. Prefer full expected-file or inline
 snapshot comparisons for generated output over substring checks.
 
-Tests do not need to name expected files. Write the test with the helpers (input
-and arguments only), run `pytest '<test>'`, and commit every file it writes:
+Tests never name expected files: no helper takes an expected path or directory.
+Write the test with the helpers (input and arguments only), run `pytest '<test>'`, and commit every file it writes:
 `tests/data/expected/**` and the `.refs` files, which can include those of other
 modules that share output with it; `git add -A tests` stages them all and the
 run lists them. To accept changed
@@ -77,8 +77,8 @@ Review the resulting `git diff` before committing.
 
 A test's outputs are stored under its own name. With the run and tree helpers, its
 second and later unnamed outputs of one kind are numbered; `assert_output` allows
-only one unnamed output per test, so later calls need `name=` or an explicit
-expected path. `name="warnings"` names one (the run helpers, the tree helpers and
+only one unnamed output per test, so later calls need `name=`.
+`name="warnings"` names one (the run helpers, the tree helpers and
 `assert_output` take it), and two outputs under
 one name in one test must be equal, which is how a test compares two runs.
 `against=` (on `assert_output`, `assert_directory_content` and
@@ -88,7 +88,7 @@ runtime (`_runtime`), and stores nothing.
 `assert_output(text, suffix=".py")` keeps a stored suffix other than `.txt`
 (`.json` stores a JSON value); `derived_stdout=True` compares stdout beside a
 written output, and `stdout_suffix=".py"` stores a stdout module as `.py`. The
-tree helpers without an expected directory store the files their `pattern`
+tree helpers store the files their `pattern`
 selects as the test's tree, and `run_generate_and_assert(expected_error=...)`
 without `expected_error_match` stores the error text.
 
