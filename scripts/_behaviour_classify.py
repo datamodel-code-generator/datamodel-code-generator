@@ -67,6 +67,8 @@ ITEM_KEYS = (
     ("config", "config"),
     ("readonly", "readonly"),
     ("default", "default"),
+    ("signature", "signature"),
+    ("methods", "signature"),
 )
 FIELD_KEYS = ("required", "alias", "validation_alias", "serialization_alias", "default")
 CLASSES = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in", "base-skipped")

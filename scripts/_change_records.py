@@ -141,6 +141,7 @@ ASPECTS = frozenset({
     "readonly",
     "required",
     "serialization_alias",
+    "signature",
     "type",
     "validation_alias",
     "warning",

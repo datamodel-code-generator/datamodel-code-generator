@@ -37,6 +37,11 @@ The bound: the five families below, with exactly these dimensions, and nothing e
 ``FAMILY_BACKENDS`` names the output model types each family is generated for by default: Pydantic v2 for the first
 three, four backends for ``container`` and three for ``tagged``. A cell is a shape and one of its backends: 1,246
 cells in all.
+
+Every shape is also spelled as an OpenAPI 3.1 document (``Shape.openapi``): its definitions are the components, and
+one operation sends and returns the checked definition, so a client and a server generated from it carry the shape in
+a request body and a response. The behaviour gate generates both spellings (``scripts/behaviour_diff.py``, family
+cells).
 """
 
 from __future__ import annotations
@@ -56,6 +61,10 @@ Schema: TypeAlias = dict[str, object]
 
 DIALECT: Final = "https://json-schema.org/draft/2020-12/schema"
 REF: Final = "#/$defs/"
+COMPONENT_REF: Final = "#/components/schemas/"
+OPENAPI_VERSION: Final = "3.1.0"
+OPENAPI_SERVER: Final = "https://api.example.com"
+"""The server of the OpenAPI spelling: a client needs an absolute http or https URL to send to."""
 
 PYDANTIC_V2: Final = "pydantic_v2.BaseModel"
 TYPED_DICT: Final = "typing.TypedDict"
@@ -117,6 +126,42 @@ class Shape:
     def schema(self) -> Schema:
         """The schema of the checked definition: a reference to it beside the document's definitions."""
         return {"$schema": DIALECT, "$ref": REF + self.name, "$defs": self.document["$defs"]}
+
+    @property
+    def openapi(self) -> Schema:
+        """The shape as an OpenAPI 3.1 document: the definitions as components, the checked one an operation's body.
+
+        One ``POST /check`` operation takes the checked definition as its required JSON request body and returns it as
+        its response, so a generated client and server read the shape in both directions.
+        """
+        body = {"application/json": {"schema": {"$ref": COMPONENT_REF + self.name}}}
+        operation = {
+            "operationId": "check",
+            "requestBody": {"required": True, "content": body},
+            "responses": {"200": {"description": "The checked definition.", "content": body}},
+        }
+        return {
+            "openapi": OPENAPI_VERSION,
+            "info": {"title": self.family, "version": "1"},
+            "servers": [{"url": OPENAPI_SERVER}],
+            "paths": {"/check": {"post": operation}},
+            "components": {"schemas": _as_components(self.document["$defs"])},
+        }
+
+
+def _as_components(value: object) -> object:
+    """Return a copy of a schema whose references to ``$defs`` point to the same names among the components.
+
+    A reference is a ``$ref`` or the value of a discriminator's ``mapping``; no other string of a family document
+    starts with ``#/$defs/``.
+    """
+    if isinstance(value, dict):
+        return {key: _as_components(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_as_components(item) for item in value]
+    if isinstance(value, str) and value.startswith(REF):
+        return COMPONENT_REF + value.removeprefix(REF)
+    return value
 
 
 @dataclass(frozen=True)
