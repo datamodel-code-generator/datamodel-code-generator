@@ -3,7 +3,7 @@ id = "release-draft-from-records"
 category = "harness"
 title = "Build the release draft from the change records"
 summary = "The release notes name the pull request of each record and the release analysis context lists the PR records; the package writes the same output."
-refs = ["#1"]
+refs = ["#7381"]
 covers = [
     "build_migration_docs_script/build_migration_docs_invalid_data[records].txt",
     "build_migration_docs_script/build_migration_docs_outputs.txt",
