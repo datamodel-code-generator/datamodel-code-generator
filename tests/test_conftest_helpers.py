@@ -4813,14 +4813,71 @@ def test_ledger_merges_a_copy_into_its_label(ledger: LedgerProject) -> None:
     assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/a.txt\n"
 
 
+def _refused_value_item(ledger: LedgerProject, refusal: str) -> tuple[dict[str, object], dict[str, object]]:
+    """Record ``ONE_VARYING_TEST`` and return a value payload refused for ``refusal`` and a stale one of its item."""
+    from scripts import fix_expected
+
+    ledger.write("test_m.py", ONE_VARYING_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    ledger.write("test_m.py", ONE_VARYING_TEST.replace("OUT = 'x\\n'", "OUT = 'y\\n'"))
+    value = units.decode_payload(fix_expected.payloads_in(ledger.run("suite", env=GITHUB).stdout.str())[0])
+    ledger.write("test_m.py", ONE_VARYING_TEST)
+    stale = {"facts": _foreign_facts(value["facts"]), "item": value["item"], "stale": True}
+    if refusal == "malformed":
+        value = {**value, "facts": _foreign_facts(value["facts"]), "digest": "0" * 40}
+    return value, stale
+
+
+@pytest.mark.parametrize("refusal", ["own-class", "malformed"])
+def test_ledger_refused_value_payload_takes_the_stale_payloads_of_its_item(
+    ledger: LedgerProject, tmp_path: Path, refusal: str
+) -> None:
+    """A value payload refused for any reason takes every payload of its item with it, under ``skip_rejected`` too.
+
+    The stale payload alone would mark the item's recorded line conditional although the refused value is what shows
+    the item runs; the recorded lines and files stay as they are.
+    """
+    value, stale = _refused_value_item(ledger, refusal)
+    recorded = (ledger.refs(), ledger.files())
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [value, stale]}), encoding="utf-8")
+    refused = ledger.run(f"--expected-apply={apply_file}", "suite")
+    assert refused.ret == pytest.ExitCode.USAGE_ERROR
+    assert "payload 2: a value payload of its item is refused (" in refused.stderr.str()
+    apply_file.write_text(json.dumps({"payloads": [value, stale], "skip_rejected": True}), encoding="utf-8")
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite").stdout.str()
+    assert skipped.count("expected: skipped a payload") == 2
+    assert (ledger.refs(), ledger.files()) == recorded
+    apply_file.write_text(json.dumps({"payloads": [stale]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite")
+    assert ledger.refs() != recorded[0]
+
+
+def test_from_ci_refused_value_payload_takes_the_stale_payloads_of_its_item(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """The script drops a payload that is not a payload of this suite by the same rule: its item's payloads go too."""
+    from scripts import fix_expected
+
+    value, stale = _refused_value_item(ledger, "malformed")
+    recorded = (ledger.refs(), ledger.files())
+    texts = [units.encode_payload(payload, 1 << 20) or "" for payload in (value, stale)]
+    monkeypatch.setattr(fix_expected, "ci_logs", lambda _run: "".join(f"dcg-expected-fix: {text}\n" for text in texts))
+    capfd.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--from-ci", "7") == 1
+    output = capfd.readouterr().out
+    assert output.startswith("Skipped:\npayload 1: its digest does not match its value\npayload 2: a value payload of")
+    assert (ledger.refs(), ledger.files()) == recorded
+
+
 @pytest.mark.parametrize("value", ["y\n", "z\n"], ids=["same-content", "other-content"])
 def test_ledger_refuses_payloads_of_this_class(
     ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str], value: str
 ) -> None:
     """A payload whose lane is in this environment's class is refused, whatever its tool versions.
 
-    --apply then writes nothing; --from-ci reports it and applies the run's other payloads, whose tool versions may
-    carry PEP 440 suffixes.
+    --apply then writes nothing; --from-ci reports it and skips every payload of its item, whose tool versions may
+    carry PEP 440 suffixes; the other class's payload applies alone.
     """
     from scripts import fix_expected
 
@@ -4844,7 +4901,11 @@ def test_ledger_refuses_payloads_of_this_class(
     assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
     monkeypatch.setattr(fix_expected, "ci_logs", lambda _run: f"dcg-expected-fix: {near}\ndcg-expected-fix: {far}\n")
     assert _fix_expected(ledger, monkeypatch, "--from-ci", "7") == 0
-    assert f"expected: skipped a payload: {refusal}" in capfd.readouterr().out
+    skipped = capfd.readouterr().out
+    assert f"expected: skipped a payload: {refusal}" in skipped
+    assert "a value payload of its item is refused" in skipped
+    assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
+    assert _fix_expected(ledger, monkeypatch, "--apply", far) == 0
     storage = "m/a@formatter-eq-builtin.txt"
     assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@formatter==builtin\t= {storage}\n"
     assert ledger.files() == {"m/a.txt": "x\n", storage: value}

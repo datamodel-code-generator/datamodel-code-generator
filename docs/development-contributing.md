@@ -116,7 +116,10 @@ keyed on a clause the test no longer declares fails other runs and goes in a fix
 run. When a CI lane produces different output than your environment, its
 failure ends with a `python scripts/fix_expected.py --apply '...'` command (or
 use `--from-ci <run id>`) that writes that lane's output as the line of its
-class, so no other interpreter or formatter is needed locally. A payload of your
+class, so no other interpreter or formatter is needed locally. When two equally
+specific recorded lines disagree for a class, the failure prints a local `pytest`
+command and the `dcg-expected-fix:` payload but no `--apply` command; use
+`python scripts/fix_expected.py --from-ci <run id>` to apply it. A payload of your
 environment's class is refused: only a local run changes what your class
 compares, so a comparison with no `varies_with` takes no value payload (a missing payload
 from another environment can still apply). Payloads, in any

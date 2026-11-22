@@ -96,6 +96,7 @@ __all__ = [
     "predicate_text",
     "read_unit",
     "refs_sections",
+    "refused_with_items",
     "release",
     "resolve",
     "split_label",
@@ -928,6 +929,30 @@ def payload_problem(payload: object, rootpath: Path, index: RefsIndex) -> str | 
     if problem := _payload_label_problem(payload):
         return problem
     return None if "missing" in payload else _payload_value_problem(payload)
+
+
+def refused_with_items(rootpath: Path, payloads: Sequence[object], refused: Mapping[int, str]) -> dict[int, str]:
+    """Return ``refused`` plus every payload of each item that has a refused value payload, by number from 1.
+
+    One rule for every way a payload is refused (`payload_problem`, a payload of this environment's class, the
+    resolver's refusal of a batch): the refused value payload may be what shows the item runs, and without it the
+    item's stale payloads would drop the lines the refused value kept, so every payload of the item goes with it.
+    Stale cleanup of an item no value payload shows running stays; a refused stale or missing payload takes nothing
+    with it.
+    """
+    items: dict[tuple[Path, str, str], list[int]] = {}
+    values: set[int] = set()
+    for number, payload in enumerate(payloads, start=1):
+        if isinstance(payload, dict) and isinstance(payload.get("item"), str):
+            items.setdefault(nodeid_key(rootpath, payload["item"]), []).append(number)
+            if "digest" in payload:
+                values.add(number)
+    result = dict(refused)
+    for numbers in items.values():
+        if shown := next((number for number in numbers if number in values and number in refused), 0):
+            reason = f"a value payload of its item is refused ({refused[shown]}); the payloads of an item go together"
+            result |= {number: reason for number in numbers if number not in refused}
+    return result
 
 
 def split_name(stem: str, mark: str, suffix: str, limit: int) -> str:

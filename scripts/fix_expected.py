@@ -53,6 +53,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
+    from tests.units import Payload
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT)]
 
@@ -72,6 +74,7 @@ from tests.units import (  # noqa: E402
     payload_problem,
     predicate_text,
     refs_sections,
+    refused_with_items,
     split_label,
     stored_digest,
     too_long,
@@ -206,26 +209,40 @@ def index_for(module: str, root: Path = ROOT) -> RefsIndex:
     return RefsIndex(next((parent for parent in candidates if (parent / "data" / "expected").is_dir()), root / "tests"))
 
 
+def _decode(text: str) -> Payload | ValueError:
+    """Return the payload a text holds, or the error that says why it does not decode."""
+    try:
+        return decode_payload(text)
+    except ValueError as error:
+        return error
+
+
 def apply_payloads(texts: Sequence[str], root: Path = ROOT, *, skip: bool = False) -> int:
     """Apply CI payloads after checking every one of them.
 
     A single bad payload stops all of them, unless ``skip`` is set (``--from-ci``, whose run may also hold payloads
     of this environment's class): then bad payloads are reported and the rest applied.
     """
-    payloads, problems = [], []
-    for number, text in enumerate(texts, start=1):
-        try:
-            payload = decode_payload(text)
-        except ValueError as error:
-            problems.append(f"payload {number}: {error}")
-            continue
+    decoded: list[Payload] = []
+    numbers: list[int] = []
+    problems: list[tuple[int, str]] = []
+    for number, result in enumerate(map(_decode, texts), start=1):
+        if isinstance(result, ValueError):
+            problems.append((number, str(result)))
+        else:
+            decoded.append(result)
+            numbers.append(number)
+    alone = {}
+    for position, payload in enumerate(decoded, start=1):
         module = str(payload.get("item", "")).partition("::")[0] if isinstance(payload, dict) else ""
         if problem := payload_problem(payload, root, index_for(module, root)):
-            problems.append(f"payload {number}: {problem}")
-            continue
-        payloads.append(payload)
+            alone[position] = problem
+    refused = refused_with_items(root, decoded, alone)
+    problems += [(numbers[position - 1], problem) for position, problem in refused.items()]
+    payloads = [payload for position, payload in enumerate(decoded, start=1) if position not in refused]
     if problems:
-        print(("Skipped:\n" if skip else "Rejected; nothing was written:\n") + "\n".join(problems))
+        lines = [f"payload {number}: {problem}" for number, problem in sorted(problems)]
+        print(("Skipped:\n" if skip else "Rejected; nothing was written:\n") + "\n".join(lines))
         if not skip:
             return 2
     if not payloads:

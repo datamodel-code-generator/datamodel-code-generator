@@ -75,6 +75,7 @@ from tests.units import (
     payload_problem,
     predicate_text,
     read_unit,
+    refused_with_items,
     resolve,
     split_label,
     tree_label,
@@ -1079,12 +1080,7 @@ class _Ledger:
             msg = "--expected-apply writes expected files and runs in one process; run it without -n."
             raise pytest.UsageError(msg)
         payloads = self.apply_data.get("payloads", [])
-        refused = {
-            number: problem
-            for number, payload in enumerate(payloads, start=1)
-            if (problem := payload_problem(payload, self.config.rootpath, self.index) or self.own_payload(payload))
-        }
-        refused |= self.batch_refusals(payloads, refused)
+        refused = self.refused_payloads(payloads)
         if refused and self.apply_data.get("skip_rejected"):
             self.apply_data["payloads"] = [
                 payload for number, payload in enumerate(payloads, start=1) if number not in refused
@@ -1133,26 +1129,33 @@ class _Ledger:
             msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
             raise pytest.UsageError(msg)
 
-    def batch_refusals(self, payloads: Sequence[Payload], refused: Mapping[int, str]) -> dict[int, str]:
-        """Return every payload, by number, of each item whose batch the resolver refuses (`apply_payloads`).
+    def refused_payloads(self, payloads: Sequence[Payload]) -> dict[int, str]:
+        """Return why each refused payload of an apply is refused, by number from 1: the one place that decides.
 
-        The batch of an item is every payload of it not refused alone; the resolver refuses one that would give a
-        class it does not come from another class's output where that class recorded none. The stale payloads of such an
-        item go with its value payloads: the refused value may be what shows the item runs, and without it they would
-        drop the item's lines.
+        A payload is refused alone when it is malformed or its item is not a test (`payload_problem`), or when only a
+        local run should apply it (`own_payload`). Every payload of an item that has a refused value payload goes with
+        it (`refused_with_items`). Last, the resolver runs each remaining item's batch against its recorded lines and
+        refuses the whole batch when it would give a class that recorded nothing another class's output
+        (`apply_payloads`).
         """
+        rootpath = self.config.rootpath
+        alone = {
+            number: problem
+            for number, payload in enumerate(payloads, start=1)
+            if (problem := payload_problem(payload, rootpath, self.index) or self.own_payload(payload))
+        }
+        refused = refused_with_items(rootpath, payloads, alone)
         batches: dict[tuple[Path, str, str], list[int]] = {}
         for number, payload in enumerate(payloads, start=1):
             if number not in refused:
-                batches.setdefault(nodeid_key(self.config.rootpath, payload["item"]), []).append(number)
-        found: dict[int, str] = {}
+                batches.setdefault(nodeid_key(rootpath, payload["item"]), []).append(number)
         for key, numbers in batches.items():
             batch = [payloads[number - 1] for number in numbers]
             try:
                 apply_payloads(self.start_lines(*key), batch, self.facts, exists=True)
             except ValueError as error:
-                found |= dict.fromkeys(numbers, str(error))
-        return found
+                refused |= dict.fromkeys(numbers, str(error))
+        return refused
 
     def start_lines(self, sidecar: Path, function: str, param: str) -> list[Desired]:
         """Return an item's recorded lines as lines a run keeps, each with the digest of what it stores."""
