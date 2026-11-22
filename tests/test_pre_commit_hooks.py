@@ -176,3 +176,23 @@ def test_oracle_files_are_the_files_the_gate_runs() -> None:
         f"not run by the gate: {sorted(set(ORACLE_FILES) - set(ran))}"
     )
     assert_output("".join(f"{path}\n" for path in ran))
+
+
+LINT_WORKFLOW = ".github/workflows/lint.yaml"
+LINT_SKIP = re.compile(r"\bSKIP=([\w,-]+)")
+
+
+def lint_skipped_hooks(root: Path) -> set[str]:
+    """Return the hooks the Lint workflow skips: the ``SKIP=`` list of its ``run`` steps."""
+    steps = yaml.safe_load((root / LINT_WORKFLOW).read_text(encoding="utf-8"))["jobs"]["lint"]["steps"]
+    return {hook for step in steps for found in LINT_SKIP.findall(step.get("run", "")) for hook in found.split(",")}
+
+
+@pytest.mark.allow_direct_assert("a hook that one runner skips and the other runs fails on its own")
+def test_lint_workflow_skips_the_hooks_pre_commit_ci_skips() -> None:
+    """The Lint workflow and pre-commit.ci skip the same hooks: those that build a tox environment neither has."""
+    ci_skip = set(_config()["ci"]["skip"])
+    lint_skip = lint_skipped_hooks(ROOT)
+    only_ci, only_lint = sorted(ci_skip - lint_skip), sorted(lint_skip - ci_skip)
+    assert ci_skip == lint_skip, f"only in ci.skip: {only_ci}; only in {LINT_WORKFLOW}: {only_lint}"
+    assert_output("".join(f"{hook}\n" for hook in sorted(ci_skip)))
