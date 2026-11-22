@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import shlex
 import subprocess
+import sys
 from itertools import takewhile
 from typing import TYPE_CHECKING, Any
 
@@ -19,6 +20,7 @@ from tests.conftest import assert_output
 from tests.units import REFS_HEADER
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
 GIT = ["git", "-c", "user.name=CI", "-c", "user.email=ci@example.com", "-c", "commit.gpgsign=false"]
@@ -78,7 +80,7 @@ def _commit(repository: Path, message: str) -> None:
         subprocess.run([*GIT, *command], cwd=repository, check=True)
 
 
-def _repository(tmp_path: Path, spec: dict[str, Any]) -> Path:
+def _repository(tmp_path: Path, spec: Mapping[str, Any]) -> Path:
     """Commit the release and tag it, commit the base on branch `base`, then the head on branch `fix-the-thing`.
 
     The `steps` are commits of main between the release and the base. With `origin`, origin/main points at the base,
@@ -846,3 +848,119 @@ def test_declared_changes_errors(tmp_path: Path, capsys: pytest.CaptureFixture[s
     subprocess.run([*GIT, "tag", "-d", "0.1.0"], cwd=repository, check=True, capture_output=True)
     output.append(_run(repository, capsys, ["check", "--base", "base"]))
     assert_output("\n".join(output))
+
+
+CHECK_TREE = {
+    name: (declared_changes.ROOT / name).read_text(encoding="utf-8")
+    for name in (
+        "scripts/__init__.py",
+        "scripts/declared_changes.py",
+        "scripts/_change_records.py",
+        "scripts/compare_release.py",
+        "tests/__init__.py",
+        "tests/units.py",
+    )
+}
+"""The check and the modules it imports as the repository has them, so that a temporary repository has a copy to run."""
+UNDECLARED_B = SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}
+"""A change of a stored output that no record covers."""
+
+
+WEAKENED = {
+    "scripts/declared_changes.py": CHECK_TREE["scripts/declared_changes.py"].replace(
+        "        return bool(\n            self.undeclared",
+        "        return False and bool(\n            self.undeclared",
+        1,
+    )
+}
+"""A change of the check that makes it pass every change (the head's own copy then passes the undeclared output)."""
+CI_CASES: dict[str, Mapping[str, Mapping[str, str | None] | Sequence[str] | str]] = {
+    "the verdicts file is missing where the gate wrote none": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B | _record("same-output", ["models/b.py"]),
+        "verdicts": "missing",
+    },
+    "the verdicts file is there": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B | _record("same-output", ["models/b.py"]),
+        "verdicts": "admit",
+    },
+    "no file of the check changes": {"release": CHECK_TREE, "head": UNDECLARED_B},
+    "the check passes every change in the head": {"release": CHECK_TREE, "head": UNDECLARED_B | WEAKENED},
+    "the check changes and the change is declared": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B
+        | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)
+        | {"tests/units.py": CHECK_TREE["tests/units.py"] + "\n"},
+        "args": ["--main"],
+    },
+    "the check is judged by its base without a verdicts file": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B | WEAKENED | _record("same-output", ["models/b.py"]),
+        "verdicts": "missing",
+    },
+    "the base has no copy of the check": {"head": UNDECLARED_B | CHECK_TREE | WEAKENED},
+    "the head adds a module to the check and weakens it": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B | WEAKENED | {"scripts/_added.py": "VALUE = 1\n"},
+    },
+    "the head drops a module the base's check imports": {
+        "release": CHECK_TREE
+        | {
+            "scripts/_dropped.py": "VALUE = 1\n",
+            "scripts/_change_records.py": CHECK_TREE["scripts/_change_records.py"]
+            + "\nfrom scripts._dropped import VALUE\n",
+        },
+        "head": UNDECLARED_B
+        | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)
+        | {"scripts/_dropped.py": None, "scripts/_change_records.py": CHECK_TREE["scripts/_change_records.py"]},
+    },
+    "the head tightens the check and the base's copy passes": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B
+        | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)
+        | {
+            "scripts/declared_changes.py": CHECK_TREE["scripts/declared_changes.py"].replace(
+                "        return bool(\n            self.undeclared",
+                "        return True or bool(\n            self.undeclared",
+                1,
+            )
+        },
+    },
+    "the verdicts reach the base's copy": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B
+        | _record("same-output", ["models/b.py"])
+        | {"tests/units.py": CHECK_TREE["tests/units.py"] + "\n"},
+        "verdicts": "admit",
+    },
+}
+
+
+@pytest.mark.parametrize("case", sorted(CI_CASES))
+def test_declared_changes_check_in_ci(case: str, tmp_path: Path) -> None:
+    """`check --ci` reads the gate's verdicts if there are some; the base's copy of the check judges a change of it.
+
+    The head's own script runs, as it does in CI: with the base's copy of the check first and its own judgement after
+    it, either of which fails the step. A base without the check has no copy, so the head's script judges alone.
+    """
+    spec = CI_CASES[case]
+    repository = _repository(tmp_path, spec)
+    args = ["check", "--base", "base", "--head", "HEAD", *spec.get("args", [])]
+    if "verdicts" in spec:
+        base, head = (declared_changes.Side(repository, rev) for rev in ("base", "HEAD"))
+        rows = [{"label": "models/b.py", "base": base.content("models/b.py"), "head": head.content("models/b.py")}]
+        (tmp_path / "verdicts.json").write_text(
+            json.dumps({"verdicts": [row | {"problem": None} for row in rows]}), encoding="utf-8"
+        )
+        name = "verdicts.json" if spec["verdicts"] == "admit" else "missing.json"
+        args += ["--verdicts", (tmp_path / name).as_posix()]
+    run = subprocess.run(
+        [sys.executable, str(repository / declared_changes.SCRIPT), args[0], "--ci", *args[1:]],
+        cwd=repository,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    shown = f"$ {args[0]} --ci {' '.join(args[1:])}\nexit {run.returncode}\n{run.stdout}{run.stderr}"
+    assert_output(shown.replace(tmp_path.as_posix(), "TMP"))

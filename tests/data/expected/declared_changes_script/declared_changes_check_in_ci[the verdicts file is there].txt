@@ -1,0 +1,4 @@
+$ check --ci --base base --head HEAD --verdicts TMP/verdicts.json
+exit 0
+declared changes: HEAD against base, release since 0.1.0
+ok

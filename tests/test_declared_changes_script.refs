@@ -62,6 +62,18 @@ stamp pending	declared_changes_script/declared_changes_check[stamp pending].txt
 storage renamed, content kept	declared_changes_script/declared_changes_check[storage renamed, content kept].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
 test renamed: a move	declared_changes_script/declared_changes_check[test renamed_ a move].txt
 tree member changes	declared_changes_script/declared_changes_check[tree member changes].txt
+[test_declared_changes_check_in_ci]
+no file of the check changes	declared_changes_script/declared_changes_check_in_ci[no file of the check changes].txt
+the base has no copy of the check	declared_changes_script/declared_changes_check_in_ci[the base has no copy of the check].txt
+the check changes and the change is declared	declared_changes_script/declared_changes_check_in_ci[the check changes and the change is declared].txt
+the check is judged by its base without a verdicts file	declared_changes_script/declared_changes_check_in_ci[the check is judged by its base without a verdicts file].txt
+the check passes every change in the head	declared_changes_script/declared_changes_check_in_ci[the check passes every change in the head].txt
+the head adds a module to the check and weakens it	declared_changes_script/declared_changes_check_in_ci[the head adds a module to the check and weakens it].txt	= declared_changes_script/declared_changes_check_in_ci[the check passes every change in the head].txt
+the head drops a module the base's check imports	declared_changes_script/declared_changes_check_in_ci[the head drops a module the base's check imports].txt
+the head tightens the check and the base's copy passes	declared_changes_script/declared_changes_check_in_ci[the head tightens the check and the base's copy passes].txt
+the verdicts file is missing where the gate wrote none	declared_changes_script/declared_changes_check_in_ci[the verdicts file is missing where the gate wrote none].txt
+the verdicts file is there	declared_changes_script/declared_changes_check_in_ci[the verdicts file is there].txt
+the verdicts reach the base's copy	declared_changes_script/declared_changes_check_in_ci[the verdicts reach the base's copy].txt
 [test_declared_changes_declare_and_prune]
 	declared_changes_script/declared_changes_declare_and_prune.txt
 [test_declared_changes_declare_backfill]
