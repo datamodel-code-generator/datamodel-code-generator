@@ -21,13 +21,11 @@
     "items": [
       {
         "nodeid": "b[space quote' 日本語]",
-        "weight": 3,
-        "tests": 1
+        "weight": 3
       },
       {
         "nodeid": "a",
-        "weight": 4,
-        "tests": 1
+        "weight": 4
       }
     ],
     "args": [

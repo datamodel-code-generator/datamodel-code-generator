@@ -30,7 +30,7 @@ PART_PATTERN = re.compile(r"(?P<base>.+)@[1-9][0-9]*/[1-9][0-9]*")
 RECIPE_VERSION = 1
 WEIGHTS_VERSION = 4
 SLOW_TEST_MS = 1000
-PART_DIVISORS = (2, 3, 4, 6, 8)
+PART_DIVISORS = (1, 2, 3, 4, 6, 8)
 SPLIT_TOLERANCE = 1.01
 PROFILES = ("3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "windows", "macos", "e2e")
 TESTS_ROOT = Path("tests")
@@ -393,9 +393,11 @@ def select_parted_shard(
     """Select a shard like ``select_shard``, after splitting heavy items into the parts that shorten the slowest most.
 
     Items heavier than a shard's share divided by each of ``PART_DIVISORS`` are split, and the split whose slowest
-    shard is lightest wins; of the splits within ``SPLIT_TOLERANCE`` of that, the finest wins, because a weight is only
-    a measurement: an item that fills a shard by its weight and runs twice as long by the clock makes that shard the
-    slowest of its run, and its parts spread the error over the shards.
+    shard is lightest wins (the finer of equals). Divisor 1 splits only an item heavier than a whole shard's share;
+    it wins whenever its slowest shard is within ``SPLIT_TOLERANCE`` of the best, because a weight is only a
+    measurement: an item that fills a shard by its weight and runs twice as long by the clock makes that shard the
+    slowest of its run, and its parts spread the error over the shards. Every extra part collects its module again,
+    so items that fill no shard stay whole unless splitting them is measurably faster.
     pytest runs a part ``ITEM@INDEX/TOTAL`` through ``--test-part``, which splits the item's tests like
     ``--test-shard``, so an item is never split into more parts than ``tests`` counts tests in it.
     """
@@ -404,7 +406,10 @@ def select_parted_shard(
     candidates = [weights, *(_part_items(weights, shard_total, divisor, counts) for divisor in PART_DIVISORS)]
     slowest = [(max(_assign_shards(candidate, shard_total)[1]), candidate) for candidate in candidates]
     best = min(weight for weight, _ in slowest)
-    chosen = max((candidate for weight, candidate in slowest if weight <= best * SPLIT_TOLERANCE), key=len)
+    share = slowest[1]
+    chosen = (
+        share[1] if share[0] <= best * SPLIT_TOLERANCE else min(slowest, key=lambda pair: (pair[0], len(pair[1])))[1]
+    )
     return select_shard(chosen, shard_index, shard_total)
 
 
