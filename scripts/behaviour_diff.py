@@ -117,7 +117,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Final, TypedDict
 
 import tomllib
 
@@ -2158,6 +2158,10 @@ def cell_row(result: Result) -> dict[str, Any]:
     }
 
 
+COMPOSITION_PREFIX: Final = "composition:"
+"""The start of the labels of the random tier's composition cells, which the gate has none of."""
+
+
 def selector_problems(
     plan: Plan, results: list[Result], ns: argparse.Namespace, shards: tuple[Placement, Placement]
 ) -> list[str]:
@@ -2166,6 +2170,7 @@ def selector_problems(
     A PR run judges every selector of its records; a release run judges staleness in a run of the whole nightly or
     release tier only, as the PR tier is a sample. A selection may leave a selector's cells out, so it judges none.
     A selector is judged in the shard that runs its cells (`place`), or in shard 1 where it covers no cell at all.
+    A selector whose globs all name compositions (`composition:`) is the random tier's: this run has no such cells.
     """
     here, run = shards
     if ns.select or (plan.release and ns.tier == "pr"):
@@ -2174,6 +2179,8 @@ def selector_problems(
     stale = " (stale: edit the record)" if plan.release else ""
     found = []
     for position, (record, index, selector) in enumerate(plan.selectors()):
+        if all(glob.startswith(COMPOSITION_PREFIX) for glob in selector.input):
+            continue
         if position not in here.groups and not (lead and position not in run.groups):
             continue
         matched = [result for result in results if covers(selector, result.cell)]

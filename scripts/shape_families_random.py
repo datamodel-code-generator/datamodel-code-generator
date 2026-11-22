@@ -24,7 +24,8 @@ differs is a difference.
 Two modes:
 
 - head against the last release (the default; BASE a released version, default the latest tag as `git describe
-  --tags --abbrev=0` names it, or a git revision): an example is a finding of one of these kinds:
+  --tags --abbrev=0` names it, or a git revision, which is compared at its merge base with HEAD and needs a release
+  tag in HEAD's history): an example is a finding of one of these kinds:
   - `generation-fails`: the candidate does not generate it;
   - a kind of `verdict.KINDS`: its model differs from the validator (`verdict.judge`, the families' verdict);
   - where the two outcomes differ (exit status, output, warnings or messages: `compare_release.cell_facts`) and the
@@ -77,6 +78,8 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 import datamodel_code_generator
 from scripts import compare_release
 from scripts.behaviour_diff import (
+    COMPOSITION_PREFIX,
+    NOT_COMPARED_STOPPED,
     Cell,
     Gate,
     gate_of,
@@ -114,6 +117,8 @@ BASE_FAILS: Final = "base-fails"
 MOVED: Final = "moved"
 UNDECLARED: Final = "undeclared"
 DIFFERS: Final = "differs"
+COMPARISONS: Final = frozenset({GENERATION_FAILS, BASE_FAILS, MOVED, UNDECLARED, DIFFERS})
+"""The kinds of the comparison with the base: only a change record covers them, never a rule."""
 RULES: Final = (*KEPT, *COMPOSED)
 
 
@@ -133,7 +138,7 @@ def label(chain: tuple[Level, ...]) -> str:
     `composition:<levels>/<family>/<parameter>=<value>,...`, a family and its parameters per level, joined by `/` as
     the gate labels a family cell; so `composition:*/**/tagged/**` names every composition with a `tagged` level.
     """
-    return f"{COMPOSITION}:{len(chain)}/" + "/".join(
+    return f"{COMPOSITION_PREFIX}{len(chain)}/" + "/".join(
         f"{level.family}/" + ",".join(f"{name}={value}" for name, value in level.params) for level in chain
     )
 
@@ -270,7 +275,8 @@ class Explorer:
         return [
             finding
             for finding in found
-            if covering(RULES, example.chain, example.backend, example.contract, finding.kind) is None
+            if finding.kind in COMPARISONS
+            or covering(RULES, example.chain, example.backend, example.contract, finding.kind) is None
         ]
 
     def _found(self, example: Example, shape: Shape, directory: Path) -> list[Finding]:
@@ -325,7 +331,8 @@ class Explorer:
         """Return the `differs` finding of an example whose two outcomes differ in any way, or none."""
         self.counts["compared"] += 1
         verdict = judge_outcomes(self.gate, cell, outcomes, directory).verdict
-        self.counts[f"identity {verdict.cls}"] += 1
+        stopped = verdict.cls == "both-fail" and NOT_COMPARED_STOPPED in verdict.notes
+        self.counts["identity not compared" if stopped else f"identity {verdict.cls}"] += 1
         if verdict.cls != "violation":
             return []
         return [Finding(DIFFERS, example, verdict.notes[0], "; ".join(verdict.notes[1:]))]
@@ -378,7 +385,7 @@ def _round(
     def check(example: Example) -> None:
         if not target and (time.monotonic() >= deadline or explorer.counts["judged"] >= ns.examples):
             return
-        assume(explorer.judgeable(example))
+        assume(ns.identity or explorer.judgeable(example))
         new = [
             finding
             for finding in explorer.findings(example)
@@ -436,8 +443,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "base",
         nargs="?",
-        help="released version or git revision (default: the latest tag); with --identity, the branch whose merge "
-        f"base with HEAD is compared (default: {IDENTITY_UPSTREAM})",
+        help="released version or git revision, compared at its merge base with HEAD (default: the latest tag); "
+        f"with --identity, the branch whose merge base with HEAD is compared (default: {IDENTITY_UPSTREAM})",
     )
     parser.add_argument(
         "--identity", action="store_true", help="compare with the merge base: any difference of an example is a finding"
@@ -461,10 +468,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def explorer_of(ns: argparse.Namespace, scratch: Path) -> Explorer:
     """Return the explorer of a run: the gate of its base (`behaviour_diff.gate_of`), its contracts and backends.
 
-    It prints the problems of the change records the gate judges by (a record with a problem judges nothing). Raises
-    `RefusedError` where the base lacks an option every generation uses or every backend, or, for `--identity`, a
-    contract's options or a merge base with HEAD.
+    Raises `RefusedError` where a change record the gate judges by has a problem (as the gate fails its run, no
+    composition is approved by such a record), where the base lacks an option every generation uses or every backend,
+    or, for `--identity`, a contract's options, a merge base with HEAD, or `--base-python` (the merge base is built).
     """
+    if ns.identity and ns.base_python is not None:
+        msg = "--identity compares with the merge base, built by the run: --base-python names another base"
+        raise RefusedError(msg)
     base = base_of(ns)
     gate = gate_of([
         base,
@@ -477,8 +487,9 @@ def explorer_of(ns: argparse.Namespace, scratch: Path) -> Explorer:
         *(["--identity"] if ns.identity else []),
         *(["--base-python", str(ns.base_python.absolute())] if ns.base_python is not None else []),
     ])
-    for problem in gate.plan.problems if gate.plan is not None else ():
-        print(f"records: {problem}", flush=True)
+    if problems := gate.plan.problems if gate.plan is not None else ():
+        msg = "the change records have problems:\n" + "\n".join(f"records: {problem}" for problem in problems)
+        raise RefusedError(msg)
     inventory = option_inventory(gate.base.side.python, gate.base.env)
     label = str(ns.base_python or base)
     if (absent := absent_common_option(inventory)) is not None:

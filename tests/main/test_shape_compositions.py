@@ -15,6 +15,7 @@ import argparse
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -29,8 +30,11 @@ from scripts.compare_release import COMMON_ARGS
 from scripts.legacy_rows import LEGACY_ROWS
 from scripts.shape_families_random import (
     BACKEND_OPTION,
+    COMPARISONS,
     REQUESTED,
+    RULES,
     Example,
+    RefusedError,
     absent_common_option,
     base_backends,
     common_args,
@@ -384,6 +388,35 @@ SEEDED_CASES = {
 """Each mode: whether it compares with the merge base, whether the candidate has the record, and its findings."""
 
 
+def _seeded_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **options: object) -> argparse.Namespace:
+    """Return the arguments of a run whose candidate is the working tree that seeds a difference, its base its commit.
+
+    A `record` (default none) is written as the one change record of the working tree; `identity` is the mode.
+    """
+    repo = tmp_path / "repo"
+    shutil.copytree(
+        Path(__file__).parents[2] / "src", repo / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc")
+    )
+    _git(repo, "init", "-q")
+    _git(repo, "add", "-A", ".")
+    _git(repo, "commit", "-qm", "base")
+    _git(repo, "tag", "base")
+    main_module = repo / "src" / "datamodel_code_generator" / "__main__.py"
+    main_module.write_text(main_module.read_text(encoding="utf-8") + SEEDED_MAIN, encoding="utf-8")
+    if record := options.get("record"):
+        fragments = repo / "docs" / "data" / "migration" / "unreleased"
+        fragments.mkdir(parents=True)
+        (fragments / "seeded-comment.toml").write_text(str(record), encoding="utf-8")
+    monkeypatch.setenv("BEHAVIOUR_DIFF_REPOSITORY", str(repo))
+    identity = bool(options.get("identity"))
+    return argparse.Namespace(
+        base="HEAD" if identity else _git(repo, "rev-parse", "HEAD"),
+        identity=identity,
+        base_python=options.get("base_python"),
+        cache_dir=tmp_path / "cache",
+    )
+
+
 @pytest.mark.allow_direct_assert("The findings of each mode on two compositions are compared.")
 @needs("posix")
 @pytest.mark.parametrize("case", sorted(SEEDED_CASES))
@@ -398,27 +431,7 @@ def test_a_seeded_difference_is_found_unless_a_record_covers_it(
     alike), and an ``output-text`` record whose selector names the tagged compositions covers it.
     """
     identity, recorded, wanted = SEEDED_CASES[case]
-    repo = tmp_path / "repo"
-    shutil.copytree(
-        Path(__file__).parents[2] / "src", repo / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc")
-    )
-    _git(repo, "init", "-q")
-    _git(repo, "add", "-A", ".")
-    _git(repo, "commit", "-qm", "base")
-    _git(repo, "tag", "base")
-    main_module = repo / "src" / "datamodel_code_generator" / "__main__.py"
-    main_module.write_text(main_module.read_text(encoding="utf-8") + SEEDED_MAIN, encoding="utf-8")
-    if recorded:
-        fragments = repo / "docs" / "data" / "migration" / "unreleased"
-        fragments.mkdir(parents=True)
-        (fragments / "seeded-comment.toml").write_text(OUTPUT_TEXT_RECORD, encoding="utf-8")
-    monkeypatch.setenv("BEHAVIOUR_DIFF_REPOSITORY", str(repo))
-    ns = argparse.Namespace(
-        base="HEAD" if identity else _git(repo, "rev-parse", "HEAD"),
-        identity=identity,
-        base_python=None,
-        cache_dir=tmp_path / "cache",
-    )
+    ns = _seeded_run(tmp_path, monkeypatch, identity=identity, record=OUTPUT_TEXT_RECORD if recorded else None)
     explorer = explorer_of(ns, tmp_path)
     extend = _first("extend", plain_levels())
     try:
@@ -434,3 +447,21 @@ def test_a_seeded_difference_is_found_unless_a_record_covers_it(
     finally:
         explorer.close()
     assert (found, explorer.counts["declared"]) == (wanted, int(recorded))
+
+
+@pytest.mark.allow_direct_assert("The refusals of a run and the kinds the rules may cover are compared.")
+@needs("posix")
+def test_a_run_refuses_what_the_gate_would_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A change record with a problem approves no composition: the run refuses, as the gate fails its run.
+
+    The record of the seeded difference without its `refs` has the problem `entry seeded-comment has no refs`; with
+    `--identity` no interpreter of another base may be named, and no rule covers a comparison's finding.
+    """
+    record = OUTPUT_TEXT_RECORD.replace('refs = ["#1"]\n', "")
+    ns = _seeded_run(tmp_path / "records", monkeypatch, record=record)
+    with pytest.raises(RefusedError, match="entry seeded-comment has no refs"):
+        explorer_of(ns, tmp_path)
+    ns = _seeded_run(tmp_path / "identity", monkeypatch, identity=True, base_python=Path(sys.executable))
+    with pytest.raises(RefusedError, match="--base-python"):
+        explorer_of(ns, tmp_path)
+    assert COMPARISONS.isdisjoint(rule.kind for rule in RULES)
