@@ -3,7 +3,7 @@ id = "f-varies-with"
 category = "harness"
 title = "Stored outputs that vary by environment key on declared facts"
 summary = "Comparisons whose output depends on the environment name the deciding fact (varies_with=), so their .refs lines key on condition clauses (@python>=3.14, @black<24, @pydantic<2.5, @platform==win32) instead of observed fact values; the stored contents are unchanged and only their predicates, storage names and the generation tests' labels move."
-refs = ["#7367"]
+refs = ["#7369"]
 covers = [
     "api_generation/client_runtime/client_runtime[native-wire].txt",
     "api_generation/fastapi_generation/fastapi_scope.txt",
