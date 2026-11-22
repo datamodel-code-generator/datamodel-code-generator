@@ -33,6 +33,10 @@ class RequiringBase(Struct):
     name: str
 
 
+class Grand(Struct):
+    level: int | UnsetType = UNSET
+
+
 class RequiredName(Parent):
     name: str
 
@@ -49,9 +53,23 @@ class Chain(ChainParent):
     name: str
 
 
+class GrandParent(Grand):
+    name: str | UnsetType = UNSET
+    extra: str | UnsetType = UNSET
+
+
+class GrandBase(Grand):
+    name: str | UnsetType = UNSET
+
+
+class TargetParents(GrandParent):
+    level: int
+
+
 class Model(Struct):
     required_name: RequiredName | UnsetType = UNSET
     narrowed: Narrowed | UnsetType = UNSET
     target_requires: TargetRequires | UnsetType = UNSET
     chain: Chain | UnsetType = UNSET
     inline: Parent | UnsetType = UNSET
+    target_parents: TargetParents | UnsetType = UNSET

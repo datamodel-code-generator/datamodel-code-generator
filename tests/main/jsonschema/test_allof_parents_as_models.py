@@ -34,8 +34,9 @@ JSON_SCHEMA_PATH = JSON_SCHEMA_DATA_PATH / "allof_parents_as_models"
 OPEN_API_PATH = OPEN_API_DATA_PATH / "allof_parents_as_models"
 REF_SIBLING_VALID = (
     '{"required_name": {"name": "abc"}, "narrowed": {"name": "abc"}, "target_requires": {"name": "abc"}, '
-    '"chain": {"name": "abc", "more": 1}, "inline": {"name": "abc"}}'
+    '"chain": {"name": "abc", "more": 1}, "inline": {"name": "abc"}, "target_parents": {"level": 1}}'
 )
+LEVEL_NOT_AN_INTEGER = '{"target_parents": {"level": "x"}}'
 NAME_NOT_A_STRING = '{"required_name": {"name": 5}}'
 TARGET_NAME_MISSING = '{"target_requires": {"extra": "x"}}'
 EXTRA_NOT_A_STRING = '{"narrowed": {"extra": 5}}'
@@ -55,8 +56,10 @@ required, as if the model listed it in `required`; without the option the class 
 where the first base Pydantic or dataclasses read declares it optional, and a TypedDict takes the last base. Under
 `--intersect-combined-schema-keywords`, which reads an alias member as the schema it names, an allOf of an alias of an
 object model and a member that adds only a type or required names keeps the fields of that schema too, instead of
-becoming a root model of a dict. A payload valid for the schema parses to the same values; a payload the schema
-rejects for a required or narrowed inherited property is rejected.""",
+becoming a root model of a dict. A payload the schema rejects for a required or narrowed inherited property is
+rejected. A payload valid for the schema parses to the same values, but where a union of variants takes its
+discriminator only because a variant now requires its tag: a variant that leaves the optional tag out is then read
+without the tag value it took as a default before.""",
     input_schema="jsonschema/allof_parents_as_models/ref_sibling_parents.json",
     cli_args=[OPTION],
     golden_output="main/jsonschema/allof_parents_as_models/ref_sibling_parents[on].py",
@@ -69,6 +72,7 @@ rejects for a required or narrowed inherited property is rejected.""",
         pytest.param((), NAME_NOT_A_STRING, EXTRA_NOT_A_STRING, "string_type", id="off"),
         pytest.param((OPTION,), REF_SIBLING_VALID, NAME_NOT_A_STRING, "string_type", id="on"),
         pytest.param((OPTION,), REF_SIBLING_VALID, TARGET_NAME_MISSING, "missing", id="on-target-requires"),
+        pytest.param((OPTION,), REF_SIBLING_VALID, LEVEL_NOT_AN_INTEGER, "int_parsing", id="on-target-parents"),
         pytest.param((COMBINED, OPTION), REF_SIBLING_VALID, NAME_NOT_A_STRING, "string_type", id="on-combined"),
     ],
 )
@@ -79,9 +83,10 @@ def test_allof_parents_as_models_ref_sibling_parents(
 
     ``RequiredName`` only requires ``name``, which ``Base`` declares; ``Narrowed`` adds ``minLength`` to it;
     ``TargetRequires`` declares it again where ``RequiringBase`` requires it; ``Chain`` inherits through a ``$ref``
-    with siblings whose target is one too; ``inline`` is an allOf at a property. Without the option ``name`` is ``Any``
-    in the first two and ``Chain`` and optional in ``TargetRequires``; with it each takes ``Base``'s string, the bound
-    and the requirement, also under ``--intersect-combined-schema-keywords``.
+    with siblings whose target is one too; ``inline`` is an allOf at a property; ``TargetParents`` requires ``level``,
+    which the target of its ``$ref`` parent inherits from ``Grand``. Without the option ``name`` is ``Any`` in the first
+    two and ``Chain``, optional in ``TargetRequires``, and ``level`` is ``Any``; with it each takes the parents' type,
+    the bound and the requirement, also under ``--intersect-combined-schema-keywords``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_PATH / "ref_sibling_parents.json",
@@ -206,7 +211,8 @@ def test_allof_parents_as_models_required_names_outputs(
 
     A TypedDict takes a key from its last base, so ``NamedFirst`` loses the requirement there without the option; with
     it each model writes ``name`` again (a TypedDict then declares every key itself). msgspec writes the bases' fields
-    into a Struct whose bases conflict and requires a name any of them requires, so its output does not move.
+    into a Struct whose bases conflict and requires a name any of them requires, so its output for this document does
+    not move.
     """
     run_main_and_assert(
         input_path=OPEN_API_PATH / "required_names.yaml",
@@ -256,6 +262,40 @@ def test_allof_parents_as_models_alias_parent(
         output_file,
         module_name="allof_parents_as_models",
         model_name="Model",
+        valid_json=accepted,
+        invalid_json=rejected,
+        expected_error_type=error,
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "accepted", "rejected", "error"),
+    [
+        pytest.param((), '{"thing": {"b": "x"}}', '{"thing": {"kind": "x"}}', "literal_error", id="off"),
+        pytest.param((OPTION,), '{"thing": {"kind": "d"}}', '{"thing": {"b": "x"}}', "union_tag_not_found", id="on"),
+    ],
+)
+def test_allof_parents_as_models_diamond_variant(
+    output_file: Path, extra_args: tuple[str, ...], accepted: str, rejected: str, error: str
+) -> None:
+    """Require the tag of a diamond variant whose second base requires it, so its union takes the discriminator (#7331).
+
+    ``D`` is an allOf of ``B`` and ``C``, both below ``E``, which declares ``kind`` optional; only ``C`` requires it.
+    Without the option ``D`` takes ``B``'s optional ``kind`` and the union accepts a variant payload without it; with
+    it ``D`` requires ``kind`` and the payload is rejected.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH
+        / "discriminator_nested_variant_diamond"
+        / "optional_tag_from_the_first_base.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin", *extra_args],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_parents_as_models",
+        model_name="Holder",
         valid_json=accepted,
         invalid_json=rejected,
         expected_error_type=error,

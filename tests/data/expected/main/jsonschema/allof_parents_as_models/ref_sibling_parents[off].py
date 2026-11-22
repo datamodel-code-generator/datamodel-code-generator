@@ -33,6 +33,10 @@ class RequiringBase(BaseModel):
     name: str
 
 
+class Grand(BaseModel):
+    level: int | None = None
+
+
 class RequiredName(Parent):
     name: Any
 
@@ -49,9 +53,23 @@ class Chain(ChainParent):
     name: Any
 
 
+class GrandParent(Grand):
+    name: str | None = None
+    extra: str | None = None
+
+
+class GrandBase(Grand):
+    name: str | None = None
+
+
+class TargetParents(GrandParent):
+    level: Any
+
+
 class Model(BaseModel):
     required_name: RequiredName | None = None
     narrowed: Narrowed | None = None
     target_requires: TargetRequires | None = None
     chain: Chain | None = None
     inline: Parent | None = None
+    target_parents: TargetParents | None = None

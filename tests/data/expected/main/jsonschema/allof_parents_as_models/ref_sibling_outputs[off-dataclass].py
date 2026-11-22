@@ -38,6 +38,11 @@ class RequiringBase:
 
 
 @dataclass
+class Grand:
+    level: int | None = None
+
+
+@dataclass
 class RequiredName(Parent):
     name: Any = field()
 
@@ -58,9 +63,26 @@ class Chain(ChainParent):
 
 
 @dataclass
+class GrandParent(Grand):
+    name: str | None = None
+    extra: str | None = None
+
+
+@dataclass
+class GrandBase(Grand):
+    name: str | None = None
+
+
+@dataclass
+class TargetParents(GrandParent):
+    level: Any = field()
+
+
+@dataclass
 class Model:
     required_name: RequiredName | None = None
     narrowed: Narrowed | None = None
     target_requires: TargetRequires | None = None
     chain: Chain | None = None
     inline: Parent | None = None
+    target_parents: TargetParents | None = None

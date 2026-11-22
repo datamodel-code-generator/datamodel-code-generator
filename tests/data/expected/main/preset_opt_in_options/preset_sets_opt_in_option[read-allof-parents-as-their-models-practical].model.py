@@ -47,6 +47,13 @@ class RequiringBase(BaseModel):
     name: str
 
 
+class Grand(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    level: int | None = None
+
+
 class RequiredName(Parent):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -75,6 +82,28 @@ class Chain(ChainParent):
     name: str
 
 
+class GrandParent(Grand):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    name: str | None = None
+    extra: str | None = None
+
+
+class GrandBase(Grand):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    name: str | None = None
+
+
+class TargetParents(GrandParent):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    level: int
+
+
 class Model(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -84,3 +113,4 @@ class Model(BaseModel):
     target_requires: TargetRequires | None = None
     chain: Chain | None = None
     inline: RequiredName | None = None
+    target_parents: TargetParents | None = None

@@ -2051,15 +2051,15 @@ def optional_inherited_required_names(
     (``get_inherited_property_order``).
     """
     bases = [base for base in base_classes if base.path and not _is_special_path(base.path)]
-    return tuple(
-        name
-        for name in get_inherited_property_order(parser, bases)
-        if name in required_names
-        and any(
-            name in get_inherited_property_map(parser, [base]) and name not in required_names_at(parser, base.path)
+    if not (
+        restated := required_names.intersection(
+            name
             for base in bases
+            for name in get_inherited_property_map(parser, [base]).keys() - required_names_at(parser, base.path)
         )
-    )
+    ):
+        return ()
+    return tuple(name for name in get_inherited_property_order(parser, bases) if name in restated)
 
 
 def get_inline_required_names(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> tuple[str, ...]:

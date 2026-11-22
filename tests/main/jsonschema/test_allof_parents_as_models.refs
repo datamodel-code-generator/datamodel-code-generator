@@ -5,6 +5,9 @@ off	main/jsonschema/allof_parents_as_models/alias_parent[off].py
 on	main/jsonschema/allof_parents_as_models/alias_parent[on].py
 on-as-written	main/jsonschema/allof_parents_as_models/alias_parent[on-as-written].py	= main/jsonschema/allof_parents_as_models/alias_parent[off].py
 on-short	main/jsonschema/allof_parents_as_models/alias_parent[on-short].py	= main/jsonschema/allof_parents_as_models/alias_parent[on].py
+[test_allof_parents_as_models_diamond_variant]
+off	main/jsonschema/allof_parents_as_models/diamond_variant[off].py	= main/openapi/discriminator_nested_variant_diamond/optional_tag_the_class_takes_from_its_first_base[pydantic_v2.BaseModel].py
+on	main/jsonschema/allof_parents_as_models/diamond_variant[on].py
 [test_allof_parents_as_models_ref_sibling_other_document]
 off	main/jsonschema/allof_parents_as_models/ref_sibling_other_document[off].py
 on	main/jsonschema/allof_parents_as_models/ref_sibling_other_document[on].py
@@ -21,6 +24,7 @@ on-msgspec	main/jsonschema/allof_parents_as_models/ref_sibling_outputs[on-msgspe
 off	main/jsonschema/allof_parents_as_models/ref_sibling_parents[off].py
 on	main/jsonschema/allof_parents_as_models/ref_sibling_parents[on].py
 on-combined	main/jsonschema/allof_parents_as_models/ref_sibling_parents[on-combined].py
+on-target-parents	main/jsonschema/allof_parents_as_models/ref_sibling_parents[on-target-parents].py	= main/jsonschema/allof_parents_as_models/ref_sibling_parents[on].py
 on-target-requires	main/jsonschema/allof_parents_as_models/ref_sibling_parents[on-target-requires].py	= main/jsonschema/allof_parents_as_models/ref_sibling_parents[on].py
 [test_allof_parents_as_models_required_names]
 off	main/jsonschema/allof_parents_as_models/required_names[off].py

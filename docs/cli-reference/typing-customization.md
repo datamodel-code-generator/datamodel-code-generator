@@ -4825,8 +4825,10 @@ required, as if the model listed it in `required`; without the option the class 
 where the first base Pydantic or dataclasses read declares it optional, and a TypedDict takes the last base. Under
 `--intersect-combined-schema-keywords`, which reads an alias member as the schema it names, an allOf of an alias of an
 object model and a member that adds only a type or required names keeps the fields of that schema too, instead of
-becoming a root model of a dict. A payload valid for the schema parses to the same values; a payload the schema
-rejects for a required or narrowed inherited property is rejected.
+becoming a root model of a dict. A payload the schema rejects for a required or narrowed inherited property is
+rejected. A payload valid for the schema parses to the same values, but where a union of variants takes its
+discriminator only because a variant now requires its tag: a variant that leaves the optional tag out is then read
+without the tag value it took as a default before.
 
 **Related:** [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords), [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order), [`--read-inherited-property-schemas-in-mro-order`](#read-inherited-property-schemas-in-mro-order)
 
@@ -4852,7 +4854,8 @@ rejects for a required or narrowed inherited property is rejected.
         "narrowed": {"$ref": "#/$defs/Narrowed"},
         "target_requires": {"$ref": "#/$defs/TargetRequires"},
         "chain": {"$ref": "#/$defs/Chain"},
-        "inline": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]}
+        "inline": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
+        "target_parents": {"$ref": "#/$defs/TargetParents"}
       },
       "$defs": {
         "RequiredName": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
@@ -4866,7 +4869,11 @@ rejects for a required or narrowed inherited property is rejected.
         "Parent": {"$ref": "#/$defs/Base", "properties": {"extra": {"type": "string"}}},
         "RequiringParent": {"$ref": "#/$defs/RequiringBase", "properties": {"extra": {"type": "string"}}},
         "Base": {"type": "object", "properties": {"name": {"type": "string"}}},
-        "RequiringBase": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+        "RequiringBase": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+        "TargetParents": {"allOf": [{"$ref": "#/$defs/GrandParent"}], "required": ["level"]},
+        "GrandParent": {"$ref": "#/$defs/GrandBase", "properties": {"extra": {"type": "string"}}},
+        "GrandBase": {"allOf": [{"$ref": "#/$defs/Grand"}], "properties": {"name": {"type": "string"}}},
+        "Grand": {"type": "object", "properties": {"level": {"type": "integer"}}}
       }
     }
     ```
@@ -4911,6 +4918,10 @@ rejects for a required or narrowed inherited property is rejected.
             name: str
 
 
+        class Grand(BaseModel):
+            level: int | None = None
+
+
         class RequiredName(Parent):
             name: str
 
@@ -4927,12 +4938,26 @@ rejects for a required or narrowed inherited property is rejected.
             name: str
 
 
+        class GrandParent(Grand):
+            name: str | None = None
+            extra: str | None = None
+
+
+        class GrandBase(Grand):
+            name: str | None = None
+
+
+        class TargetParents(GrandParent):
+            level: int
+
+
         class Model(BaseModel):
             required_name: RequiredName | None = None
             narrowed: Narrowed | None = None
             target_requires: TargetRequires | None = None
             chain: Chain | None = None
             inline: Parent | None = None
+            target_parents: TargetParents | None = None
         ```
 
         <!-- fmt: on -->
@@ -4977,6 +5002,10 @@ rejects for a required or narrowed inherited property is rejected.
             name: str
 
 
+        class Grand(BaseModel):
+            level: int | None = None
+
+
         class RequiredName(Parent):
             name: Any
 
@@ -4993,12 +5022,26 @@ rejects for a required or narrowed inherited property is rejected.
             name: Any
 
 
+        class GrandParent(Grand):
+            name: str | None = None
+            extra: str | None = None
+
+
+        class GrandBase(Grand):
+            name: str | None = None
+
+
+        class TargetParents(GrandParent):
+            level: Any
+
+
         class Model(BaseModel):
             required_name: RequiredName | None = None
             narrowed: Narrowed | None = None
             target_requires: TargetRequires | None = None
             chain: Chain | None = None
             inline: Parent | None = None
+            target_parents: TargetParents | None = None
         ```
 
         <!-- fmt: on -->

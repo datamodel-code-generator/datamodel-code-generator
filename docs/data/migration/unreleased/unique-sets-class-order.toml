@@ -1,6 +1,10 @@
 [[change]]
 id = "unique-sets-class-order"
 category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+affects = { options = ["--use-unique-items-as-set-by-value"] }
 title = "Keep a list of set item models whose class takes an inherited field that does not hash"
 summary = "Under --use-unique-items-as-set-by-value, whether a set item model hashes by value also reads the fields its class takes in C3 order: where a base two levels up and a later direct base both declare a field and the class takes the one that does not hash, the uniqueItems array stays a list, which a set of such items could not build (#6997). Where only the field read nearest first does not hash, the list stays as in 0.100.0."
 refs = ["#1"]

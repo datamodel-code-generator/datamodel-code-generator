@@ -7,7 +7,8 @@
     "narrowed": {"$ref": "#/$defs/Narrowed"},
     "target_requires": {"$ref": "#/$defs/TargetRequires"},
     "chain": {"$ref": "#/$defs/Chain"},
-    "inline": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]}
+    "inline": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
+    "target_parents": {"$ref": "#/$defs/TargetParents"}
   },
   "$defs": {
     "RequiredName": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
@@ -21,6 +22,10 @@
     "Parent": {"$ref": "#/$defs/Base", "properties": {"extra": {"type": "string"}}},
     "RequiringParent": {"$ref": "#/$defs/RequiringBase", "properties": {"extra": {"type": "string"}}},
     "Base": {"type": "object", "properties": {"name": {"type": "string"}}},
-    "RequiringBase": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+    "RequiringBase": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+    "TargetParents": {"allOf": [{"$ref": "#/$defs/GrandParent"}], "required": ["level"]},
+    "GrandParent": {"$ref": "#/$defs/GrandBase", "properties": {"extra": {"type": "string"}}},
+    "GrandBase": {"allOf": [{"$ref": "#/$defs/Grand"}], "properties": {"name": {"type": "string"}}},
+    "Grand": {"type": "object", "properties": {"level": {"type": "integer"}}}
   }
 }
