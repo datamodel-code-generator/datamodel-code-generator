@@ -4,8 +4,9 @@ The 20261027 presets add the opt-in options of 0.87.0 to the 20261017 presets, t
 0.90.0 to the 20261027 presets, the 20261106 presets add those of 0.91.0 to the 20261104 presets, the 20261111
 presets add those of the next release to the 20261106 presets, the 20261112 presets add the opt-in options after
 them to the 20261111 presets, the 20261113 presets add the opt-in options after those to the 20261112 presets, the
-20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, and the 20261120 presets
-add the opt-in options after those to the 20261118 presets.
+20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, the 20261120 presets
+add the opt-in options after those to the 20261118 presets, and the 20261123 presets add the opt-in options of the
+release after 0.100.0 to the 20261120 presets.
 """
 
 from __future__ import annotations
@@ -141,6 +142,9 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 """The options the 20261120 presets set beyond the 20261118 presets."""
 
+OPT_IN_OPTIONS_20261123: tuple[str, ...] = ("--read-mapping-keys-by-schema-tag-type",)
+"""The options the 20261123 presets set beyond the 20261120 presets."""
+
 WARNINGS_WITH_OPTION: dict[str, str] = {
     "uuid_version_formats.json": "Pydantic does not take max_length on UUID7",
 }
@@ -162,6 +166,7 @@ PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
     "20261113": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261118": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261120": ("--untyped-value-type", "pydantic.JsonValue"),
+    "20261123": ("--untyped-value-type", "pydantic.JsonValue"),
 }
 """The options the practical presets of a date set beyond its standard options, for Pydantic output."""
 
@@ -174,6 +179,7 @@ PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261113": ("20261112", OPT_IN_OPTIONS_20261113),
     "20261118": ("20261113", OPT_IN_OPTIONS_20261118),
     "20261120": ("20261118", OPT_IN_OPTIONS_20261120),
+    "20261123": ("20261120", OPT_IN_OPTIONS_20261123),
 }
 """The preset before each dated preset and the options it adds to it."""
 
@@ -591,11 +597,22 @@ CASES_20261120: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261120 presets changes."""
 
+CASES_20261123: tuple[pytest.ParameterSet, ...] = (
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "discriminator_mapping_key_after_union.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-mapping-keys-by-schema-tag-type",
+    ),
+)
+"""The inputs each opt-in option of the 20261123 presets changes."""
+
 
 @pytest.mark.parametrize("family", ["standard", "practical"])
 @pytest.mark.parametrize(
     ("release", "input_path", "input_file_type", "extra_args"),
     [
+        *(pytest.param("20261123", *case.values, id=case.id, marks=case.marks) for case in CASES_20261123),
         *(pytest.param("20261120", *case.values, id=case.id, marks=case.marks) for case in CASES_20261120),
         *(pytest.param("20261118", *case.values, id=case.id, marks=case.marks) for case in CASES_20261118),
         *(pytest.param("20261113", *case.values, id=case.id, marks=case.marks) for case in CASES_20261113),
@@ -936,20 +953,27 @@ def test_preset_sets_opt_in_option(
             "--no-read-uuid6-uuid7-uuid8-formats",
             id="read-uuid6-uuid7-uuid8-formats",
         ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "discriminator_mapping_key_after_union.json",
+            [],
+            "--read-mapping-keys-by-schema-tag-type",
+            "--no-read-mapping-keys-by-schema-tag-type",
+            id="read-mapping-keys-by-schema-tag-type",
+        ),
     ],
 )
 def test_preset_option_turned_off(
     input_path: Path, extra_args: list[str], option: str, off: str, source: str, tmp_path: Path
 ) -> None:
-    """Turn off one option of a 20261120 preset: the output is that of the preset without the option.
+    """Turn off one option of a 20261123 preset: the output is that of the preset without the option.
 
     The --no- form on the command line, or false for the option in the pyproject.toml that selects the preset, gives
     the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106, 20261111, 20261112, 20261113,
-    20261118 and 20261120 presets add but that one; an alias of the option has a --no- form and a key too.
+    20261118, 20261120 and 20261123 presets add but that one; an alias of the option has a --no- form and a key too.
     """
     project = tmp_path / "project"
     project.mkdir()
-    preset = "standard-py312-20261120"
+    preset = "standard-py312-20261123"
     preset_args = ["--preset", preset, off]
     if source == "pyproject":
         (project / "pyproject.toml").write_text(
@@ -978,6 +1002,7 @@ def test_preset_option_turned_off(
             *OPT_IN_OPTIONS_20261113,
             *OPT_IN_OPTIONS_20261118,
             *OPT_IN_OPTIONS_20261120,
+            *OPT_IN_OPTIONS_20261123,
         )
         if item != option
     ]

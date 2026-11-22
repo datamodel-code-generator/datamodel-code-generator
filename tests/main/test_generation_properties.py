@@ -68,7 +68,7 @@ from tests.main.payload_validation.models import GeneratedModelCache
 from tests.main.payload_validation.native_numeric import pydantic_payload_dump
 from tests.main.payload_validation.neighbours import model_verdict, value_neighbours
 from tests.main.shape_families.families import FAMILIES, MSGSPEC, PYDANTIC_V2
-from tests.main.shape_families.kept import Kept, differences
+from tests.main.shape_families.kept import BY_DESIGN, DEFAULT, Kept, differences
 from tests.main.shape_families.verdict import CONTRACTS, Cell, judge
 
 if TYPE_CHECKING:
@@ -498,9 +498,28 @@ def round_trip_witnesses(runtime: PayloadRuntime, known: Truth, verdicts: tuple[
 DUMPING_BACKENDS: Final = (PYDANTIC_V2, MSGSPEC)
 """The backends of the shape families that dump (module docstring); TypedDict and dataclasses have no dump."""
 
-ROUND_TRIP_KEPT: Final[tuple[Kept, ...]] = ()
-"""The known round trip differences of the shape families, written as ``shape_families/kept.py`` writes its rules:
-none today."""
+ROUND_TRIP_KEPT: Final[tuple[Kept, ...]] = (
+    Kept(
+        BY_DESIGN,
+        "oneOf",
+        "tagged",
+        DUMP_CHANGES,
+        DEFAULT,
+        (
+            {
+                "tag": ("enum1-str", "enum2-str"),
+                "nullable": (True,),
+                "mapping": (False,),
+                "kind": ("oneOf",),
+                "backend": (PYDANTIC_V2,),
+            },
+        ),
+        "a union whose tags also admit null is written without discriminator= (#7102), as Pydantic reads no tag that "
+        "admits None: smart mode picks the variant of a null tag by its other fields, and the dump of one variant "
+        "can validate back as another",
+    ),
+)
+"""The known round trip differences of the shape families, written as ``shape_families/kept.py`` writes its rules."""
 
 ROUND_TRIP_FAMILIES: Final = [
     pytest.param(family, backend, contract, id=f"{family}-{backend}-{contract}")

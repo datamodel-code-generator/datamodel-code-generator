@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info:
+  title: A mapping key naming a subclass, in the union before the one that tags its
+    base
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Base:
+      type: object
+      required:
+      - kind
+      properties:
+        kind:
+          type: integer
+          enum:
+          - 1
+          - 2
+    Child:
+      allOf:
+      - $ref: '#/components/schemas/Base'
+      - type: object
+        properties:
+          name:
+            type: string
+    Other:
+      type: object
+      required:
+      - kind
+      properties:
+        kind:
+          type: integer
+          const: 5
+    Second:
+      oneOf:
+      - $ref: '#/components/schemas/Child'
+      - $ref: '#/components/schemas/Other'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '2': '#/components/schemas/Child'
+          '5': '#/components/schemas/Other'
+    First:
+      oneOf:
+      - $ref: '#/components/schemas/Base'
+      - $ref: '#/components/schemas/Other'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '1': '#/components/schemas/Base'
+          '5': '#/components/schemas/Other'

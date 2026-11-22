@@ -1,0 +1,13 @@
+[[change]]
+id = "read-mapping-keys-api"
+category = "api"
+kind = "python-api"
+action = "review"
+source = "release-note"
+title = "Public names for the 20261123 presets and the mapping-key option"
+summary = "The option adds its config fields (GenerateConfig, ParserConfig and their dicts), the PresetName members and preset_names entries of the 20261123 presets, and the requirement row pydantic.root_model_tag (Pydantic 2.13); nothing is removed or changed."
+refs = ["#7404"]
+decision = ["#7404"]
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

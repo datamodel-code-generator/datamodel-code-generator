@@ -1,0 +1,21 @@
+openapi: '3.0.3'
+info: {title: Discriminated unions whose variants' tag properties are nullable, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, nullable: true, enum: [cat]}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, nullable: true, enum: [dog]}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind

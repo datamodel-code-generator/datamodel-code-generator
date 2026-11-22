@@ -42,7 +42,10 @@ if TYPE_CHECKING:
             """Return the values of the ``Literal`` its type is, if any."""
 
         def enum_member(self) -> tuple[int, Any]:
-            """Return how many members its Enum has (0 for none) and the first one's value (None for none)."""
+            """Return how many members its Enum has (0 for none) and the first one's value (None for none).
+
+            At the L5 sites a member whose value is null is none, as a null tags no variant; at ``schema`` it counts.
+            """
 
         def referenced_tag(self) -> FieldTag | None:
             """Return the tag of the schema its ``$ref`` names, or None."""
@@ -85,6 +88,9 @@ if TYPE_CHECKING:
 
         def takes_one_tag(self) -> bool:
             """Return whether the variant's class takes exactly one tag (a msgspec Struct)."""
+
+        def named(self) -> bool:
+            """Return whether the variant has a name to be tagged by: its schema path ends in no internal marker."""
 
         def enum_member_tag_field(self) -> bool:
             """Return whether the variant's tag field holds the members of an Enum written as tags (``nested``)."""
@@ -168,8 +174,9 @@ FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-nested-root
   ``const``, else the one value of its ``enum``, else the schema its ``$ref`` names; a value no ``Literal`` holds is no
   tag, and such a ``const`` ends the search.
 * ``variant-field``: L5, the tag field of a variant a union lists (``_get_discriminator_field_value``): its ``const``,
-  its one ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``), else the tag of the root
-  model or type alias its type names, as ``--enum-field-as-literal`` writes a one-value enum the field references.
+  its one ``Literal`` or the one member of its Enum that is no null, of any kind (``value-of-another-kind``), else the
+  tag of the root model or type alias its type names, as ``--enum-field-as-literal`` writes a one-value enum the field
+  references.
 * ``legacy-nested-root-model-tag``: L5, the tag field of a variant a nested choice gives a union, and of an inline
   variant, read as ``variant-field`` but without the root model its type names: such a variant gives no tag there,
   so its union stays a plain union, which accepts a payload of a variant whose tag is optional (#6044).
@@ -244,7 +251,8 @@ VariantTagRule: TypeAlias = Literal[
   them where it has no tag of its own: the union nesting its union reads the tags that union wrote into its tag
   field. Row ``legacy-nested-enum-members-untagged``: under ``--use-enum-values-in-discriminator`` a nested variant
   whose tag field holds the members of an Enum takes no tag, as in 0.97.0, so its union stays a plain union.
-  A class that takes one tag, a msgspec Struct, takes them only where they are one.
+  A class that takes one tag, a msgspec Struct, takes them only where they are one, or where it has no name to be
+  tagged by (an inline variant, whose schema path ends in an internal marker); it is then untagged.
 * ``inline-inherited-field``: the tag field an inline variant inherits, for a variant that has no name to be tagged by
   (#4829): the last segment of its schema path is an internal marker, and no union it belongs to lists another variant
   with that tag.
@@ -491,8 +499,8 @@ def _own_field_values(
     """Return the values of ``own-field-values``: the mapped tags, then the values of the field nothing claims.
 
     A value is claimed by a mapping key whose JSON text it is (``mapping_key_tag``) or by another variant of the union
-    whose tag field admits it (``type-and-value``). A class that takes one tag takes them only where they are one (a
-    msgspec Struct named by several tags stays untagged).
+    whose tag field admits it (``type-and-value``). A class that takes one tag takes them only where they are one or
+    where the variant has no name (a msgspec Struct with several tags stays untagged).
     """
     keys = facts.mapping_keys()[1]
     held = {tag_key(value, "type-and-value") for value in facts.other_values()}
@@ -500,7 +508,7 @@ def _own_field_values(
         *mapped,
         *(value for value in own if _json_text(value) not in keys and tag_key(value, "type-and-value") not in held),
     )
-    return values[:0] if len(values) > 1 and facts.takes_one_tag() else values
+    return values[:0] if len(values) > 1 and facts.takes_one_tag() and facts.named() else values
 
 
 def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tuple[MappingPathKey, ...]:

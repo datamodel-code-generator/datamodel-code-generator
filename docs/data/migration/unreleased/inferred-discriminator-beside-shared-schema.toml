@@ -3,7 +3,7 @@ id = "inferred-discriminator-beside-shared-schema"
 category = "harness"
 title = "Infer a union's discriminator without writing it into the shared schema"
 summary = "The discriminator msgspec output and --infer-union-discriminators infer for a union is kept beside the schema object instead of written into it, as the target of a $ref is one object every reader shares (#7249); the output is the same, and the allOf over a $ref to a union is now tested with both."
-refs = ["#1"]
+refs = ["#7404"]
 covers = [
     "main/openapi/main_openapi/allof_with_anyof_ref_inferred_tags[inferred-discriminators].py",
     "main/openapi/main_openapi/allof_with_anyof_ref_inferred_tags[msgspec].py",

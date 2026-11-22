@@ -502,9 +502,27 @@ EXCLUDED_CASES: dict[str, str] = {
             "openapi/variant_tag_values/integer_values_mapped.yaml::components.schemas.Pet",
             "openapi/variant_tag_values/several_values_mapped.yaml::components.schemas.Pet",
             "openapi/variant_tag_values/several_values_mapped_twice.yaml::components.schemas.Pet",
+            "jsonschema/discriminator_mapping_key_after_union.json",
+            *(
+                f"openapi/variant_tag_values/{kind}_key_{order}_union.yaml::components.schemas.{union}"
+                for kind in ("mapping", "enum")
+                for order in ("after", "before")
+                for union in ("First", "Second")
+            ),
         ),
         "legacy-mapped-tags-only: a variant a mapping key names takes only its mapping keys, not the other values its "
         "tag property admits; --use-unmapped-variant-tag-values takes them and test_variant_tag_values pins both",
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/variant_tag_values/nullable_tags.yaml::components.schemas.ConstOptional",
+            "openapi/variant_tag_values/nullable_tags.yaml::components.schemas.Nested",
+            "openapi/variant_tag_values/nullable_tags.yaml::components.schemas.RefOrNull",
+        ),
+        "a union whose variants' tags admit null is written without discriminator= (#7102), so a null tag both "
+        "variants admit, which oneOf refuses, is accepted and dumps as either; under --strict-nullable the tag "
+        "written for an anyOf of a $ref and null drops the null, so that union keeps discriminator= and refuses the "
+        "null only Cat admits, as in 0.100.0; test_tags_that_admit_null pins the verdicts",
     ),
     "openapi/variant_tag_values/object_values.yaml::components.schemas.Pet": (
         "Cat's tag property admits only objects, which tag no variant, as in 0.97.0; "

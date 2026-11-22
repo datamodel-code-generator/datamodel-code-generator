@@ -1,0 +1,25 @@
+[[change]]
+id = "lone-variant-root-model-tag"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "A lone variant's RootModel tag writes no discriminator below Pydantic 2.13"
+summary = "A union of one variant whose tag field is a RootModel of a Literal (a $ref to a const or one-value enum) is written without discriminator= unless --target-pydantic-version is 2.14, as Pydantic reads a tag through a RootModel only from 2.13 and the module failed to import on the releases an unset or older target allows (#7327); class names, fields and parsed values stay."
+refs = ["#7404"]
+covers = [
+    "main/openapi/main_openapi/discriminator_enum_tag_variants[discriminator_enum_tag_variants-pydantic_v2.BaseModel-extra_args5].py",
+    "main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].py",
+    "main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args1].py",
+    "main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args3].py",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[dataclass].payloads.txt",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[dataclass].py",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[default].payloads.txt",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[default].py",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[literals].payloads.txt",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[literals].py",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[pydantic-2.12].payloads.txt",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[pydantic-2.12].py",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[pydantic-2.14].payloads.txt",
+    "main/openapi/variant_tag_values/lone_variant_of_root_model_tag[pydantic-2.14].py",
+]
