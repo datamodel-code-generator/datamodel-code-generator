@@ -1,9 +1,13 @@
 # The base release of scripts/behaviour_diff.py's table and the inputs releases are known to hang on.
 # Change records judge every differing cell (`[[change.cells]]` in docs/data/migration/unreleased/<id>.toml), so the
-# table keeps `base` and `[[base_skip]]` only, and holds no `[[accepted]]` entry (a test keeps it so).
+# table keeps `base`, `families` and `[[base_skip]]` only, and holds no `[[accepted]]` entry (a test keeps it so).
 # `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
 # `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
 # in a run of the whole tier, on an entry that covers no cell; an entry that names no release of the gate's base is
 # no error and does nothing. Remove the entry once the input stops mattering for the gate's base.
+# `families` decides what the family cells (the shapes of tests/main/shape_families) do: "report" prints their
+# differences apart and keeps them out of the verdict, the evidence and `--json`; "fail" judges them as every cell.
+# They report only for their first cycle; then this key turns to "fail".
 base = "0.97.0"
+families = "report"

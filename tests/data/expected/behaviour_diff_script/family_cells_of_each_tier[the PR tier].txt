@@ -1,0 +1,4 @@
+root/k/schema.json | pydantic_v2.BaseModel | default | family
+root/k/schema.json | msgspec.Struct | default | family
+root/k/openapi.json | pydantic_v2.BaseModel | --openapi-scopes schemas api --generate-client httpx2 --client-output client --client-package client --client-model-package model --client-body-arguments both | family
+root/k/openapi.json | pydantic_v2.BaseModel | --openapi-scopes schemas api --generate-server fastapi --server-output server --server-package server --server-model-package model | family

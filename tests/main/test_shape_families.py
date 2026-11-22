@@ -15,20 +15,25 @@ the pull request tier (``TIERS``) and on all of them where ``DATAMODEL_CODE_GENE
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import subprocess
+import sys
 from dataclasses import dataclass, replace
 from itertools import repeat
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import pytest
 
 from datamodel_code_generator.__main__ import Config
 from datamodel_code_generator.arguments import arg_parser
+from scripts.behaviour_diff import FAMILY_SHAPES
 from scripts.legacy_rows import LEGACY_ROWS
 from tests.capabilities import needs
 from tests.main.payload_validation import BACKEND_UNASSERTED_MUTATION_CONSTRAINTS
-from tests.main.shape_families.families import FAMILIES, MSGSPEC, PYDANTIC_V2, TYPED_DICT
+from tests.main.shape_families.families import COMPONENT_REF, FAMILIES, MSGSPEC, PYDANTIC_V2, REF, TYPED_DICT
 from tests.main.shape_families.kept import BASES, ISSUE, KEPT, LEGACY_ROW, Differences, differences
 from tests.main.shape_families.options import ACCEPTANCE, PRESENTATION
 from tests.main.shape_families.relations import (
@@ -49,11 +54,11 @@ from tests.main.shape_families.verdict import CONTRACTS, KINDS, Cell, judge, pay
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
-    from pathlib import Path
 
     from tests.main.shape_families.families import Family, Shape
     from tests.main.shape_families.kept import Kept
 
+ROOT = Path(__file__).resolve().parents[2]
 STATED_BOUND = {"extend": 432, "union": 72, "mixin": 70, "container": 144, "tagged": 32}
 """The number of shapes of each family, as the module docstring of the family library states them."""
 ISSUE_REFERENCE = re.compile(r"#[1-9][0-9]*")
@@ -186,6 +191,44 @@ def _enumerated(family: str) -> list[Cell]:
 def test_families_enumerate_their_stated_bound() -> None:
     """Each family yields exactly the shapes its docstring states, so a dropped or added dimension value fails."""
     assert {name: len(family.shapes()) for name, family in FAMILIES.items()} == STATED_BOUND
+
+
+@pytest.mark.allow_direct_assert("Each shape's OpenAPI spelling is compared with its own definitions.")
+def test_openapi_spelling_carries_each_shape() -> None:
+    """Each shape's OpenAPI spelling holds its definitions as components, every reference to a component of that name.
+
+    No reference to ``$defs`` is left, and its one operation sends the checked definition, so the targets generated
+    from it carry the shape.
+    """
+    moved = [
+        shape.name
+        for family in FAMILIES.values()
+        for shape in family.shapes()
+        if REF in json.dumps(shape.openapi)
+        or json.loads(json.dumps(shape.openapi["components"]).replace(f'"{COMPONENT_REF}', f'"{REF}'))
+        != {"schemas": shape.document["$defs"]}
+        or shape.openapi["paths"]["/check"]["post"]["requestBody"]["content"]["application/json"]["schema"]
+        != {"$ref": COMPONENT_REF + shape.name}
+    ]
+    assert moved == []
+
+
+@pytest.mark.allow_direct_assert("The gate's listing of the library is compared with the library's own shapes.")
+def test_gate_lists_every_shape_of_the_library() -> None:
+    """The behaviour gate's listing (`FAMILY_SHAPES`, run as the gate runs it) holds every shape of the library.
+
+    Each row is the shape's family, its parameters as text and its two spellings, so a library change the gate
+    cannot read (a renamed `FAMILIES`, `shapes`, `params`, `document` or `openapi`) fails here, not in the gate.
+    """
+    listed = subprocess.run(
+        [sys.executable, "-c", FAMILY_SHAPES], cwd=ROOT, capture_output=True, text=True, check=False
+    )
+    assert listed.returncode == 0, listed.stderr
+    rows = json.loads(listed.stdout)
+    shapes = [shape for family in FAMILIES.values() for shape in family.shapes()]
+    written = [[s.family, [[n, str(v)] for n, v in s.params], s.document, s.openapi] for s in shapes]
+    assert len(rows) == sum(STATED_BOUND.values())
+    assert rows == json.loads(json.dumps(written))
 
 
 @pytest.mark.allow_direct_assert("The rule list is a static table; each check lists the rules that break it.")

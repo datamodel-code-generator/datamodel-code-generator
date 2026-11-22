@@ -128,7 +128,8 @@ def _differences(check: str, family: str, backend: str, contract: str, root: Pat
     """Generate every shape of a family for one backend under one contract, check the modules and hold them to rules."""
     shapes = ALL_FAMILIES[family].shapes()
     targets = [
-        f"{index}/{_generate(shape, backend, contract, root / str(index)).name}" for index, shape in enumerate(shapes)
+        f"{index}/{_generate(shape.document, 'jsonschema', backend, contract, root / str(index)).name}"
+        for index, shape in enumerate(shapes)
     ]
     diagnostics = CHECKERS[check](root, targets)
     cells = [

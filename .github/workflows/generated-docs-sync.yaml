@@ -30,7 +30,6 @@ on:
       - 'src/datamodel_code_generator/preset.py'
       - 'scripts/build_release_benchmark_docs.py'
       - 'scripts/build_llms_txt.py'
-      - 'scripts/update_generate_prompt_snapshots.py'
       - 'scripts/update_docs_version.py'
       - 'docs/data/release-benchmarks.json'
       - 'docs/data/release-benchmark-notes.json'
@@ -106,7 +105,6 @@ jobs:
             docs/supported-data-types.md
             docs/supported_formats.md
             src/datamodel_code_generator/prompt_data.py
-            tests/data/expected/main_kr/generate_prompt/
           )
           if git diff --quiet -- "${generated_paths[@]}"; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"

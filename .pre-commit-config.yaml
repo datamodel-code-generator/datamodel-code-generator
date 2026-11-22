@@ -1,7 +1,7 @@
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit.ci"
   autofix_prs: false
-  skip: [readme, config-types, schema-docs, compiled-templates]
+  skip: [readme, config-types, schema-docs, compiled-templates, heki-contracts]
 
 repos:
 - repo: https://github.com/python-jsonschema/check-jsonschema
@@ -39,19 +39,19 @@ repos:
   hooks:
   - id: readme
     name: Update README command help
-    entry: bash -c '[ -x .tox/fix/bin/python ] && PYTHON=.tox/fix/bin/python || PYTHON=.tox/fix/Scripts/python; test -x "$PYTHON" || tox run -e fix --notest -qq; "$PYTHON" scripts/update_command_help_on_markdown.py'
+    entry: bash -c 'test -x .tox/fix/bin/python || test -x .tox/fix/Scripts/python || tox run -e fix --notest -qq; [ -x .tox/fix/bin/python ] && PYTHON=.tox/fix/bin/python || PYTHON=.tox/fix/Scripts/python; "$PYTHON" scripts/update_command_help_on_markdown.py'
     language: system
     files: ^(src/datamodel_code_generator/arguments\.py|README\.md|docs/index\.md|scripts/update_command_help_on_markdown\.py|scripts/build_cli_docs\.py)$
     pass_filenames: false
   - id: config-types
     name: Generate config TypedDicts
-    entry: bash -c '[ -x .tox/dev/bin/python ] && PREFIX=.tox/dev/bin || PREFIX=.tox/dev/Scripts; test -x "$PREFIX/python" || tox run -e dev --notest -qq; "$PREFIX/datamodel-codegen" --profile generate-config-dict && "$PREFIX/datamodel-codegen" --profile parser-config-dicts && "$PREFIX/datamodel-codegen" --profile parse-config-dict'
+    entry: bash -c 'test -x .tox/dev/bin/python || test -x .tox/dev/Scripts/python || tox run -e dev --notest -qq; [ -x .tox/dev/bin/python ] && PREFIX=.tox/dev/bin || PREFIX=.tox/dev/Scripts; "$PREFIX/datamodel-codegen" --profile generate-config-dict && "$PREFIX/datamodel-codegen" --profile parser-config-dicts && "$PREFIX/datamodel-codegen" --profile parse-config-dict'
     language: system
     files: ^src/datamodel_code_generator/config\.py$
     pass_filenames: false
   - id: schema-docs
     name: Update schema feature documentation
-    entry: bash -c '[ -x .tox/schema-docs/bin/python ] && PYTHON=.tox/schema-docs/bin/python || PYTHON=.tox/schema-docs/Scripts/python; test -x "$PYTHON" || tox run -e schema-docs --notest -qq; "$PYTHON" scripts/build_schema_docs.py'
+    entry: bash -c 'test -x .tox/schema-docs/bin/python || test -x .tox/schema-docs/Scripts/python || tox run -e schema-docs --notest -qq; [ -x .tox/schema-docs/bin/python ] && PYTHON=.tox/schema-docs/bin/python || PYTHON=.tox/schema-docs/Scripts/python; "$PYTHON" scripts/build_schema_docs.py'
     language: system
     files: ^(src/datamodel_code_generator/parser/schema_version\.py|scripts/build_schema_docs\.py|docs/supported_formats\.md)$
     pass_filenames: false
@@ -75,7 +75,20 @@ repos:
     pass_filenames: false
   - id: compiled-templates
     name: Check generated built-in template renderers
-    entry: bash -c '[ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; test -x "$PYTHON" || tox run -e dev --notest -qq; "$PYTHON" scripts/compile_builtin_templates.py --check'
+    entry: bash -c 'test -x .tox/dev/bin/python || test -x .tox/dev/Scripts/python || tox run -e dev --notest -qq; [ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; "$PYTHON" scripts/compile_builtin_templates.py --check'
     language: system
     files: ^(src/datamodel_code_generator/(model/template|_fastapi/templates|_client/templates)/.*\.jinja2|scripts/_template_compiler/.*\.py|scripts/compile_builtin_templates\.py|src/datamodel_code_generator/model/_compiled_template_runtime\.py|src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/.*\.py)$
+    pass_filenames: false
+  - id: heki-contracts
+    name: Check the heki contracts are written from the records
+    entry: bash -c 'test -x .tox/dev/bin/python || test -x .tox/dev/Scripts/python || tox run -e dev --notest -qq; [ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; "$PYTHON" scripts/build_heki_contracts.py --check'
+    language: system
+    files: ^(scripts/(build_heki_contracts|fact_tables|decision_homes|_decision_home_reads|check_architecture_boundaries|check_generation_store_usage|check_ratchets|check_source_rules|where|_source_model|_ci_lanes|_import_cycles|pass_decls|related_tests)\.py|scripts/heki\.toml|tests/units\.py|src/datamodel_code_generator/.*\.py)$
+    pass_filenames: false
+  - id: heki
+    name: Check the package against the heki contracts
+    entry: heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
+    language: python
+    additional_dependencies: [heki==0.2.1]
+    files: ^(src/datamodel_code_generator/.*\.py|scripts/heki\.toml|scripts/heki_baseline\.toml)$
     pass_filenames: false

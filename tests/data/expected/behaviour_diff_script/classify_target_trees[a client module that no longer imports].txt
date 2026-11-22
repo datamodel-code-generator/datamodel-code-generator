@@ -1,0 +1,7 @@
+{
+  "cls": "violation",
+  "notes": [
+    "import now fails: imported first: AttributeError: module 'model' has no attribute 'Missing'"
+  ],
+  "accepted_by": []
+}

@@ -52,7 +52,6 @@ from tests.conftest import (
     _validation_stats,
     assert_generate_wrote_file,
     assert_inputs_not_mutated,
-    assert_output,
     assert_warnings_contain,
     freeze_time,
     validate_generated_code,
@@ -357,7 +356,6 @@ def _assert_exit_code(return_code: Exit, expected_exit: Exit, context: str) -> N
 def _assert_captured_output(
     capsys: pytest.CaptureFixture[str] | None,
     *,
-    expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
@@ -366,7 +364,6 @@ def _assert_captured_output(
     name: str | None = None,
 ) -> None:
     if not any((
-        expected_stdout_path is not None,
         expected_stderr is not None,
         expected_stderr_contains is not None,
         assert_no_stderr,
@@ -376,8 +373,6 @@ def _assert_captured_output(
     if capsys is None:  # pragma: no cover
         pytest.fail("capsys is required when captured output assertions are set")
     captured = capsys.readouterr()
-    if expected_stdout_path is not None:
-        assert_output(captured.out, expected_stdout_path)
     if derived_stdout:
         _compare_derived(
             _normalize_line_endings(captured.out), role=_derived_output_role(".stdout", name), suffix=stdout_suffix
@@ -720,7 +715,6 @@ def run_main_with_args(
     *,
     expected_exit: Exit = Exit.OK,
     capsys: pytest.CaptureFixture[str] | None = None,
-    expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
@@ -736,7 +730,6 @@ def run_main_with_args(
         args: Command line arguments to pass to main()
         expected_exit: Expected exit code (default: Exit.OK)
         capsys: pytest capsys fixture for capturing output assertions
-        expected_stdout_path: Path to file with expected stdout content
         expected_stderr: Exact expected stderr
         expected_stderr_contains: Expected stderr substring
         assert_no_stderr: Assert stderr is empty
@@ -767,7 +760,6 @@ def run_main_with_args(
     _assert_exit_code(return_code, expected_exit, f"Args: {args}")
     _assert_captured_output(
         capsys,
-        expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,

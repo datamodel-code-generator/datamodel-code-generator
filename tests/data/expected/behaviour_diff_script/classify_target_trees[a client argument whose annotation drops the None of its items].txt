@@ -1,0 +1,7 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[signature] client.resource:Resource: {'check': '(POSITIONAL_OR_KEYWORD self, KEYWORD_ONLY f: list[str | None] | None = None) -> model.Holder'} -> {'check': '(POSITIONAL_OR_KEYWORD self, KEYWORD_ONLY f: list[str] | None = None) -> model.Holder'}"
+  ],
+  "accepted_by": []
+}
