@@ -10,6 +10,7 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+from coverage import CoverageData
 
 from scripts import ci_coverage, coverage_exclusions
 from tests.conftest import assert_output
@@ -290,3 +291,62 @@ def test_executed_exclusions(
     monkeypatch.chdir(tmp_path)
     coverage_exclusions.main([".coverage"])
     assert_output(capsys.readouterr().out)
+
+
+LATE_FILES = {
+    "combined": {"late-tracker": ("-1", "1"), "late-forkserver": ("1", "1")},
+    "no-leftovers": {},
+    "unreadable-leftover": {"late-tracker": ("-1", "1"), "truncated": None},
+    "only-unreadable": {"truncated": None},
+    "unknown-name": {"late-tracker": ("-1", "1")},
+}
+"""The files each case leaves beside the run's data file: a run of `MODULE` with its arguments, or a broken file."""
+
+
+@pytest.mark.parametrize("case", LATE_FILES)
+def test_collect_combines_the_files_written_after_the_tests(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The data files a run's late processes leave beside its data file join it before it takes the artifact's name.
+
+    A file coverage cannot read stays, and the command fails rather than leave a stray file in the artifact.
+    """
+    (tmp_path / "sign.py").write_text(MODULE, encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    data = ".coverage.py314-parallel"
+    for name, values in {data: ("1", "1"), **{f"{data}.{late}": run for late, run in LATE_FILES[case].items()}}.items():
+        if values is None:
+            Path(name).write_bytes(b"not a data file")
+            continue
+        command = [sys.executable, "-m", "coverage", "run", "--branch", f"--data-file={name}", "sign.py", *values]
+        subprocess.run(command, capture_output=True, check=True)
+    target = ".coverage.unknown" if case == "unknown-name" else ".coverage.py314-parallel-shard9-ubuntu-24.04"
+    out, err = StringIO(), StringIO()
+    code = 0
+    with redirect_stdout(out), redirect_stderr(err):
+        try:
+            ci_coverage.main(["collect", data, target])
+        except SystemExit as error:
+            code = error.code
+    lines = {}
+    if Path(target).is_file():
+        stored = CoverageData(target)
+        stored.read()
+        lines = {
+            Path(name).name: sorted(stored.lines(name) or [])
+            for name in stored.measured_files()
+            if Path(name).name == "sign.py"
+        }
+    payload = {
+        "code": code,
+        # Coverage's verdict on each file, without the paths of its warnings, which differ by machine.
+        "stdout": [
+            line.partition(": ")[0]
+            for line in out.getvalue().splitlines()
+            if line.startswith(("Combined", "Couldn't combine", "No usable"))
+        ],
+        "stderr": err.getvalue(),
+        "files": sorted(path.name for path in tmp_path.glob(".coverage*")),
+        "lines": lines,
+    }
+    assert_output(json.dumps(payload, sort_keys=True, indent=2) + "\n")

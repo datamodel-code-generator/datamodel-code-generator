@@ -1,0 +1,10 @@
+{
+  "code": 1,
+  "files": [
+    ".coverage.py314-parallel",
+    ".coverage.py314-parallel.late-tracker"
+  ],
+  "lines": {},
+  "stderr": "Invalid coverage data: .coverage.py314-parallel for .coverage.unknown\n",
+  "stdout": []
+}

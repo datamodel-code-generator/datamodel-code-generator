@@ -147,6 +147,25 @@ def test_recipe_round_trip_selects_disjoint_shards(tmp_path: Path, shard_total: 
     )
 
 
+@pytest.mark.parametrize("heavy", [False, True])
+def test_only_an_item_heavier_than_a_shard_share_is_split(heavy: bool) -> None:
+    """Items that fill no shard stay whole; an item heavier than a whole share is split into parts."""
+    weights = {f"tests/test_{index}.py": 100 for index in range(8)}
+    if heavy:
+        weights["tests/test_heavy.py"] = 900
+    selected = [select_ci_test_shard.select_parted_shard(weights, index, 4) for index in range(1, 5)]
+    assert_output(
+        json.dumps(
+            {
+                "parts": [len(part) for part in selected],
+                "split": any("@" in line for part in selected for line in part),
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+
 @pytest.mark.parametrize(
     "case", json.loads((Path(__file__).parent / "data/ci_shards/cases.json").read_text(encoding="utf-8"))
 )

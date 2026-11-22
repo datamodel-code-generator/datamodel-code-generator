@@ -798,6 +798,25 @@ def show(flag: bool) -> None:
         "head": {"src/pkg/d.py": FUTURE + NAME},
         "args": ["--enforce"],
     },
+    "unchanged-counter": {
+        "base": COUNTER,
+        "head": {"src/pkg/d.py": FUTURE + NAME},
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
+    "unchanged-counter-other-checkout-input": {
+        "base": {
+            **COUNTER,
+            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = ">=3.9"\n',
+            "tests/test_a.py": "match 1:\n    case _:\n        pass\n",
+        },
+        "head": {
+            "pyproject.toml": BASE["pyproject.toml"] + '\n[project]\nrequires-python = "~=3.9"\n',
+            "tests/test_b.py": "match 1:\n    case _:\n        pass\n",
+        },
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
     "weakened-counter": {
         "base": COUNTER,
         "head": {
