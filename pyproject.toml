@@ -478,7 +478,6 @@ ini_options.assert_helper_direct_assert_exempt_files = [
   "test_yaml_backend.py",
 ]
 ini_options.timeout = 900
-ini_options.timeout_method = "thread"
 
 [tool.coverage]
 run.omit = [
