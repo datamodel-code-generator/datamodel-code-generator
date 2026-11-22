@@ -3,7 +3,7 @@ id = "intersect-merged-allof-members"
 category = "new-surface"
 title = "Read the allOf members merged into one schema keyword by keyword"
 summary = "--intersect-merged-allof-members gives a property several merged allOf object members declare the type, null and multipleOf every declaration admits and merges the members' own allOf members, keeps the enum of every member of a named allOf of a $ref and value members, keeps a map $ref beside property counts or propertyNames a map with them, and checks a length or pattern beside a $ref to base64 text on the text."
-refs = ["#7398"]
+refs = ["#7399"]
 surface = ["--intersect-merged-allof-members"]
 covers = [
     "main/jsonschema/main_jsonschema/allof_base64_member_constraints[intersected-collapse-root-models].py",
