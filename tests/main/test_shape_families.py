@@ -1,35 +1,132 @@
-"""Generate every shape of the shape families and hold their differences from the validator to the known ones.
+"""Generate every shape of the shape families and hold their differences and their relations to the known ones.
 
 The families (``tests/main/shape_families/families.py``) enumerate ordinary modelling idioms completely within their
 stated bound; each shape is generated for the backends of its family under the default output and under the newest
 dated preset, and its model is judged on a bounded payload pool by the payload suite's validator
-(``shape_families/verdict.py``). Every difference must be one ``KEPT`` names (``shape_families/kept.py``), and every
+(``shape_families/verdict.py``) and against the model of every other spelling of the same meaning, of the reference
+backend, of the default output without a presentation option, and against the generated client's argument
+(``shape_families/relations.py``). Every difference must be one ``KEPT`` names (``shape_families/kept.py``), and every
 cell a rule names must still differ: under the default output the set is frozen, under the preset it is the to-do list.
+
+The relations between backends, the presentation options and the client run on a bounded subset of the families in
+the pull request tier (``TIERS``) and on all of them where ``DATAMODEL_CODE_GENERATOR_TEST_SHAPE_FAMILIES`` is ``all``
+(the nightly tier).
 """
 
 from __future__ import annotations
 
+import os
 import re
-from typing import TYPE_CHECKING
+from dataclasses import dataclass, replace
+from itertools import repeat
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 
+from datamodel_code_generator.__main__ import Config
+from datamodel_code_generator.arguments import arg_parser
 from scripts.legacy_rows import LEGACY_ROWS
 from tests.capabilities import needs
 from tests.main.payload_validation import BACKEND_UNASSERTED_MUTATION_CONSTRAINTS
-from tests.main.shape_families.families import FAMILIES, TYPED_DICT
+from tests.main.shape_families.families import FAMILIES, MSGSPEC, PYDANTIC_V2, TYPED_DICT
 from tests.main.shape_families.kept import BASES, ISSUE, KEPT, LEGACY_ROW, Differences, differences
+from tests.main.shape_families.options import ACCEPTANCE, PRESENTATION
+from tests.main.shape_families.relations import (
+    BACKENDS,
+    CLIENT,
+    OPTION_PREFIX,
+    RELATIONS,
+    REWRITES,
+    TWIN_RELATIONS,
+    client_findings,
+    option_kind,
+    rewritten,
+    with_backends,
+    with_base,
+    with_twins,
+)
 from tests.main.shape_families.verdict import CONTRACTS, KINDS, Cell, judge, payload_backend
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Mapping
     from pathlib import Path
 
+    from tests.main.shape_families.families import Family, Shape
     from tests.main.shape_families.kept import Kept
 
 STATED_BOUND = {"extend": 432, "union": 72, "mixin": 70, "container": 144, "tagged": 32}
 """The number of shapes of each family, as the module docstring of the family library states them."""
 ISSUE_REFERENCE = re.compile(r"#[1-9][0-9]*")
 LEGACY_ROW_NAMES = frozenset(row.name for row in LEGACY_ROWS)
+OPTION_FIELDS = frozenset(name for name, field in Config.model_fields.items() if not field.exclude) | {
+    action.dest for action in arg_parser._actions if action.option_strings
+}
+"""Every configuration field and option destination: the names the option-effect table may place."""
+
+
+def cover(family: Family) -> tuple[Shape, ...]:
+    """Return a few shapes of a family that together take every value of every dimension.
+
+    Each next shape is the first that takes the most values no shape before it took, until none is left.
+    """
+    shapes = family.shapes()
+    left = {pair for shape in shapes for pair in shape.params}
+    chosen: list[Shape] = []
+    while left:
+        best = max(shapes, key=lambda shape: len(left.intersection(shape.params)))
+        chosen.append(best)
+        left -= set(best.params)
+    return tuple(chosen)
+
+
+def _every_shape(family: Family) -> tuple[Shape, ...]:
+    return family.shapes()
+
+
+def _reference_backend(_family: Family) -> tuple[str, ...]:
+    return (PYDANTIC_V2,)
+
+
+def _family_backends(family: Family) -> tuple[str, ...]:
+    return family.backends
+
+
+@dataclass(frozen=True)
+class Tier:
+    """The cells the relations between backends, options and the client judge."""
+
+    shapes: Callable[[Family], tuple[Shape, ...]]
+    variant_backends: Callable[[Family], tuple[str, ...]]
+    """The backends of a family the rewrites and the presentation options are generated for."""
+    contracts: tuple[str, ...]
+    """The contracts of the rewrites and the presentation options; the backends and the client take both in every
+    tier."""
+    client_backends: tuple[str, ...]
+
+
+TierName = Literal["pr", "all"]
+TIER_VARIABLE = "DATAMODEL_CODE_GENERATOR_TEST_SHAPE_FAMILIES"
+TIERS: dict[TierName, Tier] = {
+    "pr": Tier(cover, _reference_backend, ("default",), (PYDANTIC_V2, TYPED_DICT, MSGSPEC)),
+    "all": Tier(_every_shape, _family_backends, tuple(CONTRACTS), FAMILIES["container"].backends),
+}
+"""The pull request tier (a cover of each family; the reference backend and the default output for the rewrites and
+the options; a backend of each runtime for the client) and the nightly one (every cell)."""
+
+
+def _tier_from_env(raw: str | None = None) -> TierName:
+    """Return the tier the environment names: unset or empty is the pull request tier, ``all`` the nightly one."""
+    if raw is None:
+        raw = os.environ.get(TIER_VARIABLE)
+    if raw in {None, ""}:
+        return "pr"
+    if raw == "all":
+        return "all"
+    msg = f"{TIER_VARIABLE} must be empty or 'all'"
+    raise ValueError(msg)
+
+
+TIER = TIERS[_tier_from_env()]
 
 
 def _domain(family: str) -> dict[str, tuple[object, ...]]:
@@ -58,6 +155,23 @@ def _reference_holds(rule: Kept) -> bool:
     )
 
 
+def _known_kind(kind: str) -> bool:
+    """Return whether a kind is one of the verdict, one relation or the relation of a presentation option."""
+    return kind in KINDS or kind in RELATIONS or kind.removeprefix(OPTION_PREFIX) in PRESENTATION
+
+
+def _hold(cells: Iterable[Cell], kinds: Iterable[str]) -> Differences:
+    """Hold the findings of the kinds a test judges to the rules of those kinds, both ways."""
+    judged = set(kinds)
+    return differences(
+        (
+            replace(cell, findings={kind: text for kind, text in cell.findings.items() if kind in judged})
+            for cell in cells
+        ),
+        [rule for rule in KEPT if rule.kind in judged],
+    )
+
+
 def _enumerated(family: str) -> list[Cell]:
     """Return every cell of a family under every contract, unjudged: the cells the rules may name."""
     return [
@@ -81,7 +195,7 @@ def test_kept_rules_are_well_formed() -> None:
     No two rules of one kind cover one cell, so narrowing one rule after a fix never leaves the cell to another.
     """
     assert [
-        rule for rule in KEPT if rule.family not in FAMILIES or rule.kind not in KINDS or rule.basis not in BASES
+        rule for rule in KEPT if rule.family not in FAMILIES or not _known_kind(rule.kind) or rule.basis not in BASES
     ] == []
     assert [rule for rule in KEPT if not rule.contracts or not rule.contracts <= CONTRACTS.keys()] == []
     assert [rule.reference for rule in KEPT if not _reference_holds(rule)] == []
@@ -104,6 +218,55 @@ def test_kept_rules_are_well_formed() -> None:
     ] == []
 
 
+@pytest.mark.allow_direct_assert("The option-effect table is static; each check lists the entries that break it.")
+def test_option_effect_table_is_well_formed() -> None:
+    """Every option the table places exists, none is both kinds, and the cover takes every value of every dimension."""
+    assert sorted((PRESENTATION.keys() | ACCEPTANCE) - OPTION_FIELDS) == []
+    assert sorted(PRESENTATION.keys() & ACCEPTANCE) == []
+    assert [
+        (name, dimension, value)
+        for name, family in FAMILIES.items()
+        for dimension, values in family.dimensions
+        for value in values
+        if not any(dict(shape.params)[dimension] == value for shape in TIERS["pr"].shapes(family))
+    ] == []
+
+
+@pytest.mark.allow_direct_assert("The tiers are static; each check lists the cells that break it.")
+def test_pull_request_tier_is_within_the_nightly_tier() -> None:
+    """The pull request tier judges a part of the cells the nightly tier judges, and the nightly tier every cell."""
+    pr, nightly = TIERS["pr"], TIERS["all"]
+    assert [
+        (name, shape.params)
+        for name, family in FAMILIES.items()
+        for shape in pr.shapes(family)
+        if shape.params not in {every.params for every in nightly.shapes(family)}
+    ] == []
+    assert {name: len(nightly.shapes(family)) for name, family in FAMILIES.items()} == STATED_BOUND
+    assert {name: nightly.variant_backends(family) for name, family in FAMILIES.items()} == {
+        name: family.backends for name, family in FAMILIES.items()
+    }
+    assert [
+        name for name, family in FAMILIES.items() if not set(pr.variant_backends(family)) <= set(family.backends)
+    ] == []
+    assert set(pr.contracts) <= set(nightly.contracts) == set(CONTRACTS)
+    assert set(pr.client_backends) <= set(nightly.client_backends) == set(FAMILIES["container"].backends)
+
+
+@pytest.mark.parametrize(("raw", "expected"), [(None, "pr"), ("", "pr"), ("all", "all")], ids=["unset", "empty", "all"])
+@pytest.mark.allow_direct_assert("The tier is a pure function of the environment variable's value.")
+def test_tier_reads_the_environment(raw: str | None, expected: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The tier variable selects the tier; the nightly workflow sets it to ``all``."""
+    monkeypatch.delenv(TIER_VARIABLE, raising=False)
+    assert _tier_from_env(raw) == expected
+
+
+def test_tier_rejects_other_values() -> None:
+    """A value other than empty or ``all`` fails loudly instead of running the pull request tier."""
+    with pytest.raises(ValueError, match=TIER_VARIABLE):
+        _tier_from_env("nightly")
+
+
 FAMILY_BACKENDS = [
     pytest.param(family, backend, marks=needs("typed-dict-validation") if backend == TYPED_DICT else ())
     for family, definition in FAMILIES.items()
@@ -113,11 +276,15 @@ FAMILY_BACKENDS = [
 
 
 def _differences(family: str, backend: str, contract: str, directory: Path) -> Differences:
-    """Judge every shape of a family for one backend under one contract and hold the cells to the rule list."""
-    cells = [
+    """Judge every shape of a family for one backend under one contract, with its twins, and hold it to the rules."""
+    cells = with_twins(
         judge(shape, backend, contract, directory / str(index)) for index, shape in enumerate(FAMILIES[family].shapes())
-    ]
-    return differences(cells, KEPT)
+    )
+    return _hold(cells, (*KINDS, *TWIN_RELATIONS))
+
+
+UNCOVERED = "differences no rule of shape_families/kept.py covers:\n"
+STALE = "rules to narrow or remove:\n"
 
 
 @pytest.mark.allow_direct_assert(
@@ -127,11 +294,12 @@ def _differences(family: str, backend: str, contract: str, directory: Path) -> D
 def test_default_output_differences_are_frozen(family: str, backend: str, tmp_path: Path) -> None:
     """Under the default output every difference is a known one, and every known one still differs: the set is frozen.
 
-    A change that adds a difference fails, and so does a fix until it narrows or removes its rule.
+    A difference is one from the validator or one between two spellings of a meaning (``TWINS``). A change that adds
+    a difference fails, and so does a fix until it narrows or removes its rule.
     """
     found = _differences(family, backend, "default", tmp_path)
-    assert not found.uncovered, "differences no rule of shape_families/kept.py covers:\n" + "\n".join(found.uncovered)
-    assert not found.stale, "rules to narrow or remove:\n" + "\n".join(found.stale)
+    assert not found.uncovered, UNCOVERED + "\n".join(found.uncovered)
+    assert not found.stale, STALE + "\n".join(found.stale)
 
 
 @pytest.mark.allow_direct_assert(
@@ -144,5 +312,121 @@ def test_newest_preset_differences_are_the_to_do_list(family: str, backend: str,
     A fix that clears a rule's cells under the preset (an option the preset turns on) removes or narrows the rule.
     """
     found = _differences(family, backend, "preset", tmp_path)
-    assert not found.uncovered, "differences no rule of shape_families/kept.py covers:\n" + "\n".join(found.uncovered)
-    assert not found.stale, "rules to narrow or remove:\n" + "\n".join(found.stale)
+    assert not found.uncovered, UNCOVERED + "\n".join(found.uncovered)
+    assert not found.stale, STALE + "\n".join(found.stale)
+
+
+MULTI_BACKEND_FAMILIES = [
+    pytest.param(family, contract, marks=needs("typed-dict-validation") if TYPED_DICT in definition.backends else ())
+    for family, definition in FAMILIES.items()
+    if len(definition.backends) > 1
+    for contract in CONTRACTS
+]
+
+
+@pytest.mark.allow_direct_assert("The backends' verdicts are held to the rule list both ways; each line names a cell.")
+@pytest.mark.parametrize(("family", "contract"), MULTI_BACKEND_FAMILIES)
+def test_backends_agree_on_accepted_payloads(family: str, contract: str, tmp_path: Path) -> None:
+    """Every backend of a family accepts, in strict mode, the payloads its Pydantic v2 model accepts, and no other.
+
+    The shapes are those of the tier; every difference is a ``backends`` rule, and every such rule still differs.
+    """
+    cells = with_backends(
+        judge(shape, backend, contract, tmp_path / f"{index}-{position}", strict=True)
+        for index, shape in enumerate(TIER.shapes(FAMILIES[family]))
+        for position, backend in enumerate(FAMILIES[family].backends)
+    )
+    found = _hold(cells, [BACKENDS])
+    assert not found.uncovered, UNCOVERED + "\n".join(found.uncovered)
+    assert not found.stale, STALE + "\n".join(found.stale)
+
+
+CLIENT_CELLS = [
+    pytest.param(backend, contract, marks=needs("typed-dict-validation") if backend == TYPED_DICT else ())
+    for backend in TIER.client_backends
+    for contract in CONTRACTS
+]
+
+
+@pytest.mark.allow_direct_assert("The client's arguments are held to the rule list both ways; each line names a cell.")
+@pytest.mark.parametrize(("backend", "contract"), CLIENT_CELLS)
+def test_client_arguments_accept_what_the_models_accept(backend: str, contract: str, tmp_path: Path) -> None:
+    """The httpx2 client's field argument of every container shape accepts each valid value its model field accepts.
+
+    The shapes are the fields of one request body; every difference is a ``client`` rule, and every such rule still
+    differs.
+    """
+    found = _hold(client_findings(backend, contract, tmp_path), [CLIENT])
+    assert not found.uncovered, UNCOVERED + "\n".join(found.uncovered)
+    assert not found.stale, STALE + "\n".join(found.stale)
+
+
+VARIANT_CELLS = [
+    pytest.param(family, backend, contract, marks=needs("typed-dict-validation") if backend == TYPED_DICT else ())
+    for family, definition in FAMILIES.items()
+    for backend in TIER.variant_backends(definition)
+    for contract in TIER.contracts
+]
+"""Each family with the backends and contracts the tier generates its variants for: the rewrites and the options."""
+
+
+def _base(shapes: tuple[Shape, ...], backend: str, contract: str, directory: Path) -> list[Cell]:
+    return [judge(shape, backend, contract, directory / "base" / str(index)) for index, shape in enumerate(shapes)]
+
+
+def _hold_variants(variants: Mapping[str, list[Cell]]) -> Differences:
+    """Hold the cells of each variant (a rewrite, an option) to the rules of its own relation, both ways.
+
+    The cells of two variants share their parameters, so each kind is held apart from the cells of the others.
+    """
+    held = [_hold(cells, [kind]) for kind, cells in variants.items()]
+    return Differences(
+        tuple(line for found in held for line in found.uncovered), tuple(line for found in held for line in found.stale)
+    )
+
+
+@pytest.mark.allow_direct_assert("The rewrite relations are held to the rule list both ways; each line names a cell.")
+@pytest.mark.parametrize(("family", "backend", "contract"), VARIANT_CELLS)
+def test_rewrites_keep_the_verdicts(family: str, backend: str, contract: str, tmp_path: Path) -> None:
+    """Each rewrite of ``REWRITES`` (definition order, allOf member order, union member order) keeps every verdict.
+
+    The shapes are those of the tier; every difference is a rule of its rewrite, and every such rule still differs.
+    """
+    shapes = TIER.shapes(FAMILIES[family])
+    base = _base(shapes, backend, contract, tmp_path)
+    variants: dict[str, list[Cell]] = {}
+    for rewrite in REWRITES:
+        changed = [(index, shape) for index, shape in enumerate(map(rewritten, shapes, repeat(rewrite))) if shape]
+        variants[rewrite] = with_base(
+            rewrite,
+            (judge(shape, backend, contract, tmp_path / rewrite / str(index)) for index, shape in changed),
+            base,
+        )
+    found = _hold_variants(variants)
+    assert not found.uncovered, UNCOVERED + "\n".join(found.uncovered)
+    assert not found.stale, STALE + "\n".join(found.stale)
+
+
+@pytest.mark.allow_direct_assert("The option relations are held to the rule list both ways; each line names a cell.")
+@pytest.mark.parametrize(("family", "backend", "contract"), VARIANT_CELLS)
+def test_presentation_options_keep_the_verdicts(family: str, backend: str, contract: str, tmp_path: Path) -> None:
+    """Each presentation option of the option-effect table leaves every verdict of the tier's cells as it was.
+
+    Every difference is a rule of its ``option:<name>`` relation, and every such rule still differs.
+    """
+    shapes = TIER.shapes(FAMILIES[family])
+    base = _base(shapes, backend, contract, tmp_path)
+    variants = {
+        option_kind(option): with_base(
+            option_kind(option),
+            (
+                judge(shape, backend, contract, tmp_path / option / str(index), extra=arguments)
+                for index, shape in enumerate(shapes)
+            ),
+            base,
+        )
+        for option, arguments in PRESENTATION.items()
+    }
+    found = _hold_variants(variants)
+    assert not found.uncovered, UNCOVERED + "\n".join(found.uncovered)
+    assert not found.stale, STALE + "\n".join(found.stale)

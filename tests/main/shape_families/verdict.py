@@ -56,7 +56,7 @@ from tests.main.payload_validation.neighbours import model_verdict, value_neighb
 from .families import DIALECT, MSGSPEC, Shape
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator, Mapping, Sequence
+    from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 
     from .families import Schema
 
@@ -265,6 +265,8 @@ class Truth:
     payloads: tuple[object, ...]
     valid: tuple[bool, ...]
     case: SchemaCase
+    keys: tuple[str, ...]
+    """The key of each payload, which tells payloads of two pools apart by value and by JSON kind."""
 
     def valid_as_any_of(self, payload: object) -> bool:
         """Return whether the schema accepts the payload once ``oneOf`` reads as ``anyOf``."""
@@ -283,8 +285,10 @@ def truth(shape: Shape) -> Truth:
 
 
 def _truth(case: SchemaCase, payloads: tuple[object, ...]) -> Truth:
-    """Return the payloads with the verdicts of the validator of ``case``."""
-    return Truth(payloads, tuple(map(source_schema_validator(case).is_valid, payloads)), case)
+    """Return the payloads with the verdicts of the validator of ``case`` and their keys."""
+    return Truth(
+        payloads, tuple(map(source_schema_validator(case).is_valid, payloads)), case, tuple(map(_key, payloads))
+    )
 
 
 @dataclass(frozen=True)
@@ -325,7 +329,10 @@ class Cell:
     backend: str
     contract: str
     findings: Mapping[str, str] = field(default_factory=dict)
-    """The smallest witness of each kind of ``KINDS`` the cell shows: a payload as JSON, or the error."""
+    """The smallest witness of each kind the cell shows (``KINDS``, or a relation of ``relations.py``): a payload as
+    JSON, or the error."""
+    verdicts: tuple[str, ...] | None = None
+    """The model's verdict on each payload of the shape's pool (``model_verdict``), or None where it has no model."""
 
     @property
     def params(self) -> dict[str, object]:
@@ -342,8 +349,13 @@ class _UnusableCellError(Exception):
         self.detail = detail
 
 
-def _generate(document: Schema, input_file_type: str, backend: str, contract: str, directory: Path) -> Path:
-    """Generate a document into ``directory`` with the main tests' helper and return the path of the module."""
+def _generate(
+    document: Schema, input_file_type: str, backend: str, contract: str, directory: Path, extra: tuple[str, ...] = ()
+) -> Path:
+    """Generate a document into ``directory`` with the main tests' helper and return the path of the module.
+
+    ``extra`` are more arguments, after those of the contract: an option whose effect a relation checks.
+    """
     directory.mkdir(parents=True)
     source = directory / "schema.json"
     source.write_text(json.dumps(document), encoding="utf-8")
@@ -361,6 +373,7 @@ def _generate(document: Schema, input_file_type: str, backend: str, contract: st
         "--formatters",
         "builtin",
         *CONTRACTS[contract],
+        *extra,
     ]
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
@@ -415,16 +428,31 @@ def _strict_verdict(runtime: PayloadRuntime, payload: object) -> str:
     return "accepts"
 
 
-def _witnesses(runtime: PayloadRuntime, known: Truth, *, judges_null: bool) -> dict[str, list[object]]:
-    """Return the payloads on which a model differs from the validator, by kind.
+def lax_verdicts(runtime: PayloadRuntime, known: Truth) -> tuple[str, ...]:
+    """Return the model's verdict on each payload of a pool, in the default (lax) mode."""
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        return tuple(model_verdict(runtime, payload) for payload in known.payloads)
+
+
+def strict_verdicts(runtime: PayloadRuntime, known: Truth) -> tuple[str, ...]:
+    """Return the model's verdict on each payload of a pool, in strict mode over its JSON text."""
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        return tuple(_strict_verdict(runtime, payload) for payload in known.payloads)
+
+
+def _witnesses(
+    runtime: PayloadRuntime, known: Truth, verdicts: tuple[str, ...], *, judges_null: bool = False
+) -> dict[str, list[object]]:
+    """Return the payloads on which a model differs from the validator, by kind, from its lax ``verdicts``.
 
     A payload holding null is judged for ``accepts-invalid`` only where ``judges_null`` says so (the null table).
     """
     witnesses: dict[str, list[object]] = {}
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
-        for payload, valid in zip(known.payloads, known.valid, strict=True):
-            verdict = model_verdict(runtime, payload)
+        for payload, valid, verdict in zip(known.payloads, known.valid, verdicts, strict=True):
             if verdict.startswith("raises"):
                 witnesses.setdefault(MODEL_RAISES, []).append(payload)
             elif valid and verdict == "rejects":
@@ -451,23 +479,35 @@ def _accepted_invalid(runtime: PayloadRuntime, known: Truth, payload: object, *,
     )
 
 
+def smallest(texts: Iterable[str]) -> str:
+    """Return the shortest of some witnesses, the first in text order among equally short ones."""
+    return min(texts, key=lambda text: (len(text), text))
+
+
 def _findings(witnesses: Mapping[str, list[object]]) -> dict[str, str]:
     """Return the smallest witness of each kind, as JSON."""
-    return {
-        kind: min((json.dumps(payload) for payload in payloads), key=lambda text: (len(text), text))
-        for kind, payloads in witnesses.items()
-    }
+    return {kind: smallest(json.dumps(payload) for payload in payloads) for kind, payloads in witnesses.items()}
 
 
-def judge(shape: Shape, backend: str, contract: str, directory: Path) -> Cell:
-    """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings."""
-    output = _generate(shape.document, "jsonschema", backend, contract, directory)
+def judge(
+    shape: Shape, backend: str, contract: str, directory: Path, *, extra: tuple[str, ...] = (), strict: bool = False
+) -> Cell:
+    """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings.
+
+    The cell keeps the model's verdict on every payload of the pool: lax, or strict over JSON text with ``strict``.
+    ``extra`` are more generation arguments (see ``_generate``).
+    """
+    known = truth(shape)
+    output = _generate(shape.document, "jsonschema", backend, contract, directory, extra)
     try:
         with _loaded(output, [shape.name], backend) as (runtime,):
-            witnesses = _witnesses(runtime, truth(shape), judges_null=False)
+            verdicts = lax_verdicts(runtime, known)
+            witnesses = _witnesses(runtime, known, verdicts)
+            if strict:
+                verdicts = strict_verdicts(runtime, known)
     except _UnusableCellError as unusable:
         return Cell(shape, backend, contract, {unusable.kind: unusable.detail})
-    return Cell(shape, backend, contract, _findings(witnesses))
+    return Cell(shape, backend, contract, _findings(witnesses), verdicts)
 
 
 def row_shape(batch: Batch, row: Row) -> Shape:
@@ -476,21 +516,23 @@ def row_shape(batch: Batch, row: Row) -> Shape:
 
 
 def judge_batch(batch: Batch, backend: str, contract: str, directory: Path, *, judges_null: bool) -> tuple[Cell, ...]:
-    """Generate a batch once for a backend under a contract and return the cell of each row with its findings."""
+    """Generate a batch once for a backend under a contract and return the cell of each row with its findings.
+
+    A cell keeps the model's lax verdict on each payload of its row.
+    """
     shapes = [row_shape(batch, row) for row in batch.rows]
+    truths = [_truth(_case(batch.family, batch.schema(row), batch.document), row.payloads) for row in batch.rows]
     output = _generate(batch.document, batch.input_file_type, backend, contract, directory)
     try:
         with _loaded(output, [row.name for row in batch.rows], backend) as runtimes:
+            verdicts = list(itertools.starmap(lax_verdicts, zip(runtimes, truths, strict=True)))
             found = [
-                _findings(
-                    _witnesses(
-                        runtime,
-                        _truth(_case(batch.family, batch.schema(row), batch.document), row.payloads),
-                        judges_null=judges_null,
-                    )
-                )
-                for row, runtime in zip(batch.rows, runtimes, strict=True)
+                _findings(_witnesses(runtime, known, row_verdicts, judges_null=judges_null))
+                for runtime, known, row_verdicts in zip(runtimes, truths, verdicts, strict=True)
             ]
     except _UnusableCellError as unusable:
-        found = [{unusable.kind: unusable.detail}] * len(batch.rows)
-    return tuple(Cell(shape, backend, contract, findings) for shape, findings in zip(shapes, found, strict=True))
+        return tuple(Cell(shape, backend, contract, {unusable.kind: unusable.detail}) for shape in shapes)
+    return tuple(
+        Cell(shape, backend, contract, findings, row_verdicts)
+        for shape, findings, row_verdicts in zip(shapes, found, verdicts, strict=True)
+    )

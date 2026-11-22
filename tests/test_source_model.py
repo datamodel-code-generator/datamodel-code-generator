@@ -46,6 +46,7 @@ from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
 from tests.main import public_api_record
+from tests.main.shape_families import relations as shape_relations
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -1080,6 +1081,26 @@ def _legacy_row_reads(form: Path) -> list[Finding]:
         ]
 
 
+def _client_reads(form: Path) -> list[Finding]:
+    """Return what the shape families' client relation reads of each module of a form, as it reads a generated client.
+
+    That is each annotated parameter of a function, with the function's qualified name and the annotation's text, and
+    each name a module-level ``from`` import binds, with the module it is read from.
+    """
+    found: list[Finding] = []
+    for name, text in _form_files(form):
+        module = source_model.SourceModule(text, name, "forms.form", verify=False)
+        found += [
+            Finding("parameter", _site(form, name, line), f"{name}:{line}: {function.qualname}({parameter}: {written})")
+            for function, parameter, written, line in shape_relations.parameter_annotations(module)
+        ]
+        found += [
+            Finding("import", _site(form, name, line), f"{name}:{line}: {bound} = {source}.{imported}")
+            for bound, source, imported, line in shape_relations.imported_names(module)
+        ]
+    return found
+
+
 def _public_api_record(form: Path) -> list[Finding]:
     """Return the lines the public API record writes for each public name of a form, and what it refuses.
 
@@ -1209,6 +1230,9 @@ RULES: dict[str, RuleRun] = {
         "scripts._decision_home_reads",
         frozenset({"bindings", "references", "imports", "extents"}),
         _decision_home_callers,
+    ),
+    "shape-family-client-reads": RuleRun(
+        "tests.main.shape_families.relations", frozenset({"references", "imports", "extents"}), _client_reads
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
