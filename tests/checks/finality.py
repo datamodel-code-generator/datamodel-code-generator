@@ -112,11 +112,13 @@ from scripts import pass_decls as decls
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
     RENDER_FACT_FREEZE_POINTS,
+    STORE_MEMBERS,
     Access,
     AttributeFact,
     Fact,
     FactKind,
     FreezePoint,
+    MemberUse,
     RenderFact,
 )
 from scripts.pass_decls import PassDecl, PassKind, Scope
@@ -157,6 +159,7 @@ class GuardedView:
 _PACKAGE_ROOT: Final = Path(datamodel_code_generator.__file__).parent
 _PACKAGE: Final = _PACKAGE_ROOT.name
 _SOURCE_PREFIX: Final = f"src/{_PACKAGE}"
+_STORE_MODULE: Final = f"{_SOURCE_PREFIX}/parser/generation.py"
 _CONSTRUCTORS: Final = frozenset({"__init__", "__post_init__", "model_post_init"})
 _GUARDED_KINDS: Final = frozenset({FactKind.FACT, FactKind.PRESENTATION})
 _GUARDED_ACCESS: Final = frozenset({Access.ATTRIBUTE, Access.CONTAINER})
@@ -204,6 +207,12 @@ def _guarded_names(cls: type) -> tuple[frozenset[str], frozenset[str]]:
 
 
 _STORE_OPERATIONS: Final = frozenset(store_op for row in ATTRIBUTE_FACTS for store_op in row.store_ops)
+_STORE_METHODS: Final = frozenset(member.name for member in STORE_MEMBERS if member.use is MemberUse.CALL)
+"""The methods that write the graph for the store (``STORE_MEMBERS``): their writes are the store's while it runs them.
+
+heki lets only the store module and the methods' own classes call them; a store function may run one outside the
+window of a named operation (after the ``yield`` of a replacement it hands a pass), and that write is the store's too.
+"""
 _ITEM_OPERATIONS: Final = frozenset(
     store_op for row in ATTRIBUTE_FACTS if row.access is Access.ITEM for store_op in row.store_ops
 )
@@ -1826,7 +1835,14 @@ class ParseChecks:
     def report_write(
         self, mode: Mode, owner: str, attribute: str, operation: str, key: str | None, frame: FrameType
     ) -> None:
-        """Raise for a write outside store operations, or report it once per writing line and parse."""
+        """Raise for a write outside store operations, or report it once per writing line and parse.
+
+        A write a method of ``_STORE_METHODS`` makes while a function of the store module runs it is the store's.
+        """
+        if frame.f_code.co_name in _STORE_METHODS and any(
+            _source_path(item.f_code.co_filename) == _STORE_MODULE for item in _stack(frame)
+        ):
+            return
         filename, line = frame.f_code.co_filename, frame.f_lineno
         if (seen := (filename, line, attribute, operation, key)) in self._reported:
             return

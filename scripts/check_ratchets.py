@@ -223,6 +223,8 @@ HEKI_RULES = {
     "lock-or-tx-held-across-io": "EFF106",
     "lock-reacquired-while-held": "EFF109",
     "exclusive-object-fanout": "EFF110",
+    "set-order-output": "EFF112",
+    "recursion-error-as-value": "EFF114",
     "unretained-async-task": "EFF107",
     "effect-boundary-violation": "EFF201",
     "loop-carried-concat": "DATA101",

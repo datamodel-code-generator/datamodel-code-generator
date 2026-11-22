@@ -742,6 +742,16 @@ paragraph above), which only shrinks:
 - A refactor that moves a write to another function moves its entry: delete
   the baseline and run the same command again; the keys must not rise.
 
+The methods that write the graph for the store operations that run them (the
+hooks such as `process_const` and `set_base_class`, and the reference mutators
+such as `replace_data_type` and `replace_reference`) and the bookkeeping of a
+reference (`Reference.children`, `loaded`, `source`) are listed in
+`STORE_MEMBERS` of `scripts/fact_tables.py`. Each method gets a `call-owners`
+contract: only the store module, the method's own class and the other listed
+methods may call it, and it may write what the store module writes. A call of
+one from a parser pass is a `MUT204` finding, and a read of `Reference.children`
+outside `reference.py`, `_graph_links.py` and the store a `MUT203` one.
+
 The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks the table itself: a new
 attribute on `DataType`, a field or a model, and a new `__dict__` key that

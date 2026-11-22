@@ -1260,7 +1260,11 @@ or set mutator, also through an alias, a `__dict__` entry whose key a row names,
 a cache row; a write through an object or a name it cannot resolve is a finding of its own. Construction writes to
 the object being built are allowed. `scripts/heki_baseline.toml` records the writes that bypass the store today by
 path, function, rule and target, with a count each; it only shrinks, so a change that routes a write through the store
-removes its entry, and a new write outside the store fails.
+removes its entry, and a new write outside the store fails. The methods a store operation runs to write the graph,
+and the bookkeeping of a reference (`STORE_MEMBERS` of the same file), get contracts of their own: only the store, the
+method's class and the other listed methods may call such a method, which may write what the store writes, and only
+the store, `reference.py` and `_graph_links.py` may read or write the reverse edges and the loading state of a
+reference.
 
 `scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads the table and
 the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) through `scripts/_source_model.py` and checks the table itself:

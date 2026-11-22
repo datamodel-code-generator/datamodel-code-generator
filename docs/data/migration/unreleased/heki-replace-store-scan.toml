@@ -3,7 +3,7 @@ id = "heki-replace-store-scan"
 category = "internal"
 title = "Check the store writes with heki instead of the store scan"
 summary = "only the repository checks and their tests change; the package writes the same output"
-refs = ["#7388"]
+refs = ["#1"]
 covers = [
     "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
     "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",

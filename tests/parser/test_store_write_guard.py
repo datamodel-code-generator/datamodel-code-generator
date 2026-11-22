@@ -109,6 +109,22 @@ class SharingParser(JsonSchemaParser):
         return super()._process_single_module(module_, models, *args)
 
 
+class RedirectingParser(JsonSchemaParser):
+    """Points every referencing data type at its own reference again, through the store or directly."""
+
+    direct: bool
+
+    def _process_single_module(self, module_: object, models: list[DataModel], *args: object) -> ModuleContext:
+        for data_type in (field.data_type for model in models for field in model.fields):
+            if (reference := data_type.reference) is None:
+                continue
+            if self.direct:
+                data_type.replace_reference(reference)
+            else:
+                type(self.generation_store)._replace_data_type_reference(data_type, reference)
+        return super()._process_single_module(module_, models, *args)
+
+
 def _reported(report: Path) -> str:
     """Return the reported writes without what depends on the checkout and the Python version."""
     lines = report.read_text(encoding="utf-8").splitlines() if report.exists() else []
@@ -206,3 +222,26 @@ def test_store_write_guard_keeps_what_the_parsed_graph_shares(monkeypatch: pytes
 
     assert_output(output, name="output")
     assert_output(json.dumps({"shared while processing modules": parser.shared}) + "\n", name="shared")
+
+
+@pytest.mark.parametrize("direct", [False, True], ids=["store", "pass"])
+@pytest.mark.allow_direct_assert("which writer the guard reports is its verdict, not a stored output")
+def test_store_write_guard_leaves_a_store_method_to_the_store(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, direct: bool
+) -> None:
+    """A method only the store runs writes for the store under a store function; a pass calling it is reported.
+
+    ``STORE_MEMBERS`` lists the method; the store function runs it outside the window of a named operation.
+    """
+    report = tmp_path / "writes.jsonl"
+    monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{report}")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+
+    parser = RedirectingParser(SCHEMA.with_name("nullable_reuse.json"), formatters=[Formatter.BUILTIN])
+    parser.direct = direct
+
+    parser.parse()
+
+    lines = report.read_text(encoding="utf-8").splitlines() if report.exists() else []
+    writers = [(write["function"], write["attribute"]) for write in map(json.loads, lines)]
+    assert writers == ([("DataType.replace_reference", "reference")] if direct else [])

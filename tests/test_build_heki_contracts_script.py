@@ -17,7 +17,8 @@ from pathlib import Path
 import pytest
 import tomllib
 
-from scripts import check_ratchets
+from scripts import build_heki_contracts, check_ratchets
+from scripts.fact_tables import MemberUse, StoreMember
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
@@ -90,30 +91,43 @@ SEEDED_PACKAGE = {
     f"{PACKAGE}/model/__init__.py": "",
     f"{PACKAGE}/model/base.py": (
         "class DataModel:\n    def __init__(self) -> None:\n        self.fields: list[str] = []\n"
+        "        self.set_base_class()\n\n"
+        "    def set_base_class(self) -> None:\n        self.fields = []\n"
+    ),
+    f"{PACKAGE}/reference.py": (
+        "class Reference:\n    def __init__(self) -> None:\n"
+        "        self.children: list[object] = []\n        self.loaded = True\n"
     ),
     f"{PACKAGE}/parser/__init__.py": "",
     f"{PACKAGE}/parser/generation.py": (
         "from datamodel_code_generator.model.base import DataModel\n\n\n"
         "class GenerationStore:\n"
-        "    def set_fields(self, model: DataModel, fields: list[str]) -> None:\n        model.fields = fields\n"
+        "    def set_fields(self, model: DataModel, fields: list[str]) -> None:\n        model.fields = fields\n\n"
+        "    def reset_base_classes(self, model: DataModel) -> None:\n        model.set_base_class()\n"
     ),
     f"{PACKAGE}/parser/base.py": (
         "class Parser:\n    def __init__(self) -> None:\n        self.results: list[str] = []\n"
     ),
     f"{PACKAGE}/parser/seeded.py": (
         "from datamodel_code_generator.model.base import DataModel\n"
-        "from datamodel_code_generator.parser.base import Parser\n\n\n"
+        "from datamodel_code_generator.parser.base import Parser\n"
+        "from datamodel_code_generator.reference import Reference\n\n\n"
         'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n\n\n'
-        'def register(parser: Parser) -> None:\n    parser.results.append("model")\n'
+        'def register(parser: Parser) -> None:\n    parser.results.append("model")\n\n\n'
+        "def rebase(model: DataModel) -> None:\n    model.set_base_class()\n\n\n"
+        "def users(reference: Reference) -> list[object]:\n    return reference.children\n\n\n"
+        "def unload(reference: Reference) -> None:\n    reference.loaded = False\n"
     ),
     f"{PACKAGE}/parser/seeded_env.py": SEEDED_ENVIRONMENT,
 }
 """A package whose ``seeded.py`` writes ``DataModel.fields`` and the run-state list ``Parser.results`` outside the
-store operations that their rows name.
+store operations that their rows name, calls ``DataModel.set_base_class``, which only the store runs, and reads and
+writes the bookkeeping of a ``Reference``.
 
-``GenerationStore.set_fields``, one of those operations, writes ``DataModel.fields`` too, and ``Parser.__init__``
-builds ``results``: heki allows both writes. ``seeded_env.py`` holds `SEEDED_ENVIRONMENT`, which the environment
-boundary forbids in functions and module bodies.
+``GenerationStore.set_fields``, one of those operations, writes ``DataModel.fields`` too, ``Parser.__init__``
+builds ``results``, the store and the model's own initialization call ``set_base_class``, which writes ``fields`` for
+the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them all. ``seeded_env.py`` holds
+`SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
 """
 
 
@@ -164,6 +178,9 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_reads(tmp_path: Path) -> None:
     """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none.
 
+    A call of a method only the store runs (``STORE_MEMBERS``) outside the store and the method's class is a finding,
+    and so are a read and a write of a reference's bookkeeping outside its module.
+
     A read of the environment the package runs in is a finding too, in a function and in a module body, counted per
     site.
     """
@@ -181,8 +198,17 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
     assert (result.returncode, found) == (
         1,
         [
+            (
+                f"{PACKAGE}/parser/seeded.py",
+                "rebase",
+                "MUT204",
+                "datamodel_code_generator.model.base.DataModel.set_base_class",
+                1,
+            ),
             (f"{PACKAGE}/parser/seeded.py", "register", "MUT201", "Parser.results", 1),
             (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields", 1),
+            (f"{PACKAGE}/parser/seeded.py", "unload", "MUT201", "Reference.loaded", 1),
+            (f"{PACKAGE}/parser/seeded.py", "users", "MUT203", "Reference.children", 1),
             (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", environment, 14),
             (f"{PACKAGE}/parser/seeded_env.py", "old_python", "EFF201", environment, 1),
         ],
@@ -213,7 +239,7 @@ attribution = "lexical"
 
 @pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
-    """Homes, builders, held parse methods, dispatch tables and fact rows are judged where the access is written.
+    """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.
 
     The guards of the records (`scripts/_decision_home_reads.py`) report the scope that holds each read, so a call
     handed to a private helper is the helper's, not its caller's; the runtime write guard names a write by the
@@ -224,10 +250,24 @@ def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
         (table["name"], table.get("attribution"))
         for kind in ("call-owners", "read-owners", "write-owners")
         for table in contracts[kind]
-        if table["name"].startswith(("home:", "builder:", "held:", "table:", "fact:", "presentation:", "cache:"))
+        if table["name"].startswith((
+            "home:",
+            "builder:",
+            "held:",
+            "table:",
+            "fact:",
+            "presentation:",
+            "cache:",
+            "store-call:",
+            "store-read:",
+            "store-write:",
+        ))
     ]
 
     assert {name.partition(":")[0] for name, _ in judged} == {
+        "store-call",
+        "store-read",
+        "store-write",
         "home",
         "builder",
         "held",
@@ -275,3 +315,32 @@ def test_the_ratchet_knows_every_rule_of_the_pinned_heki() -> None:
 
     assert rules == check_ratchets.HEKI_RULES, result.stderr
     assert [code for code in rules.values() if not check_ratchets.HEKI_CODE.fullmatch(code)] == []
+
+
+@pytest.mark.parametrize(
+    ("member", "message"),
+    [
+        pytest.param(
+            StoreMember("types.py", "DataType", "never_defined", MemberUse.CALL),
+            "STORE_MEMBERS: types.py defines no method DataType.never_defined",
+            id="method",
+        ),
+        pytest.param(
+            StoreMember("reference.py", "Reference", "name", MemberUse.WRITE),
+            "STORE_MEMBERS: Reference.name has no bookkeeping row in ATTRIBUTE_FACTS",
+            id="attribute",
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
+def test_store_members_name_a_method_or_a_bookkeeping_row(
+    monkeypatch: pytest.MonkeyPatch, member: StoreMember, message: str
+) -> None:
+    """A ``STORE_MEMBERS`` row names a method its class defines, or a bookkeeping row of ``ATTRIBUTE_FACTS``."""
+    monkeypatch.setattr(build_heki_contracts, "STORE_MEMBERS", (member,))
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.store_member_contracts(repo)
+
+    assert str(stopped.value) == message

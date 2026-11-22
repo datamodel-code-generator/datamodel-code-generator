@@ -4294,6 +4294,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
+qualname = "DataModel.__init__"
+rule_code = "MUT201"
+target = "Reference.source"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel._append_internal_template_data"
 rule_code = "MUT201"
 target = "DataModel._internal_template_data"
@@ -4318,20 +4325,6 @@ path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel._uses_custom_root_template"
 rule_code = "MUT201"
 target = "DataModel._uses_custom_root_template"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel._write_additional_properties_type"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel.assign_forward_reference_fields"
-rule_code = "MUT201"
-target = "DataModelFieldBase.use_annotated"
 count = 1
 
 [[entries]]
@@ -4378,20 +4371,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel.set_base_class"
-rule_code = "MUT201"
-target = "DataModel._additional_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel.set_base_class"
-rule_code = "MUT201"
-target = "DataModel.base_classes"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel.set_field_name_bindings"
 rule_code = "MUT201"
 target = "DataModel._field_name_bindings"
@@ -4402,20 +4381,6 @@ path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModel.set_item_hash"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._decisions.hashability.set_items_may_keep_builtin_hash"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel.set_reference_path"
-rule_code = "MUT201"
-target = "DataModel.path"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModel.set_reference_path"
-rule_code = "MUT201"
-target = "Reference.path"
 count = 1
 
 [[entries]]
@@ -4437,13 +4402,6 @@ path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModelFieldBase._merge_untaken_constraints"
 rule_code = "MUT205"
 target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase._process_const_as_literal"
-rule_code = "MUT201"
-target = "DataModelFieldBase.const"
 count = 1
 
 [[entries]]
@@ -4507,13 +4465,6 @@ path = "src/datamodel_code_generator/model/base.py"
 qualname = "DataModelFieldBase.record_untaken_constraints"
 rule_code = "MUT201"
 target = "DataModelFieldBase._untaken_constraints"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/base.py"
-qualname = "DataModelFieldBase.replace_data_type"
-rule_code = "MUT201"
-target = "DataModelFieldBase.data_type"
 count = 1
 
 [[entries]]
@@ -4732,20 +4683,6 @@ qualname = "DataModelField.annotated"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
 count = 3
-
-[[entries]]
-path = "src/datamodel_code_generator/model/msgspec.py"
-qualname = "DataModelField.process_const"
-rule_code = "MUT201"
-target = "DataModelFieldBase.const"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/msgspec.py"
-qualname = "DataModelField.unconstrain_union_members"
-rule_code = "MUT201"
-target = "DataType.data_types"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/msgspec.py"
@@ -5204,13 +5141,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
-qualname = "DataClass.assign_forward_reference_fields"
-rule_code = "MUT201"
-target = "DataModel.fields"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/dataclass.py"
 qualname = "DataModelFieldBackport.alias_form"
 rule_code = "MUT204"
 target = "datamodel_code_generator._target_unicode.is_python_name"
@@ -5452,13 +5382,6 @@ path = "src/datamodel_code_generator/model/typed_dict.py"
 qualname = "TypedDict._set_typed_dict_kwargs"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.keyword_argument"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/typed_dict.py"
-qualname = "TypedDict._write_additional_properties_type"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
 count = 1
 
 [[entries]]
@@ -8550,6 +8473,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_rw_split.py"
+qualname = "get_rw_model_variant_reference"
+rule_code = "MUT201"
+target = "Reference.loaded"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_rw_split.py"
 qualname = "merge_inherited_field_overrides"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModelFieldBase._*"
@@ -9978,6 +9908,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
+qualname = "JsonSchemaParser.resolve_ref"
+rule_code = "MUT201"
+target = "Reference.loaded"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser.root_id_context"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._schema_object._named_path"
@@ -10562,27 +10499,6 @@ path = "src/datamodel_code_generator/types.py"
 qualname = "DataType._wrap_discriminator_type_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataType.replace_reference"
-rule_code = "MUT201"
-target = "DataType.reference"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataType.swap_with"
-rule_code = "MUT201"
-target = "DataModelFieldBase.data_type"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataType.swap_with"
-rule_code = "MUT201"
-target = "DataType.data_types"
 count = 1
 
 [[entries]]

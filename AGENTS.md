@@ -50,7 +50,10 @@ becomes final and where a decision belongs.
 - heki checks fact writes against the write-owner contracts that `scripts/build_heki_contracts.py` builds from
   `scripts/fact_tables.py` (`scripts/heki.toml`); its baseline `scripts/heki_baseline.toml` only shrinks. Route a new
   write through the store instead of recording it, and run `heki check --config scripts/heki.toml --baseline
-  scripts/heki_baseline.toml --update-baseline src` after routing one. `scripts/check_generation_store_usage.py` checks
+  scripts/heki_baseline.toml --update-baseline src` after routing one. A call of a method the store runs
+  (`STORE_MEMBERS`: `replace_data_type`, `set_base_class`, `process_const`, ...) outside the store is a `MUT204`
+  finding, and a read of `Reference.children` a `MUT203` one: call the store operation or ask the generation index
+  instead. `scripts/check_generation_store_usage.py` checks
   that every attribute and `__dict__` key the model graph writes has a row in the table.
 - Every test also runs the runtime write guard (`DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`): a test that fails with
   "... is written outside store operations" made a write the heki baseline does not record; route it the same way.

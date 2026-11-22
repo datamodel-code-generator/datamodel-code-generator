@@ -19,6 +19,7 @@ import pytest
 import tomllib
 from inline_snapshot import snapshot
 
+from scripts.fact_tables import STORE_MEMBERS, MemberUse
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -172,7 +173,7 @@ def test_runtime_writes_are_named_as_heki_names_its_findings() -> None:
 
     writes = checker.runtime_writes([*lines, other_area, outside])
 
-    assert Counter(rule for *_, rule in written) == snapshot(Counter({"MUT201": 148, "MUT205": 39}))
+    assert Counter(rule for *_, rule in written) == snapshot(Counter({"MUT201": 136, "MUT205": 39}))
     assert [write.key for write in writes] == [(path, function, attribute) for path, function, attribute, _ in written]
     assert checker.runtime_problems(lines) == []
     checker.check_runtime_writes(lines)
@@ -183,6 +184,39 @@ def test_runtime_writes_are_named_as_heki_names_its_findings() -> None:
         f"of 'never_written_here' by {function} in {path})"
     )
     assert rule == "MUT201"
+
+
+def test_runtime_guard_knows_no_write_of_a_method_only_the_store_runs() -> None:
+    """A method of ``STORE_MEMBERS`` writes for the store: run outside a store operation, its write fails the guard."""
+    checker = _load_checker()
+    methods = {member.name for member in STORE_MEMBERS if member.use is MemberUse.CALL}
+    path = f"{checker.SOURCE_ROOT.as_posix()}/model/base.py"
+    line = next(
+        scope.node.lineno
+        for scope in checker.read_model(checker.ROOT / path).scopes
+        if checker.finding_scope(scope) == "DataModel.set_base_class"
+    )
+    report = json.dumps({
+        "area": "STORE_WRITES",
+        "message": "base_classes is written outside store operations",
+        "path": path,
+        "line": line,
+        "attribute": "base_classes",
+        "operation": "=",
+        "key": None,
+    })
+
+    known = [key for key in checker.load_known_writes() if key[1].rpartition(".")[2] in methods]
+
+    assert (known, checker.runtime_problems([report])) == (
+        [],
+        [
+            (
+                "base_classes is written outside store operations; route it through a GenerationStore operation "
+                f"(scripts/heki_baseline.toml records no write of 'base_classes' by DataModel.set_base_class in {path})"
+            )
+        ],
+    )
 
 
 NESTED_SCOPES = """\
@@ -589,6 +623,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         ),
         "FreezePoint": ("B1", "B2", "RENDER"),
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
+        "MemberUse": ("CALL", "READ", "WRITE"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
         Counter({"FACT": 75, "PRESENTATION": 59, "BOOKKEEPING": 33, "CACHE": 11})
