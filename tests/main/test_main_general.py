@@ -4850,6 +4850,7 @@ def test_check_file_matches(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
+        name="model",
     )
     run_main_and_assert(
         input_path=input_path,
@@ -4857,6 +4858,7 @@ def test_check_file_matches(output_file: Path) -> None:
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK,
+        name="model",
     )
 
 
@@ -4892,6 +4894,7 @@ def test_check_suffixless_file_matches(tmp_path: Path) -> None:
         output_path=output_path,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
+        name="model",
     )
     run_main_and_assert(
         input_path=input_path,
@@ -4899,6 +4902,7 @@ def test_check_suffixless_file_matches(tmp_path: Path) -> None:
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK,
+        name="model",
     )
 
 
@@ -4985,6 +4989,7 @@ def test_check_normalizes_line_endings(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
+        name="model",
     )
     content = output_file.read_text(encoding="utf-8")
     output_file.write_bytes(content.replace("\n", "\r\n").encode("utf-8"))
@@ -4994,6 +4999,7 @@ def test_check_normalizes_line_endings(output_file: Path) -> None:
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK,
+        name="model",
     )
 
 
@@ -5005,6 +5011,7 @@ def test_check_directory_matches(output_dir: Path) -> None:
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
+        name="tree",
     )
     run_main_and_assert(
         input_path=input_path,
@@ -5012,6 +5019,7 @@ def test_check_directory_matches(output_dir: Path) -> None:
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK,
+        name="tree",
     )
 
 
@@ -5093,6 +5101,7 @@ def test_check_directory_ignores_pycache(output_dir: Path) -> None:
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
+        name="tree",
     )
     pycache_dir = output_dir / "__pycache__"
     pycache_dir.mkdir()
@@ -5104,6 +5113,7 @@ def test_check_directory_ignores_pycache(output_dir: Path) -> None:
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--check"],
         expected_exit=Exit.OK,
+        name="tree",
     )
 
 
@@ -5574,6 +5584,7 @@ def test_check_respects_pyproject_toml_settings(tmp_path: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--use-annotated"],
+        name="model",
     )
 
     run_main_and_assert(
@@ -5582,6 +5593,7 @@ def test_check_respects_pyproject_toml_settings(tmp_path: Path) -> None:
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--use-annotated", "--check"],
         expected_exit=Exit.OK,
+        name="model",
     )
 
 
@@ -6158,8 +6170,9 @@ def test_type_checking_imports_default_to_runtime_imports_for_modular_pydantic_r
             "ruff-format",
             "--disable-timestamp",
         ],
+        name="tree",
     )
-    assert_runtime_import_package(output_dir)
+    assert_runtime_import_package(output_dir, name="tree")
 
 
 @pytest.mark.cli_doc(
@@ -6182,7 +6195,7 @@ require manual `model_rebuild()` calls for cross-module runtime references.""",
         "--no-use-type-checking-imports",
         "--disable-timestamp",
     ],
-    golden_output="openapi/no_use_type_checking_imports/_internal.py",
+    golden_output="main_general/no_use_type_checking_imports.tree/_internal.py",
     related_options=["--use-type-checking-imports", "--formatters", "--use-exact-imports"],
 )
 def test_no_use_type_checking_imports(output_dir: Path) -> None:
@@ -6208,8 +6221,9 @@ def test_no_use_type_checking_imports(output_dir: Path) -> None:
             "--no-use-type-checking-imports",
             "--disable-timestamp",
         ],
+        name="tree",
     )
-    assert_runtime_import_package(output_dir)
+    assert_runtime_import_package(output_dir, name="tree")
 
 
 def test_generate_multi_module_pydantic_ruff_defaults_to_runtime_imports() -> None:
@@ -6917,12 +6931,14 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
         input_=Path("file_b.json"),
         input_file_type=InputFileType.Auto,
         formatters=formatters,
+        name="model",
     )
     run_generate_and_assert(
         input_=(source_dir / "file_b.json").read_text(encoding="utf-8"),
         input_file_type=InputFileType.Auto,
         input_filename="file_b.json",
         formatters=formatters,
+        name="model",
     )
 
     single_modules = generate([Path("file_b.json")], input_file_type=InputFileType.Auto, formatters=formatters)
@@ -6947,6 +6963,7 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
         input_path=source_dir,
         output_path=tmp_path / "cli",
         input_file_type="jsonschema",
+        name="cli",
     )
 
 

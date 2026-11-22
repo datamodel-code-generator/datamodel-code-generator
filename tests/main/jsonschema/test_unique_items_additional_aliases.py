@@ -68,6 +68,7 @@ def test_main_jsonschema_unique_items_additional_aliases(output_file: Path) -> N
     }
     run_generate_and_assert(
         input_=schema,
+        name="serialization",
         **serialization_kwargs,
     )
     generate(input_=schema, output=output_file, **serialization_kwargs)

@@ -1009,7 +1009,7 @@ target-2	main/openapi/main_openapi/deprecated_field_pydantic26[target-2].py
 target-2.12	main/openapi/main_openapi/deprecated_field_pydantic26[target-2.12].py	= main/openapi/main_openapi/deprecated_field.py
 target-unset	main/openapi/main_openapi/deprecated_field_pydantic26[target-unset].py	= main/openapi/main_openapi/deprecated_field.py
 [test_main_openapi_detects_created_include_only_template_directory]
-	main/openapi/main_openapi/detects_created_include_only_template_directory.2.stdout.py	= main/openapi/main_openapi/custom_template_dir_include_override.stdout.py
+	main/openapi/main_openapi/detects_created_include_only_template_directory.created.stdout.py	= main/openapi/main_openapi/custom_template_dir_include_override.stdout.py
 	main/openapi/main_openapi/detects_created_include_only_template_directory.stdout.py	= main/openapi/extra_template_data_config_pydantic_v2.py
 [test_main_openapi_discriminated_oneof_allof_cycle]
 	main/openapi/main_openapi/discriminated_oneof_allof_cycle.py

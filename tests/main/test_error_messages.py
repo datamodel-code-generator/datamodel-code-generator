@@ -462,6 +462,7 @@ def test_directory_input_preserves_nonstandard_schema_files(
             extra_args=extra_args,
             # The output tree also contains the intentionally non-Python .py input.
             skip_code_validation=yaml_key is not None,
+            name="tree",
         )
         generated = module_path.read_text(encoding="utf-8")
         if header is not None:
@@ -502,6 +503,7 @@ def test_directory_input_custom_header_trailing_newlines(
                 "--custom-file-header-mode",
                 mode,
             ],
+            name="tree",
         )
         generated = (output_path / "person.py").read_text(encoding="utf-8")
         if mode == "prepend":

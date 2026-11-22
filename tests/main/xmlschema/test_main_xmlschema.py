@@ -155,6 +155,7 @@ def test_main_xmlschema_directory_input_ignores_its_own_output(tmp_path: Path) -
             output_path=input_path / "generated",
             input_file_type="xmlschema",
             extra_args=["--disable-timestamp", "--formatters", "builtin"],
+            name="tree",
         )
 
 

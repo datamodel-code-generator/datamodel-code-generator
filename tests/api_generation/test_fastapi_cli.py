@@ -171,6 +171,7 @@ def test_fastapi_cli_generate(
         extra_args=_server("--check"),
         capsys=capsys,
         assert_no_stderr=True,
+        name="model",
     )
     monkeypatch.chdir(tmp_path / "server")
     run_main_and_assert(
@@ -180,6 +181,7 @@ def test_fastapi_cli_generate(
         extra_args=_server("--check", output=str(tmp_path / "server")),
         capsys=capsys,
         assert_no_stderr=True,
+        name="model",
     )
     monkeypatch.chdir(tmp_path)
     (tmp_path / "models.py").write_text("# edited\n", encoding="utf-8")
@@ -203,6 +205,7 @@ def test_fastapi_cli_generate(
         capsys=capsys,
         derived_stdout=True,
         assert_no_stderr=True,
+        name="missing",
     )
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -285,6 +288,7 @@ def test_fastapi_cli_check_read_only(
         output_path=output,
         extra_args=_server(*arguments, output=server),
         skip_code_validation=nested_package,
+        name="model",
     )
     assert_output(capsys.readouterr().err, name="stderr")
     roots = [root for root in (tmp_path / server, tmp_path / output) if root.is_dir()]
@@ -304,6 +308,7 @@ def test_fastapi_cli_check_read_only(
             derived_stdout=True,
             stdout_suffix=".json" if structured else ".txt",
             skip_code_validation=nested_package,
+            name="model",
         )
     finally:
         for directory in directories:
@@ -350,6 +355,7 @@ def test_fastapi_cli_check_outputs(
             output_path=output,
             extra_args=_server(*options, output=server),
             skip_code_validation=unvalidated,
+            name="model",
         )
         assert_output(capsys.readouterr().err, name="notice")
     for name in case.get("remove", ()):
@@ -377,6 +383,7 @@ def test_fastapi_cli_check_outputs(
                 output_path=output,
                 extra_args=_server(*options, *case.get("options", ()), output=server),
                 skip_code_validation=unvalidated,
+                name="regenerated",
             )
             assert_output(capsys.readouterr().err, name="notice" if case.get("fresh") else "regenerated")
     assert_output("\n".join(f"{item.category.__name__}: {item.message}" for item in regenerated), name="warnings")
@@ -444,6 +451,7 @@ def test_fastapi_cli_generation_json(
             input_file_type="openapi",
             output_path=model,
             extra_args=_server("--encoding", encoding, output=str(server)),
+            name="initial",
         )
         assert_output(capsys.readouterr().err, name="initial")
     for name, text in case.get("write", {}).items():
@@ -457,6 +465,7 @@ def test_fastapi_cli_generation_json(
             output_path=model,
             extra_args=_server(*options, *case.get("publish", ()), output=str(server)),
             skip_code_validation=unvalidated,
+            name="model",
         )
     captured = capsys.readouterr()
     assert_output(captured.err, name="notice")
@@ -482,6 +491,7 @@ def test_fastapi_cli_generation_json(
             derived_stdout=True,
             stdout_suffix=".txt" if stale else ".json",
             skip_code_validation=unvalidated,
+            name="model",
         )
     assert_output(
         "\n".join([
@@ -719,6 +729,7 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(),
+        name="model",
     )
     assert_output(capsys.readouterr().err, name="stderr")
     run_main_and_assert(
@@ -729,6 +740,7 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         extra_args=_server("--check"),
         capsys=capsys,
         assert_no_stderr=True,
+        name="model",
     )
     run_main_and_assert(
         stdin_path=SOURCE / "pets.yaml",
@@ -1072,7 +1084,7 @@ def test_fastapi_cli_model_option_warning(
     notice = stderr.removeprefix("Warning: --reuse-scope=tree has no effect without --reuse-model\n")
     assert_output(stderr.removesuffix(notice), name="warning")
     assert_output(notice, name="stderr")
-    assert_directory_content(tmp_path / "server")
+    assert_directory_content(tmp_path / "server", name="server")
 
 
 @pytest.mark.parametrize(

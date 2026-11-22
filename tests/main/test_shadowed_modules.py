@@ -101,7 +101,7 @@ def test_shadowed_module_warns_in_batch_jobs(output_dir: Path, tmp_path: Path) -
         pytest.warns(UserWarning, match=_pattern(tmp_path / "model.py")),
     ):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
-    assert_directory_content(output_dir)
+    assert_directory_content(output_dir, name="tree")
     assert_output((tmp_path / "model.py").read_text(encoding="utf-8"), name="single", suffix=".py")
 
 
@@ -181,7 +181,7 @@ def test_check_lists_stale_package_without_warning(output_dir: Path, capsys: pyt
     """`--check` writes no module, so it lists the stale package files as extra and warns about nothing."""
     _run("package", output_dir)
     with pytest.warns(UserWarning, match=_pattern(output_dir / "pets.py")):
-        _run("module", output_dir)
+        _run("module", output_dir, name="tree")
     _run(
         "module",
         output_dir,
@@ -196,15 +196,15 @@ def test_check_single_file_output_does_not_warn(output_dir: Path) -> None:
     """`--check` of a single-file output beside a package of its name writes nothing and warns about nothing."""
     _run("package", output_dir)
     with pytest.warns(UserWarning, match=_pattern(output_dir / "pets.py")):
-        _run("single", output_dir / "pets.py")
-    _run("single", output_dir / "pets.py", "--check")
+        _run("single", output_dir / "pets.py", name="single")
+    _run("single", output_dir / "pets.py", "--check", name="single")
 
 
 @pytest.mark.parametrize(("name", "output"), [("module", ""), ("single", "pets.py")])
 def test_input_diff_does_not_warn(name: str, output: str, output_dir: Path) -> None:
     """`--diff-against` writes no module, so it warns about nothing beside a package of the module's name."""
-    _run("package", output_dir)
-    _run(name, output_dir / output, "--diff-against", str(INPUT_PATH / f"{name}.json"))
+    _run("package", output_dir, name="tree")
+    _run(name, output_dir / output, "--diff-against", str(INPUT_PATH / f"{name}.json"), name="tree")
 
 
 @pytest.mark.abnormal_path("a directory that can be written but not listed is not portable to Windows or root")

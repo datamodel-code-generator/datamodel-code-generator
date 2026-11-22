@@ -69,6 +69,7 @@ def test_allof_constraint_intersections(
         run_generate_file_and_assert(
             input_path=input_path,
             output_path=output_file,
+            name="file",
             **options,
         )
     else:
