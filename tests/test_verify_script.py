@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import json
 import re
+import sys
 from contextlib import redirect_stdout
 from io import StringIO
 from typing import TYPE_CHECKING
@@ -138,6 +139,43 @@ def test_verify_refuses_an_unusable_catalog(
         verify.main(argv)
     err = capsys.readouterr().err
     assert (raised.value.code, "verify: --catalog refused" in err) == (2, True)
+
+
+STOPS = {
+    "an unknown base": "git merge-base no-such-revision HEAD failed",
+    "a catalog that cannot be recorded": "verify: recording the catalog failed",
+    "a comparison that writes no evidence": "verify: FAILED: the comparison wrote no evidence",
+}
+"""Each case of a step that cannot go on, and the line verify stops with."""
+
+
+@pytest.mark.allow_direct_assert("the stop is the exit status and the message, not a stored output")
+@needs("posix")
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", sorted(STOPS))
+def test_verify_stops_where_a_step_fails(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """A base git cannot read, a catalog that cannot be recorded and a run without evidence stop verify."""
+    repo = tmp_path / "repo"
+    commit = _fake_generator(repo, ["first"], None)[0]
+    monkeypatch.setenv(behaviour_diff.REPOSITORY_ENV, str(repo))
+    (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(OUTPUT_CHANGE, encoding="utf-8")
+    blocked = tmp_path / "a-file"
+    blocked.write_text("", encoding="utf-8")
+    catalog = repo / ".git" / verify.CATALOGS / f"{commit}.json.gz"
+    if case == "a comparison that writes no evidence":
+        catalog.parent.mkdir(parents=True)
+        selects = [arg for name in PICK_CATALOG_INPUTS for arg in ("--select", f"tests/data/jsonschema/{name}")]
+        with redirect_stdout(StringIO()):
+            behaviour_diff.main(["catalog", str(catalog), commit, *selects, "-j", "1", "--cache-dir", str(tmp_path)])
+    monkeypatch.chdir(repo)
+    base = "no-such-revision" if case == "an unknown base" else commit
+    argv = ["--base", base, "-j", "2", "--cache-dir", str(blocked)]
+    with pytest.raises(SystemExit) as raised:
+        sys.exit(verify.main(argv))
+    stopped = f"{raised.value.code}\n{capfd.readouterr().out}"
+    assert (raised.value.code != 0, STOPS[case] in stopped) == (True, True), stopped
 
 
 FLAKY_CASES = {

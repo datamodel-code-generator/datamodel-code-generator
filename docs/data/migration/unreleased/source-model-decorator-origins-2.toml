@@ -1,0 +1,8 @@
+[[change]]
+id = "source-model-decorator-origins-2"
+extends = "public-api-record"
+refs = ["#7370"]
+covers = [
+    "source_model/every_rule_states_its_verdicts[ci-test-targets].txt",
+    "source_model/every_rule_states_its_verdicts[source-rules].txt",
+]

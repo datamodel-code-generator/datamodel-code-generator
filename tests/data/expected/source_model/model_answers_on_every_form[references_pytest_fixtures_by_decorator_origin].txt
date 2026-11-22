@@ -1,0 +1,44 @@
+== references
+15:0 shared store in <module> -> local <module> @15
+15:9 pytest load in <module> -> local <module> @11; origin pytest
+17:3 pytest load in <module> -> local <module> @11; origin pytest
+18:4 either store in <module> -> local <module> @18,20
+18:13 pytest load in <module> -> local <module> @11; origin pytest
+20:4 either store in <module> -> local <module> @18,20
+20:13 marks load in <module> -> local <module> @13; origin pytest.mark
+23:1 pytest load in <module> -> local <module> @11; origin pytest
+28:1 pytest load in <module> -> local <module> @11; origin pytest
+33:1 fixture load in <module> -> local <module> @12; origin pytest.fixture
+38:1 shared load in <module> -> local <module> @15; origin pytest.fixture
+43:1 either load in <module> -> local <module> @18,20
+  may be pytest.fixture [if:body@17]
+  may be pytest.mark.skip [if:else@17]
+48:1 marks load in <module> -> local <module> @13; origin pytest.mark
+49:1 functools load in <module> -> local <module> @9; origin functools
+51:11 value load in test_value -> local test_value @50
+51:21 test_data load in test_value -> local test_value @50
+54:1 marks load in <module> -> local <module> @13; origin pytest.mark
+56:5 fixture load in TestGroup -> global <module> @12; origin pytest.fixture
+61:15 test_inner load in TestGroup.test_method -> local TestGroup.test_method @60
+64:19 function load in <lambda> -> local <lambda> @64
+uses of <module>:functools@9: call:lru_cache@49
+uses of <module>:pytest@11: read@15, read@17, read@18, read@23, call:fixture@28
+uses of <module>:fixture@12: read@33, read@56
+uses of <module>:marks@13: read@20, call:parametrize@48, call:usefixtures@54
+uses of <module>:shared@15: read@38
+uses of <module>:either@18: read@43
+uses of <module>:either@20: read@43
+uses of test_value:value@50: read@51
+uses of test_value:test_data@50: read@51
+uses of TestGroup.test_method:test_inner@60: read@61
+uses of <lambda>:function@64: read@64
+decorators @24: pytest.fixture
+decorators @29: pytest.fixture
+decorators @34: pytest.fixture
+decorators @39: pytest.fixture
+decorators @44: -
+decorators @50: pytest.mark.parametrize, functools.lru_cache
+decorators @55: pytest.mark.usefixtures
+decorators @57: pytest.fixture
+decorators @65: -
+== code objects: one per scope that compiles on this Python

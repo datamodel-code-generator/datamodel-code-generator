@@ -18,7 +18,7 @@
 architecture-boundaries	source_model/every_rule_states_its_verdicts[architecture-boundaries].txt
 assert-helper-usage	source_model/every_rule_states_its_verdicts[assert-helper-usage].txt
 change-units-typing-only	source_model/every_rule_states_its_verdicts[change-units-typing-only].txt
-changed-test-units	source_model/every_rule_states_its_verdicts[changed-test-units].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
+changed-test-units	source_model/every_rule_states_its_verdicts[changed-test-units].txt
 check-run-on-the-tree	source_model/every_rule_states_its_verdicts[check-run-on-the-tree].txt
 ci-test-targets	source_model/every_rule_states_its_verdicts[ci-test-targets].txt
 coverage-exclusions	source_model/every_rule_states_its_verdicts[coverage-exclusions].txt
@@ -180,6 +180,7 @@ references/posix_only_in_tests	source_model/model_answers_on_every_form[referenc
 references/posonly_receiver_members	source_model/model_answers_on_every_form[references_posonly_receiver_members].txt
 references/private_globals_read_or_shadowed	source_model/model_answers_on_every_form[references_private_globals_read_or_shadowed].txt
 references/private_names_by_string_argument	source_model/model_answers_on_every_form[references_private_names_by_string_argument].txt
+references/pytest_fixtures_by_decorator_origin	source_model/model_answers_on_every_form[references_pytest_fixtures_by_decorator_origin].txt
 references/qualified_enum_receivers	source_model/model_answers_on_every_form[references_qualified_enum_receivers].txt
 references/reexport_chain_across_modules	source_model/model_answers_on_every_form[references_reexport_chain_across_modules].txt
 references/reexported_names_by_origin	source_model/model_answers_on_every_form[references_reexported_names_by_origin].txt

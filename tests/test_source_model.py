@@ -61,7 +61,7 @@ OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
     r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
-    r"|nested-names|assignments|annotations|segments)"
+    r"|nested-names|assignments|annotations|segments|decorators)"
     r": *(.*)$",
     re.MULTILINE,
 )
@@ -309,6 +309,15 @@ def _references(model: source_model.SourceModule, directives: dict[str, str]) ->
     out += _type_positions(model)
     out += _annotations_and_string_reads(model) if directives.get("annotations") else []
     out += [f"constant {name}: {_value(model.constant(name))}" for name in directives.get("constants", "").split()]
+    statements = sorted(
+        (node for node in ast.walk(model.tree) if isinstance(node, ast.stmt) and directives.get("decorators")),
+        key=lambda node: (node.lineno, node.col_offset),
+    )
+    out += [
+        f"decorators @{node.lineno}: {', '.join(origin or '-' for origin in origins)}"
+        for node in statements
+        if (origins := model.decorator_origins(node))
+    ]
     if directives.get("consumers"):
         out += [
             f"use of {model.source(node)} @{node.lineno}:{node.col_offset}: {model.use_of(node)}"
@@ -1242,7 +1251,7 @@ RULES: dict[str, RuleRun] = {
         frozenset({"bindings", "references", "imports", "extents"}),
         _decision_home_callers,
     ),
-    "changed-test-units": RuleRun("scripts.related_tests", frozenset({"extents"}), _test_units),
+    "changed-test-units": RuleRun("scripts.related_tests", frozenset({"references", "extents"}), _test_units),
     "shape-family-client-reads": RuleRun(
         "tests.main.shape_families.relations", frozenset({"references", "imports", "extents"}), _client_reads
     ),

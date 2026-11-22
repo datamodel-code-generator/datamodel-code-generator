@@ -138,6 +138,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: the compiler agrees"
 "references/writes_through_a_name" = "no finding: the compiler agrees"
 "references/a6_lazy_exports" = "no finding: the compiler agrees"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: the compiler agrees"
 
 ["private-scope-walk"]
 "bindings/annotation_without_value" = "no finding: the form reads no ast, symtable or tokenize name"
@@ -272,6 +273,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: the form reads no ast, symtable or tokenize name"
 "references/writes_through_a_name" = "no finding: the form reads no ast, symtable or tokenize name"
 "references/a6_lazy_exports" = "no finding: the form reads no ast, symtable or tokenize name"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: the form reads no ast, symtable or tokenize name"
 
 ["where-agrees-with-the-model"]
 "bindings/annotation_without_value" = "no finding: where reports the model's own answers"
@@ -436,6 +438,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: where reports the model's own answers"
 "references/writes_through_a_name" = "no finding: where reports the model's own answers"
 "references/a6_lazy_exports" = "no finding: where reports the model's own answers"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: where reports the model's own answers"
 
 ["import-cycle"]
 "bindings/binding_of_a_node" = "no finding: one module, so no import between modules"
@@ -546,6 +549,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: one module, so no import between modules"
 "references/writes_through_a_name" = "no finding: one module, so no import between modules"
 "references/a6_lazy_exports" = "no finding: the modules import each other in one direction only"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: one module, so no import between modules"
 
 ["template-assignments"]
 "bindings/annotation_without_value" = "finding: no-value 21; with-a-value 22"
@@ -680,6 +684,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no class body of the form assigns or annotates a name"
 "references/writes_through_a_name" = "no finding: no class body of the form assigns or annotates a name"
 "references/a6_lazy_exports" = "no finding: its module-level classes hold no field lines, and Built is nested in a function"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no class body of the form assigns or annotates a name"
 
 ["check-run-on-the-tree"]
 "bindings/annotation_without_value" = "no finding: no test of the form calls a check script's main"
@@ -814,6 +819,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no test of the form calls a check script's main"
 "references/writes_through_a_name" = "no finding: no test of the form calls a check script's main"
 "references/a6_lazy_exports" = "no finding: no test of the form calls a check script's main"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no test of the form calls a check script's main"
 
 ["source-rules"]
 "bindings/annotation_without_value" = "no finding: the form holds none of the shapes a source rule reports"
@@ -987,6 +993,7 @@
 "suppressions/type_ignore_forms" = "no finding: the form holds none of the shapes a source rule reports"
 "suppressions/heki_ignore_forms" = "no finding: the form holds none of the shapes a source rule reports"
 "references/a6_lazy_exports" = "finding: redundant-local-import src/table.py:28"
+"references/pytest_fixtures_by_decorator_origin" = "finding: raw-skip tests:20"
 
 ["architecture-boundaries"]
 "bindings/annotation_without_value" = "no finding: the form imports and reads nothing a layer rule or the host rule reports"
@@ -1137,6 +1144,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: the form imports and reads nothing a layer rule or the host rule reports"
 "references/writes_through_a_name" = "no finding: the form imports and reads nothing a layer rule or the host rule reports"
 "references/a6_lazy_exports" = "finding: config/root-import table.py:28; entrypoint/root-import table.py:28; input-model/root-import table.py:28; reference/root-import table.py:28"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: the form imports and reads nothing a layer rule or the host rule reports"
 
 ["generation-store-usage"]
 "bindings/annotation_without_value" = "no finding: no write of a generation fact"
@@ -1287,6 +1295,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no write of a generation fact"
 "references/writes_through_a_name" = "no finding: no write of a generation fact"
 "references/a6_lazy_exports" = "no finding: no write of a generation fact"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no write of a generation fact"
 
 ["pass-pipeline"]
 "bindings/annotation_without_value" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
@@ -1421,6 +1430,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 "references/writes_through_a_name" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 "references/a6_lazy_exports" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 
 ["coverage-exclusions"]
 "extents/annotations_without_future" = "no finding: no coverage mark"
@@ -1587,6 +1597,7 @@
 "references/skip_markers_by_origin" = "no finding: every load is bound by the time it runs"
 "references/legacy_row_reading_lines" = "no finding: every load is bound by the time it runs"
 "references/a6_lazy_exports" = "no finding: every load is bound by the time it runs"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: every load is bound by the time it runs"
 
 ["assert-helper-usage"]
 "bindings/annotation_without_value" = "no finding: no assert, mock or private access the guard reports"
@@ -1737,6 +1748,7 @@
 "references/skip_markers_by_origin" = "finding: disguised-assert 24"
 "references/legacy_row_reading_lines" = "no finding: no assert, mock or private access the guard reports"
 "references/a6_lazy_exports" = "no finding: no assert, mock or private access the guard reports"
+"references/pytest_fixtures_by_decorator_origin" = "finding: direct-assert 51 61"
 
 ["expected-access"]
 "bindings/annotation_without_value" = "no finding: no path below the stored expected output is read or listed"
@@ -1887,6 +1899,7 @@
 "references/skip_markers_by_origin" = "no finding: no path below the stored expected output is read or listed"
 "references/legacy_row_reading_lines" = "no finding: no path below the stored expected output is read or listed"
 "references/a6_lazy_exports" = "no finding: no path below the stored expected output is read or listed"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no path below the stored expected output is read or listed"
 
 ["pre-commit-hook-runs"]
 "bindings/binding_of_a_node" = "no finding: no module of the form imports another of its modules"
@@ -1997,6 +2010,7 @@
 "references/skip_markers_by_origin" = "no finding: no module of the form imports another of its modules"
 "references/legacy_row_reading_lines" = "finding: runs __init__.py rows.py"
 "references/a6_lazy_exports" = "finding: runs __init__.py _lazy_exports.py _lazy_exports.py _values.py"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no module of the form imports another of its modules"
 
 ["ci-test-targets"]
 "bindings/annotation_without_value" = "finding: defines Fields Fields::name Fields::size count f g"
@@ -2131,6 +2145,7 @@
 "references/writes_through_a_name" = "finding: defines FROZEN ITEMS JUSTIFIED_VIOLATIONS REGISTRY read"
 "references/skip_markers_by_origin" = "finding: defines REFERENCE TestCase TestCase::* TestCase::skip TestCase::test_method importorskip marks pt sys test_aliased test_local test_parameter ut when"
 "references/a6_lazy_exports" = "finding: defines Base Base Chosen Hidden LIMIT LIMIT Other Other Public Public::* Remote TYPE_CHECKING _TABLE __all__ __dir__ __dir__ __getattr__ __getattr__ _load_class _load_module module_hooks module_hooks module_hooks"
+"references/pytest_fixtures_by_decorator_origin" = "finding: defines TestGroup TestGroup::test_inner TestGroup::test_method either fixture functools helper marks pytest shared test_aliased test_bare test_data test_either test_session_data test_value"
 
 ["change-units-typing-only"]
 "bindings/comprehension_in_annotation" = "no finding: no part only type checkers read"
@@ -2235,6 +2250,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no part only type checkers read"
 "references/writes_through_a_name" = "no finding: no part only type checkers read"
 "references/a6_lazy_exports" = "finding: type-checking table.py:9 table.py:9 table.py:9 table.py:9 table.py:9 table.py:9"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: no part only type checkers read"
 
 
 ["legacy-row-reads"]
@@ -2400,6 +2416,7 @@
 "references/expected_paths_through_bindings" = "no finding: the form names no legacy row"
 "references/skip_markers_by_origin" = "no finding: the form names no legacy row"
 "references/a6_lazy_exports" = "no finding: the form names no legacy row"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: the form names no legacy row"
 
 ["public-api-record"]
 "bindings/annotation_without_value" = "finding: recorded 9 14 20"
@@ -2564,6 +2581,7 @@
 "references/typevar_string_bound_and_cast" = "finding: recorded 5 6 7 8 11 15"
 "references/writes_through_a_name" = "finding: recorded 3 9 11 13 16"
 "references/a6_lazy_exports" = "finding: recorded table.py:34 table.py:35 table.py:36 table.py:38 table.py:39 table.py:41 table.py:46 table.py:51; refused _values.py:20 table.py:11 table.py:37 table.py:40 table.py:51 table.py:56"
+"references/pytest_fixtures_by_decorator_origin" = "finding: recorded 15 18 24 29 34 39 44 50 55 65"
 
 ["rule-b"]
 "bindings/annotation_without_value" = "no finding: the unparsed text of each module holds rule (b)"
@@ -2714,6 +2732,7 @@
 "references/posix_only_fixtures_by_pytest" = "no finding: the unparsed text of each module holds rule (b)"
 "references/posix_only_in_tests" = "no finding: the unparsed text of each module holds rule (b)"
 "references/a6_lazy_exports" = "no finding: the unparsed text of each module holds rule (b)"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: the unparsed text of each module holds rule (b)"
 
 ["decision-home-callers"]
 "bindings/annotation_without_value" = "no finding: one module, whose reads of its own definitions are in their home module"
@@ -2857,6 +2876,7 @@
 "references/posonly_receiver_members" = "no finding: one module, whose reads of its own definitions are in their home module"
 "references/private_globals_read_or_shadowed" = "no finding: one module, whose reads of its own definitions are in their home module"
 "references/private_names_by_string_argument" = "no finding: one module, whose reads of its own definitions are in their home module"
+"references/pytest_fixtures_by_decorator_origin" = "no finding: one module, whose reads of its own definitions are in their home module"
 "references/qualified_enum_receivers" = "no finding: one module, whose reads of its own definitions are in their home module"
 "references/reexport_chain_across_modules" = "finding: caller __init__.py:11 format.py:9 format.py:15"
 "references/reexported_names_by_origin" = "no finding: one module, whose reads of its own definitions are in their home module"
@@ -2981,6 +3001,7 @@
 "references/posonly_receiver_members" = "no finding: no function annotates a parameter and no module-level from import binds a name"
 "references/private_globals_read_or_shadowed" = "finding: parameter 39"
 "references/private_names_by_string_argument" = "no finding: no function annotates a parameter and no module-level from import binds a name"
+"references/pytest_fixtures_by_decorator_origin" = "finding: import 12 13"
 "references/qualified_enum_receivers" = "finding: import 8"
 "references/reexport_chain_across_modules" = "no finding: no function annotates a parameter and no module-level from import binds a name"
 "references/reexported_names_by_origin" = "finding: import 7 8"
@@ -3004,6 +3025,13 @@
 "references/writes_through_a_name" = "no finding: no function annotates a parameter and no module-level from import binds a name"
 
 ["changed-test-units"]
+"bindings/comprehension_in_annotation" = "no finding: no top-level test_* function or Test* class"
+"bindings/comprehension_in_annotation_lambda" = "no finding: no top-level test_* function or Test* class"
+"bindings/comprehension_in_local_annotation" = "no finding: no top-level test_* function or Test* class"
+"bindings/lambda_in_function_annotation" = "no finding: no top-level test_* function or Test* class"
+"bindings/type_parameter_scopes" = "no finding: no top-level test_* function or Test* class"
+"bindings/type_params_def_class" = "no finding: no top-level test_* function or Test* class"
+"bindings/type_statements" = "no finding: no top-level test_* function or Test* class"
 "extents/annotations_without_future" = "no finding: no top-level test_* function or Test* class"
 "extents/clause_headers" = "no finding: no top-level test_* function or Test* class"
 "extents/code_token_lines" = "no finding: no top-level test_* function or Test* class"
@@ -3019,4 +3047,84 @@
 "extents/shared_lines" = "no finding: no top-level test_* function or Test* class"
 "extents/skippable_segments" = "no finding: no top-level test_* function or Test* class"
 "extents/typing_only_parts" = "no finding: no top-level test_* function or Test* class"
+"imports/lazy_import" = "no finding: no top-level test_* function or Test* class"
+"imports/submodule_and_parent_packages" = "no finding: no top-level test_* function or Test* class"
+"references/a6_late_module_writes" = "no finding: no top-level test_* function or Test* class"
+"references/a6_lazy_exports" = "no finding: no top-level test_* function or Test* class"
+"references/aliased_library_names" = "no finding: no top-level test_* function or Test* class"
+"references/aliases_of_names_bound_twice" = "no finding: no top-level test_* function or Test* class"
+"references/all_augmented" = "no finding: no top-level test_* function or Test* class"
 "references/allowlist_entries_by_statement" = "no finding: no top-level test_* function or Test* class"
+"references/annotation_modes" = "no finding: no top-level test_* function or Test* class"
+"references/annotations_and_string_reads" = "no finding: no top-level test_* function or Test* class"
+"references/attribute_stores_on_receiver" = "no finding: no top-level test_* function or Test* class"
+"references/backend_strings_and_modules" = "no finding: no top-level test_* function or Test* class"
+"references/builtin_shadowed_and_spelled" = "no finding: no top-level test_* function or Test* class"
+"references/builtins_of_some_platforms_and_versions" = "no finding: no top-level test_* function or Test* class"
+"references/call_arguments_by_parameter" = "no finding: no top-level test_* function or Test* class"
+"references/check_main_calls" = "finding: test-unit 8 14 18 23 31"
+"references/class_body_comprehension" = "no finding: no top-level test_* function or Test* class"
+"references/class_body_reads_function_locals" = "no finding: no top-level test_* function or Test* class"
+"references/class_body_reads_later_binding" = "no finding: no top-level test_* function or Test* class"
+"references/class_body_rebinds_global" = "no finding: no top-level test_* function or Test* class"
+"references/class_cell_and_super" = "no finding: no top-level test_* function or Test* class"
+"references/class_scope_skipped" = "no finding: no top-level test_* function or Test* class"
+"references/comprehension_in_method_default" = "no finding: no top-level test_* function or Test* class"
+"references/comprehension_shadows_parameter" = "no finding: no top-level test_* function or Test* class"
+"references/conditional_expression_guards" = "no finding: no top-level test_* function or Test* class"
+"references/consumers_of_expressions" = "no finding: no top-level test_* function or Test* class"
+"references/decorator_origins" = "no finding: no top-level test_* function or Test* class"
+"references/entrypoint_parser_private_access" = "no finding: no top-level test_* function or Test* class"
+"references/expected_paths_through_bindings" = "finding: test-unit 9"
+"references/flaky_markers_by_origin" = "finding: test-unit 19 27 33"
+"references/floor_syntax_newer_forms" = "no finding: no top-level test_* function or Test* class"
+"references/floor_syntax_newest_forms" = "no finding: no top-level test_* function or Test* class"
+"references/floor_syntax_oldest_grammar" = "no finding: no top-level test_* function or Test* class"
+"references/global_declared_in_middle_scope" = "no finding: no top-level test_* function or Test* class"
+"references/globals_registry_shapes" = "no finding: no top-level test_* function or Test* class"
+"references/hash_split_receivers" = "no finding: no top-level test_* function or Test* class"
+"references/header_parts_evaluated_outside" = "no finding: no top-level test_* function or Test* class"
+"references/keyword_separator" = "no finding: no top-level test_* function or Test* class"
+"references/lambda_closure_in_comprehension" = "no finding: no top-level test_* function or Test* class"
+"references/late_attribute_writes" = "no finding: no top-level test_* function or Test* class"
+"references/lazy_table_module_getattr" = "no finding: no top-level test_* function or Test* class"
+"references/legacy_row_reading_lines" = "no finding: no top-level test_* function or Test* class"
+"references/literal_constants_and_late_writes" = "no finding: no top-level test_* function or Test* class"
+"references/mangled_module_global" = "no finding: no top-level test_* function or Test* class"
+"references/method_receiver_by_position" = "no finding: no top-level test_* function or Test* class"
+"references/nested_scope_shadows" = "no finding: no top-level test_* function or Test* class"
+"references/output_policy_by_origin" = "no finding: no top-level test_* function or Test* class"
+"references/parameter_shadows_global" = "no finding: no top-level test_* function or Test* class"
+"references/parser_pass_public_import" = "no finding: no top-level test_* function or Test* class"
+"references/pipeline_calls_and_parser_members" = "no finding: no top-level test_* function or Test* class"
+"references/portable_names_by_key" = "no finding: no top-level test_* function or Test* class"
+"references/portable_names_in_paths" = "finding: test-unit 54 59"
+"references/posix_only_across_modules" = "finding: test-unit cases.py:10 cases.py:14 cases.py:18 cases.py:22 cases.py:26 cases.py:30 cases.py:34"
+"references/posix_only_at_import" = "no finding: no top-level test_* function or Test* class"
+"references/posix_only_fixtures_by_pytest" = "finding: test-unit cases.py:4 cases.py:6 cases.py:8 cases.py:10 cases.py:14 cases.py:19 cases.py:24 cases.py:28"
+"references/posix_only_in_tests" = "finding: test-unit 37 41 46 51 56 61 66 70 76 83 88 92 100 107 134 138 142 146 160 165 170 176 183"
+"references/posonly_receiver_members" = "no finding: no top-level test_* function or Test* class"
+"references/private_globals_read_or_shadowed" = "no finding: no top-level test_* function or Test* class"
+"references/private_names_by_string_argument" = "no finding: no top-level test_* function or Test* class"
+"references/pytest_fixtures_by_decorator_origin" = "finding: test-unit 43 48 54"
+"references/qualified_enum_receivers" = "no finding: no top-level test_* function or Test* class"
+"references/reexport_chain_across_modules" = "no finding: no top-level test_* function or Test* class"
+"references/reexported_names_by_origin" = "no finding: no top-level test_* function or Test* class"
+"references/reference_backend_definitions" = "no finding: no top-level test_* function or Test* class"
+"references/relative_dynamic_imports_by_origin" = "no finding: no top-level test_* function or Test* class"
+"references/shared_model_dynamic_import_neutral" = "no finding: no top-level test_* function or Test* class"
+"references/shared_model_dynamic_import_providers" = "no finding: no top-level test_* function or Test* class"
+"references/shared_model_importlib_dunder_import" = "no finding: no top-level test_* function or Test* class"
+"references/skip_markers_by_origin" = "finding: test-unit 18 24 32 37"
+"references/star_import_hides_builtins" = "no finding: no top-level test_* function or Test* class"
+"references/star_import_hides_dynamic_imports" = "no finding: no top-level test_* function or Test* class"
+"references/store_writes_through_bindings" = "no finding: no top-level test_* function or Test* class"
+"references/string_annotation_forward" = "no finding: no top-level test_* function or Test* class"
+"references/string_annotation_type_positions" = "no finding: no top-level test_* function or Test* class"
+"references/syntax_read_by_origin" = "no finding: no top-level test_* function or Test* class"
+"references/sys_modules_registry_neutral" = "no finding: no top-level test_* function or Test* class"
+"references/sys_modules_registry_reads" = "no finding: no top-level test_* function or Test* class"
+"references/template_strings" = "no finding: no top-level test_* function or Test* class"
+"references/type_expressions_and_any_aliases" = "no finding: no top-level test_* function or Test* class"
+"references/typevar_string_bound_and_cast" = "no finding: no top-level test_* function or Test* class"
+"references/writes_through_a_name" = "no finding: no top-level test_* function or Test* class"
