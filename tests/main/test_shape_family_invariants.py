@@ -42,8 +42,8 @@ RULES: Final[dict[str, tuple[Kept, ...]]] = {"invariants": INVARIANTS, "types": 
 CHECKS: Final = ("invariants", "types") if os.environ.get(TYPING_VARIABLE) else ("invariants",)
 """The checks this run makes: the invariants always, ty in the nightly tier."""
 
-REFERENCES: Final = {ISSUE: re.compile(r"#[1-9][0-9]*|draft:[a-z-]+"), LEGACY_ROW: re.compile(r"legacy-[a-z0-9-]+")}
-"""The form of a rule's reference for each basis; ``draft:`` names an issue draft that is not filed yet."""
+REFERENCES: Final = {ISSUE: re.compile(r"#[1-9][0-9]*"), LEGACY_ROW: re.compile(r"legacy-[a-z0-9-]+")}
+"""The form of a rule's reference for each basis."""
 TY_RULE: Final = re.compile(r"[a-z]+(-[a-z]+)+")
 LEGACY_ROW_NAMES: Final = frozenset(row.name for row in LEGACY_ROWS)
 

@@ -152,10 +152,10 @@ INVARIANTS: Final[tuple[Kept, ...]] = (
 """Every known break of an invariant of the shape families."""
 
 _CONSTRAINED_CALLS: Final = "#625"
-_MUTABLE_NARROWING: Final = "draft:subclass-narrowing-mutable-override"
-_UNASSIGNABLE_NARROWING: Final = "draft:narrowed-property-unassignable-type"
-_TAG_MARKER: Final = "draft:inline-variant-tag-marker"
-_FIELD_NAMED_LIKE_TYPE: Final = "draft:field-named-like-its-type"
+_MUTABLE_NARROWING: Final = "#7355"
+_UNASSIGNABLE_NARROWING: Final = "#7356"
+_TAG_MARKER: Final = "#7357"
+_FIELD_NAMED_LIKE_TYPE: Final = "#7358"
 
 INVALID_TYPE_FORM: Final = "invalid-type-form"
 INVALID_MUTABLE_OVERRIDE: Final = "invalid-mutable-override"
