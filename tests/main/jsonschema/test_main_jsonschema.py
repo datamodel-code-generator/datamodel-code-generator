@@ -8462,11 +8462,13 @@ def test_main_unique_items_as_set_by_value(extra_args: list[str], expected_repr:
 
 
 def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path) -> None:
-    """Read the fields a frozen dataclass set item inherits nearest first, each model once, under by-value sets.
+    """Read the fields a frozen dataclass set item inherits in its class's order and nearest first, under by-value sets.
 
-    Row ``legacy-unique-sets-level-order``: ``Levels`` inherits ``x`` from ``B``, a direct base, and from ``Z``, the
-    base of ``A``; the fields are read nearest first, so ``x`` is ``B``'s string and ``levels`` is a set, where the
-    class takes ``Z``'s list (C3). ``Diamond`` reaches ``Y`` through ``P`` and ``Q`` and reads it once; its fields hash,
+    ``Levels`` inherits ``x`` from ``B``, a direct base, and from ``Z``, the base of ``A``: the class takes ``Z``'s list
+    (C3), which does not hash, so ``levels`` is a list; up to 0.100.0 the fields were read nearest first only, ``x`` was
+    ``B``'s string and ``levels`` a set that a payload with ``x`` fails to build (#6997). ``Reverse`` is the other way
+    round: the class takes ``W``'s string, nearest first reads ``U``'s list (row ``legacy-unique-sets-level-order``),
+    so ``reverse`` stays a list. ``Diamond`` reaches ``Y`` through ``P`` and ``Q`` and reads it once; its fields hash,
     so ``diamond`` is a set.
     """
     run_main_and_assert(
@@ -8484,6 +8486,37 @@ def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path) -
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+    )
+
+
+def test_main_unique_items_as_set_by_value_inherited_fields_pydantic_dataclass(output_file: Path) -> None:
+    """Keep a list of Pydantic dataclass items whose class takes an inherited field that does not hash (#6997).
+
+    ``Levels`` takes ``Z``'s list ``x`` in its class's order, so ``levels`` is a list and a payload whose item holds
+    ``x`` parses; a set of such items fails to build.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--frozen-dataclasses",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_by_value_inherited_fields",
+        model_name="Holder",
+        valid_json='{"levels": [{"x": ["a"]}], "diamond": [{"y": "b"}], "reverse": [{"w": "c"}]}',
+        invalid_json='{"levels": [{"x": "a"}]}',
+        expected_error_type="list_type",
     )
 
 

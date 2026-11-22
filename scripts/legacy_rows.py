@@ -3030,12 +3030,14 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         "legacy-unique-sets-level-order",
         (
             "under `--use-unique-items-as-set-by-value`, the fields a set item model has with its bases are read "
-            "nearest first, each name from the first model that declares it (`parser/_unique_sets.py:_ByValue.fields`, "
-            "`ReferenceGraph.level_order`), where the generated class takes the field of its C3 order: a name a base "
-            "two levels up and a later direct base both declare is read from the later base, so a set may be written "
-            "of items whose field does not hash"
+            "nearest first too, each name from the first model that declares it "
+            "(`parser/_unique_sets.py:_ByValue.fields`, `ReferenceGraph.level_order`), besides the fields of its C3 "
+            "order, which the generated class takes: a name "
+            "a base two levels up and a later direct base both declare is read from the later base as well, so where "
+            "only that field does not hash the items stay a list (the class's field hashes; #6997 made the other "
+            "direction, a set of items whose class's field does not hash, a list)"
         ),
-        fix=6997,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/openapi/yaml_1_1_numbers/ratio.yaml",
