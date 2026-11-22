@@ -1342,6 +1342,8 @@ def test_input_model_reuse_every_reached_input_model_type(
         pytest.param(["shop:Basket"], "reuse-all", id="nested-class-reuse-all"),
         pytest.param(["shop:Order", "shop:Basket"], "reuse-all", id="two-models-reuse-all"),
         pytest.param(["shop:Child"], "reuse-all", id="inherited-reuse-all"),
+        pytest.param(["shop:Override"], "reuse-all", id="overridden-reuse-all"),
+        pytest.param(["shop:Override"], "reuse-foreign", id="overridden-reuse-foreign"),
         pytest.param(["shop:Painting"], "reuse-all", id="merged-reuse-all"),
     ],
 )
@@ -1352,9 +1354,11 @@ def test_input_model_reuse_same_named_classes(
 
     ``Order`` holds ``shop.Item`` and ``shop.Status`` and names ``legacy.Item`` and ``legacy.Status`` in ``type[...]``
     fields; ``Basket`` names the nested ``Basket.Legacy.Item``, and the parent ``Base`` of ``Child`` holds
-    ``shop.Item`` where ``Child`` names ``legacy.Item``. Up to 0.100.0 the field of a Pydantic model or a dataclass
-    input was typed by the class of that name the fields reach last, which rejects every valid value; the definitions
-    of two input models were already read by identity. The ``Color`` of ``Painting`` and the ``legacy.Color`` of its
+    ``shop.Item`` where ``Child`` names ``legacy.Item``. ``Override`` redeclares the ``legacy.Item`` field of its parent
+    ``LegacyBase`` as ``shop.Item``: the two classes get distinct definition names across the schemas of the model and
+    its parent, so each field imports its own class. Up to 0.100.0 the field of a Pydantic model or a dataclass input
+    was typed by the class of that name the fields reach last, which rejects every valid value; the definitions of two
+    input models were already read by identity. The ``Color`` of ``Painting`` and the ``legacy.Color`` of its
     ``Frame`` have one schema, which Pydantic merges into one definition, so the definition keeps the class of its
     name. The input modules are written for the test, as tests/data/python holds no new modules.
     """
@@ -1401,6 +1405,10 @@ def test_input_model_reuse_same_named_classes(
         "    item: Item\n\n\n"
         "class Child(Base):\n"
         "    legacy_item: legacy.Item\n\n\n"
+        "class LegacyBase(BaseModel):\n"
+        "    item: legacy.Item\n\n\n"
+        "class Override(LegacyBase):\n"
+        "    item: Item\n\n\n"
         "class Color(Enum):\n"
         "    RED = 'red'\n\n\n"
         "@dataclass\n"
