@@ -25,7 +25,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
 _RE_GLOBAL_FLAGS_AFTER_START = "Flags not at the start of the expression"
-_SCHEMA_MAP_KEYWORDS = frozenset(keyword for keyword, kind in SCHEMA_KEYWORD_KINDS.items() if kind == "schema_map")
+_SCHEMA_KEYWORDS = frozenset({
+    *(keyword for keyword, kind in SCHEMA_KEYWORD_KINDS.items() if kind == "schema"),
+    "x-propertyNames",
+})
+"""The keywords whose value is a schema or a list of schemas, which the conversion reads as schemas."""
+_SCHEMA_MAP_KEYWORDS = frozenset(
+    keyword for keyword, kind in SCHEMA_KEYWORD_KINDS.items() if kind in {"schema_map", "dependencies"}
+)
 """The keywords whose value maps names to schemas: the conversion reads each schema, never the map."""
 
 
@@ -57,9 +64,12 @@ def _has_unresolved_internal_ref(schema: dict[str, Any]) -> bool:
         current: Any = schema
         for raw_part in ref.removeprefix("#/").split("/"):
             part = _pointer_part(raw_part)
-            if not isinstance(current, dict) or part not in current:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            elif isinstance(current, list) and part.isdecimal() and int(part) < len(current):
+                current = current[int(part)]
+            else:
                 return True
-            current = current[part]
     return False
 
 
@@ -345,16 +355,21 @@ def _to_json_schema_map(value: object) -> object:
     return {name: _to_json_schema(child) for name, child in value.items()} if isinstance(value, dict) else value
 
 
+def _convert_keyword(keyword: str, value: object) -> object:
+    """Convert the value of a schema keyword: a schema, a map of schemas, or data (a mapping, a default) as it is."""
+    if keyword in _SCHEMA_KEYWORDS:
+        return _to_json_schema(value)
+    if keyword in _SCHEMA_MAP_KEYWORDS:
+        return _to_json_schema_map(value)
+    return deepcopy(value)
+
+
 def _to_json_schema(value: Any) -> Any:
     """Convert common OpenAPI schema extensions to JSON Schema-compatible shape."""
     converted_value = value
     match value:
         case dict():
-            converted = {
-                key: _to_json_schema_map(child) if key in _SCHEMA_MAP_KEYWORDS else _to_json_schema(child)
-                for key, child in value.items()
-                if key != "nullable"
-            }
+            converted = {key: _convert_keyword(key, child) for key, child in value.items() if key != "nullable"}
             if (property_names := converted.get("x-propertyNames")) is not None:
                 converted.setdefault("propertyNames", property_names)
             _set_discriminator_mapping_enum(converted, value)
