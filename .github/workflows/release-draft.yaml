@@ -325,7 +325,7 @@ jobs:
           claude_args: |
             --model claude-opus-5-5
             --effort xhigh
-            --max-turns 50
+            --max-turns 100
             --setting-sources user
             --tools Read
             --allowedTools "Read(/${{ steps.pr-diff.outputs.claude_working_dir }}/**)"
