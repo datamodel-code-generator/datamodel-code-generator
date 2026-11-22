@@ -13,9 +13,12 @@ is enumerated here completely, against the oracle of each table (the reason this
 * the tag plan: which unions of msgspec Structs msgspec refuses (``struct_union_refusal``), which values it refuses as
   a tag (``struct_tag_refused``, ``is_tag_kind``), against msgspec itself.
 
-A difference from the oracle is no failure where the core's answer comes from a row of ``EXPLAINED`` (the ``legacy-*``
-rows that keep today's output and the rows that read an option), each with its reason; the set of rows that explain a
-difference is held equal to it, so a seeded wrong row fails and a fixed row is removed.
+A null site's answer that differs from the oracle is no failure where ``KEPT_ANSWERS`` keeps it, cell by cell (the
+site, its row, the answer, the schema object, the mode, the required state and default), each with its reason (the
+``legacy-*`` rows that keep today's output and the rows that read an option); the kept answers are held equal to the
+differing ones both ways, so a seeded wrong answer fails, also under a kept row's name, and a fixed one is removed.
+The sources a site reads are those the parser's adapter gives it: the sites that read the answer the schema object
+recorded (``_RECORDED_TYPE_NULL_SITES``) get it as ``JsonSchemaParser._type_has_null`` gives it.
 """
 
 from __future__ import annotations
@@ -25,6 +28,7 @@ import itertools
 import json
 import operator
 from collections import Counter, OrderedDict
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Final
 
 import msgspec
@@ -51,6 +55,7 @@ from datamodel_code_generator.parser._null_facts import (
     null_sources,
     resolve_null_facts,
 )
+from datamodel_code_generator.parser.jsonschema import _RECORDED_TYPE_NULL_SITES
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -198,7 +203,7 @@ SITE_READS: Final[dict[NullSite, frozenset[str]]] = {
     "field": _NULLABLE,
     "scalar": _TYPE_AND_NULLABLE,
     "object-model": frozenset({"type", "anyOf", "nullable"}),
-    "root-model": frozenset({"type", "anyOf"}),
+    "root-model": frozenset({"type", "anyOf", "nullable"}),
     "ref-target": _TYPE_AND_NULLABLE,
     "type-union": frozenset({"type"}),
     "object-map": _TYPE_AND_NULLABLE,
@@ -224,31 +229,18 @@ OBJECT_SITES: Final = frozenset({"object-model", "object-map"})
 ENUM_SITES: Final = frozenset({"enum", "enum-literal", "enum-as-const"})
 """The sites that read a schema with an enum only."""
 
-EXPLAINED: Final[dict[str, str]] = {
-    "legacy-root-model-type-only": "a root model reads no nullable",
-    "legacy-ref-target-null-type-only": "a reference reads no type list of its target",
-    "legacy-enum-literal-value-only": "a Literal enum reads its null value without the type",
-    "scalar-not-null": "OpenAPI's nullable admits null only under --strict-nullable (#1496)",
-    "map-strict-nullable": "OpenAPI's nullable admits null only under --strict-nullable (#1496)",
-    "object-type-or-strict-nullable": "OpenAPI's nullable admits null only under --strict-nullable (#1496)",
-    "enum-null-as-nullable": "the null of a string or nullable enum makes its class nullable, whatever its type says",
-    "nullable-enum-not-const": "nullable beside a one-value enum admits null (the null table's nullable-beside-enum)",
-    "all-of-union-part-admits-null": "a part that constrains no type admits null by its own keywords",
-}
-"""The rows whose answer differs from the validator on some schema object, each with why it is kept."""
-
 MEMBERS: Final[tuple[tuple[str, ...], ...]] = (("string", "null"), ("string", "integer"))
 STRING_TYPES: Final[tuple[object, ...]] = (None, "string", ["string", "null"])
 """The types an enum or a const of strings stands beside."""
-MODES: Final[tuple[NullMode, ...]] = (
-    NullMode(),
-    NullMode(strict_nullable=True),
-    NullMode(use_missing_sentinel=True),
-    NullMode(strict_nullable=True, nullable_as_type_list=True),
-    NullMode(force_optional=True),
-    NullMode(type_excludes_member_null=True),
-    NullMode(strict_nullable=True, read_nullable_beside_type_list=True),
-)
+MODES: Final[dict[str, NullMode]] = {
+    "default": NullMode(),
+    "strict": NullMode(strict_nullable=True),
+    "sentinel": NullMode(use_missing_sentinel=True),
+    "openapi-strict": NullMode(strict_nullable=True, nullable_as_type_list=True),
+    "force-optional": NullMode(force_optional=True),
+    "intersect": NullMode(type_excludes_member_null=True),
+    "strict-beside-list": NullMode(strict_nullable=True, read_nullable_beside_type_list=True),
+}
 """The option sets of ``NullMode`` a run can give: the default, each option alone, and OpenAPI under
 ``--strict-nullable`` with and without ``--read-nullable-beside-type-list``."""
 
@@ -290,48 +282,226 @@ def _declares_null(schema: Schema, reads: frozenset[str]) -> bool:
 def _read_by(site: NullSite, schema: Schema) -> bool:
     """Return whether a site reads a schema object.
 
-    An object site reads one whose type admits an object, an enum site one with an enum, the others every one.
+    An object site reads one whose type admits an object, an enum site one with an enum, the scalar site one whose type
+    is no list (the type-union site reads those), the others every one.
     """
     type_ = schema.get("type")
     may_be_object = type_ is None or type_ == "object" or (isinstance(type_, list) and "object" in type_)
-    return (site not in OBJECT_SITES or may_be_object) and (site not in ENUM_SITES or "enum" in schema)
+    return (
+        (site not in OBJECT_SITES or may_be_object)
+        and (site not in ENUM_SITES or "enum" in schema)
+        and (site != "scalar" or not isinstance(type_, list))
+    )
 
 
-def _sources(schema: Schema) -> NullSources:
-    """Return the null sources of a schema object, as the adapter reads them."""
+def _sources(schema: Schema, site: NullSite, mode: NullMode) -> NullSources:
+    """Return the null sources of a schema object as the parser's adapter gives them to a site.
+
+    The sites of ``_RECORDED_TYPE_NULL_SITES`` read the answer ``JsonSchemaObject.type_has_null`` records (the
+    ``schema-type`` row under no option), false where the mode's ``type`` excludes the null of the members
+    (``JsonSchemaParser._type_has_null``); the others read none.
+    """
+    written = null_sources(
+        schema.get("type"),
+        nullable=schema.get("nullable"),
+        type_has_null=False,
+        member_types=[member["type"] for member in schema.get("anyOf", [])],
+        enum=schema.get("enum"),
+        const=(schema["const"],) if "const" in schema else (),
+    )
+    excluded = resolve_null_facts(written, "schema-type", mode).rule == "type-excludes-member-null"
+    recorded = bool(resolve_null_facts(written, "schema-type").admits_null) and not excluded
     return null_sources(
         schema.get("type"),
         nullable=schema.get("nullable"),
+        type_has_null=site in _RECORDED_TYPE_NULL_SITES and recorded,
         member_types=[member["type"] for member in schema.get("anyOf", [])],
         enum=schema.get("enum"),
         const=(schema["const"],) if "const" in schema else (),
     )
 
 
-def _differing_answers() -> list[tuple[str, str, str]]:
-    """Return the site, the row and the schema object of every site answer that differs from the validator."""
-    return [
-        (site, facts.rule, json.dumps(schema))
+Cell = tuple[str, str, bool, str, str, bool, bool]
+"""A site answer: the site, its row, the answer, the schema object (sorted JSON), the mode, required, has a default."""
+
+
+def _key(schema: Schema) -> str:
+    return json.dumps(schema, sort_keys=True)
+
+
+def _differing_answers() -> set[Cell]:
+    """Return every site answer that differs from the validator's verdict on the keywords the site reads."""
+    return {
+        (site, facts.rule, bool(facts.admits_null), _key(schema), name, required, has_default)
         for schema in _schemas()
         for site, reads in SITE_READS.items()
         if _read_by(site, schema)
-        for mode, required, has_default in itertools.product(MODES, (False, True), (False, True))
+        for (name, mode), required, has_default in itertools.product(MODES.items(), (False, True), (False, True))
         if (
-            facts := resolve_null_facts(_sources(schema), site, mode, required=required, has_default=has_default)
+            facts := resolve_null_facts(
+                _sources(schema, site, mode), site, mode, required=required, has_default=has_default
+            )
         ).admits_null
         not in {None, _declares_null(schema, reads)}
-    ]
+    }
+
+
+@dataclass(frozen=True)
+class KeptAnswer:
+    """Site answers that differ from the validator and are kept: the row, its answer, the inputs, and why."""
+
+    site: NullSite
+    rule: str
+    answer: bool
+    schemas: tuple[Schema, ...]
+    modes: tuple[str, ...]
+    reason: str
+
+    def cells(self) -> set[Cell]:
+        """Return the answers the entry keeps, under every required state and default."""
+        return {
+            (self.site, self.rule, self.answer, _key(schema), mode, required, has_default)
+            for schema in self.schemas
+            for mode in self.modes
+            for required, has_default in itertools.product((False, True), (False, True))
+        }
+
+
+_STRING_MEMBERS: Final = [{"type": "string"}, {"type": "integer"}]
+_NULL_MEMBERS: Final = [{"type": "string"}, {"type": "null"}]
+_NULLABLE_BESIDE_NO_TYPE: Final[tuple[Schema, ...]] = (
+    {"nullable": True},
+    {"nullable": True, "anyOf": _STRING_MEMBERS},
+    {"nullable": True, "enum": ["a"]},
+    {"nullable": True, "enum": ["a", None]},
+    {"nullable": True, "const": "a"},
+)
+_NULLABLE_NULL_MEMBER: Final[Schema] = {"nullable": True, "anyOf": _NULL_MEMBERS}
+_NULLABLE_OBJECT: Final[Schema] = {"type": "object", "nullable": True}
+_NULLABLE_STRINGS: Final[tuple[Schema, ...]] = (
+    {"type": "string", "nullable": True},
+    {"type": "string", "nullable": True, "enum": ["a"]},
+    {"type": "string", "nullable": True, "enum": ["a", None]},
+    {"type": "string", "nullable": True, "const": "a"},
+)
+_TYPE_LISTS: Final[tuple[Schema, ...]] = (
+    {"type": ["object", "null"]},
+    {"type": ["string", "null"]},
+    {"type": ["string", "null"], "enum": ["a"]},
+    {"type": ["string", "null"], "enum": ["a", None]},
+    {"type": ["string", "null"], "const": "a"},
+)
+_UNTYPED: Final[tuple[Schema, ...]] = (
+    {},
+    {"nullable": False},
+    {"anyOf": _STRING_MEMBERS},
+    {"anyOf": _NULL_MEMBERS},
+    {"nullable": False, "anyOf": _STRING_MEMBERS},
+    {"nullable": False, "anyOf": _NULL_MEMBERS},
+)
+_ALL_MODES: Final = tuple(MODES)
+_WITHOUT_STRICT_NULLABLE: Final = tuple(name for name, mode in MODES.items() if not mode.strict_nullable)
+
+KEPT_ANSWERS: Final[tuple[KeptAnswer, ...]] = (
+    KeptAnswer(
+        "root-model",
+        "legacy-root-model-type-only",
+        answer=False,
+        schemas=(*_NULLABLE_BESIDE_NO_TYPE, _NULLABLE_OBJECT, *_NULLABLE_STRINGS),
+        modes=_ALL_MODES,
+        reason="a root model reads no nullable",
+    ),
+    KeptAnswer(
+        "ref-target",
+        "legacy-ref-target-null-type-only",
+        answer=False,
+        schemas=_TYPE_LISTS,
+        modes=_ALL_MODES,
+        reason="a reference reads no type list of its target",
+    ),
+    KeptAnswer(
+        "ref-target",
+        "legacy-ref-target-null-type-only",
+        answer=False,
+        schemas=(*_NULLABLE_BESIDE_NO_TYPE, _NULLABLE_NULL_MEMBER, _NULLABLE_OBJECT, *_NULLABLE_STRINGS),
+        modes=_WITHOUT_STRICT_NULLABLE,
+        reason="a reference reads its target's nullable only under --strict-nullable (#1496)",
+    ),
+    KeptAnswer(
+        "scalar",
+        "scalar-not-null",
+        answer=False,
+        schemas=(*_NULLABLE_BESIDE_NO_TYPE, _NULLABLE_NULL_MEMBER, _NULLABLE_OBJECT, *_NULLABLE_STRINGS),
+        modes=_WITHOUT_STRICT_NULLABLE,
+        reason="OpenAPI's nullable admits null only under --strict-nullable (#1496)",
+    ),
+    KeptAnswer(
+        "object-map",
+        "map-strict-nullable",
+        answer=False,
+        schemas=(*_NULLABLE_BESIDE_NO_TYPE, _NULLABLE_NULL_MEMBER, _NULLABLE_OBJECT),
+        modes=_WITHOUT_STRICT_NULLABLE,
+        reason="OpenAPI's nullable admits null only under --strict-nullable (#1496)",
+    ),
+    KeptAnswer(
+        "object-model",
+        "object-type-or-strict-nullable",
+        answer=False,
+        schemas=(*_NULLABLE_BESIDE_NO_TYPE, _NULLABLE_OBJECT),
+        modes=_WITHOUT_STRICT_NULLABLE,
+        reason="OpenAPI's nullable admits null only under --strict-nullable (#1496)",
+    ),
+    KeptAnswer(
+        "enum",
+        "enum-null-as-nullable",
+        answer=True,
+        schemas=({"type": "string", "enum": ["a", None]}, {"type": "string", "nullable": False, "enum": ["a", None]}),
+        modes=_ALL_MODES,
+        reason="the null of a string enum makes its class nullable, though the string type excludes null",
+    ),
+    KeptAnswer(
+        "enum-literal",
+        "legacy-enum-literal-value-only",
+        answer=True,
+        schemas=(
+            {"type": "string", "enum": ["a", None]},
+            {"type": "string", "nullable": False, "enum": ["a", None]},
+            {"type": "string", "nullable": True, "enum": ["a", None]},
+        ),
+        modes=_ALL_MODES,
+        reason="a Literal enum reads its null value without the type",
+    ),
+    KeptAnswer(
+        "enum-as-const",
+        "nullable-enum-not-const",
+        answer=True,
+        schemas=({"nullable": True, "enum": ["a"]}, {"type": "string", "nullable": True, "enum": ["a"]}),
+        modes=_ALL_MODES,
+        reason="nullable beside a one-value enum admits null (the null table's nullable-beside-enum)",
+    ),
+    KeptAnswer(
+        "all-of-union",
+        "all-of-union-part-admits-null",
+        answer=True,
+        schemas=_UNTYPED,
+        modes=_ALL_MODES,
+        reason="a part that constrains no type admits null by its own keywords",
+    ),
+)
+"""The site answers that differ from the validator and are kept, each with its inputs and why."""
 
 
 @pytest.mark.allow_direct_assert("A pure core is compared with the validator over a finite domain of schema objects.")
 def test_null_sites_read_the_validator_s_verdict() -> None:
-    """Every site's answer is the validator's verdict on null for the keywords it reads, or a row of ``EXPLAINED``.
+    """Every site's answer is the validator's verdict on null for the keywords it reads, or a kept answer.
 
-    The rows that explain a difference are exactly those of ``EXPLAINED``, so a fixed row is removed from it.
+    The kept answers are exactly the differing ones, cell by cell: a new difference under a kept row's name fails, and
+    so does a kept answer that agrees again until its entry is narrowed or removed.
     """
     differing = _differing_answers()
-    assert sorted({answer for answer in differing if answer[1] not in EXPLAINED})[:20] == []
-    assert {rule for _, rule, _ in differing} == EXPLAINED.keys()
+    kept = set().union(*(entry.cells() for entry in KEPT_ANSWERS))
+    assert sorted(differing - kept)[:20] == []
+    assert sorted(kept - differing)[:20] == []
 
 
 TAG_SPECS: Final[tuple[tuple[str, object] | None, ...]] = (
