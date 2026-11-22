@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Schedule",
+  "type": "object",
+  "definitions": {
+    "Stamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Day": {
+      "type": "string",
+      "format": "date"
+    },
+    "Clock": {
+      "type": "string",
+      "format": "time"
+    }
+  },
+  "properties": {
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "on": {
+      "type": "string",
+      "format": "date"
+    },
+    "clock": {
+      "type": "string",
+      "format": "time"
+    },
+    "local_at": {
+      "type": "string",
+      "format": "date-time-local"
+    },
+    "local_clock": {
+      "type": "string",
+      "format": "time-local"
+    },
+    "maybe_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "at_or_count": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "stamps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "days_by_name": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    "stamp": {
+      "$ref": "#/definitions/Stamp"
+    },
+    "day": {
+      "$ref": "#/definitions/Day"
+    },
+    "clock_ref": {
+      "$ref": "#/definitions/Clock"
+    }
+  },
+  "required": ["at", "on", "clock"]
+}

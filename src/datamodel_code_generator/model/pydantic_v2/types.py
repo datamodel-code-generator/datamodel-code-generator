@@ -70,6 +70,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_POSITIVE_FLOAT,
     IMPORT_POSITIVE_INT,
     IMPORT_SERIALIZE_AS_ANY,
+    IMPORT_STRICT,
     IMPORT_STRICT_BOOL,
     IMPORT_STRICT_BYTES,
     IMPORT_STRICT_FLOAT,
@@ -191,6 +192,27 @@ number_kwargs: tuple[str, ...] = _applicability.NUMBER_KEYWORD_ORDER
 
 string_kwargs: tuple[str, ...] = _applicability.STRING_LENGTH_KEYWORD_ORDER
 _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
+_STRICT_DATE_TIME_KINDS: Final[Mapping[_ImportKey, StrictTypes]] = MappingProxyType({
+    **dict.fromkeys(
+        map(
+            _import_key,
+            (
+                IMPORT_DATETIME,
+                IMPORT_AWARE_DATETIME,
+                IMPORT_NAIVE_DATETIME,
+                IMPORT_PAST_DATETIME,
+                IMPORT_FUTURE_DATETIME,
+            ),
+        ),
+        StrictTypes.datetime,
+    ),
+    **dict.fromkeys(map(_import_key, (IMPORT_DATE, IMPORT_PAST_DATE, IMPORT_FUTURE_DATE)), StrictTypes.date),
+    _import_key(IMPORT_TIME): StrictTypes.time,
+})
+"""The ``--strict-types`` value of each date and time type Pydantic parses, by its import.
+
+Pydantic has no strict class for them; the pendulum types are absent, as Pydantic accepts only their instances.
+"""
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 _ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
 _STRICT_ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_STRICT_STR, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
@@ -487,7 +509,7 @@ class DataTypeManager(_DataTypeManagerBase):
         if kwargs.get("base64_encoded"):
             if not data_type_kwargs:
                 return self.data_type.from_import(IMPORT_BASE64BYTES, strict=strict)
-            return self._encoded_text_type(
+            return self._runtime_annotated_type(
                 "PydanticV2EncodedBytesDataType",
                 EncodedBytesDataType,
                 IMPORT_ENCODED_BYTES,
@@ -513,7 +535,7 @@ class DataTypeManager(_DataTypeManagerBase):
             return None
         if self.PATTERN_KEY in data_type_kwargs:
             data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
-        return self._encoded_text_type(
+        return self._runtime_annotated_type(
             "PydanticV2EncodedStrDataType",
             EncodedStrDataType,
             IMPORT_ENCODED_STR,
@@ -524,7 +546,7 @@ class DataTypeManager(_DataTypeManagerBase):
             strict=strict,
         )
 
-    def _encoded_text_type(
+    def _runtime_annotated_type(
         self,
         name: str,
         base: type[DataType],
@@ -534,7 +556,10 @@ class DataTypeManager(_DataTypeManagerBase):
         *,
         strict: bool = False,
     ) -> DataType:
-        """Return the type ``import_`` that decodes base64 text, on the context class ``name`` over ``base``."""
+        """Return the type ``import_`` written through its runtime ``imports``, on the context class ``name``.
+
+        The context class is over ``base``; ``kwargs`` and ``strict`` are those of the type.
+        """
         data_type = self._context_class(name, base).from_import(import_, kwargs=kwargs, strict=strict)
         data_type._set_runtime_expression_imports(imports)  # noqa: SLF001
         return data_type
@@ -655,8 +680,29 @@ class DataTypeManager(_DataTypeManagerBase):
             if strict:
                 return self.copy_data_type(self.strict_type_map[StrictTypes.str])
             return self.data_type(type="str")
+        return self._mapped_type(types, string_format=bool(kwargs.get("string_format")))
 
-        return self.copy_data_type(self.type_map[types])
+    def _mapped_type(self, types: Types, *, string_format: bool) -> DataType:
+        """Return the type ``types`` maps to, written ``Annotated[<type>, Strict()]`` where ``--strict-types`` names it.
+
+        Only the date and time types Pydantic parses take it (``_STRICT_DATE_TIME_KINDS``), from the format of a string
+        (``string_format``): an integer or number of format ``date-time`` is a Unix time, which strict mode refuses.
+        """
+        mapped = self.type_map[types]
+        if (
+            not string_format
+            or (import_ := mapped.import_) is None
+            or _STRICT_DATE_TIME_KINDS.get(_import_key(import_)) not in self.strict_types
+        ):
+            return self.copy_data_type(mapped)
+        return self._runtime_annotated_type(
+            "PydanticV2StrictAnnotatedDataType",
+            StrictAnnotatedDataType,
+            import_,
+            None,
+            (IMPORT_ANNOTATED, import_, IMPORT_STRICT),
+            strict=True,
+        )
 
 
 # --- Pydantic v2 specific ---
@@ -739,12 +785,36 @@ class _RuntimeAnnotatedDataType(PydanticV2DataType):
         bindings = (import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
         return next(bindings) if default is None else next(bindings, default)
 
+    def _annotated(self, base: str, *metadata: str) -> str:
+        """Return ``base`` and its ``metadata`` inside an Annotated subscript, through the current binding."""
+        return subscript_text(self._binding("Annotated"), (base, *metadata))
+
     @property
     @override
     def imports(self) -> Iterator[Import]:
         """Yield the annotation imports in place of the type's own import."""
         yield from (import_ for import_ in super().imports if import_ != self.import_)
         yield from self.runtime_expression_imports
+
+
+class StrictAnnotatedDataType(_RuntimeAnnotatedDataType):
+    """A type Pydantic has no strict class for, written as ``Annotated[<type>, Strict()]``.
+
+    ``--strict-types datetime``, ``date`` and ``time`` write the date and time types so: strict mode refuses the numbers
+    lax mode reads as a Unix time or as seconds, and, in Python input, ISO strings too.
+    """
+
+    @property
+    @override
+    def type_hint(self) -> str:
+        """The type, through its current binding, and ``Strict()`` inside an Annotated subscript."""
+        return self._annotated(self._binding(self.type or ""), f"{self._binding('Strict')}()")
+
+    @property
+    @override
+    def base_type_hint(self) -> str:
+        """The type hint itself: ``Strict()`` builds no pattern, so a ``RootModel`` base keeps it."""
+        return self.type_hint
 
 
 class AnnotatedStringDataType(PydanticV2DataType):
@@ -842,7 +912,7 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
             metadata.append(f"{self._binding('MultipleOf')}({represent_python_value(multiple_of)})")
         if not metadata:
             return self.annotated_base_type
-        return subscript_text(self._binding("Annotated"), (self.annotated_base_type, *metadata))
+        return self._annotated(self.annotated_base_type, *metadata)
 
 
 _ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
@@ -908,13 +978,10 @@ class EncodedTextDataType(_RuntimeAnnotatedDataType):
             if (kwargs := self.kwargs)
             else ()
         )
-        return subscript_text(
-            self._binding("Annotated"),
-            (
-                self._decoded_base,
-                *constraints,
-                f"{self._binding(self.encoder)}(encoder={self._binding('Base64Encoder')})",
-            ),
+        return self._annotated(
+            self._decoded_base,
+            *constraints,
+            f"{self._binding(self.encoder)}(encoder={self._binding('Base64Encoder')})",
         )
 
     @property

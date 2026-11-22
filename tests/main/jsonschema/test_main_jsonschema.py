@@ -7364,7 +7364,12 @@ def test_main_strict_types(output_file: Path) -> None:
 The --strict-types option enforces stricter type checking by preventing implicit
 type coercion for the specified types (str, bytes, int, float, bool). This
 generates StrictStr, StrictBytes, StrictInt, StrictFloat, and StrictBool types
-in Pydantic models, ensuring values match exactly without automatic conversion.""",
+in Pydantic models, ensuring values match exactly without automatic conversion.
+
+`datetime`, `date` and `time` write the date and time string formats as
+`Annotated[<type>, Strict()]`, so `-1` is no longer read as a Unix time. JSON input
+still accepts ISO strings, but Python input must be `datetime`, `date` or `time`
+objects (see the type mappings page).""",
     input_schema="jsonschema/strict_types.json",
     cli_args=["--strict-types", "str", "bytes", "int", "float", "bool"],
     golden_output="main/jsonschema/main_jsonschema/main_strict_types_all.py",
@@ -7380,6 +7385,11 @@ def test_main_strict_types_all(output_file: Path) -> None:
     type coercion for the specified types (str, bytes, int, float, bool). This
     generates StrictStr, StrictBytes, StrictInt, StrictFloat, and StrictBool types
     in Pydantic models, ensuring values match exactly without automatic conversion.
+
+    `datetime`, `date` and `time` write the date and time string formats as
+    `Annotated[<type>, Strict()]`, so `-1` is no longer read as a Unix time. JSON input
+    still accepts ISO strings, but Python input must be `datetime`, `date` or `time`
+    objects (see the type mappings page).
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "strict_types.json",
@@ -7473,6 +7483,123 @@ def test_main_strict_types_time(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--strict-types", "str", "bytes", "int", "float", "bool"],
+    )
+
+
+_STRICT_DATE_TIME = ("--strict-types", "datetime", "date", "time")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="lax"),
+        pytest.param([*_STRICT_DATE_TIME], id="strict"),
+        pytest.param(["--use-annotated", *_STRICT_DATE_TIME], id="annotated"),
+        pytest.param(["--use-root-model-type-alias", *_STRICT_DATE_TIME], id="root-model-type-alias"),
+        pytest.param(
+            ["--output-datetime-class", "datetime", "--output-date-class", "PastDate", *_STRICT_DATE_TIME],
+            id="date-classes",
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", *_STRICT_DATE_TIME], id="pydantic-dataclass"),
+    ],
+)
+def test_main_strict_types_date_time(output_file: Path, extra_args: list[str]) -> None:
+    """Test strict date and time types reject the numbers lax mode reads as times and keep ISO strings in JSON.
+
+    In Python input strict mode rejects ISO strings too.
+    """
+    name = "strict_types_date_time"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "Schedule") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+
+        def accepts(field_name: str, value: object) -> bool:
+            with suppress(ValidationError):
+                return validate(json.dumps(payloads["valid"] | {field_name: value})) is not None
+            return False
+
+        rejected = [field_name for field_name, value in payloads["invalid"].items() if not accepts(field_name, value)]
+        python_iso = "rejected"
+        with suppress(ValidationError):
+            TypeAdapter(model).validate_python(payloads["valid"])
+            python_iso = "accepted"
+    assert_output("\n".join([*rejected, f"python input of the valid payload: {python_iso}"]) + "\n", name="rejected")
+
+
+def test_main_strict_types_date_time_numbers(output_file: Path) -> None:
+    """Test strict date and time types leave the numbers of a date-time or time format lax, which hold Unix times."""
+    _run_jsonschema_dict(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Reading",
+            "type": "object",
+            "properties": {
+                "unix_at": {"type": "integer", "format": "date-time"},
+                "epoch": {"type": "number", "format": "date-time"},
+                "seconds": {"type": "number", "format": "time"},
+                "at_or_unix": {"type": ["string", "integer"], "format": "date-time"},
+            },
+        },
+        output_file,
+        extra_args=[*_STRICT_DATE_TIME, "--formatters", "builtin", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_date_time_numbers", "Reading") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps({"unix_at": 1600000000, "epoch": 1.5, "seconds": 3600, "at_or_unix": 1600000000}))
+        validate(json.dumps({"at_or_unix": "2020-01-01T00:00:00Z"}))
+
+
+def test_main_strict_types_date_time_root_model_regex_engine(output_file: Path) -> None:
+    """Test a root model that needs a regex engine keeps the strict date and time type in its base."""
+    _run_jsonschema_dict(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Stamp",
+            "anyOf": [{"type": "string", "format": "date-time"}, {"type": "string", "pattern": "^(?=x).*"}],
+        },
+        output_file,
+        extra_args=[*_STRICT_DATE_TIME, "--formatters", "builtin", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_date_time_root_model_regex_engine", "Stamp") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps("2020-01-01T00:00:00Z"))
+        validate(json.dumps("x"))
+        with pytest.raises(ValidationError):
+            validate(json.dumps(-1))
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--use-pendulum"], id="pendulum"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+    ],
+)
+def test_main_strict_types_date_time_kept(output_file: Path, extra_args: list[str]) -> None:
+    """Test strict date and time types leave pendulum types and the outputs without strict types as they are."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "strict_types_date_time.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            *_STRICT_DATE_TIME,
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+        ],
     )
 
 

@@ -1,0 +1,29 @@
+{
+  "valid": {
+    "at": "2020-01-01T00:00:00Z",
+    "on": "2020-01-01",
+    "clock": "10:00:00",
+    "local_at": "2020-01-01T00:00:00",
+    "local_clock": "10:00:00",
+    "maybe_at": null,
+    "at_or_count": 5,
+    "stamps": ["2020-01-01T00:00:00Z"],
+    "days_by_name": {"start": "2020-01-01"},
+    "stamp": "2020-01-01T00:00:00Z",
+    "day": "2020-01-01",
+    "clock_ref": "10:00:00"
+  },
+  "invalid": {
+    "at": -1,
+    "on": 0,
+    "clock": 3600,
+    "local_clock": 1.5,
+    "maybe_at": -1,
+    "at_or_count": 1.5,
+    "stamps": [-1],
+    "days_by_name": {"start": 0},
+    "stamp": -1,
+    "day": 0,
+    "clock_ref": 1.5
+  }
+}

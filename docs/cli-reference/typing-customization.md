@@ -5663,6 +5663,11 @@ type coercion for the specified types (str, bytes, int, float, bool). This
 generates StrictStr, StrictBytes, StrictInt, StrictFloat, and StrictBool types
 in Pydantic models, ensuring values match exactly without automatic conversion.
 
+`datetime`, `date` and `time` write the date and time string formats as
+`Annotated[<type>, Strict()]`, so `-1` is no longer read as a Unix time. JSON input
+still accepts ISO strings, but Python input must be `datetime`, `date` or `time`
+objects (see the type mappings page).
+
 **See also:** [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"

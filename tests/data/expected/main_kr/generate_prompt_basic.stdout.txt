@@ -968,7 +968,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.
-  --strict-types {str,bytes,int,float,bool} [{str,bytes,int,float,bool} ...]
+  --strict-types {str,bytes,int,float,bool,datetime,date,time} [{str,bytes,int,float,bool,datetime,date,time} ...]
                         Use strict types
   --type-mappings TYPE_MAPPINGS [TYPE_MAPPINGS ...]
                         Override default type mappings. Format:
@@ -2231,7 +2231,7 @@ Recommend a final CLI command for the user's schema and target runtime. Include:
 
 - `--use-annotated` also enables `--field-constraints`; prefer it for constrained Pydantic v2 fields.
 - `--openapi-include-paths` only has an effect when `--openapi-scopes paths` is included.
-- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, or `bytes`.
+- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, `bytes`, `datetime`, `date`, or `time`.
 - `--use-specialized-enum` requires `--target-python-version >= 3.11`.
 - `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, `--check`, and `--diff-against`; not for `--watch`.
 - `--output-format-json-schema` accepts `config`, `generate-prompt`, `generation`, `model-metadata`, `recommend-options`, or `structured-output`; use `config` for JSON configuration schemas.
