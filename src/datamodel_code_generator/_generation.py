@@ -443,9 +443,10 @@ _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096
 def get_first_file(path: Path) -> Path:
     """Find and return the first file in a path: the path itself unless it is a directory, else its first file."""
     if path.is_dir():
-        for child in path.rglob("*"):
-            if child.is_file():
-                return child
+        from datamodel_code_generator._paths import iter_input_files  # noqa: PLC0415
+
+        if (first := next(iter_input_files(path), None)) is not None:
+            return first
     elif path.exists():
         return path
     msg = f"No file found in: {path}"
@@ -1715,7 +1716,9 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
         try:
             match input_:
                 case Path() as input_path if (input_filter := config._directory_input_filter) is not None:  # noqa: SLF001
-                    detected_input = next(input_filter.iter_files(input_path.rglob("*"), config.encoding), None)
+                    from datamodel_code_generator._paths import iter_input_files  # noqa: PLC0415
+
+                    detected_input = next(input_filter.iter_files(iter_input_files(input_path), config.encoding), None)
                     if detected_input is None:
                         msg = f"No file found in: {input_path}"
                         raise FileNotFoundError(msg)  # noqa: TRY301
