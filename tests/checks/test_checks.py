@@ -77,7 +77,7 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
     """
     report, lines = tmp_path / "report.jsonl", 300
     start_read, start_write = os.pipe()
-    ready_read, ready_write = os.pipe()
+    readies = [os.pipe() for _ in range(4)]
     processes = [
         subprocess.Popen(
             [sys.executable, "-c", _APPENDS_ONCE_STARTED, str(report), f"process {number}", str(lines)],
@@ -85,24 +85,24 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
             stdin=start_read,
             stdout=ready_write,
         )
-        for number in range(4)
+        for number, (_, ready_write) in enumerate(readies)
     ]
     os.close(start_read)
-    os.close(ready_write)
+    for _, ready_write in readies:
+        os.close(ready_write)
     mode = Mode(Area.STORE_WRITES, report)
 
     def append(writer: str) -> None:
         for index in range(lines):
             mode.record("appended", writer=writer, index=index, padding="x" * 8192)
 
-    ready = b""
-    while ready.count(b"\n") < len(processes) and (chunk := os.read(ready_read, 64)):
-        ready += chunk
+    for ready_read, _ in readies:
+        os.read(ready_read, 64)
+        os.close(ready_read)
     os.close(start_write)
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(append, [f"thread {number}" for number in range(4)]))
     statuses = [process.wait() for process in processes]
-    os.close(ready_read)
     records = [json.loads(line) for line in report.read_text(encoding="utf-8").splitlines()]
     counts = Counter(record["writer"] for record in records)
     assert_output(f"exit statuses {statuses}\n" + "".join(f"{writer}: {counts[writer]}\n" for writer in sorted(counts)))
