@@ -139,6 +139,15 @@ rule_code = "MUT201"
 target = "Model.fields"
 count = 1
 """
+HEKI_ENVIRONMENT = """
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+"""
+"""A baseline entry of the environment boundary, whose sites count under their own key."""
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -353,66 +362,6 @@ def two() -> int:
 """A module with a stopgap comment, a to-do comment and directives (a shebang, an encoding line, noqa, a pragma)."""
 COMMENTS_MOVED = FUTURE + "\n\n" + COMMENTS.removeprefix(FUTURE)
 """The same comments with other line numbers: no key rises."""
-ENV_PROBES = (
-    FUTURE
-    + """import os
-import sys
-from importlib import util
-
-try:
-    import tomllib
-except ImportError:
-    tomllib = None
-try:
-    import tomli
-except ImportError:
-    import tomllib as tomli
-
-OLD = sys.version_info < (3, 12)
-WINDOWS = sys.platform == "win32" or os.name == "nt"
-HOME = os.environ.get("HOME")
-EDITOR = os.getenv("EDITOR")
-FOUND = util.find_spec("yaml")
-"""
-)
-"""Two guarded imports and six reads of the environment; the fallback import and the module reads count nothing."""
-BROAD_TRY = (
-    FUTURE
-    + """def load() -> None:
-    try:
-        import csv
-        from json import dumps
-    except Exception:
-        return
-    try:
-        import io
-    except BaseException:
-        return
-    csv.reader(io.StringIO(dumps(1)))
-"""
-)
-"""Lazy imports inside a broad ``try``: ordinary imports, no environment probes."""
-MORE_PROBES = (
-    FUTURE
-    + """import platform
-import sys
-from importlib import import_module
-
-try:
-    from yaml import CDumper, CSafeLoader
-except ImportError:
-    CDumper = CSafeLoader = None
-
-try:
-    import_module("orjson")
-except ModuleNotFoundError:
-    pass
-
-HEX = sys.hexversion
-SYSTEM = platform.system()
-"""
-)
-"""A guarded ``from`` import of two names, a guarded ``import_module``, ``sys.hexversion`` and ``platform.system()``."""
 PROSE_COMMENTS = (
     FUTURE
     + """VALUE = 1  # value type: int for now
@@ -593,14 +542,6 @@ CASES = {
         "head": {"src/pkg/c.py": COMMENTS_MOVED},
         "args": ["--enforce"],
     },
-    "environment-probes": {"head": {"src/pkg/e.py": ENV_PROBES}, "args": ["--enforce"]},
-    "environment-probes-unchanged": {
-        "base": {"src/pkg/e.py": ENV_PROBES},
-        "head": {"src/pkg/e.py": ENV_PROBES},
-        "args": ["--enforce"],
-    },
-    "environment-probes-broad-try": {"head": {"src/pkg/e.py": BROAD_TRY}, "args": ["--enforce"]},
-    "environment-probes-more": {"head": {"src/pkg/e.py": MORE_PROBES}, "args": ["--enforce"]},
     "stopgap-comments-prose": {"head": {"src/pkg/c.py": PROSE_COMMENTS}, "args": ["--enforce"]},
     "expected-reported-only": {"head": {"tests/test_a.refs": EXPECTED_REFS}, "args": ["--enforce"]},
     "moved-line": {"head": {"src/pkg/a.py": FUTURE + NAME, "src/pkg/b.py": FUTURE + SIZE}, "args": ["--enforce"]},
@@ -702,6 +643,11 @@ def show(flag: bool) -> None:
             "scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2")
             + HEKI_BASELINE.removeprefix("version = 2\n").replace('"run"', '"stop"')
         },
+        "args": ["--enforce"],
+    },
+    "heki-baseline-environment-swap": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2") + HEKI_ENVIRONMENT},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT.replace("count = 1", "count = 2")},
         "args": ["--enforce"],
     },
     "heki-baseline-shrinks": {

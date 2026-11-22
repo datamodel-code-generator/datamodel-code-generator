@@ -369,3 +369,9 @@ prs = [7221]
 incident = "a new module under scripts/ changed what `python -m scripts.where` prints; the stored answers failed only on hosted CI"
 paths = ["scripts/*.py"]
 tests = ["tests/test_where_script.py"]
+
+[[rule]]
+id = "src-heki-baseline"
+incident = "the review of the environment boundary's move to heki: a change under src/ that added a read of the environment passed the local quick check, because no selected test ran heki and the baseline file it counts did not change"
+paths = ["src/*"]
+tests = ["tests/test_build_heki_contracts_script.py::test_the_package_has_no_heki_finding_beyond_the_baseline"]

@@ -23,8 +23,10 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   the classes outside the concern modules of the host rule of ``scripts/check_architecture_boundaries.py`` (and of the
   Protocols inside them that are no ``*Host``), which the concern modules may neither read nor call (``MUT206``,
   ``MUT207`` report what heki cannot tie to a class).
-- ``effect-boundaries`` (``EFF201``): no function of the package reads the environment it runs in, the reads that
-  ``env-probe@src`` of ``scripts/check_ratchets.py`` counts.
+- ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
+  (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
+  depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
+  sites, ``allowlist:heki-baseline:EFF201`` of ``scripts/check_ratchets.py``.
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods
 from scripts.check_architecture_boundaries import _in_host_scope, _protocol_bases
 from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
+from scripts.check_ratchets import ENVIRONMENT_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home
 from scripts.fact_tables import ATTRIBUTE_FACTS, Access, FactKind
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
@@ -256,14 +259,15 @@ def host_contracts(repo: Repo) -> list[str]:
 
 
 def environment_contracts() -> list[str]:
-    """Return the effect boundary that keeps the package's functions from reading the environment."""
+    """Return the effect boundary that keeps the package's functions and module bodies from reading the environment."""
     return [
         _table(
             "effect-boundaries",
             name="no-environment-reads",
-            scopes=[f"{PACKAGE}.*", f"{PACKAGE}:*"],
+            scopes=[f"{PACKAGE}.*", f"{PACKAGE}:*", f"{PACKAGE}.*:<module>", f"{PACKAGE}:<module>"],
             forbid=["reads-environment"],
             import_probes="report",
+            message=ENVIRONMENT_ADVICE,
         )
     ]
 
