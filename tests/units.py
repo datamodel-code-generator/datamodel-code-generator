@@ -1979,23 +1979,31 @@ def apply_payloads(
 ) -> list[Desired]:
     """Merge CI payloads, what other environments compared for one item, into the item's desired lines (`start`).
 
-    A value payload writes or replaces the line of its class (`payload_class`) and drops the label's lines whose
-    clauses the comparison no longer declares. A line it adds takes the conditional flag of the line its class read in
-    `start`; without one it is conditional when the item has other lines or does not exist here. Where it would change
-    what this environment's class reads, that class keeps what it read under a line of its own, since only a local run
-    changes what this class compares; one of this environment's class raises ``ValueError`` (apply sessions refuse it
-    before). Then a stale payload (the lane lacks the item) marks the item's lines that lane reads conditional when
-    the item exists here, and drops them when it exists nowhere; a missing payload marks the label's lines it reads
-    conditional. So the result does not depend on the order of the payloads.
+    Every fact the batch decides comes from `start` and the whole batch, never from lines an earlier payload wrote, so
+    the result does not depend on the order of the payloads. Per label, a value payload writes or replaces the line of
+    its class (`payload_class`) and drops the label's lines whose clauses the comparison no longer declares. A line it
+    adds takes the conditional flag of the line its class read in `start`; without one it is conditional when the item
+    has other lines or does not exist here. When the label's writes change the output this environment's class read
+    in `start` (one line, or tied lines that agree), that class keeps it under a line of its own, since only a local
+    run changes what this class compares; a class that read nothing, or tied lines that disagree, gets no line. A value
+    payload of this environment's class raises ``ValueError`` (apply sessions refuse it before). Then a stale payload
+    (its lane lacks the item) marks the item's lines that lane reads conditional when the item runs here or a value or
+    missing payload of the batch shows it runs on another lane, and drops them when it runs nowhere; a missing payload
+    marks the label's lines it reads conditional.
     """
+    values = [payload for payload in payloads if "digest" in payload]
     desired = list(start)
-    for payload in sorted(payloads, key=lambda payload: "digest" not in payload):
+    for label in sorted({payload["label"] for payload in values}):
+        of_label = [payload for payload in values if payload["label"] == label]
+        desired = _apply_values(start, desired, of_label, local, exists=exists)
+    runs = exists or any(not payload.get("stale") for payload in payloads)
+    for payload in payloads:
         facts = payload["facts"]
         if payload.get("stale"):
             marked = [
                 replace(want, conditional=True) if clauses_hold(want.predicate, facts) else want for want in desired
             ]
-            desired = marked if exists else []
+            desired = marked if runs else []
         elif payload.get("missing"):
             desired = [
                 replace(want, conditional=True)
@@ -2003,33 +2011,44 @@ def apply_payloads(
                 else want
                 for want in desired
             ]
-        else:
-            desired = _apply_value(start, desired, payload, local, exists=exists)
     return desired
 
 
-def _apply_value(
-    start: list[Desired], desired: list[Desired], payload: Payload, local: Mapping[str, str], *, exists: bool
+def _apply_values(
+    start: list[Desired], desired: list[Desired], payloads: Sequence[Payload], local: Mapping[str, str], *, exists: bool
 ) -> list[Desired]:
-    """Write a value payload's line into an item's desired lines (`apply_payloads`)."""
-    label, value, digest = payload["label"], payload["value"], payload["digest"]
-    target, home = payload_class(payload, payload["facts"]), payload_class(payload, local)
-    if target == home:
-        msg = "the payload comes from this environment's class; run its test here with --inline-snapshot=fix instead"
-        raise ValueError(msg)
-    declared = set(payload["clauses"])
+    """Write the value payloads of one label into an item's desired lines (`apply_payloads`).
+
+    What each class read, and which lines exist, come from `start`: one write per class, then one check of what this
+    environment's class reads afterwards. Outputs compare by digest, a line that keeps its storage by the digest of
+    what it stores (None when unknown or missing).
+    """
+    label, declared = payloads[0]["label"], set(payloads[0]["clauses"])
+    home = payload_class(payloads[0], local)
+    writes: dict[tuple[str, ...], Payload] = {}
+    for payload in payloads:
+        if (target := payload_class(payload, payload["facts"])) == home:
+            msg = (
+                "the payload comes from this environment's class; run its test here with --inline-snapshot=fix instead"
+            )
+            raise ValueError(msg)
+        writes.setdefault(target, payload)
+    recorded = [want for want in start if want.label != label or set(want.predicate) <= declared]
+    lines = [want for want in recorded if want.label == label]
     desired = [want for want in desired if want.label != label or set(want.predicate) <= declared]
-    before = applicable_lines((want for want in desired if want.label == label), local)
-    if any(want.label == label and want.predicate == target for want in desired):
-        desired = [
-            replace(want, value=value, digest=digest) if want.label == label and want.predicate == target else want
-            for want in desired
-        ]
-    else:
-        recorded = [want for want in start if want.label != label or set(want.predicate) <= declared]
-        read = applicable_lines((want for want in recorded if want.label == label), payload["facts"])
-        conditional = read[0].conditional if read else bool(recorded) or not exists
-        desired = [*desired, Desired(label, conditional, target, value, digest)]
-    if len(before) == 1 and applicable_lines((want for want in desired if want.label == label), local) != before:
+    for target, payload in sorted(writes.items()):
+        value, digest = payload["value"], payload["digest"]
+        if any(want.predicate == target for want in lines):
+            desired = [
+                replace(want, value=value, digest=digest) if want.label == label and want.predicate == target else want
+                for want in desired
+            ]
+        else:
+            read = applicable_lines(lines, payload["facts"])
+            conditional = read[0].conditional if read else bool(recorded) or not exists
+            desired.append(Desired(label, conditional, target, value, digest))
+    before = applicable_lines(lines, local)
+    after = applicable_lines((want for want in desired if want.label == label), local)
+    if len(output := {want.digest for want in before}) == 1 and {want.digest for want in after} != output:
         desired.append(replace(before[0], predicate=home))
     return desired

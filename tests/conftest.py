@@ -1529,15 +1529,12 @@ class _Ledger:
         their digests (`unit_digest`), so JSON values of different kinds differ although Python finds ``1 == True``;
         a missing file differs from every stored value.
         """
-        if len({line.predicate for line in read}) < 2:
-            return False
-        contents = {
-            None
-            if (value := read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1])) is None
-            else unit_digest(line.label, value)
-            for line in read
-        }
-        return len(contents) > 1
+        return len({line.predicate for line in read}) > 1 and len(set(map(self.stored_digest, read))) > 1
+
+    def stored_digest(self, line: RefLine) -> str | None:
+        """Return the digest (`unit_digest`) of what a line stores, or None when its storage is missing."""
+        value = read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1])
+        return None if value is None else unit_digest(line.label, value)
 
     def unrecorded_class_status(self, observation: _Observation, read: list[RefLine]) -> str:
         """Record the output of a class no environment recorded in a fixing or observing run; else fail saying how."""
@@ -1976,7 +1973,7 @@ class _Ledger:
                 current
                 if current is not None
                 else [
-                    Desired(line.label, line.conditional, line.predicate, current=line)
+                    Desired(line.label, line.conditional, line.predicate, digest=self.stored_digest(line), current=line)
                     for line in self.index.item_lines(sidecar).get((function, param), [])
                 ]
             )

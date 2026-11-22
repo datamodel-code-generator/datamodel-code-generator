@@ -1702,6 +1702,58 @@ def test_ledger_applies_payloads_in_any_order(ledger: LedgerProject, tmp_path: P
     )
 
 
+@pytest.mark.parametrize(
+    ("other", "recorded", "outcome"),
+    [
+        pytest.param("x\n", {"builtin": "x\n", "anywhere": "y\n", "both": "x\n"}, "passed", id="agreeing"),
+        pytest.param("z\n", {"builtin": "x\n", "anywhere": "y\n"}, "failed", id="disagreeing"),
+    ],
+)
+def test_ledger_applies_a_payload_that_breaks_a_tie(
+    ledger: LedgerProject,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    other: str,
+    recorded: dict[str, str],
+    outcome: str,
+) -> None:
+    """A payload that breaks a tie this environment's class reads leaves the class the output its tied lines agree on.
+
+    The kept line holds both clauses, so the next local run passes; lines that already stored different outputs keep
+    nothing, since they recorded no output for this class, which the next local run still reports.
+    """
+    everywhere = "platform==darwin|platform==linux|platform==win32"
+    monkeypatch.setitem(capabilities.CAPABILITIES, "any-platform", ((everywhere,), "every platform"))
+    ledger.write(
+        "test_m.py",
+        "from tests.conftest import assert_output\n\n\ndef test_a():\n"
+        "    assert_output('x\\n', varies_with=('builtin-formatter', 'any-platform'))\n",
+    )
+    ledger.store(builtin := "m/a@builtin.txt", "x\n")
+    ledger.store(anywhere := "m/a@any.txt", other)
+    lines = [
+        units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin),
+        units.RefLine("test_a", "", "m/a.txt", predicate=(everywhere,), storage=anywhere),
+    ]
+    (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
+    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+    payload = {
+        "facts": facts | {"pydantic": "2.14.1"},
+        "item": "suite/test_m.py::test_a",
+        "label": "m/a.txt",
+        "digest": units.unit_digest("m/a.txt", "y\n"),
+        "value": "y\n",
+        "clauses": ["formatter==builtin", everywhere],
+    }
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(json.dumps({"payloads": [payload]}), encoding="utf-8")
+    ledger.run(f"--expected-apply={apply_file}", "suite", env=BUILTIN).assert_outcomes()
+    names = {("formatter==builtin",): "builtin", (everywhere,): "anywhere", ("formatter==builtin", everywhere): "both"}
+    stored = ledger.files()
+    assert {names[line.predicate]: stored[line.stored] for line in units.parse_refs(ledger.refs())[0]} == recorded
+    ledger.run("suite", "--inline-snapshot=disable", env=BUILTIN).assert_outcomes(**{outcome: 1})
+
+
 def test_ledger_payload_too_large(ledger: LedgerProject) -> None:
     """Output too large for a payload names the lane to run locally instead."""
     ledger.write(
@@ -2422,24 +2474,100 @@ def test_apply_payloads_keep_what_this_class_reads(
     assert all(want.current is current for want in applied if want.value is units.KEEP)
 
 
-def test_apply_payloads_do_not_depend_on_their_order() -> None:
-    """A line a value payload adds takes its flag from the item's lines before the payloads, not from other payloads.
+@pytest.mark.parametrize(
+    ("clauses", "stored", "wanted"),
+    [
+        pytest.param(
+            ["formatter==builtin", "platform==win32"],
+            "x\n",
+            [
+                (("formatter==builtin",), "y\n"),
+                (("platform==win32",), units.KEEP),
+                (("formatter==builtin", "platform==win32"), units.KEEP),
+            ],
+            id="a-tie-that-agrees",
+        ),
+        pytest.param(
+            ["formatter==builtin", "platform==win32"],
+            "z\n",
+            [(("formatter==builtin",), "y\n"), (("platform==win32",), units.KEEP)],
+            id="a-tie-that-disagrees",
+        ),
+    ],
+)
+def test_apply_payloads_keep_a_tie_this_class_reads(
+    clauses: list[str], stored: str, wanted: list[tuple[tuple[str, ...], object]]
+) -> None:
+    """A payload that breaks a tie this environment's class reads keeps the tie's output when its lines agree.
+
+    The kept line holds the class's own clauses; lines that already disagreed tell no output, so nothing is kept.
+    """
+    start = [
+        units.Desired("m/a.txt", predicate=("formatter==builtin",), digest=units.unit_digest("m/a.txt", "x\n")),
+        units.Desired("m/a.txt", predicate=("platform==win32",), digest=units.unit_digest("m/a.txt", stored)),
+    ]
+    applied = units.apply_payloads(start, [_value_payload(PY311, "y\n", clauses)], WINDOWS, exists=True)
+    assert [(want.predicate, want.value) for want in applied] == wanted
+    assert all(want.digest == start[0].digest for want in applied if len(want.predicate) == len(clauses))
+
+
+@pytest.mark.parametrize(
+    ("start", "payloads", "local", "exists", "wanted"),
+    [
+        pytest.param(
+            [units.Desired("m/a.txt"), units.Desired("m/a.extra.txt")],
+            [
+                units.Payload(facts=PY311, item="t.py::test_a", label="m/a.txt", missing=True),
+                _value_payload(WINDOWS, "w\n", ["platform==win32"]),
+            ],
+            BLACK22,
+            True,
+            [("m/a.txt", (), True), ("m/a.extra.txt", (), False), ("m/a.txt", ("platform==win32",), False)],
+            id="missing-and-value",
+        ),
+        pytest.param(
+            [units.Desired("m/a.extra.txt")],
+            [
+                _value_payload(WINDOWS, "w\n", ["black<24", "platform==win32"]),
+                _value_payload(BLACK22, "b\n", ["black<24", "platform==win32"]),
+            ],
+            {**BLACK22, "platform": "win32"},
+            True,
+            [("m/a.extra.txt", (), False), ("m/a.txt", ("black<24",), True), ("m/a.txt", ("platform==win32",), True)],
+            id="two-classes-this-class-read-none-of",
+        ),
+        pytest.param(
+            [units.Desired("m/a.txt")],
+            [
+                units.Payload(facts=WINDOWS, item="t.py::test_a", stale=True),
+                _value_payload(BLACK22, "b\n", ["black<24"]),
+            ],
+            PY311,
+            False,
+            [("m/a.txt", (), True), ("m/a.txt", ("black<24",), False)],
+            id="stale-and-value-of-an-item-absent-here",
+        ),
+    ],
+)
+def test_apply_payloads_do_not_depend_on_their_order(
+    start: list[units.Desired],
+    payloads: list[units.Payload],
+    local: dict[str, str],
+    *,
+    exists: bool,
+    wanted: list[tuple[str, tuple[str, ...], bool]],
+) -> None:
+    """What a batch decides comes from the item's lines before the payloads and the whole batch, in either order.
 
     A missing payload, from a lane that reads the base line and compares nothing, marks the base line conditional and
-    not the line of a class it is not in, in either order.
+    not the line of a class it is not in; a line a value payload adds takes its flag from the lines before the batch.
+    Lines one payload writes are no read of this environment's class for another payload, so a class that read
+    nothing gets no line. A value payload shows the item still runs on its lane, so a stale payload of another lane
+    marks lines conditional instead of dropping the item that does not exist here.
     """
-    start = [units.Desired("m/a.txt"), units.Desired("m/a.extra.txt")]
-    payloads = [
-        units.Payload(facts=PY311, item="t.py::test_a", label="m/a.txt", missing=True),
-        _value_payload(WINDOWS, "w\n", ["platform==win32"]),
-    ]
-    applied = [units.apply_payloads(start, order, BLACK22, exists=True) for order in (payloads, payloads[::-1])]
+    applied = [units.apply_payloads(start, order, local, exists=exists) for order in (payloads, payloads[::-1])]
     assert applied[0] == applied[1]
-    assert [(want.label, want.predicate, want.conditional) for want in applied[0]] == [
-        ("m/a.txt", (), True),
-        ("m/a.extra.txt", (), False),
-        ("m/a.txt", ("platform==win32",), False),
-    ]
+    assert [(want.label, want.predicate, want.conditional) for want in applied[0]] == wanted
 
 
 @pytest.mark.parametrize(
