@@ -23,7 +23,7 @@ def verdicts(output: Path, shape: Shape, backend: str) -> tuple[str, ...]:
     """Return a module's verdict on each payload of the shape's pool, lax and strict, or why it does not import."""
     known = truth(shape)
     try:
-        with _loaded(output, shape.name, backend) as runtime:
+        with _loaded(output, [shape.name], backend) as (runtime,):
             pairs = zip(lax_verdicts(runtime, known), strict_verdicts(runtime, known), strict=True)
             return tuple(f"{lax}, strict {strict}" for lax, strict in pairs)
     except _UnusableCellError as unusable:
