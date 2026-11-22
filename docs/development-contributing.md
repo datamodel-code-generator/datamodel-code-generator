@@ -479,6 +479,31 @@ record that covered cells with its decision references (`covered: <id> (<categor
 inputs it could only judge by signature (no payload case), and the payload cases both sides refused alike (no payload
 evidence). Its `--identity` mode, used by refactoring steps, ignores records and fails on any difference.
 
+## Verifying a change before a commit
+
+Run `python -m scripts.verify` in your checkout before you commit (inside the development environment, on Python 3.12
+or later). It judges the working tree, uncommitted and untracked files included, against the merge base with
+`origin/main` (`--base <ref>` for another one):
+
+1. It runs the tests your diff reaches, the ones `scripts/related_tests.py` selects: the test modules that mirror the
+   modules you changed and the rows of `scripts/related_tests.toml` your diff fires.
+2. Where you changed `src/`, it runs `scripts/behaviour_diff.py gate <merge base> --identity --pick <catalog>` on the
+   cells of the cell catalog that run your changed code (see "Comparing output with a release"), and prints every
+   difference with its cell, and each changed code object that no compared cell ran.
+3. It runs the same comparison a second time, beside the first, with both sides generating again, and fails on a cell
+   whose two runs differ: a flaky cell proves nothing.
+
+It fails when a test fails, a cell differs, the evidence is incomplete (a changed code object no compared cell ran,
+marked where the tests of step 1 ran its lines) or a cell is flaky. A refactoring shows no difference; where its
+evidence stays incomplete, the code objects it names need cells of option sets or backends the catalog lacks (it holds
+default options), which the behaviour gate of your pull request runs. A change meant to change output lists its
+differences: check that they are the ones you meant, and declare them (see "Declared changes"); the behaviour gate of
+your pull request judges them by your change records over its whole tier, which a run of the picked cells does not
+replace. The cells come from the newest catalog in `.git/verify-catalogs/` recorded on an ancestor of the merge base;
+without one the script records one at the merge base first, which takes several minutes once (later merge bases reuse
+it), and `--catalog <file>` names another. With a catalog in place the comparison takes 10-30 seconds; the tests take
+what the selection takes (several thousand tests for a parser change), `-j` sets how many run at once.
+
 ## Review checklist
 
 `python scripts/review_checklist.py --base origin/main` prints the review items your diff triggers, at most ten: the

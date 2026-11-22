@@ -1,0 +1,7 @@
+exit=1
+verify: TMP/repo (working tree) against the merge base <sha> with <sha>
+verify: tests the diff reaches: 0
+verify: tests done after <n>s
+evidence: incomplete: no input group, changed code objects not measured: 1
+verify: cells compared 0 of 0, differing 0, flaky 0; changed code objects no compared cell ran: 1 of 1
+verify: FAILED: evidence incomplete: 1 changed code objects no compared cell ran (<n>s)

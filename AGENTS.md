@@ -20,6 +20,13 @@ the ones failures print, inside the development environment (`.tox/dev` from `to
   failures print the exact command to run.
 - A CI failure that ends with `dcg-expected-fix:` is fixed by the `python scripts/fix_expected.py ...` command it prints.
 
+## Before committing
+
+- Run `python -m scripts.verify` (see "Verifying a change before a commit" in `docs/development-contributing.md`):
+  the tests your diff reaches, then the generated output of the cells that run your changed code, compared twice with
+  the merge base. A refactoring shows no difference; a change meant to change output lists the differences you
+  then declare.
+
 ## Adding an option
 
 - Follow "Adding a New CLI Option" in `docs/development-contributing.md`, including Step 4: register the option with
