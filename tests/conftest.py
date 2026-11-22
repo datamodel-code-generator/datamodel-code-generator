@@ -957,17 +957,22 @@ def _describe_facts(facts: Mapping[str, str]) -> str:
     return f"python {facts['python']}, {tools}"
 
 
-def _git_tracked(path: Path, root: Path) -> bool:
-    """Return whether git tracks a path; outside a repository nothing is tracked."""
+def _git_tracked(path: Path, root: Path) -> bool | None:
+    """Return whether git tracks a path, or None where git cannot tell: ``root`` is outside a work tree, or no git."""
     import subprocess
 
+    def git(*args: str) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(["git", *args], cwd=root, capture_output=True, check=False)
+
     try:
-        result = subprocess.run(
-            ["git", "ls-files", "--error-unmatch", "--", str(path)], cwd=root, capture_output=True, check=False
+        listed = (
+            None
+            if git("rev-parse", "--is-inside-work-tree").returncode
+            else git("ls-files", "--error-unmatch", "--", str(path))
         )
     except OSError:  # pragma: no cover
-        return False
-    return result.returncode == 0
+        return None
+    return None if listed is None else listed.returncode == 0
 
 
 def _color_output() -> bool:
@@ -2274,16 +2279,18 @@ def _compare_against(against: Path, value: object, pattern: str | None, output_d
 
     ``against`` resolves outside the tests root and is tracked by git (a docs page, the skill sources), or it and the
     compared ``output_dir`` are both ``_runtime`` directories: copies of the package runtime generation puts into a
-    client. Anything else is a run's output, which a test compares under one ``name=``.
+    client. Anything else is a run's output, which a test compares under one ``name=``. Where git cannot tell, as in
+    a source distribution, a document is a file or tree below the root that exists.
     """
     __tracebackhide__ = True
     ledger = _ledger()
     assert ledger is not None, "against= needs a running test"
     resolved = against.resolve()
+    root = ledger.config.rootpath
     runtime_copies = output_dir is not None and output_dir.name == resolved.name == "_runtime"
-    if resolved.is_relative_to(ledger.tests_root.resolve()) or not (
-        runtime_copies or _git_tracked(resolved, ledger.config.rootpath)
-    ):
+    tracked = _git_tracked(resolved, root)
+    document = tracked if tracked is not None else resolved.is_relative_to(root.resolve()) and resolved.exists()
+    if resolved.is_relative_to(ledger.tests_root.resolve()) or not (runtime_copies or document):
         pytest.fail(f"{_AGAINST_REFUSAL}: {against}", pytrace=False)
     _compare_direct(against, value, pattern)
 

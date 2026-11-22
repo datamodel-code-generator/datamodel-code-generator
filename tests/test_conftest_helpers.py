@@ -125,6 +125,46 @@ def test_against_refuses_what_is_not_a_document_or_runtime_copy(case: str, tmp_p
         compare()
 
 
+def test_against_without_git_compares_documents_on_disk(ledger: LedgerProject, tmp_path: Path) -> None:
+    """Where git cannot tell, as in a source distribution, an existing file below the root is a document.
+
+    Once the root is a git checkout, only a file git tracks is one.
+    """
+    (ledger.pytester.path / "doc.md").write_text("doc\n", encoding="utf-8")
+    outside = tmp_path / "doc.md"
+    outside.write_text("doc\n", encoding="utf-8")
+    ledger.write(
+        "test_m.py",
+        f"""
+        from pathlib import Path
+
+        import pytest
+
+        from tests.conftest import assert_output
+
+        ROOT = Path(__file__).parents[1]
+
+
+        def test_document():
+            assert_output("doc\\n", against=ROOT / "doc.md")
+
+
+        def test_refused():
+            for path in (ROOT / "missing.md", Path({str(outside)!r})):
+                with pytest.raises(pytest.fail.Exception, match="against= compares with a tracked document"):
+                    assert_output("doc\\n", against=path)
+        """,
+    )
+    ledger.run("suite").assert_outcomes(passed=2)
+    subprocess.run(["git", "init", "-q"], cwd=ledger.pytester.path, check=True)
+    untracked = ledger.run("suite")
+    untracked.assert_outcomes(failed=1, passed=1)
+    assert "against= compares with a tracked document or another copy of the package runtime" in untracked.stdout.str()
+    subprocess.run(["git", "add", "doc.md"], cwd=ledger.pytester.path, check=True)
+    ledger.run("suite").assert_outcomes(passed=2)
+    assert ledger.files() == {}
+
+
 def test_assert_inputs_not_mutated_allows_unchanged_nested_values() -> None:
     """Mutation guard accepts unchanged dict/list inputs and ignores immutable labels."""
     schema = {"properties": {"name": {"type": "string"}}, "required": ["name"]}
