@@ -1,0 +1,8 @@
+[
+  "/0/boolean enum 1: invalid, model accepts",
+  "/0/boolean enum 1.0: invalid, model accepts",
+  "/0/kind enum null: invalid, model accepts",
+  "/0/number enum \"1\": invalid, model accepts",
+  "/0/number enum true: invalid, model accepts",
+  "/0/type enum null: invalid, model accepts"
+]

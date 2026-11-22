@@ -1,0 +1,3 @@
+[
+  "/color enum null: invalid, model accepts"
+]

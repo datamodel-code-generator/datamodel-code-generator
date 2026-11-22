@@ -1,0 +1,3 @@
+[
+  "/ach_class enum null: invalid, model accepts"
+]

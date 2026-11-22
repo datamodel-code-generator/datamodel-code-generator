@@ -13,10 +13,9 @@ import pytest
 import yaml
 
 from scripts.build_datamodel_codegen_skill_docs import build_cli_options_reference
-from tests.conftest import assert_exact_directory_content, assert_output
+from tests.conftest import assert_output
 
 SKILL_DIR = Path(__file__).parents[3] / "skills" / "datamodel-code-generator"
-EXPECTED = Path(__file__).parents[2] / "data" / "expected" / "skills" / "datamodel-code-generator"
 SKILL_FILES = [
     SKILL_DIR / "SKILL.md",
     SKILL_DIR / "references" / "workflows.md",
@@ -90,12 +89,9 @@ def test_skill_frontmatter_requires_mapping(tmp_path: Path) -> None:
         _read_frontmatter(skill_file)
 
 
-def test_skill_cli_options_reference_is_generated(tmp_path: Path) -> None:
+def test_skill_cli_options_reference_is_generated() -> None:
     """CLI option reference matches the generated output."""
-    output = tmp_path / "references" / "cli-options.md"
-    output.parent.mkdir()
-    output.write_text(build_cli_options_reference(), encoding="utf-8")
-    assert_exact_directory_content(tmp_path, SKILL_DIR, pattern="references/cli-options.md")
+    assert_output(build_cli_options_reference(), against=SKILL_DIR / "references" / "cli-options.md")
 
 
 def test_skill_documented_flags_exist_in_cli_help() -> None:

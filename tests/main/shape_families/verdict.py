@@ -52,7 +52,7 @@ from tests.main.payload_validation.neighbours import model_verdict, value_neighb
 from .families import MSGSPEC
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator, Mapping
+    from collections.abc import Generator, Iterable, Iterator, Mapping
 
     from .families import Schema, Shape
 
@@ -256,6 +256,8 @@ class Truth:
     payloads: tuple[object, ...]
     valid: tuple[bool, ...]
     case: SchemaCase
+    keys: tuple[str, ...]
+    """The key of each payload, which tells payloads of two pools apart by value and by JSON kind."""
 
     def valid_as_any_of(self, payload: object) -> bool:
         """Return whether the schema accepts the payload once ``oneOf`` reads as ``anyOf``."""
@@ -271,7 +273,9 @@ def truth(shape: Shape) -> Truth:
     if (known := _TRUTHS.get(case.id)) is None:
         payloads = payload_pool(shape.schema, case)
         exact = source_schema_validator(case)
-        known = _TRUTHS[case.id] = Truth(payloads, tuple(map(exact.is_valid, payloads)), case)
+        known = _TRUTHS[case.id] = Truth(
+            payloads, tuple(map(exact.is_valid, payloads)), case, tuple(map(_key, payloads))
+        )
     return known
 
 
@@ -283,7 +287,10 @@ class Cell:
     backend: str
     contract: str
     findings: Mapping[str, str] = field(default_factory=dict)
-    """The smallest witness of each kind of ``KINDS`` the cell shows: a payload as JSON, or the error."""
+    """The smallest witness of each kind the cell shows (``KINDS``, or a relation of ``relations.py``): a payload as
+    JSON, or the error."""
+    verdicts: tuple[str, ...] | None = None
+    """The model's verdict on each payload of the shape's pool (``model_verdict``), or None where it has no model."""
 
     @property
     def params(self) -> dict[str, object]:
@@ -300,8 +307,11 @@ class _UnusableCellError(Exception):
         self.detail = detail
 
 
-def _generate(shape: Shape, backend: str, contract: str, directory: Path) -> Path:
-    """Generate a shape into ``directory`` with the main tests' helper and return the path of the module."""
+def _generate(shape: Shape, backend: str, contract: str, directory: Path, extra: tuple[str, ...] = ()) -> Path:
+    """Generate a shape into ``directory`` with the main tests' helper and return the path of the module.
+
+    ``extra`` are more arguments, after those of the contract: an option whose effect a relation checks.
+    """
     directory.mkdir(parents=True)
     source = directory / "schema.json"
     source.write_text(json.dumps(shape.document), encoding="utf-8")
@@ -319,6 +329,7 @@ def _generate(shape: Shape, backend: str, contract: str, directory: Path) -> Pat
         "--formatters",
         "builtin",
         *CONTRACTS[contract],
+        *extra,
     ]
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
@@ -371,13 +382,26 @@ def _strict_verdict(runtime: PayloadRuntime, payload: object) -> str:
     return "accepts"
 
 
-def _witnesses(runtime: PayloadRuntime, known: Truth) -> dict[str, list[object]]:
+def lax_verdicts(runtime: PayloadRuntime, known: Truth) -> tuple[str, ...]:
+    """Return the model's verdict on each payload of a pool, in the default (lax) mode."""
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        return tuple(model_verdict(runtime, payload) for payload in known.payloads)
+
+
+def strict_verdicts(runtime: PayloadRuntime, known: Truth) -> tuple[str, ...]:
+    """Return the model's verdict on each payload of a pool, in strict mode over its JSON text."""
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        return tuple(_strict_verdict(runtime, payload) for payload in known.payloads)
+
+
+def _witnesses(runtime: PayloadRuntime, known: Truth, verdicts: tuple[str, ...]) -> dict[str, list[object]]:
     """Return the payloads on which a model differs from the validator, by kind."""
     witnesses: dict[str, list[object]] = {}
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
-        for payload, valid in zip(known.payloads, known.valid, strict=True):
-            verdict = model_verdict(runtime, payload)
+        for payload, valid, verdict in zip(known.payloads, known.valid, verdicts, strict=True):
             if verdict.startswith("raises"):
                 witnesses.setdefault(MODEL_RAISES, []).append(payload)
             elif valid and verdict == "rejects":
@@ -393,15 +417,27 @@ def _witnesses(runtime: PayloadRuntime, known: Truth) -> dict[str, list[object]]
     return witnesses
 
 
-def judge(shape: Shape, backend: str, contract: str, directory: Path) -> Cell:
-    """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings."""
+def smallest(texts: Iterable[str]) -> str:
+    """Return the shortest of some witnesses, the first in text order among equally short ones."""
+    return min(texts, key=lambda text: (len(text), text))
+
+
+def judge(
+    shape: Shape, backend: str, contract: str, directory: Path, *, extra: tuple[str, ...] = (), strict: bool = False
+) -> Cell:
+    """Generate a shape for a backend under a contract into ``directory`` and return the cell with its findings.
+
+    The cell keeps the model's verdict on every payload of the pool: lax, or strict over JSON text with ``strict``.
+    ``extra`` are more generation arguments (see ``_generate``).
+    """
+    known = truth(shape)
     try:
-        with _loaded(_generate(shape, backend, contract, directory), shape.name, backend) as runtime:
-            witnesses = _witnesses(runtime, truth(shape))
+        with _loaded(_generate(shape, backend, contract, directory, extra), shape.name, backend) as runtime:
+            verdicts = lax_verdicts(runtime, known)
+            witnesses = _witnesses(runtime, known, verdicts)
+            if strict:
+                verdicts = strict_verdicts(runtime, known)
     except _UnusableCellError as unusable:
         return Cell(shape, backend, contract, {unusable.kind: unusable.detail})
-    findings = {
-        kind: min((json.dumps(payload) for payload in payloads), key=lambda text: (len(text), text))
-        for kind, payloads in witnesses.items()
-    }
-    return Cell(shape, backend, contract, findings)
+    findings = {kind: smallest(json.dumps(payload) for payload in payloads) for kind, payloads in witnesses.items()}
+    return Cell(shape, backend, contract, findings, verdicts)

@@ -23,10 +23,6 @@ coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage
 demoted-absolute-rule	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule].txt
 demoted-absolute-rule-approved-in-head	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
-environment-probes	check_ratchets_script/check_ratchets_against_base[environment-probes].txt
-environment-probes-broad-try	check_ratchets_script/check_ratchets_against_base[environment-probes-broad-try].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
-environment-probes-more	check_ratchets_script/check_ratchets_against_base[environment-probes-more].txt
-environment-probes-unchanged	check_ratchets_script/check_ratchets_against_base[environment-probes-unchanged].txt
 exempt-files-listed	check_ratchets_script/check_ratchets_against_base[exempt-files-listed].txt
 expected-reported-only	check_ratchets_script/check_ratchets_against_base[expected-reported-only].txt
 explicit-preview-rules	check_ratchets_script/check_ratchets_against_base[explicit-preview-rules].txt
@@ -34,6 +30,7 @@ extend-exclude-swapped	check_ratchets_script/check_ratchets_against_base[extend-
 extended-per-file-ignores	check_ratchets_script/check_ratchets_against_base[extended-per-file-ignores].txt
 fix-enabled	check_ratchets_script/check_ratchets_against_base[fix-enabled].txt
 form-swap	check_ratchets_script/check_ratchets_against_base[form-swap].txt
+heki-baseline-environment-swap	check_ratchets_script/check_ratchets_against_base[heki-baseline-environment-swap].txt
 heki-baseline-grows	check_ratchets_script/check_ratchets_against_base[heki-baseline-grows].txt
 heki-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[heki-baseline-shrinks].txt
 heki-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable].txt

@@ -1,0 +1,5 @@
+[
+  "/kind const true: invalid, model accepts",
+  "/kind enum true: invalid, model accepts",
+  "discriminator {\"kind\": true, \"name\": \"a\"}: invalid, model accepts"
+]

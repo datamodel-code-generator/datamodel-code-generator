@@ -1,0 +1,3 @@
+[
+  "/open/0 maxLength \"aaaa\": invalid, model accepts"
+]

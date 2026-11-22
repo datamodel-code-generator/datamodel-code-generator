@@ -29,14 +29,16 @@ from .constants import (
 from .models import SchemaCase
 from .schema import (
     _apply_component_discriminator_payload_constraints,
-    _apply_discriminator_payload_constraints,
+    _apply_every_discriminator_payload_constraints,
     _has_dotted_openapi_component_name,
     _has_read_only_exclusion,
+    _has_unresolved_internal_ref,
     _normalize_schema_dialect,
     _openapi_components,
     _referenced_openapi_components,
     _schema_exclusion_reason,
     _to_json_schema,
+    _to_json_schema_map,
 )
 
 if TYPE_CHECKING:
@@ -126,9 +128,9 @@ def _make_openapi_case(path: Path, document: dict[str, Any], candidate_name: str
     referenced_components = _referenced_openapi_components(schema, components)
     json_schema = {
         **_to_json_schema(schema),
-        "components": {"schemas": _to_json_schema(referenced_components)},
+        "components": {"schemas": _to_json_schema_map(referenced_components)},
     }
-    _apply_discriminator_payload_constraints(json_schema, schema)
+    _apply_every_discriminator_payload_constraints(json_schema)
     _apply_component_discriminator_payload_constraints(json_schema)
     codegen_schema = {
         "openapi": document.get("openapi", "3.0.0"),
@@ -191,14 +193,18 @@ def _jsonschema_file_candidates(path: Path) -> Iterator[SchemaCase]:
 
 
 def _openapi_file_candidates(path: Path) -> Iterator[SchemaCase]:
+    """Yield the supported cases of an OpenAPI document's components and JSON bodies.
+
+    Each candidate is judged with the components it references, as its case holds them: alone, a reference to another
+    component of the document would be unresolved. A candidate that references a component named like the payload
+    class is left out: its case could not hold both under that name.
+    """
     document = _load_mapping(path)
     if not _is_openapi_document(document) or _has_dotted_openapi_component_name(document):
         return
     for name, schema in _iter_openapi_schema_candidates(document):
-        if not _schema_is_supported(schema, is_openapi=True):
-            continue
         case = _make_openapi_case(path, document, name, schema)
-        if _case_is_supported(case):
+        if PAYLOAD_CLASS_NAME not in case.source_schema["components"]["schemas"] and _case_is_supported(case):
             yield case
 
 
@@ -299,6 +305,23 @@ def _discover_cases() -> list[SchemaCase]:
             directory / f"{chunk}.pickle", directory / f"{chunk}.claim", files[chunk::chunks], deadline
         )
     return [case for cases in by_file for case in cases if case.id not in EXCLUDED_CASES]
+
+
+def discover_unresolved_openapi_candidates() -> list[str]:
+    """Return the OpenAPI candidates whose case still holds a reference it cannot resolve, which the suite skips.
+
+    The case holds the components it references; a reference to another part of the document (parameters, ``x-``
+    keys, a name the component's ``$id`` scopes) or to nothing stays unresolved.
+    """
+    return [
+        case.id
+        for path, read in _candidate_files()
+        if read is _openapi_file_candidates
+        and _is_openapi_document(document := _load_mapping(path))
+        and not _has_dotted_openapi_component_name(document)
+        for name, schema in _iter_openapi_schema_candidates(document)
+        if _has_unresolved_internal_ref((case := _make_openapi_case(path, document, name, schema)).source_schema)
+    ]
 
 
 def discover_unaccounted_files(cases: list[SchemaCase]) -> list[str]:

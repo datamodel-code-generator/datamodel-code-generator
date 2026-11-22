@@ -27,8 +27,6 @@ from tests.conftest import (
     assert_exact_directory_content,
     assert_inputs_not_mutated,
     assert_output,
-    assert_parser_modules,
-    assert_parser_results,
     home_directory_in,
     slow_test_durations,
     worksteal_chunk_sizes,
@@ -59,60 +57,98 @@ def test_split_name(stem: str, limit: int, expected: str) -> None:
     assert units.split_name(stem, ".part1", ".py", limit) == expected
 
 
-def test_assert_exact_directory_content_reports_diff(tmp_path: Path) -> None:
-    """Test exact directory comparison reports the mismatched file path."""
-    output_dir = tmp_path / "output"
-    expected_dir = tmp_path / "expected"
-    output_dir.mkdir()
-    expected_dir.mkdir()
+def _runtime_copy(root: Path, files: dict[str, str]) -> Path:
+    """Write files into a ``_runtime`` directory below a root, as generation copies the package runtime."""
+    copy = root / "_runtime"
+    copy.mkdir(parents=True)
+    for name, text in files.items():
+        (copy / name).write_text(text, encoding="utf-8")
+    return copy
 
-    (output_dir / "sample.py").write_text("value = 1\n", encoding="utf-8")
-    (expected_dir / "sample.py").write_text("value = 2\n", encoding="utf-8")
+
+def test_assert_exact_directory_content_reports_diff(tmp_path: Path) -> None:
+    """A comparison with another copy of the runtime names each changed, missing and extra file."""
+    output_dir = _runtime_copy(tmp_path / "output", {"sample.py": "value = 1\n", "extra.py": "value = 2\n"})
+    other = _runtime_copy(tmp_path / "other", {"sample.py": "value = 2\n", "missing.py": "value = 3\n"})
 
     with pytest.raises(pytest.fail.Exception, match="Content mismatch") as exc_info:
-        assert_exact_directory_content(output_dir, expected_dir)
+        assert_exact_directory_content(output_dir, against=other)
 
-    assert "sample.py" in str(exc_info.value)
-
-
-def test_assert_parser_results_rejects_unexpected_result(tmp_path: Path) -> None:
-    """Parser result assertions fail when generated output has no expected file."""
-    expected_dir = tmp_path / "expected"
-    expected_dir.mkdir()
-    (expected_dir / "sample.py").write_text("value = 1\n", encoding="utf-8")
-
-    with pytest.raises(pytest.fail.Exception, match=r"new: extra\.py"):
-        assert_parser_results({"sample.py": "value = 1\n", "extra.py": "value = 2\n"}, expected_dir)
+    message = str(exc_info.value)
+    assert "missing: missing.py\nnew: extra.py\nsample.py:" in message
 
 
-def test_assert_parser_results_rejects_missing_result(tmp_path: Path) -> None:
-    """Parser result assertions fail when an expected file is not generated."""
-    expected_dir = tmp_path / "expected"
-    expected_dir.mkdir()
-    (expected_dir / "sample.py").write_text("value = 1\n", encoding="utf-8")
-    (expected_dir / "missing.py").write_text("value = 2\n", encoding="utf-8")
+def test_against_compares_runtime_copies_and_tracked_documents(tmp_path: Path) -> None:
+    """Equal copies of the runtime pass, and a value that differs from a tracked document names that document."""
+    files = {"sample.py": "value = 1\n", "notes.md": "skip\n"}
+    assert_exact_directory_content(
+        _runtime_copy(tmp_path / "output", files), pattern="*", against=_runtime_copy(tmp_path / "other", files)
+    )
+    document = Path(__file__).parents[1] / "skills" / "datamodel-code-generator" / "SKILL.md"
 
-    with pytest.raises(pytest.fail.Exception, match=r"missing: missing\.py"):
-        assert_parser_results({"sample.py": "value = 1\n"}, expected_dir)
+    with pytest.raises(pytest.fail.Exception, match="Content mismatch for") as exc_info:
+        assert_output("changed\n", against=document)
 
-
-def test_assert_parser_modules_rejects_missing_expected_module(tmp_path: Path) -> None:
-    """Parser module assertions fail when an expected module is not generated."""
-    expected_dir = tmp_path / "expected"
-    expected_dir.mkdir()
-    (expected_dir / "sample.py").write_text("value = 1\n", encoding="utf-8")
-
-    with pytest.raises(pytest.fail.Exception, match=r"missing: sample\.py"):
-        assert_parser_modules({}, expected_dir)
+    assert str(document) in str(exc_info.value)
 
 
-def test_assert_parser_modules_rejects_unexpected_module(tmp_path: Path) -> None:
-    """Parser module assertions fail when generated output has no expected file."""
-    expected_dir = tmp_path / "expected"
-    expected_dir.mkdir()
+@pytest.mark.parametrize("case", ["untracked-file", "untracked-tree", "one-runtime-copy", "tests-root"])
+def test_against_refuses_what_is_not_a_document_or_runtime_copy(case: str, tmp_path: Path) -> None:
+    """A run's output, a tree beside one runtime copy, or a file below the tests root is compared under a name."""
+    output_dir = _runtime_copy(tmp_path / "output", {"a.py": "A = 1\n"})
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "a.py").write_text("A = 1\n", encoding="utf-8")
 
-    with pytest.raises(pytest.fail.Exception, match=r"new: sample\.py"):
-        assert_parser_modules({("sample.py",): "value = 1\n"}, expected_dir.parent / "absent")
+    compare = {
+        "untracked-file": lambda: assert_output("A = 1\n", against=other / "a.py"),
+        "untracked-tree": lambda: assert_exact_directory_content(other, against=other),
+        "one-runtime-copy": lambda: assert_exact_directory_content(other, against=output_dir),
+        "tests-root": lambda: assert_output("x\n", against=Path(__file__)),
+    }[case]
+
+    with pytest.raises(pytest.fail.Exception, match="against= compares with a tracked document or another copy"):
+        compare()
+
+
+def test_against_without_git_compares_documents_on_disk(ledger: LedgerProject, tmp_path: Path) -> None:
+    """Where git cannot tell, as in a source distribution, an existing file below the root is a document.
+
+    Once the root is a git checkout, only a file git tracks is one.
+    """
+    (ledger.pytester.path / "doc.md").write_text("doc\n", encoding="utf-8")
+    outside = tmp_path / "doc.md"
+    outside.write_text("doc\n", encoding="utf-8")
+    ledger.write(
+        "test_m.py",
+        f"""
+        from pathlib import Path
+
+        import pytest
+
+        from tests.conftest import assert_output
+
+        ROOT = Path(__file__).parents[1]
+
+
+        def test_document():
+            assert_output("doc\\n", against=ROOT / "doc.md")
+
+
+        def test_refused():
+            for path in (ROOT / "missing.md", Path({str(outside)!r})):
+                with pytest.raises(pytest.fail.Exception, match="against= compares with a tracked document"):
+                    assert_output("doc\\n", against=path)
+        """,
+    )
+    ledger.run("suite").assert_outcomes(passed=2)
+    subprocess.run(["git", "init", "-q"], cwd=ledger.pytester.path, check=True)
+    untracked = ledger.run("suite")
+    untracked.assert_outcomes(failed=1, passed=1)
+    assert "against= compares with a tracked document or another copy of the package runtime" in untracked.stdout.str()
+    subprocess.run(["git", "add", "doc.md"], cwd=ledger.pytester.path, check=True)
+    ledger.run("suite").assert_outcomes(passed=2)
+    assert ledger.files() == {}
 
 
 def test_assert_inputs_not_mutated_allows_unchanged_nested_values() -> None:
@@ -1176,7 +1212,6 @@ def test_ledger_compares_trees(ledger: LedgerProject) -> None:
 
         from tests.conftest import (
             assert_directory_content,
-            assert_exact_directory_content,
             assert_generated_modules_output,
         )
 
@@ -1198,7 +1233,7 @@ def test_ledger_compares_trees(ledger: LedgerProject) -> None:
 
 
         def test_empty(tmp_path):
-            assert_exact_directory_content(tmp_path, EXPECTED / "empty", "*.md")
+            assert_directory_content(tmp_path, EXPECTED / "empty", pattern="*.md")
         """,
     )
     ledger.run("suite").assert_outcomes(passed=3)

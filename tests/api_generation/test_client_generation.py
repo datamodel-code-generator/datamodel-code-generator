@@ -38,6 +38,16 @@ DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "client"
 
 
+def _client_files(root: Path) -> dict[tuple[str, ...], str]:
+    """Read the modules, documents and markers of a generated client tree, without its copy of the runtime."""
+    return {
+        parts: path.read_text(encoding="utf-8")
+        for pattern in ("*.py", "*.md", "py.typed")
+        for path in sorted(root.rglob(pattern))
+        if "_runtime" not in (parts := path.relative_to(root).parts)
+    }
+
+
 @pytest.mark.parametrize(
     "case", ["input-cycle-dict", "input-cycle-list", "input-cycle-mutual", "input-cycle-reference", "input-aliases"]
 )
@@ -318,12 +328,13 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "retry-headers",
         "validation-arguments",
     }:
-        for backend, ordinary in client_ordinary_models(case, tmp_path / "ordinary").items():
+        for backend in client_ordinary_models(case, tmp_path / "ordinary"):
             write_generated_modules(
-                captured := tmp_path / "captured" / backend,
+                tmp_path / "captured" / backend,
                 {parts: content for parts, content in rendered.get(backend, {}).items() if parts[0] != "client"},
             )
-            assert_exact_directory_content(captured, ordinary)
+        assert_exact_directory_content(tmp_path / "captured", name="ordinary")
+        assert_exact_directory_content(tmp_path / "ordinary", name="ordinary")
 
 
 @pytest.mark.parametrize(
@@ -438,11 +449,12 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
 def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> None:
     """Generate equivalent helper settings, such as document references spelled two ways, into the same files.
 
-    Each id names the equality it shows.
+    Each id names the equality it shows; the copies of the package runtime are compared with each other, not stored.
     """
     left, right = (client_tree(name, tmp_path / name) for name in (first, second))
-    for pattern in ("*.py", "*.md", "py.typed"):
-        assert_exact_directory_content(left, right, pattern)
+    for tree in (left, right):
+        assert_generated_modules_output(_client_files(tree), pattern="*", name="client")
+    assert_exact_directory_content(left / "client" / "_runtime", pattern="*", against=right / "client" / "_runtime")
 
 
 @pytest.mark.parametrize(

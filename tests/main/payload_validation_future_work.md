@@ -283,6 +283,15 @@ Future work:
   change that is correct for Pydantic may not be correct for dataclasses,
   TypedDict, msgspec, or other output types.
 
+An OpenAPI case holds the components it references, and payload sampling reads
+the tag rule of a discriminator wherever it sits (the case root, its properties
+and items, its components): the tag property of each `$ref` branch takes the tag
+that selects the branch, which JSON Schema validation does not read. The rule
+holds only where the branch declares a string tag property of its own. A tag
+taken through `allOf` or from an enum `$ref`, a tag that is no string, a branch
+without the tag property, or a variant that two discriminators tag differently
+stays unconstrained; such cases are excluded with that reason in `EXCLUDED_CASES`.
+
 ## Top-Level Nullable Object Components
 
 The following case is excluded:

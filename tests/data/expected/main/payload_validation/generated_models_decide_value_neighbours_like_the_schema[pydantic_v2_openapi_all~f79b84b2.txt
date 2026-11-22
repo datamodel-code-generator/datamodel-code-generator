@@ -1,0 +1,3 @@
+[
+  "/quantity_trunc enum null: invalid, model accepts"
+]

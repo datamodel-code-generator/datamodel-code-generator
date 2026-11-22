@@ -3405,9 +3405,23 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/_shared_types.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_shared_types.py"
 qualname = "InvalidClassNameError.__init__"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_source.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
 count = 1
 
 [[entries]]
@@ -3436,6 +3450,13 @@ path = "src/datamodel_code_generator/_source.py"
 qualname = "input_text"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.normalize_newlines"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_structured_output.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
 count = 1
 
 [[entries]]
@@ -4067,6 +4088,13 @@ qualname = "json_config_json_schema"
 rule_code = "MUT204"
 target = "datamodel_code_generator._json_output.schema_document"
 count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/__init__.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/model/__init__.py"
@@ -11780,6 +11808,13 @@ path = "src/datamodel_code_generator/parser/generation.py"
 qualname = "<module>"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._decisions.union_assembly.UnionPolicy"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/graphql.py"
+qualname = "<module>"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
 count = 1
 
 [[entries]]

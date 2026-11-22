@@ -81,6 +81,10 @@ only one unnamed output per test, so later calls need `name=` or an explicit
 expected path. `name="warnings"` names one (the run helpers, the tree helpers and
 `assert_output` take it), and two outputs under
 one name in one test must be equal, which is how a test compares two runs.
+`against=` (on `assert_output`, `assert_directory_content` and
+`assert_exact_directory_content`) compares with a git-tracked document or tree
+outside `tests/`, such as a docs page, or with another copy of the package
+runtime (`_runtime`), and stores nothing.
 `assert_output(text, suffix=".py")` keeps a stored suffix other than `.txt`
 (`.json` stores a JSON value); `derived_stdout=True` compares stdout beside a
 written output, and `stdout_suffix=".py"` stores a stdout module as `.py`. The
@@ -550,18 +554,25 @@ the fact rows of `scripts/fact_tables.py`, the homes and builders of
 `scripts/decision_homes.py` and the concern modules above, and
 `tests/test_build_heki_contracts_script.py` runs
 `heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src`.
+Its effect boundary `no-environment-reads` keeps every function and module body
+of the package from reading the environment it runs in: the interpreter's
+version, the platform, a variable, or an installed package through a guarded
+import, `import_module` or `find_spec`. Output that depends on the environment
+cost review rounds; key the decision on an option or a static rule instead.
 The baseline records today's findings and only shrinks (its sites are the
-`allowlist:heki-baseline` key of `scripts/check_ratchets.py`): keep a new write,
+`allowlist:heki-baseline` keys of `scripts/check_ratchets.py`): keep a new write,
 read or call inside its owners instead of recording it, and after a change that
 removes findings run the same command with `--update-baseline`. If the findings
 only moved (a function was renamed or moved), `--update-baseline` refuses the
 new ones: delete `scripts/heki_baseline.toml` and run the command with
-`--update-baseline` again; the key must not rise. Each site of the baseline
-repeats a violation that another key already budgets
-(`allowlist:UNLISTED_CALLERS`, `allowlist:host-private-access`, the generation
-store allowlist, `env-probe@src`, `allowlist:BUILDER_BYPASSES`), so a new
-violation of a recorded rule raises both keys and needs both `[[approved]]`
-entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
+`--update-baseline` again; the keys must not rise. The sites of the
+environment boundary count under a key of their own,
+`allowlist:heki-baseline:EFF201`, so a new read of the environment is never
+paid for by another finding. Each other site of the baseline repeats a
+violation that another key already budgets (`allowlist:UNLISTED_CALLERS`,
+`allowlist:host-private-access`, the generation store allowlist,
+`allowlist:BUILDER_BYPASSES`), so a new violation of a recorded rule raises
+both keys and needs both `[[approved]]` entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
 comments that name a heki rule count as `heki-ignore:<rule>` keys.
 
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
