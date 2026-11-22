@@ -9,8 +9,8 @@ from datamodel_code_generator.format import PythonVersion, is_supported_in_black
 from tests.main.conftest import CURRENT_PYTHON_VERSION, DATA_PATH, installed_pydantic_runs_target
 from tests.main.payload_validation.models import PayloadBackend
 
-PAYLOAD_CODEGEN_WARNING_FILES: dict[str, str] = json.loads(
-    (DATA_PATH / "payloads/numeric_allof_type_warning_files.json").read_text(encoding="utf-8")
+PAYLOAD_CODEGEN_WARNING_CASES: frozenset[str] = frozenset(
+    json.loads((DATA_PATH / "payloads/codegen_warning_cases.json").read_text(encoding="utf-8"))
 )
 
 PAYLOAD_CLASS_NAME = "Payload"
