@@ -1,7 +1,7 @@
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit.ci"
   autofix_prs: false
-  skip: [readme, config-types, schema-docs, compiled-templates]
+  skip: [readme, config-types, schema-docs, compiled-templates, heki-contracts]
 
 repos:
 - repo: https://github.com/python-jsonschema/check-jsonschema
@@ -78,4 +78,17 @@ repos:
     entry: bash -c '[ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; test -x "$PYTHON" || tox run -e dev --notest -qq; "$PYTHON" scripts/compile_builtin_templates.py --check'
     language: system
     files: ^(src/datamodel_code_generator/(model/template|_fastapi/templates|_client/templates)/.*\.jinja2|scripts/_template_compiler/.*\.py|scripts/compile_builtin_templates\.py|src/datamodel_code_generator/model/_compiled_template_runtime\.py|src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/.*\.py)$
+    pass_filenames: false
+  - id: heki-contracts
+    name: Check the heki contracts are written from the records
+    entry: bash -c '[ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; test -x "$PYTHON" || tox run -e dev --notest -qq; "$PYTHON" scripts/build_heki_contracts.py --check'
+    language: system
+    files: ^(scripts/(build_heki_contracts|fact_tables|decision_homes|_decision_home_reads|check_architecture_boundaries|check_generation_store_usage|check_ratchets|where|_source_model)\.py|scripts/heki\.toml|src/datamodel_code_generator/.*\.py)$
+    pass_filenames: false
+  - id: heki
+    name: Check the package against the heki contracts
+    entry: heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
+    language: python
+    additional_dependencies: [heki==0.2.1]
+    files: ^(src/datamodel_code_generator/.*\.py|scripts/heki\.toml|scripts/heki_baseline\.toml)$
     pass_filenames: false
