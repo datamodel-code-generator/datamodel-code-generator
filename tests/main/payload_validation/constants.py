@@ -786,7 +786,7 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
             "openapi/variant_tag_values/nested_union_of_several_values.yaml::components.schemas.Pet",
         ),
         "Pydantic warns while it dumps a discriminated union that lists a union root model as a variant "
-        "(PydanticSerializationUnexpectedValue), which fails the run that turns warnings into errors",
+        "(PydanticSerializationUnexpectedValue), which fails the run that turns warnings into errors (#7326)",
     ),
 }
 REJECTION_EXCLUDED_CASES: dict[str, str] = {
@@ -832,7 +832,7 @@ REJECTION_EXCLUDED_CASES: dict[str, str] = {
         ),
         "a property that a later allOf parent requires stays optional in the model, whose class takes the parents in "
         "order (class D(B, C) keeps B's optional kind over C's required one), so it takes a payload without kind "
-        "(issue pending)",
+        "(#7331)",
     ),
 }
 """The cases the Pydantic v2 rejection check leaves out, by reason; their acceptance and round trip checks run."""
@@ -1011,7 +1011,7 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
             PayloadBackend.PYDANTIC_V2: {
                 "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneRootTag": (
                     "Pydantic before 2.13.0 refuses the discriminator of a variant whose tag is a root model of a "
-                    "Literal when the module is imported (discriminator-needs-literal)"
+                    "Literal when the module is imported (discriminator-needs-literal, #7327)"
                 ),
             },
         },
