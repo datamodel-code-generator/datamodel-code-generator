@@ -207,8 +207,8 @@ RULE_FAILURE_MESSAGES = {
         "Test code lists no directory there either (glob, rglob, iterdir, walk, listdir, scandir), not even one "
         "stored_expected returned: the files it finds are whatever is stored now, not what the test generated. Compare "
         "a generated directory as one tree instead: give it as output_path= to run_main_and_assert or "
-        "run_generate_file_and_assert, or call assert_directory_content(output_dir); pytest records the whole tree "
-        "under the test's name, and creates or fixes all of its files.\n"
+        'run_generate_file_and_assert, or call assert_directory_content(output_dir, pattern="*"); pytest records '
+        "the whole tree under the test's name, and creates or fixes all of its files.\n"
         "Audits of every stored file below a directory are justified entries in JUSTIFIED_VIOLATIONS."
     ),
     EMBEDDED_SOURCE: (
