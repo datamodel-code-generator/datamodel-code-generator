@@ -141,7 +141,8 @@ jobs:
         id: base
         run: echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
       - name: Restore the base environment and the failing examples
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: compositions-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.SHAPE_COMPOSITIONS_CACHE }}
           key: shape-compositions-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-${{ github.run_id }}
@@ -162,6 +163,13 @@ jobs:
             --cache-dir "$SHAPE_COMPOSITIONS_CACHE" --database "$SHAPE_COMPOSITIONS_CACHE/database-$SHARD" \
             --json "shape-compositions-$SHARD.json" --out "shape-compositions-schemas-$SHARD" \
             | tee "shape-compositions-$SHARD.txt"
+      # A draw that finds a failure exits 1; save the example database then too, so the next run replays it.
+      - name: Save the base environment and the failing examples
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.SHAPE_COMPOSITIONS_CACHE }}
+          key: ${{ steps.compositions-cache.outputs.cache-primary-key }}
       - name: Write job summary
         if: always()
         env:
