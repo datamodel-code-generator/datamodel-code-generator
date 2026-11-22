@@ -147,6 +147,22 @@ def test_recipe_round_trip_selects_disjoint_shards(tmp_path: Path, shard_total: 
     )
 
 
+def test_item_that_fills_a_shard_is_split_into_parts() -> None:
+    """An item as heavy as a shard's share is split too: its weight is a measurement that may be half the clock's."""
+    weights = {f"tests/test_{index}.py": 100 for index in range(8)}
+    selected = [select_ci_test_shard.select_parted_shard(weights, index, 4) for index in range(1, 5)]
+    assert_output(
+        json.dumps(
+            {
+                "parts": [len(part) for part in selected],
+                "split": any("@" in line for part in selected for line in part),
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+
 @pytest.mark.parametrize(
     "case", json.loads((Path(__file__).parent / "data/ci_shards/cases.json").read_text(encoding="utf-8"))
 )
