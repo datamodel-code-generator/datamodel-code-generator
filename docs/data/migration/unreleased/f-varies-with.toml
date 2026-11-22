@@ -2,13 +2,16 @@
 id = "f-varies-with"
 category = "harness"
 title = "Stored outputs that vary by environment key on declared facts"
-summary = "Comparisons whose output depends on the environment name the deciding fact (varies_with=), so their .refs lines key on condition clauses (@python>=3.14, @black<24, @pydantic<2.5, @platform==win32) instead of observed fact values; the stored contents are unchanged and only their predicates, storage names and the generation tests' labels move."
+summary = "Comparisons whose output depends on the environment name the deciding fact (varies_with=), so their .refs lines key on condition clauses (@python>=3.14, @black<24, @pydantic<2.5, @platform==win32) instead of observed fact values; the stored contents are unchanged and only their predicates, storage names and the generation tests' labels move. A version clause compares numeric releases padded with zeros (a lane that pins pydantic==2 reads @pydantic==2.0), and the ratchet judges a stored list by the records each CI lane reads."
 refs = ["#7369"]
 covers = [
     "api_generation/client_runtime/client_runtime[native-wire].txt",
     "api_generation/fastapi_generation/fastapi_scope.txt",
     "behaviour_diff_script/gate_against_a_git_revision[identity_fails_on_any_difference].txt",
+    "capabilities/clauses_hold_by_release_series.txt",
+    "capabilities/malformed_clauses_say_why.txt",
     "check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt",
+    "check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt",
     "format/builtin_formatter_string_normalization_preserves_pep695_invalid_errors.txt",
     "input_model/python_generic_reuse[builtin-api-regenerate-all-arguments-pydantic_v2.BaseModel].py",
     "input_model/python_generic_reuse[builtin-api-regenerate-all-enum-pydantic_v2.BaseModel].py",

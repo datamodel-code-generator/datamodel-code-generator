@@ -62,7 +62,9 @@ stopgap-comments-moved	check_ratchets_script/check_ratchets_against_base[stopgap
 stopgap-comments-prose	check_ratchets_script/check_ratchets_against_base[stopgap-comments-prose].txt
 stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
 stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
+stored-lists-lane-gains	check_ratchets_script/check_ratchets_against_base[stored-lists-lane-gains].txt
 stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
+stored-lists-relabeled	check_ratchets_script/check_ratchets_against_base[stored-lists-relabeled].txt
 stored-lists-shrink	check_ratchets_script/check_ratchets_against_base[stored-lists-shrink].txt
 top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top-level-extended-ignores].txt	= check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt

@@ -77,6 +77,7 @@ __all__ = [
     "fact_difference",
     "facts_fit",
     "format_refs",
+    "historical_clauses",
     "holding_clauses",
     "input_duplicates",
     "is_derived_label",
@@ -383,7 +384,7 @@ def parse_clauses(text: str) -> tuple[str, ...]:
     return tuple(sorted(set(clauses)))
 
 
-def _historical_clauses(text: str) -> tuple[str, ...]:
+def historical_clauses(text: str) -> tuple[str, ...]:
     """Parse the ``@`` column of a sidecar from any revision: condition clauses, or the pairs written before them.
 
     Sidecars before condition clauses wrote ``fact=value,...`` (``@formatter=builtin,python=3.12``); such a pair held
@@ -561,7 +562,7 @@ def _parse_columns(function: str, columns: list[str], *, historical: bool = Fals
         if flag == "?" and not conditional and not predicate and storage is None:
             conditional = True
         elif flag.startswith("@") and not predicate and storage is None:
-            predicate = (_historical_clauses if historical else parse_clauses)(flag[1:])
+            predicate = (historical_clauses if historical else parse_clauses)(flag[1:])
         elif flag.startswith("= ") and storage is None and flag[2:]:
             storage = flag[2:]
         else:
@@ -598,7 +599,7 @@ def parse_refs(text: str, *, historical: bool = False) -> tuple[list[RefLine], l
     """Parse a sidecar into its distinct lines and its problems; a canonical file has no problems.
 
     ``historical`` reads a sidecar of any revision, such as a release tag's: its ``@`` columns may hold the pairs
-    sidecars wrote before condition clauses (`_historical_clauses`), which read as the clauses they meant, and such a
+    sidecars wrote before condition clauses (`historical_clauses`), which read as the clauses they meant, and such a
     file has an ``ORDER`` problem only. Sidecars of the working tree are read without it, so pytest rewrites them.
 
     The ``#`` lines a sidecar starts with are its header and hold no references. Lines that do not parse are
