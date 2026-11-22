@@ -42,7 +42,7 @@ from datamodel_code_generator._paths import file_uri, file_uri_path, files_under
 from datamodel_code_generator._shared_types import Error, InvalidClassNameError, InvalidFileFormatError
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
-from datamodel_code_generator.enums import InputFileType, JsonSchemaVersion
+from datamodel_code_generator.enums import JsonSchemaVersion
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import (
     ConvertedRefs,
@@ -89,6 +89,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._shared_types import DefaultPutDict, ResponseObserver
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.format import PythonVersion
     from datamodel_code_generator.parser._schema_graph import (
         DocumentRecord,
@@ -1052,7 +1053,7 @@ def implicit_schema_resources(
                     if isinstance(schema, dict):
                         yield ("components", "schemas", name), schema
                         if (
-                            parser._input_file_type is InputFileType.AsyncAPI
+                            "asyncapi" in raw
                             and (held := held_schema(schema)) is not None
                             and isinstance(held[0], dict)
                         ):

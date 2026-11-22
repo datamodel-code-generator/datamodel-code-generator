@@ -551,7 +551,7 @@ class AsyncAPIParser(OpenAPIParser):
 
     def _read_ref_object(
         self,
-        value: Any,
+        value: object,
         seen_paths: set[tuple[str, ...]],
     ) -> AsyncAPIResolvedRef | None:
         """Return what a Reference Object names, None for any other value or a reference to one already met."""
