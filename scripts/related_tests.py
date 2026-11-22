@@ -1,4 +1,8 @@
-"""Print the test node ids and the environments a diff selects: mirrors, fast-path tests and related_tests.toml rows."""
+"""Print the test node ids and the environments a diff selects: changed suite modules, mirrors and table rows.
+
+A changed module of the test suite selects itself, a changed source module or script its mirror, a module the stored
+fast-path lists name the fast-path tests, and the rows of related_tests.toml the tests they name.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +19,8 @@ RULES = Path(__file__).with_name("related_tests.toml")
 SRC = "src/datamodel_code_generator/"
 FAST_PATH_TEST = "tests/main/test_cli_fast_paths.py"
 FAST_PATH_LISTS = "tests/data/expected/main/cli_fast_paths/"
+TESTS = "tests/"
+TEST_INPUTS = "tests/data/"
 MODULE_NAME = re.compile(r'"(datamodel_code_generator[\w.]*)"')
 TOX = "tox.ini"
 TOX_SECTION = re.compile(r"^\[testenv:([^\]]+)\]", re.MULTILINE)
@@ -89,6 +95,14 @@ def mirrors(path: str) -> list[str]:
     return []
 
 
+def own_module(path: str) -> bool:
+    """Whether a path is a module of the test suite (a test module or a helper), which a change of it selects itself.
+
+    The suite's inputs under tests/data are no such module: the rows of related_tests.toml select their tests.
+    """
+    return path.startswith(TESTS) and path.endswith(".py") and not path.startswith(TEST_INPUTS)
+
+
 def _module_name(path: str) -> str | None:
     """Return the dotted name of a package module file (`a/b.py` or `a/b/__init__.py`), or None for other paths."""
     if not (path.startswith(SRC) and path.endswith(".py")):
@@ -131,12 +145,14 @@ def _fired(root: Path, base: str, head: str | None, changed: dict[str, str], rul
 
 
 def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
-    """Return the sorted node ids the diff selects: the mirrors of changed modules and every row that fires."""
+    """Return the sorted node ids the diff selects: changed suite modules, mirrors and every row that fires."""
     changed = _changes(root, base, head)
     nodes: set[str] = set()
     for path, letter in changed.items():
         if letter == "D":
             continue
+        if own_module(path) and _exists(root, head, path):
+            nodes.add(path)
         nodes.update(next(([test] for test in mirrors(path) if _exists(root, head, test)), []))
     listed = _fast_path_modules(root, base, head)
     if any(_module_name(path) in listed for path, letter in changed.items() if letter != "D") and _exists(

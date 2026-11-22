@@ -19,19 +19,26 @@ if TYPE_CHECKING:
 
 DEPRECATION = 'warnings.warn(spec["deprecated"], DeprecationWarning'
 OUTPUT_CHANGE = FAKE_FIRST.replace(DEPRECATION, DEPRECATION.replace('"]', '"] + "!"'))
+PASSING_TEST = "def test_passes() -> None:\n    pass\n"
+FAILING_TEST = "def test_fails() -> None:\n    raise AssertionError\n"
 CANDIDATES = {
-    "src unchanged": (None, "given"),
-    "a change of no output": (FAKE_DEPRECATION, "given"),
-    "a change no cell runs": (FAKE_FIRST.replace("raise MemoryError\n", "raise MemoryError()\n"), "given"),
-    "an output change": (OUTPUT_CHANGE, "given"),
+    "src unchanged": (None, "given", {}),
+    "a change of no output": (FAKE_DEPRECATION, "given", {}),
+    "a change no cell runs": (FAKE_FIRST.replace("raise MemoryError\n", "raise MemoryError()\n"), "given", {}),
+    "an output change": (OUTPUT_CHANGE, "given", {}),
     "a flaky change": (
         FAKE_FIRST.replace(DEPRECATION, DEPRECATION.replace('"]', '"] + "-" + os.urandom(4).hex()')),
         "given",
+        {},
     ),
-    "a catalog in the cache": (OUTPUT_CHANGE, "cached"),
-    "no catalog yet": (OUTPUT_CHANGE, "none"),
+    "a catalog in the cache": (OUTPUT_CHANGE, "cached", {}),
+    "no catalog yet": (OUTPUT_CHANGE, "none", {}),
+    "a changed test module that passes": (None, "given", {"tests/test_sample.py": PASSING_TEST}),
+    "a changed test module that fails": (None, "given", {"tests/test_sample.py": FAILING_TEST}),
+    "a changed test helper alone": (None, "given", {"tests/helpers.py": "VALUE = 1\n"}),
 }
-"""The `__main__.py` of each candidate (None: the base's) and where its catalog is: given, in the cache or none."""
+"""Each candidate's `__main__.py` (None: the base's), where its catalog is (given, in the cache or none) and the
+files of the test suite it adds."""
 
 
 @pytest.mark.allow_direct_assert(
@@ -43,8 +50,8 @@ CANDIDATES = {
 def test_verify_compares_the_picked_cells_twice(
     case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
 ) -> None:
-    """The picked cells of a change run twice: a difference, unrun changed code or a flaky cell fails the run."""
-    text, where = CANDIDATES[case]
+    """Changed suite modules run; picked cells run twice: a difference or a flaky cell fails, unrun code warns."""
+    text, where, suite = CANDIDATES[case]
     repo = tmp_path / "repo"
     commit = _fake_generator(repo, ["first"], None)[0]
     monkeypatch.setenv(behaviour_diff.REPOSITORY_ENV, str(repo))
@@ -56,6 +63,8 @@ def test_verify_compares_the_picked_cells_twice(
             behaviour_diff.main(["catalog", str(catalog), commit, *selects, "-j", "1", "--cache-dir", str(tmp_path)])
     if text is not None:
         (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(text, encoding="utf-8")
+    for name, content in suite.items():
+        (repo / name).write_text(content, encoding="utf-8")
     monkeypatch.chdir(repo)
     argv = [
         "--base",
@@ -73,7 +82,9 @@ def test_verify_compares_the_picked_cells_twice(
         for line in out.splitlines()
         if line.startswith((
             "verify:",
+            "WARN",
             "violation:",
+            "FAILED tests/",
             "    ",
             "pick: cell",
             "evidence: complete",

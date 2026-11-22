@@ -12,7 +12,8 @@
 # (a row with `envs` must name them, and every environment must exist: `--check` and the test of this file say so).
 #
 # The mirrors (a changed src/datamodel_code_generator/.../x.py selects tests/.../test_x.py; a changed scripts/x.py
-# selects tests/test_x_script.py) are not rows: the script derives them from the paths.
+# selects tests/test_x_script.py) and the changed modules of the suite (a changed tests/.../x.py outside tests/data
+# selects itself) are not rows: the script derives them from the paths.
 
 [[rule]]
 id = "legacy-rows"

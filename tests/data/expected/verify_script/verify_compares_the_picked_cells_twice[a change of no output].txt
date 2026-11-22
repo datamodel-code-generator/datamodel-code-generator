@@ -4,5 +4,5 @@ verify: tests the diff reaches: 0
 verify: tests done after <n>s
 pick: cell default tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
 evidence: complete
-verify: cells compared 1 of 1, differing 0, flaky 0; changed code objects no compared cell ran: 0 of 1
+verify: cells compared 1 of 1, violations 0, flaky 0
 verify: passed (<n>s)

@@ -8,6 +8,9 @@ same runs	verify_script/flaky_cells_differ_between_two_runs[same runs].txt	= mai
 a catalog in the cache	verify_script/verify_compares_the_picked_cells_twice[a catalog in the cache].txt
 a change no cell runs	verify_script/verify_compares_the_picked_cells_twice[a change no cell runs].txt
 a change of no output	verify_script/verify_compares_the_picked_cells_twice[a change of no output].txt
+a changed test helper alone	verify_script/verify_compares_the_picked_cells_twice[a changed test helper alone].txt
+a changed test module that fails	verify_script/verify_compares_the_picked_cells_twice[a changed test module that fails].txt
+a changed test module that passes	verify_script/verify_compares_the_picked_cells_twice[a changed test module that passes].txt	= verify_script/verify_compares_the_picked_cells_twice[a changed test helper alone].txt
 a flaky change	verify_script/verify_compares_the_picked_cells_twice[a flaky change].txt
 an output change	verify_script/verify_compares_the_picked_cells_twice[an output change].txt
 no catalog yet	verify_script/verify_compares_the_picked_cells_twice[no catalog yet].txt

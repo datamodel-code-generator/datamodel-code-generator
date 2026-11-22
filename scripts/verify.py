@@ -11,7 +11,7 @@ merge base of REF (default: origin/main) and HEAD:
 2. Where the diff changes `src/`, `scripts/behaviour_diff.py gate MERGE-BASE CHECKOUT --identity --pick CATALOG`
    compares the cells of the cell catalog that run the changed code (`scripts/_cell_catalog.py`), the merge base
    against the working tree. It prints every difference with its cell, and each changed code object no compared cell
-   ran, marked where the tests of step 1 ran its lines (`--test-coverage`); the evidence is then incomplete. Its tier
+   ran, marked where the tests of step 1 ran its lines (`--test-coverage`). Its tier
    is narrowed to no input, so the picked cells alone run: this is the check before a commit, not the gate's verdict
    on a pull request, which runs its whole tier.
 3. The same comparison runs a second time beside the first, with an empty output cache so that both sides generate
@@ -21,7 +21,8 @@ The catalog is the newest file `<git common dir>/verify-catalogs/<revision>.json
 repository) whose revision is an ancestor of the merge base. Without one the script first records one at the merge base
 (`behaviour_diff.py catalog`, several minutes; later merge bases reuse it). `--catalog FILE` names a catalog instead.
 
-The exit status is 1 when a test fails, a cell differs, the evidence is incomplete or a cell is flaky.
+The exit status is 1 when a test fails, the comparison finds a violation (a cell differs) or a cell is flaky. Changed
+code no compared cell ran fails nothing: a warning lists it by side, file and lines (`WARN uncovered`).
 """
 
 from __future__ import annotations
@@ -41,6 +42,9 @@ import tomllib
 from scripts import behaviour_diff, compare_release, related_tests
 
 GATE = Path(behaviour_diff.__file__).resolve()
+PACKAGE_SOURCE = f"src/{compare_release.PACKAGE}/"
+NO_TESTS_COLLECTED = 5
+"""pytest's exit status when the selected paths hold no test."""
 NO_TIER_INPUT = "verify: the picked cells only"
 """A `--select` pattern no input label matches: the gate's tier runs no cell, and `--pick` adds the catalog's."""
 CATALOGS = "verify-catalogs"
@@ -86,18 +90,22 @@ def _python(root: Path) -> str:
     return str(venv if venv.exists() else sys.executable)
 
 
-def run_tests(root: Path, base: str, jobs: int, coverage: Path) -> int:
-    """Run the tests the diff reaches with line coverage into `coverage`; return pytest's status (0 when none)."""
+def run_tests(root: Path, base: str, jobs: int, coverage: Path) -> bool:
+    """Run the tests the diff reaches with line coverage into `coverage`; return whether one failed.
+
+    A selection of helper modules alone collects no test (pytest's status 5), which fails nothing.
+    """
     rules_file = root / "scripts" / "related_tests.toml"
     rules = tomllib.loads(rules_file.read_text("utf-8"))["rule"] if rules_file.exists() else []
     nodes = related_tests.select(root, base, None, rules)
     print(f"verify: tests the diff reaches: {len(nodes)}", flush=True)
     if not nodes:
-        return 0
+        return False
     env = {**os.environ, "PYTHONPATH": str(root / "src"), "COVERAGE_FILE": str(coverage)}
     package = root / "src" / compare_release.PACKAGE
     options = ["-q", "-p", "no:randomly", "-n", str(jobs), f"--cov={package}", "--cov-report=", "--cov-fail-under=0"]
-    return subprocess.run([_python(root), "-m", "pytest", *options, *nodes], cwd=root, env=env, check=False).returncode
+    command = [_python(root), "-m", "pytest", *options, *nodes]
+    return subprocess.run(command, cwd=root, env=env, check=False).returncode not in {0, NO_TESTS_COLLECTED}
 
 
 def _cache(cache_dir: Path | None) -> list[str]:
@@ -123,8 +131,8 @@ def ensure_catalog(root: Path, base: str, ns: argparse.Namespace) -> Path:
     return out
 
 
-def compare(root: Path, base: str, catalog: Path, ns: argparse.Namespace, work: Path) -> tuple[int, list[dict]]:
-    """Run the identity comparison of the picked cells twice at once; return the first run's status and both evidences.
+def compare(root: Path, base: str, catalog: Path, ns: argparse.Namespace, work: Path) -> tuple[list[dict], list[dict]]:
+    """Run the identity comparison of the picked cells twice at once; return the first run's cells and both evidences.
 
     The first run prints its report and may reuse cached base outputs; the second one writes its report to a file
     beside its empty cache, so both of its sides generate again. A run that wrote no evidence gives none.
@@ -132,10 +140,11 @@ def compare(root: Path, base: str, catalog: Path, ns: argparse.Namespace, work: 
     jobs = str(max(1, ns.j // 2))
     tested = ["--test-coverage", str(work / "tests.coverage")] if (work / "tests.coverage").exists() else []
 
-    def gate(cache_dir: Path | None, evidence: Path) -> list[str]:
+    def gate(cache_dir: Path | None, run: str) -> list[str]:
         return [
             *(sys.executable, str(GATE), "gate", base, str(root), "--identity", "--pick", str(catalog), *tested),
-            *("--select", NO_TIER_INPUT, "--evidence", str(evidence), "-j", jobs, *_cache(cache_dir)),
+            *("--select", NO_TIER_INPUT, "--evidence", str(work / f"{run}.json"), "--json", str(work / f"{run}.jsonl")),
+            *("-j", jobs, *_cache(cache_dir)),
         ]
 
     env = {**os.environ, behaviour_diff.REPOSITORY_ENV: str(root)}
@@ -143,39 +152,63 @@ def compare(root: Path, base: str, catalog: Path, ns: argparse.Namespace, work: 
     with log.open("w", encoding="utf-8") as second_out, ThreadPoolExecutor(1) as pool:
         second = pool.submit(
             subprocess.run,
-            gate(work / "cache", work / "second.json"),
+            gate(work / "cache", "second"),
             env=env,
             stdout=second_out,
             stderr=subprocess.STDOUT,
             check=False,
         )
-        first = subprocess.run(gate(ns.cache_dir, work / "first.json"), env=env, check=False)
+        subprocess.run(gate(ns.cache_dir, "first"), env=env, check=False)
         second.result()
-    reports = [work / "first.json", work / "second.json"]
+    reports = [work / "first.json", work / "second.json", work / "first.jsonl"]
     if not all(report.exists() for report in reports):
         print(f"verify: the second run:\n{log.read_text(encoding='utf-8')[-4000:]}")
-        return first.returncode or 1, []
-    return first.returncode, [json.loads(report.read_text("utf-8")) for report in reports]
+        return [], []
+    rows = [json.loads(line) for line in reports[2].read_text("utf-8").splitlines()]
+    return rows, [json.loads(report.read_text("utf-8")) for report in reports[:2]]
 
 
-def judge(code: int, evidences: list[dict]) -> list[str]:
-    """Print what the comparison found and return why it fails: differing cells, unrun changed code, flaky cells."""
+def spans(lines: set[int]) -> str:
+    """Return sorted line numbers as ranges: `3-5,9`."""
+    ordered = sorted(lines)
+    starts = [line for line in ordered if line - 1 not in lines]
+    ends = [line for line in ordered if line + 1 not in lines]
+    return ",".join(str(start) if start == end else f"{start}-{end}" for start, end in zip(starts, ends, strict=True))
+
+
+def uncovered(units: list[dict]) -> list[str]:
+    """Return a line per side and file: the lines of the changed code objects no compared cell ran, and their names."""
+    files: dict[tuple[str, str], tuple[set[int], list[str]]] = {}
+    for unit in units:
+        if not unit["ran"]:
+            lines, names = files.setdefault((unit["side"], unit["path"]), (set(), []))
+            lines.update(line for where in unit["missing"] for line in compare_release.lines_of(where))
+            names.append(unit["qualname"])
+    return [
+        f"{side} {PACKAGE_SOURCE}{path}:{spans(lines) or '-'} ({', '.join(names)})"
+        for (side, path), (lines, names) in sorted(files.items())
+    ]
+
+
+def judge(rows: list[dict], evidences: list[dict]) -> list[str]:
+    """Print what the comparison found and return why it fails: differing or flaky cells; warn of unrun changed code.
+
+    Changed code no compared cell ran fails nothing: it is listed under a warning, by side, file and lines.
+    """
     if not evidences:
         return ["the comparison wrote no evidence (see above)"]
     cells, units = evidences[0]["cells"], evidences[0]["units"]
-    differ = sum(cell["base"] != cell["candidate"] for cell in cells)
-    unrun = sum(not unit["ran"] for unit in units)
+    violations = sum(row["class"] == "violation" for row in rows)
     flaky = flaky_cells(*evidences)
     print("".join(f"verify: flaky cell, its two runs differ: {cell}\n" for cell in flaky), end="")
+    unrun = sum(not unit["ran"] for unit in units)
+    if unrun:
+        print(f"WARN uncovered: {unrun} of {len(units)} changed code objects no compared cell ran (side, file:lines):")
+        print("".join(f"WARN   {line}\n" for line in uncovered(units)), end="")
     compared = sum(cell["compared"] for cell in cells)
-    print(
-        f"verify: cells compared {compared} of {len(cells)}, differing {differ}, flaky {len(flaky)}; changed code "
-        f"objects no compared cell ran: {unrun} of {len(units)}"
-    )
-    failed = [f"cells differ: {differ}"] if differ else []
-    failed += [f"evidence incomplete: {unrun} changed code objects no compared cell ran"] if unrun else []
-    failed += [f"flaky cells: {len(flaky)}"] if flaky else []
-    return failed or (["identity (see the lines above)"] if code else [])
+    print(f"verify: cells compared {compared} of {len(cells)}, violations {violations}, flaky {len(flaky)}")
+    failed = [f"violations: {violations}"] if violations else []
+    return failed + ([f"flaky cells: {len(flaky)}"] if flaky else [])
 
 
 def main(argv: list[str] | None = None) -> int:

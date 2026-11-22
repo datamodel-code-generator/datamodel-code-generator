@@ -7,5 +7,5 @@ violation: tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | defau
     warnings differ: ["builtins.DeprecationWarning", "old option", "datamodel_code_generator.__main__"] -> ["builtins.DeprecationWarning", "old option-<random>", "datamodel_code_generator.__main__"]
 evidence: complete
 verify: flaky cell, its two runs differ: tests/data/jsonschema/deprecated.json | pydantic_v2.BaseModel | default
-verify: cells compared 1 of 1, differing 1, flaky 1; changed code objects no compared cell ran: 0 of 1
-verify: FAILED: cells differ: 1; flaky cells: 1 (<n>s)
+verify: cells compared 1 of 1, violations 1, flaky 1
+verify: FAILED: violations: 1; flaky cells: 1 (<n>s)

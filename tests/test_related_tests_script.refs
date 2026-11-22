@@ -21,6 +21,7 @@ row-with-tests-only	related_tests_script/related_tests_print_the_environments_of
 tracked-and-untracked	related_tests_script/related_tests_read_the_working_tree_without_a_head[tracked-and-untracked].txt
 untracked-listed-module	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
 untracked-non-ascii-path	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-non-ascii-path].txt	= related_tests_script/related_tests_select_the_diff[row-by-added-path].txt
+untracked-test-module	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-test-module].txt
 untracked-with-a-pattern	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-with-a-pattern].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 untracked-without-a-pattern	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-without-a-pattern].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 [test_related_tests_rows_follow_the_stored_outputs_where_they_live]
@@ -33,7 +34,10 @@ platform-observations-of-the-test-modules	related_tests_script/related_tests_row
 [test_related_tests_rows_select_with_the_repository_rules]
 	related_tests_script/related_tests_rows_select_with_the_repository_rules.txt
 [test_related_tests_select_the_diff]
+added-test-helper	related_tests_script/related_tests_select_the_diff[added-test-helper].txt
+changed-test-module	related_tests_script/related_tests_select_the_diff[changed-test-module].txt	= related_tests_script/related_tests_select_the_diff[row-by-path].txt
 deleted-module	related_tests_script/related_tests_select_the_diff[deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+deleted-test-module	related_tests_script/related_tests_select_the_diff[deleted-test-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-deleted-module	related_tests_script/related_tests_select_the_diff[fast-path-deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-list-edited	related_tests_script/related_tests_select_the_diff[fast-path-list-edited].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-listed-module	related_tests_script/related_tests_select_the_diff[fast-path-listed-module].txt	= related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
@@ -54,3 +58,4 @@ row-pattern-added-line	related_tests_script/related_tests_select_the_diff[row-pa
 row-pattern-removed-line	related_tests_script/related_tests_select_the_diff[row-pattern-removed-line].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 row-status-modified	related_tests_script/related_tests_select_the_diff[row-status-modified].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 script-without-a-mirror	related_tests_script/related_tests_select_the_diff[script-without-a-mirror].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+test-input-under-data	related_tests_script/related_tests_select_the_diff[test-input-under-data].txt	= related_tests_script/related_tests_select_the_diff[row-by-added-path].txt
