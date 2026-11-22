@@ -96,7 +96,6 @@ from tests.main.conftest import (
     AVRO_DATA_PATH,
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
-    EXPECTED_MAIN_PATH,
     GRAPHQL_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
@@ -1176,12 +1175,8 @@ def test_show_help(no_color: bool, capsys: pytest.CaptureFixture[str]) -> None:
     args = ["--no-color"] if no_color else []
     args += ["--help"]
 
-    run_main_with_system_exit(
-        args,
-        expected_code=Exit.OK,
-        capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_PATH / "help" / ("no_color.txt" if no_color else "color.txt"),
-    )
+    run_main_with_system_exit(args, expected_code=Exit.OK)
+    assert_output(capsys.readouterr().out)
 
 
 @pytest.mark.parametrize(
@@ -6557,7 +6552,7 @@ def test_generate_resolves_relative_custom_template_dir_from_caller_cwd(
     with freeze_time(TIMESTAMP):
         run_generate_and_assert(
             input_=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
-            expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "custom_template_relative_api.txt",
+            name="api",
             **generate_options,
         )
         run_generate_file_and_assert(

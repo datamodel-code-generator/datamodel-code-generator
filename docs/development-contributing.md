@@ -61,11 +61,10 @@ files, generated modules, warnings, errors, and HTTP request behavior with
 consistent diffs and update hints.
 
 Use helpers such as `run_main_and_assert`, `run_main_url_and_assert`,
-`create_assert_file_content`, `assert_output`, `assert_directory_content`,
-`assert_generated_modules_output`, `assert_generated_file_matches_output`,
-`assert_httpx_get_kwargs`, and `assert_warnings_contain` where they fit. Prefer
-full expected-file or inline snapshot comparisons for generated output over
-substring checks.
+`assert_output`, `assert_directory_content`, `assert_generated_modules_output`,
+`assert_generated_file_matches_output`, `assert_httpx_get_kwargs`, and
+`assert_warnings_contain` where they fit. Prefer full expected-file or inline
+snapshot comparisons for generated output over substring checks.
 
 Tests do not need to name expected files. Write the test with the helpers (input
 and arguments only), run `pytest '<test>'`, and commit every file it writes:

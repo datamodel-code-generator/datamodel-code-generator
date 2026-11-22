@@ -8,12 +8,10 @@ import pytest
 
 from datamodel_code_generator import InputFileType, InvalidFileFormatError, generate
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import create_assert_file_content
 from tests.main.conftest import (
     BACKEND_GOLDEN_CASES,
     BACKEND_GOLDEN_TARGET_ARGS,
     CSV_DATA_PATH,
-    EXPECTED_CSV_PATH,
     JSON_DATA_PATH,
     YAML_DATA_PATH,
     run_main_and_assert,
@@ -21,9 +19,6 @@ from tests.main.conftest import (
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-assert_file_content = create_assert_file_content(EXPECTED_CSV_PATH)
 
 
 def test_csv_file(output_file: Path) -> None:

@@ -12,6 +12,7 @@ import pytest
 
 from scripts import prepare_release_draft_artifacts as artifacts
 from tests.conftest import assert_output
+from tests.units import RefLine, format_refs
 
 ROOT = Path(__file__).parents[1]
 PACKAGE = "src/datamodel_code_generator"
@@ -27,6 +28,17 @@ ENVIRONMENT = {
 }
 HELP = " ".join(f"--option-{index} Describe option {index}." for index in range(400))
 WORDS = " ".join(f"word{index}" for index in range(600))
+HELP_LABEL = "main/main_general/show_help[True].txt"
+
+
+def _help_refs(label: str) -> str:
+    """Return the help test's sidecar when its ``--no-color`` output is stored under ``label``."""
+    return format_refs([
+        RefLine("test_show_help", "False", "main/help/color.txt"),
+        RefLine("test_show_help", "True", label),
+    ])
+
+
 RELEASES = (
     (
         "0.0.1",
@@ -44,6 +56,7 @@ RELEASES = (
                 '    "behavior.old": ExperimentalFeature(id="behavior.old", target="--old"),\n'
                 "}\n"
             ),
+            "tests/main/test_main_general.refs": _help_refs("main/help/no_color.txt"),
             "tests/data/expected/main/help/no_color.txt": 'OPTIONS = ["--old", "--keep"]\n',
             f"{PACKAGE}/__init__.py": '__all__ = ["generate"]\n',
         },
@@ -58,7 +71,8 @@ RELEASES = (
                 '    "Not An Id": ExperimentalFeature(id="Not An Id"),\n'
                 "}\n"
             ),
-            "tests/data/expected/main/help/no_color.txt": 'OPTIONS = ["--old", "--keep", "--new", "--no-new"]\n',
+            "tests/main/test_main_general.refs": _help_refs(HELP_LABEL),
+            f"tests/data/expected/{HELP_LABEL}": 'OPTIONS = ["--old", "--keep", "--new", "--no-new"]\n',
             f"{PACKAGE}/preset_names.py": (
                 'PresetName = Literal[\n    "standard-20260101",\n    "standard-20261106",\n]\n'
             ),

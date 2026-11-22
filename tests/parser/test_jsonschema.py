@@ -66,7 +66,7 @@ from datamodel_code_generator.parser.jsonschema import (
 )
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
-from tests.conftest import assert_inputs_not_mutated, assert_output, create_assert_file_content, validate_generated_code
+from tests.conftest import assert_inputs_not_mutated, assert_output, validate_generated_code
 from tests.main.conftest import assert_generated_model_json_validation, run_generate_file_and_assert
 
 if TYPE_CHECKING:
@@ -75,9 +75,6 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 DATA_PATH: Path = Path(__file__).parents[1] / "data" / "jsonschema"
-EXPECTED_PARSER_PATH: Path = Path(__file__).parents[1] / "data" / "expected" / "parser"
-EXPECTED_MAIN_JSONSCHEMA_PATH: Path = Path(__file__).parents[1] / "data" / "expected" / "main" / "jsonschema"
-assert_file_content = create_assert_file_content(EXPECTED_PARSER_PATH)
 
 
 def _json_schema_object(data: dict[str, Any]) -> JsonSchemaObject:

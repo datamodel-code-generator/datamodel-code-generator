@@ -801,6 +801,7 @@ def test_preset_sets_opt_in_option(
             input_file_type=input_file_type,
             extra_args=["--preset", f"{family}-py312-{release}", *common],
             skip_code_validation=sys.version_info < (3, 12),
+            name="tree" if input_path.is_dir() else "model",
         )
     with _warns(WARNINGS_WITH_OPTION, input_path):
         run_main_and_assert(
@@ -815,11 +816,7 @@ def test_preset_sets_opt_in_option(
                 *(PRACTICAL_OPT_IN_OPTIONS.get(release, ()) if family == "practical" else ()),
             ],
             skip_code_validation=sys.version_info < (3, 12),
-            **(
-                {"expected_directory": preset_output}
-                if input_path.is_dir()
-                else {"expected_output": preset_output.read_text(encoding="utf-8")}
-            ),
+            name="tree" if input_path.is_dir() else "model",
         )
 
 

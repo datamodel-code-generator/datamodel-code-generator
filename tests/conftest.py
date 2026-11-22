@@ -874,15 +874,6 @@ def _format_diff(expected: str, actual: str, expected_path: Path | str) -> str: 
     return output.getvalue()
 
 
-def _infer_expected_file(caller_function_name: str) -> str:
-    name = caller_function_name
-    for prefix in ("test_main_", "test_"):  # pragma: no branch
-        if name.startswith(prefix):
-            name = name[len(prefix) :]
-            break
-    return f"{name}.py"
-
-
 EXPECTED_FIX_PREFIX = "dcg-expected-fix: "
 """Prefix of the line a CI failure prints so ``scripts/fix_expected.py --from-ci`` can apply CI's own output."""
 EXPECTED_PAYLOAD_LIMIT = 32 * 1024
@@ -2228,11 +2219,6 @@ def _compare_derived(
     _compare_expected(path, value, pattern="*" if tree else None, hint=hint)
 
 
-def expected_root() -> Path:
-    """Return the directory expected outputs live in for the running test."""
-    return ledger.expected_root if (ledger := _ledger()) is not None else Path(__file__).parent / "data" / "expected"
-
-
 def default_output_count(role: str = "") -> int:
     """Count the unnamed outputs of one role the running test compared so far, including this one."""
     if (ledger := _ledger()) is None:  # pragma: no cover
@@ -2272,57 +2258,6 @@ def _compare_direct(expected_path: Path, value: object, pattern: str | None) -> 
         pytest.fail(
             f"Content mismatch for {expected_path}\n{_unit_diff(stored, value, str(expected_path))}", pytrace=False
         )
-
-
-class AssertFileContent(Protocol):
-    """Protocol for file content assertion callable."""
-
-    def __call__(
-        self,
-        output_file: Path,
-        expected_name: str | Path | None = None,
-        encoding: str = "utf-8",
-    ) -> None:
-        """Assert file content matches expected output."""
-        ...
-
-
-def create_assert_file_content(
-    base_path: Path,
-) -> AssertFileContent:
-    """Create an assert function bound to a specific expected path.
-
-    Args:
-        base_path: The base path for expected files (e.g., EXPECTED_JSON_SCHEMA_PATH).
-
-    Returns:
-        A function that asserts file content matches expected.
-
-    Usage:
-        # In test module
-        assert_file_content = create_assert_file_content(EXPECTED_JSON_SCHEMA_PATH)
-
-        # In tests - infer from function name
-        assert_file_content(output_file)  # test_main_foo -> foo.py
-
-        # Explicit filename
-        assert_file_content(output_file, "custom.py")
-        assert_file_content(output_file, "subdir/bar.py")
-        assert_file_content(output_file, f"{expected_output}/file.py")
-    """
-
-    def _assert_file_content(
-        output_file: Path,
-        expected_name: str | Path | None = None,
-        encoding: str = "utf-8",
-    ) -> None:
-        """Assert that file content matches expected external file."""
-        __tracebackhide__ = True
-        assert expected_name is not None, "name the stored file: pytest names it when no helper compares a file by path"
-        content = output_file.read_text(encoding=encoding)
-        _compare_expected(base_path / expected_name, _normalize_line_endings(content))
-
-    return _assert_file_content
 
 
 def assert_output(
