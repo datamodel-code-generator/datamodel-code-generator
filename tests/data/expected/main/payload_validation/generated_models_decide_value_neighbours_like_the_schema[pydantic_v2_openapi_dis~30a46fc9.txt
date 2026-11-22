@@ -1,0 +1,4 @@
+[
+  "/type const null: invalid, model accepts",
+  "discriminator {\"type\": null}: invalid, model accepts"
+]

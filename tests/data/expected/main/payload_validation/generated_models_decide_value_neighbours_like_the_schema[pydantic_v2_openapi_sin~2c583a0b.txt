@@ -1,0 +1,11 @@
+[
+  "/level enum \"1\": invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/level enum true: invalid, model accepts",
+  "/marker enum null: invalid, model accepts",
+  "/null_default enum null: invalid, model accepts",
+  "/optional_marker enum null: invalid, model accepts",
+  "/optional_state enum null: invalid, model accepts",
+  "/short_marker enum null: invalid, model accepts",
+  "/state enum null: invalid, model accepts"
+]

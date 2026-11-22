@@ -1,0 +1,3 @@
+[
+  "/mixedUntypedEnumValue enum true: invalid, model accepts"
+]

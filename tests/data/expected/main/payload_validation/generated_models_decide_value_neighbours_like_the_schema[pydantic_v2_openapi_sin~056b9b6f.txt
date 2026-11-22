@@ -1,0 +1,8 @@
+[
+  "/cache const 0: invalid, model accepts",
+  "/cache const 0.0: invalid, model accepts",
+  "/cache const null: invalid, model accepts",
+  "/kind const true: invalid, model accepts",
+  "/level const null: invalid, model accepts",
+  "/limit const false: invalid, model accepts"
+]

@@ -1,0 +1,4 @@
+[
+  "/things/0 discriminator {\"b\": \"a\", \"c\": \"a\", \"e\": \"a\", \"kind\": null}: invalid, model accepts",
+  "/things/0/kind const null: invalid, model accepts"
+]

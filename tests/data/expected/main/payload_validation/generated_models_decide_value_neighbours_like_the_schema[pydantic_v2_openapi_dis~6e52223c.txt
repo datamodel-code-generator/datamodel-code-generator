@@ -1,0 +1,4 @@
+[
+  "/u discriminator {\"kind\": true}: invalid, model accepts",
+  "/u/kind enum true: invalid, model accepts"
+]

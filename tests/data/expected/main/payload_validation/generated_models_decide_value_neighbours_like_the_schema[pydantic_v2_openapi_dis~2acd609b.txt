@@ -1,0 +1,5 @@
+[
+  "/constTag/type const \"cat\": invalid, model accepts",
+  "/mappedTag/type enum \"parrot\": invalid, model accepts",
+  "/oneOfMappedTags/type enum \"shark\": invalid, model accepts"
+]

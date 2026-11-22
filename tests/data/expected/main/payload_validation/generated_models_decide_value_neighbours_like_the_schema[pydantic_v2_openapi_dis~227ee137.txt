@@ -1,0 +1,4 @@
+[
+  "/type enum null: invalid, model accepts",
+  "discriminator {\"id\": 0, \"type\": null}: invalid, model accepts"
+]

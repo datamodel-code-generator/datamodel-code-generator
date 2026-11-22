@@ -1,0 +1,4 @@
+[
+  "/color_u enum true: invalid, model accepts",
+  "/size_u enum true: invalid, model accepts"
+]

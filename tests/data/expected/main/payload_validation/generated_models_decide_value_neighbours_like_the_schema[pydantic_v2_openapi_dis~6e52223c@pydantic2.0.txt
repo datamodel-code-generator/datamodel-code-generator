@@ -1,0 +1,5 @@
+[
+  "/u discriminator {\"kind\": 1.0}: valid, model rejects",
+  "/u/kind enum 1.0: valid, model rejects",
+  "/u/kind enum 2.0: valid, model rejects"
+]

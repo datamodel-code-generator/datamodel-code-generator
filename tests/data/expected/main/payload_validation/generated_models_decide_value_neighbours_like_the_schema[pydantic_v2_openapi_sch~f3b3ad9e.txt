@@ -1,0 +1,4 @@
+[
+  "/id maxLength \"aaaaaa\": invalid, model accepts",
+  "/s2 maxLength \"aaaaaaaaaa\": invalid, model accepts"
+]

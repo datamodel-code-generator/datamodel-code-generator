@@ -7,10 +7,12 @@ import math
 import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote
 
 from hypothesis_jsonschema import from_schema
 from jsonschema import exceptions, validators
 
+from .conformance import SCHEMA_KEYWORD_KINDS, _iter_schema_nodes
 from .constants import (
     ARRAY_SCHEMA_KEYWORDS,
     COMBINED_SCHEMA_KEYS,
@@ -23,6 +25,15 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
 _RE_GLOBAL_FLAGS_AFTER_START = "Flags not at the start of the expression"
+_SCHEMA_KEYWORDS = frozenset({
+    *(keyword for keyword, kind in SCHEMA_KEYWORD_KINDS.items() if kind == "schema"),
+    "x-propertyNames",
+})
+"""The keywords whose value is a schema or a list of schemas, which the conversion reads as schemas."""
+_SCHEMA_MAP_KEYWORDS = frozenset(
+    keyword for keyword, kind in SCHEMA_KEYWORD_KINDS.items() if kind in {"schema_map", "dependencies"}
+)
+"""The keywords whose value maps names to schemas: the conversion reads each schema, never the map."""
 
 
 def _any_schema_node(value: Any, predicate: Callable[[dict[str, Any]], bool]) -> bool:
@@ -43,14 +54,22 @@ def _has_external_ref(value: Any) -> bool:
     return _any_schema_node(value, is_external_ref)
 
 
+def _pointer_part(raw_part: str) -> str:
+    """Return a JSON pointer segment of a URI fragment as the key it names: percent-decoded, then ``~1`` and ``~0``."""
+    return unquote(raw_part).replace("~1", "/").replace("~0", "~")
+
+
 def _has_unresolved_internal_ref(schema: dict[str, Any]) -> bool:
     for ref in _find_internal_refs(schema):
         current: Any = schema
         for raw_part in ref.removeprefix("#/").split("/"):
-            part = raw_part.replace("~1", "/").replace("~0", "~")
-            if not isinstance(current, dict) or part not in current:
+            part = _pointer_part(raw_part)
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            elif isinstance(current, list) and part.isdecimal() and int(part) < len(current):
+                current = current[int(part)]
+            else:
                 return True
-            current = current[part]
     return False
 
 
@@ -292,6 +311,10 @@ def _schema_exclusion_reason(schema: dict[str, Any], *, is_openapi: bool = False
 
 def _apply_nullable(schema: dict[str, Any]) -> None:
     match schema.get("type"):
+        case _ if "$ref" in schema:
+            referenced = dict(schema)
+            schema.clear()
+            schema["anyOf"] = [referenced, {"type": "null"}]
         case str(schema_type):
             schema["type"] = [schema_type, "null"]
         case list(schema_types):
@@ -327,12 +350,26 @@ def _set_discriminator_mapping_enum(schema: dict[str, Any], source_schema: dict[
     return
 
 
+def _to_json_schema_map(value: object) -> object:
+    """Convert each schema of a map of schemas (``properties``, ``$defs``, components), never the map itself."""
+    return {name: _to_json_schema(child) for name, child in value.items()} if isinstance(value, dict) else value
+
+
+def _convert_keyword(keyword: str, value: object) -> object:
+    """Convert the value of a schema keyword: a schema, a map of schemas, or data (a mapping, a default) as it is."""
+    if keyword in _SCHEMA_KEYWORDS:
+        return _to_json_schema(value)
+    if keyword in _SCHEMA_MAP_KEYWORDS:
+        return _to_json_schema_map(value)
+    return deepcopy(value)
+
+
 def _to_json_schema(value: Any) -> Any:
     """Convert common OpenAPI schema extensions to JSON Schema-compatible shape."""
     converted_value = value
     match value:
         case dict():
-            converted = {key: _to_json_schema(child) for key, child in value.items() if key != "nullable"}
+            converted = {key: _convert_keyword(key, child) for key, child in value.items() if key != "nullable"}
             if (property_names := converted.get("x-propertyNames")) is not None:
                 converted.setdefault("propertyNames", property_names)
             _set_discriminator_mapping_enum(converted, value)
@@ -367,21 +404,30 @@ def _has_dotted_openapi_component_name(document: dict[str, Any]) -> bool:
     return any("." in name for name in _openapi_components(document))
 
 
-def _referenced_openapi_components(schema: dict[str, Any], components: dict[str, Any]) -> dict[str, Any]:
-    referenced: dict[str, Any] = {}
-    pending = [
-        ref.removeprefix("#/components/schemas/")
-        for ref in _find_openapi_component_refs(schema)
+def _referenced_component_names(value: object) -> list[str]:
+    """Return the components the references of a schema name: the first pointer segment after the components path."""
+    return [
+        _pointer_part(ref.removeprefix("#/components/schemas/").split("/", 1)[0])
+        for ref in _find_openapi_component_refs(value)
         if ref.startswith("#/components/schemas/")
     ]
+
+
+def _referenced_openapi_components(schema: dict[str, Any], components: dict[str, Any]) -> dict[str, Any]:
+    """Return the components a schema references, directly or through other components, in document order.
+
+    A reference names its component by the first segment of its pointer, decoded, so a pointer into a component and an
+    escaped name count; a boolean component is kept as it is.
+    """
+    referenced: dict[str, Any] = {}
+    pending = _referenced_component_names(schema)
     while pending:
         name = pending.pop()
-        if name in referenced:
+        if name in referenced or name not in components:
             continue
-        component = components.get(name)
+        referenced[name] = component = components[name]
         if not isinstance(component, dict):
             continue
-        referenced[name] = component
         if isinstance(component.get("discriminator"), dict):
             component_ref = f"#/components/schemas/{name}"
             pending.extend(
@@ -389,24 +435,21 @@ def _referenced_openapi_components(schema: dict[str, Any], components: dict[str,
                 for component_name, component_schema in components.items()
                 if isinstance(component_schema, dict) and _has_allof_ref(component_schema, component_ref)
             )
-        pending.extend(
-            ref.removeprefix("#/components/schemas/")
-            for ref in _find_openapi_component_refs(component)
-            if ref.startswith("#/components/schemas/")
-        )
+        pending.extend(_referenced_component_names(component))
     return {name: component for name, component in components.items() if name in referenced}
 
 
-def _openapi_component_mapping_tags(mapping: Any) -> dict[str, str]:
-    if not isinstance(mapping, dict):
-        return {}
-    return {
-        normalized_ref.removeprefix("#/components/schemas/"): tag
-        for tag, ref in mapping.items()
-        if isinstance(tag, str)
-        and isinstance(ref, str)
-        and (normalized_ref := _normalize_openapi_component_ref(ref)).startswith("#/components/schemas/")
-    }
+def _openapi_component_mapping_tags(mapping: Any) -> dict[str, list[str]]:
+    """Return the mapping keys that name each component, in mapping order: a variant two keys name takes both."""
+    tags: dict[str, list[str]] = {}
+    for tag, ref in mapping.items() if isinstance(mapping, dict) else ():
+        if (
+            isinstance(tag, str)
+            and isinstance(ref, str)
+            and (normalized_ref := _normalize_openapi_component_ref(ref)).startswith("#/components/schemas/")
+        ):
+            tags.setdefault(normalized_ref.removeprefix("#/components/schemas/"), []).append(tag)
+    return tags
 
 
 def _iter_branch_component_refs(schema: dict[str, Any], *keys: str) -> Iterator[str]:
@@ -440,12 +483,21 @@ def _apply_discriminator_payload_constraints(json_schema: dict[str, Any], schema
         if not isinstance(properties, dict) or not isinstance(property_schema := properties.get(property_name), dict):
             continue
         _add_required_property(component_schema, property_name)
-        tag = mapped_tags.get(component_name, component_name)
         if property_schema.get("type") == "string" and not any(
             key in property_schema for key in ("$ref", "const", "enum")
         ):
-            property_schema["enum"] = [tag]
+            property_schema["enum"] = mapped_tags.get(component_name, [component_name])
     return
+
+
+def _apply_every_discriminator_payload_constraints(json_schema: dict[str, object]) -> None:
+    """Constrain the tags of each discriminator of a case like its root's: its own, its nested and its components'.
+
+    OpenAPI selects a branch by its tag, which JSON Schema validation does not read, so a branch's tag property takes
+    the tag that selects it, wherever the discriminator sits.
+    """
+    for node in [node for node in _iter_schema_nodes(json_schema) if "discriminator" in node]:
+        _apply_discriminator_payload_constraints(json_schema, node)
 
 
 def _add_required_property(schema: dict[str, Any], property_name: str) -> None:
@@ -494,17 +546,19 @@ def _apply_component_discriminator_payload_constraints(json_schema: dict[str, An
         if not subtype_tags:
             base_ref = f"#/components/schemas/{base_name}"
             subtype_tags = {
-                component_name: component_name
+                component_name: [component_name]
                 for component_name, component_schema in component_schemas.items()
                 if component_name != base_name
                 and isinstance(component_schema, dict)
                 and _has_allof_ref(component_schema, base_ref)
             }
-        _set_discriminator_property_constraint(base_schema, property_name, list(subtype_tags.values()))
-        for component_name, tag in subtype_tags.items():
+        _set_discriminator_property_constraint(
+            base_schema, property_name, [tag for tags in subtype_tags.values() for tag in tags]
+        )
+        for component_name, tags in subtype_tags.items():
             component_schema = component_schemas.get(component_name)
             if isinstance(component_schema, dict):
-                _set_discriminator_property_constraint(component_schema, property_name, [tag])
+                _set_discriminator_property_constraint(component_schema, property_name, tags)
     return
 
 

@@ -1,0 +1,5 @@
+[
+  "discriminator {\"type\": \"0\"}: invalid, model accepts",
+  "discriminator {\"type\": false}: invalid, model accepts",
+  "discriminator {\"type\": null}: invalid, model accepts"
+]

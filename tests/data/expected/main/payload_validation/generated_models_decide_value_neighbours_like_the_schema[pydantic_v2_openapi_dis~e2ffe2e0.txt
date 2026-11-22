@@ -1,0 +1,4 @@
+[
+  "/kind const null: invalid, model accepts",
+  "discriminator {\"b\": \"a\", \"c\": \"a\", \"e\": \"a\", \"kind\": null}: invalid, model accepts"
+]

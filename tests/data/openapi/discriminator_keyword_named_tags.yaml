@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Form fields whose kinds are named like schema keywords
+  version: "1"
+paths: {}
+components:
+  schemas:
+    TypeField:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+    FormatField:
+      type: object
+      required: [kind, pattern]
+      properties:
+        kind:
+          type: string
+        pattern:
+          type: string
+    NullableField:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        fallback:
+          type: string
+    PropertiesField:
+      type: object
+      required: [kind, keys]
+      properties:
+        kind:
+          type: string
+        keys:
+          type: array
+          items:
+            type: string
+    Field:
+      oneOf:
+        - $ref: "#/components/schemas/TypeField"
+        - $ref: "#/components/schemas/FormatField"
+        - $ref: "#/components/schemas/NullableField"
+        - $ref: "#/components/schemas/PropertiesField"
+      discriminator:
+        propertyName: kind
+        mapping:
+          type: "#/components/schemas/TypeField"
+          format: "#/components/schemas/FormatField"
+          nullable: "#/components/schemas/NullableField"
+          properties: "#/components/schemas/PropertiesField"
+    Form:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/Field"

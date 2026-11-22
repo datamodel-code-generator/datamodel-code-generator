@@ -1,0 +1,5 @@
+[
+  "/allIn enum \"my_first_object\": invalid, model accepts",
+  "/allIn enum \"my_second_object\": invalid, model accepts",
+  "/allIn enum true: invalid, model accepts"
+]
