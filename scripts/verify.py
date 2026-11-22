@@ -39,7 +39,7 @@ from pathlib import Path
 
 import tomllib
 
-from scripts import behaviour_diff, compare_release, related_tests
+from scripts import _cell_catalog, behaviour_diff, compare_release, related_tests
 
 GATE = Path(behaviour_diff.__file__).resolve()
 PACKAGE_SOURCE = f"src/{compare_release.PACKAGE}/"
@@ -114,9 +114,17 @@ def _cache(cache_dir: Path | None) -> list[str]:
 
 
 def ensure_catalog(root: Path, base: str, ns: argparse.Namespace) -> Path:
-    """Return the catalog to pick from: the one given, the newest ancestor one, or one recorded at the merge base."""
+    """Return the catalog to pick from: the one given the newest ancestor one, or one recorded at the merge base.
+
+    A given catalog that is missing, unreadable, of another format or no ancestor of the base exits 2.
+    """
     if ns.catalog is not None:
-        return ns.catalog.absolute()
+        given = ns.catalog.absolute()
+        catalog, reason = _cell_catalog.loaded(given, root, base)
+        if catalog is None:
+            print(f"verify: --catalog refused, {reason}", file=sys.stderr)
+            raise SystemExit(2)
+        return given
     directory = Path(_git(root, "rev-parse", "--path-format=absolute", "--git-common-dir")) / CATALOGS
     directory.mkdir(parents=True, exist_ok=True)
     if (found := newest_catalog(root, directory, base)) is not None:
@@ -221,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
     ns = parser.parse_args(argv)
     root = Path(_git(Path.cwd(), "rev-parse", "--show-toplevel"))
     base = _git(root, "merge-base", ns.base, "HEAD")
+    if ns.catalog is not None:
+        ensure_catalog(root, base, ns)
     started = time.monotonic()
     print(f"verify: {root} (working tree) against the merge base {base[:12]} with {ns.base}", flush=True)
     with tempfile.TemporaryDirectory(prefix="verify-") as scratch:

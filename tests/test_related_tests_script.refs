@@ -44,6 +44,7 @@ changed-parametrized-test	related_tests_script/related_tests_select_the_diff[cha
 changed-test-class	related_tests_script/related_tests_select_the_diff[changed-test-class].txt
 changed-test-function	related_tests_script/related_tests_select_the_diff[changed-test-function].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 changed-test-module-with-a-syntax-error	related_tests_script/related_tests_select_the_diff[changed-test-module-with-a-syntax-error].txt	= related_tests_script/related_tests_select_the_diff[row-by-path].txt
+changed-test-named-fixture	related_tests_script/related_tests_select_the_diff[changed-test-named-fixture].txt	= related_tests_script/related_tests_select_the_diff[row-by-path].txt
 deleted-module	related_tests_script/related_tests_select_the_diff[deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 deleted-test-module	related_tests_script/related_tests_select_the_diff[deleted-test-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
 fast-path-deleted-module	related_tests_script/related_tests_select_the_diff[fast-path-deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt

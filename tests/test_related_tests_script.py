@@ -138,6 +138,16 @@ CASES: dict[str, dict[str, dict[str, str | None]]] = {
     },
     "removed-test-function": {"head": {"tests/test_guide.py": TEST.partition("\n\n\n")[0] + "\n"}},
     "changed-module-level-code": {"head": {"tests/test_guide.py": "import os\n\n\n" + TEST}},
+    "changed-test-named-fixture": {
+        "base": {
+            "tests/test_guide.py": "import pytest\n\n\n@pytest.fixture\ndef test_data() -> int:\n    return 1\n\n\n"
+            + TEST
+        },
+        "head": {
+            "tests/test_guide.py": "import pytest\n\n\n@pytest.fixture\ndef test_data() -> int:\n    return 2\n\n\n"
+            + TEST
+        },
+    },
     "changed-blank-line-only": {"head": {"tests/test_guide.py": TEST.replace("\n\n\n", "\n\n\n\n")}},
     "changed-helper-module": {
         "base": {"tests/helpers.py": "value = 1\n"},

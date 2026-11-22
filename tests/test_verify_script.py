@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import gzip
+import json
 import re
 from contextlib import redirect_stdout
 from io import StringIO
@@ -9,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from scripts import behaviour_diff, verify
+from scripts import _cell_catalog, behaviour_diff, verify
 from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.test_behaviour_diff_script import FAKE_DEPRECATION, FAKE_FIRST, PICK_CATALOG_INPUTS, _fake_generator
@@ -92,6 +94,8 @@ def test_verify_compares_the_picked_cells_twice(
         ))
     ]
     assert code == (0 if lines[-1].startswith("verify: passed") else 1), out
+    if case in FAILING:
+        assert (code, lines[-1].startswith("verify: FAILED: tests")) == (1, True), out
     assert_output(
         "\n"
         .join([f"exit={code}", *lines, ""])
@@ -99,6 +103,41 @@ def test_verify_compares_the_picked_cells_twice(
         .replace(commit[:12], "<sha>")
         .replace(str(tmp_path), "TMP")
     )
+
+
+FAILING = {"a changed test module that fails"}
+"""The cases that must exit 1 with a failed run of the tests, whatever the stored output holds."""
+
+
+def _unusable_catalog(case: str, repo: Path, commit: str) -> Path:
+    """Return a catalog path of the given kind: missing, corrupt, of another format or of a revision no ancestor."""
+    path = repo / f"{case}.json.gz"
+    if case == "corrupt":
+        path.write_bytes(b"not gzip")
+    elif case in {"wrong format", "no ancestor"}:
+        data = {
+            "format": "other" if case == "wrong format" else _cell_catalog.FORMAT,
+            "revision": "0" * 40 if case == "no ancestor" else commit,
+        }
+        with gzip.open(path, "wt", encoding="utf-8") as file:
+            json.dump(data, file)
+    return path
+
+
+@pytest.mark.allow_direct_assert("the refusal is the exit status and the message, not a stored output")
+@pytest.mark.parametrize("case", ["missing", "corrupt", "wrong format", "no ancestor"])
+def test_verify_refuses_an_unusable_catalog(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A given catalog that cannot be picked from exits 2 with its reason, never runs the whole tier silently."""
+    repo = tmp_path / "repo"
+    commit = _fake_generator(repo, ["first"], None)[0]
+    monkeypatch.chdir(repo)
+    argv = ["--base", commit, "--catalog", str(_unusable_catalog(case, repo, commit))]
+    with pytest.raises(SystemExit) as raised:
+        verify.main(argv)
+    err = capsys.readouterr().err
+    assert (raised.value.code, "verify: --catalog refused" in err) == (2, True)
 
 
 FLAKY_CASES = {

@@ -8,6 +8,7 @@ lists name the fast-path tests, and the rows of related_tests.toml the tests the
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import subprocess
 import sys
@@ -108,18 +109,28 @@ def own_module(path: str) -> bool:
     return path.startswith(TESTS) and path.endswith(".py") and not path.startswith(TEST_INPUTS)
 
 
+def _fixture(model: SourceModule, node: ast.stmt) -> bool:
+    """Whether a statement is a function decorated as a pytest fixture, whatever its name: module-level code."""
+    decorators = node.decorator_list if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) else []
+    return any(
+        model.origin(item.func if isinstance(item, ast.Call) else item) == "pytest.fixture" for item in decorators
+    )
+
+
 def test_units(model: SourceModule) -> list[tuple[range, str | None]]:
     """Return the top-level statements of a test module with their lines and the node id suffix they select.
 
     A `test_*` function and a `Test*` class (the scope whose header the statement starts) are units of their own (a
     parametrized test is its function); any other statement (imports, fixtures, constants, helpers) is module-level
-    code, None.
+    code, None (a fixture too, even one named `test_*`).
     """
     units: list[tuple[range, str | None]] = []
     for node in model.tree.body:
         scope = model.header_of(node.lineno, node.col_offset)
         prefix = {"function": "test", "class": "Test"}.get(scope.kind if scope else "")
-        test = scope is not None and prefix is not None and scope.qualname.startswith(prefix)
+        test = (
+            scope is not None and prefix is not None and scope.qualname.startswith(prefix) and not _fixture(model, node)
+        )
         units.append((model.extent(node), scope.qualname if test and scope else None))
     return units
 
