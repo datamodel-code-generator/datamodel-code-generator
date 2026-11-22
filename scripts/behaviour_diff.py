@@ -1069,8 +1069,7 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
 
     The release's output is signed where the candidate refuses it too, so a refusal of an output that failed to
     import is told from one of an output that worked. A release that `[[base_skip]]` names for the input does not
-    run at all. A family cell the run reports only (`in_verdict`) adds nothing to the evidence, and no change record
-    judges it.
+    run at all; the base's output comes from the cache where it has it (`judge_outcomes` judges the two).
     """
     if (project := project_of(gate, cell)) is not None:
         try:
@@ -1088,29 +1087,41 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         if base is None:
             base = gate.base.generate(args, tmp)
             gate.cache.put(cell.input, args, base, import_check=False)
-        candidate = gate.candidate.generate(args, tmp)
-        if in_verdict(gate, cell):
-            run = f"{cell.label} | {cell.backend} | {cell.option_label}"
-            gate.evidence.add(input_group(cell), run, base, candidate)
-        if gate.identity:
-            return Result(cell, identity_verdict(base, candidate))
-        same = base.ok and candidate.ok and base.tree == candidate.tree
-        sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
-        valid: frozenset[str] = frozenset()
-        if base.ok and not same:
-            payloads = payloads_for(gate, cell) if candidate.ok else None
-            if payloads is not None:
-                entries = json.loads(payloads.read_text(encoding="utf-8"))
-                valid = frozenset(e["id"] for e in entries if e.get("kind") == "valid" and e.get("expect") == "accept")
-            sides = [
-                Side(
-                    generated=True,
-                    signature=cell_signature(gate, cell, outcome.tree, tmp / f"sig-{side}", payloads),
-                )
-                if outcome.ok
-                else failed
-                for (side, outcome), failed in zip((("base", base), ("cand", candidate)), sides, strict=True)
-            ]
+        return judge_outcomes(gate, cell, (base, gate.candidate.generate(args, tmp)), tmp)
+
+
+def judge_outcomes(
+    gate: Gate, cell: Cell, outcomes: tuple[compare_release.Outcome, compare_release.Outcome], tmp: Path
+) -> Result:
+    """Classify a cell whose base and candidate generated into `tmp` (`run_cell`), signing their trees there.
+
+    It adds the cell to the evidence, then gives the identity verdict, or the classification and, where the sides'
+    facts differ, the verdict of the change records (`judge_cell`). A family cell the run reports only (`in_verdict`)
+    adds nothing to the evidence, and no change record judges it.
+    """
+    base, candidate = outcomes
+    if in_verdict(gate, cell):
+        run = f"{cell.label} | {cell.backend} | {cell.option_label}"
+        gate.evidence.add(input_group(cell), run, base, candidate)
+    if gate.identity:
+        return Result(cell, identity_verdict(base, candidate))
+    same = base.ok and candidate.ok and base.tree == candidate.tree
+    sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
+    valid: frozenset[str] = frozenset()
+    if base.ok and not same:
+        payloads = payloads_for(gate, cell) if candidate.ok else None
+        if payloads is not None:
+            entries = json.loads(payloads.read_text(encoding="utf-8"))
+            valid = frozenset(e["id"] for e in entries if e.get("kind") == "valid" and e.get("expect") == "accept")
+        sides = [
+            Side(
+                generated=True,
+                signature=cell_signature(gate, cell, outcome.tree, tmp / f"sig-{side}", payloads),
+            )
+            if outcome.ok
+            else failed
+            for (side, outcome), failed in zip((("base", base), ("cand", candidate)), sides, strict=True)
+        ]
     verdict = classify_cell(
         sides[0],
         sides[1],
@@ -2373,6 +2384,15 @@ def build_gate(ns: argparse.Namespace) -> Gate:
         gate.base.probes, gate.candidate.probes = units.probes["base"], units.probes["head"]
     gate.picked = pick_rows(ns, candidate, base, units)
     return gate
+
+
+def gate_of(argv: Sequence[str]) -> Gate:
+    """Return the gate that `gate ARGV...` runs (`build_gate`), for a caller that generates and judges cells of its own.
+
+    Nothing is generated: the caller runs its cells through `gate.base` and `gate.candidate` and judges them with
+    `judge_outcomes`, by the identity verdict (`--identity`) or by the change records the base lacks.
+    """
+    return build_gate(_parse_args(["gate", *argv]))
 
 
 def shortcut(gate: Gate, plan: Plan, ns: argparse.Namespace) -> int:
