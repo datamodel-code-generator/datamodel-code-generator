@@ -142,6 +142,7 @@
   "locked",
   "lockfile",
   "merge_message_trait_headers",
+  "merge_msgspec_str_like_union_members",
   "merge_shared_variant_tags",
   "model_extra_keys",
   "model_extra_keys_without_x_prefix",
@@ -188,6 +189,7 @@
   "read_schema_version_per_document",
   "read_single_allof_refs_in_their_documents",
   "read_unevaluated_properties",
+  "read_uuid6_uuid7_uuid8_formats",
   "read_yaml_1_1_numbers_as_text",
   "remove_special_field_name_prefix",
   "remove_unused_models_beside_type_overrides",
@@ -993,6 +995,12 @@
    ],
    "choices": null
   },
+  "--merge-msgspec-str-like-union-members": {
+   "aliases": [
+    "--no-merge-msgspec-str-like-union-members"
+   ],
+   "choices": null
+  },
   "--merge-shared-variant-tags": {
    "aliases": [
     "--no-merge-shared-variant-tags"
@@ -1203,6 +1211,7 @@
     "practical-py310-20261112",
     "practical-py310-20261113",
     "practical-py310-20261118",
+    "practical-py310-20261120",
     "practical-py311-20260619",
     "practical-py311-20260826",
     "practical-py311-20260909",
@@ -1215,6 +1224,7 @@
     "practical-py311-20261112",
     "practical-py311-20261113",
     "practical-py311-20261118",
+    "practical-py311-20261120",
     "practical-py312-20260619",
     "practical-py312-20260826",
     "practical-py312-20260909",
@@ -1227,6 +1237,7 @@
     "practical-py312-20261112",
     "practical-py312-20261113",
     "practical-py312-20261118",
+    "practical-py312-20261120",
     "practical-py313-20260619",
     "practical-py313-20260826",
     "practical-py313-20260909",
@@ -1239,6 +1250,7 @@
     "practical-py313-20261112",
     "practical-py313-20261113",
     "practical-py313-20261118",
+    "practical-py313-20261120",
     "practical-py314-20260619",
     "practical-py314-20260826",
     "practical-py314-20260909",
@@ -1251,6 +1263,7 @@
     "practical-py314-20261112",
     "practical-py314-20261113",
     "practical-py314-20261118",
+    "practical-py314-20261120",
     "practical-py315-20261015",
     "practical-py315-20261017",
     "practical-py315-20261027",
@@ -1260,6 +1273,7 @@
     "practical-py315-20261112",
     "practical-py315-20261113",
     "practical-py315-20261118",
+    "practical-py315-20261120",
     "standard-py310-20260619",
     "standard-py310-20260826",
     "standard-py310-20260909",
@@ -1272,6 +1286,7 @@
     "standard-py310-20261112",
     "standard-py310-20261113",
     "standard-py310-20261118",
+    "standard-py310-20261120",
     "standard-py311-20260619",
     "standard-py311-20260826",
     "standard-py311-20260909",
@@ -1284,6 +1299,7 @@
     "standard-py311-20261112",
     "standard-py311-20261113",
     "standard-py311-20261118",
+    "standard-py311-20261120",
     "standard-py312-20260619",
     "standard-py312-20260826",
     "standard-py312-20260909",
@@ -1296,6 +1312,7 @@
     "standard-py312-20261112",
     "standard-py312-20261113",
     "standard-py312-20261118",
+    "standard-py312-20261120",
     "standard-py313-20260619",
     "standard-py313-20260826",
     "standard-py313-20260909",
@@ -1308,6 +1325,7 @@
     "standard-py313-20261112",
     "standard-py313-20261113",
     "standard-py313-20261118",
+    "standard-py313-20261120",
     "standard-py314-20260619",
     "standard-py314-20260826",
     "standard-py314-20260909",
@@ -1320,6 +1338,7 @@
     "standard-py314-20261112",
     "standard-py314-20261113",
     "standard-py314-20261118",
+    "standard-py314-20261120",
     "standard-py315-20261015",
     "standard-py315-20261017",
     "standard-py315-20261027",
@@ -1328,7 +1347,8 @@
     "standard-py315-20261111",
     "standard-py315-20261112",
     "standard-py315-20261113",
-    "standard-py315-20261118"
+    "standard-py315-20261118",
+    "standard-py315-20261120"
    ]
   },
   "--profile": {
@@ -1447,6 +1467,12 @@
   "--read-unevaluated-properties": {
    "aliases": [
     "--no-read-unevaluated-properties"
+   ],
+   "choices": null
+  },
+  "--read-uuid6-uuid7-uuid8-formats": {
+   "aliases": [
+    "--no-read-uuid6-uuid7-uuid8-formats"
    ],
    "choices": null
   },
@@ -2272,6 +2298,20 @@
    "standard-py313-20261118": "1a9b17333ae0b897",
    "standard-py314-20261118": "1a9b17333ae0b897",
    "standard-py315-20261118": "1a9b17333ae0b897"
+  },
+  "20261120": {
+   "practical-py310-20261120": "527088c3a7b88dc9",
+   "practical-py311-20261120": "c75067039f12534f",
+   "practical-py312-20261120": "c75067039f12534f",
+   "practical-py313-20261120": "c75067039f12534f",
+   "practical-py314-20261120": "c75067039f12534f",
+   "practical-py315-20261120": "c75067039f12534f",
+   "standard-py310-20261120": "254194be63e81a76",
+   "standard-py311-20261120": "a9f37691574dc865",
+   "standard-py312-20261120": "a9f37691574dc865",
+   "standard-py313-20261120": "a9f37691574dc865",
+   "standard-py314-20261120": "a9f37691574dc865",
+   "standard-py315-20261120": "a9f37691574dc865"
   }
  },
  "python_api": [
