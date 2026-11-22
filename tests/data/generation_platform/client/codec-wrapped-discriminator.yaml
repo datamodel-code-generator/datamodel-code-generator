@@ -45,6 +45,21 @@ components:
     Other:
       oneOf: [{$ref: "#/components/schemas/C"}, {$ref: "#/components/schemas/E"}]
       discriminator: {propertyName: kind}
+    D:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [x, y]}
+    MappedX:
+      oneOf: [{$ref: "#/components/schemas/D"}, {$ref: "#/components/schemas/B"}]
+      discriminator:
+        propertyName: kind
+        mapping: {x: "#/components/schemas/D", y: "#/components/schemas/D", b: "#/components/schemas/B"}
+    MappedY:
+      oneOf: [{$ref: "#/components/schemas/D"}, {$ref: "#/components/schemas/C"}]
+      discriminator:
+        propertyName: kind
+        mapping: {y: "#/components/schemas/D", c: "#/components/schemas/C"}
     ShapeRef:
       $ref: "#/components/schemas/Shape"
     Row:
@@ -64,3 +79,5 @@ components:
             anyOf: [{$ref: "#/components/schemas/Shape"}, {type: "null"}]
         joined:
           anyOf: [{$ref: "#/components/schemas/Shape"}, {$ref: "#/components/schemas/Other"}, {type: "null"}]
+        shared:
+          anyOf: [{$ref: "#/components/schemas/MappedX"}, {$ref: "#/components/schemas/MappedY"}, {type: "null"}]

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
@@ -33,6 +34,23 @@ class Other(RootModel[C | E]):
     root: C | E = Field(..., discriminator='kind')
 
 
+class Kind(StrEnum):
+    x = 'x'
+    y = 'y'
+
+
+class D(BaseModel):
+    kind: Literal['y']
+
+
+class MappedX(RootModel[D | B]):
+    root: D | B = Field(..., discriminator='kind')
+
+
+class MappedY(RootModel[D | C]):
+    root: D | C = Field(..., discriminator='kind')
+
+
 class ShapeRef(RootModel[Shape]):
     root: Shape
 
@@ -43,3 +61,4 @@ class Row(BaseModel):
     items: list[Shape | None] | None = None
     values: dict[str, Shape | None] | None = None
     joined: Shape | Other | None = None
+    shared: MappedX | MappedY | None = None

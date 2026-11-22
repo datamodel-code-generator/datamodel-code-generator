@@ -29,6 +29,16 @@ Shape: TypeAlias = A | B
 Other: TypeAlias = C | E
 
 
+class D(TypedDict):
+    kind: Literal['x', 'y']
+
+
+MappedX: TypeAlias = D | B
+
+
+MappedY: TypeAlias = D | C
+
+
 ShapeRef: TypeAlias = Shape
 
 
@@ -38,3 +48,4 @@ class Row(TypedDict):
     items: NotRequired[list[Shape | None]]
     values: NotRequired[dict[str, Shape | None]]
     joined: NotRequired[Shape | Other | None]
+    shared: NotRequired[MappedX | MappedY | None]

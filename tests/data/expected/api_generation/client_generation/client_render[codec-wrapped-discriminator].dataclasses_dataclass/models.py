@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Literal, TypeAlias
 
 
@@ -34,6 +35,22 @@ Shape: TypeAlias = A | B
 Other: TypeAlias = C | E
 
 
+class Kind(StrEnum):
+    x = 'x'
+    y = 'y'
+
+
+@dataclass
+class D:
+    kind: Literal['y']
+
+
+MappedX: TypeAlias = D | B
+
+
+MappedY: TypeAlias = D | C
+
+
 ShapeRef: TypeAlias = Shape
 
 
@@ -44,3 +61,4 @@ class Row:
     items: list[Shape | None] | None = None
     values: dict[str, Shape | None] | None = None
     joined: Shape | Other | None = None
+    shared: MappedX | MappedY | None = None

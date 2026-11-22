@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType, field
@@ -30,6 +31,21 @@ Shape: TypeAlias = A | B
 Other: TypeAlias = C | E
 
 
+class Kind(StrEnum):
+    x = 'x'
+    y = 'y'
+
+
+class D(Struct, tag_field='kind', tag='y'):
+    pass
+
+
+MappedX: TypeAlias = D | B
+
+
+MappedY: TypeAlias = D | C
+
+
 ShapeRef: TypeAlias = Shape
 
 
@@ -39,3 +55,4 @@ class Row(Struct):
     items: list[Shape | None] | UnsetType = UNSET
     values: dict[str, Shape | None] | UnsetType = UNSET
     joined: Shape | Other | None | UnsetType = UNSET
+    shared: MappedX | MappedY | None | UnsetType = UNSET

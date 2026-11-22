@@ -554,8 +554,8 @@ KEPT: Final[tuple[Kept, ...]] = (
         "client",
         DEFAULT,
         (
-            {"container": _ALL_MAPS, "nullable": (True,), "backend": (PYDANTIC_V2, DATACLASSES, MSGSPEC)},
-            {"container": _ALL_MAPS, "nullable": (True,), "required": (True,), "backend": (TYPED_DICT,)},
+            {"container": _ALL_MAPS, "nullable": (True,), "backend": (DATACLASSES,)},
+            {"container": _ALL_MAPS, "nullable": (True,), "required": (False,), "backend": (MSGSPEC,)},
         ),
         "the client's field argument of a nullable map with key constraints drops the None its model field keeps",
     ),

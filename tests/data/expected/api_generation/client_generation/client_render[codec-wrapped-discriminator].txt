@@ -1,5 +1,6 @@
 # codec-wrapped-discriminator
 render pydantic_v2.BaseModel
+  warning UserWarning: D is a variant of discriminated unions that map 'kind' to different tags: it keeps 'y' from MappedY, so these unions cannot decode it: MappedX ('x', 'y').
   client/README.md
   client/__init__.py
   client/_async_client.py
@@ -21,6 +22,7 @@ render pydantic_v2.BaseModel
   client/types/default/_operations.py
   models.py
 render dataclasses.dataclass
+  warning UserWarning: D is a variant of discriminated unions that map 'kind' to different tags: it keeps 'y' from MappedY, so these unions cannot decode it: MappedX ('x', 'y').
   client/README.md
   client/__init__.py
   client/_async_client.py
@@ -63,6 +65,8 @@ render typing.TypedDict
   client/types/default/_operations.py
   models.py
 render msgspec.Struct
+  warning UserWarning: Discriminator 'kind' of MappedX cannot be represented as msgspec tags: D cannot take exactly one tag for it; its variants are left untagged.
+  warning UserWarning: D is a variant of discriminated unions that map 'kind' to different tags: it keeps 'y' from MappedY, so these unions cannot decode it: MappedX ('x', 'y').
   client/README.md
   client/__init__.py
   client/_async_client.py

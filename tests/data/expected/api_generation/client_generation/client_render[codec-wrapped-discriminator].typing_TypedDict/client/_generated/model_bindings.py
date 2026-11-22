@@ -23,6 +23,7 @@ MODELS: Final[dict[type, Model]] = {
     models.B: Model((Field('kind', 'kind'),)),
     models.C: Model((Field('kind', 'kind'),)),
     models.E: Model((Field('kind', 'kind'),)),
+    models.D: Model((Field('kind', 'kind'),)),
     models.Row: Model(
         (
             Field(
@@ -54,6 +55,20 @@ MODELS: Final[dict[type, Model]] = {
                         ('b', models.B),
                         ('c', models.C),
                         ('e', models.E),
+                    ),
+                ),
+            ),
+            Field(
+                'shared',
+                'shared',
+                Choice(
+                    (),
+                    'kind',
+                    (
+                        ('x', models.D),
+                        ('y', models.D),
+                        ('b', models.B),
+                        ('c', models.C),
                     ),
                 ),
             ),

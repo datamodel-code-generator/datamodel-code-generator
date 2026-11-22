@@ -382,8 +382,12 @@ def _joined_declarations(declared: Iterable[UnionDiscriminator | None]) -> Union
     known = tuple(item for item in found if item is not None)
     if not known or len(known) != len(found) or len({item.property_name for item in known}) != 1:
         return None
-    variants = dict.fromkeys(variant for item in known for variant in item.variants)
-    return UnionDiscriminator(known[0].property_name, tuple(variants))
+    by_source: dict[str, list[str | int | bool]] = {}
+    for item in known:
+        for source, names in item.variants:
+            by_source.setdefault(source, []).extend(names)
+    variants = tuple((source, tuple(names)) for source, names in by_source.items())
+    return UnionDiscriminator(known[0].property_name, variants)
 
 
 def plan_client_codecs(
