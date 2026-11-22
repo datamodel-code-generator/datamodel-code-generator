@@ -17,5 +17,11 @@ covers = [
 
 [[change.cells]]
 input = ["tests/data/jsonschema/allof_enum_member_of_constrained_ref.json"]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
-options = [[]]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"
+
+[[change.cells]]
+input = ["payload:jsonschema/allof_enum_member_of_constrained_ref.json"]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp"]]
+input_file_type = "jsonschema"
