@@ -873,6 +873,16 @@ frames), exit status, the refusal of a single output file before a modular run, 
 each side, and fails on any difference. A cell that fails alike on both sides is not compared where the timeout or
 the memory cap stopped both or where every cell of its input fails on both sides; the run prints how many.
 
+The fixtures and catalog cells are fixed inputs. To also try schemas nobody wrote down, run
+`python -m scripts.shape_families_random --identity`: it draws compositions of the shape families
+(`tests/main/shape_families/compose.py`, one family's shape placed inside another's), generates each on your checkout
+and on the merge base with `origin/main` (pass another branch as its argument) through the gate's workers and
+arguments, and fails on any difference the gate's identity mode would report. Without `--identity` it compares with
+the latest release instead: there a difference fails unless a change record covers its cell (the label is
+`composition:<levels>/<family>/<parameter>=<value>,.../...`, so `input = ["composition:*/**/tagged/**"]` with
+`input_file_type = "jsonschema"` names every composition with a `tagged` level), and each model is also held to the
+validator. `--budget` (seconds) and `--examples` bound a run, and `--seed` replays one.
+
 Against a git revision both scripts also say whether the compared runs ran what your commits change, counted by code
 object (a module or class body, a function, a lambda, a generator expression; `scripts/_change_units.py`). What your
 commits add has to run on your side, what they remove on the base's, in a compared run. The change is read token by

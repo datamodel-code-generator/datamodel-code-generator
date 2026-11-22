@@ -3260,6 +3260,17 @@ CELLS_CASES: dict[str, CellsCase] = {
         _cells_src(("plain", None, "warn:mind the gap"))
         | _record("plain-warns", "notice", _cells("plain.json", match="other text")),
     ),
+    "pass: a selector of the random tier's compositions is not judged by this run": CellsCase(
+        "pass",
+        "composition selector",
+        COMMENT_OTHER
+        | _record(
+            "other-note",
+            "output-text",
+            _cells("other.json"),
+            {"input": ["composition:*/**/tagged/**"], "input_file_type": "jsonschema", "backends": "*", "options": "*"},
+        ),
+    ),
     "fail: a selector that matches no input": CellsCase(
         "fail",
         "selector matches no input",
