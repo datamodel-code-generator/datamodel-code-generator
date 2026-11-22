@@ -179,14 +179,16 @@ def get_version() -> str:
 
 @contextlib.contextmanager
 def chdir(path: Path | None) -> Generator[None]:
-    """Change working directory and return to previous on exit."""
+    """Change working directory and return to previous on exit; a missing directory is its nearest existing parent."""
     if path is None:
         yield
         return
+    from datamodel_code_generator._paths import existing_ancestor  # noqa: PLC0415
+
     with PROCESS_STATE_LOCK:
         prev_cwd = Path.cwd()
         try:
-            os.chdir(path if path.is_dir() else path.parent)
+            os.chdir(existing_ancestor(path if path.is_dir() else path.parent))
             yield
         finally:
             os.chdir(prev_cwd)

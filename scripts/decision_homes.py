@@ -2080,12 +2080,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_paths.py`: `existing_ancestor`, `missing_root`, `creation_root`",
         adapters=(
-            "`_generation.py:_refuse_uncreatable_paths`; `_publication.py`: `publication_anchor`, "
+            "`_generation.py`: `_refuse_uncreatable_paths`, `chdir` (the working directory of a run whose output "
+            "directory does not exist yet); `_publication.py`: `publication_anchor`, "
             "`staging_directory_for`, `_create_target_parent`; `remote_lock.py:_nearest_existing_directory`; "
             "`watch_dependencies.py:_nearest_existing_directory`"
         ),
         sites=(
             Home("_generation.py", "_refuse_uncreatable_paths"),
+            Home("_generation.py", "chdir"),
             Home("_publication.py", "publication_anchor"),
             Home("_publication.py", "staging_directory_for"),
             Home("_publication.py", "_create_target_parent"),

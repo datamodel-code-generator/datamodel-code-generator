@@ -2390,6 +2390,10 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         is_directory_output = False
         compare_output = None
 
+    # A run that generates into a staging directory (a check, JSON output, a batch job) reads the context of the
+    # output it stands for: where its custom formatter, template directory and class name generator run.
+    real_output = _batch_original_output or config.output
+    logical_output = None if generate_output == real_output else real_output
     config.repair_invalid_dotted_stdout = _repairs_invalid_dotted_stdout(config, namespace, generate_output)
     naming_hint = _collect_naming_hint(config, namespace)
 
@@ -2425,7 +2429,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         else:
             with nullcontext() if watch_dependencies is None else watch_dependencies.generation():
                 result = run_generate_from_config(
-                    **run_options, input_=input_, output=generate_output, logical_output=_batch_original_output
+                    **run_options, input_=input_, output=generate_output, logical_output=logical_output
                 )
     except InvalidClassNameError as e:
         print(_invalid_class_name_message(e, namespace, config.class_name), file=sys.stderr)
