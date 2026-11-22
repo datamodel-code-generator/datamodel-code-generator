@@ -281,6 +281,19 @@ class PresetName(str, Enum):
     PracticalPy31420261120 = "practical-py314-20261120"
     PracticalPy31520261120 = "practical-py315-20261120"
 
+    StandardPy31020261123 = "standard-py310-20261123"
+    StandardPy31120261123 = "standard-py311-20261123"
+    StandardPy31220261123 = "standard-py312-20261123"
+    StandardPy31320261123 = "standard-py313-20261123"
+    StandardPy31420261123 = "standard-py314-20261123"
+    StandardPy31520261123 = "standard-py315-20261123"
+    PracticalPy31020261123 = "practical-py310-20261123"
+    PracticalPy31120261123 = "practical-py311-20261123"
+    PracticalPy31220261123 = "practical-py312-20261123"
+    PracticalPy31320261123 = "practical-py313-20261123"
+    PracticalPy31420261123 = "practical-py314-20261123"
+    PracticalPy31520261123 = "practical-py315-20261123"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -665,6 +678,7 @@ _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]]
     "20261113": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261118": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261120": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261123": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1447,6 +1461,22 @@ _STANDARD_20261120_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261118 groups and the opt-in options added after them."""
 
+_STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261120_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Merged allOf members intersected",
+        config=PresetConfig(intersect_merged_allof_members=True),
+        description=(
+            "Read the allOf members the generator merges into one schema keyword by keyword, as JSON Schema "
+            "validates them: a property several merged object members declare takes the type, null and multipleOf "
+            "they all admit and the members' own allOf members, a named allOf of a $ref and value members keeps the "
+            "enum of every member, a map $ref beside property counts stays a map with the counts, and a length or "
+            "pattern beside a $ref to base64 text is checked on the text."
+        ),
+    ),
+)
+"""The 20261120 groups and the opt-in options added after them."""
+
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
     "20260826": _STANDARD_20260826_OPTION_GROUPS,
@@ -1461,6 +1491,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261113": _STANDARD_20261113_OPTION_GROUPS,
     "20261118": _STANDARD_20261118_OPTION_GROUPS,
     "20261120": _STANDARD_20261120_OPTION_GROUPS,
+    "20261123": _STANDARD_20261123_OPTION_GROUPS,
 }
 
 

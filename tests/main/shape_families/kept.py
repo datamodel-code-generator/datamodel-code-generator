@@ -190,15 +190,26 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7171",
         "mixin",
         "accepts-invalid",
-        BOTH,
+        DEFAULT,
         (
             {"first": ("int", "int_min"), "second": ("num",), "swapped": (False,)},
             {"first": ("num",), "second": ("int", "int_min"), "swapped": (True,)},
+        ),
+        "an allOf merge of two refs takes the shared property from the later member: number after integer accepts "
+        "1.5 (row legacy-all-of-object-merge-row)",
+    ),
+    Kept(
+        ISSUE,
+        "#7171",
+        "mixin",
+        "accepts-invalid",
+        BOTH,
+        (
             {"first": _STRING_LEAVES, "second": ("str_or_arr",)},
             {"first": ("str_or_arr",), "second": _STRING_LEAVES},
         ),
-        "an allOf merge of two refs takes the shared property from one member: number after integer accepts 1.5, and "
-        "a string beside a string-or-array union is the union in both member orders, so it accepts an array",
+        "a string beside a string-or-array union is the union in both member orders, so it accepts an array: the "
+        "merge is the string type beside the union, which a type beside an anyOf writes as the whole union",
     ),
     Kept(
         ISSUE,
@@ -486,7 +497,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7171",
         "mixin",
         "member-order",
-        BOTH,
+        DEFAULT,
         (
             {"first": ("int", "int_min"), "second": ("num",), "swapped": (True,)},
             {"first": ("num",), "second": ("int", "int_min"), "swapped": (True,)},

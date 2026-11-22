@@ -46,12 +46,11 @@ from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
 from datamodel_code_generator.parser import _rw_split, _schema_refs, _value_keywords
-from datamodel_code_generator.parser._all_of_values import holds_union_member
+from datamodel_code_generator.parser._all_of_values import conjoined_declarations, holds_union_member
 from datamodel_code_generator.parser._field_copies import _get_inherited_type_modifiers
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
     POSITIONAL_SCHEMA_KEYWORDS,
-    all_of_member_row,
     declared_types,
     inherited_override_row,
     inherited_positional_tail,
@@ -85,7 +84,6 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _without_contains_keywords,
 )
-from datamodel_code_generator.parser._schema_refs import mark_conjunction_parts
 from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
@@ -1672,7 +1670,7 @@ def property_conjunctions(
     which wins (``DataModel._validate_fields``); the request/response variants of the site take the last. A ``$ref``
     member read in place (``_read_through_members``) is no base class whose properties the other members override, so
     a property that members read within different locations declare is one field, the conjunction of every declaration
-    (``_conjoined_declarations``) where it is first declared; no member is read in place under
+    (``_all_of_values.conjoined_declarations``) where it is first declared; no member is read in place under
     ``legacy-ref-member-union-dropped``. Each declaration of a property that members within one location declare
     takes the check keywords of all of them (``checked_declarations``). A property that one of them declares as a
     boolean schema keeps its declarations.
@@ -1688,7 +1686,7 @@ def property_conjunctions(
         if len(declared_within) == 1 or len(schemas) < len(declared_within):
             continue
         if reads_through and len({within for _, within in declared_within}) > 1:
-            conjunctions[name] = [_conjoined_declarations(parser, name, schemas), *([None] * (len(schemas) - 1))]
+            conjunctions[name] = [conjoined_declarations(parser, name, schemas), *([None] * (len(schemas) - 1))]
         elif (checked := checked_declarations(parser, name, schemas)) is not None:
             conjunctions[name] = [*checked]
     return conjunctions
@@ -1742,32 +1740,6 @@ def checked_declarations(
             else declared
         )
     return None if all(map(operator.is_, checked, declarations)) else tuple(checked)
-
-
-def _conjoined_declarations(
-    parser: InheritedSchemasHost, name: str, declarations: list[JsonSchemaObject]
-) -> JsonSchemaObject:
-    """Return the schema of a property several allOf members declare: the intersection of their declarations.
-
-    The row is their merge as allOf members (``all_of_member_row``), and every keyword the intersection reads keeps
-    the value all the declarations admit, also under ``legacy-merge-row``, with a warning for keywords without a
-    common value. Siblings of a ``$ref`` it keeps are parts of it in every dialect (``_CONJUNCTION_PARTS_KEY``). It
-    stands at the first declaration.
-    """
-    dumps = [declared.model_dump(exclude_unset=True, by_alias=True) for declared in declarations]
-    location = declarations[0].schema_location
-    intersection = _intersect_parts(
-        parser,
-        dumps,
-        reduce(all_of_member_row, dumps[1:], dumps[0]),
-        where=named_location(location, f"property {stable_repr(name)}"),
-        parts=("the allOf members that declare it",),
-        own_last=False,
-    )
-    merged = parser._schema_object(intersection.keywords).with_schema_location(location)
-    _schema_refs.mark_reported_value_conflict(parser, merged, intersection.unsatisfiable)
-    mark_conjunction_parts(merged)
-    return merged
 
 
 def with_conjoined_properties(

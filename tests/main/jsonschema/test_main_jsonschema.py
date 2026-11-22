@@ -15515,6 +15515,244 @@ def test_main_jsonschema_read_ref_siblings_in_closed_allof_members(output_file: 
     )
 
 
+def test_main_jsonschema_allof_merged_member_values(output_file: Path) -> None:
+    """Test allOf members merged into one object keep their merge row without the option (#7171, #7096).
+
+    The later member's ``type`` and ``multipleOf`` of a property both declare win, a later ``true`` declaration
+    replaces the schema, and the allOf members of a member are dropped (row ``legacy-all-of-object-merge-row``).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_merged_member_values.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--intersect-merged-allof-members"],
+    option_description="""Read the allOf members that are merged into one schema keyword by keyword.
+
+Where several `$ref` members declare one property differently, the members are merged into one model. Without this
+option the later member's `type`, null and `multipleOf` win and a member's own allOf members are dropped, as in
+0.100.0: `count` is a `float` though one member admits integers only, `step` a multiple of 2 though the other member
+asks for a multiple of 3, and `status`, which a member's own allOf adds, is missing, so `{"status": "s"}` is rejected
+by the closed model. With it the property takes what every declaration admits (`int`, a multiple of 6, `int`) and the
+members' own allOf members are merged too. The option also keeps the `enum` of every member of a named allOf of a
+`$ref` and value members, keeps a `$ref` to a map beside property counts or `propertyNames` a map with them, and checks
+a length or `pattern` beside a `$ref` to base64 text on the text where the output checks base64 constraints on the
+text.""",
+    input_schema="jsonschema/allof_merged_member_values.json",
+    cli_args=["--intersect-merged-allof-members"],
+    golden_output="main/jsonschema/main_jsonschema/intersect_merged_allof_members[pydantic_v2.BaseModel].py",
+    comparison_output="main/jsonschema/main_jsonschema/allof_merged_member_values.py",
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("dataclasses.dataclass", [], id="dataclasses.dataclass"),
+        pytest.param("typing.TypedDict", [], id="typing.TypedDict"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--read-only-write-only-model-type", "all"], id="read-only-write-only-model-type"
+        ),
+        pytest.param("pydantic_v2.BaseModel", ["--allof-merge-mode", "none"], id="allof-merge-mode-none"),
+    ],
+)
+def test_main_jsonschema_intersect_merged_allof_members(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Test a property several merged allOf members declare takes what every declaration admits, opt-in (#7171, #7096).
+
+    ``count`` is an integer (one declaration through a ``$ref`` to a number), ``step`` a multiple of 6, ``code`` an
+    integer, ``kind`` keeps ``maxLength`` beside a ``true`` declaration, and ``status`` comes from the allOf of the
+    closed member and of an items member. Under ``--allof-merge-mode none`` nothing is intersected.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "allof_merged_member_values.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+            *("--intersect-merged-allof-members", *extra_args),
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type != "pydantic_v2.BaseModel" or extra_args:
+        return
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    valid, invalid = {"count": 2, "step": 6, "code": 1, "kind": "abc", "status": "s"}, {"count": 1.5}
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="intersect_merged_allof_members_objects",
+        model_name="Order",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="int_from_float",
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict", "pydantic_v2.dataclass"],
+)
+@pytest.mark.parametrize("intersected", [False, True], ids=["released", "intersected"])
+def test_main_jsonschema_allof_enum_member_of_constrained_ref(
+    output_file: Path, output_model_type: str, *, intersected: bool
+) -> None:
+    """Test a named allOf of a ``$ref`` and a typed enum member keeps the enum (#7314, #7315).
+
+    ``Settlement`` names an untyped constraint ``$ref``, so the enum member is the first typed one: it is written as
+    its enum class in every output that reads the annotations, where it used to name itself and stop the run (#7314);
+    standard dataclasses keep ``Any`` without the option (row ``legacy-all-of-enum-root-self-alias``). ``Currency``
+    names a typed ``$ref``: without ``--intersect-merged-allof-members`` it is that ``$ref``'s string (row
+    ``legacy-all-of-root-first-typed-member``), with it the enum (#7315).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_enum_member_of_constrained_ref.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+            *(["--intersect-merged-allof-members"] if intersected else []),
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type != "pydantic_v2.BaseModel":
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"allof_enum_member_of_constrained_ref_{intersected}",
+        model_name="Payment",
+        valid_json=json.dumps({"currency": "USD", "settlement": "GBP"}),
+        invalid_json=json.dumps({"currency": "ABC"} if intersected else {"settlement": "ABC"}),
+        expected_error_type="enum",
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--collapse-root-models"], id="pydantic_v2.BaseModel-collapse"),
+        pytest.param("msgspec.Struct", ["--collapse-root-models"], id="msgspec.Struct-collapse"),
+        pytest.param("pydantic_v2.BaseModel", ["--preset", "standard-py312-20261120"], id="preset-20261120"),
+    ],
+)
+def test_main_jsonschema_allof_enum_member_of_untyped_ref_forms(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Test the enum root of a named allOf of an untyped constraint ``$ref`` and a typed enum in other forms (#7314).
+
+    Without ``--intersect-merged-allof-members`` such a root named itself: under --collapse-root-models its users
+    admitted only null, under the 20261120 presets it was a root model of itself that no value validates; it is its
+    enum class.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_enum_member_of_constrained_ref.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type != "pydantic_v2.BaseModel":
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"allof_enum_member_of_untyped_ref_forms_{extra_args[-1].replace('-', '_')}",
+        model_name="Payment",
+        valid_json=json.dumps({"settlement": "GBP"}),
+        invalid_json=json.dumps({"settlement": "ABC"}),
+        expected_error_type="enum",
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"]
+)
+@pytest.mark.parametrize("intersected", [False, True], ids=["released", "intersected"])
+def test_main_jsonschema_allof_map_member_counts(
+    output_file: Path, output_model_type: str, *, intersected: bool
+) -> None:
+    """Test an allOf of a map ``$ref`` and members that add property counts or ``propertyNames`` (#7340).
+
+    Without ``--intersect-merged-allof-members`` a definition is a model without fields, which drops every entry, and
+    the other sites name the map without the counts (row ``legacy-all-of-map-counts-dropped``); with it every site is
+    the map with them, at a definition, a property, array items and map values.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_map_member_counts.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+            *(["--intersect-merged-allof-members"] if intersected else []),
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type != "pydantic_v2.BaseModel" or not intersected:
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_map_member_counts",
+        model_name="Item",
+        valid_json=json.dumps({"labels": {"a": "x"}, "history": [{"a": "x", "b": "y"}]}),
+        invalid_json=json.dumps({"history": [{"a": "x", "b": "y", "c": "z"}]}),
+        expected_error_type="too_long",
+        expected_attribute_path=("labels", "root"),
+        expected_attribute_value={"a": "x"},
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--field-constraints"], id="field-constraints"),
+        pytest.param(["--field-constraints", "--use-site-models-for-constrained-refs"], id="site-models"),
+        pytest.param(["--use-annotated", "--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+@pytest.mark.parametrize("intersected", [False, True], ids=["released", "intersected"])
+def test_main_jsonschema_allof_base64_member_constraints(
+    output_file: Path, extra_args: list[str], *, intersected: bool
+) -> None:
+    """Test a length an allOf member adds to a ``$ref`` to base64 text, checked on the text (#7341).
+
+    Under --use-encoded-str-for-constrained-base64 the keyword beside the format is checked on the base64 text. Without
+    ``--intersect-merged-allof-members`` the allOf site writes it beside the reference, checked on the decoded value,
+    or leaves it out (row ``legacy-all-of-base64-reference-layered``); with it the site is written as the keyword
+    beside the format, at a property and in array items.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_base64_member_constraints.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
+            *("--use-encoded-str-for-constrained-base64", *extra_args),
+            *(["--intersect-merged-allof-members"] if intersected else []),
+        ],
+        force_exec_validation=True,
+    )
+    if not intersected:
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"allof_base64_member_constraints_{extra_args[-1].strip('-').replace('-', '_')}",
+        model_name="Upload",
+        valid_json=json.dumps({"thumbnail": "YWJj", "parts": ["YWJjZA=="]}),
+        invalid_json=json.dumps({"parts": ["YWJjZGVmZ2g="]}),
+        expected_error_type="string_too_long",
+    )
+
+
 def test_main_jsonschema_allof_closed_member_pattern(output_file: Path) -> None:
     """Test a closed allOf member with patternProperties keeps the combined model open.
 

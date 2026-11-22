@@ -15,6 +15,7 @@
 | [`--import-overrides`](#import-overrides) | Override modules for generated imports by symbol name. |
 | [`--intersect-allof-keywords`](#intersect-allof-keywords) | Combine the keywords of every part of an `allOf`, a `$ref` w... |
 | [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords) | Combine the keywords beside an `anyOf` or `oneOf` with each ... |
+| [`--intersect-merged-allof-members`](#intersect-merged-allof-members) | Read the allOf members that are merged into one schema keywo... |
 | [`--keep-enum-member-values`](#keep-enum-member-values) | Give an enum class a value base only when it keeps every mem... |
 | [`--no-use-closed-typed-dict`](#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
@@ -2924,6 +2925,386 @@ admits null where every part of the `allOf` does.
 
         class Nested(RootModel[Nested1 | Nested2]):
             root: Nested1 | Nested2
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--intersect-merged-allof-members` {#intersect-merged-allof-members}
+
+Read the allOf members that are merged into one schema keyword by keyword.
+
+Where several `$ref` members declare one property differently, the members are merged into one model. Without this
+option the later member's `type`, null and `multipleOf` win and a member's own allOf members are dropped, as in
+0.100.0: `count` is a `float` though one member admits integers only, `step` a multiple of 2 though the other member
+asks for a multiple of 3, and `status`, which a member's own allOf adds, is missing, so `{"status": "s"}` is rejected
+by the closed model. With it the property takes what every declaration admits (`int`, a multiple of 6, `int`) and the
+members' own allOf members are merged too. The option also keeps the `enum` of every member of a named allOf of a
+`$ref` and value members, keeps a `$ref` to a map beside property counts or `propertyNames` a map with them, and checks
+a length or `pattern` beside a `$ref` to base64 text on the text where the output checks base64 constraints on the
+text.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input allof_merged_member_values.json --intersect-merged-allof-members # (1)!
+    ```
+
+    1. :material-arrow-left: `--intersect-merged-allof-members` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Order",
+      "type": "object",
+      "$defs": {
+        "Num": {
+          "type": "number"
+        },
+        "Base": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          }
+        },
+        "Item": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "$ref": "#/$defs/Num"
+            },
+            "step": {
+              "type": "integer",
+              "multipleOf": 2
+            },
+            "code": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "kind": {
+              "type": "string"
+            },
+            "note": {
+              "type": "string"
+            },
+            "legacy": {
+              "type": "string"
+            }
+          }
+        },
+        "Counted": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "step": {
+              "type": "integer",
+              "multipleOf": 3
+            },
+            "code": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "maxLength": 5
+            }
+          }
+        },
+        "Shipment": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/Counted"
+                },
+                {
+                  "$ref": "#/$defs/Item"
+                }
+              ]
+            },
+            "lines": {
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Counted"
+                  },
+                  {
+                    "$ref": "#/$defs/Item"
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/Base"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Sealed": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Counted"
+            },
+            {
+              "$ref": "#/$defs/Item"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "count": true,
+                "step": true,
+                "code": true,
+                "kind": true,
+                "note": true
+              },
+              "allOf": [
+                {
+                  "$ref": "#/$defs/Base"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/Counted"
+        },
+        {
+          "$ref": "#/$defs/Item"
+        },
+        {
+          "unevaluatedProperties": false,
+          "properties": {
+            "count": true,
+            "step": true,
+            "code": true,
+            "kind": true,
+            "note": true,
+            "legacy": false
+          },
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            },
+            true,
+            {
+              "$ref": "#/$defs/Counted"
+            },
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "count"
+                  ]
+                },
+                {
+                  "required": [
+                    "step"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_merged_member_values.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
+
+
+        class Order(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: Any | None = None
+            status: str | None = None
+
+
+        class Num(RootModel[float]):
+            root: float
+
+
+        class Base(BaseModel):
+            status: str | None = None
+
+
+        class Item(BaseModel):
+            count: Num | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: str | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Counted(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=3) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+
+
+        class Summary(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Line(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+            status: str | None = None
+
+
+        class Shipment(BaseModel):
+            summary: Summary | None = None
+            lines: list[Line] | None = None
+
+
+        class Sealed(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_merged_member_values.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
+
+
+        class Order(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: Any | None = None
+            step: Any | None = None
+            code: Any | None = None
+            kind: Any | None = None
+            note: Any | None = None
+            legacy: Any | None = None
+
+
+        class Num(RootModel[float]):
+            root: float
+
+
+        class Base(BaseModel):
+            status: str | None = None
+
+
+        class Item(BaseModel):
+            count: Num | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: str | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Counted(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=3) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+
+
+        class Summary(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Line(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Shipment(BaseModel):
+            summary: Summary | None = None
+            lines: list[Line] | None = None
+
+
+        class Sealed(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: Any | None = None
+            step: Any | None = None
+            code: Any | None = None
+            kind: Any | None = None
+            note: Any | None = None
+            legacy: str | None = None
         ```
 
         <!-- fmt: on -->

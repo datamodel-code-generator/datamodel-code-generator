@@ -1,0 +1,14 @@
+[[change]]
+id = "intersect-merged-allof-members-api"
+category = "api"
+title = "Public names for --intersect-merged-allof-members"
+summary = "The option adds its config fields and the PresetName members and preset_names entries of the 20261123 presets; nothing is removed or changed."
+refs = ["#7398"]
+decision = ["#7398"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

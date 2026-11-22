@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 271 | Shared generation options. |
-| `GenerateConfig` | 286 | Public `generate()` configuration. |
-| `ParserConfig` | 225 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 227 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 238 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 241 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 228 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 228 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 227 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 228 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 272 | Shared generation options. |
+| `GenerateConfig` | 287 | Public `generate()` configuration. |
+| `ParserConfig` | 226 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 228 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 239 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 242 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 229 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 229 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 228 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 229 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1703,6 +1703,11 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | `legacy-union-parts-joined` | without `--distribute-allof-over-unions`, every `anyOf` and `oneOf` of an allOf is parsed at the site's path and their branches join one union, each with the other parts; a discriminated `$ref` branch of them is left out | keep |
 | `legacy-ref-member-union-dropped` | without `--distribute-allof-over-unions`, an allOf member naming an allOf that holds an `anyOf` or `oneOf` is a base, which later passes drop as a root model | keep |
 | `legacy-value-union-members-unread` | without `--distribute-allof-over-unions`, the value branches of an allOf's `anyOf` and `oneOf` are read only where every combination admits no object and the site writes a model: a field writes `Any`, a field of one `$ref` member that type, and an allOf of object branches leaves them out | keep |
+| `legacy-all-of-object-merge-row` | without `--intersect-merged-allof-members`, allOf members merged into one object are their merge row: of a property several of them declare, the later `type`, `nullable` and `multipleOf` win, two type lists join and a later `true` replaces the schema, and the allOf members of a member are dropped | keep |
+| `legacy-all-of-root-first-typed-member` | without `--intersect-merged-allof-members`, a named allOf of one `$ref` to a value schema and value members is the first typed of them with the constraints of all, the `enum` of another member dropped | keep |
+| `legacy-all-of-enum-root-self-alias` | without `--intersect-merged-allof-members`, a named allOf whose merged root is an enum written as a class names itself where no output reads the annotations (standard dataclasses), which later passes type `Any` | keep |
+| `legacy-all-of-map-counts-dropped` | without `--intersect-merged-allof-members`, an allOf of a `$ref` to a map and members that add only property counts or `propertyNames` is a model without fields at a definition, and the reference elsewhere | keep |
+| `legacy-all-of-base64-reference-layered` | without `--intersect-merged-allof-members`, a length or `pattern` an allOf site adds to a `$ref` to base64 text is written beside the reference, checked on the decoded value | keep |
 | `legacy-map-union-of-dicts` | without `--use-single-dict-for-object-maps`, patternProperties give a union of dicts, one per rendered value type, with no inexact-map warning (msgspec, which cannot decode it, gets the one dict) | keep |
 | `legacy-map-pattern-keys-only` | without `--use-single-dict-for-object-maps`, an additionalProperties schema beside patternProperties types no key; the dict admits the keys of its patterns only | keep |
 | `legacy-map-null-left-to-field` | without `--use-single-dict-for-object-maps`, the dict of an object map takes neither the null of its type array or `nullable` nor its property counts, which stay on the field (a type array of object and null is a union holding the dict); only the typed values of `--use-typed-nullable-map-values` make one dict, optional where its type array lists null, joined with the other types | keep |

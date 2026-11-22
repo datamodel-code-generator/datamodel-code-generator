@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
-    from datamodel_code_generator.model import DataModel, DataModelFieldBase
+    from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
@@ -70,10 +70,6 @@ class ObjectMapsHost(AllOfValuesHost, Protocol):
     @property
     def check_pattern_maps_strictly(self) -> bool:
         """Whether the maps the patternProperties validator checks key and count by their patterns."""
-
-    @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
 
     @property
     def use_annotated(self) -> bool:

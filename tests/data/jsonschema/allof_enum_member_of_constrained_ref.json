@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payment",
+  "type": "object",
+  "$defs": {
+    "ThreeLetters": {
+      "minLength": 3,
+      "maxLength": 3
+    },
+    "Code": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "Currency": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Code"
+        },
+        {
+          "type": "string",
+          "enum": [
+            "USD",
+            "EUR"
+          ]
+        }
+      ]
+    },
+    "Settlement": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ThreeLetters"
+        },
+        {
+          "type": "string",
+          "enum": [
+            "GBP",
+            "JPY"
+          ]
+        }
+      ]
+    }
+  },
+  "properties": {
+    "currency": {
+      "$ref": "#/$defs/Currency"
+    },
+    "settlement": {
+      "$ref": "#/$defs/Settlement"
+    }
+  }
+}

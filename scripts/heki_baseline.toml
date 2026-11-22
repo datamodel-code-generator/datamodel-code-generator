@@ -5904,6 +5904,34 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_all_of_values.py"
+qualname = "conjoined_declarations"
+rule_code = "MUT203"
+target = "datamodel_code_generator.parser._schema_reading._IntersectionReader._*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_all_of_values.py"
+qualname = "conjoined_declarations"
+rule_code = "MUT204"
+target = "datamodel_code_generator._url_redaction.named_location"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_all_of_values.py"
+qualname = "conjoined_declarations"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser._schema_reading._IntersectionReader._*"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_all_of_values.py"
+qualname = "conjoined_declarations"
+rule_code = "MUT204"
+target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_all_of_values.py"
 qualname = "intersect_all_of_value_parts"
 rule_code = "MUT203"
 target = "datamodel_code_generator.parser._schema_reading._IntersectionReader._*"
@@ -6233,20 +6261,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "_conjoined_declarations"
-rule_code = "MUT204"
-target = "datamodel_code_generator._url_redaction.named_location"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "_conjoined_declarations"
-rule_code = "MUT204"
-target = "datamodel_code_generator.python_literal.stable_repr"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
 qualname = "_conjunctions_at"
 rule_code = "MUT204"
 target = "datamodel_code_generator._warning_control.quiet"
@@ -6384,20 +6398,6 @@ qualname = "merge_properties_with_parent_constraints"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "property_conjunctions"
-rule_code = "MUT203"
-target = "datamodel_code_generator.parser._schema_reading._IntersectionReader._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "property_conjunctions"
-rule_code = "MUT204"
-target = "datamodel_code_generator.parser._schema_reading._IntersectionReader._*"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
