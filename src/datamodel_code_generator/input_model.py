@@ -519,7 +519,13 @@ def _get_input_model_json_schema_class(
     class IdentifiedInputModelJsonSchema(
         cast("Any", GenerateJsonSchema if use_standard_schema else InputModelJsonSchema)
     ):
-        """Retain Pydantic's definition-to-runtime-type correspondence when merging."""
+        """Retain Pydantic's definition-to-runtime-type correspondence when merging.
+
+        ``merged_definition_names`` are the definitions of the last schema that Pydantic merged from distinct types,
+        which name no one class.
+        """
+
+        merged_definition_names: frozenset[str] = frozenset()
 
         def generate_inner(self, schema: Any) -> dict[str, Any]:
             if (ref := schema.get("ref")) and (cls := schema.get("cls")):
@@ -560,9 +566,14 @@ def _get_input_model_json_schema_class(
                             ]
             remapping = super()._build_definitions_remapping()
             definition_types.clear()
+            merged: set[str] = set()
             for defs_ref in self.definitions:
                 core_ref, _mode = self.defs_to_core_refs[defs_ref]
-                definition_types[remapping.remap_defs_ref(defs_ref)] = core_types.get(core_ref, core_ref)
+                name, model = remapping.remap_defs_ref(defs_ref), core_types.get(core_ref, core_ref)
+                if definition_types.setdefault(name, model) is not model:
+                    merged.add(name)
+                definition_types[name] = model
+            type(self).merged_definition_names = frozenset(merged)
             return remapping
 
     core_types: dict[str, type] = {}
@@ -1144,13 +1155,17 @@ def _prepare_reused_model_types(
 def _add_reused_definitions(
     nested_models: dict[str, type] | None,
     definition_types: dict[str, type | str] | None,
+    schema_types: ABCMapping[str, type | str],
+    merged_names: AbstractSet[str],
     *,
     identify: bool = False,
 ) -> None:
     """Let reuse find the specialized types (and, when identifying, the same-named ones) of the definitions.
 
-    Call it before another schema is generated: that refills ``definition_types``.
+    The definitions are identified first (``_identify_reused_definitions``). Call it before another schema is
+    generated: that refills ``definition_types`` and ``schema_types``.
     """
+    _identify_reused_definitions(nested_models, schema_types, merged_names)
     if nested_models is None or definition_types is None:
         return
     nested_models.update(
@@ -1158,6 +1173,22 @@ def _add_reused_definitions(
     )
     if identify and (identified_types := _colliding_definition_types(definition_types)):
         nested_models.update(identified_types)
+
+
+def _identify_reused_definitions(
+    nested_models: dict[str, type] | None, schema_types: ABCMapping[str, type | str], merged_names: AbstractSet[str]
+) -> None:
+    """Make each definition of the last schema that reuse finds by name the class the generation recorded for it.
+
+    ``schema_types`` holds that class by identity, where the names hold the last class of a name the fields reach. A
+    definition that Pydantic merged from distinct classes (``merged_names``) names no one class and keeps the name's.
+    """
+    if nested_models is not None:
+        nested_models.update(
+            (name, model)
+            for name, model in schema_types.items()
+            if name in nested_models and name not in merged_names and isinstance(model, type)
+        )
 
 
 def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
@@ -1467,8 +1498,14 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
     definitions: _InputModelDefinitions | None = None,
     generic_definitions: dict[str, type | str] | None = None,
     schema_types: dict[str, type | str] | None = None,
+    *,
+    nested_models: dict[str, type] | None = None,
 ) -> dict[str, object]:
-    """Transform a single model's schema to use allOf inheritance structure."""
+    """Transform a single model's schema to use allOf inheritance structure.
+
+    The definitions of each parent's schema that reuse finds by name in ``nested_models`` are identified as the root's
+    are (``_identify_reused_definitions``).
+    """
     if getattr(model_class, "__pydantic_root_model__", False):
         return schema
     if processed_parents is None:
@@ -1489,6 +1526,9 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
         parent_schema = _model_schema_with_python_types(
             parent, schema_generator, expression_collector, generic_definitions, schema_types
         )
+        _identify_reused_definitions(
+            nested_models, schema_types or {}, getattr(schema_generator, "merged_definition_names", frozenset())
+        )
         if definitions is not None:
             parent_schema = definitions.normalize(parent_schema, parent)
         parent_properties = cast("dict[str, object]", parent_schema.get("properties", {}))
@@ -1502,6 +1542,7 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
             definitions,
             generic_definitions,
             schema_types,
+            nested_models=nested_models,
         )
         processed_parents[parent] = parent_schema, parent_properties, parent_required
     parent_schema, parent_properties, parent_required = processed_parents[parent]
@@ -1800,7 +1841,13 @@ def _load_single_model_schema(
             schema = _model_schema_with_python_types(
                 obj, schema_generator, expression_collector, definition_types, schema_types
             )
-            _add_reused_definitions(nested_models, definition_types, identify=True)
+            _add_reused_definitions(
+                nested_models,
+                definition_types,
+                schema_types,
+                getattr(schema_generator, "merged_definition_names", frozenset()),
+                identify=True,
+            )
             schema = _transform_single_model_to_inheritance(
                 schema,
                 obj,
@@ -1808,6 +1855,7 @@ def _load_single_model_schema(
                 expression_collector=expression_collector,
                 generic_definitions=definition_types,
                 schema_types=schema_types,
+                nested_models=nested_models,
             )
         elif _typed_fields_family(obj) not in {None, _OutputModelFamily.MSGSPEC}:
             _require_json_schema_input(input_file_type, "a dataclass or TypedDict")
@@ -1815,16 +1863,20 @@ def _load_single_model_schema(
 
             nested_models, definition_types = _prepare_reused_model_types(model, ref_strategy, output_family)
             schema_types = definition_types if definition_types is not None else {}
-            schema = TypeAdapter(model).json_schema(
-                schema_generator=_get_input_model_json_schema_class(
-                    schema_types,
-                    [model],
-                    use_standard_schema=definition_types is None,
-                    preserve_generic_identity=definition_types is not None,
-                )
+            schema_generator = _get_input_model_json_schema_class(
+                schema_types,
+                [model],
+                use_standard_schema=definition_types is None,
+                preserve_generic_identity=definition_types is not None,
             )
+            schema = TypeAdapter(model).json_schema(schema_generator=schema_generator)
             schema = _add_python_type_info(schema, model, expression_collector, definition_types, schema_types)
-            _add_reused_definitions(nested_models, definition_types)
+            _add_reused_definitions(
+                nested_models,
+                definition_types,
+                schema_types,
+                getattr(schema_generator, "merged_definition_names", frozenset()),
+            )
         else:
             msg = (
                 f"{stable_repr(qualname)} is not a supported type. "

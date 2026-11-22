@@ -1067,6 +1067,15 @@ outer-plain-reuse-foreign	input_model/reuse_every_reached_input_model_type[outer
 outer-plain-reuse-foreign-option	input_model/reuse_every_reached_input_model_type[outer-plain-reuse-foreign-option].txt
 outer-reuse-foreign	input_model/reuse_every_reached_input_model_type[outer-reuse-foreign].txt
 outer-reuse-foreign-option	input_model/reuse_every_reached_input_model_type[outer-reuse-foreign-option].txt
+[test_input_model_reuse_same_named_classes]
+dataclass-reuse-all	input_model/reuse_same_named_classes[dataclass-reuse-all].txt
+dataclass-reuse-foreign	input_model/reuse_same_named_classes[dataclass-reuse-foreign].txt	= input_model/reuse_same_named_classes[dataclass-reuse-all].txt
+inherited-reuse-all	input_model/reuse_same_named_classes[inherited-reuse-all].txt
+merged-reuse-all	input_model/reuse_same_named_classes[merged-reuse-all].txt
+model-reuse-all	input_model/reuse_same_named_classes[model-reuse-all].txt
+model-reuse-foreign	input_model/reuse_same_named_classes[model-reuse-foreign].txt	= input_model/reuse_same_named_classes[model-reuse-all].txt
+nested-class-reuse-all	input_model/reuse_same_named_classes[nested-class-reuse-all].txt
+two-models-reuse-all	input_model/reuse_same_named_classes[two-models-reuse-all].txt
 [test_input_model_single_multi_level_inheritance]
 	input_model/single_multi_level_inheritance.txt
 [test_input_model_single_no_inheritance]
