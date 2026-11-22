@@ -7600,6 +7600,7 @@ def test_main_strict_types_date_time_kept(output_file: Path, extra_args: list[st
             *_STRICT_DATE_TIME,
             *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
         ],
+        skip_code_validation="--use-pendulum" in extra_args,
     )
 
 
