@@ -121,7 +121,7 @@ from scripts._source_model import SourceModule
 from scripts.check_source_rules import RULES
 from scripts.check_source_rules import Tree as SourceTree
 from scripts.check_source_rules import run as run_source_rules
-from tests.units import RefsIndex, derived_siblings, is_derived_label
+from tests.units import RefsIndex, derived_file_name, derived_siblings, is_derived_label
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -1037,11 +1037,13 @@ def _stored_lines(path: Path) -> list[str] | None:
 def _stored_list_tally(tally: Tally, root: Path) -> None:
     """Count the items and lines of the stored lists, reading each record's storage through its ``.refs`` file.
 
-    Only the records of the test's own list count: the other outputs it stores for an item, such as the warnings of
-    its generation, are no list of gaps.
+    Only the records of the test's own list count, the output the harness names after the item with no role: the
+    other outputs it stores for an item under a role, such as the ``warnings`` of its generation, are no list of gaps.
     """
     for sidecar, test in STORED_LISTS:
         path = root / sidecar
+        stem = PurePosixPath(sidecar).stem.removeprefix("test_")
+        siblings = derived_siblings(test, _module_tests(root, path.with_suffix(".py")))
         section = ""
         for raw in path.read_text(encoding="utf-8").splitlines() if path.is_file() else []:
             if raw.startswith("["):
@@ -1049,7 +1051,7 @@ def _stored_list_tally(tally: Tally, root: Path) -> None:
             if section != test or raw.startswith(("[", "#")):
                 continue
             item, label, *flags = raw.split("\t")
-            if not label.rpartition("/")[2].startswith(f"{test.removeprefix('test_')}["):
+            if label.rpartition("/")[2] != derived_file_name(stem, test, item, siblings, suffix=".txt"):
                 continue
             storage = next((flag.removeprefix("= ") for flag in flags if flag.startswith("= ")), label)
             environment = next((flag for flag in flags if flag.startswith("@")), "")
