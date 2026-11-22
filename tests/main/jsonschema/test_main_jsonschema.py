@@ -7359,7 +7359,7 @@ def test_main_strict_types(output_file: Path) -> None:
 
 @pytest.mark.cli_doc(
     options=["--strict-types"],
-    option_description="""Enable strict type validation for specified Python types.
+    option_description="""Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.
 
 The --strict-types option enforces stricter type checking by preventing implicit
 type coercion for the specified types (str, bytes, int, float, bool). This
@@ -7379,7 +7379,7 @@ objects (see the type mappings page).""",
     reason="Installed black doesn't support the old style",
 )
 def test_main_strict_types_all(output_file: Path) -> None:
-    """Enable strict type validation for specified Python types.
+    """Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.
 
     The --strict-types option enforces stricter type checking by preventing implicit
     type coercion for the specified types (str, bytes, int, float, bool). This

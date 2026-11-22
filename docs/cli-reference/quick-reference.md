@@ -70,7 +70,7 @@ datamodel-codegen [OPTIONS]
 | [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they name. |
-| [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
+| [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for str, bytes, int, float, bool, datetime, date a... |
 | [`--type-mappings`](typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
 | [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the field's whole type. |
@@ -614,7 +614,7 @@ All options sorted alphabetically:
 - [`--strict-dotted-module-names`](template-customization.md#strict-dotted-module-names) - Require canonical Python identifiers when inferring dotted m...
 - [`--strict-nullable`](model-customization.md#strict-nullable) - Treat default field as a non-nullable field.
 - [`--strict-refs`](general-options.md#strict-refs) - Treat unresolved local `$ref` JSON pointers as errors.
-- [`--strict-types`](typing-customization.md#strict-types) - Enable strict type validation for specified Python types.
+- [`--strict-types`](typing-customization.md#strict-types) - Enable strict type validation for str, bytes, int, float, bo...
 - [`--strip-default-none`](model-customization.md#strip-default-none) - Remove fields with None as default value from generated mode...
 - [`--tag-msgspec-by-payload-name`](model-customization.md#tag-msgspec-by-payload-name) - Tag the structs of a msgspec discriminated union with the pr...
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version) - Target Pydantic version for generated code compatibility.

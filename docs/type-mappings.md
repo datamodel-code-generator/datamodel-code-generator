@@ -247,7 +247,9 @@ are not changed.
 Strict mode reads JSON and Python input differently. `model_validate_json()` still accepts ISO strings, but Python input
 must be `datetime`, `date` or `time` objects: `Event(at="2020-01-01T00:00:00Z")` and `Event.model_validate({...})` fail.
 A default that Pydantic validates is Python input too, so a field whose `$ref` names a root model with a `default`
-fails on every input. FastAPI validates request bodies as Python input, so it rejects ISO strings there as well.
+fails when the field is left out ([#7380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7380)).
+The generated server and client read date and time values from text, so `--generate-server` and `--generate-client`
+stop with an error when `--strict-types` holds `datetime`, `date` or `time`.
 
 ```bash
 datamodel-codegen --input openapi.yaml --output models.py \

@@ -30,7 +30,7 @@
 | [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
 | [`--read-uuid6-uuid7-uuid8-formats`](#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID v... |
-| [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
+| [`--strict-types`](#strict-types) | Enable strict type validation for str, bytes, int, float, bo... |
 | [`--type-mappings`](#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](#type-overrides) | Replace schema model types with custom Python types via JSON... |
 | [`--type-overrides-replace-whole-type`](#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the f... |
@@ -5656,7 +5656,7 @@ entry may name them as a source or a target, and `--read-format-as-annotation` k
 
 ## `--strict-types` {#strict-types}
 
-Enable strict type validation for specified Python types.
+Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.
 
 The --strict-types option enforces stricter type checking by preventing implicit
 type coercion for the specified types (str, bytes, int, float, bool). This
