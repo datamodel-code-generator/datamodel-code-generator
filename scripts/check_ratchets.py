@@ -109,6 +109,7 @@ import tarfile
 import tempfile
 import tokenize
 from collections import Counter, defaultdict
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
@@ -125,6 +126,7 @@ from tests.units import RefsIndex, derived_file_name, derived_siblings, is_deriv
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from concurrent.futures import Future
 
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
@@ -1316,17 +1318,46 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
     return json.loads(output.stdout)
 
 
-def _copy_tallies(
-    base_root: Path, head_root: Path, ruff_args: list[str], base_commit: str
-) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
-    """Count both trees with the base revision's copy of this script; nothing where the base has no copy."""
-    copy = base_root / SCRIPT
-    if not copy.is_file():
-        return {}, {}
-    return (
-        _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit),
-        _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit),
+def _code_is_unchanged(base_root: Path, head_root: Path) -> bool:
+    """Return whether every file this run loaded from ``head_root`` (this script and its imports) is the base's too.
+
+    The base revision's copy then counts both trees as this run does, so its counts are this run's.
+    """
+    head = head_root.resolve()
+    loaded = {Path(module.__file__).resolve() for module in sys.modules.values() if getattr(module, "__file__", None)}
+    code = sorted(path.relative_to(head) for path in loaded if path.is_relative_to(head))
+    return bool(code) and all(
+        (base_root / path).is_file() and (base_root / path).read_bytes() == (head / path).read_bytes() for path in code
     )
+
+
+def _count_sites(root: Path, ruff: list[str]) -> dict[str, dict[str, list[int]]]:
+    """Count a tree in a worker process; the sites come back as plain dicts, which a process can send."""
+    return {
+        key: {path: list(lines) for path, lines in files.items()} for key, files in count_tree(root, ruff).sites.items()
+    }
+
+
+def _as_tally(sites: dict[str, dict[str, list[int]]]) -> Tally:
+    tally = Tally()
+    for key, files in sites.items():
+        for path, lines in files.items():
+            tally.sites[key][path] = list(lines)
+    return tally
+
+
+def _copy_tallies(
+    jobs: tuple[Future[dict[str, dict[str, int]]], Future[dict[str, dict[str, int]]]] | None,
+    counted: tuple[Tally, Tally],
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """Return the counts of both trees by the base revision's copy of this script.
+
+    ``counted`` holds this run's tallies of the base and the head: where the copy's code is this run's (no ``jobs``),
+    they are the copy's counts and the copy runs no second time.
+    """
+    if jobs is None:
+        return counted[0].counts(), counted[1].counts()
+    return jobs[0].result(), jobs[1].result()
 
 
 def _report_copy(
@@ -1527,7 +1558,20 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(base_root, filter="data")
-        base, head = count_tree(base_root, ruff), count_tree(head_root, ruff)
+        copy = base_root / SCRIPT
+        with ProcessPoolExecutor(max_workers=4) as pool:
+            # The four counts are independent: they run side by side, one process each.
+            base_job, head_job = (pool.submit(_count_sites, root, ruff) for root in (base_root, head_root))
+            copy_jobs = (
+                (
+                    pool.submit(_copy_counts, copy, base_root, ruff_args, "the base revision", fork),
+                    pool.submit(_copy_counts, copy, head_root, ruff_args, "the working tree", fork),
+                )
+                if copy.is_file() and not _code_is_unchanged(base_root, head_root)
+                else None
+            )
+            base, head = _as_tally(base_job.result()), _as_tally(head_job.result())
+            copy_counts = _copy_tallies(copy_jobs, (base, head)) if copy.is_file() else ({}, {})
         absolute = ABSOLUTE_KEYS | _absolute_keys(base_root)
         approvals = Approvals(_read_approvals(base_root, absolute)[0], _judged_pull_requests(head_root, fork))
         head_rises = set(_rises(base.counts(), head.counts(), approvals, absolute))
@@ -1539,7 +1583,7 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         lines += [*notes, *unreadable, *table_problems]
         seen = head_rises | {key for key in head.counts() if _kind(key) == "unreadable"}
         copy_lines = _report_copy(
-            *_copy_tallies(base_root, head_root, ruff_args, fork),
+            *copy_counts,
             lambda key, total: key in seen or approvals.covering(key, total) is not None,
             absolute,
         )

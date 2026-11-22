@@ -798,6 +798,12 @@ def show(flag: bool) -> None:
         "head": {"src/pkg/d.py": FUTURE + NAME},
         "args": ["--enforce"],
     },
+    "unchanged-counter": {
+        "base": COUNTER,
+        "head": {"src/pkg/d.py": FUTURE + NAME},
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
     "weakened-counter": {
         "base": COUNTER,
         "head": {
