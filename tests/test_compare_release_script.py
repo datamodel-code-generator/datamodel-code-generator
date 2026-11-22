@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import gzip
 import json
 import os
 import re
@@ -13,6 +14,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -23,6 +25,9 @@ from scripts import compare_release
 from scripts._behaviour_classify import kinds
 from tests.capabilities import needs
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 IMPORTED = re.compile(r"from \S+,")
@@ -1080,6 +1085,20 @@ def f3(value):
 def f4(value):
     return value + "4"
 """
+TWO_FILTERS = """def run(spec):
+    reach = spec.get("reach")
+    return "".join([part.lower() for part in spec["value"] if part and reach])
+"""
+MATCH_ARM_ON_ONE_LINE = """def run(spec):
+    match spec.get("reach"):
+        case True: return spec["value"].lower()
+        case _: return spec["value"]
+"""
+WHILE_BODY_ON_ONE_LINE = """def run(spec):
+    value, count = spec["value"], 0
+    while spec.get("reach") and count < 1: value, count = value.lower(), count + 1
+    return value
+"""
 LAMBDAS_ON_ONE_LINE = """def run(spec):
     first, second = (lambda value: value.lower()), (lambda value: value.lower())
     return second(spec["value"]) if spec.get("reach") else first(spec["value"])
@@ -1388,6 +1407,9 @@ ORACLES: dict[str, Oracle] = {
     "r3_s3_docstring_of_a_function_no_run_calls": _changed(
         DOCUMENTED, ("Return the value.", "Return the given value."), runs=NO_UNIT
     ),
+    "r4_element_after_two_filters": _changed(TWO_FILTERS, ("part.lower()", "part.casefold()")),
+    "r4_match_arm_on_one_line": _changed(MATCH_ARM_ON_ONE_LINE, (".lower()", ".casefold()")),
+    "r4_while_body_on_one_line": _changed(WHILE_BODY_ON_ONE_LINE, ("value.lower()", "value.casefold()")),
     "r4_lambdas_on_one_line": _changed(
         LAMBDAS_ON_ONE_LINE, ("(lambda value: value.lower())\n", "(lambda value: value.casefold())\n")
     ),
@@ -1579,16 +1601,24 @@ SUB_LINE = frozenset({
     "r2_p1_genexpr",
     "r2_p1_one_line_def",
     "r2_p2_tuple_in_lambda",
+    "r4_element_after_two_filters",
     "r4_lambdas_on_one_line",
+    "r4_match_arm_on_one_line",
     "r4_receiver_of_another_call",
+    "r4_while_body_on_one_line",
     "v2_else_arm_deleted",
     "v2_reindented_block",
 })
-"""The shapes whose changed part is less than a line: a line key cannot tell its arms apart (step 1b of the design).
+"""The shapes whose changed part is less than a line: a line key cannot tell its arms apart.
 
 Every catalog cell that runs the line holds the key, the plain cells too, so a pick of `REDUNDANCY` of them (the
-cheapest) leaves the reaching cell out and the picked comparison is incomplete: a known miss, never a pass.
+cheapest) leaves the reaching cell out and the picked comparison is incomplete: a known miss, never a pass. Where
+the interpreter reports branches, the catalog's sub-line keys (the first position of a code object that started, the
+instruction a branch led to) tell them apart, but for `SUB_LINE_MISSED`.
 """
+SUB_LINE_MISSED = frozenset({"r4_receiver_of_another_call", "v2_reindented_block"})
+"""The sub-line shapes no key of the catalog's revision tells apart: the read runs in every cell and only its object
+differs (a reader's receiver), or the arm exists on the head alone (the catalog's revision runs the line unbranched)."""
 
 
 SHARED = frozenset({
@@ -1604,13 +1634,14 @@ def _catalog_pick(
     tmp_path: Path,
     oracle: Oracle,
     *,
-    shift: bool = False,
+    between: Callable[[str], str] | None = None,
     inputs: dict[str, tuple[dict[str, object], str]] = CATALOG_INPUTS,
-) -> tuple[Path, list[str], list[str]]:
+) -> tuple[Path, list[str], list[str], list[dict[str, object]]]:
     """Record a catalog of `inputs` on the oracle's base commit and pick its change's cells.
 
-    With `shift`, a commit that moves the lines of `_case.py` comes between the catalog and the base of the change.
-    Return the repository, the comparison command of `_oracle_project` and the labels of the picked cells.
+    With `between`, a commit that edits `_case.py` so (on both sides of the change) comes between the catalog and the
+    base of the change. Return the repository, the comparison command of `_oracle_project`, the labels of the picked
+    cells and the pick's requirements.
     """
     from scripts import _cell_catalog as cell_catalog
     from scripts.behaviour_diff import Cell
@@ -1635,21 +1666,25 @@ def _catalog_pick(
     catalog = cell_catalog.record(runner, cells, catalog_commit, 1)
     catalog.write(tmp_path / "catalog.json.gz")
     base = catalog_side
-    if shift:
+    if between is not None:
         case = repo / "src" / "datamodel_code_generator" / "_case.py"
         changed = case.read_text(encoding="utf-8")
-        case.write_text(SHIFTED + oracle.base["_case.py"], encoding="utf-8")
-        for args in (["add", "-A", "src"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "shift"]):
+        case.write_text(between(oracle.base["_case.py"]), encoding="utf-8")
+        for args in (["add", "-A", "src"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "between"]):
             subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
-        case.write_text(SHIFTED + changed, encoding="utf-8")
+        case.write_text(between(changed), encoding="utf-8")
         shifted = compare_release.git(repo, "rev-parse", "HEAD").stdout.strip()
         base = compare_release.resolve_base(shifted, python, cache, repo)
         command[command.index("--base") + 1] = shifted
     units = compare_release.changed_units(python, repo, base, None, repo / "src")
     chosen = cell_catalog.pick_change(
-        cell_catalog.Catalog.read(tmp_path / "catalog.json.gz"), repo, units, (base.revision or "", None), REDUNDANCY
+        cell_catalog.Catalog.read(tmp_path / "catalog.json.gz"),
+        repo,
+        units,
+        (cell_catalog.ChangeSide(base.revision, base.source), cell_catalog.ChangeSide(None, repo / "src")),
+        REDUNDANCY,
     )
-    return repo, command, [cell["label"] for cell in chosen.data()["cells"]]
+    return repo, command, [cell["label"] for cell in chosen.data()["cells"]], chosen.data()["requirements"]
 
 
 def _compare(repo: Path, command: list[str], names: list[str]) -> str:
@@ -1670,7 +1705,7 @@ def test_cell_catalog_picks_the_cells_the_evidence_asks_for(case: str, tmp_path:
     that runs no changed line is left out; where the plain path runs a changed line too, some plain cells come with
     it and one is still left out), and comparing them gives the verdict comparing that input gives.
     """
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case])
     assert "reached.json" in picked, picked
     if case in SHARED:
         assert set(picked) < set(CATALOG_INPUTS), picked
@@ -1682,15 +1717,39 @@ def test_cell_catalog_picks_the_cells_the_evidence_asks_for(case: str, tmp_path:
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
+@needs("sys-monitoring", "branch-events")
+@pytest.mark.parametrize("case", sorted(SUB_LINE - SUB_LINE_MISSED))
+def test_cell_catalog_keys_a_change_inside_a_line(case: str, tmp_path: Path) -> None:
+    """A change of less than a line picks the cell that runs its part of the line: the sub-line keys tell it apart.
+
+    The reaching cell is picked and a plain cell is left out; a probe whose place the change moved (a head probe on a
+    changed line past its unchanged start) keeps its line keys, which may add a plain cell. Comparing the picked
+    cells gives the verdict comparing the reaching input gives.
+    """
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case])
+    assert "reached.json" in picked, picked
+    assert set(picked) < set(CATALOG_INPUTS), picked
+    assert _compare(repo, command, picked) == PICKED[case]
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
 @needs("sys-monitoring")
-@pytest.mark.parametrize("case", sorted(SUB_LINE))
+@pytest.mark.parametrize(
+    "case",
+    [
+        *sorted(SUB_LINE_MISSED),
+        *(pytest.param(case, marks=needs("no-branch-events")) for case in sorted(SUB_LINE - SUB_LINE_MISSED)),
+    ],
+)
 def test_cell_catalog_misses_a_change_inside_a_line(case: str, tmp_path: Path) -> None:
-    """A change of less than a line is a known miss: every cell that runs the line holds its key (step 1b).
+    """A change of less than a line that no catalog key tells apart is a known miss (all of them before 3.14).
 
     The pick takes the cheapest cells that run the line, the plain ones, so the picked comparison is incomplete (the
-    gate then says which code objects no compared cell ran). The step that keys a line's arms apart flips these.
+    gate then says which code objects no compared cell ran).
     """
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case])
     assert len(picked) == REDUNDANCY, picked
     assert set(picked) <= set(PLAIN_CELLS), picked
     assert _compare(repo, command, picked) == "incomplete"
@@ -1703,9 +1762,106 @@ def test_cell_catalog_misses_a_change_inside_a_line(case: str, tmp_path: Path) -
 @pytest.mark.parametrize("case", ["r2_p3_elif_deleted", "r2_p4_override_deleted", "r2_c4_override_body_changed"])
 def test_cell_catalog_reads_lines_of_an_older_revision(case: str, tmp_path: Path) -> None:
     """A catalog older than the change's base finds the change's lines where the commits between moved them."""
-    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case], shift=True)
+    repo, command, picked, _ = _catalog_pick(tmp_path, ORACLES[case], between=lambda text: SHIFTED + text)
     assert picked == ["reached.json"], picked
     assert _compare(repo, command, picked) == "complete"
+
+
+RENAMED_AROUND = """class Old:
+    @staticmethod
+    def convert(value):
+        return value.lower()
+
+
+def run(spec):
+    if spec.get("reach"):
+        return Old.convert(spec["value"])
+    return spec["value"]
+"""
+RAISES_BEFORE = """def convert(value):
+    number = int(value)
+    return str(number).lower()
+
+
+def run(spec):
+    try:
+        return convert("1" if spec.get("reach") else spec["value"])
+    except ValueError:
+        return spec["value"]
+"""
+AND_CHAIN = """def run(spec):
+    value = spec["value"]
+    return str(value and spec.get("reach") and value.lower())
+"""
+STOPPED_AT_A_YIELD = """def values(value):
+    yield value
+    yield value.lower()
+
+
+def run(spec):
+    parts = values(spec["value"])
+    first = next(parts)
+    return first + next(parts) if spec.get("reach") else first
+"""
+EITHER_TAKES_THE_BODY = """def run(spec):
+    value = spec["value"]
+    if spec.get("other") is not None or spec.get("reach"): value = value.lower()
+    return value
+"""
+SUB_LINE_LIMITS = {
+    "a rename between the catalog and the base": (
+        _changed(RENAMED_AROUND, ("value.lower()", "value.casefold()")),
+        lambda text: text.replace("Old", "New"),
+        ("line", ["reached.json"]),
+    ),
+    "a call that raises before the probe": (
+        _changed(RAISES_BEFORE, (".lower()", ".casefold()")),
+        None,
+        ("sub-line", ["reached.json"]),
+    ),
+    "a generator stopped at its first yield": (
+        _changed(STOPPED_AT_A_YIELD, ("value.lower()", "value.casefold()")),
+        None,
+        ("line", ["reached.json"]),
+    ),
+    "a body both ways of an or reach": (
+        _changed(EITHER_TAKES_THE_BODY, ("value.lower()", "value.casefold()")),
+        None,
+        ("sub-line", ["reached.json"]),
+    ),
+    "the operands of an and chain": (
+        _changed(AND_CHAIN, ("value.lower()", "value.casefold()")),
+        None,
+        ("line", ["plain.json", "plain3.json"]),
+    ),
+}
+"""Changes whose base probes' sub-line keys cannot stand alone, the commit between the catalog and the base (None:
+the catalog is the base's) and the keys and cells the pick gives the base probe of the changed call.
+
+A rename leaves the line's text but drifts its start key (`New.convert` against the catalog's `Old.convert`): the
+line keys decide. A call that raises before the probe ran its stretch's start in every cell, the plain ones too: the
+line's cells (the reaching one) intersect it. Every operand of an `and` chain ends at a `POP_TOP` with the chain's
+place, which the plain cells hold after the first operand: that key names no one instruction, so the line keys decide.
+A generator resumes after a `yield` without an event, so no key of the stretch before stands for the probe after it;
+the left way of an `or`'s last operand and its first operand's jump both lead into the body, each reported.
+"""
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own pick, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring", "branch-events")
+@pytest.mark.parametrize("case", sorted(SUB_LINE_LIMITS))
+def test_cell_catalog_sub_line_keys_only_narrow_the_line_s_cells(case: str, tmp_path: Path) -> None:
+    """Sub-line keys narrow a probe's line cells to those holding one, else the probe keeps its line cells.
+
+    They narrow where each names one instruction or code object of the catalog's revision; a key an edit drifted
+    never makes the probe `none`.
+    """
+    oracle, between, wanted = SUB_LINE_LIMITS[case]
+    _, _, _, found = _catalog_pick(tmp_path, oracle, between=between)
+    probe = next(item for item in found if item["side"] == "base" and item["kind"] in {"instr", "start"})
+    assert (probe["keys"], sorted(probe["picked"])) == wanted, found
 
 
 DROPPED_BASE = "def run(spec):\n    value = spec['value']\n    return value[:2]\n"
@@ -1727,11 +1883,48 @@ def test_cell_catalog_pick_is_not_the_verdict(tmp_path: Path) -> None:
     of the picked cells alone is no verdict: all the inputs that run the line differ where the picked ones do not.
     """
     oracle = Oracle({"_case.py": DROPPED_BASE}, {"_case.py": DROPPED_BASE.replace("[:2]", "[:3]")})
-    repo, command, picked = _catalog_pick(tmp_path, oracle, inputs=DROPPED_INPUTS)
+    repo, command, picked, _ = _catalog_pick(tmp_path, oracle, inputs=DROPPED_INPUTS)
     assert len(picked) == REDUNDANCY
     assert "w.json" not in picked
     assert _compare(repo, command, picked) == "complete"
     assert _compare(repo, command, list(DROPPED_INPUTS)) == "differ"
+
+
+STARTING_SHAPES = {
+    "a generator expression": "def f(x):\n    return (p.upper() for p in x)\n",
+    "a generator function": "def f(x):\n    yield x\n    yield x.upper()\n",
+    "a coroutine": "async def f(x):\n    return x.upper()\n",
+}
+"""Code objects that run a setup before their body starts (`PY_START` reports the body's `RESUME`)."""
+
+
+@needs("branch-events")
+@pytest.mark.parametrize("case", sorted(STARTING_SHAPES))
+def test_entry_places_start_where_the_body_starts(case: str) -> None:
+    """A stretch starts a code object at its body's `RESUME`, and its start key names it apart from the code around it.
+
+    The setup before (a generator's, run when it is made, not when it starts) has no key; the first instruction after
+    has no key but the start key (none where a loop starts there), which holds the qualname: a generator expression
+    can start at its function's first position.
+    """
+    import dis
+    from types import CodeType
+
+    module = compile(STARTING_SHAPES[case], "<shape>", "exec")
+    function = next(item for item in module.co_consts if isinstance(item, CodeType))
+    lines = []
+    for code in [function, *(item for item in function.co_consts if isinstance(item, CodeType))]:
+        instructions = list(dis.get_instructions(code))
+        body = max(at for at, item in enumerate(instructions) if item.opname == "RESUME" and not (item.arg or 0) & 3)
+        setup = [compare_release.entry_places(code, item.offset) for item in instructions[:body]]
+        first = compare_release.entry_places(code, instructions[body + 1].offset)
+        named = compare_release.start_place(code).endswith(f" {code.co_qualname}")
+        own = first in (None, [("start", compare_release.start_place(code))])
+        lines += [
+            f"{code.co_qualname}: setup without keys {setup.count(None) == len(setup)}, named start {named}",
+            f"  after its RESUME no key but its own start: {own}",
+        ]
+    assert_output("\n".join(lines) + "\n")
 
 
 FILE_MAP_CASES = {
@@ -1754,6 +1947,42 @@ def test_file_map_places_a_side_line_on_the_catalog(case: str) -> None:
     hunks, lines = FILE_MAP_CASES[case]
     found = FileMap("module.py", hunks)
     assert_output("".join(f"{line} -> {found.lines(line)}\n" for line in lines))
+
+
+REPLACED = (
+    (3, "    return a if c else b", "    return a if c else b.lower()"),
+    (30, "    a = first", "    a = second"),
+    (31, "    return b", "    return b or a"),
+)
+"""Line 3 of a side replaces line 3 of the catalog, one for one (their texts agree up to byte 24); lines 30 and 31
+replace two catalog lines together (`return b` is unchanged up to byte 12)."""
+SUB_LINE_KEY_CASES = {
+    "a start on an unchanged line": ((), ("start", "m.py", "7:8 f.<locals>.<lambda>")),
+    "a start below a pure insertion": (((2, 0, 3, 2),), ("start", "m.py", "7:8 f")),
+    "an arm on an unchanged line": (((3, 1, 3, 1),), ("arm", "m.py", "5:4-5:9 LOAD_FAST")),
+    "an arm in the unchanged start of a replaced line": (((3, 1, 3, 1),), ("arm", "m.py", "3:22-3:23 LOAD_FAST")),
+    "an arm reaching past it": (((3, 1, 3, 1),), ("arm", "m.py", "3:22-3:31 LOAD_ATTR")),
+    "a start in it": (((3, 1, 3, 1),), ("start", "m.py", "3:11 f.<locals>.<lambda>")),
+    "an arm over two lines, one replaced": (((3, 1, 3, 1),), ("arm", "m.py", "2:4-3:9 CALL")),
+    "an arm of a line a hunk adds": (((3, 1, 3, 2),), ("arm", "m.py", "4:4-4:9 LOAD_FAST")),
+    "a file the catalog lacks": (None, ("arm", "m.py", "1:0-1:1 LOAD_NAME")),
+    "the second of two lines replaced together": (((20, 2, 30, 2),), ("arm", "m.py", "31:11-31:12 LOAD_FAST")),
+}
+"""Sub-line keys of a side, with the hunks of their file between the catalog and the side (None: a new file)."""
+
+
+@pytest.mark.parametrize("case", sorted(SUB_LINE_KEY_CASES))
+def test_cell_catalog_places_a_sub_line_key_where_its_text_holds(case: str) -> None:
+    """A sub-line key lies on the catalog where its text is the catalog's, else it has none.
+
+    That is an unchanged line, or the unchanged start of a line replaced one for one up to where the key's span ends
+    (a start: up to where it starts).
+    """
+    from scripts._cell_catalog import FileMap, translated
+
+    hunks, key = SUB_LINE_KEY_CASES[case]
+    maps = {"m.py": FileMap(None) if hunks is None else FileMap("m.py", hunks, REPLACED if hunks else ())}
+    assert_output(f"{key} -> {translated(key, maps)}\n")
 
 
 CELL_SET_CASES = {
@@ -1785,13 +2014,14 @@ def test_cell_catalog_pick_names_how_each_requirement_is_met(round_trip: bool, t
     """A requirement is met by cells, at startup, by no catalog cell or by none that can run; failed cells stay out.
 
     Cell 2 failed on the catalog's revision: it holds no key, so no pick takes it. The pick reads the same from the
-    catalog written to a file and read back.
+    catalog written to a file and read back, with its sub-line keys and the version that recorded them.
     """
     from scripts._cell_catalog import Catalog, CatalogCell, pick
 
     cells = [CatalogCell("default", name, "jsonschema", "pydantic_v2.BaseModel") for name in ("a", "b", "failed")]
-    shared = {("line", "m.py", 3), ("code", "m.py", "f")}
-    catalog = Catalog.of("r" * 40, cells, [shared, {("line", "m.py", 3)}, None], {("line", "boot.py", 1)})
+    shared = {("line", "m.py", 3), ("code", "m.py", "f"), ("start", "m.py", "3:4 f"), ("arm", "m.py", "3:8-3:9 CALL")}
+    ran = [shared, {("line", "m.py", 3)}, None]
+    catalog = Catalog.of("r" * 40, cells, ran, {("line", "boot.py", 1)}, "3.15")
     if round_trip:
         catalog.write(tmp_path / "catalog.json.gz")
         catalog = Catalog.read(tmp_path / "catalog.json.gz")
@@ -1804,16 +2034,100 @@ def test_cell_catalog_pick_names_how_each_requirement_is_met(round_trip: bool, t
         _requirement_unit("head", "m.py", "f", {"kind": "unmeasurable"}),
     ]
     chosen = pick(catalog, units, {"base": {}, "head": {}})
-    assert_output("\n".join([*chosen.lines(), f"failed cells: {catalog.failed}", f"picked: {chosen.picked}"]) + "\n")
+    sub_line = sorted((key for key in catalog.keys if key[0] in {"start", "arm"}), key=str)
+    lines = [f"failed cells: {catalog.failed}", f"picked: {chosen.picked}", f"python {catalog.python}: {sub_line}"]
+    assert_output("\n".join([*chosen.lines(), *lines]) + "\n")
+
+
+LOADED_CASES = {
+    "a usable catalog": ("first", "second", 2),
+    "a release base": ("first", None, 2),
+    "no catalog file": (None, "second", 2),
+    "another format": ("first", "second", 1),
+    "a catalog newer than the base": ("second", "first", 2),
+    "a catalog cut short": ("first", "second", 0),
+}
+"""The catalog revision (None: no file), the base (None: a release) and the catalog format (0: the file is cut short)
+of a gate's `--pick`."""
+
+
+@pytest.mark.parametrize("case", sorted(LOADED_CASES))
+def test_cell_catalog_a_gate_picks_from_only_a_catalog_older_than_its_base(case: str, tmp_path: Path) -> None:
+    """A gate picks from a catalog of this format whose revision is the base's ancestor; else it says why it cannot."""
+    from scripts._cell_catalog import Catalog, CatalogCell, loaded
+
+    catalog_name, base_name, form = LOADED_CASES[case]
+    commits = {}
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    for name in ("first", "second"):
+        allowed = ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", name, "--allow-empty"]
+        subprocess.run(["git", *allowed], cwd=tmp_path, check=True)
+        commits[name] = compare_release.git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+    path = tmp_path / "catalog.json.gz"
+    if catalog_name is not None:
+        cells = [CatalogCell("default", "a", "jsonschema", "pydantic_v2.BaseModel")]
+        Catalog.of(commits[catalog_name], cells, [set()], set()).write(path)
+        if not form:
+            path.write_bytes(path.read_bytes()[:20])
+        elif form != 2:
+            with gzip.open(path, "rt", encoding="utf-8") as file:
+                data = json.load(file) | {"format": form}
+            with gzip.open(path, "wt", encoding="utf-8") as file:
+                json.dump(data, file)
+    catalog, reason = loaded(path, tmp_path, commits[base_name] if base_name else None)
+    text = f"{catalog.revision if catalog else None} | {reason}\n"
+    for name, commit in commits.items():
+        text = text.replace(commit, f"<{name}>").replace(commit[:12], f"<{name}>")
+    assert_output(text.replace(str(tmp_path), "TMP"))
+
+
+RAISING_HELPER = "def helper(value):\n    number = int(value)\n    return number + 1\n"
+"""A helper whose call at import raised before its last line: startup ran its start, not that line."""
+
+
+@needs("branch-events")
+def test_cell_catalog_startup_needs_both_kinds_of_keys(tmp_path: Path) -> None:
+    """A probe narrowed by sub-line keys is met at startup only where its line keys are too, else by its cells.
+
+    The CLI's import called `helper`, which raised at `int`: startup holds its start key and line 2, not line 3. Cell
+    `a` runs line 3, cell `b` stops at line 2 like the import; the probe of line 3 is cell `a`'s, not startup's.
+    """
+    import dis
+
+    from scripts._cell_catalog import Catalog, CatalogCell, Sources, pick
+
+    package = tmp_path / "src" / compare_release.PACKAGE
+    package.mkdir(parents=True)
+    (package / "m.py").write_text(RAISING_HELPER, encoding="utf-8")
+    for args in (
+        ["init", "-q"],
+        ["add", "-A", "."],
+        ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "m"],
+    ):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+    commit = compare_release.git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+    helper = next(item for item in compile(RAISING_HELPER, "m.py", "exec").co_consts if hasattr(item, "co_code"))
+    started = ("start", "m.py", compare_release.start_place(helper))
+    cells = [CatalogCell("default", name, "jsonschema", "pydantic_v2.BaseModel") for name in ("a", "b")]
+    ran = [{("line", "m.py", 3), started}, {("line", "m.py", 2), started}]
+    version = "{}.{}".format(*sys.version_info[:2])
+    catalog = Catalog.of(commit, cells, ran, {("line", "m.py", 2), started}, version)
+    offsets = [item.offset for item in dis.get_instructions(helper) if item.positions.lineno == 3][:1]
+    code = ["m.py", helper.co_qualname, helper.co_firstlineno, *change_units.first_position(helper)]
+    probe = {"kind": "instr", "code": code, "offsets": offsets, "where": "3:11-3:21"}
+    units = [{"side": "base", "path": "m.py", "qualname": "helper", "probes": [probe]}]
+    sources = Sources({"base": tmp_path / "src", "head": tmp_path / "src"}, tmp_path, commit)
+    chosen = pick(catalog, units, {"base": {}, "head": {}}, 2, sources)
+    assert_output("\n".join(chosen.lines()).replace(commit[:12], "<catalog>") + "\n")
 
 
 def test_cell_catalog_pick_refuses_a_release_base(tmp_path: Path) -> None:
     """A release base has no change units: `pick` says to run the tier instead of reporting an empty pick."""
-    from scripts._cell_catalog import Catalog, CatalogCell, pick_change
+    from scripts._cell_catalog import Catalog, CatalogCell, ChangeSide, pick_change
 
     catalog = Catalog.of("r" * 40, [CatalogCell("default", "a", "jsonschema", "pydantic_v2.BaseModel")], [set()], set())
     with pytest.raises(SystemExit) as refused:
-        pick_change(catalog, tmp_path, None, ("0.98.0", None))
+        pick_change(catalog, tmp_path, None, (ChangeSide("0.98.0"), ChangeSide(None)))
     assert_output(f"{refused.value}\n")
 
 
@@ -1868,7 +2182,7 @@ def test_cell_catalog_records_code_the_warm_up_ran(tmp_path: Path) -> None:
     warm = "from datamodel_code_generator import _case\n\n_case.run({'value': 'warm'})\n"
     changed = "def run(spec):\n    value = spec['value']\n    return value\n"
     oracle = Oracle({"_case.py": PLAIN_RUN, "_warm.py": warm}, {"_case.py": changed})
-    _, _, picked = _catalog_pick(tmp_path, oracle)
+    _, _, picked, _ = _catalog_pick(tmp_path, oracle)
     assert len(picked) == REDUNDANCY, picked
     assert set(picked) <= set(PLAIN_CELLS), picked
 

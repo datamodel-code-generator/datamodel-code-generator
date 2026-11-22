@@ -1,0 +1,1 @@
+['gate', 'v1', '--identity'] -> ['gate', 'v1', '--identity']

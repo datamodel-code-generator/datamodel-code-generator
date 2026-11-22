@@ -1,0 +1,2 @@
+catalog: recording what each cell ran needs sys.monitoring (Python 3.12 or later)
+written: False

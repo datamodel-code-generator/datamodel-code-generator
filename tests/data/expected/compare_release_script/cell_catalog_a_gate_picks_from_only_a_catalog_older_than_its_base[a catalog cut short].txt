@@ -1,0 +1,1 @@
+None | TMP/catalog.json.gz: unreadable catalog (EOFError)

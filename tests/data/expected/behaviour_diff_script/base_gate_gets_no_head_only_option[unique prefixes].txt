@@ -1,0 +1,1 @@
+['gate', '--verd', 'v.json', '--pi', 'c.json.gz', '--projects', 'p.json'] -> ['gate', '--projects', 'p.json']

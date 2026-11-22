@@ -1,0 +1,1 @@
+None | no catalog at TMP/catalog.json.gz

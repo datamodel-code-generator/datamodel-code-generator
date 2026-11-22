@@ -1,0 +1,2 @@
+f: setup without keys True, named start True
+  after its RESUME no key but its own start: True

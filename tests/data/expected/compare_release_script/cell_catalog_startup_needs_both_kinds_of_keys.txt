@@ -1,0 +1,2 @@
+pick: catalog <catalog>, requirements 1: by cells 1 (1 by sub-line keys), at startup 0, no catalog cell 0, unmeasurable 0; cells picked 1
+pick: cell default a | pydantic_v2.BaseModel | default

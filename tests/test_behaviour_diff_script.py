@@ -1945,6 +1945,87 @@ def test_identity_evidence_oracle(case: str, tmp_path: Path) -> None:
     assert_output("\n".join([f"exit={code}", *lines]).replace(commit[:9], "<sha>") + "\n")
 
 
+PICK_CATALOG_INPUTS = ("plain.json", "deprecated.json", "warns.json")
+"""The fixtures of the identity oracle's catalog: only `deprecated.json` takes the changed branch."""
+PICK_CASES = {
+    "the pick adds the cell that takes the change": (True, "complete"),
+    "without a catalog the tier runs alone": (False, "incomplete"),
+}
+"""Whether the identity oracle's catalog exists, and the verdict of the plain selection with `--pick` on it."""
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", sorted(PICK_CASES))
+def test_identity_with_a_pick(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`--pick` adds the catalog's cells that run the change to the selection, which stays; without one it says so.
+
+    The catalog (`catalog`, recorded on the base commit) holds the cells of three fixtures; the selection of the plain
+    fixture alone takes no changed branch, the picked `deprecated.json` does, so the run is complete with both.
+    """
+    exists, wanted = PICK_CASES[case]
+    argv, commit = _identity_argv(tmp_path, "tests/data/jsonschema/plain.json")
+    catalog = tmp_path / "catalog.json.gz"
+    if exists:
+        monkeypatch.setenv(behaviour_diff.REPOSITORY_ENV, str(tmp_path / "repo"))
+        selects = [arg for name in PICK_CATALOG_INPUTS for arg in ("--select", f"tests/data/jsonschema/{name}")]
+        with redirect_stdout(StringIO()):
+            behaviour_diff.main([
+                "catalog",
+                str(catalog),
+                commit,
+                *selects,
+                "-j",
+                "1",
+                "--cache-dir",
+                str(tmp_path / "cache"),
+            ])
+    stdout = StringIO()
+    with redirect_stdout(stdout), redirect_stderr(StringIO()):
+        code = behaviour_diff.main([*argv, "--pick", str(catalog)])
+    rows = [json.loads(line) for line in (tmp_path / "cells.jsonl").read_text(encoding="utf-8").splitlines()]
+    lines = [
+        line
+        for line in stdout.getvalue().splitlines()
+        if line.startswith(("pick: cell", "pick: no", "evidence: complete", "evidence: incomplete"))
+    ]
+    complete = code == 0 and "evidence: complete" in lines
+    incomplete = code == 1 and any(line.startswith("evidence: incomplete") for line in lines)
+    verdict = "complete" if complete else "incomplete" if incomplete else f"exit={code}"
+    assert verdict == wanted, stdout.getvalue()
+    text = "\n".join([f"exit={code}", *lines, *sorted(row["input"] for row in rows)]) + "\n"
+    assert_output(text.replace(commit[:12], "<sha>").replace(str(tmp_path), "TMP"))
+
+
+@needs("posix", "no-sys-monitoring")
+def test_catalog_refuses_an_interpreter_without_sys_monitoring(tmp_path: Path) -> None:
+    """`catalog` refuses Python 3.11, which records nothing a cell ran, before any worker: no catalog of no keys."""
+    out = tmp_path / "catalog.json.gz"
+    with pytest.raises(SystemExit) as refused:
+        behaviour_diff.main(["catalog", str(out), "--select", "no/such/input", "--cache-dir", str(tmp_path / "cache")])
+    assert_output(f"{refused.value}\nwritten: {out.exists()}\n")
+
+
+BASE_ARGUMENT_CASES = {
+    "verdicts and a pick": ["gate", "v1", "--verdicts", "v.json", "--pick", "c.json.gz", "--check"],
+    "joined values": ["gate", "--verdicts=v.json", "--pick=c.json.gz", "-j", "2"],
+    "unique prefixes": ["gate", "--verd", "v.json", "--pi", "c.json.gz", "--projects", "p.json"],
+    "neither": ["gate", "v1", "--identity"],
+    "a checkout named like an option after --": ["gate", "v1", "--pick", "c.json.gz", "--check", "--", "--pick"],
+}
+"""Arguments of a head's gate: its base's gate gets them without the head-only options."""
+
+
+@pytest.mark.parametrize("case", sorted(BASE_ARGUMENT_CASES))
+def test_base_gate_gets_no_head_only_option(case: str) -> None:
+    """The base's gate gets the head's arguments without `--verdicts` and `--pick`, or a prefix of either, and value."""
+    argv = BASE_ARGUMENT_CASES[case]
+    assert_output(f"{argv} -> {behaviour_diff.base_arguments(argv)}\n")
+
+
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )

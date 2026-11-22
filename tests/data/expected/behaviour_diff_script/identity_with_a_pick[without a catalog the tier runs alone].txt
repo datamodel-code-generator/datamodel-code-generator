@@ -1,0 +1,4 @@
+exit=1
+pick: no catalog at TMP/catalog.json.gz: the tier runs alone
+evidence: incomplete: changed code objects no compared cell ran: 1
+tests/data/jsonschema/plain.json

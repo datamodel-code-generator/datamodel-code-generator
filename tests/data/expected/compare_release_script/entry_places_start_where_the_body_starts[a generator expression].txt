@@ -1,0 +1,4 @@
+f: setup without keys True, named start True
+  after its RESUME no key but its own start: True
+f.<locals>.<genexpr>: setup without keys True, named start True
+  after its RESUME no key but its own start: True

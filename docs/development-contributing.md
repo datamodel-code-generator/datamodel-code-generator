@@ -841,6 +841,13 @@ unmeasurable or could not be measured, and names each with the probes that did n
 data file with `--test-coverage` to tell those whose probes lie on lines the tests ran (line coverage, which does not
 tell which part of a line ran). Identity judges the whole run, so it refuses `--shard`.
 
+To find the runs that reach your change, record a cell catalog on a revision older than your base
+(`scripts/behaviour_diff.py catalog <file> <revision> --select <glob>`: each fixture cell with the lines, code objects
+and files it ran, and on Python 3.14 or later which arm of a line and which lambda or nested function on it) and pass
+it to the gate with `--pick <file>`: the gate prints one list of the catalog cells it picks for all the probes
+together and adds them to the cells it runs, never dropping one, and it names the probes no catalog cell runs. The
+evidence still judges what the run compared.
+
 ## Calibrating the option recommender
 
 `scripts/recommender_calibrate.py` checks the option recommender's rules against the public schemas listed in
