@@ -32,6 +32,7 @@ pre-commit-hook-runs	source_model/every_rule_states_its_verdicts[pre-commit-hook
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt
 public-api-record	source_model/every_rule_states_its_verdicts[public-api-record].txt
 rule-b	source_model/every_rule_states_its_verdicts[rule-b].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
+shape-family-client-reads	source_model/every_rule_states_its_verdicts[shape-family-client-reads].txt
 source-model-compiler-check	source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 source-rules	source_model/every_rule_states_its_verdicts[source-rules].txt
 template-assignments	source_model/every_rule_states_its_verdicts[template-assignments].txt

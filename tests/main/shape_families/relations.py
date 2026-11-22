@@ -325,6 +325,35 @@ def client_module(client: Path) -> SourceModule:
     return SourceModule(path.read_text(encoding="utf-8"), path.as_posix())
 
 
+def parameter_annotations(module: SourceModule) -> list[tuple[Scope, str, str, int]]:
+    """Return each annotated parameter of the functions a module writes: the function, the name, the text, the line.
+
+    The text is the annotation's source with each run of whitespace one space, as the model gives it.
+    """
+    return [
+        (function, name, module.source(annotation.node), annotation.line)
+        for annotation in module.annotations
+        if (name := getattr(annotation.target, "arg", None))
+        and (function := module.header_of(annotation.line, annotation.node.col_offset)) is not None
+    ]
+
+
+def imported_names(module: SourceModule) -> list[tuple[str, str, str, int]]:
+    """Return each name a module-level ``from`` import binds: the name, its module, the name imported, the line.
+
+    Relative imports and ``__future__`` imports are left out.
+    """
+    return [
+        (record.bound, str(record.source), str(record.target).rpartition(".")[2], record.node.lineno)
+        for record in module.imports
+        if record.kind == "from"
+        and record.scope.kind == "module"
+        and not record.level
+        and record.source != "__future__"
+        and record.bound is not None
+    ]
+
+
 def annotation_namespace(module: SourceModule, models: object) -> dict[str, object]:
     """Return the names the client module's annotations read: its imports from outside the package, and the models.
 
@@ -332,14 +361,11 @@ def annotation_namespace(module: SourceModule, models: object) -> dict[str, obje
     which ``client_type`` takes out again.
     """
     namespace: dict[str, object] = {"UNSET": _Unset}
-    for record in module.imports:
-        if record.kind != "from" or record.level or record.source == "__future__" or record.bound is None:
-            continue
-        name = str(record.target).rpartition(".")[2]
-        if str(record.source).partition(".")[0] == CLIENT_PACKAGE:
-            namespace.update({record.bound: models} if name == "models" else {})
+    for bound, source, name, _line in imported_names(module):
+        if source.partition(".")[0] == CLIENT_PACKAGE:
+            namespace.update({bound: models} if name == "models" else {})
         else:
-            namespace[record.bound] = getattr(sys.modules[str(record.source)], name)
+            namespace[bound] = getattr(sys.modules[source], name)
     return namespace
 
 
@@ -349,11 +375,9 @@ def client_arguments(module: SourceModule) -> dict[str, str]:
     The overload that takes the fields writes ``body: UNSET``.
     """
     overloads: dict[Scope, dict[str, str]] = {}
-    for annotation in module.annotations:
-        function = module.header_of(annotation.line, annotation.node.col_offset)
-        if function is not None and function.qualname.endswith(".send_rows"):
-            name = getattr(annotation.target, "arg", None)
-            overloads.setdefault(function, {}).update({name: module.source(annotation.node)} if name else {})
+    for function, name, text, _line in parameter_annotations(module):
+        if function.qualname.endswith(".send_rows"):
+            overloads.setdefault(function, {})[name] = text
     fields = next(arguments for arguments in overloads.values() if arguments.get("body") == "UNSET")
     return {name: text for name, text in fields.items() if name != "body"}
 

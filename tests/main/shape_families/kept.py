@@ -96,8 +96,6 @@ def differences(cells: Iterable[Cell], rules: Iterable[Kept]) -> Differences:
     )
 
 
-CLIENT_NULLABLE_MAP_ISSUE: Final = "#1"
-"""Placeholder of the issue to file for the client's nullable maps; the filed number replaces it."""
 _ALL_MAPS: Final = ("pattern-map", "names-map")
 _NO_RUNTIME: Final = (TYPED_DICT, DATACLASSES)
 _STRING_LEAVES: Final = ("str", "str_min", "enum", "nullable_str")
@@ -551,7 +549,7 @@ KEPT: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        CLIENT_NULLABLE_MAP_ISSUE,
+        "#7348",
         "container",
         "client",
         DEFAULT,
