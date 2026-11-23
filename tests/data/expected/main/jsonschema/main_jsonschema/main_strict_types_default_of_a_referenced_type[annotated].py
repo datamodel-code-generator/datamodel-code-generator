@@ -102,3 +102,4 @@ class Upload(BaseModel):
     incomplete_pet: Annotated[Pet | None, Field(validate_default=True)] = cast(
         'Pet | None', {'name': 'a'}
     )
+    pair: tuple[Stamp, StrictStr] | None = ['2020-01-01T00:00:00Z', 'a']

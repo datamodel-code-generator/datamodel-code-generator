@@ -3067,6 +3067,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether the config the model applies selects ``python-re``: a model with no config does not."""
         return False
 
+    def validates_by(self) -> tuple[bool, bool]:  # noqa: PLR6301
+        """Return whether input names a field by its alias and by its name: a model with no config, by alias only."""
+        return True, False
+
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
         """Yield the Pydantic constructs that the model's rendering writes, each with the field that writes it.
 

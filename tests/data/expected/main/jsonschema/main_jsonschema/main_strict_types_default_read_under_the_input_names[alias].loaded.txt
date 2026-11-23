@@ -1,1 +1,2 @@
 blob: {'rawData': ''}
+given blob: Blob(raw_data=b'a')

@@ -1,1 +1,2 @@
 blob: Blob(raw_data=None)
+given blob: Blob(raw_data=b'a')

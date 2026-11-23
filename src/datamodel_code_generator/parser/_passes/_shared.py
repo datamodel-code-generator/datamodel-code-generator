@@ -13,7 +13,7 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
-from itertools import chain
+from itertools import chain, starmap
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar, cast
 
 from typing_extensions import Protocol, assert_type, final, override
@@ -257,15 +257,18 @@ def _is_none_type(data_type: DataType) -> bool:
     return data_type.type == NONE and not data_type.data_types and data_type.reference is None
 
 
-def _read_input_names(field: DataModelFieldBase) -> Sequence[str | None]:
-    """Return the names Pydantic reads the value of a field under in every configuration (``field_input_names``).
+def _read_key(field: DataModelFieldBase, value: dict[Any, Any], *, by_alias: bool, by_name: bool) -> str | None:
+    """Return the key of ``value`` Pydantic reads a field from, by the config of its model (``validates_by``).
 
-    Names that depend on options the field does not hold (an alias generator, populating by field name) are left out,
-    so a default is never read under a name Pydantic ignores.
+    Pydantic reads the aliases first, where the model validates by alias: the validation aliases, else the alias unless
+    it is the serialization alias. It reads the field name where the field has none of them or the model validates by
+    name. A name an alias generator gives is left out, so a default is never read under a name Pydantic ignores.
     """
-    if field.validation_aliases:
-        return field.validation_aliases
-    return (field.name,) if field.use_serialization_alias or field.alias is None else (field.alias,)
+    aliases = field.validation_aliases or (
+        () if field.use_serialization_alias or field.alias is None else (field.alias,)
+    )
+    names = (*(aliases if by_alias else ()), *((field.name,) if by_name or not aliases else ()))
+    return next((name for name in names if name in value), None)
 
 
 def _refuses_python_text(data_type: DataType) -> bool:
@@ -288,7 +291,9 @@ def default_refused_as_python_input(
     Pydantic validates a default as Python input, where a strict bytes, date or time type refuses the text of a JSON
     document, so every instance of a model with such a default fails (#7380). The default is followed through
     mappings, lists and the models ``model_of`` gives for a reference, one model at a time for a value (a root model
-    that names itself reads the same value again); a union refuses it when every member does.
+    that names itself reads the same value again), and each key of an object under the names its model's config
+    reads it by (``_read_key``). The items of a tuple with a type per position are read by that position's
+    type, and a union refuses a value when every member does.
     """
     visiting: set[tuple[int, int]] = set()
 
@@ -299,6 +304,8 @@ def default_refused_as_python_input(
         if (reference := node.reference) is not None:
             return model_refuses(model_of(reference), value)
         members = [member for member in node.data_types if not _is_none_type(member)]
+        if node.is_tuple and node.tuple_item_count is None:
+            return isinstance(value, list) and any(starmap(refused, zip(node.data_types, value, strict=False)))
         if node in CONTAINERS:
             items = value.values() if isinstance(value, dict) else value if isinstance(value, list) else ()
             return any(members_refuse(members, item) for item in items)
@@ -314,8 +321,9 @@ def default_refused_as_python_input(
         try:
             if model.form != "object":
                 return bool(model.fields) and refused(model.fields[0].data_type, value)
+            by_alias, by_name = model.validates_by()
             return isinstance(value, dict) and any(
-                (name := next((names for names in _read_input_names(field) if names in value), None)) is not None
+                (name := _read_key(field, value, by_alias=by_alias, by_name=by_name)) is not None
                 and refused(field.data_type, value[name])
                 for field in get_effective_fields(model)
             )

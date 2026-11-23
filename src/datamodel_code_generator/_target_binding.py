@@ -250,8 +250,6 @@ _PYDANTIC_CONFIGURATION: Final = (
     "alias_generator",
     "regex_engine",
 )
-_TRUE: Final = LiteralScalar("bool", value=True)
-_FALSE: Final = LiteralScalar("bool", value=False)
 _EXTRAS: Final[dict[object, Literal["allow", "forbid"]]] = {
     LiteralScalar("str", "allow"): "allow",
     LiteralScalar("str", "forbid"): "forbid",
@@ -2174,9 +2172,9 @@ def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid",
 
     The model layer reads it with the bases as Pydantic applies them (``applied_config``); a class that sets no
     `extra` ignores extra members, and one whose `extra` a configured base class the generator does not read may set
-    has none (None). It validates by field name as Pydantic settles it from what the class applies: by
-    `validate_by_name`, else by `populate_by_name`, else where `validate_by_alias` is false. Any other declaration has
-    no `extra` and validates by alias only, a root model too, which Pydantic gives no extra members.
+    has none (None). It validates by field name as Pydantic settles it from what the class applies
+    (``validates_by``). Any other declaration has no `extra` and validates by alias only, a root model too, which
+    Pydantic gives no extra members.
     """
     if not isinstance(model, pydantic_v2.BaseModel | pydantic_dataclass.DataClass) or isinstance(
         model, pydantic_v2.RootModel
@@ -2186,9 +2184,7 @@ def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid",
     extra: Literal["allow", "forbid", "ignore"] | None = "ignore" if known is None else None
     if "extra" in (items if known is None else known):
         extra = _EXTRAS.get(_syntax_value(items["extra"]).value, "ignore")
-    if (by_name := items.get("validate_by_name", items.get("populate_by_name"))) is not None:
-        return extra, _syntax_value(by_name).value == _TRUE
-    return extra, "validate_by_alias" in items and _syntax_value(items["validate_by_alias"]).value == _FALSE
+    return extra, model.validates_by()[1]
 
 
 def _field_facts(

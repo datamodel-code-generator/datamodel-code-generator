@@ -95,3 +95,4 @@ class Upload(BaseModel):
     digest: Digest | None = ''
     pet_or_color: Pet | Color | None = Field('red', validate_default=True)
     incomplete_pet: Pet | None = Field({'name': 'a'}, validate_default=True)
+    pair: tuple[Stamp, StrictStr] | None = ['2020-01-01T00:00:00Z', 'a']

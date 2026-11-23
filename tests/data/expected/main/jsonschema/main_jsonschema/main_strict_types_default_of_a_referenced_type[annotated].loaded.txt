@@ -16,3 +16,5 @@ flag: Flag(root=True)
 digest: ''
 pet_or_color: <Color.red: 'red'>
 incomplete_pet: Pet(born=None, name='a')
+pair: ['2020-01-01T00:00:00Z', 'a']
+given pair: (Stamp(root=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=TzInfo(0))), 'b')

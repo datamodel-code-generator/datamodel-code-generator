@@ -7670,6 +7670,13 @@ _STRICT_DEFAULTS_SCHEMA: dict[str, object] = {
         "digest": {"$ref": "#/$defs/Digest", "default": ""},
         "pet_or_color": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Color"}], "default": "red"},
         "incomplete_pet": {"$ref": "#/$defs/Pet", "default": {"name": "a"}},
+        "pair": {
+            "type": "array",
+            "prefixItems": [{"$ref": "#/$defs/Stamp"}, {"type": "string"}],
+            "minItems": 2,
+            "maxItems": 2,
+            "default": [_STRICT_TEXT, "a"],
+        },
     },
 }
 
@@ -7686,7 +7693,8 @@ def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra
 
     Pydantic validates ``validate_default`` as Python input, where strict mode refuses the text of a JSON document, so
     every instance failed (#7380). The fields whose default no strict type refuses (``incomplete_pet``, ``name``, a
-    union with a ``str`` member) keep ``validate_default``.
+    union with a ``str`` member) keep ``validate_default``. A tuple reads each item by the type of its position, so
+    the ``str`` second item of ``pair`` leaves its first one refused; a payload still validates ``pair``.
     """
     _run_jsonschema_dict(
         _STRICT_DEFAULTS_SCHEMA,
@@ -7699,24 +7707,33 @@ def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra
         force_exec_validation=True,
     )
     with _generated_model(output_file, "strict_types_default_of_a_referenced_type", "Upload") as model:
-        upload = _model_json_validator(model)("{}")
-    assert_output("\n".join(f"{name}: {value!r}" for name, value in upload) + "\n", name="loaded")
+        validate = _model_json_validator(model)
+        upload = validate("{}")
+        given = validate(json.dumps({"pair": [_STRICT_TEXT, "b"]}))
+    assert_output(
+        "\n".join(f"{name}: {value!r}" for name, value in upload) + f"\ngiven pair: {given.pair!r}\n", name="loaded"
+    )
 
 
 @pytest.mark.parametrize(
-    "extra_args",
+    ("extra_args", "key"),
     [
-        pytest.param(["--snake-case-field"], id="alias"),
-        pytest.param(["--snake-case-field", "--no-alias"], id="no-alias"),
-        pytest.param(["--snake-case-field", "--use-serialization-alias"], id="serialization-alias"),
-        pytest.param(["--snake-case-field", "--aliases"], id="validation-aliases"),
+        pytest.param(["--snake-case-field"], "rawData", id="alias"),
+        pytest.param(["--snake-case-field", "--no-alias"], "rawData", id="no-alias"),
+        pytest.param(["--snake-case-field", "--use-serialization-alias"], "rawData", id="serialization-alias"),
+        pytest.param(["--snake-case-field", "--aliases"], "rawData", id="validation-aliases"),
+        pytest.param(["--snake-case-field", "--allow-population-by-field-name"], "raw_data", id="field-name"),
     ],
 )
-def test_main_strict_types_default_read_under_the_input_names(output_file: Path, extra_args: list[str]) -> None:
+def test_main_strict_types_default_read_under_the_input_names(
+    output_file: Path, extra_args: list[str], key: str
+) -> None:
     """Test a default is followed by the names Pydantic reads a field under, so a key it ignores keeps validation.
 
-    The default of ``blob`` names ``rawData``: Pydantic reads it only where the field keeps that alias, so only there
-    does it reach the strict bytes type, and the other outputs keep ``validate_default`` and a ``Blob`` instance.
+    The default of ``blob`` names ``key``: Pydantic reads ``rawData`` only where the field keeps that alias, and
+    ``raw_data`` where the config populates by field name, so only there does it reach the strict bytes type; the
+    other outputs keep ``validate_default`` and a ``Blob`` instance. A payload under both names still validates
+    ``blob``.
     """
     args = list(extra_args)
     if args[-1] == "--aliases":
@@ -7728,7 +7745,7 @@ def test_main_strict_types_default_read_under_the_input_names(output_file: Path,
             "title": "Top",
             "type": "object",
             "$defs": {"Blob": {"type": "object", "properties": {"rawData": {"type": "string", "format": "binary"}}}},
-            "properties": {"blob": {"$ref": "#/$defs/Blob", "default": {"rawData": ""}}},
+            "properties": {"blob": {"$ref": "#/$defs/Blob", "default": {key: ""}}},
         },
         output_file,
         extra_args=[
@@ -7739,8 +7756,10 @@ def test_main_strict_types_default_read_under_the_input_names(output_file: Path,
         force_exec_validation=True,
     )
     with _generated_model(output_file, "strict_types_default_read_under_the_input_names", "Top") as model:
-        top = _model_json_validator(model)("{}")
-    assert_output(f"blob: {top.blob!r}\n", name="loaded")
+        validate = _model_json_validator(model)
+        top = validate("{}")
+        given = validate(json.dumps({"blob": {"rawData": "a", "raw_data": "a"}}))
+    assert_output(f"blob: {top.blob!r}\ngiven blob: {given.blob!r}\n", name="loaded")
 
 
 @LEGACY_BLACK_SKIP

@@ -15,6 +15,8 @@ covers = [
     "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].py",
     "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[alias].loaded.txt",
     "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[alias].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[field-name].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[field-name].py",
     "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].loaded.txt",
     "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].py",
     "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[serialization-alias].loaded.txt",

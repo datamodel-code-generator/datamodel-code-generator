@@ -9216,6 +9216,8 @@ default	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_reference
 [test_main_strict_types_default_read_under_the_input_names]
 alias	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[alias].loaded.txt
 alias	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[alias].py
+field-name	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[field-name].loaded.txt
+field-name	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[field-name].py
 no-alias	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].loaded.txt
 no-alias	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].py
 serialization-alias	main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[serialization-alias].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].loaded.txt

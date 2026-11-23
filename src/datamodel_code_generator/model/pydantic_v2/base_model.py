@@ -1991,6 +1991,20 @@ class _PydanticV2Model(DataModel):
         """Return the config items Pydantic applies to the model that the generator reads."""
         return self._applied_config()[0]
 
+    @override
+    def validates_by(self) -> tuple[bool, bool]:
+        """Return whether Pydantic validates the fields by alias and by field name, from the config the model applies.
+
+        By field name as Pydantic settles it: by ``validate_by_name``, else by ``populate_by_name``, else where
+        ``validate_by_alias`` is false; by alias unless ``validate_by_alias`` is false. An item that a configured base
+        class the generator does not read may set counts as unset.
+        """
+        items = self._applied_config_items()
+        by_alias = items.get("validate_by_alias") != "False"
+        if (by_name := items.get("validate_by_name", items.get("populate_by_name"))) is not None:
+            return by_alias, by_name == "True"
+        return by_alias, not by_alias
+
     @abstractmethod
     def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies to the model and which of them are known (``applied_config``)."""
