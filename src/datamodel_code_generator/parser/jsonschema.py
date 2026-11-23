@@ -9144,9 +9144,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         Under --read-refs-in-their-resources a reference of one input to a resource another declares is read where
         the registry holds every input, in any file order; each document read here is the one its parse reads (a
-        source that is no dictionary is left to the parse, which reports it). Without the option, row
-        ``legacy-inputs-prepared-as-parsed``: each input is prepared when it is parsed, so the registry holds the
-        inputs parsed before it.
+        source that is no dictionary is left to the parse, which reports it). Each input is prepared as the document
+        parsed (``raw_obj``), as its parse prepares it, and ``schema_features`` is read first with the first input,
+        the document a parse reads it with first. Without the option, row ``legacy-inputs-prepared-as-parsed``: each
+        input is prepared when it is parsed, so the registry holds the inputs parsed before it.
         """
         if _schema_documents.resource_row(self, "legacy-inputs-prepared-as-parsed") is not None:
             return
@@ -9157,6 +9158,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 raw = self._input_documents[source.path.as_posix()] = self._load_source_dict(source)
             except TypeError:
                 continue
+            self.raw_obj = raw
+            _ = self.schema_features
             _schema_documents.prepare_schema_resources(self, raw, path_parts)
 
     def _reads_document(self, url: str) -> bool:

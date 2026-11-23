@@ -1,0 +1,17 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Codes
+type: object
+properties:
+  first:
+    $ref: "#/$defs/1"
+  second:
+    $ref: "#second"
+  any:
+    $ref: "#/$defs/Anything"
+$defs:
+  1:
+    type: string
+  2:
+    $anchor: second
+    type: integer
+  Anything: true

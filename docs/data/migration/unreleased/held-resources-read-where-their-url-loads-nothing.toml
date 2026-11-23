@@ -9,6 +9,7 @@ summary = "A reference to a URL that another document of the run declares (an em
 refs = ["#7159", "#6999"]
 decision = ["#7159", "#6999"]
 covers = [
+    "main/jsonschema/main_jsonschema/held_root_anchor_named_by_url[default]/",
     "main/jsonschema/main_jsonschema/held_root_ids_named_by_url[before-default]/",
     "main/jsonschema/main_jsonschema/local_document_entered_from_remote[local_document_from_remote].py",
     "main/jsonschema/main_jsonschema/local_document_entered_from_remote[local_document_from_remote_embedded].py",
@@ -16,3 +17,8 @@ covers = [
     "main/openapi/main_openapi/component_embedded_id_absolute_ref[not-found].py",
     "main/openapi/main_openapi/component_embedded_id_absolute_ref[served].py",
 ]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/held_root_anchor", "tests/data/jsonschema/held_root_ids_store"]
+backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "typing.TypedDict"]
+options = "*"

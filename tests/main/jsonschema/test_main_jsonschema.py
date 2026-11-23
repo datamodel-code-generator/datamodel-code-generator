@@ -41233,3 +41233,76 @@ def test_held_root_id_served_by_local_store(option: str, output_dir: Path) -> No
             *(["--read-refs-in-their-resources"] if option == "option" else []),
         ],
     )
+
+
+@pytest.mark.parametrize("option", ["default", "option"])
+def test_held_root_anchor_named_by_url(option: str, output_dir: Path) -> None:
+    """Read an anchor of the input that declares the `$id` URL another input of the directory refers to.
+
+    `owner.json` refers to `https://example.com/schemas/pet.json#name`, an `$anchor` below the root `$id` of the
+    sibling `a_pet.json`, which no document embeds. Under --no-allow-remote-refs the URL is not read, so the anchor
+    names the sibling's `Name` instead of the run failing on the refused read (up to 0.100.0), with and without
+    --read-refs-in-their-resources.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "held_root_anchor",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--no-allow-remote-refs",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(["--read-refs-in-their-resources"] if option == "option" else []),
+        ],
+    )
+
+
+def test_read_refs_in_their_resources_numbered_definitions(output_file: Path) -> None:
+    """Read definitions a YAML document names by numbers, and a boolean definition, under the option.
+
+    `$defs` holds `1` and `2`, YAML integers, one with an `$anchor`, and `Anything: true`. Under
+    --read-refs-in-their-resources each is read as the schema it is, as without the option.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "numbered_definitions.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--read-refs-in-their-resources",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_read_refs_in_their_resources_first_input_dialect(tmp_path: Path, output_dir: Path) -> None:
+    """Read the schema version of the first input for the run when every input is read first, under the option.
+
+    `a_owner.json` declares draft-04 and `b_pet.json` declares no version, so under --schema-version-mode strict the
+    run reads draft-04 `definitions` (`Tag`) and no draft-04 warning, as without --read-refs-in-their-resources. An
+    input that holds a list is skipped with a warning, as without the option.
+    """
+    shutil.copytree(JSON_SCHEMA_DATA_PATH / "first_input_dialect", input_dir := tmp_path / "in")
+    (input_dir / "z_list.json").write_text("[]", encoding="utf-8")
+    with pytest.warns(UserWarning, match="is empty or not a dict"):
+        run_main_and_assert(
+            input_path=input_dir,
+            output_path=output_dir,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--read-refs-in-their-resources",
+                "--schema-version-mode",
+                "strict",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+        )

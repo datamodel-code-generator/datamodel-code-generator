@@ -15029,6 +15029,16 @@ def test_main_openapi_component_embedded_id_absolute_ref(
     assert_httpx_get_kwargs(httpx_get_mock, call_count=0 if status is None else 1)
 
 
+def test_main_openapi_component_embedded_urn_id(output_file: Path) -> None:
+    """Read the component schema a reference names by its `urn:` `$id`, which names no document to load."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "component_embedded_urn_id.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
+    )
+
+
 @pytest.mark.parametrize(
     ("option", "model_type"),
     [

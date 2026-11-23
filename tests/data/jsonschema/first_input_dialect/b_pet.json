@@ -1,0 +1,1 @@
+{"title": "Pet", "type": "object", "properties": {"name": {"$ref": "#name"}}, "definitions": {"Name": {"id": "#name", "type": "string", "maxLength": 5}}}

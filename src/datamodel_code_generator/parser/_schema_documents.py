@@ -607,7 +607,9 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
 
     Only the fragment is rewritten: the document part stays as written, relative to the document parsed now, since the
     reference is resolved again from there. A name several schemas of the document declare names the first of them under
-    --read-dynamic-anchors-in-document-order, as a local reference to it does (``duplicate_name_location``).
+    --read-dynamic-anchors-in-document-order, as a local reference to it does (``duplicate_name_location``). A name
+    another document of the run declares where its URL is not read (``held_resource_location``) is left as written,
+    without reading the URL, for the key to name that schema.
     """
     if get_ref_type(ref := lenient_ref(parser, ref)) == JSONReference.LOCAL:
         return ref
@@ -617,7 +619,7 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
         return ref
 
     relative_path, separator, object_path = resolved_ref.partition("#")
-    if not separator or not object_path or object_path.startswith("/"):
+    if not separator or not object_path or object_path.startswith("/") or held_resource_location(parser, resolved_ref):
         return ref
 
     ref_body = parser._get_ref_body(relative_path)
@@ -1505,9 +1507,9 @@ def _definition_members(
     """
     for key, member in members.items():
         if isinstance(member, dict):
-            yield (*path, key), member
-            if _is_version_namespace(parser, key) and not has_schema_affecting_keywords(parser, member):
-                yield from _definition_members(parser, (*path, key), dict(_namespace_members(parser, member)))
+            yield (*path, name := str(key)), member
+            if _is_version_namespace(parser, name) and not has_schema_affecting_keywords(parser, member):
+                yield from _definition_members(parser, (*path, name), dict(_namespace_members(parser, member)))
 
 
 def _is_version_namespace(parser: SchemaResourcesHost, name: str) -> bool:

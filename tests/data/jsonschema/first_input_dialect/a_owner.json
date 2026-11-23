@@ -1,0 +1,1 @@
+{"$schema": "http://json-schema.org/draft-04/schema#", "title": "Owner", "type": "object", "properties": {"pet": {"$ref": "b_pet.json"}, "age": {"type": "integer", "maximum": 30, "exclusiveMaximum": true}, "kind": {"type": ["string", "null"]}}, "definitions": {"Tag": {"type": "string"}}}
