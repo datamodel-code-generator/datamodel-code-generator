@@ -6,8 +6,8 @@ action = "review"
 source = "release-note"
 title = "A map key names the root type of its RootModel members"
 summary = "A map key that is a union (propertyNames anyOf or oneOf) whose members are all references, a one-member wrapper of a RootModel included, was written with the RootModel class, which Pydantic cannot use as a dict key, so a key that matches that member raised TypeError. The member is now written as its root type, as a key that names the RootModel alone is; the class itself stays. A union key with a member that is no reference (a str, a constr call, Any) keeps the RootModel class unless --use-root-types-for-mixed-union-map-keys is set."
-refs = ["#7433"]
-decision = ["#7433"]
+refs = ["#7434"]
+decision = ["#7434"]
 covers = [
     "main/jsonschema/main_jsonschema/compound_property_names_compatibility[api-unsupported_one_sibling-False].py",
     "main/jsonschema/main_jsonschema/compound_property_names_compatibility[api-unsupported_sibling-False].py",
