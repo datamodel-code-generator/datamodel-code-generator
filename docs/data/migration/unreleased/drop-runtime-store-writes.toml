@@ -1,0 +1,17 @@
+[[change]]
+id = "drop-runtime-store-writes"
+category = "harness"
+title = "Drop the runtime store write check in favour of heki"
+summary = "only the test-suite checks and their tests change; the package writes the same output"
+refs = ["#7424"]
+covers = [
+    "checks/checks/a_failing_check_is_no_error_that_a_generation_catches.txt",
+    "parser/store_write_guard/leaves_deep_copies_unguarded.copies.txt",
+    "parser/store_write_guard/of_a_nested_parse.txt",
+    "parser/store_write_guard/reports_a_custom_parser_write[off].output.txt",
+    "parser/store_write_guard/reports_a_custom_parser_write[off].writes.txt",
+    "parser/store_write_guard/reports_a_custom_parser_write[report].output.txt",
+    "parser/store_write_guard/reports_a_custom_parser_write[report].writes.txt",
+    "parser/store_write_guard/reports_list_writes_outside_store_operations.output.txt",
+    "parser/store_write_guard/reports_list_writes_outside_store_operations.writes.txt",
+]

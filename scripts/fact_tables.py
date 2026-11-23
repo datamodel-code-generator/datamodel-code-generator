@@ -3,9 +3,10 @@
 ``ATTRIBUTE_FACTS`` has one row per owner class and attribute, ``__dict__`` key, dict entry or cached property.
 ``scripts/check_generation_store_usage.py`` reads this module with ``ast`` (it never imports the package), so every
 row is a literal ``AttributeFact(...)`` call whose arguments are strings, tuples, ``None`` or members of the enums
-below and of ``Phase``, which the generation store enters and ``parser/_facts.py`` defines. Later readers: the
-runtime write guard (which attributes to guard per class and phase), the finality fingerprints (the ``fact`` rows), the
-decision phase (what ``FinalFacts`` exposes) and the Fact Finality table of ``docs/architecture.md``.
+below and of ``Phase``, which the generation store enters and ``parser/_facts.py`` defines. Later readers: heki's
+contracts (``scripts/build_heki_contracts.py``), the write guards of the finality check (which attributes to guard per
+class), the finality fingerprints (the ``fact`` rows), the decision phase (what ``FinalFacts`` exposes) and the Fact
+Finality table of ``docs/architecture.md``.
 
 Columns of a row:
 

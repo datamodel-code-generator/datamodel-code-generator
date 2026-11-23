@@ -324,6 +324,7 @@ class ParserConfig(BaseModel):
     read_length_keywords_by_type: bool = False
     read_object_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
     use_site_models_for_constrained_refs: bool = False
     use_one_model_per_ref_site: bool = False
     original_field_name_delimiter: str | None = None
@@ -387,6 +388,7 @@ class ParserConfig(BaseModel):
     read_allof_parents_in_mro_order: bool = False
     read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
+    keep_null_of_nullable_items: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False
     known_third_party: list[str] | None = None

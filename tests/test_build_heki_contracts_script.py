@@ -18,6 +18,7 @@ import pytest
 import tomllib
 
 from scripts import build_heki_contracts, check_ratchets
+from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
 from scripts.fact_tables import MemberUse, StoreMember
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,7 @@ SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
 CONTRACTS = ROOT / "scripts" / "heki.toml"
 BASELINE = ROOT / "scripts" / "heki_baseline.toml"
 PACKAGE = "src/datamodel_code_generator"
+PACKAGE_NAME = "datamodel_code_generator"
 
 SEEDED_ENVIRONMENT = """\
 import os
@@ -161,7 +163,9 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 
     assert result.returncode == 0, (
         "heki findings the baseline does not record: keep the write, read or call inside its owners "
-        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of the "
+        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of a decision "
+        "home (a home: contract), go through an adapter site of its row, or name the reader in the row's Adapters "
+        "cell and its sites (scripts/decision_homes.py); for a read of the "
         "environment (EFF201), key the decision on an option or a static rule (the help of each report). If the "
         "findings only moved "
         "(a function was renamed or moved), delete scripts/heki_baseline.toml and run heki check --config "
@@ -215,35 +219,105 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
     ), result.stderr
 
 
-SEEDED_HOMES = {
-    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
-    f"{PACKAGE}/__init__.py": "",
-    f"{PACKAGE}/home.py": "def decide() -> int:\n    return 1\n",
-    f"{PACKAGE}/caller.py": (
-        "from datamodel_code_generator.home import decide\n\n\n"
-        "def run() -> int:\n    return decide()\n\n\n"
-        "def run_through_helper() -> int:\n    return _helper()\n\n\n"
-        "def _helper() -> int:\n    return decide()\n"
-    ),
-}
-"""A decision home that `run` and `run_through_helper` may call; the second hands the call to a private helper."""
-SEEDED_HOME_CONTRACT = """[[call-owners]]
-name = "home:home.py:decide"
-targets = ["datamodel_code_generator.home.decide"]
-allowed-callers = ["datamodel_code_generator.caller:run", "datamodel_code_generator.caller:run_through_helper"]
-references = "calls"
-subclasses = false
-attribution = "lexical"
+SEEDED_WRITE_FORMS = """\
+from copy import deepcopy
+
+from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+from datamodel_code_generator.parser.generation import GenerationStore
+
+
+def through_the_store(store: GenerationStore, model: DataModel) -> None:
+    store.set_fields(model, list(model.fields))
+
+
+def reorder(model: DataModel) -> None:
+    model.fields.reverse()
+    model.fields[:] = model.fields[::-1]
+    model.fields[0] = model.fields[0]
+    model.fields.insert(0, model.fields.pop())
+    model.fields.sort(reverse=True)
+
+
+def reorder_a_copy(model: DataModel) -> None:
+    copied = deepcopy(model.fields)
+    copied.reverse()
+
+
+def mark_through_an_alias(field: DataModelFieldBase) -> None:
+    extras = field.extras
+    extras["seen"] = True
+
+
+def rebase_in_a_callback(models: list[DataModel]) -> list[None]:
+    return list(map(lambda owner: owner.set_base_class(), models))
+
+
+def set_base_class(model: DataModel) -> None:
+    model.fields = []
+
+
+def clear_untyped(models):
+    for model in models:
+        model.fields = []
 """
+"""Writes of fact rows by a pass: through a store operation, by every list mutator, to a deep copy, through a container
+alias, by a store-only method that a callback calls on an untyped receiver, by a function that only shares the name
+of such a method, and through a receiver whose class heki cannot tell."""
+SEEDED_FIELD_CLASS = """
+
+class DataModelFieldBase:
+    def __init__(self) -> None:
+        self.extras: dict[str, object] = {}
+"""
+"""A field class for the seeded ``model/base.py``, whose ``extras`` a write form aliases."""
+
+
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Path) -> None:
+    """Each list mutator, a write through an alias and a store-only call in a callback are findings, once per call.
+
+    The store operation and the copy, which no graph object holds, are none; a function named like a method only the
+    store runs is judged by the attribute it writes, and a write through a receiver heki cannot resolve is ``MUT205``.
+    """
+    package = {
+        **SEEDED_PACKAGE,
+        f"{PACKAGE}/model/base.py": SEEDED_PACKAGE[f"{PACKAGE}/model/base.py"] + SEEDED_FIELD_CLASS,
+        f"{PACKAGE}/parser/forms.py": SEEDED_WRITE_FORMS,
+    }
+    for name, text in package.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+
+    result = _heki("--output-format", "json", cwd=tmp_path)
+
+    found = [
+        (item["qualname"], item["rule_code"], item["target"], item["line"])
+        for item in json.loads(result.stdout)
+        if Path(item["path"]).name == "forms.py"
+    ]
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("reorder", "MUT201", "DataModel.fields", 12),
+            ("reorder", "MUT201", "DataModel.fields", 13),
+            ("reorder", "MUT201", "DataModel.fields", 14),
+            ("reorder", "MUT201", "DataModel.fields", 15),
+            ("reorder", "MUT201", "DataModel.fields", 15),
+            ("reorder", "MUT201", "DataModel.fields", 16),
+            ("mark_through_an_alias", "MUT201", "DataModelFieldBase.extras", 26),
+            ("rebase_in_a_callback", "MUT207", "set_base_class", 30),
+            ("set_base_class", "MUT201", "DataModel.fields", 34),
+            ("clear_untyped", "MUT205", "fields", 39),
+        ],
+    ), result.stderr
 
 
 @pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
     """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.
 
-    The guards of the records (`scripts/_decision_home_reads.py`) report the scope that holds each read, so a call
-    handed to a private helper is the helper's, not its caller's; the runtime write guard names a write by the
-    function that makes it, as heki names it with lexical attribution.
+    A call handed to a private helper is the helper's, not its caller's, as the baseline records it by the scope that
+    holds it; a write is the function's that makes it, as heki names it with lexical attribution.
     """
     contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
     judged = [
@@ -279,14 +353,76 @@ def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
     assert [name for name, attribution in judged if attribution != "lexical"] == []
 
 
+SEEDED_HOMES = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "from .core import decide\n",
+    f"{PACKAGE}/core.py": (
+        "class Rule:\n    def method(self) -> None:\n        pass\n\n\nTABLE = {}\n\n\n"
+        "def decide() -> Rule:\n    return Rule()\n\n\n"
+        "class Failure(Exception):\n    pass\n\n\nclass Detail(Failure):\n    pass\n"
+    ),
+    f"{PACKAGE}/adapter.py": (
+        "from .core import TABLE, Rule, decide\n\n\ndef site() -> None:\n    decide()\n\n\n"
+        "class Site:\n    def nested(self) -> None:\n        decide()\n\n\n"
+        "def typed(rule: Rule) -> object:\n    return TABLE\n\n\n"
+        "def bypass(value: object) -> bool:\n    return isinstance(value, Rule) and decide() is not None\n\n\n"
+        "def run_through_helper() -> Rule:\n    return _helper()\n\n\n"
+        "def _helper() -> Rule:\n    return decide()\n"
+    ),
+    f"{PACKAGE}/whole.py": "from .core import decide\n\nRESULT = decide()\n",
+    f"{PACKAGE}/raises.py": (
+        "from .core import Detail, Failure\n\n\n"
+        "def raised() -> None:\n    raise Failure('x')\n\n\n"
+        "def caught() -> bool:\n    try:\n        raise Detail\n    except Failure as error:\n"
+        "        return isinstance(error, Detail)\n"
+    ),
+    f"{PACKAGE}/through.py": (
+        "from typing import TYPE_CHECKING\n\nfrom . import core\nfrom datamodel_code_generator import decide\n\n"
+        "if TYPE_CHECKING:\n    from .core import Rule\n\n    Checked = Rule | None\n\n\n"
+        "def by_module() -> None:\n    core.decide()\n\n\nby_package = decide()\n"
+    ),
+}
+"""A package whose ``core.py`` holds the homes: read by name, by module attribute and through a re-export.
+
+``adapter.py`` holds the sites ``site`` and ``Site``, ``whole.py`` is a site as a whole module. ``bypass`` reads
+``Rule`` and calls ``decide`` outside them, and ``run_through_helper`` hands the call to a private helper. ``typed``
+names ``Rule`` in an annotation and reads ``TABLE``, a constant home. ``raises.py`` raises and catches the exception
+homes ``Failure`` and ``Detail`` (a subclass of it), and ``through.py`` reads ``Rule`` in a type alias under ``if
+TYPE_CHECKING:``, where it imports ``Rule``.
+"""
+SEEDED_HOME_RECORD = DecisionHome(
+    "seeded",
+    homes=(
+        Home("core.py", "decide"),
+        Home("core.py", "Rule"),
+        Home("core.py", "TABLE"),
+        Home("core.py", "Rule.method"),
+        Home("core.py", "Failure"),
+        Home("core.py", "Detail"),
+    ),
+    core="",
+    adapters="",
+    sites=(Home("adapter.py", "site"), Home("adapter.py", "Site"), Home("whole.py")),
+)
+
+
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_judges_a_home_call_in_the_helper_that_makes_it(tmp_path: Path) -> None:
-    """With lexical attribution a call delegated to a private helper is reported at the helper, as the guard does."""
+def test_heki_reports_reads_of_a_home_outside_its_modules_and_sites(tmp_path: Path) -> None:
+    """A run-time read of a def or class home outside its row's home modules and sites is a finding; theirs is none.
+
+    A call, an ``isinstance`` check, a module attribute and a re-export read a home; an annotation, a name imported
+    only under ``if TYPE_CHECKING:``, a constant home and an exception home do not count. With lexical attribution a
+    call handed to a private helper is the helper's.
+    """
     for name, text in SEEDED_HOMES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(SEEDED_HOME_CONTRACT, encoding="utf-8")
+    contracts.write_text(
+        "\n".join(build_heki_contracts.decision_home_contracts(repo, [SEEDED_HOME_RECORD])), encoding="utf-8"
+    )
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -297,8 +433,194 @@ def test_heki_judges_a_home_call_in_the_helper_that_makes_it(tmp_path: Path) -> 
         check=False,
     )
 
-    found = [(item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)]
-    assert (result.returncode, found) == (1, [("_helper", "MUT204")]), result.stderr
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].rpartition(".")[2])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("adapter.py", "_helper", "MUT204", "decide"),
+            ("adapter.py", "bypass", "MUT204", "Rule"),
+            ("adapter.py", "bypass", "MUT204", "decide"),
+            ("through.py", "<module>", "MUT204", "decide"),
+            ("through.py", "by_module", "MUT204", "decide"),
+        ],
+    ), result.stderr
+
+
+SEEDED_BUILDERS = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/types.py": (
+        "class DataType:\n    def __init__(self, *, is_dict: bool = False, is_list: bool = False) -> None:\n"
+        "        self.is_dict = is_dict\n        self.is_list = is_list\n"
+    ),
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_schema_dispatch.py": (
+        "class Row:\n    def __init__(self, name: str, applies: object, build: object) -> None:\n"
+        "        self.build = build\n\n\n"
+        "class Default:\n    def __init__(self, name: str, build: object) -> None:\n        self.build = build\n\n\n"
+        "class DispatchTable:\n    def __init__(self, entries: tuple[Row, ...], default: Default) -> None:\n"
+        "        self.entries = entries\n\n"
+        "    def choose(self, parser: object, site: object) -> object:\n        return self.entries[0].build\n\n"
+        "    def typed_children(self, parser: object, site: object) -> tuple[Row, ...]:\n"
+        "        return self.entries\n"
+    ),
+    f"{PACKAGE}/parser/kinds.py": (
+        "from functools import partial\nfrom typing import Protocol\n\n"
+        "from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row\n\n\n"
+        "def _shared(parser: 'Parser', site: object) -> object:\n    return parser.parse_object(site)\n\n\n"
+        "def _then(build: object) -> object:\n    return build\n\n\n"
+        "class Parser:\n"
+        "    def _build_array(self, site: object) -> object:\n"
+        "        return self._build_enum(site) or self._build_default(site)\n\n"
+        "    def _build_enum(self, site: object) -> object:\n        return site\n\n"
+        "    def _build_default(self, site: object) -> object:\n        return self._build_array(site)\n\n"
+        "    def parse_object(self, site: object) -> object:\n        return _shared(self, site)\n\n"
+        "    _ROWS = (Row('enum', None, _then(_build_enum)),)\n"
+        "    _TABLE = DispatchTable(\n"
+        "        (Row('array', None, build=partial(_build_array)), *_ROWS, Row('shared', None, _shared)),\n"
+        "        Default('default', _build_default),\n    )\n\n"
+        "    def parse_site(self, site: object) -> object:\n        return self._TABLE.choose(self, site)\n\n"
+        "    def shortcut(self, site: object) -> object:\n        return self._TABLE.choose(self, site)\n\n"
+        "    def parameter(self, _build_enum: object) -> object:\n        return _build_enum\n\n"
+        "    def alias(self, site: object) -> object:\n"
+        "        table = self._TABLE\n        return table.choose(self, site)\n\n\n"
+        "class KindsHost(Protocol):\n    _TABLE: DispatchTable\n\n"
+        '    def _build_enum(self, site: object) -> object:\n        """The parse method of the enum row."""\n\n\n'
+        "def via_host(parser: KindsHost, site: object) -> object:\n"
+        "    return parser._build_enum(parser._TABLE.choose(parser, site))\n\n\n"
+        "def typed(parser: KindsHost, site: object) -> object:\n"
+        "    return parser._TABLE.typed_children(parser, site)\n"
+    ),
+    f"{PACKAGE}/parser/maps.py": (
+        "from typing import Protocol\n\nfrom datamodel_code_generator.types import DataType\n\n\n"
+        "class MapsHost(Protocol):\n"
+        '    @property\n    def data_type(self) -> type[DataType]:\n        """The data type class."""\n\n'
+        "    def _container_flags(self, obj: object, slot: str) -> dict[str, bool]:\n"
+        '        """The flags of a container slot."""\n\n\n'
+        "class MapParser:\n"
+        "    @property\n    def data_type(self) -> type[DataType]:\n        return DataType\n\n"
+        "    def _container_flags(self, obj: object, slot: str) -> dict[str, bool]:\n"
+        "        return {'is_dict': slot == 'dict'}\n\n\n"
+        "def build_map(parser: MapsHost) -> DataType:\n    return part(parser)\n\n\n"
+        "def part(parser: MapsHost) -> DataType:\n    return parser.data_type(is_dict=True)\n\n\n"
+        "def flags(parser: MapsHost) -> DataType:\n    return parser.data_type(**{'is_dict': True})\n\n\n"
+        "def handed_on() -> dict[str, bool]:\n    return {'is_dict': True, 'is_list': False}\n\n\n"
+        "def not_a_map(parser: MapsHost) -> DataType:\n    return parser.data_type(is_dict=False)\n\n\n"
+        "class MapType(DataType):\n    pass\n\n\n"
+        "def subclass_map() -> DataType:\n    return MapType(is_dict=True)\n\n\n"
+        "def seeded_slot(parser: MapsHost, obj: object) -> DataType:\n"
+        "    return parser.data_type(**parser._container_flags(obj, 'dict'))\n\n\n"
+        "def other_slot(parser: MapsHost, obj: object) -> dict[str, bool]:\n"
+        "    return parser._container_flags(obj, 'list')\n"
+    ),
+    f"{PACKAGE}/model.py": (
+        "from datamodel_code_generator.types import DataType\n\n\n"
+        "class Ref:\n    @classmethod\n    def model_construct(cls) -> 'Ref':\n        return cls()\n\n\n"
+        "def name_model() -> Ref:\n    return Ref()\n\n\n"
+        "def outside() -> DataType:\n    return DataType(is_dict=True)\n"
+    ),
+    f"{PACKAGE}/naming.py": (
+        "from datamodel_code_generator.model import Ref as Named\n\n\n"
+        "def rename() -> Named:\n    return Named()\n\n\n"
+        "def construct() -> Named:\n    return Named.model_construct()\n"
+    ),
+    f"{PACKAGE}/other.py": "class Ref:\n    pass\n\n\ndef local() -> Ref:\n    return Ref()\n",
+}
+"""A package with a dispatch table in ``parser/kinds.py``, an object-map builder in ``parser/maps.py`` and a builder of
+``Ref`` in ``model.py``.
+
+``Parser._build_array`` calls the parse methods of the ``enum`` row (held through the shared rows and a wrapper) and of
+the default outside the table, ``_build_default`` calls the one of the ``array`` row (held through ``partial``),
+``parse_object`` calls ``_shared``, the parse method of another row, and ``shortcut`` and ``alias`` read the table
+outside ``parse_site``; ``parameter`` reads a parameter spelled as a parse method. ``via_host`` calls the parse method
+and the table's ``choose`` through the host protocol ``KindsHost``, and ``typed`` only asks the table for
+``typed_children``. ``build_map`` hands the map to its part ``part``; ``flags`` builds the dict flag through a ``**``
+dict display and ``seeded_slot`` asks ``_container_flags`` for the ``dict`` slot outside them, both through the host
+protocol ``MapsHost``, which ``MapParser`` implements (heki ties a call through a protocol to a class only where one
+implements it), and ``subclass_map`` builds one as a subclass of ``DataType``. ``not_a_map``, ``other_slot`` (another
+slot) and ``outside`` (outside ``parser/``) build no map, and ``handed_on`` returns a flag dict that no call takes
+there. ``naming.py`` builds a ``Ref`` of ``model.py`` through an alias and by ``model_construct`` outside
+``name_model``; ``other.py`` builds a class of its own of that name.
+"""
+SEEDED_BUILDER_RECORDS = (
+    BuilderHome(
+        output="seeded: a parse of the table",
+        prose="",
+        builder=Home("parser/kinds.py", "Parser.parse_site"),
+        table=Home("parser/kinds.py", "Parser._TABLE"),
+    ),
+    BuilderHome(
+        output="seeded: a map",
+        prose="",
+        builder=Home("parser/maps.py", "build_map"),
+        marks=(
+            Mark("datamodel_code_generator.types.DataType", "is_dict", value=True),
+            Mark("datamodel_code_generator.parser.maps.MapParser._container_flags", "slot", "dict"),
+        ),
+        parts=(Home("parser/maps.py", "part"),),
+        within="parser/",
+    ),
+    BuilderHome(
+        output="seeded: a named model",
+        prose="",
+        builder=Home("model.py", "name_model"),
+        marks=(Mark("datamodel_code_generator.model.Ref"), Mark("datamodel_code_generator.model.Ref.model_construct")),
+    ),
+)
+
+
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
+    """A parse method called outside its tables, a table read outside its builder, a marked output built elsewhere.
+
+    Those are findings; the builders and their parts are none. A mark with an argument list is a call that binds the
+    parameter to the constant, by keyword, by position or through a ``**`` dict display, under the record's ``within``
+    only.
+    """
+    for name, text in SEEDED_BUILDERS.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    contracts.write_text(
+        "\n".join(build_heki_contracts.builder_contracts(repo, SEEDED_BUILDER_RECORDS)), encoding="utf-8"
+    )
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].removeprefix(f"{PACKAGE_NAME}."))
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("kinds.py", "Parser._build_array", "MUT204", "parser.kinds.Parser._build_default"),
+            ("kinds.py", "Parser._build_array", "MUT204", "parser.kinds.Parser._build_enum"),
+            ("kinds.py", "Parser._build_default", "MUT204", "parser.kinds.Parser._build_array"),
+            ("kinds.py", "Parser.alias", "MUT203", "parser.kinds.Parser._TABLE"),
+            ("kinds.py", "Parser.parse_object", "MUT204", "parser.kinds._shared"),
+            ("kinds.py", "Parser.shortcut", "MUT203", "parser.kinds.Parser._TABLE"),
+            ("kinds.py", "via_host", "MUT203", "parser.kinds.KindsHost._TABLE"),
+            ("kinds.py", "via_host", "MUT204", "parser.kinds.KindsHost._build_enum"),
+            ("maps.py", "flags", "MUT204", "types.DataType(is_dict=True)"),
+            ("maps.py", "seeded_slot", "MUT204", 'parser.maps.MapsHost._container_flags(slot="dict")'),
+            ("maps.py", "subclass_map", "MUT204", "types.DataType(is_dict=True)"),
+            ("naming.py", "construct", "MUT204", "model.Ref.model_construct"),
+            ("naming.py", "rename", "MUT204", "model.Ref"),
+        ],
+    ), result.stderr
 
 
 @pytest.mark.allow_direct_assert(

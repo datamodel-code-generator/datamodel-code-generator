@@ -159,12 +159,14 @@ How do I convert enums to Literal types?
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
 - `--infer-union-discriminators`: Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
+- `--keep-string-keywords-beside-formats`: Keep the string keywords beside a format Pydantic writes as a class `...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--name-allof-union-members-after-branches`: Name the classes an allOf gives the branches of a oneOf or anyOf ...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-infer-union-discriminators`
+- `--no-keep-string-keywords-beside-formats`
 - `--no-merge-shared-variant-tags`
 - `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
@@ -236,6 +238,7 @@ How do I convert enums to Literal types?
 - `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
+- `--keep-null-of-nullable-items`: Write the null that `nullable: true` declares on an array item, a tuple item ...
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
@@ -259,6 +262,7 @@ How do I convert enums to Literal types?
 - `--no-keep-enum-literal-aliases`
 - `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
+- `--no-keep-null-of-nullable-items`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-keep-self-referencing-array-items`
@@ -833,6 +837,20 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         change a member value, such as 2.5 in an IntEnum;
                         without it the base follows the schema type, as in
                         0.86.0
+  --keep-string-keywords-beside-formats, --no-keep-string-keywords-beside-formats
+                        Keep the minLength, maxLength and pattern beside a
+                        string format that Pydantic output writes as a class
+                        no constr call constrains: a `format: email` takes
+                        them in `Annotated[EmailStr, Field(...)]`, a `format:
+                        byte` writes them in front of the base64 decoding, so
+                        Pydantic 2.10 or later checks them on the text, also
+                        in the field forms (--field-constraints, --use-
+                        annotated), and a `format: uri` is the plain string
+                        they check, as AnyUrl takes no pattern; an output that
+                        writes a date or UUID format as `str`, as msgspec
+                        does, also keeps the keywords an `allOf` member adds
+                        beside a `$ref` to it. Without it these keywords are
+                        left out, silently or with a warning, as in 0.100.0
   --merge-shared-variant-tags, --no-merge-shared-variant-tags
                         Give a variant that several discriminated unions tag
                         differently (for example one by a mapping key, one by
@@ -1295,6 +1313,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         extracted from the branches of its `anyOf` or `oneOf`,
                         which then require their value; without it each such
                         root takes the property's default
+  --keep-null-of-nullable-items, --no-keep-null-of-nullable-items
+                        Write the null that `nullable: true` declares under
+                        --strict-nullable on an array item, a tuple item or a
+                        map value of any form (a nested array, a map, an
+                        `allOf` of one `$ref`), as it is written for a scalar
+                        or an object (`list[list[float] | None]`); without it
+                        those items reject null, as in 0.100.0. The option
+                        adds no null to an enum or a `const`; an enum that
+                        lists null admits it with or without the option
   --keep-reference-null-on-merged-models, --no-keep-reference-null-on-merged-models
                         Keep the null that the schema of a field, item or
                         member admits where the model it references is merged

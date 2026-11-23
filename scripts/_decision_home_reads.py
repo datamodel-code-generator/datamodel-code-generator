@@ -1,7 +1,7 @@
-"""Read the decision homes of scripts/decision_homes.py in the package: who calls them, and what builders hold.
+"""Read the decision homes of scripts/decision_homes.py in the package: who may read them, and what builders hold.
 
-The caller guard and the builder guard of `tests/test_decision_homes.py` and the heki contracts of
-`scripts/build_heki_contracts.py` read the same homes, callers and held parse methods from here.
+The record checks of `tests/test_decision_homes.py` and the heki contracts of `scripts/build_heki_contracts.py` read
+the same homes and held parse methods from here.
 """
 
 from __future__ import annotations
@@ -10,10 +10,10 @@ import ast
 import builtins
 from functools import cache
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, TypeGuard
+from typing import TYPE_CHECKING
 
 from scripts._source_model import bases
-from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
+from scripts.decision_homes import BuilderHome, DecisionHome, Home
 from scripts.where import DEFS, PACKAGE_DIR, SPAN, Page, Repo, scope_name
 
 if TYPE_CHECKING:
@@ -45,16 +45,6 @@ def missing(home: Home, repo: Repo | None = None) -> str | None:
     if home.name and not any(found.qualname == home.name for found in repo.definitions(home.name, path)):
         return f"{home.path} defines no {home.name}"
     return None
-
-
-class Caller(NamedTuple):
-    """A run-time read of a home outside the home modules and the adapter sites of every row that holds the home."""
-
-    home: str
-    """The home as ``path:name``."""
-    caller: str
-    """The scope that reads it as ``path:qualname`` (``<module>`` for the module's own code)."""
-    line: int
 
 
 def _callable_homes(records: Iterable[DecisionHome]) -> dict[Home, tuple[set[str], set[Home]]]:
@@ -101,12 +91,12 @@ def _is_exception(repo: Repo, path: str, name: str) -> bool:
 def checked_homes(
     repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR
 ) -> list[tuple[Home, Found, set[str], set[Home]]]:
-    """Return the def and class homes of records that the caller guard checks, with what may call each.
+    """Return the def and class homes of records whose readers heki checks, with what may read each.
 
     Each comes with its definition in the package and the home modules and adapter sites of every row that holds it
     (`_callable_homes`). A home that is an exception class (it derives from ``BaseException``) is not checked: its
     record states where the type is defined, not who may raise or catch it. `scripts/build_heki_contracts.py` writes
-    the same homes as heki contracts.
+    a contract per home: only those modules and sites read it at run time.
     """
     checked: list[tuple[Home, Found, set[str], set[Home]]] = []
     for home, (modules, sites) in _callable_homes(records).items():
@@ -120,46 +110,10 @@ def checked_homes(
     return checked
 
 
-def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR) -> list[Caller]:
-    """Return the run-time reads of a def or class home of records in a package outside the modules and sites.
-
-    Paths of homes, sites and callers are relative to the package directory, ``src/datamodel_code_generator/`` unless
-    given.
-
-    `Repo.module_reads` finds the references; a store binds the name and one in an annotation names a type, so neither
-    calls the home. A site is a def or a class (and the scopes inside it), or a whole module. The homes are those
-    `checked_homes` returns.
-    """
-    callers: list[Caller] = []
-    for home, found, modules, sites in checked_homes(repo, records, package):
-        for rel, references in repo.module_reads(found).items():
-            module = rel.removeprefix(package)
-            if not rel.startswith(package) or module in modules:
-                continue
-            callers += [
-                Caller(f"{home.path}:{home.name}", f"{module}:{scope}", reference.line)
-                for reference in references
-                if reference.context == "load" and not reference.annotation
-                for scope in [scope_name(reference.scope)]
-                if not any(_covers(site, module, scope) for site in sites)
-            ]
-    return sorted(callers)
-
-
 DISPATCH = f"{PACKAGE}.parser._schema_dispatch"
 """The module of the dispatch tables, as the names its classes lead to through imports."""
 BUILD_INDEX = {f"{DISPATCH}.Row": 2, f"{DISPATCH}.Default": 1}
 """The position of the parse method among the arguments of a table entry that holds one (``build``)."""
-
-
-class Bypass(NamedTuple):
-    """A scope that reaches what a builder home keeps: a parse method a table row holds, or the output of a builder."""
-
-    home: str
-    """The parse method, or the builder, as ``path:qualname``."""
-    scope: str
-    """The scope that calls the parse method outside the tables, or builds the marked output, as ``path:qualname``."""
-    line: int
 
 
 class _Reads:
@@ -170,7 +124,6 @@ class _Reads:
         self.repo = repo
         self.package = package
         self.modules = {module: rel for rel, (_, module) in repo.names.items() if rel.startswith(package)}
-        self._scoped: dict[str, list[tuple[ast.AST, Scope]]] = {}
         self._attributes: dict[str, dict[str, list[tuple[ast.Attribute, Scope]]]] = {}
 
     def paths(self, word: str = "") -> list[str]:
@@ -186,26 +139,23 @@ class _Reads:
         module, _, name = (model.origin(reference.node) or "").rpartition(".")
         return Home(self.modules[module].removeprefix(self.package), name) if module in self.modules else None
 
-    def scoped(self, rel: str) -> list[tuple[ast.AST, Scope]]:
-        """Return every node of a module with the scope it runs in, a def's body in the def's, found once.
+    def attributes(self, rel: str) -> dict[str, list[tuple[ast.Attribute, Scope]]]:
+        """Return the attributes a module loads, by name, each with the scope it runs in (a def's body in the def's).
 
         A def or class statement, its decorators, defaults, bases and annotations run in the scope around it.
         """
-        if (found := self._scoped.get(rel)) is None:
+        if (found := self._attributes.get(rel)) is None:
             model = self.repo.model(rel)
             defs = {id(scope.node): scope for scope in model.scopes if scope.kind in {"function", "class"}}
-            found = self._scoped[rel] = []
+            found = self._attributes[rel] = {}
             todo: list[tuple[ast.AST, Scope]] = [(model.tree, model.module_scope)]
             while todo:
                 node, scope = todo.pop()
-                found.append((node, scope))
+                if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
+                    found.setdefault(node.attr, []).append((node, scope))
                 inner = defs.get(id(node), scope)
                 body = {id(statement) for statement in getattr(node, "body", [])} if inner is not scope else set()
                 todo += [(child, inner if id(child) in body else scope) for child in ast.iter_child_nodes(node)]
-            self._attributes[rel] = attributes = {}
-            for node, scope in found:
-                if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
-                    attributes.setdefault(node.attr, []).append((node, scope))
         return found
 
     def reads(self, home: Home) -> list[tuple[str, ast.expr, Scope]]:
@@ -217,8 +167,7 @@ class _Reads:
         leaf = home.name.rpartition(".")[2]
         found: list[tuple[str, ast.expr, Scope]] = []
         for rel in self.paths(leaf):
-            self.scoped(rel)
-            found += [(rel, node, scope) for node, scope in self._attributes[rel].get(leaf, [])]
+            found += [(rel, node, scope) for node, scope in self.attributes(rel).get(leaf, [])]
             found += [
                 (rel, reference.node, reference.scope)
                 for reference in self.repo.model(rel).references
@@ -307,56 +256,6 @@ def _tables(reads: _Reads) -> list[Home]:
     return found
 
 
-def _marks_of(record: BuilderHome) -> tuple[Mark, ...]:
-    """Return the marks of what a record's builder builds: a call of its table's ``choose``, else its own marks."""
-    return (Mark(callee=f"{record.table.name.rpartition('.')[2]}.choose"),) if record.table else record.marks
-
-
-def _sets(pairs: Iterable[tuple[str | None, ast.expr]], mark: Mark) -> bool:
-    """Return whether keyword and value pairs set the mark's keyword to its value as a constant."""
-    return any(
-        key == mark.keyword and isinstance(value, ast.Constant) and value.value is mark.value
-        if isinstance(mark.value, bool)
-        else key == mark.keyword and isinstance(value, ast.Constant) and value.value == mark.value
-        for key, value in pairs
-    )
-
-
-def _pairs(node: ast.AST) -> list[tuple[str | None, ast.expr]]:
-    """Return the keywords a call passes, those of a ``**`` dict display included, or the constant keys of a dict."""
-    if isinstance(node, ast.Dict):
-        return [(str(key.value), value) for key, value in zip(node.keys, node.values, strict=True) if _is_text(key)]
-    if not isinstance(node, ast.Call):
-        return []
-    pairs: list[tuple[str | None, ast.expr]] = [(item.arg, item.value) for item in node.keywords if item.arg]
-    return pairs + [pair for item in node.keywords if item.arg is None for pair in _pairs(item.value)]
-
-
-def _is_text(node: ast.expr | None) -> TypeGuard[ast.Constant]:
-    """Return whether a dict key is a string constant."""
-    return isinstance(node, ast.Constant) and isinstance(node.value, str)
-
-
-def _marked(model: SourceModule, node: ast.AST, mark: Mark) -> bool:
-    """Return whether a call carries a mark, or, for a keyword asked of any call, a dict display of flags sets it.
-
-    A mark may ask the call for a constant positional argument (``_container_flags(obj, "dict")``).
-    """
-    if isinstance(node, ast.Dict):
-        return not mark.callee and bool(mark.keyword) and _sets(_pairs(node), mark)
-    if not isinstance(node, ast.Call):
-        return False
-    callee = ast.unparse(node.func)
-    if mark.callee and mark.callee not in {model.origin(node.func), callee} and not callee.endswith(f".{mark.callee}"):
-        return False
-    if mark.argument is not None:
-        index, constant = mark.argument
-        given = node.args[index] if len(node.args) > index else None
-        if not (isinstance(given, ast.Constant) and given.value == constant):
-            return False
-    return not mark.keyword or _sets(_pairs(node), mark)
-
-
 def _unreached(reads: _Reads, record: BuilderHome) -> list[Home]:
     """Return the parts of a record that the builder does not reach by reads through the parts it reaches."""
     reached = [record.builder]
@@ -429,64 +328,26 @@ def _held_builds(reads: _Reads, holders: Iterable[tuple[str, SourceModule, list[
 def held_parse_methods(repo: Repo, records: Iterable[BuilderHome], package: str = PACKAGE_DIR) -> list[Home]:
     """Return the parse methods that the entries of the recorded tables hold, which run only through the tables.
 
-    `builder_bypasses` reports their reads outside the tables; `scripts/build_heki_contracts.py` writes them as heki
-    contracts.
+    `scripts/build_heki_contracts.py` writes a heki contract per method: only the modules of the tables call it.
     """
     return sorted(_held_builds(_Reads(repo, package), _holders(repo, records, package)))
 
 
-def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = PACKAGE_DIR) -> list[Bypass]:
-    """Return the scopes of a package that bypass a builder home.
+def typed_children_readers(repo: Repo, table: Home, package: str = PACKAGE_DIR) -> list[Home]:
+    """Return the scopes of a package whose every read of a recorded table asks it for ``typed_children``.
 
-    A parse method that an entry of a recorded table holds (``Row.build``, ``Default.build``) runs only through the
-    tables: a read of it outside every recorded table (and the shared rows a table reads) is a bypass, whatever calls
-    it, a public hook too. A read of a record's table outside its builder, other than by ``typed_children``, is a
-    bypass (an alias of the table escapes the ``choose`` mark otherwise). A call with a mark of a record outside its
-    builder and parts, in a module under its ``within``, is a bypass: for a table record the mark is a call of the
-    table's ``choose``.
+    Such a scope reads what the rows of the table type, not which row parses a site, so it may read the table besides
+    the builder; a scope that also reads the table otherwise (its ``choose``, a name bound to it) is none. heki cannot
+    tell the method a read is followed by, so `scripts/build_heki_contracts.py` names these scopes as readers.
     """
     reads = _Reads(repo, package)
-    found: dict[tuple[str, str], int] = {}
-    records = list(records)
-    holders = _holders(repo, records, package)
-    inside = {id(node) for _, _, held in holders for expr in held for node in ast.walk(expr)}
-    for build in _held_builds(reads, holders):
-        for rel, node, scope in reads.reads(build):
-            if id(node) not in inside:
-                key = (f"{build.path}:{build.name}", f"{rel.removeprefix(package)}:{scope_name(scope)}")
-                found[key] = min(found.get(key, node.lineno), node.lineno)
     parents: dict[str, dict[int, ast.AST]] = {}
-    for record, table in [(record, record.table) for record in records if record.table]:
-        for rel, node, scope in reads.reads(table):
-            tree = parents.setdefault(
-                rel,
-                {
-                    id(child): parent
-                    for parent in ast.walk(repo.model(rel).tree)
-                    for child in ast.iter_child_nodes(parent)
-                },
-            )
-            parent = tree.get(id(node))
-            if (isinstance(parent, ast.Attribute) and parent.attr == "typed_children") or _covers(
-                record.builder, rel.removeprefix(package), scope_name(scope)
-            ):
-                continue
-            key = (f"{record.builder.path}:{record.builder.name}", f"{rel.removeprefix(package)}:{scope_name(scope)}")
-            found[key] = min(found.get(key, node.lineno), node.lineno)
-    for record, mark in [(holder, mark) for holder in records for mark in _marks_of(holder)]:
-        for rel in reads.paths(mark.keyword or mark.callee.rpartition(".")[2]):
-            if not rel.startswith(f"{package}{record.within}"):
-                continue
-            model = repo.model(rel)
-            for node, inside_scope in reads.scoped(rel):
-                scope = scope_name(inside_scope) if _marked(model, node, mark) else ""
-                if (
-                    scope
-                    and isinstance(node, ast.expr)
-                    and not any(
-                        _covers(holder, rel.removeprefix(package), scope) for holder in (record.builder, *record.parts)
-                    )
-                ):
-                    key = (f"{record.builder.path}:{record.builder.name}", f"{rel.removeprefix(package)}:{scope}")
-                    found[key] = min(found.get(key, node.lineno), node.lineno)
-    return sorted(Bypass(home, scope, line) for (home, scope), line in found.items())
+    only: dict[Home, bool] = {}
+    for rel, node, scope in reads.reads(table):
+        if rel not in parents:
+            tree = repo.model(rel).tree
+            parents[rel] = {id(child): parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
+        parent = parents[rel].get(id(node))
+        home = Home(rel.removeprefix(package), scope_name(scope))
+        only[home] = only.get(home, True) and isinstance(parent, ast.Attribute) and parent.attr == "typed_children"
+    return sorted(home for home, typed in only.items() if typed)

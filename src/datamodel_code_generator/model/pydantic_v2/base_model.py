@@ -150,6 +150,7 @@ from datamodel_code_generator.python_literal import (
     _normalize_string,
     _normalized_safe_python_name,
     _text_constructor_expression,
+    message_repr,
     represent_untrusted_python_value,
     stable_repr,
 )
@@ -2051,8 +2052,16 @@ class _PydanticV2Model(DataModel):
         """
         from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
 
+        validates = self._CONFIG_AS_CONFIG_DICT
+        if validates and (left_out := [key for key in config_parameters if key not in ConfigDict.model_fields]):
+            warn(
+                f"The config of {self.name} sets {', '.join(map(message_repr, left_out))}, which this model leaves out "
+                f"of model_config. It writes only {', '.join(ConfigDict.model_fields)}. "
+                "pydantic_v2.dataclass writes every key as given.",
+                stacklevel=2,
+            )
         self.extra_template_data["config"] = (
-            ConfigDict.model_validate(config_parameters) if self._CONFIG_AS_CONFIG_DICT else config_parameters
+            ConfigDict.model_validate(config_parameters) if validates else config_parameters
         )
         self._set_internal_template_data(self._CONFIG_ITEMS_KEY, self._config_items())
         if IMPORT_CONFIG_DICT not in self._additional_imports:

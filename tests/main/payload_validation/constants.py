@@ -171,6 +171,16 @@ EXCLUDED_FILES: dict[str, str] = {
         "which hypothesis-jsonschema cannot satisfy for generic payload validation"
     ),
     "jsonschema/unknown_format.json": "unknown format fixture intentionally emits a generator warning",
+    "jsonschema/format_string_keywords.json": (
+        "option-only e2e fixture of --keep-string-keywords-beside-formats; payload validation intentionally uses "
+        "default generation, which drops the keywords; test_keep_string_keywords_beside_formats and the decision "
+        "tables validate its payloads"
+    ),
+    "jsonschema/format_string_keywords_all_of.json": (
+        "option-only e2e fixture of --keep-string-keywords-beside-formats; payload validation intentionally uses "
+        "default generation, which drops the keywords; test_keep_string_keywords_beside_formats_all_of validates its "
+        "output"
+    ),
     "jsonschema/uuid_version_formats.json": (
         "option-only e2e fixture of --read-uuid6-uuid7-uuid8-formats; payload validation intentionally uses default "
         "generation, which types the formats as str; test_read_uuid6_uuid7_uuid8_formats validates its payloads"
@@ -537,6 +547,19 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/variant_tag_values/object_values.yaml::components.schemas.Pet": (
         "Cat's tag property admits only objects, which tag no variant, as in 0.97.0; "
         "test_object_values_of_a_tag_property pins it"
+    ),
+    **dict.fromkeys(
+        (
+            f"openapi/variant_tag_values/scalar_kind_mapped.yaml::components.schemas.{name}Union"
+            for name in (
+                *("Int", "BoundedInt", "Number", "BoundedNumber", "FractionNumber", "DecimalNumber", "MultipleNumber"),
+                *("Flag", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt", "PositiveNumber"),
+                *("NegativeNumber", "NonNegativeNumber", "NonPositiveNumber"),
+            )
+        ),
+        _UNCONSTRAINED_TAG_REASON + "here the variants take an integer, number or boolean tag from a scalar type, so "
+        "a payload tagged 2 with the first variant's properties is schema-valid; "
+        "test_scalar_tag_mapping_keys pins the tags",
     ),
     "openapi/variant_tag_values/integer_kind_mapped.yaml::components.schemas.Pet": (
         _UNCONSTRAINED_TAG_REASON

@@ -396,7 +396,10 @@ options = "*"
 ```
 
 - `input` (required): a non-empty list of path globs over the head tree (`*` within a path part, `**` across parts);
-  they name files and directories, and a directory names its own cell only, so list the files below it too.
+  they name files and directories, and a directory names its own cell only, so list the files below it too. A glob
+  that starts with `payload:`, `project:`, `family:` or `composition:` names the cells of that label space instead (a
+  payload case is `payload:<case id>`); one selector names one label space, and a selector of another space than the
+  paths needs `input_file_type`.
 - `backends` (required): `"*"` or a list of output model types (`pydantic_v2.BaseModel`, `msgspec.Struct`, ...).
 - `options` (required): `"*"` or a list of option sets, each a list of strings (`[["--use-annotated"], []]`; `[]` is
   the default options). `"*"` is every option set the run has for the matched inputs: the default options, the
@@ -414,7 +417,9 @@ The gate prints a starting block for the uncovered cells: one selector per input
 several option sets, and the first change line as a commented `match`. Write the selector narrow: one selector may name
 at most 1500 cells (about a whole PR-tier run), and every selector must match a differing cell of the run, so a
 selector that matches no cell, or only equal ones, fails (a stale one, in a run of the whole nightly or release tier; `--select` judges no
-selector).
+selector). A run judges only the selectors of the label spaces it builds: every run builds the cells of path
+selectors, the nightly and release tiers also the `payload:` and `project:` cells, so a PR run leaves a payload
+selector to the nightly.
 A selector may not name unreleased surface: an option, option value, `--preset` date or input type the latest release
 lacks is judged by the stored outputs, so its cells never run. The schema is checked before anything generates:
 unknown keys, an empty `input`, an unknown backend, malformed `options`, an unknown aspect or a `match` that does not
@@ -423,8 +428,12 @@ compile stop the gate. `--stamp` drops `cells` when it moves a record to a relea
 A PR judges the records whose `id` the merge base lacks (the merge base of the PR's base and its head, so a lagging
 branch is judged only by what it changes). A record that exists at the merge base and gains selectors fails: add a
 record with `extends = "<id>"`, which has the category of its target and its own selectors. A PR that changes nothing
-under `src/` passes without generating, and fails if one of its records names cells, because no cell can differ. A PR
-that changes a file the gate runs also runs the base's gate. A release run judges the records the latest tag lacks,
+under `src/` passes without generating, and fails if one of its records names cells, because no cell can differ,
+except a record of a change already on main: its own `refs` name only pull requests merged after the latest release
+tag (the `(#n)` that ends their squash commits' subjects on the merge base's first-parent history), and, if it extends a
+record, that record is the merge base's. Such a record names the cells the release runs judge, which the PR run cannot
+(the change is on both sides); add it in a PR of its own, as in a PR that changes `src/` its selectors are judged as
+every other record's. A PR that changes a file the gate runs also runs the base's gate. A release run judges the records the latest tag lacks,
 adds their selectors' cells to the tier, and judges stale selectors. Release-time records need no backfill: only the
 records a PR adds must name cells.
 
@@ -490,7 +499,10 @@ the records, and exits 1 under `--check`.
 | `entry <id>: cells <n> names <N> cells, more than the 1500 a run may take` | narrow its `input`, `backends` or `options` |
 | `entry <id>: cells <n> name <item>, which <tag> lacks` | unreleased surface is judged by the stored outputs, not by cells: drop the selector |
 | `entry <id>: a record of the base gains [[change.cells]]; add a record with extends instead` | move the new selectors to an `extends` record |
-| `entry <id>: src/ is unchanged since <base>, so its cells cannot differ` | drop `cells` from the record, or cover the change with a category without cells |
+| `entry <id>: src/ is unchanged since <base>, so its cells cannot differ` | drop `cells` from the record, or cover the change with a category without cells; for a change already on main, name its pull request in the record's `refs` |
+| `entry <id>: cells <n> matches ... (it records #<n>, merged before <base>: ...)` | the record names the cells of a change already on main: move it to a PR that changes nothing under `src/` |
+| `entry <id>: cells <n>: input names cells of <space> and <space>; a selector names one label space` | split the selector, one per label space |
+| `entry <id>: cells <n>: input names <space> cells, which need input_file_type` | add the input type the cells run with (`jsonschema`, `openapi`, ...) |
 | `nondeterministic: the head's second run gives other facts` | the output depends on something other than the input: fix that first |
 | `<label>: a harness record covers a changed ... output in a src PR` | see the `harness` rule above |
 
@@ -616,12 +628,13 @@ new ones: delete `scripts/heki_baseline.toml` and run the command with
 environment boundary count under a key of their own,
 `allowlist:heki-baseline:EFF201`, so a new read of the environment is never
 paid for by another finding. Each other site of the baseline, except the
-writes outside the store operations that only heki checks, repeats a violation
-that another key already budgets (`allowlist:UNLISTED_CALLERS`,
-`allowlist:host-private-access`, `allowlist:BUILDER_BYPASSES`), so a new
-violation of such a rule raises both keys and needs both `[[approved]]`
-entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
-comments that name a heki rule count as `heki-ignore:<rule>` keys.
+writes outside the store operations, the reads of a decision home outside its
+row's home modules and adapter sites and the bypasses of a builder home, which
+only heki checks, repeats a violation that another key already budgets
+(`allowlist:host-private-access`), so a new violation of such a rule raises
+both keys and needs both `[[approved]]` entries, and a fix lowers both.
+`# heki: ignore[...]` comments and `# noqa` comments that name a heki rule
+count as `heki-ignore:<rule>` keys.
 
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
 an `[[approved]]` entry of `scripts/ratchet_approvals.toml`: the key, the count
@@ -730,7 +743,8 @@ graph: `scripts/build_heki_contracts.py` writes a `write-owners` contract of
 `scripts/heki.toml` for the rows of `scripts/fact_tables.py` (and for the model
 lists of the parser run state, `Parser.results` and `ModuleContext.models`)
 that only the store operations the rows name may write. Each write is judged in
-the function that makes it. Writes that bypassed the store when the contracts
+the function that makes it, whether a test reaches it or not; no run-time check
+of the test suite repeats it. Writes that bypassed the store when the contracts
 were written are recorded in `scripts/heki_baseline.toml` (see the heki
 paragraph above), which only shrinks:
 
@@ -762,11 +776,6 @@ a row that names nothing the sources declare or write fails. heki can judge a
 write only of an attribute or key that a row names. The hook runs when a parser
 file changes; after editing `model/`, `types.py` or the table, run the script
 yourself (the test suite runs it too).
-
-The runtime write guard (the `STORE_WRITES` debug check below) sees the writes
-while the generator runs, also where heki cannot follow them. Every test runs
-it, and a test fails when its generations write outside a store operation in a
-function where the heki baseline records no such write of the attribute.
 
 If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
 `NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in
@@ -805,11 +814,6 @@ tables of `Parser`; the check runs it inside the scope of that declaration (`tes
 script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare.
 
-`STORE_WRITES` is the exception: today's code still writes outside store operations at the places
-`scripts/heki_baseline.toml` records, so `1` would stop every generation. Unless you set the variable,
-`tests/conftest.py` (`StoreWritesCheck`) sets it to `report:<file>` during each test, with one file per test process,
-and fails the test for a write of the package that the baseline does not record.
-
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
@@ -817,7 +821,6 @@ and fails the test for a write of the package that the baseline does not record.
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, every model parsed from a JSON document has an owner or is a root at the end of L1, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | no reader writes a schema object the schema graph validated once and shares (`tests/checks/schema_graph.py`, [Layers](architecture.md#layers), L0) |
 | `TEMPLATE_ASSIGNMENTS` | every class-scope field line that a model's built-in template renders after B2, annotated or assigned, binds the field's name (`= value`) exactly where the model's row of `classify_assignment` decides that the class body binds the field, as the compiled renderer or Jinja writes it; not checked: renders before B2, models under a custom root template, models whose class brings its own assignment hooks (rule `hook`), fields the text writes no line for, and text the running Python cannot parse; the shapes of `LEGACY_ROWS` (`legacy-annotated-factory-binds`, `legacy-typed-dict-binds`, `legacy-enum-member-unbound`) differ today and are only recorded with a report file (`tests/checks/template_assignments.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
-| `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
 | `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |

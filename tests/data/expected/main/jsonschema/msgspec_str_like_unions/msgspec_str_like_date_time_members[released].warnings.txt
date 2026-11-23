@@ -1,0 +1,2 @@
+warning: msgspec cannot decode the union Model.at: it holds the str-like members time, UUID, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.when: it holds the str-like members date, datetime, while a msgspec union holds only one str-like member (str and Literal str values count as one).

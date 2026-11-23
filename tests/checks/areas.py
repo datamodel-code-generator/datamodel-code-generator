@@ -106,17 +106,14 @@ class Area(Enum):
     copy of the resolver when ``name_models`` starts, they give every reference its name, and every model of the parse
     is named by a reference of the resolver (``naming.py``)."""
 
-    STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
-    """After L1, data types, fields and models change their facts only inside store operations (``finality.py``)."""
-
     FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
     """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a
     freeze point, a write to the graph of facts frozen there fails where it is made (``finality.py``)."""
 
     PASS_TRIGGERS = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
     """A pass whose trigger is false runs anyway and changes nothing: no fact, memo revision, import, parser attribute,
-    run-state field or warning (``finality.ParseChecks.idle_pass``). It needs ``STORE_WRITES`` or ``FACT_FINALITY``,
-    which open the checks of a parse, and compares the facts only with ``FACT_FINALITY``."""
+    run-state field or warning (``finality.ParseChecks.idle_pass``). It needs ``FACT_FINALITY``, which opens the
+    checks of a parse and compares the facts."""
 
     FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
     """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.

@@ -1,0 +1,8 @@
+[[change]]
+id = "keep-null-of-nullable-items-payloads"
+extends = "keep-null-of-nullable-items"
+refs = ["#7343"]
+covers = [
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_nullable_ite~a8a80bbe.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_nullable_item_fo~30588d54.errors.txt",
+]

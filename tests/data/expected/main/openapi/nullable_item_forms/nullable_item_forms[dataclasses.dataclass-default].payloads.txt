@@ -1,0 +1,13 @@
+{"rows": [[1.0], null]}: rejected (list_type)
+{"rows": [["x"]]}: rejected (float_parsing)
+{"by_name": {"a": null}}: rejected (list_type)
+{"counted_rows": [null, [1.0]]}: rejected (list_type)
+{"grid_maps": [{"k": "v"}, null]}: rejected (dict_type)
+{"nested_maps": {"a": null}}: rejected (dict_type)
+{"by_pattern": {"ax": null}}: rejected (list_type)
+{"pair": [null, "x"]}: rejected (list_type)
+{"owners": [null, {"name": "n"}]}: rejected (dataclass_type)
+{"owners": [1]}: rejected (dataclass_type)
+{"owner_map": {"a": null}}: rejected (dataclass_type)
+{"kinds": ["a"]}: accepted
+{"kinds": [null]}: rejected (enum)

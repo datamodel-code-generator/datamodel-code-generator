@@ -155,12 +155,14 @@
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
 - `--infer-union-discriminators`: Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
+- `--keep-string-keywords-beside-formats`: Keep the string keywords beside a format Pydantic writes as a class `...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--name-allof-union-members-after-branches`: Name the classes an allOf gives the branches of a oneOf or anyOf ...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-infer-union-discriminators`
+- `--no-keep-string-keywords-beside-formats`
 - `--no-merge-shared-variant-tags`
 - `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
@@ -232,6 +234,7 @@
 - `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
+- `--keep-null-of-nullable-items`: Write the null that `nullable: true` declares on an array item, a tuple item ...
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
@@ -255,6 +258,7 @@
 - `--no-keep-enum-literal-aliases`
 - `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
+- `--no-keep-null-of-nullable-items`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-keep-self-referencing-array-items`
