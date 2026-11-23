@@ -38,7 +38,7 @@ from datamodel_code_generator._document_reader import held_schema, member_key, r
 from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
-from datamodel_code_generator._paths import file_uri, file_uri_path, files_under
+from datamodel_code_generator._paths import file_uri, file_uri_path, input_files_under
 from datamodel_code_generator._shared_types import Error, InvalidClassNameError, InvalidFileFormatError
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
@@ -1372,7 +1372,7 @@ def iter_local_source_paths(parser: SchemaDocumentsHost) -> Iterator[Path]:
         return
     match parser.source:
         case Path() as path if path.is_dir():
-            yield from files_under(path, order="name")
+            yield from input_files_under(path, order="name", encoding=parser.encoding)
         case list() as paths:
             yield from ((parser.base_path / path) for path in paths)
 

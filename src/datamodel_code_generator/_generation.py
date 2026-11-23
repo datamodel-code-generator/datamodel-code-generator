@@ -39,9 +39,22 @@ from typing import (
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._generation_timestamp import current_timestamp
+from datamodel_code_generator._paths import (
+    MODULAR_OUTPUT_FILE_ERROR,
+    concrete,
+    creation_root,
+    existing_ancestor,
+    iter_input_files,
+    layout_refusal,
+    lexical,
+    names_directory,
+    output_layout,
+    overlaps,
+    resolved,
+    same_file,
+)
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
-    DanglingRefWarning,
     DefaultPutDict,
     Error,
     GeneratedModules,
@@ -179,14 +192,14 @@ def get_version() -> str:
 
 @contextlib.contextmanager
 def chdir(path: Path | None) -> Generator[None]:
-    """Change working directory and return to previous on exit."""
+    """Change working directory and return to previous on exit; a missing directory is its nearest existing parent."""
     if path is None:
         yield
         return
     with PROCESS_STATE_LOCK:
         prev_cwd = Path.cwd()
         try:
-            os.chdir(path if path.is_dir() else path.parent)
+            os.chdir(existing_ancestor(path if path.is_dir() else path.parent))
             yield
         finally:
             os.chdir(prev_cwd)
@@ -352,8 +365,6 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
     if output is None and model_metadata is None and lockfile is None:
         return
 
-    from datamodel_code_generator._paths import lexical, overlaps, resolved, same_file  # noqa: PLC0415
-
     targets = [
         (label, path, lexical(path), resolved(path))
         for label, path in _written_paths(output, model_metadata, lockfile)
@@ -410,8 +421,6 @@ def _refuse_uncreatable_paths(
 
     Their deepest existing ancestor is a regular file, or a root that does not exist (a missing drive).
     """
-    from datamodel_code_generator._paths import creation_root, lexical  # noqa: PLC0415
-
     for label, path in _written_paths(output, model_metadata, lockfile):
         if path is None:
             continue
@@ -440,12 +449,14 @@ def _refuse_written_path_conflicts(
 _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096
 
 
-def get_first_file(path: Path) -> Path:
-    """Find and return the first file in a path: the path itself unless it is a directory, else its first file."""
+def get_first_file(path: Path, encoding: str = "utf-8") -> Path:
+    """Find and return the first file in a path: the path itself unless it is a directory, else its first file.
+
+    The hidden files of a directory are read as text in ``encoding`` (``is_hidden_binary``).
+    """
     if path.is_dir():
-        for child in path.rglob("*"):
-            if child.is_file():
-                return child
+        if (first := next(iter_input_files(path, encoding=encoding), None)) is not None:
+            return first
     elif path.exists():
         return path
     msg = f"No file found in: {path}"
@@ -1047,8 +1058,6 @@ def _prepare_parser_common_options(
         source = prepared.text or input_
         assert not isinstance(source, Mapping)
 
-    from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
-
     defer_formatting = config.output is not None and names_directory(config.output)
 
     target_datetime_class = config.output_datetime_class
@@ -1170,8 +1179,6 @@ _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file 
 
 def _refuse_output_layout(layout: OutputLayout | None, destination: Path, *, compares: bool = False) -> None:
     """Raise the refusal of an output of ``layout`` that cannot replace what ``destination`` holds, if not comparing."""
-    from datamodel_code_generator._paths import layout_refusal  # noqa: PLC0415
-
     if refusal := layout_refusal(layout, destination, compares=compares):
         raise Error(refusal)
 
@@ -1208,8 +1215,6 @@ def _write_results_to_output(
     has_custom_file_header: bool,
 ) -> list[Path]:
     """Write one file or a sorted collection of generated modules to disk, and return the files written."""
-    from datamodel_code_generator._paths import MODULAR_OUTPUT_FILE_ERROR, names_directory  # noqa: PLC0415
-
     if isinstance(results, str):
         _refuse_output_layout("module", output)
     elif not names_directory(output):
@@ -1242,7 +1247,10 @@ def _format_deferred_output(
     settings_path: Path,
     files: Iterable[Path],
 ) -> None:
-    """Apply deferred Ruff formatting only when a Ruff formatter is configured, to the files written in the encoding."""
+    """Apply deferred Ruff formatting only when a Ruff formatter is configured, to the files written in the encoding.
+
+    The paths are absolute where the working directory changes around the call (``_emit_results``).
+    """
     if not config.formatters:
         return
 
@@ -1296,8 +1304,6 @@ def _read_custom_file_header(
 def _emit_results(
     results: _ParserResults,
     input_: _GenerationInput,
-    input_filename: str | None,
-    custom_file_header: str | None,
     config: GenerateConfig,
     *,
     defer_formatting: bool,
@@ -1305,16 +1311,18 @@ def _emit_results(
     settings_path: Path,
     allow_empty_api: bool = False,
     models_not_found_hint: str = "",
+    formatter_cwd: Path | None = None,
 ) -> str | GeneratedModules | None:
-    if not input_filename:
-        input_filename = _default_input_filename(input_)
+    input_filename = config.input_filename or _default_input_filename(input_)
     if not results:
         if allow_empty_api:
             return None
         msg = f"Models not found in the input data{models_not_found_hint}"
         raise Error(msg)
 
-    custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
+    custom_file_header = _read_custom_file_header(
+        config.custom_file_header, config.custom_file_header_path, config.encoding
+    )
     has_custom_file_header = bool(custom_file_header)
     header_prefix, header_suffix = _build_file_header_parts(custom_file_header, config)
 
@@ -1336,13 +1344,13 @@ def _emit_results(
             has_custom_file_header=has_custom_file_header,
         )
     except OSError as e:
-        from datamodel_code_generator._paths import layout_refusal  # noqa: PLC0415
-
         if isinstance(results, str) or (refusal := layout_refusal("package", output)) is None:
             raise
         raise Error(refusal) from e
     if defer_formatting:
-        _format_deferred_output(output, config, data_model_types, settings_path, written)
+        absolute_output, absolute_files = output.absolute(), [file.absolute() for file in written]
+        with chdir(formatter_cwd):
+            _format_deferred_output(absolute_output, config, data_model_types, settings_path, absolute_files)
 
     return None
 
@@ -1414,7 +1422,6 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
-    from datamodel_code_generator._paths import output_layout  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
         artifact_roots,
@@ -1526,7 +1533,6 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     if not isinstance(input_, Path) or not input_.is_dir():
         return config
 
-    from datamodel_code_generator._paths import concrete, names_directory  # noqa: PLC0415
     from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
 
     output = config._logical_output or config.output  # noqa: SLF001
@@ -1538,10 +1544,10 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
         if target is None:
             continue
         paths = (target.resolve(),) if is_directory else (concrete(target), target.resolve())
-        for resolved in paths:
-            if not resolved.is_relative_to(input_root):
+        for location in paths:
+            if not location.is_relative_to(input_root):
                 continue
-            source_path = input_ / resolved.relative_to(input_root)
+            source_path = input_ / location.relative_to(input_root)
             if is_directory:
                 output_directory = source_path
             else:
@@ -1669,8 +1675,6 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
         msg = "List input is only supported for file path lists or input_file_type=InputFileType.MCPTools."
         raise Error(msg)
 
-    from datamodel_code_generator._paths import resolved  # noqa: PLC0415
-
     match input_:
         case Path() as input_path if not input_path.is_absolute():
             input_ = resolved(input_path, caller_cwd)
@@ -1715,7 +1719,12 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
         try:
             match input_:
                 case Path() as input_path if (input_filter := config._directory_input_filter) is not None:  # noqa: SLF001
-                    detected_input = next(input_filter.iter_files(input_path.rglob("*"), config.encoding), None)
+                    detected_input = next(
+                        input_filter.iter_files(
+                            iter_input_files(input_path, encoding=config.encoding), config.encoding
+                        ),
+                        None,
+                    )
                     if detected_input is None:
                         msg = f"No file found in: {input_path}"
                         raise FileNotFoundError(msg)  # noqa: TRY301
@@ -1725,9 +1734,11 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
                     prefetched_source = (detected_input_path, input_data)
                     input_text_ = input_data.decode(config.encoding)
                 case Path() as input_path:
-                    input_text_ = _input_text(get_first_file(input_path), config.encoding, read_once_data)
+                    input_text_ = _input_text(
+                        get_first_file(input_path, config.encoding), config.encoding, read_once_data
+                    )
                 case [Path(), *_] as input_paths:
-                    detected_input_path = get_first_file(input_paths[0])
+                    detected_input_path = get_first_file(input_paths[0], config.encoding)
                     input_data = detected_input_path.read_bytes()
                     # Retain original bytes for parsing and content-based cache keys without another read.
                     prefetched_source = (detected_input_path, input_data)
@@ -2175,7 +2186,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
             )
             retry_parsed = None
             with contextlib.suppress(Exception):
-                retry_parsed = _parse_again(retry_run, retry_context, retry_caches, ignored_warnings=DanglingRefWarning)
+                retry_parsed = _parse_again(retry_run, retry_context, retry_caches)
 
             retry_accepted = False
             if retry_parsed is not None:
@@ -2254,13 +2265,12 @@ def _emit_generation(run: _GenerationRun, parsed: _ParsedGeneration) -> str | Ge
     generated = emit_results(
         results,
         run.input_,
-        config.input_filename,
-        config.custom_file_header,
         config,
         defer_formatting=run.defer_formatting,
         data_model_types=run.data_model_types,
         settings_path=run.emit_settings_path,
         models_not_found_hint=models_not_found_hint,
+        formatter_cwd=run.output_context_path if run.use_output_cwd else None,
     )
     if metadata is not None:
         _write_model_metadata(*metadata, config.encoding)

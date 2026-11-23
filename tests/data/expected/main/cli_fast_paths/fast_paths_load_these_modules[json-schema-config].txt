@@ -19,6 +19,7 @@
     "datamodel_code_generator._message_text",
     "datamodel_code_generator._module_paths",
     "datamodel_code_generator._option_names",
+    "datamodel_code_generator._paths",
     "datamodel_code_generator._process_state",
     "datamodel_code_generator._python_syntax",
     "datamodel_code_generator._records",

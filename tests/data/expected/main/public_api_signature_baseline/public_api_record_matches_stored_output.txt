@@ -179,7 +179,7 @@ def enable_parsed_source_cache() -> Callable[[], None]
 def generate(input_: Path | str | ParseResult | Mapping[str, Any] | list[Any], *, config: GenerateConfig | None=None, **options: Unpack[GenerateConfigDict]) -> str | GeneratedModules | None
 generate_dynamic_models = datamodel_code_generator.dynamic.generate_dynamic_models  [lazy]
 generate_dynamic_module = datamodel_code_generator.dynamic.generate_dynamic_module  [lazy]
-def get_first_file(path: Path) -> Path
+def get_first_file(path: Path, encoding: str='utf-8') -> Path
 def get_version() -> str
 @contextmanager
 def held() -> Generator[Callable[[], None], None, None]

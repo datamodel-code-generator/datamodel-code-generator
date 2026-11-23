@@ -21,13 +21,19 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   and may write whatever the store module may write, in every override; a call on a receiver heki cannot tie to a
   class is reported (``MUT207``), as untyped callbacks reach these methods so; the bookkeeping attributes of a
   reference are read or written only by the store module, their class's module and the modules their row names.
-- ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py`` that the caller guard checks
-  (`scripts._decision_home_reads.checked_homes`), callable by the home modules and the adapter sites of their rows; the
+- ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py``
+  (`scripts._decision_home_reads.checked_homes`), read at run time (called, subclassed, handed on or read as a value:
+  ``references = "reads"``; an annotation and a name imported only under ``if TYPE_CHECKING:`` read none, and a name
+  bound to the home by itself counts only where it is read by name, not through ``self``, ``cls`` or its class) only by
+  the home modules and the adapter sites of their rows, where a class site's own body counts as the code around it; the
   parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
-  records mark by a callee, built only by the builder and its parts.
-- ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder (the guard of the builder
-  records also allows ``typed_children`` reads; heki cannot tell the method a read is followed by, so such a read
-  outside the builder is a finding, and none exists in the package today); and the private members of
+  records mark (a call of a class or function, binding a parameter to a constant where the mark asks for one: an
+  argument-list target such as ``DataType(is_dict=True)``), built only by the builder and its parts, and under the
+  record's ``within`` directory by no other function. A table, parse method or mark that is a member of a class is
+  also named as the member of every Protocol of the package that declares it, since heki judges a use through a value
+  typed with a host Protocol by the Protocol's declaration.
+- ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder and by the scopes that only ask
+  it for ``typed_children`` (`scripts._decision_home_reads.typed_children_readers`); and the private members of
   the classes outside the concern modules of the host rule of ``scripts/check_architecture_boundaries.py`` (and of the
   Protocols inside them that are no ``*Host``), which the concern modules may neither read nor call (``MUT206``,
   ``MUT207`` report what heki cannot tie to a class).
@@ -47,16 +53,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts._decision_home_reads import checked_homes, held_parse_methods
+from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import PackageIndex, _in_host_scope, _protocol_bases, bases
 from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
 from scripts.check_ratchets import ENVIRONMENT_ADVICE
-from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home
+from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
 from scripts.fact_tables import ATTRIBUTE_FACTS, STORE_MEMBERS, Access, FactKind, MemberUse, StoreMember
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from scripts.decision_homes import BuilderHome, DecisionHome
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
@@ -272,10 +280,14 @@ def store_member_contracts(repo: Repo) -> list[str]:
     return contracts
 
 
-def decision_home_contracts(repo: Repo) -> list[str]:
-    """Return a ``call-owners`` contract per def or class home that the caller guard checks."""
+def decision_home_contracts(repo: Repo, records: Iterable[DecisionHome] = DECISION_HOMES) -> list[str]:
+    """Return a ``call-owners`` contract per def or class home of records that `checked_homes` returns.
+
+    A run-time read of the home outside the home modules and the adapter sites of every row that holds it is a
+    finding, in the scope that makes it.
+    """
     contracts: dict[Home, str] = {}
-    for home, _, modules, sites in checked_homes(repo, DECISION_HOMES):
+    for home, _, modules, sites in checked_homes(repo, records):
         allowed = {f"{_module(module)}:*" for module in modules}
         allowed.update(pattern for site in sites for pattern in _scope(_module(site.path), site.name))
         contracts[home] = _table(
@@ -283,41 +295,83 @@ def decision_home_contracts(repo: Repo) -> list[str]:
             name=f"home:{home.path}:{home.name}",
             targets=[f"{_module(home.path)}.{home.name}"],
             allowed_callers=sorted(allowed),
-            references="calls",
+            references="reads",
             subclasses=False,
             attribution="lexical",
         )
     return [contracts[home] for home in sorted(contracts)]
 
 
-def builder_contracts(repo: Repo) -> list[str]:
+class _Protocols:
+    """The members the Protocols of the package declare, by name, and the classes of the package, by dotted name."""
+
+    def __init__(self, repo: Repo) -> None:
+        """Read the class scopes of the package's modules."""
+        self.classes: set[str] = set()
+        self.members: dict[str, set[str]] = defaultdict(set)
+        for rel, module in _package_modules(repo).items():
+            model = repo.model(rel)
+            for scope in model.scopes:
+                if scope.kind != "class" or "<locals>" in scope.qualname:
+                    continue
+                self.classes.add(f"{module}.{scope.qualname}")
+                if _protocol_bases(model, scope):
+                    for name in scope.bindings:
+                        self.members[name].add(f"{module}.{scope.qualname}.{name}")
+
+    def targets(self, target: str, arguments: str = "") -> list[str]:
+        """Return a target and, for a member of a class, the same member of every Protocol that declares its name.
+
+        heki judges a call or read through a value typed with a Protocol by the Protocol's declaration, so a host
+        Protocol that declares the member reaches it too; ``arguments`` is the argument list each target ends in.
+        """
+        owner, _, name = target.rpartition(".")
+        protocols = self.members.get(name, set()) if owner in self.classes else set()
+        return [f"{found}{arguments}" for found in sorted({target, *protocols})]
+
+
+def _mark_targets(mark: Mark, protocols: _Protocols) -> list[str]:
+    """Return the heki targets of a mark: its callee, with an argument list where it asks for a parameter's constant."""
+    value = f'"{mark.value}"' if isinstance(mark.value, str) else repr(mark.value)
+    return protocols.targets(mark.callee, f"({mark.keyword}={value})" if mark.keyword else "")
+
+
+def builder_contracts(repo: Repo, records: Iterable[BuilderHome] = BUILDER_HOMES) -> list[str]:
     """Return the contracts of the builder records: tables read by their builders, held parse methods, marked outputs.
 
-    Each parse method has a contract of its own: heki lets the targets of one contract call each other.
+    A table is read only by its builder and the scopes that only ask it for ``typed_children``. A call with a mark of a
+    record is made only by its builder and parts; under its ``within`` directory, by no other function of those
+    modules. Constructing a subclass of a marked class builds the output too, and every target that is a member of a
+    class also names that member of each Protocol declaring it. Each parse method has a contract of its own: heki lets
+    the targets of one contract call each other.
     """
     contracts: list[str] = []
-    tables = sorted({_module(record.table.path) for record in BUILDER_HOMES if record.table})
-    for record in BUILDER_HOMES:
+    protocols = _Protocols(repo)
+    records = list(records)
+    tables = sorted({_module(record.table.path) for record in records if record.table})
+    for record in records:
         builder = _scope(_module(record.builder.path), record.builder.name)
         if record.table:
+            readers = [f"{_module(home.path)}:{home.name}" for home in typed_children_readers(repo, record.table)]
             contracts.append(
                 _table(
                     "read-owners",
                     name=f"table:{record.table.path}:{record.table.name}",
-                    targets=[f"{_module(record.table.path)}.{record.table.name}"],
-                    allowed_readers=builder,
+                    targets=protocols.targets(f"{_module(record.table.path)}.{record.table.name}"),
+                    allowed_readers=[*builder, *readers],
                     attribution="lexical",
                 )
             )
-        if callees := sorted(mark.callee for mark in record.marks if "." in mark.callee):
+        if record.marks:
             parts = [pattern for part in record.parts for pattern in _scope(_module(part.path), part.name)]
+            within = [f"{_module(record.within.rstrip('/'))}.*"] if record.within else []
             contracts.append(
                 _table(
                     "call-owners",
                     name=f"builder:{record.builder.path}:{record.builder.name}",
-                    targets=callees,
+                    targets=sorted(target for mark in record.marks for target in _mark_targets(mark, protocols)),
                     allowed_callers=[*builder, *parts],
-                    subclasses=False,
+                    **({"forbidden_callers": within} if within else {}),
                     attribution="lexical",
                 )
             )
@@ -325,12 +379,12 @@ def builder_contracts(repo: Repo) -> list[str]:
         _table(
             "call-owners",
             name=f"held:{method.path}:{method.name}",
-            targets=[f"{_module(method.path)}.{method.name}"],
+            targets=protocols.targets(f"{_module(method.path)}.{method.name}"),
             allowed_callers=[f"{table}:<module>" for table in tables],
             references="calls",
             attribution="lexical",
         )
-        for method in held_parse_methods(repo, BUILDER_HOMES)
+        for method in held_parse_methods(repo, records)
     ]
     return contracts
 

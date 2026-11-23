@@ -1,0 +1,9 @@
+[[change]]
+id = "heki-replace-decision-callers"
+category = "harness"
+title = "Check the readers of decision homes with heki instead of the caller guard"
+summary = "only the repository checks and their tests change; the package writes the same output"
+refs = ["#7414"]
+covers = [
+    "source_model/every_rule_states_its_verdicts[decision-home-callers].txt",
+]
