@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from itertools import pairwise
 
 import pytest
 
-from datamodel_code_generator.cli_options import CLI_OPTION_META, OPTION_TOPIC_ALLOWED_GROUPS
+from datamodel_code_generator.cli_options import CLI_OPTION_META, OPTION_TOPIC_ALLOWED_GROUPS, OPTIONS
 from datamodel_code_generator.enums import DataModelType, InputFileType
 from datamodel_code_generator.preset import PresetContext, PresetInfo, PresetName, get_preset_infos
 
@@ -21,11 +22,33 @@ def _preset_name_problems() -> list[str]:
     ]
 
 
+def _preset_join_problems() -> list[str]:
+    titles = {
+        info.name.value.rpartition("-")[2]: {group.title for group in info.option_groups}
+        for info in get_preset_infos()
+        if info.name.value.startswith("standard-py312-")
+    }
+    added = {date: titles[date] - titles.get(previous, set()) for previous, date in pairwise(["", *sorted(titles)])}
+    joins = [(option, option.preset) for option in OPTIONS if option.preset is not None]
+    return [
+        *(
+            f"{option.flags[0]} joins the presets of {join.date}, which do not add its group {join.title!r}"
+            for option, join in joins
+            if join.title not in added.get(join.date, set())
+        ),
+        *(
+            f"{option.flags[0]} joins with the config {join.config}, which is not its own field {option.dest} alone"
+            for option, join in joins
+            if [*join.config] != [option.dest]
+        ),
+    ]
+
+
 def _preset_group_problems(info: PresetInfo) -> list[str]:
     settings = Counter(
         (output_model_type, item.field_name)
         for group in info.option_groups
-        for output_model_type in group.output_model_types
+        for output_model_type in group.output_model_types or (None,)
         for item in group.config.items()
     )
     return [
@@ -78,7 +101,7 @@ def _option_topic_problems() -> list[str]:
 @pytest.mark.allow_direct_assert("states invariants of static tables that no generation output shows")
 def test_static_tables_keep_their_invariants() -> None:
     """Check the preset tables and the option topics and groups."""
-    problems = _preset_name_problems()
+    problems = [*_preset_name_problems(), *_preset_join_problems()]
     for info in get_preset_infos():
         problems.extend(_preset_group_problems(info))
         for output_model_type in DataModelType:
