@@ -1906,11 +1906,10 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_field_runtime_default() instead.", category=None)
     def set_field_runtime_default(
-        field_: DataModelFieldBase, default: Any, runtime_expression_imports: tuple[Import, ...]
+        field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]
     ) -> None:
-        """Write a field's default with the imports of the runtime expressions it holds."""
+        """Write a field's default with the imports of the runtime expressions it holds (``GraphBuilder``'s)."""
         field_.default = default
         field_._set_runtime_expression_imports(runtime_expression_imports)  # noqa: SLF001
         bump_field(field_)
@@ -2741,10 +2740,10 @@ class GraphBuilder:
         self._store.set_field_default(field_, default)  # ty: ignore[deprecated]
 
     def set_field_runtime_default(
-        self, field_: DataModelFieldBase, default: Any, runtime_expression_imports: tuple[Import, ...]
+        self, field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]
     ) -> None:
         """Write a field's default with the imports of the runtime expressions it holds, through the store."""
-        self._store.set_field_runtime_default(field_, default, runtime_expression_imports)  # ty: ignore[deprecated]
+        self._store.set_field_runtime_default(field_, default, runtime_expression_imports)
 
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default, through the store."""

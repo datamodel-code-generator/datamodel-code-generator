@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 from decimal import Decimal, InvalidOperation
 from itertools import chain, takewhile
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast, runtime_checkable
 
 from typing_extensions import Protocol
 
@@ -600,16 +600,24 @@ def _deserialized_value(recipe: DefaultValueRecipe, constructor_import: Import |
         return None
     match recipe:
         case DefaultValueRecipe.Decimal:
-            if not isinstance(value, int | float | str):
+            if not isinstance(value, int | float | str) or constructor_import is None:
                 return None
             try:
                 text = str(Decimal(str(value)))
             except (InvalidOperation, ValueError):
                 return None
-            return _text_constructor_expression(cast("Import", constructor_import), text)
+            return _text_constructor_expression(constructor_import, text)
         case DefaultValueRecipe.Bytes:
             return value.encode() if isinstance(value, str) else None
     return _rfc3339_expression(_TEMPORAL_KINDS[recipe], value) if isinstance(value, str) else None
+
+
+@runtime_checkable
+class _ReadsJsonBytes(Protocol):
+    """A model whose config tells how validating it reads bytes from JSON text: the Pydantic v2 models."""
+
+    def reads_json_bytes_as_text(self) -> bool:
+        """Return whether validating the model reads bytes from JSON text as the text's UTF-8 bytes."""
 
 
 def _strict_recipe(manager: DataTypeManager, node: DataType) -> tuple[DefaultValueRecipe, Import | None] | None:
@@ -653,7 +661,7 @@ def _validated_default_value(
     one member beside ``None`` (``_sole_member``; which member of a larger union takes a value is Pydantic's choice),
     the items of an array (by position in a tuple with a type per position) and the values of a mapping. Bytes are
     read from text only where the config of the model that holds them reads JSON bytes as UTF-8 text
-    (``reads_json_bytes_as_text``). A value the recipe gives nothing for, or one under a type whose imports an
+    (``_ReadsJsonBytes``). A value the recipe gives nothing for, or one under a type whose imports an
     override redirects, is kept, and a container is copied only where it changes.
     """
     visiting: set[tuple[int, int]] = set()
@@ -674,7 +682,7 @@ def _validated_default_value(
             return value if (member := _sole_member(node.data_types)) is None else read(member, value, holder)
         return leaf_value(node, value, holder)
 
-    def array_value(node: DataType, value: Any, holder: DataModel) -> object:
+    def array_value(node: DataType, value: _ArrayValue, holder: DataModel) -> object:
         if node.is_tuple and node.tuple_item_count is None:
             items = [read(member, item, holder) for member, item in zip(node.data_types, value, strict=False)]
             return _copied_items(value, [*items, *list(value)[len(items) :]])
@@ -685,7 +693,10 @@ def _validated_default_value(
         if (
             not (node.strict or (node.kwargs or {}).get("strict") is True)
             or (strict_recipe := _strict_recipe(manager, node)) is None
-            or (strict_recipe[0] is DefaultValueRecipe.Bytes and not holder.reads_json_bytes_as_text())
+            or (
+                strict_recipe[0] is DefaultValueRecipe.Bytes
+                and not (isinstance(holder, _ReadsJsonBytes) and holder.reads_json_bytes_as_text())
+            )
             or has_import_override(import_overrides, *filter(None, (node.import_, strict_recipe[1])))
         ):
             return value
@@ -737,14 +748,16 @@ def _certain_input_names(field: DataModelFieldBase, *, alias_generator: bool) ->
 
 _ARRAY_VALUES: Final = (list, tuple, set, frozenset)
 """The values a default of an array type holds: a JSON array, or a set ``--use-unique-items-as-set`` wrote."""
+_ArrayValue: TypeAlias = "list[object] | tuple[object, ...] | set[object] | frozenset[object]"
+"""A value of one of the kinds of ``_ARRAY_VALUES``."""
 
 
-def _copied_items(value: Any, items: list[Any]) -> Any:
+def _copied_items(value: _ArrayValue, items: list[object]) -> object:
     """Return ``value``, or a container of its type with ``items`` where one of them is another object."""
     return value if unchanged(items, value) else type(value)(items)
 
 
-def _copied_mapping(value: dict[Any, Any], items: dict[Any, Any]) -> dict[Any, Any]:
+def _copied_mapping(value: dict[object, object], items: dict[object, object]) -> dict[object, object]:
     """Return ``value``, or ``items`` where one of its values is another object."""
     return value if unchanged(items.values(), value.values()) else items
 

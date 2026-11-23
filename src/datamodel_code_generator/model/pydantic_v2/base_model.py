@@ -1979,9 +1979,10 @@ class _PydanticV2Model(DataModel):
         """Return whether the config the model applies selects ``python-re``."""
         return self._applied_config_items().get("regex_engine") == '"python-re"'
 
-    @override
     def reads_json_bytes_as_text(self) -> bool:
-        """Return whether the config the model applies is known, so ``val_json_bytes`` keeps its default, UTF-8.
+        """Return whether validating the model reads bytes from JSON text as the text's UTF-8 bytes.
+
+        It does where the config the model applies is known, so ``val_json_bytes`` keeps its default, UTF-8.
 
         The generator writes no ``val_json_bytes``; a configured base class it does not read may set it.
         """

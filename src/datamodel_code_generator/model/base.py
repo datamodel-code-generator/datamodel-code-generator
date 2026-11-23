@@ -3460,13 +3460,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """
         return (self.IS_ROOT_MODEL or self.IS_ALIAS) and len(fields := self.fields) == 1 and fields[0]._admits_none()  # noqa: SLF001
 
-    def reads_json_bytes_as_text(self) -> bool:  # noqa: PLR6301
-        """Return whether validating the model reads bytes from JSON text as the text's UTF-8 bytes.
-
-        Only Pydantic v2 models answer it: only they validate a default and hold strict bytes.
-        """
-        return False  # pragma: no cover - only Pydantic v2 outputs hold strict bytes in a validated default
-
     @property
     def form(self) -> ModelForm:
         """How the model holds its value: as a root model, a type alias or the fields of an object.

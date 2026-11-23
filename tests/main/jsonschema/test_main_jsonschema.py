@@ -7861,8 +7861,8 @@ def test_main_strict_types_default_of_a_model_in_another_module(output_dir: Path
     )
     sys.path.insert(0, str(output_dir.parent))
     try:
-        top = importlib.import_module(f"{output_dir.name}.top").Top
-        loaded = _loaded_defaults(top(), top.model_validate_json(json.dumps({"day": "2020-01-01", "node": node})))
+        with _generated_model(output_dir / "top.py", f"{output_dir.name}.top", "Top") as top:
+            loaded = _loaded_defaults(top(), top.model_validate_json(json.dumps({"day": "2020-01-01", "node": node})))
     finally:
         sys.path.remove(str(output_dir.parent))
         for loaded_module in tuple(sys.modules):

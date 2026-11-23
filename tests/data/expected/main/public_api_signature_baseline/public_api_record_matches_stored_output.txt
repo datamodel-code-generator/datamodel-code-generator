@@ -1890,7 +1890,6 @@ class DataModel(TemplateBase, Nullable, ABC)
     def effective_fields(self) -> tuple[DataModelFieldBase, ...]
     @property
     def holds_null(self) -> bool
-    def reads_json_bytes_as_text(self) -> bool
     @property
     def form(self) -> ModelForm
     @property
@@ -3718,8 +3717,7 @@ class GenerationStore
     @deprecated('Use GenerationStore.builder().set_field_default() instead.', category=None)
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_field_runtime_default() instead.', category=None)
-    def set_field_runtime_default(field_: DataModelFieldBase, default: Any, runtime_expression_imports: tuple[Import, ...]) -> None
+    def set_field_runtime_default(field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]) -> None
     @staticmethod
     @deprecated('Use GenerationStore.builder().record_nullable_without_default() instead.', category=None)
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None
@@ -3861,7 +3859,7 @@ class GraphBuilder
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None
     def set_field_constraints(self, field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None=None, union_siblings: Mapping[str, Any] | None=None) -> None
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None
-    def set_field_runtime_default(self, field_: DataModelFieldBase, default: Any, runtime_expression_imports: tuple[Import, ...]) -> None
+    def set_field_runtime_default(self, field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]) -> None
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None
     def omit_field_default(self, field_: DataModelFieldBase) -> None
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None
@@ -5897,7 +5895,6 @@ class _PydanticV2Model(DataModel)
     @classmethod
     @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None
-    @override
     def reads_json_bytes_as_text(self) -> bool
     def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]
 # a base of datamodel_code_generator.model.pydantic_v2.types.AnnotatedConstraintDataType
