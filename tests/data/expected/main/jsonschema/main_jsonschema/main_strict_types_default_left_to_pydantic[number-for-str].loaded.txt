@@ -1,0 +1,2 @@
+refused: f.name string_type
+given: Top(f=None)
