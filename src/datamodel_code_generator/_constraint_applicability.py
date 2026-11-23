@@ -49,7 +49,7 @@ builds the public tables of ``DataTypeManager`` from it while it is imported, an
 from __future__ import annotations
 
 import operator
-from dataclasses import replace
+from dataclasses import field, replace
 from fractions import Fraction
 from math import ceil, floor, inf, isfinite
 from types import MappingProxyType
@@ -427,7 +427,7 @@ class OutputKeywords:
     drops_non_finite_bounds: bool
     refused_literal_types: tuple[type, ...]
     regex_engines: frozenset[str] = frozenset()
-    format_keyword_forms: Mapping[str, FormatKeywordForm] = MappingProxyType({})
+    format_keyword_forms: Mapping[str, FormatKeywordForm] = field(default_factory=lambda: MappingProxyType({}))
 
 
 BASE_OUTPUT: Final = OutputKeywords(
