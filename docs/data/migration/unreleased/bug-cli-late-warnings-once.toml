@@ -1,0 +1,10 @@
+[[change]]
+id = "bug-cli-late-warnings-once"
+category = "api"
+title = "A stdout run with a repaired dotted schema name shows the warnings of the last passes once"
+summary = "Output to stdout that needs the repair of a dotted schema name parses the input again; that parse no longer repeats the warnings of the last passes, such as the dropped pattern of an AnyUrl or the serialized Decimal default."
+refs = ["#6926"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"

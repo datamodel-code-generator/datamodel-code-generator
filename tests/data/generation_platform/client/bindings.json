@@ -1219,7 +1219,6 @@
         "extra_template_data": {
           "#all#": {
             "config": {
-              "strict": true,
               "extra": "forbid",
               "populate_by_name": true
             }

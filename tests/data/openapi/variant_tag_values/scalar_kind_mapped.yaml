@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info: {title: Scalar tags, version: '1'}
+paths: {}
+components:
+  schemas:
+    IntA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer"}
+        a: {type: string}
+    IntB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer"}
+        b: {type: string}
+    IntUnion:
+      oneOf: [{$ref: '#/components/schemas/IntA'}, {$ref: '#/components/schemas/IntB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/IntA'
+          "2": '#/components/schemas/IntB'
+    BoundedIntA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "minimum": 1, "maximum": 9}
+        a: {type: string}
+    BoundedIntB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "minimum": 1, "maximum": 9}
+        b: {type: string}
+    BoundedIntUnion:
+      oneOf: [{$ref: '#/components/schemas/BoundedIntA'}, {$ref: '#/components/schemas/BoundedIntB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/BoundedIntA'
+          "2": '#/components/schemas/BoundedIntB'
+    NumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number"}
+        a: {type: string}
+    NumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number"}
+        b: {type: string}
+    NumberUnion:
+      oneOf: [{$ref: '#/components/schemas/NumberA'}, {$ref: '#/components/schemas/NumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/NumberA'
+          "2": '#/components/schemas/NumberB'
+    BoundedNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "minimum": 0.5, "maximum": 9.5}
+        a: {type: string}
+    BoundedNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "minimum": 0.5, "maximum": 9.5}
+        b: {type: string}
+    BoundedNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/BoundedNumberA'}, {$ref: '#/components/schemas/BoundedNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/BoundedNumberA'
+          "2": '#/components/schemas/BoundedNumberB'
+    FractionNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number"}
+        a: {type: string}
+    FractionNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number"}
+        b: {type: string}
+    FractionNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/FractionNumberA'}, {$ref: '#/components/schemas/FractionNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1.5": '#/components/schemas/FractionNumberA'
+          "2.5": '#/components/schemas/FractionNumberB'
+    DecimalNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "format": "double"}
+        a: {type: string}
+    DecimalNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "format": "double"}
+        b: {type: string}
+    DecimalNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/DecimalNumberA'}, {$ref: '#/components/schemas/DecimalNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/DecimalNumberA'
+          "2": '#/components/schemas/DecimalNumberB'
+    MultipleNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "multipleOf": 0.5}
+        a: {type: string}
+    MultipleNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "multipleOf": 0.5}
+        b: {type: string}
+    MultipleNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/MultipleNumberA'}, {$ref: '#/components/schemas/MultipleNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/MultipleNumberA'
+          "2": '#/components/schemas/MultipleNumberB'
+    FlagA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "boolean"}
+        a: {type: string}
+    FlagB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "boolean"}
+        b: {type: string}
+    FlagUnion:
+      oneOf: [{$ref: '#/components/schemas/FlagA'}, {$ref: '#/components/schemas/FlagB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "true": '#/components/schemas/FlagA'
+          "false": '#/components/schemas/FlagB'
+    PositiveIntA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "minimum": 0, "exclusiveMinimum": true}
+        a: {type: string}
+    PositiveIntB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "minimum": 0, "exclusiveMinimum": true}
+        b: {type: string}
+    PositiveIntUnion:
+      oneOf: [{$ref: '#/components/schemas/PositiveIntA'}, {$ref: '#/components/schemas/PositiveIntB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/PositiveIntA'
+          "2": '#/components/schemas/PositiveIntB'
+    NegativeIntA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "maximum": 0, "exclusiveMaximum": true}
+        a: {type: string}
+    NegativeIntB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "maximum": 0, "exclusiveMaximum": true}
+        b: {type: string}
+    NegativeIntUnion:
+      oneOf: [{$ref: '#/components/schemas/NegativeIntA'}, {$ref: '#/components/schemas/NegativeIntB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "-1": '#/components/schemas/NegativeIntA'
+          "-2": '#/components/schemas/NegativeIntB'
+    NonNegativeIntA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "minimum": 0}
+        a: {type: string}
+    NonNegativeIntB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "minimum": 0}
+        b: {type: string}
+    NonNegativeIntUnion:
+      oneOf: [{$ref: '#/components/schemas/NonNegativeIntA'}, {$ref: '#/components/schemas/NonNegativeIntB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "0": '#/components/schemas/NonNegativeIntA'
+          "1": '#/components/schemas/NonNegativeIntB'
+    NonPositiveIntA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "maximum": 0}
+        a: {type: string}
+    NonPositiveIntB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "integer", "maximum": 0}
+        b: {type: string}
+    NonPositiveIntUnion:
+      oneOf: [{$ref: '#/components/schemas/NonPositiveIntA'}, {$ref: '#/components/schemas/NonPositiveIntB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "0": '#/components/schemas/NonPositiveIntA'
+          "-1": '#/components/schemas/NonPositiveIntB'
+    PositiveNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "minimum": 0, "exclusiveMinimum": true}
+        a: {type: string}
+    PositiveNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "minimum": 0, "exclusiveMinimum": true}
+        b: {type: string}
+    PositiveNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/PositiveNumberA'}, {$ref: '#/components/schemas/PositiveNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "1": '#/components/schemas/PositiveNumberA'
+          "2": '#/components/schemas/PositiveNumberB'
+    NegativeNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "maximum": 0, "exclusiveMaximum": true}
+        a: {type: string}
+    NegativeNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "maximum": 0, "exclusiveMaximum": true}
+        b: {type: string}
+    NegativeNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/NegativeNumberA'}, {$ref: '#/components/schemas/NegativeNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "-1": '#/components/schemas/NegativeNumberA'
+          "-2": '#/components/schemas/NegativeNumberB'
+    NonNegativeNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "minimum": 0}
+        a: {type: string}
+    NonNegativeNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "minimum": 0}
+        b: {type: string}
+    NonNegativeNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/NonNegativeNumberA'}, {$ref: '#/components/schemas/NonNegativeNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "0": '#/components/schemas/NonNegativeNumberA'
+          "1": '#/components/schemas/NonNegativeNumberB'
+    NonPositiveNumberA:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "maximum": 0}
+        a: {type: string}
+    NonPositiveNumberB:
+      type: object
+      required: [kind]
+      properties:
+        kind: {"type": "number", "maximum": 0}
+        b: {type: string}
+    NonPositiveNumberUnion:
+      oneOf: [{$ref: '#/components/schemas/NonPositiveNumberA'}, {$ref: '#/components/schemas/NonPositiveNumberB'}]
+      discriminator:
+        propertyName: kind
+        mapping:
+          "0": '#/components/schemas/NonPositiveNumberA'
+          "-1": '#/components/schemas/NonPositiveNumberB'

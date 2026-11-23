@@ -8,6 +8,7 @@
       ],
       "imports": false,
       "pydantic": "2.12",
+      "encoding": "utf-8",
       "output": "output.py",
       "files": [
         "case.json",
@@ -23,6 +24,7 @@
       ],
       "imports": true,
       "pydantic": "2",
+      "encoding": "utf-8",
       "output": "output.py",
       "files": [
         "case.json",

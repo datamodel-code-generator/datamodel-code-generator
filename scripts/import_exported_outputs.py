@@ -41,7 +41,12 @@ def main(export_root: Path) -> int:
         checked += 1
         try:
             for python_file in [output_path] if output_path.is_file() else sorted(output_path.rglob("*.py")):
-                compile(python_file.read_text(encoding="utf-8"), str(python_file), "exec", dont_inherit=True)
+                compile(
+                    python_file.read_text(encoding=case.get("encoding", "utf-8")),
+                    str(python_file),
+                    "exec",
+                    dont_inherit=True,
+                )
             if case["imports"] and release(case["pydantic"]) <= pydantic:
                 imported += 1
                 exec(import_code, {"output_path": output_path})

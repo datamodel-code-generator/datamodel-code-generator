@@ -11,6 +11,7 @@
     "datamodel_code_generator._json_output",
     "datamodel_code_generator._lazy_exports",
     "datamodel_code_generator._module_paths",
+    "datamodel_code_generator._paths",
     "datamodel_code_generator._process_state",
     "datamodel_code_generator._shared_types",
     "datamodel_code_generator._source",

@@ -756,5 +756,11 @@
     },
     "payload": 1,
     "safe": false
+  },
+  {
+    "name": "scalar_defaults",
+    "options": {},
+    "payload": 1,
+    "safe": true
   }
 ]
