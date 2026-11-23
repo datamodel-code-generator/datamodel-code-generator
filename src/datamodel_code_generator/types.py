@@ -2169,6 +2169,8 @@ class DataTypeManager(ABC):
     use_encoded_str_for_constrained_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
     use_strict_str_for_base64: bool = False
+    _UNDECODED_STANDARD_PRIMITIVE_TYPES: ClassVar[frozenset[Types]] = frozenset()
+    """The formats whose class ``--use-standard-primitive-types`` writes and the output cannot decode."""
     WRITES_ENCODED_STR: ClassVar[bool] = False
     """Whether the output writes a string decoded from base64 text with its constraints in front of the decoding."""
     FORMAT_KEYWORD_FORMS: ClassVar[Mapping[str, _applicability.FormatKeywordForm]] = (
@@ -2285,6 +2287,24 @@ class DataTypeManager(ABC):
             type_map[types] = _valid_data_type(
                 cls, data_types=[untyped_value_data_type(cls, untyped_value)], **{container: True}
             )
+
+    def use_str_for_formats_msgspec_cannot_decode(self, *, enabled: bool) -> None:
+        """Write ``str`` for each format of ``_UNDECODED_STANDARD_PRIMITIVE_TYPES`` the standard primitive map has.
+
+        Row ``legacy-standard-primitive-types-without-decoder``: the type map keeps the standard library class
+        ``--use-standard-primitive-types`` gives the format (``IPv4Address``, ``Path``), which msgspec has no decoder
+        for. Under ``--use-str-for-formats-msgspec-cannot-decode`` the format is ``str``, as without the option. The
+        option is set after construction, as --untyped-value-type is, so a type manager with the constructor of an
+        older release keeps working.
+        """
+        row: Literal["str-without-decoder", "legacy-standard-primitive-types-without-decoder"] = (
+            "str-without-decoder" if enabled else "legacy-standard-primitive-types-without-decoder"
+        )
+        if row == "legacy-standard-primitive-types-without-decoder":
+            return
+        type_map = self.type_map
+        for types in self._UNDECODED_STANDARD_PRIMITIVE_TYPES:
+            type_map[types] = type_map[Types.string]
 
     def use_target_pydantic_version(self, target_pydantic_version: TargetPydanticVersion | None) -> None:
         """Write each type of ``_TARGET_TYPE_FALLBACKS`` whose construct the target Pydantic lacks as its fallback.

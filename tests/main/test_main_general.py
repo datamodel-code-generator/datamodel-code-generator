@@ -1922,6 +1922,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "infer_union_discriminators",
         "name_allof_union_members_after_branches",
         "use_standard_primitive_types",
+        "use_str_for_formats_msgspec_cannot_decode",
         "use_duplicate_name_suffix_for_every_collision",
         "name_converted_payloads_by_message",
         "merge_message_trait_headers",

@@ -919,6 +919,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "instead of str. Affects dataclass, msgspec, TypedDict output. "
         "Pydantic already uses these types by default.",
     ),
+    toggle(
+        (Section.MODEL, _C.TYPING, _G.TYPE_MAPPING),
+        "--use-str-for-formats-msgspec-cannot-decode",
+        help="Write str for the formats whose standard library class msgspec has no decoder for (ipv4, ipv6, "
+        "ipv4-network, ipv6-network, path) under --use-standard-primitive-types, so msgspec.Struct output decodes a "
+        "document that holds them; without it the Struct holds IPv4Address, IPv6Address, IPv4Network, IPv6Network "
+        "and Path, as in 0.100.0, which msgspec decodes only with a dec_hook. Other output model types keep the "
+        "classes.",
+    ),
     flag(
         (Section.MODEL, _C.TEMPLATE, _G.IMPORTS),
         "--use-exact-imports",
