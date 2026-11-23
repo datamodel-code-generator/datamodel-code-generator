@@ -2543,6 +2543,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             force_optional=self.force_optional_for_required_fields,
             type_excludes_member_null="legacy-all-of-null-as-written" not in self._legacy_intersection,
             read_nullable_beside_type_list=self.config.read_nullable_beside_type_list,
+            keep_null_of_nullable_items=self.config.keep_null_of_nullable_items,
         )
 
     @cached_property
@@ -5632,16 +5633,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         value = self._additional_properties_value(name, additional_properties, parent)
         if not value.constrained:
-            return self.parse_item(name, value.schema, path, parent=value.parent)
+            return _object_maps.with_item_null(
+                self, value.schema, self.parse_item(name, value.schema, path, parent=value.parent)
+            )
         if value.item_counts_site:
             value.schema.__dict__[ITEM_COUNTS_SITE_KEY] = True
-        return JsonSchemaParser._parse_constrained_additional_properties_value_item(
+        return _object_maps.with_item_null(
             self,
-            constrained_name or (name if value.preserve_root_model else composed_name(name, "additional-property")),
             value.schema,
-            path,
-            parent=parent,
-            data_model_root_type=(self._nested_constrained_model_type if not value.preserve_root_model else None),
+            JsonSchemaParser._parse_constrained_additional_properties_value_item(
+                self,
+                constrained_name or (name if value.preserve_root_model else composed_name(name, "additional-property")),
+                value.schema,
+                path,
+                parent=parent,
+                data_model_root_type=(self._nested_constrained_model_type if not value.preserve_root_model else None),
+            ),
         )
 
     @cached_property
@@ -6648,12 +6655,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return [
             self.data_type_manager.get_data_type(Types.any)
             if item is True
-            else self.parse_item(
-                name,
+            else _object_maps.with_item_null(
+                self,
                 item,
-                [*path, str(index)],
-                singular_name=singular_name,
-                parent=parent,
+                self.parse_item(
+                    name,
+                    item,
+                    [*path, str(index)],
+                    singular_name=singular_name,
+                    parent=parent,
+                ),
             )
             for index, item in enumerate(target_items)
             if item is not False

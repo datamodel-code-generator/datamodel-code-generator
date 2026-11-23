@@ -154,6 +154,7 @@ class BaseGenerateConfig(TypedDict):
     read_allof_parents_in_mro_order: NotRequired[bool]
     read_inherited_property_schemas_in_mro_order: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]
+    keep_null_of_nullable_items: NotRequired[bool]
     keep_field_defaults_off_branch_roots: NotRequired[bool]
     keep_enum_member_values: NotRequired[bool]
     set_default_enum_member: NotRequired[bool]

@@ -1678,6 +1678,14 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         (Section.FIELD, _C.MODEL),
+        "--keep-null-of-nullable-items",
+        help="Write the null that `nullable: true` declares under --strict-nullable on an array item, a tuple item or "
+        "a map value of any form (a nested array, a map, an `allOf` of one `$ref`), as it is written for a scalar or "
+        "an object (`list[list[float] | None]`); without it those items reject null, as in 0.100.0. The option adds no "
+        "null to an enum or a `const`; an enum that lists null admits it with or without the option",
+    ),
+    toggle(
+        (Section.FIELD, _C.MODEL),
         "--keep-field-defaults-off-branch-roots",
         help="Leave the default of a property off the root models extracted from the branches of its `anyOf` or "
         "`oneOf`, which then require their value; without it each such root takes the property's default",

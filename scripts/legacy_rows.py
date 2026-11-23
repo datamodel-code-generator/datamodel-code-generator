@@ -909,6 +909,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-item-null-by-form",
+        (
+            "without `--keep-null-of-nullable-items`, under `--strict-nullable` an array item, a tuple item or a map "
+            "value that is a scalar or an object keeps the null its `nullable` declares, and one "
+            "that is an array, a map or an `allOf` of one `$ref` rejects null"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/nullable_item_forms.yaml",
+            "--input-file-type",
+            "openapi",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--strict-nullable",
+            "--disable-timestamp",
+        ),
+        option="--keep-null-of-nullable-items",
+    ),
+    LegacyRow(
         "legacy-root-type-nullable-ungated",
         "a root field is nullable by `nullable` without `--strict-nullable`",
         fix=5054,

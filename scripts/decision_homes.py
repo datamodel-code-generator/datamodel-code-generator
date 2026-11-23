@@ -265,7 +265,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "without `--strict-nullable` (`legacy-root-type-nullable-ungated`, `legacy-array-nullable-ungated`; "
             "`allOf` sites read it so by the allOf intersection's null rule, `all-of-own-null`), a copied `nullable` "
             "leaves a map without "
-            "null (`legacy-map-copied-nullable`), a `Literal` enum reads its null value alone "
+            "null (`legacy-map-copied-nullable`), an array, a map or an `allOf` of one `$ref` as an item, a value or "
+            "a union member writes no null (`legacy-item-null-by-form`), a `Literal` enum reads its null value alone "
             "(`legacy-enum-literal-value-only`), and OpenAPI's `nullable` counts as a type list only after the type is "
             "first built (`legacy-nullable-as-type-list`); the step that writes rendered nullability once at render "
             "preparation deletes the three use-site rows "
@@ -301,7 +302,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`JsonSchemaParser.parse_combined_schema`), `_enum_entries_skip_null`, `JsonSchemaParser`: "
             "`get_object_field`, `_get_data_type`, `_get_python_type_override`, `_object_nullable`, "
             "`_create_registered_root_model`, `get_ref_data_type` and `_cache_ref_data_type_facts`, "
-            "`_parse_ref_nullable_only_item`, `_build_constrained_type_union`, `parse_array_fields`, "
+            "`_parse_ref_nullable_only_item`, "
+            "`_build_constrained_type_union`, `parse_array_fields`, "
             "`_parse_root_type_with_context`, `_parse_multiple_types_with_properties`, `parse_enum`, "
             "`_literal_values_type`, `_add_nullable_combined_schema_branches`, `_enforced_value_keywords`, "
             "`_reads_enum_as_const`, `_all_of_part_admits_null` (site `all-of-union`, read by `parse_all_of` for the "
@@ -310,7 +312,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`merge_inherited_type_shape_dict`, `mark_partial_inherited_fields`, `get_inherited_schema_types`; "
             "`parser/_value_keywords.py`: `resolve_array_field_required_nullable`, `extract_const_enum_from_combined`; "
             "`parser/_all_of_values.py`: `merge_all_of_root_schema`, `all_of_root_value_schema`; "
-            "`parser/_object_maps.py:object_map_admits_null`; `parser/graphql.py:GraphQLParser.parse_field` "
+            "`parser/_object_maps.py`: `object_map_admits_null`, `with_item_null` (site `item`, read where an array "
+            "item, a tuple item or a map value is typed); `parser/graphql.py:GraphQLParser.parse_field` "
             "(`GraphQLParser._null_mode`); the converters `parser/avro.py` (`NULL_SCHEMA`), `parser/protobuf.py` "
             "(`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py:_XMLSchemaConverter._apply_common_element_metadata` "
             "(`nillable`)"
@@ -355,6 +358,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_all_of_values.py", "merge_all_of_root_schema"),
             Home("parser/_all_of_values.py", "all_of_root_value_schema"),
             Home("parser/_object_maps.py", "object_map_admits_null"),
+            Home("parser/_object_maps.py", "with_item_null"),
             Home("parser/graphql.py", "GraphQLParser.parse_field"),
             Home("parser/graphql.py", "GraphQLParser._null_mode"),
             Home("parser/xmlschema.py", "_XMLSchemaConverter._apply_common_element_metadata"),
