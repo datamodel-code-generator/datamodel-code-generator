@@ -1,0 +1,17 @@
+[[change]]
+id = "bug-g10-msgspec-reuse-overridden"
+category = "harness"
+title = "Pin the refusal of msgspec structs whose bases hide a type override"
+summary = "Stored refusals of three new cases where a type override replaces a direct base or an ancestor of a base of a conflicting msgspec struct, with and without --reuse-model; the package writes the same refusal as the latest release."
+refs = ["#7446"]
+covers = [
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_ancestor-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_ancestor-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_ancestor-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_direct_base-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_direct_base-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_direct_base-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_type_differs_overridden_ancestor-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_type_differs_overridden_ancestor-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_type_differs_overridden_ancestor-cli].txt",
+]

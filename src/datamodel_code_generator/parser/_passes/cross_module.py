@@ -6,6 +6,7 @@ the parser comes in through ``CrossModuleHost``, which ``Parser`` satisfies stru
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from typing_extensions import Protocol
@@ -15,12 +16,14 @@ from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator.imports import Import, _import_bindings
 from datamodel_code_generator.model._decisions.tag_value import enum_tag_as_values
 from datamodel_code_generator.model.base import (
-    _FINAL_LAYOUT_VIEW,
     GENERIC_BASE_CLASS_NAME,
     GENERIC_BASE_CLASS_PATH,
     BaseClassDataType,
+    BaseLayoutView,
     DataModel,
     _find_base_classes,
+    _is_instance_field,
+    _same_model,
     _walk_bases_first,
     linearize_data_models,
 )
@@ -46,7 +49,12 @@ from datamodel_code_generator.parser._passes._shared import (
     module_members,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts
+from datamodel_code_generator.parser._passes.plans import (
+    FlattenHost,
+    TypeOverriddenBasesHost,
+    flatten_base_layouts,
+    inherits_type_override,
+)
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, iter_struct_tag_decisions
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import Reference
@@ -67,6 +75,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CrossModuleHost",
     "CrossModuleRun",
+    "FinalLayoutsHost",
     "FlattenAcrossModulesHost",
     "TaggedBasesHost",
     "apply_generic_base_class",
@@ -130,6 +139,10 @@ class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
 
 class FlattenAcrossModulesHost(CrossModuleHost, FlattenHost, Protocol):
     """What making a model of any module declare the fields of its bases reads and writes of the parser."""
+
+
+class FinalLayoutsHost(FlattenAcrossModulesHost, TypeOverriddenBasesHost, Protocol):
+    """What flattening the structs whose bases still conflict at L6 reads and writes of the parser."""
 
 
 class TaggedBasesHost(FlattenAcrossModulesHost, TagPlanHost, Protocol):
@@ -229,19 +242,28 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
             flatten(model)
 
 
-def flatten_conflicting_final_layouts(parser: FlattenAcrossModulesHost, run: CrossModuleRun) -> None:
+def flatten_conflicting_final_layouts(parser: FinalLayoutsHost, run: CrossModuleRun) -> None:
     """Make each model whose generated bases the output cannot combine, as every module leaves them, drop its bases.
 
     The layout flattening of L4 sees the layouts as the processing of each module may leave them and predicts what
     reuse merges, which it cannot know before it runs. A model it left whole, on the prediction that a base duplicates
     another, that the processing then left conflicting would fail the final check of the output; here the layouts
     are final, so it declares the fields of its generated bases itself (``_flattener``), the models with fewer
-    ancestors first. Only a msgspec Struct decides to.
+    ancestors first. Only a msgspec Struct decides to. A model that a type override replaced has a layout the
+    generator does not know, as at L4 (``plans.replaced_by_type_override``): the override replaced it in the bases by
+    now, so a model with such a base hides its layout (``plans.inherits_type_override``), and a model that has it or
+    inherits it is left as it is, which the final check of the output refuses where L4 left it too.
     """
     flatten = _flattener(parser, run, "flatten-conflicting-final-layouts")
-    joins = (model for ctx in run.contexts for model in ctx.models if len(model.base_classes) > 1)
+    view = BaseLayoutView(_is_instance_field, _same_model, partial(inherits_type_override, parser))
+    joins = (
+        model
+        for ctx in run.contexts
+        for model in ctx.models
+        if len(model.base_classes) > 1 and not view.is_opaque(model)
+    )
     for model in sorted(joins, key=lambda model: len(linearize_data_models([model]))):
-        model.flatten_conflicting_base_layouts(_FINAL_LAYOUT_VIEW, flatten)
+        model.flatten_conflicting_base_layouts(view, flatten)
 
 
 def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRun) -> None:

@@ -931,5 +931,54 @@
         "q": 1
       }
     }
+  },
+  {
+    "name": "jsonschema_reuse_type_differs_overridden_ancestor",
+    "schema": "jsonschema_reuse_type_differs.json",
+    "format": "jsonschema",
+    "options": {
+      "reuse_model": true,
+      "type_overrides": {
+        "Z": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--reuse-model",
+      "--type-overrides",
+      "{\"Z\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": true
+  },
+  {
+    "name": "jsonschema_overridden_ancestor",
+    "schema": "jsonschema_reuse_type_differs.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "Z": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"Z\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": true
+  },
+  {
+    "name": "jsonschema_overridden_direct_base",
+    "schema": "jsonschema_overridden_direct_base.json",
+    "format": "jsonschema",
+    "options": {
+      "reuse_model": true,
+      "type_overrides": {
+        "Z": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--reuse-model",
+      "--type-overrides",
+      "{\"Z\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": true
   }
 ]

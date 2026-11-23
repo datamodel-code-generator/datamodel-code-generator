@@ -4777,6 +4777,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/msgspec.py"
+qualname = "Struct._validate_base_layouts"
+rule_code = "MUT204"
+target = "datamodel_code_generator.python_literal.stable_repr"
+count = 3
+
+[[entries]]
+path = "src/datamodel_code_generator/model/msgspec.py"
 qualname = "Struct._validate_renamed_field_names"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"

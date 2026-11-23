@@ -1010,6 +1010,7 @@ FLATTEN_CONFLICTING_FINAL_LAYOUTS = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(
+        Fact.TYPE_OVERRIDES,
         Fact.BASES,
         Fact.FIELD_SET,
         Fact.FIELD_NAMES,
