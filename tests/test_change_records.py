@@ -107,6 +107,20 @@ SELECTOR_CASES: dict[str, dict[str, object]] = {
     "empty aspects": _entry("decided-change", SELECTOR | {"aspects": []}),
     "match that does not compile": _entry("decided-change", SELECTOR | {"match": "(float"}),
     "match of no string": _entry("decided-change", SELECTOR | {"match": 1}),
+    "payload cells with their input file type": _entry(
+        "output-text", SELECTOR | {"input": ["payload:jsonschema/*.json"], "input_file_type": "jsonschema"}
+    ),
+    "payload cells without an input file type": _entry("output-text", SELECTOR | {"input": ["payload:jsonschema/*"]}),
+    "project and family cells": _entry(
+        "output-text",
+        SELECTOR | {"input": ["project:a/*"], "input_file_type": "openapi"},
+        SELECTOR | {"input": ["family:*"], "input_file_type": "jsonschema"},
+    ),
+    "cells of two label spaces": _entry(
+        "output-text",
+        SELECTOR | {"input": ["tests/data/jsonschema/plain.json", "payload:jsonschema/plain.json"]},
+    ),
+    "a glob outside every label space is a path": _entry("output-text", SELECTOR | {"input": ["**/plain.json"]}),
 }
 
 

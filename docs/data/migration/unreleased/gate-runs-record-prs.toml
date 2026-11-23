@@ -1,0 +1,8 @@
+[[change]]
+id = "gate-runs-record-prs"
+category = "harness"
+title = "The behaviour gate runs record_prs.py"
+summary = "The gate reads the pull request of a squash commit through scripts/record_prs.py, so the list of files the gate runs gains it; the package writes the same output."
+covers = [
+    "pre_commit_hooks/oracle_files_are_the_files_the_gate_runs.txt",
+]
