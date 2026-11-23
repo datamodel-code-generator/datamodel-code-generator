@@ -2,8 +2,8 @@
 id = "preset-20261123"
 category = "new-surface"
 title = "Dated presets 20261123"
-summary = "The standard and practical 20261123 presets add --read-mapping-keys-by-schema-tag-type, --keep-null-of-nullable-items and --keep-string-keywords-beside-formats to the 20261120 presets, for every output model type."
-refs = ["#7405", "#7411", "#7413"]
+summary = "The standard and practical 20261123 presets add --read-mapping-keys-by-schema-tag-type, --keep-null-of-nullable-items, --keep-string-keywords-beside-formats and --use-root-types-for-mixed-union-map-keys to the 20261120 presets, for every output model type."
+refs = ["#7405", "#7411", "#7413", "#6933"]
 surface = ["preset:20261123"]
 covers = [
     "main/main_recommend_options/recommend_options.stdout.txt",

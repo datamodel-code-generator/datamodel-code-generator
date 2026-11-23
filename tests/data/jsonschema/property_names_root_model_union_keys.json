@@ -1,0 +1,16 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "direct": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
+    "limits": {"$ref": "#/$defs/Limits"},
+    "rows": {"type": "array", "items": {"type": "object", "propertyNames": {"oneOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}}},
+    "outer": {"type": "object", "additionalProperties": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Chain"}]}, "additionalProperties": {"type": "integer"}}}
+  },
+  "$defs": {
+    "Unit": {"type": "string", "enum": ["kg", "lb"]},
+    "Ext": {"type": "string", "pattern": "^x-"},
+    "Chain": {"$ref": "#/$defs/Ext"},
+    "Limits": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}}
+  }
+}

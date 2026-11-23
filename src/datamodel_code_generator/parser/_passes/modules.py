@@ -413,6 +413,10 @@ class ModulesHost(
         """Whether a field of one literal takes it as its default."""
 
     @property
+    def use_root_types_for_mixed_union_map_keys(self) -> bool:
+        """Whether a union map key with a plain member is typed by the root types of its RootModel members too."""
+
+    @property
     def use_tuple_for_closed_arrays(self) -> bool:
         """Whether closed arrays are written as tuples."""
 
@@ -2796,13 +2800,31 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
     return key_type
 
 
+def _has_plain_member(key: DataType) -> bool:
+    """Return whether a union key has a member that 0.100.0 already wrote as a type a key takes.
+
+    A member that is no reference is such a type (``str``, a ``constr`` call, a ``Literal``, ``Any``): Pydantic reads
+    a key by it where it matches, and the RootModel members of the key only take the keys it rejects, so typing them
+    by their root types can change what a key that both match parses to, and a key that only they match raised
+    ``TypeError``. A reference (a RootModel or an enum) is no such member: a key of references alone raised
+    ``TypeError`` for every key a RootModel member matched.
+    """
+    if key.reference is not None:
+        return False
+    return any(_has_plain_member(member) for member in key.data_types) if key.data_types else True
+
+
 def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) -> None:
     """Type each dict key of the module that names a root model whose instances cannot be dict keys by its root type.
 
     Runs once the root types are final: after collapse, const narrowing and type overrides. Such a root model
     named inside the root type a key takes is typed the same way, and a cycle of them stops at the first repeated
-    model. A root type that cannot be a dict key either keeps the root model, as does a member of a key that is no
-    reference: another member may take every key. A key that the copies of a collapsed root type share
+    model. A root type that cannot be a dict key keeps the root model. A key that is a reference is read, and so is
+    a union key, through its members: Pydantic validates a key by the member that matches it most exactly, a root
+    model among them. A union key with a plain member (``_has_plain_member``) keeps its RootModel members unless
+    ``--use-root-types-for-mixed-union-map-keys`` is set: 0.100.0 parsed the keys that both match by the plain
+    member, and the root types can read them as another type (a uuid-format root: a ``UUID``). A key that the copies
+    of a collapsed root type share
     (``GenerationIndex.inlined_holders_of``) is replaced in each holder as the module of its model reaches it, with
     the imports of that module, and leaves its reference once no holder keeps it: the holder that kept it otherwise
     named the root model through a key that no longer names it. Each changed model refreshes its backend config, as a
@@ -2811,13 +2833,23 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
     module = ModuleImportTarget.of(parser.imports, state, state)
     imports = module.imports
     index = parser.generation_store.index
+    legacy_rows = (
+        frozenset[str]()
+        if parser.use_root_types_for_mixed_union_map_keys
+        else frozenset({"legacy-mixed-union-key-root-models"})
+    )
     for model in state.model_list:
         changed = False
         for field in model.fields:
             pending = [
                 (key, holder, frozenset[ModelKey]())
                 for holder in field.data_type.all_data_types
-                if (key := holder.dict_key) is not None and key.reference is not None
+                if (key := holder.dict_key) is not None
+                and (
+                    key.reference is not None
+                    or "legacy-mixed-union-key-root-models" not in legacy_rows
+                    or not _has_plain_member(key)
+                )
             ]
             while pending:
                 data_type, parent, expanded = pending.pop()

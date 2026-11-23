@@ -670,6 +670,17 @@ Typing customization:
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic
                         v2 only)
+  --use-root-types-for-mixed-union-map-keys, --no-use-root-types-for-mixed-union-map-keys
+                        Type the RootModel members of a map key that is a
+                        union with a plain member (`propertyNames` `anyOf` of
+                        a `str` with a `maxLength` and a uuid-format
+                        RootModel) by their root types, as the key of a
+                        RootModel is typed (`dict[str | UUID, int]`); without
+                        it such a key keeps the RootModel class, which
+                        Pydantic cannot hash, and the plain member reads the
+                        keys it matches, as in 0.100.0. A key whose members
+                        are all references is typed by the root types with or
+                        without the option
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)

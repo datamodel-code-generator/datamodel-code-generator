@@ -1,0 +1,17 @@
+[[change]]
+id = "use-root-types-for-mixed-union-map-keys"
+category = "new-surface"
+title = "Type the RootModel members of a union map key that has a plain member by their root types"
+summary = "--use-root-types-for-mixed-union-map-keys writes the RootModel members of a map key that is a union with a plain member (a propertyNames anyOf of a str with a maxLength and a uuid-format RootModel) by their root types, as the key of a RootModel alone is written. Without it such a key keeps the RootModel class as in 0.100.0, which Pydantic cannot hash; with it a key that both members match parses as the root type (a UUID, not a str) and a key that only the RootModel matches no longer raises TypeError. The 20261123 presets set it."
+refs = ["#6933"]
+surface = ["--use-root-types-for-mixed-union-map-keys"]
+covers = [
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option-annotated].payloads.txt",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option-annotated].py",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option-field-constraints].payloads.txt",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option-field-constraints].py",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option].payloads.txt",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option].py",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[released].payloads.txt",
+    "main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[released].py",
+]

@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 274 | Shared generation options. |
-| `GenerateConfig` | 289 | Public `generate()` configuration. |
-| `ParserConfig` | 228 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 230 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 241 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 244 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 231 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 231 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 230 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 231 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 275 | Shared generation options. |
+| `GenerateConfig` | 290 | Public `generate()` configuration. |
+| `ParserConfig` | 229 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 231 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 242 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 245 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 232 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 232 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 231 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 232 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -502,7 +502,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `rename_fields_hiding_types` (`parser/_passes/modules.py`) | same-named fields and types of the model family | field names or type names |
 | process | `remove_overridden_models` (`parser/_passes/modules.py`) | model-level `--type-overrides`, stand-ins | removes overridden models and stand-ins from the module's list (constructor ordering still runs on them) |
 | process | `apply_field_type_overrides` (`parser/_passes/modules.py`) | `--type-overrides`, field names | field types of the kept models; model-level overrides edit nodes on fields in place |
-| process | `type_dict_keys_by_root_types` (`parser/_passes/modules.py`) | dict keys that name a RootModel whose instances cannot be dict keys (`DataModel._keys_take_root_type` over `model/_decisions/hashability.py:dict_key_takes_root_type`: not frozen, no validators, methods or custom root template), its root type and `Field()` constraints (any module) | types the key by the root type, the constraints written into a string type; follows root models inside that type, not union members of a key; refreshes the backend config |
+| process | `type_dict_keys_by_root_types` (`parser/_passes/modules.py`) | dict keys that name a RootModel whose instances cannot be dict keys (`DataModel._keys_take_root_type` over `model/_decisions/hashability.py:dict_key_takes_root_type`: not frozen, no validators, methods or custom root template), its root type and `Field()` constraints (any module) | types the key by the root type, the constraints written into a string type; follows root models inside that type, and the members of a union key unless one is a plain type (`legacy-mixed-union-key-root-models`); refreshes the backend config |
 | finalize | `apply_base_class_type_overrides` (`parser/_passes/modules.py`) | model-level `--type-overrides` (not of the bases that name stand-ins) | base classes; edits base-class nodes in place and keeps the generated model each replaced base stood for, which constructor ordering reads |
 
 Once every module is processed, `write_rule_aliases_as_classes` (`parser/_passes/modules.py`, `--generate-schema-validators`) writes each type
@@ -1691,6 +1691,7 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | `legacy-ref-target-null-type-only` | a reference reads only a `type` of null (or strict `nullable`) of its target, not a type list | keep |
 | `legacy-map-copied-nullable` | a `nullable` copied into a combined branch leaves its map without null (the owner kept it) | keep |
 | `legacy-item-null-by-form` | without `--keep-null-of-nullable-items`, under `--strict-nullable` an array item, a tuple item or a map value that is a scalar or an object keeps the null its `nullable` declares, and one that is an array, a map or an `allOf` of one `$ref` rejects null | keep |
+| `legacy-mixed-union-key-root-models` | without `--use-root-types-for-mixed-union-map-keys`, a map key that is a union with a plain member (`str`, a `constr` call, a `Literal`, `Any`) keeps the RootModel class of its other members, which Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and a key both match is read by the plain member (`parser/_passes/modules.py:type_dict_keys_by_root_types`) | keep |
 | `legacy-root-type-nullable-ungated` | a root field is nullable by `nullable` without `--strict-nullable` | #5054 |
 | `legacy-multiple-types-nullable-not-recorded` | a type list with an object records only the type list's null; `--read-nullable-beside-type-list` reads `nullable` too | keep |
 | `legacy-array-nullable-ungated` | an array field is nullable by `nullable` without `--strict-nullable` | #5054 |

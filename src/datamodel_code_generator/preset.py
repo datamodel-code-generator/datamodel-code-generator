@@ -1473,6 +1473,16 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Root types for mixed union map keys",
+        config=PresetConfig(use_root_types_for_mixed_union_map_keys=True),
+        description=(
+            "Type the RootModel members of a map key that is a union with a plain member, such as a propertyNames "
+            "anyOf of a string with a maxLength and a uuid-format RootModel, by their root types, so a key that "
+            "matches the RootModel member parses as its root type, here a UUID, as it does where the key names "
+            "the RootModel alone."
+        ),
+    ),
+    PresetOptionGroup(
         title="Null kept on nullable items",
         config=PresetConfig(keep_null_of_nullable_items=True),
         description=(

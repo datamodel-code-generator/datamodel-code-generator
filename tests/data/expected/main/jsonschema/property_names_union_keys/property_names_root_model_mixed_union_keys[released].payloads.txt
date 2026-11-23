@@ -1,0 +1,10 @@
+open x-a: str
+open zz: str
+mixed kg: Unit
+mixed y-1: str
+mixed x-2: TypeError: cannot use 'property_names_root_model_mixed_union_keys.Ext' as a dict key (unhashable type: 'Ext')
+mixed zz: rejected
+ids 123e4567-e89b-12d3-a456-426614174000: str
+ids plain: str
+anything x-a: str
+anything zz: str

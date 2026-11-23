@@ -177,6 +177,7 @@
 - `--no-use-field-description`
 - `--no-use-field-description-example`
 - `--no-use-one-model-per-ref-site`
+- `--no-use-root-types-for-mixed-union-map-keys`
 - `--no-use-schema-description`
 - `--no-use-single-line-docstring`
 - `--no-use-site-models-for-constrained-refs`
@@ -200,6 +201,7 @@
 - `--use-field-description-example`: Add field examples to docstrings.
 - `--use-inline-field-description`: Add field descriptions as inline comments.
 - `--use-one-model-per-ref-site`: Give an object `$ref` with sibling keywords one model per place it is written.
+- `--use-root-types-for-mixed-union-map-keys`: Type the RootModel members of a union map key with a plain member...
 - `--use-schema-description`: Use schema description as class docstring.
 - `--use-serialization-alias`: Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).
 - `--use-single-line-docstring`: Emit short docstrings on a single line.
@@ -1120,6 +1122,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic
                         v2 only)
+  --use-root-types-for-mixed-union-map-keys, --no-use-root-types-for-mixed-union-map-keys
+                        Type the RootModel members of a map key that is a
+                        union with a plain member (`propertyNames` `anyOf` of
+                        a `str` with a `maxLength` and a uuid-format
+                        RootModel) by their root types, as the key of a
+                        RootModel is typed (`dict[str | UUID, int]`); without
+                        it such a key keeps the RootModel class, which
+                        Pydantic cannot hash, and the plain member reads the
+                        keys it matches, as in 0.100.0. A key whose members
+                        are all references is typed by the root types with or
+                        without the option
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)

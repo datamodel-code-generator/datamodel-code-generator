@@ -146,6 +146,7 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--read-mapping-keys-by-schema-tag-type",
     "--keep-null-of-nullable-items",
     "--keep-string-keywords-beside-formats",
+    "--use-root-types-for-mixed-union-map-keys",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
@@ -621,6 +622,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="keep-string-keywords-beside-formats",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "property_names_root_model_mixed_union_keys.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-root-types-for-mixed-union-map-keys",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -1009,6 +1016,14 @@ def test_preset_sets_opt_in_option(
             "--keep-string-keywords-beside-formats",
             "--no-keep-string-keywords-beside-formats",
             id="keep-string-keywords-beside-formats",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "property_names_root_model_mixed_union_keys.json",
+            "jsonschema",
+            [],
+            "--use-root-types-for-mixed-union-map-keys",
+            "--no-use-root-types-for-mixed-union-map-keys",
+            id="use-root-types-for-mixed-union-map-keys",
         ),
     ],
 )

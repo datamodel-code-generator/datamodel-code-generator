@@ -270,8 +270,13 @@ EXCLUDED_CASES: dict[str, str] = {
             "jsonschema/compound_property_names/unsupported_one_sibling.json",
             "jsonschema/compound_property_names/unsupported_sibling.json",
         ),
-        "legacy propertyNames model keys cannot validate nonempty dictionaries; "
-        "valid empty dictionaries are covered by test_compound_property_names_compatibility",
+        "a propertyNames anyOf with a sibling keyword is written as Any keys, which accept keys the schema rejects; "
+        "test_compound_property_names_compatibility covers them",
+    ),
+    "jsonschema/property_names_root_model_mixed_union_keys.json": (
+        "a union key with a plain member keeps its RootModel class unless --use-root-types-for-mixed-union-map-keys "
+        "is set, as in 0.100.0, so a key that only the RootModel matches raises TypeError; "
+        "test_property_names_root_model_mixed_union_keys covers both sides"
     ),
     **{
         f"jsonschema/allof_ref_siblings/{name}.json": (

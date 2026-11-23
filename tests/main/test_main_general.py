@@ -1948,6 +1948,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "merge_shared_variant_tags",
         "use_unmapped_variant_tag_values",
         "read_mapping_keys_by_schema_tag_type",
+        "use_root_types_for_mixed_union_map_keys",
         "use_standard_collections",
         "use_object_type",
         "use_typed_nullable_map_values",

@@ -1,0 +1,1 @@
+{"title": "A", "type": "object", "properties": {"limits": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "b.json#/$defs/Unit"}, {"$ref": "b.json#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}}}}
