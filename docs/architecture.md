@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 277 | Shared generation options. |
-| `GenerateConfig` | 292 | Public `generate()` configuration. |
-| `ParserConfig` | 231 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 233 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 244 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 247 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 234 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 234 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 233 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 234 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 278 | Shared generation options. |
+| `GenerateConfig` | 293 | Public `generate()` configuration. |
+| `ParserConfig` | 232 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 234 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 245 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 248 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 235 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 235 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 234 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 235 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1700,6 +1700,7 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | `legacy-ref-target-null-type-only` | a reference reads only a `type` of null (or strict `nullable`) of its target, not a type list | keep |
 | `legacy-map-copied-nullable` | a `nullable` copied into a combined branch leaves its map without null (the owner kept it) | keep |
 | `legacy-item-null-by-form` | without `--keep-null-of-nullable-items`, under `--strict-nullable` an array item, a tuple item or a map value that is a scalar or an object keeps the null its `nullable` declares, and one that is an array, a map or an `allOf` of one `$ref` rejects null | keep |
+| `legacy-mixed-union-key-root-models` | without `--use-root-types-for-mixed-union-map-keys`, a map key that is a union with a member that is no RootModel (`str`, a `constr` call, a `Literal`, `Any`, an enum) keeps the RootModel class of its other members, which Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and a key both match is read by the other member (`parser/_passes/modules.py:type_dict_keys_by_root_types`) | keep |
 | `legacy-root-type-nullable-ungated` | a root field is nullable by `nullable` without `--strict-nullable` | #5054 |
 | `legacy-multiple-types-nullable-not-recorded` | a type list with an object records only the type list's null; `--read-nullable-beside-type-list` reads `nullable` too | keep |
 | `legacy-array-nullable-ungated` | an array field is nullable by `nullable` without `--strict-nullable` | #5054 |

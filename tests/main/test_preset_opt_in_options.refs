@@ -40,6 +40,8 @@ read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_opt
 read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
 use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
+use-root-types-for-mixed-union-map-keys-command-line	main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-command-line].model.py
+use-root-types-for-mixed-union-map-keys-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-command-line].model.py
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].model.py
 use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].model.py
 use-unmapped-variant-tag-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-command-line].model.py
@@ -201,6 +203,8 @@ use-one-model-per-ref-site-practical	main/preset_opt_in_options/preset_sets_opt_
 use-one-model-per-ref-site-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-one-model-per-ref-site-standard].model.py
 use-plain-alias-for-recursive-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-plain-alias-for-recursive-models-practical].model.py
 use-plain-alias-for-recursive-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-plain-alias-for-recursive-models-standard].model.py
+use-root-types-for-mixed-union-map-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-root-types-for-mixed-union-map-keys-practical].model.py
+use-root-types-for-mixed-union-map-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-root-types-for-mixed-union-map-keys-standard].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-command-line].model.py
 use-serialize-as-any-for-every-subclass-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-practical].model.py
 use-serialize-as-any-for-every-subclass-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-standard].model.py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].model.py

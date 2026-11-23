@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 66 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 44 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 45 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 75 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -453,6 +453,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-plain-alias-for-recursive-models`](typing-customization.md#use-plain-alias-for-recursive-models)
 - [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface)
 - [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias)
+- [`--use-root-types-for-mixed-union-map-keys`](field-customization.md#use-root-types-for-mixed-union-map-keys)
 - [`--use-schema-description`](field-customization.md#use-schema-description)
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias)
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)
