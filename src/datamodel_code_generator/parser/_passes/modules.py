@@ -2801,15 +2801,16 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
 
 
 def _names_only_root_models(key: DataType) -> bool:
-    """Return whether every member of a union key is a RootModel that a key takes the root type of.
+    """Return whether every member of a union key is a RootModel.
 
     0.100.0 wrote such a member with its class, which Pydantic builds an unhashable instance of, so a key of these
-    members alone raised ``TypeError`` for every key it accepts. A key with another member (a ``str``, a ``constr``
-    call, a ``Literal``, ``Any``, an enum, a RootModel that hashes) worked for the keys that member matches, and the
-    RootModel members only took the keys it rejected: typing them can change what a key that both match parses to.
+    members alone raised ``TypeError`` for every key it accepts (a frozen class hashes and keeps its class below). A
+    key with another member (a ``str``, a ``constr`` call, a ``Literal``, ``Any``, an enum) worked for the keys that
+    member matches, and the RootModel members only took the keys it rejected: typing them can change what a key that
+    both match parses to.
     """
     if (reference := key.reference) is not None:
-        return isinstance(source := reference.source, DataModel) and source._keys_take_root_type
+        return isinstance(source := reference.source, DataModel) and source.IS_ROOT_MODEL
     return bool(key.data_types) and all(_names_only_root_models(member) for member in key.data_types)
 
 

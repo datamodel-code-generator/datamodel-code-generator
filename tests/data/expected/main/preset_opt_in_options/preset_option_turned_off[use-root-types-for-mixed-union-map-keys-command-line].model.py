@@ -29,6 +29,9 @@ class Model(BaseModel):
     ids: dict[Annotated[str, StringConstraints(max_length=64)] | UUID, int] | None = (
         None
     )
+    units: (
+        dict[Unit | Annotated[str, StringConstraints(pattern=r'^x-')], int] | None
+    ) = None
     anything: (
         dict[Any | Annotated[str, StringConstraints(pattern=r'^x-')], int] | None
     ) = None
