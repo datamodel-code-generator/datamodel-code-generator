@@ -16,3 +16,8 @@ covers = [
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_variant_tag_valu~b1680e46.errors.txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_variant_tag_values_lone_root_model_tag.yaml].txt",
 ]
+
+[[change.cells]]
+input = ["tests/data/openapi/variant_tag_values/lone_root_model_tag.yaml"]
+backends = ["pydantic_v2.BaseModel"]
+options = "*"
