@@ -153,7 +153,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`legacy-enum-outside-type-kept`, `legacy-schema-maps-merged-as-schemas`, "
             "`legacy-type-narrowing-override-deferred`, `legacy-type-shape-length-from-max-items`, "
             "`legacy-all-of-ref-siblings-ignored`, `legacy-all-of-alias-member-base`, "
-            "`legacy-all-of-union-null-dropped`, `legacy-all-of-required-names-dropped`), with `kept_legacy_rows`, the "
+            "`legacy-all-of-union-null-dropped`, `legacy-all-of-required-names-dropped`) and of 0.100.0 output without "
+            "`--read-allof-parents-as-their-models` (`legacy-ref-sibling-parent-read-alone`, "
+            "`legacy-inherited-required-names-unwritten`, `legacy-root-site-members-as-written`), with "
+            "`kept_legacy_rows`, the "
             "options' only policy; the inherited property override: its presentation row `inherited_override_row` and "
             "the rows of `--allof-merge-mode` (`inherits_keyword`, which keywords and defaults an override inherits; "
             "`merge_inherited_value` and `merge_inherited_keyword`, how one subschema value or keyword merges, rows "
@@ -3326,24 +3329,29 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         decision=(
             "how generated code builds a date, time or datetime, and an XML Schema timedelta, at run time: an "
             "expression on the `datetime` module imported as `datetime_module`, and for the ISO text of a date, time "
-            "or datetime its `fromisoformat` call"
+            "or datetime its `fromisoformat` call; an RFC 3339 text is read into the canonical ISO text of its value"
         ),
         homes=(
             Home("imports.py", "IMPORT_DATETIME_MODULE"),
             Home("python_literal.py", "_datetime_expression"),
             Home("python_literal.py", "_isoformat_expression"),
+            Home("python_literal.py", "_rfc3339_expression"),
         ),
         core=(
-            "`imports.py:IMPORT_DATETIME_MODULE`; `python_literal.py`: `_datetime_expression`, `_isoformat_expression`"
+            "`imports.py:IMPORT_DATETIME_MODULE`; `python_literal.py`: `_datetime_expression`, "
+            "`_isoformat_expression`, `_rfc3339_expression`"
         ),
         adapters=(
             "Avro's date, time and datetime logical defaults (`parser/avro.py:_logical_default_expression`; its "
             "timedelta defaults import `timedelta` directly), XML Schema's temporal defaults "
-            "(`parser/_xmlschema_literals.py`)"
+            "(`parser/_xmlschema_literals.py`, which reads XML Schema lexical forms with Python's reader), and the "
+            "JSON text of a strict date, time or datetime in a default Pydantic validates "
+            "(`parser/_passes/render_prep.py:_deserialized_value`)"
         ),
         sites=(
             Home("parser/avro.py", "_logical_default_expression"),
             Home("parser/_xmlschema_literals.py"),
+            Home("parser/_passes/render_prep.py", "_deserialized_value"),
         ),
     ),
     DecisionHome(
@@ -3354,13 +3362,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("python_literal.py", "_text_constructor_expression"),),
         core="`python_literal.py:_text_constructor_expression`",
         adapters=(
-            "Decimal defaults (`parser/_passes/render_prep.py:deserialize_decimal_default`) and constraints "
+            "Decimal defaults (`parser/_passes/render_prep.py`: `deserialize_decimal_default`, `_deserialized_value`) "
+            "and constraints "
             "(`parser/_passes/_shared.py:normalize_default_value_constraints`), compiled patterns "
             "(`model/pydantic_v2/base_model.py:_compiled_python_pattern`); Avro's `Decimal` defaults keep the call as "
             "their value (`parser/avro.py:_logical_default_expression`)"
         ),
         sites=(
             Home("parser/_passes/render_prep.py", "deserialize_decimal_default"),
+            Home("parser/_passes/render_prep.py", "_deserialized_value"),
             Home("parser/_passes/_shared.py", "normalize_default_value_constraints"),
             Home("model/pydantic_v2/base_model.py", "_compiled_python_pattern"),
             Home("parser/avro.py", "_logical_default_expression"),
@@ -3567,7 +3577,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`python_literal.py:_safe_non_finite_value`), the imports a module writes "
             "(`parser/_imports_plan.py:ModuleImportLedger.rendered`, which returns the live imports when no entry "
             "changed) and the nested values of an inherited schema "
-            "(`parser/_inherited_schemas.py:normalize_inherited_nested_schema_value`)"
+            "(`parser/_inherited_schemas.py:normalize_inherited_nested_schema_value`), and the containers of a default "
+            "whose strict values are deserialized (`parser/_passes/render_prep.py`: `_copied_items`, `_copied_mapping`)"
         ),
         sites=(
             Home("_python_type_annotation.py", "_with_children"),
@@ -3576,6 +3587,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("python_literal.py", "_safe_non_finite_value"),
             Home("parser/_imports_plan.py", "ModuleImportLedger.rendered"),
             Home("parser/_inherited_schemas.py", "normalize_inherited_nested_schema_value"),
+            Home("parser/_passes/render_prep.py", "_copied_items"),
+            Home("parser/_passes/render_prep.py", "_copied_mapping"),
         ),
     ),
     DecisionHome(
@@ -6777,13 +6790,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/base.py:Parser._run_with_suppressed_warnings` (the hook the settle passes call for a retry "
             "parse), `_generation.py:_parse_again` (the category its caller names, or none), "
             "`_recommend/_trial.py:_run_candidate`, `parser/jsonschema.py:JsonSchemaParser._typed_model_children` (the "
-            "extra items type of a key model)"
+            "extra items type of a key model), `parser/_inherited_schemas.py:model_schema_at` (the merge an inherited "
+            "`$ref` with siblings is read as, whose parse reports its warnings)"
         ),
         sites=(
             Home("parser/base.py", "Parser._run_with_suppressed_warnings"),
             Home("_generation.py", "_parse_again"),
             Home("_recommend/_trial.py", "_run_candidate"),
             Home("parser/jsonschema.py", "JsonSchemaParser._typed_model_children"),
+            Home("parser/_inherited_schemas.py", "model_schema_at"),
         ),
     ),
     DecisionHome(
@@ -7536,10 +7551,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`input_model.py`: `_pydantic_fields`, `_model_field_annotations`",
         adapters=(
             "the walks that follow the fields of a class (`_reached_classes`, `_collect_nested_models`, "
-            "`_native_generic_field_paths`), the unserializable properties of a model "
-            "(`_add_python_type_for_unserializable`) and the Python types of the properties of a definition "
-            "(`_add_python_type_to_model_properties`, which pairs the Pydantic fields by wire name and reads a class "
-            "without them by its type hints, keyed by field name); not routed: the fields of the models whose "
+            "`_native_generic_field_paths`) and the properties of a definition paired with the fields of its class "
+            "(`_model_properties`, which pairs the Pydantic fields by wire name and reads a class without them by "
+            "its type hints, keyed by field name; read by the unserializable properties, "
+            "`_add_python_type_for_unserializable`, and by the Python types of the properties, "
+            "`_add_python_type_to_model_properties`); not routed: the fields of the models whose "
             "inheritance a load rewrites (`_partition_inherited_fields`, `_transform_single_model_to_inheritance`), "
             "which are Pydantic models already"
         ),

@@ -385,6 +385,66 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--read-inherited-property-schemas-in-mro-order",
     ),
     LegacyRow(
+        "legacy-ref-sibling-parent-read-alone",
+        (
+            "without `--read-allof-parents-as-their-models`, the readers of the schemas a model inherits "
+            "(`model_schema_at`) read a parent that is a `$ref` with sibling keywords by its sibling keywords alone, "
+            "while its model is built from their merge with the schema its `$ref` names: a model written before such "
+            "a parent types a property it only requires `Any`, a property it narrows `Any`, and leaves optional a "
+            "property the `$ref` target requires (#6868)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_parents_as_models/ref_sibling_parents.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-allof-parents-as-their-models",
+    ),
+    LegacyRow(
+        "legacy-inherited-required-names-unwritten",
+        (
+            "without `--read-allof-parents-as-their-models`, a model writes no field for a name that only the schemas "
+            "it inherits require (`JsonSchemaParser._optional_inherited_required_names`), so the class takes the field "
+            "from a base as the output collects fields, optional where that base declares it optional: `allOf: "
+            "[PetBase, Named]` with only `Named` requiring `name` accepts a payload without `name` (#7331)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/allof_parents_as_models/required_names.yaml",
+            "--input-file-type",
+            "openapi",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-allof-parents-as-their-models",
+    ),
+    LegacyRow(
+        "legacy-root-site-members-as-written",
+        (
+            "without `--read-allof-parents-as-their-models`, the allOf root model row "
+            "(`handle_allof_root_model_with_constraints`) reads the members as written, not as `all_of_members` reads "
+            "them, so under `--intersect-combined-schema-keywords` an allOf of a `$ref` alias of an object model and "
+            "a member that adds only a `type` or `required` names is a root model of a dict, without the fields of "
+            "the schema the alias names (#7309)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_parents_as_models/alias_parent.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--intersect-combined-schema-keywords",
+        ),
+        option="--read-allof-parents-as-their-models",
+    ),
+    LegacyRow(
         "legacy-inherited-reads-at-first-ask",
         (
             "the ancestors of an inherited schema (`get_inherited_schema_ancestor_paths`), the C3 order of a list of "
@@ -736,6 +796,103 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--disable-timestamp",
         ),
         option="--distribute-allof-over-unions",
+    ),
+    LegacyRow(
+        "legacy-all-of-object-merge-row",
+        (
+            "without `--intersect-merged-allof-members`, allOf members merged into one object are their merge row: of "
+            "a property several of them declare, the later `type`, `nullable` and `multipleOf` win, two type lists "
+            "join and a later `true` replaces the schema, and the allOf members of a member are dropped"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_merged_member_values.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-root-first-typed-member",
+        (
+            "without `--intersect-merged-allof-members`, a named allOf of one `$ref` to a value schema and value "
+            "members is the first typed of them with the constraints of all, the `enum` of another member dropped"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_enum_member_of_constrained_ref.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-enum-root-self-alias",
+        (
+            "without `--intersect-merged-allof-members`, a named allOf whose merged root is an enum written as a class "
+            "names itself where no output reads the annotations (standard dataclasses), which later passes type `Any`"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_enum_member_of_constrained_ref.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-map-counts-dropped",
+        (
+            "without `--intersect-merged-allof-members`, an allOf of a `$ref` to a map and members that add only "
+            "property counts or `propertyNames` is a model without fields at a definition, and the reference elsewhere"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_map_member_counts.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-base64-reference-layered",
+        (
+            "without `--intersect-merged-allof-members`, a length or `pattern` an allOf site adds to a `$ref` to "
+            "base64 text is written beside the reference, checked on the decoded value"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_base64_member_constraints.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-constraints",
+            "--use-encoded-str-for-constrained-base64",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
     ),
     LegacyRow(
         "legacy-map-union-of-dicts",
@@ -2970,12 +3127,13 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         "legacy-unique-sets-level-order",
         (
             "under `--use-unique-items-as-set-by-value`, the fields a set item model has with its bases are read "
-            "nearest first, each name from the first model that declares it (`parser/_unique_sets.py:_ByValue.fields`, "
-            "`ReferenceGraph.level_order`), where the generated class takes the field of its C3 order: a name a base "
-            "two levels up and a later direct base both declare is read from the later base, so a set may be written "
-            "of items whose field does not hash"
+            "nearest first, each name from the first model that declares it "
+            "(`parser/_unique_sets.py:_ByValue.fields`, `ReferenceGraph.level_order`), also beside the fields of its "
+            "C3 order, which the generated class takes and `--read-set-item-fields-in-class-order` reads too: a name "
+            "a base two levels up and a later direct base both declare is read from the later base as well, so where "
+            "only that field does not hash the items stay a list (the class's field hashes)"
         ),
-        fix=6997,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/openapi/yaml_1_1_numbers/ratio.yaml",
@@ -2989,6 +3147,32 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--formatters",
             "builtin",
         ),
+    ),
+    LegacyRow(
+        "legacy-unique-sets-class-fields-unread",
+        (
+            "without `--read-set-item-fields-in-class-order`, whether a set item model hashes by value under "
+            "`--use-unique-items-as-set-by-value` reads only the fields its bases declare nearest first "
+            "(`parser/_unique_sets.py:_ByValue.fields`), not those of its C3 order, which the generated class takes: "
+            "where a base two levels up and a later direct base both declare a field and the class takes the one that "
+            "does not hash, the uniqueItems array is a set its items cannot be added to (#6997)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/unique_items_by_value_inherited_fields.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--frozen-dataclasses",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-set-item-fields-in-class-order",
     ),
     LegacyRow(
         "legacy-cycle-through-scalar",

@@ -102,6 +102,8 @@ class DecisionOptions:
     """--use-tuple-for-closed-arrays writes a closed array as a tuple, which keeps its positions."""
     user_imports: bool = False
     """--additional-imports may shadow the builtin annotations that hashability reads."""
+    kept_rows: frozenset[str] = frozenset()
+    """The ``legacy-*`` rows the decisions keep: those whose option the parse leaves off."""
 
 
 @final

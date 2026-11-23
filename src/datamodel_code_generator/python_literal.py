@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from functools import partial
 from itertools import chain
 from math import isfinite, isnan
@@ -109,6 +110,56 @@ def _datetime_expression(suffix: str, *, prefix: str = "") -> PythonRuntimeExpre
 def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
     """Return the expression that builds the ``datetime`` module's ``kind`` (date, time, datetime) from ISO ``text``."""
     return _datetime_expression(call_text(f".{kind}.fromisoformat", (stable_repr(text),)))
+
+
+_RFC3339_DATE: Final = r"([0-9]{4})-([0-9]{2})-([0-9]{2})"
+_RFC3339_TIME: Final = r"([0-9]{2}):([0-9]{2})(?::([0-9]{2})(?:\.([0-9]{1,6}))?)?([Zz]|[+-][0-9]{2}:?[0-5][0-9])?"
+_RFC3339_PATTERNS: Final = {
+    "date": re.compile(_RFC3339_DATE),
+    "time": re.compile(_RFC3339_TIME),
+    "datetime": re.compile(f"{_RFC3339_DATE}[Tt _]{_RFC3339_TIME}"),
+}
+"""The texts read as a date, a time or a datetime: RFC 3339 forms, with the separators Pydantic reads from JSON.
+
+ASCII digits only, and offset minutes below 60, as Pydantic reads them.
+"""
+
+
+def _rfc3339_expression(kind: str, text: str) -> PythonRuntimeExpression | None:
+    """Return the expression that builds the ``kind`` (date, time, datetime) an RFC 3339 ``text`` gives, or None.
+
+    The value is built from the parts of the text, so it is the same on every Python version, and written as its
+    ``isoformat()``, which ``fromisoformat`` reads on every supported Python (``Z`` as ``+00:00``, six fraction
+    digits). A text of another form (``20200101``, a week date, a date alone for a datetime, more than six fraction
+    digits) or out of range (``2020-02-30``, ``24:00:00``, an offset of a day) gives none.
+    """
+    if (match := _RFC3339_PATTERNS[kind].fullmatch(text)) is None:
+        return None
+    parts = match.groups()
+    try:
+        if kind == "date":
+            value: date | time = date(*map(int, parts))
+        else:
+            hour, minute, second, fraction, offset = parts[-5:]
+            value = time(
+                int(hour), int(minute), int(second or 0), int((fraction or "").ljust(6, "0")), _rfc3339_offset(offset)
+            )
+            if kind == "datetime":
+                value = datetime.combine(date(*map(int, parts[:3])), value)
+    except ValueError:
+        return None
+    return _isoformat_expression(kind, value.isoformat())
+
+
+def _rfc3339_offset(offset: str | None) -> tzinfo | None:
+    """Return the time zone of an RFC 3339 offset (``Z``, ``+01:00``, ``+0100``), None for none."""
+    if offset is None:
+        return None
+    if offset in {"Z", "z"}:
+        return timezone.utc
+    digits = offset[1:].replace(":", "")
+    delta = timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+    return timezone(-delta if offset[0] == "-" else delta)
 
 
 def _text_constructor_expression(import_: Import, text: str) -> PythonRuntimeExpression:

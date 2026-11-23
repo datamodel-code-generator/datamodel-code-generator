@@ -880,17 +880,23 @@ REJECTION_EXCLUDED_CASES: dict[str, str] = {
     ),
     **dict.fromkeys(
         (
-            f"{_DIAMOND}/{document}.yaml::components.schemas.{name}"
-            for document, names in (
-                ("optional_tag_from_the_first_base", ("D", "Group", "Holder")),
-                ("optional_tag_from_the_first_base_in_a_list", ("D", "Group", "Shelter", "Thing")),
-                ("shallow_diamond", ("D", "Group")),
-            )
-            for name in names
+            *(
+                f"{_DIAMOND}/{document}.yaml::components.schemas.{name}"
+                for document, names in (
+                    ("optional_tag_from_the_first_base", ("D", "Group", "Holder")),
+                    ("optional_tag_from_the_first_base_in_a_list", ("D", "Group", "Shelter", "Thing")),
+                    ("shallow_diamond", ("D", "Group")),
+                )
+                for name in names
+            ),
+            *(
+                f"openapi/allof_parents_as_models/required_names.yaml::components.schemas.{name}"
+                for name in ("NewPet", "NewPetFirst", "Owner")
+            ),
         ),
         "a property that a later allOf parent requires stays optional in the model, whose class takes the parents in "
         "order (class D(B, C) keeps B's optional kind over C's required one), so it takes a payload without kind "
-        "(#7331)",
+        "(#7331; the suite generates without --read-allof-parents-as-their-models, which writes the name again)",
     ),
 }
 """The cases the Pydantic v2 rejection check leaves out, by reason; their acceptance and round trip checks run."""

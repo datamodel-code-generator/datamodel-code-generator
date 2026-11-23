@@ -8,10 +8,14 @@ capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/p
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
+intersect-merged-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
+intersect-merged-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
 keep-null-of-nullable-items-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-null-of-nullable-items-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-string-keywords-beside-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
 keep-string-keywords-beside-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
+read-allof-parents-as-their-models-command-line	main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-command-line].model.py
+read-allof-parents-as-their-models-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-command-line].model.py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-inherited-property-schemas-in-mro-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].model.py
@@ -26,6 +30,8 @@ read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_opti
 read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].model.py
 read-ref-siblings-in-closed-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].model.py
 read-ref-siblings-in-closed-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].model.py
+read-set-item-fields-in-class-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py
+read-set-item-fields-in-class-order-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py
 read-single-allof-refs-in-their-documents-command-line	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].model.py
 read-single-allof-refs-in-their-documents-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].model.py
 read-uuid6-uuid7-uuid8-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].model.py
@@ -71,6 +77,8 @@ intersect-allof-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in
 intersect-allof-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].model.py
 intersect-combined-schema-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].model.py
 intersect-combined-schema-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].model.py
+intersect-merged-allof-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-merged-allof-members-practical].model.py
+intersect-merged-allof-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-merged-allof-members-standard].model.py
 keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-content-parameter-refs-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-content-parameter-refs-practical].model.py
@@ -123,6 +131,8 @@ order-constructor-fields-by-written-defaults-practical	main/preset_opt_in_option
 order-constructor-fields-by-written-defaults-standard	main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-written-defaults-standard].model.py
 pin-aliases-with-alias-generator-practical	main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-practical].model.py
 pin-aliases-with-alias-generator-standard	main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-practical].model.py
+read-allof-parents-as-their-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-as-their-models-practical].model.py
+read-allof-parents-as-their-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-as-their-models-standard].model.py
 read-allof-parents-in-mro-order-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-in-mro-order-practical].model.py
 read-allof-parents-in-mro-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-allof-parents-in-mro-order-standard].model.py
 read-const-beside-enum-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-practical].model.py
@@ -151,6 +161,8 @@ read-ref-siblings-in-closed-allof-members-practical	main/preset_opt_in_options/p
 read-ref-siblings-in-closed-allof-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-ref-siblings-in-closed-allof-members-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-ref-siblings-in-closed-allof-members-practical].model.py
 read-schema-version-per-document-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical].tree/
 read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard].tree/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical].tree/
+read-set-item-fields-in-class-order-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py
+read-set-item-fields-in-class-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py
 read-single-allof-refs-in-their-documents-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-practical].model.py
 read-single-allof-refs-in-their-documents-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-practical].model.py
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].model.py

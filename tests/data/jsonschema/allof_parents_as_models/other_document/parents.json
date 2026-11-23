@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Parent": {"$ref": "#/$defs/Base", "properties": {"extra": {"type": "string"}}},
+    "Base": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+  }
+}

@@ -1,0 +1,22 @@
+[[change]]
+id = "input-model-unserializable-fields-of-held-classes"
+category = "default-fix"
+title = "--input-model keeps the Python type of an unserializable field in every held class"
+summary = "A field JSON Schema cannot express, such as a Callable, kept its Python type (callback: Callable[[int], int]) only in a Pydantic model; in a dataclass, TypedDict, Pydantic dataclass or RootModel that the model holds it became str, which refused every valid value, and with --field-include-all-keys the id() of a schema reached the output as x-python-unserializable, a different number on every run. The field now keeps its type, found by the class the schema generation recorded for the definition, so two same-named classes keep their own fields. Class and field names stay."
+refs = ["#7433"]
+decision = ["#7433"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "input_model/unserializable_fields_of_held_classes[generic-dataclass].txt",
+    "input_model/unserializable_fields_of_held_classes[held-classes-reuse-foreign].txt",
+    "input_model/unserializable_fields_of_held_classes[held-classes].txt",
+    "input_model/unserializable_fields_of_held_classes[nested-held-classes].txt",
+    "input_model/unserializable_fields_of_held_classes[pydantic-dataclass-by-alias].txt",
+    "input_model/unserializable_fields_of_held_classes[pydantic-dataclass-by-name].txt",
+    "input_model/unserializable_fields_of_held_classes[root-model-root].txt",
+    "input_model/unserializable_fields_of_held_classes[same-named-classes-reuse-all].txt",
+    "input_model/unserializable_fields_of_held_classes[same-named-classes].txt",
+    "input_model/unserializable_fields_of_held_classes[two-models].txt",
+]

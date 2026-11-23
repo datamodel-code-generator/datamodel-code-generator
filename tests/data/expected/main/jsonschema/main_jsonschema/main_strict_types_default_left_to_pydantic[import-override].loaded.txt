@@ -1,0 +1,2 @@
+refused: f is_instance_of
+given: Top(f=None)

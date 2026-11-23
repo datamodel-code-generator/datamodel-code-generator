@@ -1,0 +1,2 @@
+refused: f.data bytes_type
+given: Top(f=None)

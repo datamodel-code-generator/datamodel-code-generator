@@ -1,0 +1,4 @@
+[
+  "/parts/0 maxLength \"YQ=======\": invalid, model accepts",
+  "/thumbnail maxLength \"YQ=======\": invalid, model accepts"
+]
