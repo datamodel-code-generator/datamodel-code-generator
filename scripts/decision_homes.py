@@ -7536,10 +7536,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`input_model.py`: `_pydantic_fields`, `_model_field_annotations`",
         adapters=(
             "the walks that follow the fields of a class (`_reached_classes`, `_collect_nested_models`, "
-            "`_native_generic_field_paths`), the unserializable properties of a model "
-            "(`_add_python_type_for_unserializable`) and the Python types of the properties of a definition "
-            "(`_add_python_type_to_model_properties`, which pairs the Pydantic fields by wire name and reads a class "
-            "without them by its type hints, keyed by field name); not routed: the fields of the models whose "
+            "`_native_generic_field_paths`) and the properties of a definition paired with the fields of its class "
+            "(`_model_properties`, which pairs the Pydantic fields by wire name and reads a class without them by "
+            "its type hints, keyed by field name; read by the unserializable properties, "
+            "`_add_python_type_for_unserializable`, and by the Python types of the properties, "
+            "`_add_python_type_to_model_properties`); not routed: the fields of the models whose "
             "inheritance a load rewrites (`_partition_inherited_fields`, `_transform_single_model_to_inheritance`), "
             "which are Pydantic models already"
         ),

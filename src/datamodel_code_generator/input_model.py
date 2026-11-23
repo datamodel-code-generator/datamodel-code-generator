@@ -735,7 +735,7 @@ def _remove_unserializable_markers(value: Any) -> None:
 
 def _process_unserializable_property(
     prop: dict[str, Any],
-    annotation: type,
+    annotation: Any,
     expression_collector: PythonTypeExpressionCollector | None = None,
     *,
     in_union: bool = False,
@@ -798,34 +798,35 @@ def _iter_owned_properties(
 def _add_python_type_for_unserializable(
     schema: dict[str, Any],
     model: type,
-    visited_defs: set[str] | None = None,
+    schema_types: ABCMapping[str, type | str],
     expression_collector: PythonTypeExpressionCollector | None = None,
 ) -> dict[str, Any]:
-    """Add x-python-type to ALL fields marked as unserializable."""
-    if visited_defs is None:
-        visited_defs = set()
+    """Add x-python-type to ALL fields marked as unserializable.
 
-    if "properties" in schema:
-        for field_info, prop in _iter_owned_properties(schema["properties"], _pydantic_fields(model) or {}):
-            _process_unserializable_property(prop, field_info.annotation, expression_collector)
-
-    if "$defs" in schema:
-        nested_models = _collect_nested_models(model)
-        model_name = getattr(model, "__name__", None)
-        if model_name:  # pragma: no branch
-            nested_models[model_name] = model
-        for def_name, def_schema in schema["$defs"].items():
-            if def_name in visited_defs:  # pragma: no cover - not proven unreachable
-                continue
-            visited_defs.add(def_name)
-            if def_name in nested_models:  # pragma: no branch
-                _add_python_type_for_unserializable(
-                    def_schema,
-                    nested_models[def_name],
-                    visited_defs,
-                    expression_collector,
-                )
-
+    The root is ``model``; a definition is the class the schema generation recorded for its name in ``schema_types``
+    (``_get_input_model_json_schema_class``), whatever its kind and whatever other class shares its name. A marker no
+    field is paired with is removed: it never leaves the schema. Those are the fields of a Pydantic dataclass read by
+    name, not by alias, and of a generic dataclass or TypedDict, whose recorded class is the unspecialised one, with
+    type variables in its annotations.
+    """
+    definitions: dict[str, Any] = schema.get("$defs", {})
+    classes = [
+        (definition, definition_type)
+        for name, definition in definitions.items()
+        if isinstance(definition_type := schema_types.get(name), type)
+        and (_model_class(definition_type) or not getattr(definition_type, "__parameters__", ()))
+    ]
+    for definition, definition_type in [(schema, model), *classes]:
+        if properties := definition.get("properties"):
+            for annotation, prop in _model_properties(properties, definition_type):
+                _process_unserializable_property(prop, annotation, expression_collector)
+        elif _model_class(definition_type) and definition_type.__pydantic_root_model__:
+            _process_unserializable_property(
+                definition, definition_type.model_fields["root"].annotation, expression_collector
+            )
+    for definition in (schema, *definitions.values()):
+        for node in (definition, *definition.get("properties", {}).values()):
+            _remove_unserializable_markers(node)
     return schema
 
 
@@ -979,16 +980,19 @@ def _model_field_annotations(model: type, *, raw: bool = False) -> dict[str, Any
     return getattr(model, "__annotations__", {}) if raw else _get_type_hints_safe(model)
 
 
-def _add_python_type_to_properties(
-    properties: dict[str, Any],
-    model_fields: dict[str, Any],
-    expression_collector: PythonTypeExpressionCollector | None = None,
-    generic_names: dict[type, str] | None = None,
-) -> None:
-    """Add x-python-type to properties dict for given model fields."""
-    for field_info, prop in _iter_owned_properties(properties, model_fields):
-        if serialized := _serialize_python_type(field_info.annotation, expression_collector, generic_names):
-            prop["x-python-type"] = serialized
+def _model_properties(properties: dict[str, Any], model: type) -> Iterator[tuple[Any, dict[str, Any]]]:
+    """Pair each field of a class with the property its schema writes, yielding the annotation and the property.
+
+    A Pydantic model is read by its fields, a Pydantic dataclass too when the load reads dataclass fields by alias;
+    any other class by its type hints, keyed by field name.
+    """
+    if (model_fields := _pydantic_fields(model, dataclass_fields=_READ_DATACLASS_FIELDS_BY_ALIAS.get())) is not None:
+        for field_info, prop in _iter_owned_properties(properties, model_fields):
+            yield field_info.annotation, prop
+        return
+    for field_name, annotation in _get_type_hints_safe(model).items():
+        if (prop := properties.get(field_name)) is not None:
+            yield annotation, prop
 
 
 def _clear_field_schema_names(schema: dict[str, Any]) -> None:
@@ -1018,18 +1022,9 @@ def _add_python_type_to_model_properties(
     expression_collector: PythonTypeExpressionCollector | None,
     generic_names: dict[type, str] | None,
 ) -> None:
-    """Supplement one definition using the fields of its actual Python model.
-
-    A Pydantic dataclass is read by its annotations, keyed by field name, unless the load reads its fields by alias.
-    """
-    model_fields = _pydantic_fields(model, dataclass_fields=_READ_DATACLASS_FIELDS_BY_ALIAS.get())
-    if model_fields is not None:
-        _add_python_type_to_properties(properties, model_fields, expression_collector, generic_names)
-        return
-    for field_name, field_type in _get_type_hints_safe(model).items():
-        if (prop := properties.get(field_name)) is not None and (
-            serialized := _serialize_python_type(field_type, expression_collector, generic_names)
-        ):
+    """Supplement one definition using the fields of its actual Python model."""
+    for annotation, prop in _model_properties(properties, model):
+        if serialized := _serialize_python_type(annotation, expression_collector, generic_names):
             prop["x-python-type"] = serialized
 
 
@@ -1477,11 +1472,11 @@ def _model_schema_with_python_types(
     schema_generator: type[GenerateJsonSchema],
     expression_collector: PythonTypeExpressionCollector | None,
     generic_definitions: dict[str, type | str] | None,
-    schema_types: dict[str, type | str] | None,
+    schema_types: dict[str, type | str],
 ) -> dict[str, Any]:
     """Generate a model's JSON Schema and add the Python types it cannot express."""
     schema = _add_python_type_for_unserializable(
-        model.model_json_schema(schema_generator=schema_generator), model, expression_collector=expression_collector
+        model.model_json_schema(schema_generator=schema_generator), model, schema_types, expression_collector
     )
     return _add_python_type_info(
         schema,
@@ -1539,8 +1534,8 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
     expression_collector: PythonTypeExpressionCollector | None = None,
     definitions: _InputModelDefinitions | None = None,
     generic_definitions: dict[str, type | str] | None = None,
-    schema_types: dict[str, type | str] | None = None,
     *,
+    schema_types: dict[str, type | str],
     identify_definitions: Callable[[dict[str, object]], dict[str, object]] | None = None,
 ) -> dict[str, object]:
     """Transform a single model's schema to use allOf inheritance structure.
@@ -1581,7 +1576,7 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
             expression_collector,
             definitions,
             generic_definitions,
-            schema_types,
+            schema_types=schema_types,
             identify_definitions=identify_definitions,
         )
         processed_parents[parent] = parent_schema, parent_properties, parent_required
@@ -1827,7 +1822,7 @@ def _load_model_schema(  # noqa: PLR0914
                 expression_collector,
                 definitions,
                 generic_definitions,
-                definitions.current_types,
+                schema_types=definitions.current_types,
             )
 
             if "$defs" in schema:
