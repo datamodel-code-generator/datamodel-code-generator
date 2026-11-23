@@ -1,0 +1,11 @@
+[[change]]
+id = "preset-pages-at-deploy"
+category = "harness"
+title = "Build the preset pages at docs deploy"
+summary = "The preset pages are built when the site is deployed instead of committed, and the stored renderings keep the released dates; the package writes the same output."
+refs = ["#1"]
+covers = [
+    "build_llms_txt_script/build_llms_txt_builds_the_preset_pages_first.txt",
+    "build_preset_docs_script/build_preset_docs_check_help_mentions_all_generated_targets.txt",
+    "build_preset_docs_script/build_preset_docs_pages_writes_the_preset_pages.txt",
+]
