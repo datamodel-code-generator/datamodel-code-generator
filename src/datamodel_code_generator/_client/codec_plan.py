@@ -19,6 +19,7 @@ from datamodel_code_generator._target_contract import (
     GenericType,
     LiteralScalar,
     LiteralType,
+    UnionDiscriminator,
     UnionType,
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
@@ -26,7 +27,7 @@ from datamodel_code_generator._target_types import container_slot, is_none, is_w
 from datamodel_code_generator.model._decisions.tag_value import tag_key
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator
+    from collections.abc import Collection, Iterable, Iterator
 
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._container_kinds import ContainerSlot
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
         SymbolId,
         TypeUseId,
         TypeView,
-        UnionDiscriminator,
     )
     from datamodel_code_generator._target_module import TypeNames
 
@@ -288,18 +288,34 @@ class _Planner:
         self.unsupported(value, schema)
         return None
 
-    def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
+    def flattened(
+        self,
+        members: tuple[TypeView, ...],
+        declared: UnionDiscriminator | None = None,
+        seen: frozenset[SymbolId] = frozenset(),
+    ) -> Iterator[tuple[TypeView, UnionDiscriminator | None]]:
+        """Yield the members a union stands for, through its aliases and root models, each with its discriminator.
+
+        A member's discriminator is the outermost declaration on its path, as ``shape`` passes it on: the union's, then
+        the one of each alias or root model, or of the union it wraps, it passes through.
+        """
         for member in members:
             if (
                 isinstance(member, GeneratedSymbolType)
                 and (facts := self.facts.tables.wrapped(member, seen)) is not None
             ):
-                yield from self.flattened(present(facts.type), seen | {member.symbol})
+                own = self.symbols[member.symbol].discriminator or (
+                    facts.type.discriminator if isinstance(facts.type, UnionType) else None
+                )
+                yield from self.flattened(present(facts.type), declared or own, seen | {member.symbol})
             elif not is_none(member):
-                yield member
+                yield member, declared
 
     def union(self, value: UnionType, schema: SourceLocation | None, declared: UnionDiscriminator | None) -> Shape:
-        members = tuple(dict.fromkeys(self.flattened(value.members)))
+        flat: dict[TypeView, UnionDiscriminator | None] = {}
+        for member, given in self.flattened(value.members):
+            flat.setdefault(member, given)
+        members = tuple(flat)
         shapes = [(member, self.shape(member, schema)) for member in members]
         if not any(shape is not None for _, shape in shapes):
             return None
@@ -328,7 +344,9 @@ class _Planner:
                 kinds[kind] = shape
         tag, tags = None, ()
         if len(models) > 1:
-            tag, tags = self.discriminator(models, declared)
+            tag, tags = self.discriminator(
+                models, declared or _joined_declarations(flat[GeneratedSymbolType(symbol)] for symbol in models)
+            )
             kinds.pop("object", None)
         return Choice(tuple(kinds.items()), tag, tags)
 
@@ -352,6 +370,24 @@ class _Planner:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
                 tags[key] = name, symbol
         return tag, tuple(tags.values())
+
+
+def _joined_declarations(declared: Iterable[UnionDiscriminator | None]) -> UnionDiscriminator | None:
+    """Return the one declaration the unions of several models make together, or None.
+
+    The models of a union that declares no discriminator are told apart by the declarations of the unions they come
+    from, the aliases and root models it lists: every model needs one, and all of them the same property.
+    """
+    found = tuple(declared)
+    known = tuple(item for item in found if item is not None)
+    if not known or len(known) != len(found) or len({item.property_name for item in known}) != 1:
+        return None
+    by_source: dict[str, list[str | int | bool]] = {}
+    for item in known:
+        for source, names in item.variants:
+            by_source.setdefault(source, []).extend(names)
+    variants = tuple((source, tuple(names)) for source, names in by_source.items())
+    return UnionDiscriminator(known[0].property_name, variants)
 
 
 def plan_client_codecs(

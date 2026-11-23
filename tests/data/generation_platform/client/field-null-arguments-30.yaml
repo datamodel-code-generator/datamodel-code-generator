@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info: {title: Rows, version: "1"}
+servers: [{url: "https://rows.example.com"}]
+paths:
+  /rows:
+    post:
+      operationId: sendRows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Row"}
+      responses:
+        "204": {description: Sent.}
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        name: {type: string}
+    Row:
+      type: object
+      required: [text, labels, item]
+      properties:
+        text: {type: string, nullable: true}
+        note: {type: string, nullable: true}
+        labels:
+          type: object
+          nullable: true
+          additionalProperties: {type: string}
+        extra:
+          type: object
+          nullable: true
+          additionalProperties: {type: string}
+        item:
+          nullable: true
+          allOf: [{$ref: "#/components/schemas/Item"}]
+        other:
+          nullable: true
+          allOf: [{$ref: "#/components/schemas/Item"}]
+        tags:
+          type: array
+          nullable: true
+          items: {type: string}
+        plain: {type: string}
+        anything: {nullable: true}

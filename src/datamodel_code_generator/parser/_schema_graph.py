@@ -507,11 +507,11 @@ class ResourceRegistry:
     def resource_entries(self, entries: Mapping[tuple[str, str], _T], document: str, pointer: str, default: _T) -> _T:
         """Return what a map of the registry holds for the schema resource enclosing a location, else ``default``.
 
-        The enclosing resource is rooted at the location or its nearest ancestor that roots one; a document that is not
-        registered has none, and no map holds an entry for it.
+        The enclosing resource is rooted at the location or its nearest ancestor that roots one. Every document a parser
+        reads schemas from is registered when it is loaded (``prepare_schema_resources``); one that is not would root
+        no resource, and no map holds an entry for it.
         """
-        if (resources := self.resources.get(document)) is None:
-            return default
+        resources = self.resources.get(document, ())
         while pointer and pointer not in resources:
             pointer = pointer.rpartition("/")[0]
         return entries.get((document, pointer), default)

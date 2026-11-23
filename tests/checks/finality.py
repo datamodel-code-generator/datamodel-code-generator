@@ -79,14 +79,14 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field, fields, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum, unique
-from functools import cached_property, wraps
+from functools import cache, cached_property, wraps
 from inspect import getattr_static
 from itertools import chain, repeat, takewhile, zip_longest
 from operator import is_, methodcaller
 from pathlib import Path
 from threading import Lock
 from traceback import walk_stack
-from types import MappingProxyType, ModuleType
+from types import CodeType, MappingProxyType, ModuleType
 from typing import TYPE_CHECKING, Any, Final, SupportsIndex
 from weakref import ref
 
@@ -112,11 +112,13 @@ from scripts import pass_decls as decls
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
     RENDER_FACT_FREEZE_POINTS,
+    STORE_MEMBERS,
     Access,
     AttributeFact,
     Fact,
     FactKind,
     FreezePoint,
+    MemberUse,
     RenderFact,
 )
 from scripts.pass_decls import PassDecl, PassKind, Scope
@@ -157,6 +159,7 @@ class GuardedView:
 _PACKAGE_ROOT: Final = Path(datamodel_code_generator.__file__).parent
 _PACKAGE: Final = _PACKAGE_ROOT.name
 _SOURCE_PREFIX: Final = f"src/{_PACKAGE}"
+_STORE_MODULE: Final = f"{_SOURCE_PREFIX}/parser/generation.py"
 _CONSTRUCTORS: Final = frozenset({"__init__", "__post_init__", "model_post_init"})
 _GUARDED_KINDS: Final = frozenset({FactKind.FACT, FactKind.PRESENTATION})
 _GUARDED_ACCESS: Final = frozenset({Access.ATTRIBUTE, Access.CONTAINER})
@@ -204,6 +207,28 @@ def _guarded_names(cls: type) -> tuple[frozenset[str], frozenset[str]]:
 
 
 _STORE_OPERATIONS: Final = frozenset(store_op for row in ATTRIBUTE_FACTS for store_op in row.store_ops)
+
+
+def _module_name(path: str) -> str:
+    """Return the dotted module of a path relative to the package directory."""
+    return ".".join((_PACKAGE, *Path(path).with_suffix("").parts))
+
+
+def _store_methods() -> dict[type, frozenset[str]]:
+    """Return, by owner class, the methods of the ``CALL`` rows of ``STORE_MEMBERS`` (modules imported above)."""
+    methods: dict[type, set[str]] = {}
+    for member in STORE_MEMBERS:
+        if member.use is MemberUse.CALL:
+            methods.setdefault(getattr(sys.modules[_module_name(member.path)], member.owner), set()).add(member.name)
+    return {owner: frozenset(names) for owner, names in methods.items()}
+
+
+_STORE_METHODS: Final = _store_methods()
+"""The methods that write the graph for the store (``STORE_MEMBERS``): their writes are the store's while it runs them.
+
+heki lets only the store module and the methods' own classes call them; a store function may run one outside the
+window of a named operation (after the ``yield`` of a replacement it hands a pass), and that write is the store's too.
+"""
 _ITEM_OPERATIONS: Final = frozenset(
     store_op for row in ATTRIBUTE_FACTS if row.access is Access.ITEM for store_op in row.store_ops
 )
@@ -227,6 +252,34 @@ def _key_kind(operation: str, args: tuple[Any, ...]) -> str | None:
     if operation not in _KEYED_MUTATORS or not args:
         return None
     return "slice" if isinstance(args[0], slice) else "index"
+
+
+@cache
+def _is_store_method(code: CodeType) -> bool:
+    """Return whether ``code`` is a method of ``_STORE_METHODS`` or an override of one in a class of the package.
+
+    The method is found by its module and qualified name: a function that only shares a member's name is none.
+    """
+    path = Path(code.co_filename)
+    if not path.is_relative_to(_PACKAGE_ROOT):
+        return False
+    owner_name, _, name = code.co_qualname.rpartition(".")
+    owner = getattr(sys.modules.get(_module_name(path.relative_to(_PACKAGE_ROOT).as_posix())), owner_name, None)
+    return isinstance(owner, type) and any(
+        name in names and issubclass(owner, base) for base, names in _STORE_METHODS.items()
+    )
+
+
+def _run_by_the_store(frame: FrameType) -> bool:
+    """Return whether ``frame`` runs a method of ``_STORE_METHODS`` that the store module called.
+
+    The methods may call each other; the frame right after the chain of them is a function of the store module. A
+    callback a pass hands the store is no such chain, also when it calls one of the methods.
+    """
+    caller = frame
+    while caller is not None and _is_store_method(caller.f_code):
+        caller = caller.f_back
+    return caller is not frame and caller is not None and _source_path(caller.f_code.co_filename) == _STORE_MODULE
 
 
 def _qualified_name(frame: FrameType) -> str:
@@ -1826,7 +1879,12 @@ class ParseChecks:
     def report_write(
         self, mode: Mode, owner: str, attribute: str, operation: str, key: str | None, frame: FrameType
     ) -> None:
-        """Raise for a write outside store operations, or report it once per writing line and parse."""
+        """Raise for a write outside store operations, or report it once per writing line and parse.
+
+        A write a method of ``_STORE_METHODS`` makes while a function of the store module runs it is the store's.
+        """
+        if _run_by_the_store(frame):
+            return
         filename, line = frame.f_code.co_filename, frame.f_lineno
         if (seen := (filename, line, attribute, operation, key)) in self._reported:
             return

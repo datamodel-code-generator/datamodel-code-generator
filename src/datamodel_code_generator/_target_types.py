@@ -124,10 +124,9 @@ class _Vocabulary:
     """The leaf kinds it reads as others, or as None: any value for a schema or codec, no kind for text."""
     written: JSONKinds
     """The kinds of a type that names no class it knows: another builtin, or an annotation the document writes."""
-    values: Literal["all", "one", "native"]
-    """How an enum or literal takes kinds: those of all its values (an enum its ``value_types``), one kind of them
-    (an int beside a float is a number), or the one of the codec (``legacy-codec-enum-kinds``): the kinds of its str
-    and int values alone, of a literal only where all its values are of one kind."""
+    values: Literal["all", "one"]
+    """How an enum or literal takes kinds: those of all its values (an enum its ``value_types``), or one kind of them
+    (an int beside a float is a number)."""
     text: frozenset[tuple[str | None, str]]
     """The classes it reads as strings whatever their kind: the containers imported from a module, an abstract class
     or a ``typing`` alias, that a schema or text names alone (``legacy-imported-container-text``)."""
@@ -157,7 +156,7 @@ _VOCABULARIES: Final[Mapping[JSONVocabulary, _Vocabulary]] = MappingProxyType({
         frozenset(get_args(JSONKind)),
         {"integer": frozenset({"number"}), "decimal": frozenset({"string", "number"}), "any": None},
         _STRING,
-        "native",
+        "all",
         frozenset(),
     ),
     "lexical": _Vocabulary(
@@ -490,16 +489,13 @@ class TypeTables:
     def _values(self, value: LiteralType | FinalModelSymbol, row: _Vocabulary, seen: frozenset[SymbolId]) -> JSONKinds:
         """Return the kinds of a literal's or an enum's values as ``row.values`` says.
 
-        Row ``legacy-codec-enum-kinds``: ``native`` reads the kinds of the str and int values alone.
+        An enum's ``value_types`` are JSON types, each named as the vocabulary names its leaf; null as its null kinds.
         """
         literal = isinstance(value, LiteralType)
         if row.values == "all" and not literal:
-            return frozenset(value.value_types)
-        if row.values == "native":
-            natives = {item.kind if isinstance(item, LiteralScalar) else "other" for item in value.values}
-            if literal and len(natives) > 1:
-                return frozenset()
-            return _joined(row.leaf(_SCALAR_KINDS[kind]) for kind in natives & {"str", "int"})
+            return _joined(
+                row.kinds & NULL_KINDS if kind in NULL_KINDS else row.leaf(kind) for kind in value.value_types
+            )
         kinds = _joined(
             self._kinds(GeneratedSymbolType(item.symbol), row, seen)
             if isinstance(item, GeneratedEnumMember)

@@ -1,0 +1,21 @@
+[[change]]
+id = "asyncapi-handshake-model-defaults"
+category = "experimental"
+title = "AsyncAPI handshake parameters take the default of their model field"
+summary = "A WebSocket handshake query or header parameter of a generated AsyncAPI client took the default at the end of its whole `$ref` chain, while the models take a referenced default one reference deep. The parameter now takes the default of its model field, so both agree: two references deep, or under --collapse-root-models or --ignore-ref-siblings-by-schema-version, the argument has no default where the model field has none."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#6975"]
+affects = { experimental = ["cli-option.generate-client"] }
+covers = [
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-collapsed].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-collapsed].txt",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-ignored].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2-ignored].txt",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2].txt",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v2].typing_TypedDict/",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v3].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[asyncapi-handshake-defaults-v3].txt",
+]

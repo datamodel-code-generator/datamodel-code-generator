@@ -1,0 +1,26 @@
+[[change]]
+id = "client-field-null-arguments"
+category = "experimental"
+title = "Client field arguments keep the None of a nullable field"
+summary = "Field arguments (`--client-body-arguments both`) and the other client and server plans now type a field with the None its model accepts where the schema admits null, also when the null sits on the field rather than in its type: a nullable map with `patternProperties` or `propertyNames`, and OpenAPI 3.0 `nullable: true` references, maps and arrays. `labels: {type: [object, 'null'], patternProperties: ...}` now gives `labels: dict[str, str] | None` where it gave `dict[str, str]`. A union of several part or payload types writes None once, last."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7348"]
+affects = { experimental = ["cli-option.generate-client"] }
+covers = [
+    "api_generation/client_generation/client_render[field-null-arguments-30-strict].dataclasses_dataclass/",
+    "api_generation/client_generation/client_render[field-null-arguments-30-strict].msgspec_Struct/",
+    "api_generation/client_generation/client_render[field-null-arguments-30-strict].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[field-null-arguments-30-strict].txt",
+    "api_generation/client_generation/client_render[field-null-arguments-30-strict].typing_TypedDict/",
+    "api_generation/client_generation/client_render[field-null-arguments-30].dataclasses_dataclass/",
+    "api_generation/client_generation/client_render[field-null-arguments-30].msgspec_Struct/",
+    "api_generation/client_generation/client_render[field-null-arguments-30].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[field-null-arguments-30].txt",
+    "api_generation/client_generation/client_render[field-null-arguments-30].typing_TypedDict/",
+    "api_generation/client_generation/client_render[field-null-arguments].dataclasses_dataclass/",
+    "api_generation/client_generation/client_render[field-null-arguments].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[field-null-arguments].txt",
+    "api_generation/client_generation/client_render[field-null-arguments].typing_TypedDict/",
+]

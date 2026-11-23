@@ -1,0 +1,32 @@
+asyncapi: 3.0.0
+info:
+  title: Plain-name anchors of component schemas
+  version: 1.0.0
+channels:
+  userSignedUp:
+    address: user/signedup
+    messages:
+      userSignedUp:
+        payload:
+          $ref: '#/components/schemas/SignUp'
+components:
+  schemas:
+    User:
+      $id: '#user'
+      type: object
+      properties:
+        name:
+          type: string
+    Account:
+      $anchor: account
+      type: object
+      properties:
+        number:
+          type: string
+    SignUp:
+      type: object
+      properties:
+        user:
+          $ref: '#user'
+        account:
+          $ref: '#account'

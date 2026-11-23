@@ -1,0 +1,18 @@
+asyncapi: 2.6.0
+info:
+  title: A message payload that names a plain-name anchor
+  version: 1.0.0
+channels:
+  user/signedup:
+    subscribe:
+      message:
+        payload:
+          $ref: '#user'
+components:
+  schemas:
+    User:
+      $anchor: user
+      type: object
+      properties:
+        name:
+          type: string

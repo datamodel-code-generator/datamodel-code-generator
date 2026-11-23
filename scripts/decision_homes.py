@@ -395,10 +395,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_binding.py:_Projector._admits_none` (`DataType.admits_none` of a node; a reference that binds no "
             "symbol is read through as the type it stands for, which holds the None of its model already, and adds "
             "only its own None), `_Projector._structural` (`DataType.items_admit_none` of a container whose items are "
-            "several schemas), `field_admits_none` for an annotation (`_Models.field_facts` and "
-            "`_Models.alias_nullable`, whose field's own null is `field_renders_none`'s); not yet: the null of the "
-            "wire, `_Models.wire_null` over `_Models.preexisting_null` (rows `legacy-wire-null-ignores-nullable-false` "
-            "and `legacy-wire-null-unknown-type`)"
+            "several schemas), `field_admits_none` for an annotation (`_Models.field_facts`, whose field type takes "
+            "the None the annotation adds where the wire admits null, and `_Models.alias_nullable`, whose field's own "
+            "null is `field_renders_none`'s); not yet: the null of the wire, `_Models.wire_null` over "
+            "`_Models.preexisting_null` (row `legacy-wire-null-unknown-type`)"
         ),
         sites=(
             Home("types.py", "DataType.admits_none"),
@@ -7923,7 +7923,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the schemas generation reads (`parser/asyncapi.py:AsyncAPIParser._iter_schema_format_schemas`, which "
             "refuses a wrapper without a `schema` or with a `schemaFormat` that is no string, "
-            "`_check_multi_format_schema_object`), the schemas the recommender measures "
+            "`_check_multi_format_schema_object`), the schemas a document declares as schema resources "
+            "(`parser/_schema_documents.py:implicit_schema_resources`: the schema a component wrapper holds), "
+            "the schemas the recommender measures "
             "(`_recommend/_signals.py:_unwrap`: the component schemas of an AsyncAPI document, and the payloads and "
             "headers of its messages), and the `schemaFormat` of the payload a client codes "
             "(`_asyncapi_connections.py:_Reader.message`; where its schema is, the walk records)"
@@ -7931,6 +7933,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         sites=(
             Home("parser/asyncapi.py", "AsyncAPIParser._iter_schema_format_schemas"),
             Home("parser/asyncapi.py", "_check_multi_format_schema_object"),
+            Home("parser/_schema_documents.py", "implicit_schema_resources"),
             Home("_recommend/_signals.py", "_unwrap"),
             Home("_asyncapi_connections.py", "_Reader.message"),
         ),
