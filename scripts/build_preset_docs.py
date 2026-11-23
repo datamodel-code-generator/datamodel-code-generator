@@ -3,7 +3,12 @@
 Usage:
     python scripts/build_preset_docs.py
     python scripts/build_preset_docs.py --check
+    python scripts/build_preset_docs.py --pages [DIR]
     python scripts/build_preset_docs.py --format json
+
+The preset pages (docs/presets.md, docs/preset-history.md) are built when the site is deployed and not committed, as
+the upgrade guide's pages are, so ``--check`` compares the other outputs only and ``--pages`` writes the two pages
+alone, into DIR (default: docs/).
 """
 
 from __future__ import annotations
@@ -119,8 +124,23 @@ class GeneratedDoc:
     content: str
 
 
+def build_pages(docs_dir: Path) -> int:
+    """Write the preset pages the docs deploy builds into ``docs_dir``."""
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    for doc in _preset_pages():
+        (docs_dir / doc.path.name).write_text(doc.content, encoding="utf-8")
+    return 0
+
+
+def _preset_pages() -> tuple[GeneratedDoc, GeneratedDoc]:
+    return (
+        GeneratedDoc(DOCS_PATH, render_presets("markdown")),
+        GeneratedDoc(DOCS_PRESET_HISTORY_PATH, render_preset_history()),
+    )
+
+
 def build_docs(*, check: bool) -> int:
-    """Generate or check preset documentation outputs."""
+    """Generate or check preset documentation outputs; a check leaves out the preset pages, which are not committed."""
     preset_names_doc = GeneratedDoc(PRESET_NAMES_PATH, _render_preset_names_module())
     if check:
         if not _doc_is_current(preset_names_doc):
@@ -131,7 +151,7 @@ def build_docs(*, check: bool) -> int:
 
     docs = _generate_docs(preset_names_doc)
     if not check:
-        for doc in docs:
+        for doc in (*_preset_pages(), *docs):
             doc.path.write_text(doc.content, encoding="utf-8")
         return 0
 
@@ -188,8 +208,6 @@ def _generate_docs(preset_names_doc: GeneratedDoc) -> tuple[GeneratedDoc, ...]:
     )
     return (
         preset_names_doc,
-        GeneratedDoc(DOCS_PATH, render_presets("markdown")),
-        GeneratedDoc(DOCS_PRESET_HISTORY_PATH, render_preset_history()),
         GeneratedDoc(README_PATH, readme_content),
         GeneratedDoc(
             DOCS_GETTING_STARTED_PATH,
@@ -530,9 +548,20 @@ def parse_args() -> argparse.Namespace:
         "--check",
         action="store_true",
         help=(
-            "Check whether preset docs, preset-powered quick-start examples, and README support lists are up to date "
-            "(docs/presets.md, docs/preset-history.md, docs/getting-started.md, and generated sections in README.md "
-            "and the FastAPI server page)"
+            "Check whether the preset names module, preset-powered quick-start examples, and README support lists "
+            "are up to date (preset_names.py, docs/getting-started.md, and generated sections in README.md and the "
+            "FastAPI server page); the preset pages are built at deploy and not compared"
+        ),
+    )
+    parser.add_argument(
+        "--pages",
+        type=Path,
+        nargs="?",
+        const=DOCS_PATH.parent,
+        metavar="DIR",
+        help=(
+            "Write only the preset pages (presets.md, preset-history.md) into DIR (default: docs/), as the docs deploy "
+            "does"
         ),
     )
     parser.add_argument(
@@ -550,6 +579,8 @@ def main() -> int:
     if args.check and args.format:
         print("Error: --check cannot be used with --format", file=sys.stderr)
         return 2
+    if args.pages:
+        return build_pages(args.pages)
     if args.format:
         match args.format:
             case "markdown" | "json":
