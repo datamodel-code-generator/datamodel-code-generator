@@ -4,9 +4,9 @@ One ``DecisionHome`` per row of the table under "One home per decision" in ``doc
 ``scripts/build_architecture_docs.py`` writes that table from ``DECISION_HOMES``. The three cells stay the Markdown the
 page shows; ``homes`` is what checks read: every definition of the pure core that the core cell names, where it is
 defined (never where it is imported), and ``sites``: the defs, classes and modules of the adapters cell, the scopes
-besides the home modules that may call a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
-does not define, for one its own cell does not name, and for a caller of a home outside them that
-``tests/decision_home_allowlist.py`` does not list.
+besides the home modules that may read a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
+does not define and for one its own cell does not name; heki's contracts (``scripts/build_heki_contracts.py``) report
+a reader of a home outside them that ``scripts/heki_baseline.toml`` does not record.
 
 One ``BuilderHome`` per builder home that the L1 prose of the page states (the parse method a dispatch table
 chooses at each position, the one builder of object maps, the resolver that names models): the builder, the passage of

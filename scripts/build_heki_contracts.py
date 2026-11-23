@@ -21,10 +21,11 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   and may write whatever the store module may write, in every override; a call on a receiver heki cannot tie to a
   class is reported (``MUT207``), as untyped callbacks reach these methods so; the bookkeeping attributes of a
   reference are read or written only by the store module, their class's module and the modules their row names.
-- ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py`` that the caller guard checks
-  (`scripts._decision_home_reads.checked_homes`), callable by the home modules and the adapter sites of their rows; the
-  parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
-  records mark by a callee, built only by the builder and its parts.
+- ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py``
+  (`scripts._decision_home_reads.checked_homes`), read at run time (called, subclassed, handed on or read as a value:
+  ``references = "reads"``; an annotation and a name imported only under ``if TYPE_CHECKING:`` read none) only by the
+  home modules and the adapter sites of their rows; the parse methods that dispatch tables hold, callable only where
+  the tables are built; and the outputs that builder records mark by a callee, built only by the builder and its parts.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder (the guard of the builder
   records also allows ``typed_children`` reads; heki cannot tell the method a read is followed by, so such a read
   outside the builder is a finding, and none exists in the package today); and the private members of
@@ -57,6 +58,8 @@ from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from scripts.decision_homes import DecisionHome
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
@@ -272,10 +275,14 @@ def store_member_contracts(repo: Repo) -> list[str]:
     return contracts
 
 
-def decision_home_contracts(repo: Repo) -> list[str]:
-    """Return a ``call-owners`` contract per def or class home that the caller guard checks."""
+def decision_home_contracts(repo: Repo, records: Iterable[DecisionHome] = DECISION_HOMES) -> list[str]:
+    """Return a ``call-owners`` contract per def or class home of records that `checked_homes` returns.
+
+    A run-time read of the home outside the home modules and the adapter sites of every row that holds it is a
+    finding, in the scope that makes it.
+    """
     contracts: dict[Home, str] = {}
-    for home, _, modules, sites in checked_homes(repo, DECISION_HOMES):
+    for home, _, modules, sites in checked_homes(repo, records):
         allowed = {f"{_module(module)}:*" for module in modules}
         allowed.update(pattern for site in sites for pattern in _scope(_module(site.path), site.name))
         contracts[home] = _table(
@@ -283,7 +290,7 @@ def decision_home_contracts(repo: Repo) -> list[str]:
             name=f"home:{home.path}:{home.name}",
             targets=[f"{_module(home.path)}.{home.name}"],
             allowed_callers=sorted(allowed),
-            references="calls",
+            references="reads",
             subclasses=False,
             attribution="lexical",
         )
