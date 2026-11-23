@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import msgspec
 import pydantic
 import pytest
 
+from tests.conftest import assert_output
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
@@ -107,7 +108,8 @@ def test_generic_base_class_bases(
     generated base class (``mypkg.base.BaseModel``, ``mypkg.base.Struct``) gives the generated one the first name of
     ``BaseModelModel``, ``BaseModelModelModel`` (``StructModel``, ...) that no class or import of the output binds, as a
     class that an import binds does any generated class. Every model that inherits the generated base class rejects an
-    unknown field although each class it keeps accepts them.
+    unknown field although each class it keeps accepts them (the ``unknown_fields`` record of each class the output
+    binds).
     """
     run_main_and_assert(
         input_path=INPUT,
@@ -129,30 +131,28 @@ def test_generic_base_class_bases(
     _forget_generated_package("mypkg")
     try:
         with _generated_model(output_file, "generic_base_class_bases_output", "Model") as model:
-            classes = [
-                value
-                for value in vars(sys.modules[model.__module__]).values()
-                if isinstance(value, type) and value.__module__ == model.__module__
-            ]
-            generic = next(value for value in classes if value.__bases__ in {(pydantic.BaseModel,), (msgspec.Struct,)})
-            accepting = [
-                value.__name__ for value in classes if issubclass(value, generic) and _accepts_unknown_field(value)
-            ]
+            verdicts = "".join(
+                f"{name}: {_unknown_field_verdict(value)}\n"
+                for name, value in sorted(vars(sys.modules[model.__module__]).items())
+                if isinstance(value, type)
+                and issubclass(value, (pydantic.BaseModel, msgspec.Struct))
+                and value not in {pydantic.BaseModel, msgspec.Struct}
+            )
     finally:
         _forget_generated_package("mypkg")
-    assert accepting == []
+    assert_output(verdicts, name="unknown_fields")
 
 
-def _accepts_unknown_field(model: Any) -> bool:
-    """Return whether a generated Pydantic model or msgspec Struct reads an object with a field it does not declare."""
+def _unknown_field_verdict(model: type[pydantic.BaseModel | msgspec.Struct]) -> str:
+    """Return whether a Pydantic model or msgspec Struct accepts an object with a field it does not declare."""
     try:
         if issubclass(model, msgspec.Struct):
             msgspec.json.decode(b'{"unexpected": 1}', type=model)
         else:
             model.model_validate({"unexpected": 1})
     except (pydantic.ValidationError, msgspec.ValidationError):
-        return False
-    return True
+        return "rejects"
+    return "accepts"
 
 
 @OPTION_SETS

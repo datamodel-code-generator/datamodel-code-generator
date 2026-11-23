@@ -1,0 +1,13 @@
+BaseModelModel: rejects
+Child: rejects
+Ext: accepts
+Model: rejects
+Money: rejects
+Note: rejects
+NoteBase: accepts
+Plain: accepts
+Price: rejects
+Special: rejects
+Struct: rejects
+StructModel: rejects
+Tag: rejects
