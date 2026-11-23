@@ -56,10 +56,12 @@ required, as if the model listed it in `required`; without the option the class 
 where the first base Pydantic or dataclasses read declares it optional, and a TypedDict takes the last base. Under
 `--intersect-combined-schema-keywords`, which reads an alias member as the schema it names, an allOf of an alias of an
 object model and a member that adds only a type or required names keeps the fields of that schema too, instead of
-becoming a root model of a dict. A payload the schema rejects for a required or narrowed inherited property is
-rejected. A payload valid for the schema parses to the same values, but where a union of variants takes its
-discriminator only because a variant now requires its tag: a variant that leaves the optional tag out is then read
-without the tag value it took as a default before.""",
+becoming a root model of a dict. A field whose allOf names one model and adds only `required` names (`inline` in the
+example) stays that model, which does not require them, with or without this option; that site is decided by
+`--intersect-combined-schema-keywords`, which writes a model of the field that requires them. Apart from such a field,
+a payload the schema rejects for a required or narrowed inherited property is rejected. A payload valid for the schema
+parses to the same values, but where a union of variants takes its discriminator only because a variant now requires
+its tag: a variant that leaves the optional tag out is then read without the tag value it took as a default before.""",
     input_schema="jsonschema/allof_parents_as_models/ref_sibling_parents.json",
     cli_args=[OPTION],
     golden_output="main/jsonschema/allof_parents_as_models/ref_sibling_parents[on].py",
@@ -86,7 +88,9 @@ def test_allof_parents_as_models_ref_sibling_parents(
     with siblings whose target is one too; ``inline`` is an allOf at a property; ``TargetParents`` requires ``level``,
     which the target of its ``$ref`` parent inherits from ``Grand``. Without the option ``name`` is ``Any`` in the first
     two and ``Chain``, optional in ``TargetRequires``, and ``level`` is ``Any``; with it each takes the parents' type,
-    the bound and the requirement, also under ``--intersect-combined-schema-keywords``.
+    the bound and the requirement, also under ``--intersect-combined-schema-keywords``. ``inline`` adds only
+    ``required`` to ``Parent``, so it is ``Parent`` unless ``--intersect-combined-schema-keywords`` writes ``Inline``,
+    which with the option requires ``name: str``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_PATH / "ref_sibling_parents.json",

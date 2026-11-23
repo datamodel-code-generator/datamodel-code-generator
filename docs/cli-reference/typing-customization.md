@@ -4826,10 +4826,12 @@ required, as if the model listed it in `required`; without the option the class 
 where the first base Pydantic or dataclasses read declares it optional, and a TypedDict takes the last base. Under
 `--intersect-combined-schema-keywords`, which reads an alias member as the schema it names, an allOf of an alias of an
 object model and a member that adds only a type or required names keeps the fields of that schema too, instead of
-becoming a root model of a dict. A payload the schema rejects for a required or narrowed inherited property is
-rejected. A payload valid for the schema parses to the same values, but where a union of variants takes its
-discriminator only because a variant now requires its tag: a variant that leaves the optional tag out is then read
-without the tag value it took as a default before.
+becoming a root model of a dict. A field whose allOf names one model and adds only `required` names (`inline` in the
+example) stays that model, which does not require them, with or without this option; that site is decided by
+`--intersect-combined-schema-keywords`, which writes a model of the field that requires them. Apart from such a field,
+a payload the schema rejects for a required or narrowed inherited property is rejected. A payload valid for the schema
+parses to the same values, but where a union of variants takes its discriminator only because a variant now requires
+its tag: a variant that leaves the optional tag out is then read without the tag value it took as a default before.
 
 **Related:** [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords), [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order), [`--read-inherited-property-schemas-in-mro-order`](#read-inherited-property-schemas-in-mro-order)
 
