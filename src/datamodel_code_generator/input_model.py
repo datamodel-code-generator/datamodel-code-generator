@@ -735,7 +735,7 @@ def _remove_unserializable_markers(value: Any) -> None:
 
 def _process_unserializable_property(
     prop: dict[str, Any],
-    annotation: Any,
+    annotation: object,
     expression_collector: PythonTypeExpressionCollector | None = None,
     *,
     in_union: bool = False,
@@ -809,7 +809,7 @@ def _add_python_type_for_unserializable(
     name, not by alias, and of a generic dataclass or TypedDict, whose recorded class is the unspecialised one, with
     type variables in its annotations.
     """
-    definitions: dict[str, Any] = schema.get("$defs", {})
+    definitions = schema.get("$defs", {})
     classes = [
         (definition, definition_type)
         for name, definition in definitions.items()
@@ -980,7 +980,7 @@ def _model_field_annotations(model: type, *, raw: bool = False) -> dict[str, Any
     return getattr(model, "__annotations__", {}) if raw else _get_type_hints_safe(model)
 
 
-def _model_properties(properties: dict[str, Any], model: type) -> Iterator[tuple[Any, dict[str, Any]]]:
+def _model_properties(properties: dict[str, Any], model: type) -> Iterator[tuple[type, dict[str, Any]]]:
     """Pair each field of a class with the property its schema writes, yielding the annotation and the property.
 
     A Pydantic model is read by its fields, a Pydantic dataclass too when the load reads dataclass fields by alias;
