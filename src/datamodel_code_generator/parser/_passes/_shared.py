@@ -653,8 +653,7 @@ def normalize_default_value_constraints(
         if (
             not descriptor.normalize_constraints
             or descriptor.recipe is not DefaultValueRecipe.Decimal
-            or (constructor_import := descriptor.constructor_import) is None
-            or has_import_override(import_overrides, annotation_import, constructor_import)
+            or has_import_override(import_overrides, annotation_import, descriptor.constructor_import)
         ):
             continue
         kwargs = data_type.kwargs
@@ -663,13 +662,13 @@ def normalize_default_value_constraints(
                 continue
             if kwargs is data_type.kwargs:
                 kwargs = kwargs.copy()
-            kwargs[key] = _text_constructor_expression(constructor_import, str(value))
+            kwargs[key] = _text_constructor_expression(descriptor.constructor_import, str(value))
         if kwargs is data_type.kwargs:
             continue
         host._graph_builder.set_type_expressions(
             data_type,
             kwargs=kwargs,
-            runtime_expression_imports=(*data_type.runtime_expression_imports, constructor_import),
+            runtime_expression_imports=(*data_type.runtime_expression_imports, descriptor.constructor_import),
         )
         register_runtime_expression(host)
         normalized = True
@@ -689,14 +688,13 @@ def resolve_default_value_descriptor(
     return annotation_import, descriptor
 
 
-def has_import_override(import_overrides: dict[str, str] | None, *imports: Import | None) -> bool:
-    """Avoid changing generated defaults when an import policy redirects their bindings; None stands for no import."""
+def has_import_override(import_overrides: dict[str, str] | None, *imports: Import) -> bool:
+    """Avoid changing generated defaults when an import policy redirects their bindings."""
     if not import_overrides:
         return False
     return any(
         _override_module(import_overrides, import_.from_, import_.import_) not in {None, import_.from_}
         for import_ in imports
-        if import_ is not None
     )
 
 

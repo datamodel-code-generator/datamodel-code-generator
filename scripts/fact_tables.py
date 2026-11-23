@@ -497,7 +497,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION),
         Phase.IMPORTS,
         FreezePoint.B2,
-        store_ops=("set_field_default", "apply_literal_default", "omit_field_default"),
+        store_ops=("set_field_default", "set_field_runtime_default", "apply_literal_default", "omit_field_default"),
     ),
     AttributeFact(
         "DataModelFieldBase",

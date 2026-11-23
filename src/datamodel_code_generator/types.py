@@ -88,7 +88,6 @@ from datamodel_code_generator.imports import (
     IMPORT_ABC_SEQUENCE,
     IMPORT_ANNOTATED,
     IMPORT_ANY,
-    IMPORT_DATETIME_MODULE,
     IMPORT_DECIMAL,
     IMPORT_DICT,
     IMPORT_FROZEN_SET,
@@ -139,16 +138,14 @@ class DefaultValueRecipe(Enum):
 class DefaultValueDescriptor:
     """Backend-declared semantics for one generated scalar type.
 
-    ``option_kind`` selects the opt-in configuration (``--deserialize-default-values``); a type without one is
-    deserialized only where Pydantic validates the default as Python input and the type is strict, as strict mode
-    refuses there the JSON value the recipe reads (``render_prep._validated_default_value``). ``recipe`` remains
-    deliberately separate so temporal and identifier values have their own parsing policies without inferring them
-    from an import name; ``constructor_import`` is the import its expression names, None for a literal.
+    ``option_kind`` selects the opt-in configuration, while ``recipe`` remains
+    deliberately separate so future temporal and identifier values can have
+    their own parsing policies without inferring them from an import name.
     """
 
-    option_kind: DefaultValueType | None
+    option_kind: DefaultValueType
     recipe: DefaultValueRecipe
-    constructor_import: Import | None
+    constructor_import: Import
     normalize_constraints: bool = False
 
 
@@ -162,18 +159,6 @@ CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
     recipe=DefaultValueRecipe.Decimal,
     constructor_import=IMPORT_DECIMAL,
     normalize_constraints=True,
-)
-BYTES_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
-    option_kind=None, recipe=DefaultValueRecipe.Bytes, constructor_import=None
-)
-DATE_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
-    option_kind=None, recipe=DefaultValueRecipe.Date, constructor_import=IMPORT_DATETIME_MODULE
-)
-TIME_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
-    option_kind=None, recipe=DefaultValueRecipe.Time, constructor_import=IMPORT_DATETIME_MODULE
-)
-DATETIME_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
-    option_kind=None, recipe=DefaultValueRecipe.DateTime, constructor_import=IMPORT_DATETIME_MODULE
 )
 
 UNION = "Union"
@@ -2191,6 +2176,9 @@ class DataTypeManager(ABC):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DEFAULT_VALUE_DESCRIPTORS: ClassVar[Mapping[tuple[str | None, str], DefaultValueDescriptor]] = MappingProxyType({})
+    STRICT_DEFAULT_VALUE_RECIPES: ClassVar[Mapping[tuple[str | None, str], DefaultValueRecipe]] = MappingProxyType({})
+    """The recipes of the strict types, by import, whose JSON value strict mode refuses as the Python input of a
+    validated default (bytes, date, time and datetime); ``Decimal`` has its recipe in ``DEFAULT_VALUE_DESCRIPTORS``."""
     CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = _applicability.BASE_OUTPUT.type_keywords
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
     NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _applicability.BASE_OUTPUT.number_value_types
@@ -2349,6 +2337,14 @@ class DataTypeManager(ABC):
         if (import_ := data_type.import_) is None:
             return None
         return self.DEFAULT_VALUE_DESCRIPTORS.get(_import_key(import_))
+
+    def get_strict_default_value_recipe(self, data_type: DataType) -> DefaultValueRecipe | None:
+        """Return the recipe ``STRICT_DEFAULT_VALUE_RECIPES`` gives an emitted strict scalar import."""
+        return (
+            None
+            if (import_ := data_type.import_) is None
+            else self.STRICT_DEFAULT_VALUE_RECIPES.get(_import_key(import_))
+        )
 
     @staticmethod
     def copy_data_type(data_type: DataType) -> DataType:

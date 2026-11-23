@@ -1321,8 +1321,9 @@ Current behaviour that a decision reading the index must allow for:
   `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH`, every refresh that records only the noted models compares its facts
   with a full rebuild.
 - The operations that write values the facts do not record neither note models nor mark the facts dirty: a field's
-  default (`set_field_default`), `required` (`require_field`), name, original name and aliases (`rename_field`,
-  `set_field_identity`), constraints (`set_field_constraints`), extras
+  default (`set_field_default`, and `set_field_runtime_default` with the imports it names), `required`
+  (`require_field`), name, original name and aliases (`rename_field`, `set_field_identity`), constraints
+  (`set_field_constraints`), extras
   (`set_field_extras`, `set_field_extra`, `drop_field_discriminator`), and the import of a model-level
   `--type-overrides` entry (`override_type_import`, `add_model_import`), and the `Union` or `Optional` that a quoted
   name asks of the types joining it (`drop_union_operator`). An entry written into a field's extras, a discriminator

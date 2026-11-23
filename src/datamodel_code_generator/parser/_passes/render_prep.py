@@ -25,6 +25,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
 from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.hashability import set_items_may_keep_builtin_hash
 from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, MemberFacts, assemble_union
@@ -486,10 +487,8 @@ def set_validate_default_on_fields(
             if (value := deserialize_default_value(parser, model, model_field, import_overrides)) is None:
                 continue
             imports = runtime_expression_imports(value)
-            builder.set_field_default(
-                model_field,
-                value,
-                runtime_expression_imports=tuple(dict.fromkeys((*model_field.runtime_expression_imports, *imports))),
+            builder.set_field_runtime_default(
+                model_field, value, tuple(dict.fromkeys((*model_field.runtime_expression_imports, *imports)))
             )
             if imports:
                 register_runtime_expression(parser)
@@ -564,9 +563,7 @@ def deserialize_default_value(
     if (resolved := resolve_default_value_descriptor(parser.data_type_manager, field.data_type)) is None:
         return None
     annotation_import, descriptor = resolved
-    if descriptor.option_kind is None or has_import_override(
-        import_overrides, annotation_import, descriptor.constructor_import
-    ):
+    if has_import_override(import_overrides, annotation_import, descriptor.constructor_import):
         return None
     return deserialize_decimal_default(parser, model, field, descriptor)
 
@@ -581,18 +578,18 @@ def deserialize_decimal_default(
     default_type = type(field.default)
     if default_type.__module__ == "decimal" and default_type.__name__ == "Decimal":
         # Retain the constructor identity for alias resolution.
-        return _text_constructor_expression(cast("Import", descriptor.constructor_import), str(field.default))
+        return _text_constructor_expression(descriptor.constructor_import, str(field.default))
     if (
         descriptor.option_kind not in parser.deserialize_default_value_types
-        or (value := _deserialized_value(descriptor, field.default)) is None
+        or (value := _deserialized_value(descriptor.recipe, descriptor.constructor_import, field.default)) is None
     ):
         record_decimal_default_warning(parser, model, field)
         return None
     return value
 
 
-def _deserialized_value(descriptor: DefaultValueDescriptor, value: object) -> object | None:
-    """Return the Python value the JSON value ``value`` gives under the recipe of ``descriptor``, None for no value.
+def _deserialized_value(recipe: DefaultValueRecipe, constructor_import: Import | None, value: object) -> object | None:
+    """Return the Python value the JSON value ``value`` gives under ``recipe``, None for no value.
 
     A ``Decimal`` is built from the text of a number or of a string (``Decimal('1.5')``); bytes are the UTF-8 bytes of a
     string, as Pydantic reads JSON bytes (``val_json_bytes='utf8'``, its default); a date, time or datetime is the
@@ -601,7 +598,7 @@ def _deserialized_value(descriptor: DefaultValueDescriptor, value: object) -> ob
     """
     if isinstance(value, bool):
         return None
-    match descriptor.recipe:
+    match recipe:
         case DefaultValueRecipe.Decimal:
             if not isinstance(value, int | float | str):
                 return None
@@ -609,10 +606,23 @@ def _deserialized_value(descriptor: DefaultValueDescriptor, value: object) -> ob
                 text = str(Decimal(str(value)))
             except (InvalidOperation, ValueError):
                 return None
-            return _text_constructor_expression(cast("Import", descriptor.constructor_import), text)
+            return _text_constructor_expression(cast("Import", constructor_import), text)
         case DefaultValueRecipe.Bytes:
             return value.encode() if isinstance(value, str) else None
-    return _rfc3339_expression(_TEMPORAL_KINDS[descriptor.recipe], value) if isinstance(value, str) else None
+    return _rfc3339_expression(_TEMPORAL_KINDS[recipe], value) if isinstance(value, str) else None
+
+
+def _strict_recipe(manager: DataTypeManager, node: DataType) -> tuple[DefaultValueRecipe, Import | None] | None:
+    """Return the recipe of a strict scalar type and the import its value names, None for a type that has none.
+
+    ``Decimal`` keeps the recipe and constructor of its ``--deserialize-default-values`` descriptor; bytes, date, time
+    and datetime take theirs from ``DataTypeManager.STRICT_DEFAULT_VALUE_RECIPES`` (bytes are a literal and name none).
+    """
+    if (descriptor := manager.get_default_value_descriptor(node)) is not None:
+        return descriptor.recipe, descriptor.constructor_import
+    if (recipe := manager.get_strict_default_value_recipe(node)) is None:
+        return None
+    return recipe, None if recipe is DefaultValueRecipe.Bytes else IMPORT_DATETIME_MODULE
 
 
 _TEMPORAL_KINDS: Final = {
@@ -674,12 +684,12 @@ def _validated_default_value(
     def leaf_value(node: DataType, value: object, holder: DataModel) -> object:
         if (
             not (node.strict or (node.kwargs or {}).get("strict") is True)
-            or (descriptor := manager.get_default_value_descriptor(node)) is None
-            or (descriptor.recipe is DefaultValueRecipe.Bytes and not holder.reads_json_bytes_as_text())
-            or has_import_override(import_overrides, node.import_, descriptor.constructor_import)
+            or (strict_recipe := _strict_recipe(manager, node)) is None
+            or (strict_recipe[0] is DefaultValueRecipe.Bytes and not holder.reads_json_bytes_as_text())
+            or has_import_override(import_overrides, *filter(None, (node.import_, strict_recipe[1])))
         ):
             return value
-        return value if (converted := _deserialized_value(descriptor, value)) is None else converted
+        return value if (converted := _deserialized_value(*strict_recipe, value)) is None else converted
 
     def model_value(target: DataModel | None, value: object, holder: DataModel) -> object:
         key = (id(target), id(value))

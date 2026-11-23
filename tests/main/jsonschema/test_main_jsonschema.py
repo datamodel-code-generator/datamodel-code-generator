@@ -7805,10 +7805,7 @@ def test_main_strict_types_default_keys_read_by_the_field(output_file: Path, ext
         force_exec_validation=True,
     )
     with _generated_model(output_file, "strict_types_default_keys_read_by_the_field", "Top") as model:
-        try:
-            loaded = repr(model().blob)
-        except ValidationError as error:
-            loaded = "refused " + ", ".join(item["type"] for item in error.errors())
+        loaded = repr(model().blob)
     assert_output(f"blob: {loaded}\n", name="loaded")
 
 

@@ -217,6 +217,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_extra",
     "set_field_extras",
     "set_field_identity",
+    "set_field_runtime_default",
     "set_module_models",
     "set_type_discriminator",
     "set_type_expressions",
@@ -1899,16 +1900,19 @@ class GenerationStore:  # noqa: PLR0904
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_default() instead.", category=None)
-    def set_field_default(
-        field_: DataModelFieldBase, default: Any, *, runtime_expression_imports: tuple[Import, ...] | None = None
-    ) -> None:
-        """Write a field's default, which the facts do not record, so they stay current.
-
-        ``runtime_expression_imports``, when given, are the imports of the runtime expressions the default holds.
-        """
+    def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
+        """Write a field's default, which the facts do not record, so they stay current."""
         field_.default = default
-        if runtime_expression_imports is not None:
-            field_._set_runtime_expression_imports(runtime_expression_imports)  # noqa: SLF001
+        bump_field(field_)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().set_field_runtime_default() instead.", category=None)
+    def set_field_runtime_default(
+        field_: DataModelFieldBase, default: Any, runtime_expression_imports: tuple[Import, ...]
+    ) -> None:
+        """Write a field's default with the imports of the runtime expressions it holds."""
+        field_.default = default
+        field_._set_runtime_expression_imports(runtime_expression_imports)  # noqa: SLF001
         bump_field(field_)
 
     @staticmethod
@@ -2732,13 +2736,15 @@ class GraphBuilder:
             field_, constraints, type_dependent=type_dependent, union_siblings=union_siblings
         )
 
-    def set_field_default(
-        self, field_: DataModelFieldBase, default: Any, *, runtime_expression_imports: tuple[Import, ...] | None = None
+    def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None:
+        """Write a field's default, which the facts do not record, so they stay current."""
+        self._store.set_field_default(field_, default)  # ty: ignore[deprecated]
+
+    def set_field_runtime_default(
+        self, field_: DataModelFieldBase, default: Any, runtime_expression_imports: tuple[Import, ...]
     ) -> None:
-        """Write a field's default, which the facts do not record, so they stay current, with the imports it names."""
-        self._store.set_field_default(  # ty: ignore[deprecated]
-            field_, default, runtime_expression_imports=runtime_expression_imports
-        )
+        """Write a field's default with the imports of the runtime expressions it holds, through the store."""
+        self._store.set_field_runtime_default(field_, default, runtime_expression_imports)  # ty: ignore[deprecated]
 
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default, through the store."""
