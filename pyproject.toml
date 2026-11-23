@@ -118,7 +118,7 @@ dev = [
 test = [
   "cryptography>=50",
   "email-validator>=2.2",
-  "heki==0.2.3",
+  "heki==0.2.4",
   "hypothesis>=6.136.6,<6.170.10",
   "hypothesis-jsonschema>=0.23.1",
   "inline-snapshot>=0.37",
@@ -477,6 +477,7 @@ ini_options.assert_helper_direct_assert_exempt_files = [
   "test_types.py",
   "test_yaml_backend.py",
 ]
+ini_options.timeout = 900
 
 [tool.coverage]
 run.omit = [

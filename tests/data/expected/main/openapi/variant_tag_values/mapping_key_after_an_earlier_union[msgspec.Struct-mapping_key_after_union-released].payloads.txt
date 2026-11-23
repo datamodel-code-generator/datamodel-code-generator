@@ -1,0 +1,4 @@
+Second {"kind": 2, "name": "x"}: schema accepts, model cannot decode it
+Second {"kind": "2"}: schema rejects, model cannot decode it
+Second {"kind": 5}: schema accepts, model cannot decode it
+Second {"kind": 1}: schema accepts, model cannot decode it

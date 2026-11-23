@@ -1949,6 +1949,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_strict_str_for_base64",
         "merge_shared_variant_tags",
         "use_unmapped_variant_tag_values",
+        "read_mapping_keys_by_schema_tag_type",
         "use_standard_collections",
         "use_object_type",
         "use_typed_nullable_map_values",

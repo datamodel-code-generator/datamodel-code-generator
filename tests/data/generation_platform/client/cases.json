@@ -6797,5 +6797,82 @@
     "input": "asyncapi-missing-messages-external.yaml",
     "references": ["asyncapi-missing-messages-library.yaml"],
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "codec-wrapped-discriminator": {
+    "input": "codec-wrapped-discriminator.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "modules": [["client", "_generated", "model_bindings.py"], ["models.py"]]
+  },
+  "union-value-kinds-enums": {
+    "input": "union-value-kinds-enums.yaml",
+    "backends": ["dataclasses.dataclass", "typing.TypedDict"],
+    "modules": [["client", "_generated", "model_bindings.py"], ["models.py"]]
+  },
+  "field-null-arguments": {
+    "input": "field-null-arguments.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"],
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"], ["models.py"]]
+  },
+  "field-null-arguments-30": {
+    "input": "field-null-arguments-30.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["models.py"]]
+  },
+  "field-null-arguments-30-strict": {
+    "input": "field-null-arguments-30.yaml",
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "model": {"strict_nullable": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-defaults-v2": {
+    "input": "asyncapi-handshake-defaults-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "typing.TypedDict"],
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-defaults-v3": {
+    "input": "asyncapi-handshake-defaults-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel"],
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "protocols-pagination-nullable-false": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false.json"],
+    "config": {"protocols": "protocols/pagination-nullable-false.json"},
+    "modules": false
+  },
+  "protocols-pagination-nullable-false-alias": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false.json"],
+    "model": {"use_type_alias": true},
+    "config": {"protocols": "protocols/pagination-nullable-false.json"},
+    "modules": false
+  },
+  "protocols-pagination-nullable-false-ends": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false-ends.json"],
+    "config": {"protocols": "protocols/pagination-nullable-false-ends.json"},
+    "modules": false
+  },
+  "protocols-pagination-nullable-false-ends-alias": {
+    "input": "pagination-nullable-false.yaml",
+    "references": ["protocols/pagination-nullable-false-ends.json"],
+    "model": {"use_type_alias": true},
+    "config": {"protocols": "protocols/pagination-nullable-false-ends.json"},
+    "modules": false
+  },
+  "asyncapi-handshake-defaults-v2-collapsed": {
+    "input": "asyncapi-handshake-defaults-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "collapse_root_models": true},
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-defaults-v2-ignored": {
+    "input": "asyncapi-handshake-defaults-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "ignore_ref_siblings_by_schema_version": true},
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
   }
 }

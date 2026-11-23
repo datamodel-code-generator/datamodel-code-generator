@@ -6,9 +6,8 @@ the ones failures print, inside the development environment (`.tox/dev` from `to
 
 ## Tests
 
-- Add e2e tests with the existing helpers (`run_main_and_assert`, `assert_output`, ...); no expected path is needed.
-- Never add or change an expected path to create, split, share or rename stored output: pytest names, shares and
-  splits stored files itself.
+- Add e2e tests with the existing helpers (`run_main_and_assert`, `assert_output`, ...). No helper takes an expected
+  path or directory: pytest names, shares and splits stored files itself.
 - A module-local helper that takes a stored-output name does not change this rule: pass none.
 - `name=` is an output's role in its test: a literal saying what it is (`stdout`, `warnings`, `model`) or the loop
   variable of a literal tuple, never a value of the case (the test id carries it); `suffix=` keeps `.py` or `.json`.
@@ -48,13 +47,16 @@ becomes final and where a decision belongs.
   path.
 - Don't change nodes in place that other models share; replace them in each holder through the generation store's
   mutation APIs.
-- `scripts/check_generation_store_usage.py` checks fact writes against `scripts/fact_tables.py`; its allowlist
-  `scripts/generation_store_allowlist.toml` only shrinks. Route a new write through the store instead of adding an
-  entry, and remove the entries of writes you route.
+- heki checks fact writes against the write-owner contracts that `scripts/build_heki_contracts.py` builds from
+  `scripts/fact_tables.py` (`scripts/heki.toml`); its baseline `scripts/heki_baseline.toml` only shrinks. Route a new
+  write through the store instead of recording it, and run `heki check --config scripts/heki.toml --baseline
+  scripts/heki_baseline.toml --update-baseline src` after routing one. A call of a method the store runs
+  (`STORE_MEMBERS`: `replace_data_type`, `set_base_class`, `process_const`, ...) outside the store is a `MUT204`
+  finding (`MUT207` on a receiver whose class heki cannot tell), and a read of `Reference.children` a `MUT203` one:
+  call the store operation or ask the generation index instead. `scripts/check_generation_store_usage.py` checks
+  that every attribute and `__dict__` key the model graph writes has a row in the table.
 - Every test also runs the runtime write guard (`DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`): a test that fails with
-  "... is written outside store operations" made a write the allowlist does not list; route it the same way. Witness
-  entries (`target = "<datamodel-codegen args>"`) only record runtime-only writes that existed before the guard; never
-  add one for a new write.
+  "... is written outside store operations" made a write the heki baseline does not record; route it the same way.
 - Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; the
   finality check of the test suite (`tests/checks/finality.py`) runs it inside the scope of that declaration; a pass
   that conflicts with an earlier one of its segment needs an `after` edge with

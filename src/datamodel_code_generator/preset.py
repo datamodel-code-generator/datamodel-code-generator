@@ -1464,6 +1464,15 @@ _STANDARD_20261120_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_STANDARD_20261120_OPTION_GROUPS,
     PresetOptionGroup(
+        title="Mapping keys by the schema's tag type",
+        config=PresetConfig(read_mapping_keys_by_schema_tag_type=True),
+        description=(
+            "Read the keys of a discriminator mapping as values of the type the schema declares for the tag property, "
+            "such as the integer 2 for the key '2' of an integer enum, also where an earlier discriminated union "
+            "wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first."
+        ),
+    ),
+    PresetOptionGroup(
         title="Merged allOf members intersected",
         config=PresetConfig(intersect_merged_allof_members=True),
         description=(

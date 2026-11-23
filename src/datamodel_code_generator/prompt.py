@@ -137,7 +137,10 @@ PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
         (
             "- `--use-annotated` also enables `--field-constraints`; prefer it for constrained Pydantic v2 fields.",
             "- `--openapi-include-paths` only has an effect when `--openapi-scopes paths` is included.",
-            "- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, or `bytes`.",
+            (
+                "- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, `bytes`, `datetime`, "
+                "`date`, or `time`."
+            ),
             "- `--use-specialized-enum` requires `--target-python-version >= 3.11`.",
             (
                 "- `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, "

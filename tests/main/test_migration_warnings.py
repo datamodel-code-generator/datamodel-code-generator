@@ -12,11 +12,7 @@ import sys
 import warnings
 from pathlib import Path
 
-import black
-import isort
-import pydantic
 import pytest
-from packaging.version import Version
 
 from datamodel_code_generator import chdir, generate
 from datamodel_code_generator.__main__ import generate_cli_command
@@ -24,9 +20,9 @@ from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.deprecations import cli_migration_warning_scope
 from datamodel_code_generator.util import load_toml
 from tests.conftest import assert_output
-from tests.main.conftest import DATA_PATH, EXPECTED_MAIN_PATH, run_main_with_args
+from tests.main.conftest import DATA_PATH, run_main_with_args
 
-EXPECTED = EXPECTED_MAIN_PATH / "migration_warnings"
+NOTICE_FACTS = ("pydantic-before-2.8.2", "black-before-24.3", "isort-before-6")
 
 
 @pytest.mark.parametrize(
@@ -66,25 +62,20 @@ def test_migration_notices_real_generation(selection: str, entry: str, tmp_path:
                 else {"pyproject": [], "profile": ["--profile", "selected"], "job": ["--job", "selected"]}[entry]
             )
             run_main_with_args(args, use_builtin_default_formatter=False)
-    implicit = selection in {"implicit", "old-preset", "custom"}
-    uses_black = implicit or selection in {"black", "both"}
-    uses_isort = implicit or selection in {"isort", "both"}
     notices = (
-        ("Default formatters", "default", implicit),
-        ("Black/isort", "optional", not implicit and (uses_black or uses_isort)),
-        ("Support for Black", "black", uses_black and Version(black.__version__) < Version("24.3.0")),
-        ("Support for isort", "isort", uses_isort and Version(isort.__version__) < Version("6")),
-        ("Support for DCG", "pydantic", Version(pydantic.VERSION) < Version("2.8.2")),
+        ("Default formatters", "default"),
+        ("Black/isort", "optional"),
+        ("Support for Black", "black"),
+        ("Support for isort", "isort"),
+        ("Support for DCG", "pydantic"),
     )
-    for prefix, name, expected in notices:
+    for prefix, name in notices:
         assert_output(
             "\n".join(str(item.message) for item in recorded if str(item.message).startswith(prefix)),
-            EXPECTED / f"{name if expected else 'empty'}.txt",
+            name=name,
+            varies_with=NOTICE_FACTS,
         )
-    assert_output(
-        (tmp_path / "output.py").read_text(encoding="utf-8"),
-        EXPECTED / {"custom": "custom.py", "black": "black.py", "empty": "raw.py"}.get(selection, "model.py"),
-    )
+    assert_output((tmp_path / "output.py").read_text(encoding="utf-8"), name="model", suffix=".py")
 
 
 @pytest.mark.parametrize("selection", ["implicit", "both", "new-preset"])
@@ -101,17 +92,9 @@ def test_migration_notices_batch_deduplicated(selection: str, tmp_path: Path) ->
         warnings.simplefilter("always", FutureWarning)
         run_main_with_args(["--all-jobs"], use_builtin_default_formatter=False)
     messages = [str(item.message) for item in recorded if item.category is FutureWarning]
-    versions = "-".join(
-        f"{'old-' if Version(installed) < Version(minimum) else ''}{name}"
-        for name, installed, minimum in (
-            ("pydantic", pydantic.VERSION, "2.8.2"),
-            ("black", black.__version__, "24.3.0"),
-            ("isort", isort.__version__, "6"),
-        )
-    )
-    assert_output("\n".join(messages), EXPECTED / f"batch-{selection}-{versions}.txt")
-    assert_output((tmp_path / "output.py").read_text(encoding="utf-8"), EXPECTED / "model.py")
-    assert_output((tmp_path / "second.py").read_text(encoding="utf-8"), EXPECTED / "model.py")
+    assert_output("\n".join(messages), name="warnings", varies_with=NOTICE_FACTS)
+    assert_output((tmp_path / "output.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output((tmp_path / "second.py").read_text(encoding="utf-8"), name="model", suffix=".py")
 
 
 @pytest.mark.parametrize("action", ["ignore", "error"])

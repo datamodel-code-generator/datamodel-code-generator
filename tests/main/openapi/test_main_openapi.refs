@@ -684,6 +684,9 @@ typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typ
 	main/openapi/main_openapi/allof_single_ref_inline.py
 [test_main_openapi_allof_with_anyof_ref]
 	main/openapi/main_openapi/allof_with_anyof_ref.py
+[test_main_openapi_allof_with_anyof_ref_inferred_tags]
+inferred-discriminators	main/openapi/main_openapi/allof_with_anyof_ref_inferred_tags[inferred-discriminators].py
+msgspec	main/openapi/main_openapi/allof_with_anyof_ref_inferred_tags[msgspec].py
 [test_main_openapi_allof_with_oneof_ref]
 	main/openapi/main_openapi/allof_with_oneof_ref.py
 [test_main_openapi_allof_with_required_inherited_complex_allof]

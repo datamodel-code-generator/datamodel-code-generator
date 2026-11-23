@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info: {title: Rows, version: "1"}
+servers: [{url: "https://rows.example.com"}]
+paths:
+  /rows:
+    post:
+      operationId: sendRows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Row"}
+      responses:
+        "200":
+          description: The rows as stored.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Row"}
+components:
+  schemas:
+    A:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: a}
+        at: {type: string, format: date-time}
+    B:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: b}
+    C:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: c}
+    E:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: e}
+    Shape:
+      oneOf: [{$ref: "#/components/schemas/A"}, {$ref: "#/components/schemas/B"}]
+      discriminator: {propertyName: kind}
+    Other:
+      oneOf: [{$ref: "#/components/schemas/C"}, {$ref: "#/components/schemas/E"}]
+      discriminator: {propertyName: kind}
+    D:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [x, y]}
+    MappedX:
+      oneOf: [{$ref: "#/components/schemas/D"}, {$ref: "#/components/schemas/B"}]
+      discriminator:
+        propertyName: kind
+        mapping: {x: "#/components/schemas/D", y: "#/components/schemas/D", b: "#/components/schemas/B"}
+    MappedY:
+      oneOf: [{$ref: "#/components/schemas/D"}, {$ref: "#/components/schemas/C"}]
+      discriminator:
+        propertyName: kind
+        mapping: {y: "#/components/schemas/D", c: "#/components/schemas/C"}
+    ShapeRef:
+      $ref: "#/components/schemas/Shape"
+    Row:
+      type: object
+      properties:
+        viaref:
+          anyOf: [{$ref: "#/components/schemas/ShapeRef"}, {type: "null"}]
+        field:
+          anyOf: [{$ref: "#/components/schemas/Shape"}, {type: "null"}]
+        items:
+          type: array
+          items:
+            anyOf: [{$ref: "#/components/schemas/Shape"}, {type: "null"}]
+        values:
+          type: object
+          additionalProperties:
+            anyOf: [{$ref: "#/components/schemas/Shape"}, {type: "null"}]
+        joined:
+          anyOf: [{$ref: "#/components/schemas/Shape"}, {$ref: "#/components/schemas/Other"}, {type: "null"}]
+        shared:
+          anyOf: [{$ref: "#/components/schemas/MappedX"}, {$ref: "#/components/schemas/MappedY"}, {type: "null"}]

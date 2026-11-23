@@ -1,8 +1,0 @@
-[[change]]
-id = "allof-enum-member-root-enum-class-forms"
-extends = "allof-enum-member-root-enum-class"
-covers = [
-    "main/jsonschema/main_jsonschema/allof_enum_member_of_untyped_ref_forms[msgspec.Struct-collapse].py",
-    "main/jsonschema/main_jsonschema/allof_enum_member_of_untyped_ref_forms[preset-20261120].py",
-    "main/jsonschema/main_jsonschema/allof_enum_member_of_untyped_ref_forms[pydantic_v2.BaseModel-collapse].py",
-]

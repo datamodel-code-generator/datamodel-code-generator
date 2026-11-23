@@ -39,7 +39,7 @@ RELEASED_AND_OPTION = pytest.mark.parametrize(
 
 
 def _verdict(model: object, text: str, *, is_msgspec: bool) -> str:
-    """Return whether a generated union decodes a JSON document."""
+    """Return whether a generated union decodes a JSON document; msgspec refuses a union of untagged Structs."""
     try:
         if is_msgspec:
             msgspec.json.decode(text, type=model)
@@ -47,6 +47,8 @@ def _verdict(model: object, text: str, *, is_msgspec: bool) -> str:
             _model_json_validator(model)(text)
     except (ValidationError, msgspec.ValidationError):
         return "rejects"
+    except TypeError:
+        return "cannot decode it"
     return "accepts"
 
 
@@ -56,8 +58,9 @@ def _generate_and_decode(
     output_file: Path,
     documents: tuple[dict[str, object], ...],
     *args: str,
+    unions: tuple[str, ...] = ("Pet",),
 ) -> None:
-    """Generate the models of an input, then record whether its schema and its ``Pet`` union accept each document."""
+    """Generate the models of an input, then record whether its schema and each of ``unions`` accept a document."""
     input_path = DATA_PATH / f"{input_name}.yaml"
     is_msgspec = output_model_type == "msgspec.Struct"
     run_main_and_assert(
@@ -71,13 +74,15 @@ def _generate_and_decode(
         ],
     )
     components = yaml.safe_load(input_path.read_text(encoding="utf-8"))["components"]
-    validator = Draft202012Validator({"$ref": "#/components/schemas/Pet", "components": components})
     lines: list[str] = []
-    with _generated_model(output_file, f"variant_tag_values_{input_name}", "Pet") as pet:
-        for document in documents:
-            text = json.dumps(document)
-            schema_verdict = "accepts" if validator.is_valid(document) else "rejects"
-            lines.append(f"Pet {text}: schema {schema_verdict}, model {_verdict(pet, text, is_msgspec=is_msgspec)}\n")
+    for union in unions:
+        validator = Draft202012Validator({"$ref": f"#/components/schemas/{union}", "components": components})
+        with _generated_model(output_file, f"variant_tag_values_{input_name}", union) as model:
+            for document in documents:
+                text = json.dumps(document)
+                schema_verdict = "accepts" if validator.is_valid(document) else "rejects"
+                model_verdict = _verdict(model, text, is_msgspec=is_msgspec)
+                lines.append(f"{union} {text}: schema {schema_verdict}, model {model_verdict}\n")
     assert_output("".join(lines), name="payloads")
 
 
@@ -114,7 +119,7 @@ def test_nullable_variant_of_several_values(output_model_type: str, output_file:
     """Tag a variant whose nullable tag property admits several values with those values, a null being none.
 
     ``Cat.kind`` is ``type: [string, 'null']`` with ``enum: [cat, kitty]``; it took ``Literal['Cat'] | None``. The
-    Pydantic outputs refuse an optional tag field in a discriminated union either way, so they are not listed.
+    Pydantic outputs write such a union without ``discriminator=`` (``test_tags_that_admit_null``).
     """
     _generate_and_decode("nullable_values", output_model_type, output_file, NAMED)
 
@@ -230,4 +235,220 @@ def test_integer_mapping_keys_of_literal_enum(output_model_type: str, output_fil
     """
     _generate_and_decode(
         "integer_kind_mapped", output_model_type, output_file, SHARED, "--enum-field-as-literal", "all"
+    )
+
+
+NULLABLE_UNIONS = (
+    "TypeList",
+    "Mapped",
+    "Optional",
+    "Lone",
+    "EnumNull",
+    "SeveralNull",
+    "ConstOptional",
+    "RefOrNull",
+    "Inline",
+    "Nested",
+)
+"""The unions of ``nullable_tags``, each of variants whose tag property also admits null in another way."""
+NULLABLE = ({"kind": "cat"}, {"kind": "kitty"}, {"kind": "dog"}, {"kind": "bird"}, {"kind": None}, {"kind": "Cat"})
+"""Documents of the unions of ``nullable_tags``, the null and the schema name included."""
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-enum-values-in-discriminator"], id="enum-values"),
+        pytest.param(["--force-optional"], id="force-optional"),
+        pytest.param(["--enum-field-as-literal", "all"], id="literals"),
+        pytest.param(["--enum-field-as-literal", "one"], id="one-literal"),
+    ],
+)
+@pytest.mark.parametrize("output_model_type", BACKENDS)
+def test_tags_that_admit_null(output_model_type: str, args: list[str], output_file: Path) -> None:
+    """Tag the variants of a discriminated union by the values their tag property admits, a null being none (#7102).
+
+    The tag property admits null by its ``type`` list (``TypeList``, #7102, also with a mapping, ``Mapped``, and
+    optional, ``Optional``), by a null in its enum (``EnumNull``, ``SeveralNull``, and the one variant of ``Lone``),
+    beside a ``const`` (``ConstOptional``), or as a branch of an ``anyOf`` (``RefOrNull``); the variants are also
+    inline allOf schemas (``Inline``, #7357) and the variants of a nested union (``Nested``), with each enum also
+    written as a ``Literal`` (``--enum-field-as-literal``), whose null is no tag either. Pydantic
+    reads no tag in a field that admits None, so the modules failed to import (``discriminator-needs-literal``): such a
+    union is written without ``discriminator=``, and its variants keep the null their schemas admit. A null in the
+    enum gave the variant its schema name, ``Literal['Cat']``, or the internal path marker of an inline variant, which
+    every document of the variant failed; the variant now takes the values of its enum. msgspec warns that it
+    decodes no Enum with a null member, which these inputs hold on purpose.
+    """
+    quiet = ("--disable-warnings",) if output_model_type == "msgspec.Struct" else ()
+    _generate_and_decode(
+        "nullable_tags", output_model_type, output_file, NULLABLE, *args, *quiet, unions=NULLABLE_UNIONS
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_strictly_nullable_tags(output_model_type: str, output_file: Path) -> None:
+    """Write a union without ``discriminator=`` where ``--strict-nullable`` lets its variants' tags be null (#7102).
+
+    ``Cat.kind`` is ``nullable: true`` with ``enum: [cat]`` in OpenAPI 3.0, which ``--strict-nullable`` writes as
+    ``Literal['cat'] | None``, so the module failed to import.
+    """
+    _generate_and_decode(
+        "nullable_tags_strict", output_model_type, output_file, NULLABLE[:3] + NULLABLE[4:], "--strict-nullable"
+    )
+
+
+@pytest.mark.parametrize(
+    "args",
+    [pytest.param([], id="default"), pytest.param(["--use-msgspec-tagged-unions"], id="tagged-unions")],
+)
+def test_msgspec_inline_variant_of_several_values(args: list[str], output_file: Path) -> None:
+    """Type the tag field of an inline msgspec variant by the values its base admits, not the path marker (#7357).
+
+    ``Cat.kind`` admits ``cat`` and ``kitty``, and an allOf schema that extends ``Cat`` is a variant of ``Pet``. A
+    msgspec Struct takes one tag, so such a variant took its schema path, an internal marker. It now takes both
+    values in its tag field and stays untagged, as the base keeps its tag field as an instance field.
+    """
+    run_main_and_assert(
+        input_path=DATA_PATH / "inline_several_values.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"),
+            "--disable-warnings",
+            *args,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="default"),
+        pytest.param("pydantic_v2.BaseModel", ["--target-pydantic-version", "2.12"], id="pydantic-2.12"),
+        pytest.param("pydantic_v2.BaseModel", ["--target-pydantic-version", "2.14"], id="pydantic-2.14"),
+        pytest.param("pydantic_v2.BaseModel", ["--enum-field-as-literal", "all"], id="literals"),
+        pytest.param("pydantic_v2.dataclass", [], id="dataclass"),
+    ],
+)
+def test_lone_variant_of_root_model_tag(output_model_type: str, args: list[str], output_file: Path) -> None:
+    """Write the union of one variant whose tag is a RootModel without ``discriminator=`` below Pydantic 2.13 (#7327).
+
+    ``Card.type`` is a ``$ref`` to ``CardType: const: card``, a ``RootModel[Literal['card']]``, and ``PaymentMethod``
+    lists ``Card`` alone. Pydantic reads a tag through a RootModel only from 2.13, so the module failed to import on
+    the releases an unset target or an older one allows; a target of 2.14 keeps ``discriminator=``, and a type alias
+    (``pydantic_v2.dataclass``) is a tag every release reads. One variant parses alike either way.
+    """
+    _generate_and_decode(
+        "lone_root_model_tag",
+        output_model_type,
+        output_file,
+        ({"type": "card", "number": "1"}, {"type": "cash"}),
+        *args,
+        unions=("PaymentMethod",),
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-mapping-keys-by-schema-tag-type"],
+    option_description="""Read discriminator mapping keys as values of the tag type the schema declares.
+
+A mapping key is text, so the key `'2'` of a variant whose tag property is an integer enum names the integer `2`. When
+an earlier discriminated union already wrote the tag field of the variant, or of the base it inherits it from, as its
+own `Literal`, the key was read against that `Literal` or stayed text, `Literal['2']`, so the union rejected
+`{"kind": 2}` and accepted `{"kind": "2"}`, and the output depended on the order of the unions (as in 0.100.0). With
+this option the key is read against the type the schema declares, `Literal[2]`, whichever union comes first.""",
+    input_schema="openapi/variant_tag_values/mapping_key_after_union.yaml",
+    cli_args=["--read-mapping-keys-by-schema-tag-type"],
+    golden_output=(
+        "main/openapi/variant_tag_values/"
+        "mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_after_union-option].py"
+    ),
+    comparison_output=(
+        "main/openapi/variant_tag_values/"
+        "mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_after_union-released].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "option",
+    [pytest.param([], id="released"), pytest.param(["--read-mapping-keys-by-schema-tag-type"], id="option")],
+)
+@pytest.mark.parametrize("input_name", ["mapping_key_after_union", "mapping_key_before_union"])
+@pytest.mark.parametrize("output_model_type", BACKENDS)
+def test_mapping_key_after_an_earlier_union(
+    output_model_type: str, input_name: str, option: list[str], output_file: Path
+) -> None:
+    """Read a mapping key as a value of the tag type the schema declares, whichever union writes the tag (#7113).
+
+    ``First`` maps ``'1'`` to ``Base``, whose ``kind`` is an integer enum ``[1, 2]``, and writes ``Base.kind`` as
+    ``Literal[1]``; ``Second`` maps ``'2'`` to ``Child``, an allOf subclass of ``Base``. Without the option the key
+    ``'2'`` stays text where ``First`` comes first, ``Literal['2']``, which rejects ``{"kind": 2}``, and names the
+    integer where ``Second`` does. With ``--read-mapping-keys-by-schema-tag-type`` it names ``2`` in both orders.
+    msgspec warns where the text tag sits beside the integer one, which it cannot decode.
+    """
+    _generate_and_decode(
+        input_name,
+        output_model_type,
+        output_file,
+        ({"kind": 2, "name": "x"}, {"kind": "2"}, {"kind": 5}, {"kind": 1}),
+        *option,
+        *(("--disable-warnings",) if output_model_type == "msgspec.Struct" else ()),
+        unions=("Second",),
+    )
+
+
+@pytest.mark.parametrize(
+    "option",
+    [pytest.param([], id="released"), pytest.param(["--read-mapping-keys-by-schema-tag-type"], id="option")],
+)
+@pytest.mark.parametrize("input_name", ["enum_key_after_union", "enum_key_before_union"])
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+def test_enum_mapping_key_after_an_earlier_union(
+    output_model_type: str, input_name: str, option: list[str], output_file: Path
+) -> None:
+    """Write the tag of an Enum-typed subclass alike whichever union writes its base's tag (#7113).
+
+    ``Base.kind`` is the string Enum ``Kind``; ``First`` maps ``a`` to ``Base``, ``Second`` maps ``b`` to ``Child``, an
+    allOf subclass of ``Base``. Under ``--use-enum-values-in-discriminator`` ``Child.kind`` was ``Literal['b']`` where
+    ``First`` comes first, as ``Base.kind`` holds no Enum any more, and ``Literal[Kind.b, 'b']`` where ``Second`` does.
+    With ``--read-mapping-keys-by-schema-tag-type`` it is the Enum's in both orders.
+    """
+    _generate_and_decode(
+        input_name,
+        output_model_type,
+        output_file,
+        ({"kind": "b", "name": "x"}, {"kind": "a"}, {"kind": "c"}),
+        "--use-enum-values-in-discriminator",
+        *option,
+        unions=("Second",),
+    )
+
+
+@pytest.mark.parametrize(
+    "option",
+    [pytest.param([], id="released"), pytest.param(["--read-mapping-keys-by-schema-tag-type"], id="option")],
+)
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_mapping_key_of_a_referenced_tag_type(output_model_type: str, option: list[str], output_file: Path) -> None:
+    """Read a mapping key as an integer where the tag property names an integer schema (#7113).
+
+    ``Base.kind`` names ``Kind``, an integer, which the output writes as a root model or a type alias; ``Card`` and
+    ``Cash`` inherit it. Without the option the keys ``'1'`` and ``'2'`` stay text, which rejects ``{"kind": 1}``;
+    with ``--read-mapping-keys-by-schema-tag-type`` they name the integers in both unions, also in ``Refund``, which
+    reads ``Card`` and ``Cash`` after ``Payment`` wrote their tags. ``Voucher`` declares no ``kind``, so its key stays
+    text either way.
+    """
+    _generate_and_decode(
+        "mapping_key_of_referenced_type",
+        output_model_type,
+        output_file,
+        (
+            {"kind": 1, "number": "4"},
+            {"kind": "1", "number": "4"},
+            {"kind": 2, "amount": 5},
+            {"kind": "3", "code": "x"},
+        ),
+        *option,
+        *(("--disable-warnings",) if output_model_type == "msgspec.Struct" else ()),
+        unions=("Payment", "Refund"),
     )

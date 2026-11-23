@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Final
 
 from .families import DATACLASSES, MSGSPEC, PYDANTIC_V2
-from .invariants import ANY_TYPE, BUILD_FAILS, DUPLICATE_WIRE_KEY, IMPORT_FAILS, LOST_PROPERTY
+from .invariants import ANY_TYPE, BUILD_FAILS, DUPLICATE_WIRE_KEY, LOST_PROPERTY
 from .kept import BOTH, DEFAULT, ISSUE, LEGACY_ROW, PRESET, Kept
 
 _NARROWED: Final = ("str", "int", "str_min", "int_min", "arr", "str_or_arr")
@@ -79,15 +79,6 @@ INVARIANTS: Final[tuple[Kept, ...]] = (
         DEFAULT,
         ({"container": ("map",), "nullable": (True,)},),
         "a map typed [object, null] has values of Any (the opt-in --use-typed-nullable-map-values types them)",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        "tagged",
-        IMPORT_FAILS,
-        DEFAULT,
-        ({"nullable": (True,), "backend": (PYDANTIC_V2,)},),
-        "a discriminator whose tag also admits null fails the import of the Pydantic v2 model",
     ),
     Kept(
         ISSUE,

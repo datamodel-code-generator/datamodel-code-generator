@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 308>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 309>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -472,6 +472,7 @@ class BaseGenerateConfig(BaseModel)
     use_enum_values_in_discriminator: bool = False
     merge_shared_variant_tags: bool = False
     use_unmapped_variant_tag_values: bool = False
+    read_mapping_keys_by_schema_tag_type: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
@@ -721,7 +722,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 308>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 309>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -983,6 +984,7 @@ class ParserConfig(BaseModel)
     use_enum_values_in_discriminator: bool = False
     merge_shared_variant_tags: bool = False
     use_unmapped_variant_tag_values: bool = False
+    read_mapping_keys_by_schema_tag_type: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
@@ -1329,6 +1331,9 @@ class StrictTypes(Enum)
     int = 'int'
     float = 'float'
     bool = 'bool'
+    datetime = 'datetime'
+    date = 'date'
+    time = 'time'
 class TargetPydanticVersion(Enum)
     V2 = '2'
     V2_11 = '2.11'
@@ -2715,6 +2720,7 @@ IMPORT_PYDANTIC_MISSING = Import.from_full_path(form_path('pydantic.missing_sent
 IMPORT_ROOT_MODEL = Import.from_full_path('pydantic.RootModel')
 IMPORT_SECRET_STR = Import.from_full_path('pydantic.SecretStr')
 IMPORT_SERIALIZE_AS_ANY = Import.from_full_path('pydantic.SerializeAsAny')
+IMPORT_STRICT = Import.from_full_path('pydantic.Strict')
 IMPORT_STRICT_BOOL = Import.from_full_path('pydantic.StrictBool')
 IMPORT_STRICT_BYTES = Import.from_full_path('pydantic.StrictBytes')
 IMPORT_STRICT_FLOAT = Import.from_full_path('pydantic.StrictFloat')
@@ -2856,6 +2862,13 @@ class PydanticV2DataType(DataType)
     @property
     @override
     def imports(self) -> Iterator[Import]
+class StrictAnnotatedDataType(_RuntimeAnnotatedDataType)
+    @property
+    @override
+    def type_hint(self) -> str
+    @property
+    @override
+    def base_type_hint(self) -> str
 def annotated_constraint_metadata(base: str, keywords: Mapping[str, Any]) -> tuple[dict[str, Any], Any]
 def annotated_constraints(data_type: DataType) -> DataType
 bytes_kwargs: Final[tuple[str, ...]] = ('minLength', 'maxLength')
@@ -3145,7 +3158,7 @@ class AsyncAPISchema
     location: SchemaLocation | None = None
 BINDING_SCHEMA_FIELD_NAMES: frozenset[str] = frozenset({'headers', 'query', 'key', 'groupId', 'clientId'})
 INTERNAL_SCHEMA_CONTAINER = 'x-datamodel-code-generator-asyncapi-schemas'
-JSON_SCHEMA_FORMATS: frozenset[str] = frozenset({'application/schema+json', 'application/schema+yaml'})
+JSON_SCHEMA_FORMATS: frozenset[str] = frozenset({'application/schema', 'application/schema+json', 'application/schema+yaml'})
 class MultiFormatSchemaObject(BaseModel)
     schema_: Any = Field(alias='schema')
     schema_format: StrictStr | None = Field(default=None, alias='schemaFormat')
@@ -3398,6 +3411,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.use_enum_values_in_discriminator
     self.merge_shared_variant_tags
     self.use_unmapped_variant_tag_values
+    self.read_mapping_keys_by_schema_tag_type
     self.use_msgspec_tagged_unions
     self.tag_msgspec_by_payload_name
     self.use_msgspec_nullable_enum_alias
@@ -3465,7 +3479,7 @@ class PydanticFloors
     def of(self, parser: object) -> PydanticFloor | None
     def refused_bytes_patterns_of(self, parser: object) -> tuple[str, ...]
 REQUIREMENTS: Final[Mapping[Construct, Requirement]] = MappingProxyType({row.construct: row for row in _ROWS})
-    uses _ROWS: Final[tuple[Requirement, ...]] = <tuple of 44>
+    uses _ROWS: Final[tuple[Requirement, ...]] = <tuple of 45>
 ReferenceMapSet = dict[str, set[str]]
 class Result(BaseModel)
     model_config = ConfigDict(defer_build=True)
@@ -5025,11 +5039,11 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 308>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 309>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
-PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (('Agent Task', ("Recommend a final CLI command for the user's schema and target runtime. Include:", '- Final `datamodel-codegen` command in a shell code block.', '- Brief explanation for each selected option.', '- Rejected alternatives with the reason they do not fit.', '- Verification command, such as `datamodel-codegen ... --output models.py --check` (`--check` requires `--output`) or a diff against expected output.')), ('Decision Checklist', ("- Schema-specific options: when the input schema is available, add `--recommend-options` to this command (experimental) to include the schema's facts and the options recommended for it on top of the latest dated preset.", '- Input type: auto-detected schema/data, OpenAPI, AsyncAPI, JSON Schema, MCP tools, XML Schema, Protocol Buffers, Avro, GraphQL, CSV, Python input model, or raw JSON/YAML/dict data.', '- Output model type: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `typing.TypedDict`, or `msgspec.Struct`.', '- Python/Pydantic version: align `--target-python-version`, `--output-model-type`, and `--target-pydantic-version` when generating Pydantic v2 models.', '- Strictness: choose `--strict-types` values, `--strict-nullable`, `--field-constraints`, and `--extra-fields`.', '- Aliases/naming: decide between API-compatible aliases and normalized names such as `--snake-case-field`.', '- Module layout: choose one file or an output directory with `--module-split-mode` and reuse options.', '- Structured output: use `--output-format json` for machine-readable prompt or generation output, `--emit-model-metadata` for generated model maps, and `--output-format-json-schema` when a tool needs a validation schema.', '- Runtime model base: use `--base-class` for a custom base class; it is separate from `--output-model-type`.', '- Validation constraints: prefer `--field-constraints`; add `--use-annotated` for Pydantic v2.')), ('Common Recipes', ('- Strict Pydantic v2: `--output-model-type pydantic_v2.BaseModel --target-pydantic-version 2.11 --use-annotated --field-constraints`, plus needed `--strict-types` values.', '- OpenAPI request/response models: `--input-file-type openapi --openapi-scopes schemas paths --read-only-write-only-model-type request-response`.', '- TypedDict modern syntax: `--output-model-type typing.TypedDict --target-python-version 3.12 --use-standard-collections --use-union-operator`.', '- Multi-module OpenAPI output: set `--output` to a directory and use `--module-split-mode single --all-exports-scope recursive --use-exact-imports`.', '- Machine-readable agent flow: run `--generate-prompt --output-format json` first, then validate tool integration with `--output-format-json-schema generate-prompt` or `structured-output`.')), ('Important Option Relationships', ('- `--use-annotated` also enables `--field-constraints`; prefer it for constrained Pydantic v2 fields.', '- `--openapi-include-paths` only has an effect when `--openapi-scopes paths` is included.', '- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, or `bytes`.', '- `--use-specialized-enum` requires `--target-python-version >= 3.11`.', '- `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, `--check`, and `--diff-against`; not for `--watch`.', f"- `--output-format-json-schema` accepts " f"{english_list((f'`{name}`' for name in JSON_SCHEMA_NAMES), 'or', 'serial')}; " "use `config` for JSON configuration schemas.", '- `--validation` is deprecated; use `--field-constraints` for generated Field constraints.')))
+PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (('Agent Task', ("Recommend a final CLI command for the user's schema and target runtime. Include:", '- Final `datamodel-codegen` command in a shell code block.', '- Brief explanation for each selected option.', '- Rejected alternatives with the reason they do not fit.', '- Verification command, such as `datamodel-codegen ... --output models.py --check` (`--check` requires `--output`) or a diff against expected output.')), ('Decision Checklist', ("- Schema-specific options: when the input schema is available, add `--recommend-options` to this command (experimental) to include the schema's facts and the options recommended for it on top of the latest dated preset.", '- Input type: auto-detected schema/data, OpenAPI, AsyncAPI, JSON Schema, MCP tools, XML Schema, Protocol Buffers, Avro, GraphQL, CSV, Python input model, or raw JSON/YAML/dict data.', '- Output model type: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `typing.TypedDict`, or `msgspec.Struct`.', '- Python/Pydantic version: align `--target-python-version`, `--output-model-type`, and `--target-pydantic-version` when generating Pydantic v2 models.', '- Strictness: choose `--strict-types` values, `--strict-nullable`, `--field-constraints`, and `--extra-fields`.', '- Aliases/naming: decide between API-compatible aliases and normalized names such as `--snake-case-field`.', '- Module layout: choose one file or an output directory with `--module-split-mode` and reuse options.', '- Structured output: use `--output-format json` for machine-readable prompt or generation output, `--emit-model-metadata` for generated model maps, and `--output-format-json-schema` when a tool needs a validation schema.', '- Runtime model base: use `--base-class` for a custom base class; it is separate from `--output-model-type`.', '- Validation constraints: prefer `--field-constraints`; add `--use-annotated` for Pydantic v2.')), ('Common Recipes', ('- Strict Pydantic v2: `--output-model-type pydantic_v2.BaseModel --target-pydantic-version 2.11 --use-annotated --field-constraints`, plus needed `--strict-types` values.', '- OpenAPI request/response models: `--input-file-type openapi --openapi-scopes schemas paths --read-only-write-only-model-type request-response`.', '- TypedDict modern syntax: `--output-model-type typing.TypedDict --target-python-version 3.12 --use-standard-collections --use-union-operator`.', '- Multi-module OpenAPI output: set `--output` to a directory and use `--module-split-mode single --all-exports-scope recursive --use-exact-imports`.', '- Machine-readable agent flow: run `--generate-prompt --output-format json` first, then validate tool integration with `--output-format-json-schema generate-prompt` or `structured-output`.')), ('Important Option Relationships', ('- `--use-annotated` also enables `--field-constraints`; prefer it for constrained Pydantic v2 fields.', '- `--openapi-include-paths` only has an effect when `--openapi-scopes paths` is included.', '- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, `bytes`, `datetime`, `date`, or `time`.', '- `--use-specialized-enum` requires `--target-python-version >= 3.11`.', '- `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, `--check`, and `--diff-against`; not for `--watch`.', f"- `--output-format-json-schema` accepts " f"{english_list((f'`{name}`' for name in JSON_SCHEMA_NAMES), 'or', 'serial')}; " "use `config` for JSON configuration schemas.", '- `--validation` is deprecated; use `--field-constraints` for generated Field constraints.')))
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
 class PromptPayload(_Envelope)
@@ -5047,7 +5061,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 304>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 305>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -6057,6 +6071,7 @@ class ParserConfigDict(TypedDict)
     use_enum_values_in_discriminator: NotRequired[bool]
     merge_shared_variant_tags: NotRequired[bool]
     use_unmapped_variant_tag_values: NotRequired[bool]
+    read_mapping_keys_by_schema_tag_type: NotRequired[bool]
     read_schema_version_per_document: NotRequired[bool]
     read_escaped_ref_pointers: NotRequired[bool]
     read_dynamic_anchors_in_document_order: NotRequired[bool]
@@ -6346,6 +6361,7 @@ class BaseGenerateConfig(TypedDict)
     use_enum_values_in_discriminator: NotRequired[bool]
     merge_shared_variant_tags: NotRequired[bool]
     use_unmapped_variant_tag_values: NotRequired[bool]
+    read_mapping_keys_by_schema_tag_type: NotRequired[bool]
     read_schema_version_per_document: NotRequired[bool]
     read_escaped_ref_pointers: NotRequired[bool]
     read_dynamic_anchors_in_document_order: NotRequired[bool]

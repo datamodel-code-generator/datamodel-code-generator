@@ -266,15 +266,6 @@ KEPT: Final[tuple[Kept, ...]] = (
         ISSUE,
         "#7102",
         "tagged",
-        "import-fails",
-        DEFAULT,
-        ({"nullable": (True,), "backend": (PYDANTIC_V2,)},),
-        "a discriminator whose tag also admits null fails the import of the Pydantic v2 model",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        "tagged",
         "rejects-valid",
         PRESET,
         ({"nullable": (True,), "backend": (PYDANTIC_V2,)},),
@@ -538,8 +529,8 @@ KEPT: Final[tuple[Kept, ...]] = (
         "client",
         DEFAULT,
         (
-            {"container": _ALL_MAPS, "nullable": (True,), "backend": (PYDANTIC_V2, DATACLASSES, MSGSPEC)},
-            {"container": _ALL_MAPS, "nullable": (True,), "required": (True,), "backend": (TYPED_DICT,)},
+            {"container": _ALL_MAPS, "nullable": (True,), "backend": (DATACLASSES,)},
+            {"container": _ALL_MAPS, "nullable": (True,), "required": (False,), "backend": (MSGSPEC,)},
         ),
         "the client's field argument of a nullable map with key constraints drops the None its model field keeps",
     ),
@@ -567,7 +558,10 @@ KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         "backends",
         DEFAULT,
-        ({"tag": ("enum1-str",), "nullable": (False,), "backend": (MSGSPEC,)},),
+        (
+            {"tag": ("enum1-str",), "nullable": (False,), "backend": (MSGSPEC,)},
+            {"tag": ("enum1-str",), "nullable": (True,), "mapping": (True,), "kind": ("anyOf",), "backend": (MSGSPEC,)},
+        ),
         "msgspec cannot decode a union of Structs that are not all tagged, the Pydantic model can",
     ),
     Kept(
@@ -584,18 +578,28 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7102",
         "tagged",
         "backends",
-        DEFAULT,
-        ({"nullable": (True,), "backend": (MSGSPEC, TYPED_DICT)},),
-        "the Pydantic model of a tag that admits null fails its import, the other backends import",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        "tagged",
-        "backends",
         PRESET,
         ({"nullable": (True,), "mapping": (False,), "backend": (TYPED_DICT,)},),
         "the Pydantic model of a tag that admits null rejects every tag under the preset, TypedDict accepts them",
+    ),
+    Kept(
+        LIBRARY_LIMIT,
+        "enum",
+        "tagged",
+        "accepts-invalid",
+        DEFAULT,
+        ({"tag": ("enum2-int",), "nullable": (True,), "backend": (PYDANTIC_V2,)},),
+        "a union whose integer tags also admit null is written without discriminator= (#7102), and Pydantic's Literal "
+        "equality accepts true for the integer tag Literal[1, 4] that a plain union reads",
+    ),
+    Kept(
+        LIBRARY_LIMIT,
+        "enum",
+        "tagged",
+        "accepts-invalid",
+        PRESET,
+        ({"tag": ("enum2-int",), "nullable": (True,), "mapping": (False,), "backend": (PYDANTIC_V2,)},),
+        "the same under the preset, where a mapping gives the union tags it reads with discriminator=",
     ),
     Kept(
         LIBRARY_LIMIT,
@@ -624,16 +628,6 @@ KEPT: Final[tuple[Kept, ...]] = (
         DEFAULT,
         ({"tag": ("enum1-str",), "nullable": (False,), "backend": (MSGSPEC,)},),
         "with Literal tags msgspec decodes the union whose one-member enum tags it cannot decode",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        "tagged",
-        "option:use_root_model_type_alias",
-        DEFAULT,
-        ({"nullable": (True,), "backend": (PYDANTIC_V2,)},),
-        "the Pydantic model of a tag that admits null imports when the union is a type alias of RootModel, and fails "
-        "its import as a RootModel class",
     ),
 )
 """Every known difference of the shape families."""

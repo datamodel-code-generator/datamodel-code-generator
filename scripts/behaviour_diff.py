@@ -117,7 +117,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Final, TypedDict
 
 import tomllib
 
@@ -1069,8 +1069,7 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
 
     The release's output is signed where the candidate refuses it too, so a refusal of an output that failed to
     import is told from one of an output that worked. A release that `[[base_skip]]` names for the input does not
-    run at all. A family cell the run reports only (`in_verdict`) adds nothing to the evidence, and no change record
-    judges it.
+    run at all; the base's output comes from the cache where it has it (`judge_outcomes` judges the two).
     """
     if (project := project_of(gate, cell)) is not None:
         try:
@@ -1088,29 +1087,41 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         if base is None:
             base = gate.base.generate(args, tmp)
             gate.cache.put(cell.input, args, base, import_check=False)
-        candidate = gate.candidate.generate(args, tmp)
-        if in_verdict(gate, cell):
-            run = f"{cell.label} | {cell.backend} | {cell.option_label}"
-            gate.evidence.add(input_group(cell), run, base, candidate)
-        if gate.identity:
-            return Result(cell, identity_verdict(base, candidate))
-        same = base.ok and candidate.ok and base.tree == candidate.tree
-        sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
-        valid: frozenset[str] = frozenset()
-        if base.ok and not same:
-            payloads = payloads_for(gate, cell) if candidate.ok else None
-            if payloads is not None:
-                entries = json.loads(payloads.read_text(encoding="utf-8"))
-                valid = frozenset(e["id"] for e in entries if e.get("kind") == "valid" and e.get("expect") == "accept")
-            sides = [
-                Side(
-                    generated=True,
-                    signature=cell_signature(gate, cell, outcome.tree, tmp / f"sig-{side}", payloads),
-                )
-                if outcome.ok
-                else failed
-                for (side, outcome), failed in zip((("base", base), ("cand", candidate)), sides, strict=True)
-            ]
+        return judge_outcomes(gate, cell, (base, gate.candidate.generate(args, tmp)), tmp)
+
+
+def judge_outcomes(
+    gate: Gate, cell: Cell, outcomes: tuple[compare_release.Outcome, compare_release.Outcome], tmp: Path
+) -> Result:
+    """Classify a cell whose base and candidate generated into `tmp` (`run_cell`), signing their trees there.
+
+    It adds the cell to the evidence, then gives the identity verdict, or the classification and, where the sides'
+    facts differ, the verdict of the change records (`judge_cell`). A family cell the run reports only (`in_verdict`)
+    adds nothing to the evidence, and no change record judges it.
+    """
+    base, candidate = outcomes
+    if in_verdict(gate, cell):
+        run = f"{cell.label} | {cell.backend} | {cell.option_label}"
+        gate.evidence.add(input_group(cell), run, base, candidate)
+    if gate.identity:
+        return Result(cell, identity_verdict(base, candidate))
+    same = base.ok and candidate.ok and base.tree == candidate.tree
+    sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
+    valid: frozenset[str] = frozenset()
+    if base.ok and not same:
+        payloads = payloads_for(gate, cell) if candidate.ok else None
+        if payloads is not None:
+            entries = json.loads(payloads.read_text(encoding="utf-8"))
+            valid = frozenset(e["id"] for e in entries if e.get("kind") == "valid" and e.get("expect") == "accept")
+        sides = [
+            Side(
+                generated=True,
+                signature=cell_signature(gate, cell, outcome.tree, tmp / f"sig-{side}", payloads),
+            )
+            if outcome.ok
+            else failed
+            for (side, outcome), failed in zip((("base", base), ("cand", candidate)), sides, strict=True)
+        ]
     verdict = classify_cell(
         sides[0],
         sides[1],
@@ -1393,6 +1404,17 @@ def surface_problems(plan: Plan, inventory: dict[str, list[str] | None]) -> list
             if (reason := opt_in_reason(option_set, inventory))
         ]
     return list(dict.fromkeys(found))
+
+
+def plan_surface_problems(gate: Gate, inventory: dict[str, list[str] | None], cache_dir: Path) -> list[str]:
+    """Return the selectors of the gate's records that name a surface the latest tag lacks (`surface_problems`).
+
+    `inventory` is the base's options: the released ones for a release plan, else the latest tag's are read.
+    """
+    plan = gate.plan
+    if plan is None or not any(selector.options or selector.input_file_type for *_, selector in plan.selectors()):
+        return []
+    return surface_problems(plan, inventory if plan.release else tag_inventory(gate, cache_dir))
 
 
 def tag_inventory(gate: Gate, cache_dir: Path) -> dict[str, list[str] | None]:
@@ -2147,6 +2169,10 @@ def cell_row(result: Result) -> dict[str, Any]:
     }
 
 
+COMPOSITION_PREFIX: Final = "composition:"
+"""The start of the labels of the random tier's composition cells, which the gate has none of."""
+
+
 def selector_problems(
     plan: Plan, results: list[Result], ns: argparse.Namespace, shards: tuple[Placement, Placement]
 ) -> list[str]:
@@ -2155,6 +2181,7 @@ def selector_problems(
     A PR run judges every selector of its records; a release run judges staleness in a run of the whole nightly or
     release tier only, as the PR tier is a sample. A selection may leave a selector's cells out, so it judges none.
     A selector is judged in the shard that runs its cells (`place`), or in shard 1 where it covers no cell at all.
+    A selector whose globs all name compositions (`composition:`) is the random tier's: this run has no such cells.
     """
     here, run = shards
     if ns.select or (plan.release and ns.tier == "pr"):
@@ -2163,6 +2190,8 @@ def selector_problems(
     stale = " (stale: edit the record)" if plan.release else ""
     found = []
     for position, (record, index, selector) in enumerate(plan.selectors()):
+        if all(glob.startswith(COMPOSITION_PREFIX) for glob in selector.input):
+            continue
         if position not in here.groups and not (lead and position not in run.groups):
             continue
         matched = [result for result in results if covers(selector, result.cell)]
@@ -2375,6 +2404,15 @@ def build_gate(ns: argparse.Namespace) -> Gate:
     return gate
 
 
+def gate_of(argv: Sequence[str]) -> Gate:
+    """Return the gate that `gate ARGV...` runs (`build_gate`), for a caller that generates and judges cells of its own.
+
+    Nothing is generated: the caller runs its cells through `gate.base` and `gate.candidate` and judges them with
+    `judge_outcomes`, by the identity verdict (`--identity`) or by the change records the base lacks.
+    """
+    return build_gate(_parse_args(["gate", *argv]))
+
+
 def shortcut(gate: Gate, plan: Plan, ns: argparse.Namespace) -> int:
     """Pass a PR that changes nothing under src/ without generating: every cell is equal by construction.
 
@@ -2410,9 +2448,8 @@ def gate_main(ns: argparse.Namespace) -> int:
         return shortcut(gate, plan, ns)
     inventory = option_inventory(gate.base.side.python, gate.base.env)
     offered = option_inventory(gate.candidate.side.python, gate.candidate.env) if gate.identity else inventory
-    if plan is not None and any(selector.options or selector.input_file_type for *_, selector in plan.selectors()):
-        released = inventory if plan.release else tag_inventory(gate, ns.cache_dir.absolute())
-        plan.problems += surface_problems(plan, released)
+    if plan is not None:
+        plan.problems += plan_surface_problems(gate, inventory, ns.cache_dir.absolute())
     cells = build_cells(ns, gate, inventory)
     if plan is not None:
         plan.groups = [

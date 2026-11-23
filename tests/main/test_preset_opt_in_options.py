@@ -4,9 +4,9 @@ The 20261027 presets add the opt-in options of 0.87.0 to the 20261017 presets, t
 0.90.0 to the 20261027 presets, the 20261106 presets add those of 0.91.0 to the 20261104 presets, the 20261111
 presets add those of the next release to the 20261106 presets, the 20261112 presets add the opt-in options after
 them to the 20261111 presets, the 20261113 presets add the opt-in options after those to the 20261112 presets, the
-20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, the 20261120 presets add
-the opt-in options after those to the 20261118 presets, and the 20261123 presets add the opt-in options of the release
-after 0.100.0 to the 20261120 presets.
+20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, the 20261120 presets
+add the opt-in options after those to the 20261118 presets, and the 20261123 presets add the opt-in options of the
+release after 0.100.0 to the 20261120 presets.
 """
 
 from __future__ import annotations
@@ -142,7 +142,11 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 """The options the 20261120 presets set beyond the 20261118 presets."""
 
-OPT_IN_OPTIONS_20261123: tuple[str, ...] = ("--intersect-merged-allof-members", "--read-allof-parents-as-their-models")
+OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
+    "--read-mapping-keys-by-schema-tag-type",
+    "--intersect-merged-allof-members",
+    "--read-allof-parents-as-their-models",
+)
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
 WARNINGS_WITH_OPTION: dict[str, str] = {
@@ -599,6 +603,12 @@ CASES_20261120: tuple[pytest.ParameterSet, ...] = (
 
 CASES_20261123: tuple[pytest.ParameterSet, ...] = (
     pytest.param(
+        JSON_SCHEMA_DATA_PATH / "discriminator_mapping_key_after_union.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-mapping-keys-by-schema-tag-type",
+    ),
+    pytest.param(
         JSON_SCHEMA_DATA_PATH / "allof_merged_member_values.json",
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
@@ -958,6 +968,13 @@ def test_preset_sets_opt_in_option(
             "--read-uuid6-uuid7-uuid8-formats",
             "--no-read-uuid6-uuid7-uuid8-formats",
             id="read-uuid6-uuid7-uuid8-formats",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "discriminator_mapping_key_after_union.json",
+            [],
+            "--read-mapping-keys-by-schema-tag-type",
+            "--no-read-mapping-keys-by-schema-tag-type",
+            id="read-mapping-keys-by-schema-tag-type",
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "allof_merged_member_values.json",

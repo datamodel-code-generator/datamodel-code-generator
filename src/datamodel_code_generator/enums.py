@@ -374,6 +374,9 @@ class StrictTypes(Enum):
     int = "int"
     float = "float"
     bool = "bool"
+    datetime = "datetime"
+    date = "date"
+    time = "time"
 
 
 class DefaultValueType(Enum):

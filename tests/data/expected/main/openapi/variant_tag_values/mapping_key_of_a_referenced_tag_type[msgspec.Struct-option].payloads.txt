@@ -1,0 +1,8 @@
+Payment {"kind": 1, "number": "4"}: schema accepts, model cannot decode it
+Payment {"kind": "1", "number": "4"}: schema rejects, model cannot decode it
+Payment {"kind": 2, "amount": 5}: schema accepts, model cannot decode it
+Payment {"kind": "3", "code": "x"}: schema accepts, model cannot decode it
+Refund {"kind": 1, "number": "4"}: schema accepts, model cannot decode it
+Refund {"kind": "1", "number": "4"}: schema rejects, model cannot decode it
+Refund {"kind": 2, "amount": 5}: schema accepts, model cannot decode it
+Refund {"kind": "3", "code": "x"}: schema rejects, model cannot decode it
