@@ -1981,9 +1981,11 @@ class _PydanticV2Model(DataModel):
 
     @override
     def reads_json_bytes_as_text(self) -> bool:
-        """Return whether the config the model applies is known and leaves ``val_json_bytes`` at its default, UTF-8."""
-        items, known = self.applied_config()
-        return known is None and "val_json_bytes" not in items
+        """Return whether the config the model applies is known, so ``val_json_bytes`` keeps its default, UTF-8.
+
+        The generator writes no ``val_json_bytes``; a configured base class it does not read may set it.
+        """
+        return self.applied_config()[1] is None
 
     def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies to the model, the bases included, and which of them are known.

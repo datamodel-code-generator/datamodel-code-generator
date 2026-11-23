@@ -2,7 +2,7 @@
 id = "bug-g116-json-bytes-api"
 category = "api"
 title = "Name whether a model reads JSON bytes as UTF-8 text"
-summary = "DataModel.reads_json_bytes_as_text() tells whether validating a model reads bytes from JSON text as the text's UTF-8 bytes: False on the base class; the Pydantic v2 models answer from the config they apply, known and without val_json_bytes. Strict bytes in a default Pydantic validates are written as bytes only where it is True."
+summary = "DataModel.reads_json_bytes_as_text() tells whether validating a model reads bytes from JSON text as the text's UTF-8 bytes: False on the base class; a Pydantic v2 model answers True where the config it applies is known (no configured base class the generator cannot read), as the generator writes no val_json_bytes. Strict bytes in a default Pydantic validates are written as bytes only where it is True."
 refs = ["#7420"]
 decision = ["#7420"]
 kind = "python-api"

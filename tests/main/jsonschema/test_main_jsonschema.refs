@@ -9208,9 +9208,22 @@ pendulum	main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[pendul
 	main/jsonschema/main_jsonschema/main_strict_types_date_time_numbers.py
 [test_main_strict_types_date_time_root_model_regex_engine]
 	main/jsonschema/main_jsonschema/main_strict_types_date_time_root_model_regex_engine.py
+[test_main_strict_types_default_keys_read_by_the_field]
+alias	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[alias].loaded.txt
+alias	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[alias].py
+alias-generator	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[alias-generator].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[alias].loaded.txt
+alias-generator	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[alias-generator].py
+no-alias	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[no-alias].loaded.txt
+no-alias	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[no-alias].py
+serialization-alias	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[serialization-alias].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[no-alias].loaded.txt
+serialization-alias	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[serialization-alias].py
+validation-aliases	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[validation-aliases].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[alias].loaded.txt
+validation-aliases	main/jsonschema/main_jsonschema/main_strict_types_default_keys_read_by_the_field[validation-aliases].py
 [test_main_strict_types_default_left_to_pydantic]
 basic-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].loaded.txt
 basic-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].py
+bool-for-bytes	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-bytes].loaded.txt
+bool-for-bytes	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-bytes].py
 bool-for-int	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-int].loaded.txt
 bool-for-int	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-int].py
 enum-miss	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[enum-miss].loaded.txt
@@ -9219,6 +9232,8 @@ extra-forbid	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_p
 extra-forbid	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[extra-forbid].py
 hour-24	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[hour-24].loaded.txt
 hour-24	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[hour-24].py
+import-override	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[import-override].loaded.txt
+import-override	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[import-override].py
 no-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[no-date].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].loaded.txt
 no-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[no-date].py
 number-for-str	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[number-for-str].loaded.txt
@@ -9227,6 +9242,8 @@ opaque-base	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_py
 opaque-base	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[opaque-base].py
 over-maximum	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[over-maximum].loaded.txt
 over-maximum	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[over-maximum].py
+text-for-object	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[text-for-object].loaded.txt
+text-for-object	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[text-for-object].py
 too-long	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[too-long].loaded.txt
 too-long	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[too-long].py
 two-members	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[two-members].loaded.txt

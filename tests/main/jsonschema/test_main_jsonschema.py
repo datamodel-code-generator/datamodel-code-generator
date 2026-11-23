@@ -7764,6 +7764,54 @@ def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra
     assert_output(_loaded_defaults(built, given), name="loaded")
 
 
+_KEY_NAME_FILES: dict[str, object] = {"--aliases": {"rawData": ["raw_data", "rawData"]}}
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="alias"),
+        pytest.param(["--no-alias"], id="no-alias"),
+        pytest.param(["--aliases"], id="validation-aliases"),
+        pytest.param(["--use-serialization-alias"], id="serialization-alias"),
+        pytest.param(["--alias-generator", "to_camel"], id="alias-generator"),
+    ],
+)
+def test_main_strict_types_default_keys_read_by_the_field(output_file: Path, extra_args: list[str]) -> None:
+    """Test an object default is followed only under the keys its fields read whatever the config.
+
+    The default names ``rawData``. A field written to read it (its alias, also where an alias generator reproduces
+    it, a validation alias) takes the bytes. A field that reads another name (``--no-alias``, a serialization-only
+    alias) leaves the key as written, which Pydantic ignores, as before.
+    """
+    args = list(extra_args)
+    if args and (content := _KEY_NAME_FILES.get(args[-1])) is not None:
+        path = output_file.with_name("key_names.json")
+        path.write_text(json.dumps(content), encoding="utf-8")
+        args.append(str(path))
+    _run_jsonschema_dict(
+        {
+            "title": "Top",
+            "type": "object",
+            "$defs": {"Blob": {"type": "object", "properties": {"rawData": _BINARY}}},
+            "properties": {"blob": {"$ref": "#/$defs/Blob", "default": {"rawData": "x"}}},
+        },
+        output_file,
+        extra_args=[
+            *args,
+            *("--snake-case-field", "--strict-types", "bytes"),
+            *("--formatters", "builtin", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_default_keys_read_by_the_field", "Top") as model:
+        try:
+            loaded = repr(model().blob)
+        except ValidationError as error:
+            loaded = "refused " + ", ".join(item["type"] for item in error.errors())
+    assert_output(f"blob: {loaded}\n", name="loaded")
+
+
 def test_main_strict_types_default_of_a_model_in_another_module(output_dir: Path, tmp_path: Path) -> None:
     """Test a default read through a recursive model of another module takes the values of its strict types.
 
@@ -7895,6 +7943,24 @@ def test_main_strict_types_default_of_a_model_in_another_module(output_dir: Path
             ["--strict-types", "bytes", "--base-class", "explicit_alias_base.NamespaceBase"],
             id="opaque-base",
         ),
+        pytest.param(
+            {"Checksum": {**_BINARY, "default": ""}},
+            True,
+            ["--strict-types", "bytes"],
+            id="bool-for-bytes",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY}}},
+            "data",
+            ["--strict-types", "bytes"],
+            id="text-for-object",
+        ),
+        pytest.param(
+            {"Amount": {"type": "number", "multipleOf": 0.01}},
+            1.5,
+            [*_STRICT_DEFAULT_TYPES, *_DECIMAL_FORMS, "--import-overrides", '{"Decimal": "decimal_compat"}'],
+            id="import-override",
+        ),
     ],
 )
 def test_main_strict_types_default_left_to_pydantic(
@@ -7910,8 +7976,9 @@ def test_main_strict_types_default_left_to_pydantic(
     default, so a schema default its own model refuses fails as before: a bool for a strict int, text that is no
     RFC 3339 date or time (Python reads ``20200101`` and ``24:00``, Pydantic refuses them), a constraint, a plain
     ``str`` field, an enum, an extra key or a length. A union of two members (which member takes the text is
-    Pydantic's choice) and bytes under a configured base class the generator does not read (its config may read JSON
-    bytes as base64) keep the text. A payload that gives the field still validates.
+    Pydantic's choice), bytes under a configured base class the generator does not read (its config may read JSON
+    bytes as base64), a bool for bytes, text for an object and a Decimal whose import an override redirects keep the
+    value as written. A payload that gives the field still validates.
     """
     monkeypatch.syspath_prepend(str(DATA_PATH / "python"))
     _run_jsonschema_dict(

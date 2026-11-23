@@ -3463,9 +3463,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def reads_json_bytes_as_text(self) -> bool:  # noqa: PLR6301
         """Return whether validating the model reads bytes from JSON text as the text's UTF-8 bytes.
 
-        Only an output that validates JSON reads them so, by a config the generator knows (Pydantic v2).
+        Only Pydantic v2 models answer it: only they validate a default and hold strict bytes.
         """
-        return False
+        return False  # pragma: no cover - only Pydantic v2 outputs hold strict bytes in a validated default
 
     @property
     def form(self) -> ModelForm:

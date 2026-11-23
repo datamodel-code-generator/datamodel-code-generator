@@ -112,14 +112,17 @@ def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
     return _datetime_expression(call_text(f".{kind}.fromisoformat", (stable_repr(text),)))
 
 
-_RFC3339_DATE: Final = r"(\d{4})-(\d{2})-(\d{2})"
-_RFC3339_TIME: Final = r"(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?([Zz]|[+-]\d{2}:?\d{2})?"
+_RFC3339_DATE: Final = r"([0-9]{4})-([0-9]{2})-([0-9]{2})"
+_RFC3339_TIME: Final = r"([0-9]{2}):([0-9]{2})(?::([0-9]{2})(?:\.([0-9]{1,6}))?)?([Zz]|[+-][0-9]{2}:?[0-5][0-9])?"
 _RFC3339_PATTERNS: Final = {
     "date": re.compile(_RFC3339_DATE),
     "time": re.compile(_RFC3339_TIME),
     "datetime": re.compile(f"{_RFC3339_DATE}[Tt _]{_RFC3339_TIME}"),
 }
-"""The texts read as a date, a time or a datetime: RFC 3339 forms, with the separators Pydantic reads from JSON."""
+"""The texts read as a date, a time or a datetime: RFC 3339 forms, with the separators Pydantic reads from JSON.
+
+ASCII digits only, and offset minutes below 60, as Pydantic reads them.
+"""
 
 
 def _rfc3339_expression(kind: str, text: str) -> PythonRuntimeExpression | None:

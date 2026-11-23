@@ -33,7 +33,6 @@ from datamodel_code_generator.model.base import (
     DataModel,
     _default_state,
     _effective_field_owners,
-    _field_source_name,
     _model_key_of_model,
     ordering_constructor_fields,
     set_item_models_keeping_builtin_hash,
@@ -550,7 +549,15 @@ def deserialize_default_value(
         return None
     if (
         field.extras.get("validate_default") is True
-        and (value := _validated_default_value(parser.data_type_manager, import_overrides, model, field))
+        and (
+            value := _validated_default_value(
+                parser.data_type_manager,
+                import_overrides,
+                model,
+                field,
+                alias_generator=bool(parser.config.alias_generator),
+            )
+        )
         is not field.default
     ):
         return value
@@ -617,7 +624,12 @@ _TEMPORAL_KINDS: Final = {
 
 
 def _validated_default_value(
-    manager: DataTypeManager, import_overrides: dict[str, str] | None, model: DataModel, field: DataModelFieldBase
+    manager: DataTypeManager,
+    import_overrides: dict[str, str] | None,
+    model: DataModel,
+    field: DataModelFieldBase,
+    *,
+    alias_generator: bool,
 ) -> object:
     """Return the default of ``field`` with each JSON value a strict type refuses as Python input deserialized.
 
@@ -626,7 +638,8 @@ def _validated_default_value(
     the Python value of its recipe (``_deserialized_value``); Pydantic still validates the default and judges it. A
     type is strict as written: its import (``StrictBytes``), ``Annotated[<type>, Strict()]`` or ``strict=True`` among
     its arguments. The default is followed through the model a reference names (an enum keeps it, a root model or type
-    alias reads it by its type, an object model reads each key under the field whose schema name it is), a union with
+    alias reads it by its type, an object model reads each key under the field that reads it whatever the config,
+    ``_certain_input_names``, and keeps the others, which Pydantic may not read at all), a union with
     one member beside ``None`` (``_sole_member``; which member of a larger union takes a value is Pydantic's choice),
     the items of an array (by position in a tuple with a type per position) and the values of a mapping. Bytes are
     read from text only where the config of the model that holds them reads JSON bytes as UTF-8 text
@@ -680,7 +693,9 @@ def _validated_default_value(
             if not isinstance(value, dict):
                 return value
             fields = {
-                name: field for field in target.effective_fields if (name := _field_source_name(field)) is not None
+                name: field
+                for field in target.effective_fields
+                for name in _certain_input_names(field, alias_generator=alias_generator)
             }
             return _copied_mapping(
                 value,
@@ -693,6 +708,21 @@ def _validated_default_value(
             visiting.discard(key)
 
     return read(field.data_type, field.default, model)
+
+
+def _certain_input_names(field: DataModelFieldBase, *, alias_generator: bool) -> tuple[str, ...]:
+    """Return the names Pydantic reads the field from in every config the generator writes, as the field is written.
+
+    Its validation aliases, else its alias unless it is only the serialization alias, else its name where no alias
+    generator gives it another. A config the generator does not write (a configured base class it cannot read,
+    ``validate_by_alias=False`` given as template data) may read others; ``parser/_schema_validators.field_input_names``
+    lists every name Pydantic may read instead.
+    """
+    if field.validation_aliases:
+        return tuple(field.validation_aliases)
+    if field.alias is not None and not field.use_serialization_alias:
+        return (field.alias,)
+    return () if alias_generator or field.name is None else (field.name,)
 
 
 _ARRAY_VALUES: Final = (list, tuple, set, frozenset)

@@ -250,8 +250,9 @@ A default that Pydantic validates (`validate_default=True`, written where the fi
 input too, so such a default is written as the values Pydantic reads from the schema's JSON default: bytes for a strict
 `bytes`, `date`, `time` and `datetime` objects built from RFC 3339 text, and a `Decimal` for a strict `Decimal`
 ([#7380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7380)). Pydantic still validates
-the value. Text that is no RFC 3339 date or time, a union of several types and bytes under a configured base class
-the generator cannot read are left as written, so Pydantic reports them when the field is left out.
+the value. Text that is no RFC 3339 date or time, a union of several types, bytes under a configured base class
+the generator cannot read and an object key the field is not written to read are left as written, so Pydantic reports
+them as before when the field is left out.
 The generated server and client read date and time values from text, so `--generate-server` and `--generate-client`
 stop with an error when `--strict-types` holds `datetime`, `date` or `time`.
 

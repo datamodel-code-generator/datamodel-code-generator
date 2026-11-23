@@ -141,7 +141,7 @@ class DefaultValueDescriptor:
 
     ``option_kind`` selects the opt-in configuration (``--deserialize-default-values``); a type without one is
     deserialized only where Pydantic validates the default as Python input and the type is strict, as strict mode
-    refuses there the JSON value the recipe reads (``render_prep.validated_default_value``). ``recipe`` remains
+    refuses there the JSON value the recipe reads (``render_prep._validated_default_value``). ``recipe`` remains
     deliberately separate so temporal and identifier values have their own parsing policies without inferring them
     from an import name; ``constructor_import`` is the import its expression names, None for a literal.
     """
