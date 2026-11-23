@@ -2071,6 +2071,31 @@ def test_main_openapi_allof_with_anyof_ref(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "msgspec.Struct", "--disable-warnings"], id="msgspec"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--infer-union-discriminators"],
+            id="inferred-discriminators",
+        ),
+    ],
+)
+def test_main_openapi_allof_with_anyof_ref_inferred_tags(extra_args: list[str], output_file: Path) -> None:
+    """Infer the discriminator of an anyOf that an allOf member names by ``$ref`` without writing it into that schema.
+
+    The inferred discriminator was written into the schema object the ``$ref`` names, which every reader of the
+    target shares, so the schema graph check of the suite failed (#7249); the output stays the same. msgspec warns
+    that it cannot decode the untagged union of ``ItemPostRequest``, as it did before.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_with_anyof_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=extra_args,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--base-class"],
     option_description="""Specify a custom base class for generated models.
@@ -10309,9 +10334,10 @@ def test_main_openapi_discriminator_lone_variant_tags(
     Up to 0.86.0 the output kept ``discriminator`` there, which Pydantic rejects when the module is imported (a
     Pydantic dataclass failed when its type alias was first used) as the variant has no tag field, or one that is
     not a ``Literal``, or one that is optional. A variant that has a tag keeps it: its own or an inherited
-    ``Literal``, a root model of one, and a tag that another union of the schema writes into it, wherever that
-    union is. The verdicts of each payload are the generated models', and the schema's decides whether the payload
-    is valid.
+    ``Literal``, a type alias of one, and a tag that another union of the schema writes into it, wherever that
+    union is. A RootModel of one is a tag only from Pydantic 2.13, so the union of such a variant is written without
+    ``discriminator=`` unless ``--target-pydantic-version`` is 2.14 (#7327). The verdicts of each payload are the
+    generated models', and the schema's decides whether the payload is valid.
     """
     input_name = "discriminator_lone_variant_tags"
     run_main_and_assert(

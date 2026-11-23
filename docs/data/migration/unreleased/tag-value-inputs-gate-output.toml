@@ -1,0 +1,9 @@
+[[change]]
+id = "tag-value-inputs-gate-output"
+category = "harness"
+title = "The behaviour gate counts the new tag-value inputs"
+summary = "Stored test output of the behaviour gate, whose nightly tier holds the new discriminator tag-value inputs; the package writes the same output for the same call."
+refs = ["#7405"]
+covers = [
+    "behaviour_diff_script/gate_shards_judge_the_stale_entries_of_an_unsharded_run.txt",
+]

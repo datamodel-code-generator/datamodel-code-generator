@@ -358,6 +358,7 @@ class ParserConfig(BaseModel):
     use_enum_values_in_discriminator: bool = False
     merge_shared_variant_tags: bool = False
     use_unmapped_variant_tag_values: bool = False
+    read_mapping_keys_by_schema_tag_type: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False

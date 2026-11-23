@@ -264,8 +264,9 @@ def test_composition_backends_are_shared_by_every_level() -> None:
 def test_moves_compare_the_verdicts_of_two_modules(tmp_path: Path) -> None:
     """Two modules of one composition move where they decide a payload differently or only one of them imports.
 
-    The default output and the newest preset are two generators that differ on a nullable map's values (#6305) and on
-    the import of a Pydantic discriminated union whose tag admits null (#7102).
+    The default output and the newest preset are two generators that differ on a nullable map's values (#6305). A
+    module of a discriminated union whose tag admits null, made to fail its import, moves against the one that
+    imports with an empty witness; two modules that both fail do not move.
     """
     container = _first("container", placed_levels())
     nullable_map = next(
@@ -290,12 +291,17 @@ def test_moves_compare_the_verdicts_of_two_modules(tmp_path: Path) -> None:
         '{"f": [{"f": {"zzz": 1}}]}',
         "before: accepts, strict accepts; after: rejects, strict rejects",
     )
-    shape, before = outputs["tag", "default"]
-    _, after = outputs["tag", "preset"]
+    shape, after = outputs["tag", "default"]
+    broken = tmp_path / "tag" / "broken.py"
+    broken.write_text(
+        (tmp_path / "tag" / "default" / "model.py").read_text(encoding="utf-8") + "\nraise ImportError('broken')\n",
+        encoding="utf-8",
+    )
+    before = verdicts(broken, shape, PYDANTIC_V2)
     witness, detail = moved(shape, before, after) or ("-", "")
     assert (
         witness,
-        detail.startswith("before: import-fails: PydanticUserError"),
+        detail.startswith("before: import-fails: ImportError"),
         detail.endswith("; after: imports"),
     ) == (
         "",

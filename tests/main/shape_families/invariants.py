@@ -5,8 +5,6 @@ Each check reads only the files of a generated module, as a type checker does, a
 and reads the document it was generated from (``schema.json`` beside it), and gives each diagnostic one of ``KINDS``
 followed by its detail (which names the class) as the rule and line 0; ty, the static tier, names its own rules.
 
-``import-fails``
-    the module does not import;
 ``build-fails``
     a class the module defines, or a definition it binds (an alias among them), has no validator: a
     ``msgspec.json.Decoder`` for msgspec output, a Pydantic ``TypeAdapter`` for every other output (it validates
@@ -32,7 +30,6 @@ an enum.
 
 from __future__ import annotations
 
-import contextlib
 import dataclasses
 import hashlib
 import json
@@ -51,20 +48,17 @@ if TYPE_CHECKING:
 
     from .families import Schema
 
-IMPORT_FAILS: Final = "import-fails"
 BUILD_FAILS: Final = "build-fails"
 DUPLICATE_WIRE_KEY: Final = "duplicate-wire-key"
 LOST_PROPERTY: Final = "lost-property"
 UNKNOWN_WIRE_KEY: Final = "unknown-wire-key"
 ANY_TYPE: Final = "any-type"
-KINDS: Final = (IMPORT_FAILS, BUILD_FAILS, DUPLICATE_WIRE_KEY, LOST_PROPERTY, UNKNOWN_WIRE_KEY, ANY_TYPE)
+KINDS: Final = (BUILD_FAILS, DUPLICATE_WIRE_KEY, LOST_PROPERTY, UNKNOWN_WIRE_KEY, ANY_TYPE)
 """Every way a generated module can break an invariant."""
 
 BUILD_ERRORS: Final = (PydanticUserError, NameError, TypeError, ValueError)
 """What building a validator of a broken type raises: Pydantic's user errors (an undefined annotation is a NameError),
 msgspec's TypeErrors."""
-IMPORT_ERRORS: Final = (ImportError, SyntaxError, *BUILD_ERRORS)
-"""What importing a broken module raises: its own errors, or those of building a model's validator at class creation."""
 SOURCE: Final = "schema.json"
 """The name of the document beside each generated module."""
 
@@ -202,15 +196,14 @@ def _wire_key_diagnostics(
 
 
 def module_diagnostics(root: Path, target: str) -> list[Diagnostic]:
-    """Return the diagnostics of one generated module, a path relative to ``root`` beside its ``schema.json``."""
+    """Return the diagnostics of one generated module, a path relative to ``root`` beside its ``schema.json``.
+
+    A module that does not import fails the test, as a family cell's does (``verdict.py``).
+    """
     path = root / target
     definitions = json.loads(path.with_name(SOURCE).read_text(encoding="utf-8"))["$defs"]
     module_name = "shape_family_invariants_" + hashlib.sha256(str(path).encode()).hexdigest()[:16]
-    with contextlib.ExitStack() as stack:
-        try:
-            namespace = stack.enter_context(_generated_model(path, module_name, "__dict__"))
-        except IMPORT_ERRORS as error:
-            return [(target, 0, f"{IMPORT_FAILS}: {type(error).__name__}")]
+    with _generated_model(path, module_name, "__dict__") as namespace:
         found = [*_build_diagnostics(target, namespace, definitions)]
         found += _wire_key_diagnostics(target, namespace, definitions)
         found += _any_diagnostics(target, namespace, definitions)

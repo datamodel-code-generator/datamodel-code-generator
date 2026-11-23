@@ -51,7 +51,7 @@ from datamodel_code_generator._reference_graph import (
     reference_graph,
     walk_graph,
 )
-from datamodel_code_generator._requirements import python_target_meets
+from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override, record_written_as
 from datamodel_code_generator.enums import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy
@@ -182,6 +182,7 @@ from datamodel_code_generator.parser._phases import container_copy, rewrite_addi
 from datamodel_code_generator.parser._tag_plan import (
     KeptTagField,
     MsgspecUnion,
+    TagOptions,
     TagPlanHost,
     TagReading,
     UnionTagDecision,
@@ -479,6 +480,10 @@ class InlineVariantHost(Protocol):
     @property
     def use_unmapped_variant_tag_values(self) -> bool:
         """Whether a variant a mapping names also takes the values of its tag field that nothing else claims."""
+
+    @property
+    def read_mapping_keys_by_schema_tag_type(self) -> bool:
+        """Whether mapping keys are read against the type the schema declares for the tag field."""
 
     @property
     def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
@@ -1054,22 +1059,15 @@ def tag_reading(parser: InlineVariantHost) -> TagReading:
     """
     plan = parser._tag_plan
     namer = field_namer(parser.model_resolver, parser.field_name_model_type)
-    enum_member_tags = parser.use_enum_values_in_discriminator
-    every_value = parser.use_unmapped_variant_tag_values
-    return TagReading(
-        plan.inline_variant_tags(parser.results, namer, enum_member_tags=enum_member_tags, every_value=every_value),
-        plan.union_written,
-        enum_member_tags,
-        plan.merged_variant_tags(
-            parser.results,
-            namer,
-            enum_member_tags=enum_member_tags,
-            every_value=every_value,
-            collapsed_users=parser._collapsed_reuse_users,
-        )
+    options = TagOptions(
+        parser.use_enum_values_in_discriminator,
+        parser.use_unmapped_variant_tag_values,
+        parser.read_mapping_keys_by_schema_tag_type,
+    )
+    return options.reading(plan.inline_variant_tags(parser.results, namer, options), plan.union_written).with_merged(
+        plan.merged_variant_tags(parser.results, namer, options, collapsed_users=parser._collapsed_reuse_users)
         if parser.merge_shared_variant_tags
-        else {},
-        every_value,
+        else {}
     )
 
 
@@ -2891,14 +2889,19 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     union sites.
     """
     builder = parser._graph_builder
+    root_model_tags = pydantic_target_meets("pydantic.root_model_tag", parser.target_pydantic_version)
     for ctx in run.contexts:
         for model in ctx.models:
             for field in model.fields:
-                if (site := union_site(model, field)) is not None and (status := settle_site(site)) != "tagged":
+                if (site := union_site(model, field)) is not None and (
+                    status := settle_site(site, root_model_tags=root_model_tags)
+                ) != "tagged":
                     parser._tag_plan.record_settled(site, status)
                     builder.drop_field_discriminator(field)
                 if parser.collapse_root_models:
-                    for nested, discriminator in iter_unbuildable_inlined_unions(field):
+                    for nested, discriminator in iter_unbuildable_inlined_unions(
+                        field, root_model_tags=root_model_tags
+                    ):
                         builder.set_type_discriminator(nested, discriminator)
 
 

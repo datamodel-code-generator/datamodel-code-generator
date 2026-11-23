@@ -1,0 +1,2 @@
+PaymentMethod {"type": "card", "number": "1"}: schema accepts, model accepts
+PaymentMethod {"type": "cash"}: schema rejects, model rejects

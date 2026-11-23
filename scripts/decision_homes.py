@@ -1327,7 +1327,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "prediction (`legacy-any-key`), and a variant a mapping names taking only its keys, not the other values "
             "its tag field admits, without `--use-unmapped-variant-tag-values` (`legacy-mapped-tags-only`); a variant "
             "whose tag field admits several values takes those no mapping key and no other variant claim "
-            "(`own-field-values`), a msgspec Struct, which takes one tag, only where they are one"
+            "(`own-field-values`), a msgspec Struct, which takes one tag, only where they are one or where it has no "
+            "name (an inline variant); a null the tag field admits is no tag at L5"
         ),
         homes=(
             Home("model/_decisions/tag_value.py", "field_tag"),
@@ -1432,10 +1433,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "which the passes write through the store in the order they read them: whether a union can be tagged, the "
             "Python name of its tag field, the tags of each variant and the form each tag field takes, which msgspec "
             "unions take struct tags, and which `discriminator=` Pydantic cannot build once every module wrote its "
-            "tags (the lone variant of a union without a tag, a variant whose root has a default, two choices that "
-            "hold one tag in the tag fields that were written); the L6 decision, which L6 writes the same way, base by "
-            "base in the order of the reference graph: which msgspec structs below tagged bases take the tags their "
-            "fields redeclare, opt out of the tag they inherit, or declare the fields of their bases; the class "
+            "tags (the lone variant of a union without a tag, a variant whose tag field admits None or reads its tag "
+            "through a RootModel on a target before Pydantic 2.13, a variant whose root has a default, two choices "
+            "that hold one tag in the tag fields that were written); the L6 decision, which L6 writes the same way, "
+            "base by base in the order of the reference graph: which msgspec structs below tagged bases take the tags "
+            "their fields redeclare, opt out of the tag they inherit, or declare the fields of their bases; the class "
             "constants of a backend these read are the rows of `TagCapabilities` (`variant_takes_tag`, "
             "`writes_argument`, `struct_tags`, `bool_tags`, `literal_holds_members`, `flattens_layouts`), a variant's "
             "from its own class"

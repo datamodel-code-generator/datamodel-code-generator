@@ -122,7 +122,7 @@ class LoneLiteralTag(RootModel[LiteralTag]):
 
 
 class LoneRootTag(RootModel[RootTag]):
-    root: RootTag = Field(..., discriminator='type')
+    root: RootTag
 
 
 class LoneOptionalRootTag(RootModel[OptionalRootTag]):

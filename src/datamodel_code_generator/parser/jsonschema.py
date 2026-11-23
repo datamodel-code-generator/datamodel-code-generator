@@ -1155,6 +1155,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._root_pattern_string_constraints: JsonSchemaObject | None = None
         self._parsed_branches: tuple[JsonSchemaObject | None, str, list[JsonSchemaObject]] = (None, "", [])
         """The site, keyword and branches the last ``parse_combined_schema`` parsed (``_parse_all_of_union_parts``)."""
+        self._inferred_discriminators: _union_tags.InferredDiscriminators = {}
+        """The discriminator inferred at each union site (``set_tagged_union_discriminator``), by the id of the site's
+        ``extras``, which every copy of the site object shares, with that dict; ``get_field_extras`` reads it."""
         self._init_schema_resources()
         self._pattern_validation_document_root: JsonSchemaObject | None = None
         self._root_id: str | None = None
@@ -1273,12 +1276,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return value
 
     def get_field_extras(self, obj: JsonSchemaObject) -> dict[str, Any]:
-        """Extract extra field metadata from a JSON Schema object."""
+        """Extract extra field metadata from a JSON Schema object, with the discriminator its union site inferred.
+
+        The inferred discriminator is kept beside the object (``_inferred_discriminators``), never written into it: a
+        ``$ref`` target is one object every reader shares (``SchemaGraphBuilder.schema``).
+        """
+        declared: Mapping[str, object] = obj.extras
+        if (inferred := self._inferred_discriminators.get(id(declared))) is not None and inferred[0] is declared:
+            declared = {**declared, "discriminator": inferred[1]}
         extras = {
             self.get_field_extra_key(
                 _without_x_prefix(k) if k in self.field_extra_keys_without_x_prefix else k
             ): self._externalize_schema_extra(k, v)
-            for k, v in obj.extras.items()
+            for k, v in declared.items()
             if self.field_include_all_keys or k in self.field_keys
         }
         if isinstance(discriminator := extras.get("discriminator"), dict) and isinstance(
@@ -4007,7 +4017,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else None
         )
         if (reading := _union_tags.discriminator_inference(self, obj)) is not None:
-            _union_tags.set_tagged_union_discriminator(self, obj, combined_schemas, reading)
+            _union_tags.set_tagged_union_discriminator(
+                self, obj, combined_schemas, reading, self._inferred_discriminators
+            )
         parsed_schemas = _union_tags.parse_combined_schema_items(
             self, name, obj, path, combined_schemas, variant_names, variant_keys
         )

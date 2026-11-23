@@ -95,6 +95,29 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--use-unmapped-variant-tag-values",
     ),
     LegacyRow(
+        "legacy-tag-type-from-earlier-union",
+        (
+            "without `--read-mapping-keys-by-schema-tag-type`, a variant's tags are read against the tag field it "
+            "declares, which an earlier union may have written as its `Literal`, else the nearest one it inherits "
+            "from an ancestor whose tag field no union wrote, so a mapping key reads as text or as an integer by the "
+            "order of the unions, and as text where the field names a root model or a type alias of an integer "
+            "(`parser/_tag_plan.py:_declared_type`, `declared_tag_type`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/variant_tag_values/mapping_key_after_union.yaml",
+            "--input-file-type",
+            "openapi",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-mapping-keys-by-schema-tag-type",
+    ),
+    LegacyRow(
         "legacy-nested-enum-members-untagged",
         (
             "under `--use-enum-values-in-discriminator`, a variant that a union lists through a nested discriminated "
