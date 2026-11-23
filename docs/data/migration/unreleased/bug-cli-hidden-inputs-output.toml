@@ -21,4 +21,5 @@ covers = [
     "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files[a_b_.DS_Store-jsonschema]/",
     "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files_beside_the_output[None]/",
     "main/directory_input_hidden_files/directory_input_skips_hidden_binary_files_beside_the_output[jsonschema]/",
+    "main/exec_validation/older_target_outputs_are_exported_for_their_python.txt",
 ]
