@@ -3497,6 +3497,13 @@ CELLS_CASES: dict[str, CellsCase] = {
         base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
         released="#2",
     ),
+    "fail: a PR without a src change names an option of a merged change the release lacks": CellsCase(
+        "fail",
+        "records-only PR, cells of a merged change under an unreleased option",
+        _landed(_cells("other.json", options=[["--new-flag"]])),
+        base=_cells_src(("other", "--new-flag", "comment"), flags=(*CELLS_FLAGS, "--new-flag")) | OTHER_NOTE_UNNAMED,
+        merged="#2",
+    ),
     "fail: a PR without a src change extends its own record with cells of a merged change": CellsCase(
         "fail",
         "records-only PR, a merged change's cells on a record it adds",

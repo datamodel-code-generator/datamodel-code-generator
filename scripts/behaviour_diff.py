@@ -1451,15 +1451,17 @@ def surface_problems(plan: Plan, inventory: dict[str, list[str] | None]) -> list
     return list(dict.fromkeys(found))
 
 
-def plan_surface_problems(gate: Gate, inventory: dict[str, list[str] | None], cache_dir: Path) -> list[str]:
+def plan_surface_problems(gate: Gate, inventory: dict[str, list[str] | None] | None, cache_dir: Path) -> list[str]:
     """Return the selectors of the gate's records that name a surface the latest tag lacks (`surface_problems`).
 
-    `inventory` is the base's options: the released ones for a release plan, else the latest tag's are read.
+    `inventory` is the base's options: the released ones for a release plan, else (or None) the latest tag's are read.
     """
     plan = gate.plan
     if plan is None or not any(selector.options or selector.input_file_type for *_, selector in plan.selectors()):
         return []
-    return surface_problems(plan, inventory if plan.release else tag_inventory(gate, cache_dir))
+    return surface_problems(
+        plan, inventory if plan.release and inventory is not None else tag_inventory(gate, cache_dir)
+    )
 
 
 def tag_inventory(gate: Gate, cache_dir: Path) -> dict[str, list[str] | None]:
@@ -2480,8 +2482,9 @@ def shortcut(gate: Gate, plan: Plan, ns: argparse.Namespace) -> int:
     """Pass a PR that changes nothing under src/ without generating: every cell is equal by construction.
 
     A PR record that names cells fails then, as no cell can differ, except a record of a change already merged
-    (`Plan.landed`), whose cells the runs against the release judge; the base's gate still runs on a change of the
-    gate's own files (`base_gate`).
+    (`Plan.landed`), whose cells the runs against the release judge: its selectors must name released surface only
+    (`plan_surface_problems`), as those runs refuse any other. The base's gate still runs on a change of the gate's
+    own files (`base_gate`).
     """
     base = (plan.base or "")[:12]
     problems = [
@@ -2491,6 +2494,7 @@ def shortcut(gate: Gate, plan: Plan, ns: argparse.Namespace) -> int:
             for record in plan.judged
             if record.cells and record.id not in plan.landed
         ),
+        *plan_surface_problems(gate, None, ns.cache_dir.absolute()),
     ]
     print(f"src/ unchanged since the merge base {base}: every cell is equal")
     print(
