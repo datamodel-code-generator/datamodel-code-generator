@@ -25,6 +25,7 @@
 | [`--enable-faux-immutability`](#enable-faux-immutability) | Enable faux immutability in Pydantic models (frozen=True). |
 | [`--force-optional`](#force-optional) | Force all fields to be Optional regardless of required statu... |
 | [`--frozen-dataclasses`](#frozen-dataclasses) | Generate frozen dataclasses with optional keyword-only field... |
+| [`--keep-bases-beside-generic-base-class`](#keep-bases-beside-generic-base-class) | Keep configured base classes beside the generated base class... |
 | [`--keep-constrained-root-models-in-every-container`](#keep-constrained-root-models-in-every-container) | Keep constrained root models named in every container of a h... |
 | [`--keep-defaults-of-inherited-required-fields`](#keep-defaults-of-inherited-required-fields) | Keep under `--use-default` the default of a property only an... |
 | [`--keep-enum-literal-aliases`](#keep-enum-literal-aliases) | Keep a named enum written as a Literal type alias named unde... |
@@ -3514,6 +3515,266 @@ keyword-only arguments.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--keep-bases-beside-generic-base-class` {#keep-bases-beside-generic-base-class}
+
+Keep configured base classes beside the generated base class.
+
+Under `--use-generic-base-class` the shared base class stands in for the base class of the output model type, so a
+model that inherits only a class it is configured to inherit takes the generated base class alone and the import of
+the class stays unused: `class Tag(BaseModel)` beside `from mypkg.base import TagBase`. With this option the model
+keeps the class, as it keeps a generated base: `class Tag(TagBase, BaseModel)`. The classes are the one
+`--base-class-map`, `customBasePath` or `--base-class` names, and the class `--external-ref-mapping` or
+`x-python-import` imports for a schema the model extends, so `Price` keeps the fields of `Money`.
+
+The generated base class is listed last, so the options written to it win over the configuration of the kept class,
+as the configuration of a model's own class body does without it. Where a kept class is named like the generated base
+class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModelModel` (`StructModel`).
+
+**Related:** [`--base-class`](#base-class), [`--base-class-map`](#base-class-map), [`--use-generic-base-class`](#use-generic-base-class)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input api.json --use-generic-base-class --extra-fields forbid --base-class-map '{"Tag": "mypkg.base.TagBase"}' --keep-bases-beside-generic-base-class # (1)!
+    ```
+
+    1. :material-arrow-left: `--keep-bases-beside-generic-base-class` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "Price": {
+          "allOf": [
+            {
+              "$ref": "common.json#/$defs/Money"
+            }
+          ],
+          "type": "object",
+          "properties": {
+            "currency": {
+              "type": "string"
+            }
+          }
+        },
+        "Tag": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "Note": {
+          "type": "object",
+          "customBasePath": "mypkg.base.NoteBase",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        "Plain": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer"
+            }
+          }
+        },
+        "Special": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Plain"
+            }
+          ],
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string"
+            }
+          }
+        },
+        "Ext": {
+          "type": "object",
+          "x-python-import": {
+            "module": "mypkg.ext",
+            "name": "Ext"
+          },
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        "Child": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Ext"
+            }
+          ],
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "type": "object",
+      "properties": {
+        "price": {
+          "$ref": "#/$defs/Price"
+        },
+        "tag": {
+          "$ref": "#/$defs/Tag"
+        },
+        "note": {
+          "$ref": "#/$defs/Note"
+        },
+        "plain": {
+          "$ref": "#/$defs/Plain"
+        },
+        "special": {
+          "$ref": "#/$defs/Special"
+        },
+        "child": {
+          "$ref": "#/$defs/Child"
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  api.json
+
+        from __future__ import annotations
+
+        from mypkg.base import NoteBase, TagBase
+        from mypkg.ext import Ext
+        from pydantic import BaseModel as _BaseModel
+        from pydantic import ConfigDict
+
+
+        class BaseModel(_BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class Money(BaseModel):
+            amount: float | None = None
+
+
+        class Tag(TagBase, BaseModel):
+            name: str | None = None
+
+
+        class Note(NoteBase, BaseModel):
+            text: str | None = None
+
+
+        class Plain(BaseModel):
+            id: int | None = None
+
+
+        class Special(Plain):
+            kind: str | None = None
+
+
+        class Price(Money):
+            currency: str | None = None
+
+
+        class Child(Ext, BaseModel):
+            b: str | None = None
+
+
+        class Model(BaseModel):
+            price: Price | None = None
+            tag: Tag | None = None
+            note: Note | None = None
+            plain: Plain | None = None
+            special: Special | None = None
+            child: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  api.json
+
+        from __future__ import annotations
+
+        from mypkg.base import NoteBase, TagBase
+        from mypkg.ext import Ext
+        from pydantic import BaseModel as _BaseModel
+        from pydantic import ConfigDict
+
+
+        class BaseModel(_BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class Money(BaseModel):
+            amount: float | None = None
+
+
+        class Tag(BaseModel):
+            name: str | None = None
+
+
+        class Note(BaseModel):
+            text: str | None = None
+
+
+        class Plain(BaseModel):
+            id: int | None = None
+
+
+        class Special(Plain):
+            kind: str | None = None
+
+
+        class Price(Money):
+            currency: str | None = None
+
+
+        class Child(BaseModel):
+            b: str | None = None
+
+
+        class Model(BaseModel):
+            price: Price | None = None
+            tag: Tag | None = None
+            note: Note | None = None
+            plain: Plain | None = None
+            special: Special | None = None
+            child: Child | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

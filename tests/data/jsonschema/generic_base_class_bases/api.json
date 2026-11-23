@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Price": {
+      "allOf": [
+        {
+          "$ref": "common.json#/$defs/Money"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Note": {
+      "type": "object",
+      "customBasePath": "mypkg.base.NoteBase",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Special": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Plain"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        }
+      }
+    },
+    "Ext": {
+      "type": "object",
+      "x-python-import": {
+        "module": "mypkg.ext",
+        "name": "Ext"
+      },
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Ext"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "price": {
+      "$ref": "#/$defs/Price"
+    },
+    "tag": {
+      "$ref": "#/$defs/Tag"
+    },
+    "note": {
+      "$ref": "#/$defs/Note"
+    },
+    "plain": {
+      "$ref": "#/$defs/Plain"
+    },
+    "special": {
+      "$ref": "#/$defs/Special"
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  }
+}

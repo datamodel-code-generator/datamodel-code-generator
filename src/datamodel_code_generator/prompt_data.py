@@ -113,6 +113,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--input-model-ref-strategy": "Strategy for referenced types when using --input-model.",
     "--intersect-allof-keywords": "Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...",
     "--intersect-combined-schema-keywords": "Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...",
+    "--keep-bases-beside-generic-base-class": "Keep configured base classes beside the generated base class.",
     "--keep-constrained-root-models-in-every-container": "Keep constrained root models named in every container of ...",
     "--keep-content-parameter-refs": "Type a parameter whose content media schema is a `$ref` by the model the `$re...",
     "--keep-defaults-of-inherited-required-fields": "Keep under `--use-default` the default of a property only an i...",

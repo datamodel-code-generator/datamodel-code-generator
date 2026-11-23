@@ -1143,8 +1143,8 @@ APPLY_GENERIC_BASE_CLASS = PassDecl(
     reads=_facts(Fact.BASES),
     writes=_facts(Fact.BASES, Fact.MODELS_EXIST),
     summary=(
-        "Inserts the generated base model, in the module an earlier attempt seeded where its import failed, and "
-        "rewrites the base classes; B1 follows."
+        "Inserts the generated base model, in the module an earlier attempt seeded where its import failed, "
+        "renames it where a kept base binds its name, and rewrites the base classes; B1 follows."
     ),
     condition="use_generic_base_class with a configuration for the base class",
 )

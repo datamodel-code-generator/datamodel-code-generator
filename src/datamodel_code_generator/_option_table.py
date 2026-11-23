@@ -862,6 +862,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "instead of repeating the configuration in each model. Keeps code DRY.",
     ),
     toggle(
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--keep-bases-beside-generic-base-class",
+        help="Keep the base classes a model is configured to inherit beside the generated base class of "
+        "--use-generic-base-class (`class Tag(TagBase, BaseModel)`): the class --base-class-map, customBasePath or "
+        "--base-class names, and the class --external-ref-mapping or x-python-import imports for a schema the model "
+        "extends, as the model keeps a generated base (the generated base class is named `BaseModelModel` where a "
+        "kept class is named `BaseModel`); without it the model inherits only the generated base class and the "
+        "import of the class stays unused, as in 0.100.0.",
+    ),
+    toggle(
         (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
     ),
     toggle((Section.MODEL, _C.FIELD), "--use-title-as-name", help="use titles as class names of models"),

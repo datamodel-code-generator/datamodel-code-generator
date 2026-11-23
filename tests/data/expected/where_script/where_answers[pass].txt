@@ -1,6 +1,6 @@
 exit status 0
 pass apply_generic_base_class
-  Inserts the generated base model, in the module an earlier attempt seeded where its import failed, and rewrites the base classes; B1 follows.
+  Inserts the generated base model, in the module an earlier attempt seeded where its import failed, renames it where a kept base binds its name, and rewrite...
   CROSS_MODULE, scope global, transform; condition: use_generic_base_class with a configuration for the base class
   reads: bases
   writes: bases, models_exist

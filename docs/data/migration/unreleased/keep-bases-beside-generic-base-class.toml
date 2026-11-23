@@ -1,0 +1,46 @@
+[[change]]
+id = "keep-bases-beside-generic-base-class"
+category = "new-surface"
+title = "Keep the configured bases beside the generic base class under an option"
+summary = "--keep-bases-beside-generic-base-class keeps the classes a model is configured to inherit (--base-class-map, customBasePath, --base-class, and the class an --external-ref-mapping or x-python-import schema it extends stands for) beside the generated base class of --use-generic-base-class, so Tag(TagBase, BaseModel) and Price(Money, BaseModel) keep the fields of Money (#7316), and the generated base class is named BaseModelModel where a kept class is named BaseModel; without it the model takes the generated base class alone and the import stays unused."
+refs = ["#1"]
+surface = ["--keep-bases-beside-generic-base-class"]
+covers = [
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-list-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-list-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-msgspec-base-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-msgspec-base-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-pydantic-base-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-pydantic-base-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-external-ref-mapping-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-external-ref-mapping-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-type-overrides-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-type-overrides-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-list-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-list-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-msgspec-base-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-msgspec-base-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-pydantic-base-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-pydantic-base-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-external-ref-mapping-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-external-ref-mapping-released].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-type-overrides-kept].py",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-type-overrides-released].py",
+    "main/jsonschema/generic_base_class_bases/in_modules[kept]/",
+    "main/jsonschema/generic_base_class_bases/in_modules[released]/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_generic_base_class_bases_common.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_generic_base_class_bases_common.json].errors.txt",
+    "main/preset_opt_in_options/preset_option_turned_off[keep-bases-beside-generic-base-class-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[keep-bases-beside-generic-base-class-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-standard].model.py",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_generic_base_class_bases_modules.yaml].txt",
+]

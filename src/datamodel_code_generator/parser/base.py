@@ -1308,6 +1308,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
         self.use_generic_base_class: bool = config.use_generic_base_class
+        self.keep_bases_beside_generic_base_class: bool = config.keep_bases_beside_generic_base_class
         self.generic_base_class_config = prepare_output_model_config(
             self.extra_template_data,
             validators=config.validators,
