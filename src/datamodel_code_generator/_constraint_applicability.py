@@ -737,11 +737,11 @@ def strict_decimal_multiple(options: ConstraintOptions, *, strict: bool) -> bool
 def encoded_str_field_form(options: ConstraintOptions) -> bool:
     """Return whether a field form writes a string decoded from base64 text with its constraints in front of decoding.
 
-    It does under ``use_encoded_str_for_constrained_base64``, so Pydantic checks them on the text, as the schema does;
-    otherwise ``Annotated[Base64Str, Field(...)]`` and ``Base64Str | None = Field(...)`` check them on the decoded
-    text, as in 0.88.0.
+    It does under ``use_encoded_str_for_constrained_base64`` and under ``keep_string_keywords_beside_formats``, so
+    Pydantic checks them on the text, as the schema does; otherwise ``Annotated[Base64Str, Field(...)]`` and
+    ``Base64Str | None = Field(...)`` check them on the decoded text, as in 0.88.0.
     """
-    return options.use_encoded_str_for_constrained_base64
+    return options.use_encoded_str_for_constrained_base64 or options.keep_string_keywords_beside_formats
 
 
 def strict_encoded_str(options: ConstraintOptions, *, strict: bool) -> bool:

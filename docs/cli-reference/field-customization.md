@@ -2441,7 +2441,8 @@ Keep the string keywords beside a format Pydantic writes as a class `constr` can
 `format: email` and `byte` are written as `EmailStr` and `Base64Str`, and `format: uri` as
 `AnyUrl`, none of which `constr` constrains, so a `maxLength` or `pattern` beside them is left out of the model,
 silently or with a warning, as in 0.100.0. With the option an email takes the keywords it takes in
-`Annotated[EmailStr, Field(...)]`, a `byte` is written in front of its base64 decoding, and a `uri` with a keyword is
+`Annotated[EmailStr, Field(...)]`, a `byte` is written in front of its base64 decoding (`EncodedStr`, Pydantic 2.10
+or later), so the keywords check the base64 text in the field forms too, and a `uri` with a keyword is
 the plain string the keyword checks, as `AnyUrl` takes no `pattern` and checks a length on the normalised URL. A
 `uri` without a keyword stays `AnyUrl`. An output that writes a date or UUID format as `str`, as msgspec does, keeps the
 keywords an `allOf` member adds beside a `$ref` to it.

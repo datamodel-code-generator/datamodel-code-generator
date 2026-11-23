@@ -5,7 +5,15 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import AnyUrl, Base64Str, BaseModel, EmailStr, Field, RootModel
+from pydantic import (
+    AnyUrl,
+    Base64Encoder,
+    BaseModel,
+    EmailStr,
+    EncodedStr,
+    Field,
+    RootModel,
+)
 
 
 class Email(RootModel[EmailStr]):
@@ -18,7 +26,9 @@ class Link(RootModel[str]):
 
 class Contact(BaseModel):
     email: Annotated[EmailStr | None, Field(max_length=12)] = None
-    avatar: Annotated[Base64Str | None, Field(max_length=8)] = None
+    avatar: (
+        Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)] | None
+    ) = None
     home: Annotated[str | None, Field(max_length=20, pattern='^https')] = None
     emails: list[Email] | None = None
     link: Link | int | None = None
