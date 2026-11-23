@@ -1111,6 +1111,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self.data_type_manager.use_untyped_value_type(config.untyped_value_type)
         self.data_type_manager.use_target_pydantic_version(config.target_pydantic_version)
+        self.data_type_manager.use_str_for_formats_msgspec_cannot_decode(
+            enabled=config.use_str_for_formats_msgspec_cannot_decode
+        )
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
         self.data_type_manager.read_length_keywords_by_type = config.read_length_keywords_by_type
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly

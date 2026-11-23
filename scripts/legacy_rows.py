@@ -96,6 +96,29 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--keep-bases-beside-generic-base-class",
     ),
     LegacyRow(
+        "legacy-standard-primitive-types-without-decoder",
+        (
+            "without `--use-str-for-formats-msgspec-cannot-decode`, `--use-standard-primitive-types` writes "
+            "`IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network` and `Path` for the formats `ipv4`, `ipv6`, "
+            "`ipv4-network`, `ipv6-network` and `path` of msgspec output, which msgspec decodes only with a `dec_hook` "
+            "(`types.py:DataTypeManager.use_str_for_formats_msgspec_cannot_decode`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/use_standard_primitive_types.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-standard-primitive-types",
+            "--formatters",
+            "builtin",
+        ),
+        option="--use-str-for-formats-msgspec-cannot-decode",
+    ),
+    LegacyRow(
         "legacy-msgspec-float-bounds",
         (
             "without `--read-msgspec-union-bounds-exactly`, the check of a msgspec union reads the bound of a float "

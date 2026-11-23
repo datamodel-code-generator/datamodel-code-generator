@@ -1573,6 +1573,15 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="str for the formats msgspec cannot decode",
+        config=PresetConfig(use_str_for_formats_msgspec_cannot_decode=True),
+        description=(
+            "Under --use-standard-primitive-types, write str for ipv4, ipv6, ipv4-network, ipv6-network and path in "
+            "msgspec.Struct output, whose msgspec has no decoder for IPv4Address, IPv6Address, IPv4Network, "
+            "IPv6Network and Path, so a document that holds them decodes."
+        ),
+    ),
+    PresetOptionGroup(
         title="Default values of true properties",
         config=PresetConfig(apply_default_values_to_true_properties=True),
         description=(

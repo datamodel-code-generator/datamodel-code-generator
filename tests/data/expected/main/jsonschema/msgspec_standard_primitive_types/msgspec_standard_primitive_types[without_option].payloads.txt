@@ -1,0 +1,33 @@
+valid: accepted, with dec_hook accepted
+valid: accepted, with dec_hook accepted
+valid: accepted, with dec_hook accepted
+invalid {"address": 1}: rejected, with dec_hook rejected
+invalid {"address_v6": 1}: rejected, with dec_hook rejected
+invalid {"network": 1}: rejected, with dec_hook rejected
+invalid {"location": 1}: rejected, with dec_hook rejected
+invalid {"addresses": [1]}: rejected, with dec_hook rejected
+invalid {"networks": {"lan": 1}}: rejected, with dec_hook rejected
+invalid {"either_address": 1}: rejected, with dec_hook rejected
+invalid {"address_or_count": true}: rejected, with dec_hook rejected
+invalid {"alias": 1}: rejected, with dec_hook rejected
+invalid {"device": {"gateway": 1}}: rejected, with dec_hook rejected
+invalid {"id": 1}: rejected, with dec_hook rejected
+invalid {"id": "not-a-uuid"}: accepted, with dec_hook accepted
+field address: accepted, with dec_hook accepted
+field address_v6: accepted, with dec_hook accepted
+field network: accepted, with dec_hook accepted
+field network_v6: accepted, with dec_hook accepted
+field location: accepted, with dec_hook accepted
+field nullable_address: accepted, with dec_hook accepted
+field default_address: accepted, with dec_hook accepted
+field default_location: accepted, with dec_hook accepted
+field addresses: accepted, with dec_hook accepted
+field networks: accepted, with dec_hook accepted
+field locations: accepted, with dec_hook accepted
+field either_address: accepted, with dec_hook accepted
+field address_or_count: accepted, with dec_hook accepted
+field endpoint: accepted, with dec_hook accepted
+field short_address: accepted, with dec_hook accepted
+field alias: accepted, with dec_hook accepted
+field device: accepted, with dec_hook accepted
+field id: accepted, with dec_hook accepted

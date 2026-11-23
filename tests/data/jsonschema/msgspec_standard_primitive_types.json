@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "required": [
+    "address"
+  ],
+  "properties": {
+    "address": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "address_v6": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "network": {
+      "type": "string",
+      "format": "ipv4-network"
+    },
+    "network_v6": {
+      "type": "string",
+      "format": "ipv6-network"
+    },
+    "location": {
+      "type": "string",
+      "format": "path"
+    },
+    "nullable_address": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "ipv4"
+    },
+    "default_address": {
+      "type": "string",
+      "format": "ipv4",
+      "default": "10.0.0.1"
+    },
+    "default_location": {
+      "type": "string",
+      "format": "path",
+      "default": "/etc"
+    },
+    "addresses": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "ipv6"
+      }
+    },
+    "networks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "format": "ipv4-network"
+      }
+    },
+    "locations": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "string",
+          "format": "path"
+        }
+      }
+    },
+    "either_address": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "ipv4"
+        },
+        {
+          "type": "string",
+          "format": "ipv6"
+        }
+      ]
+    },
+    "address_or_count": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "ipv4"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "endpoint": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string",
+          "format": "ipv4"
+        },
+        {
+          "type": "string",
+          "format": "path"
+        }
+      ],
+      "items": false
+    },
+    "short_address": {
+      "type": "string",
+      "format": "ipv4",
+      "maxLength": 15
+    },
+    "alias": {
+      "$ref": "#/$defs/Alias"
+    },
+    "device": {
+      "$ref": "#/$defs/Device"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "$defs": {
+    "Alias": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "Device": {
+      "type": "object",
+      "properties": {
+        "gateway": {
+          "type": "string",
+          "format": "ipv4"
+        },
+        "subnets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "ipv6-network"
+          }
+        }
+      }
+    }
+  }
+}

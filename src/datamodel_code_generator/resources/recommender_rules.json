@@ -1547,6 +1547,10 @@
       "not_recommended": "style",
       "reason": "Names response models; the schemas scope the recommender analyses has none."
     },
+    "use_str_for_formats_msgspec_cannot_decode": {
+      "not_recommended": "preset",
+      "reason": "With --use-standard-primitive-types and msgspec.Struct output only: set by the 20261123 presets; the recommendation starts from a preset."
+    },
     "use_strict_str_for_base64": {
       "not_recommended": "preset",
       "reason": "Pydantic v2 output under --strict-types str only: set by the 20261106 presets; the recommendation starts from a preset."

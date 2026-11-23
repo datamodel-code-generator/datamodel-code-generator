@@ -89,6 +89,7 @@
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
 - `--no-use-standard-collections`: Use typing.Dict/List instead of built-in dict/list for container types.
 - `--no-use-standard-primitive-types`
+- `--no-use-str-for-formats-msgspec-cannot-decode`
 - `--no-use-strict-str-for-base64`
 - `--no-use-tuple-for-closed-arrays`
 - `--no-use-tuple-for-fixed-items`
@@ -134,6 +135,7 @@
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
+- `--use-str-for-formats-msgspec-cannot-decode`: Write str for the formats msgspec cannot decode under `--use-st...
 - `--use-strict-str-for-base64`: Make a `format: byte` string strict under `--strict-types str`.
 - `--use-total-false-for-typed-dict`: Generate TypedDict declarations with `total=False`.
 - `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow.
@@ -1986,6 +1988,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         (UUID, IPv4Address, etc.) instead of str. Affects
                         dataclass, msgspec, TypedDict output. Pydantic already
                         uses these types by default.
+  --use-str-for-formats-msgspec-cannot-decode, --no-use-str-for-formats-msgspec-cannot-decode
+                        Write str for the formats whose standard library class
+                        msgspec has no decoder for (ipv4, ipv6, ipv4-network,
+                        ipv6-network, path) under --use-standard-primitive-
+                        types, so msgspec.Struct output decodes a document
+                        that holds them; without it the Struct holds
+                        IPv4Address, IPv6Address, IPv4Network, IPv6Network and
+                        Path, as in 0.100.0, which msgspec decodes only with a
+                        dec_hook. Other output model types keep the classes.
   --use-tag-as-union-variant-name
                         Name inline oneOf/anyOf branch models after their tag:
                         what --infer-union-variant-names does, skipping tags
