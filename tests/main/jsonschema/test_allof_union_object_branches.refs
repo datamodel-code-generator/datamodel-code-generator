@@ -18,11 +18,19 @@ on-site-parts	main/jsonschema/allof_union_object_branches/required_names_in_unio
 off	main/jsonschema/allof_union_object_branches/union_branch_of_union[off].py
 on	main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
 on-alias	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-alias].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-alias-siblings	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-alias-siblings].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-cycle-siblings	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-cycle-siblings].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-cycle-siblings-distribute	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-cycle-siblings-distribute].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-distribute].py
+on-cycle-siblings-no-pet	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-cycle-siblings-no-pet].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
 on-distribute	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-distribute].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-distribute].py
 on-inline	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-inline].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-inline-all-of	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-inline-all-of].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-inline-all-of-distribute	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-inline-all-of-distribute].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-distribute].py
 on-named-after-branches	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-named-after-branches].py
 on-ref-siblings	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-ref-siblings].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
 on-site-parts	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-site-parts-all-of	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-all-of].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py
+on-site-parts-all-of-distribute	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-all-of-distribute].py	= main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-distribute].py
 on-site-parts-distribute	main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-distribute].py
 [test_union_branch_of_union_sources]
 off-openapi-discriminated	main/jsonschema/allof_union_object_branches/union_branch_of_union_sources[off-openapi-discriminated].py

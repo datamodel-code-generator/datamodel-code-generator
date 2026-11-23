@@ -48,13 +48,20 @@ BRANCHES_VALID = (
     '{"owned": {"tiny": true, "owner": "a"}, "inline": {"small": true, "owner": "a"}, '
     '"keywords": {"name": "a", "wild": true, "owner": "a"}, "aliased": {"meow": true, "owner": "a"}, '
     '"tamed": {"small": true, "tamer": "a", "owner": "a"}, "layered": {"tiny": true, "owner": "a"}, '
-    '"labelled": {"label": "a", "tiny": true, "owner": "a"}}'
+    '"labelled": {"label": "a", "tiny": true, "owner": "a"}, "tagged": {"meow": true, "tag": "a", "owner": "a"}, '
+    '"badged": {"badge": "a", "small": true, "owner": "a"}, "coached": {"small": true, "coach": "a", "owner": "a"}, '
+    '"lion": {"mane": true, "tag": "a", "owner": "a"}}'
 )
 NO_PET = '{"owned": {"owner": "a"}}'
 INLINE_NO_PET = '{"inline": {"owner": "a"}}'
 NO_CAT_FIELDS = '{"aliased": {"owner": "a"}}'
 NO_TAMER = '{"tamed": {"small": true, "owner": "a"}}'
 NO_LABEL = '{"labelled": {"tiny": true, "owner": "a"}}'
+NO_TAG = '{"tagged": {"meow": true, "owner": "a"}}'
+BADGE_NO_PET = '{"badged": {"badge": "a", "owner": "a"}}'
+COACH_NO_PET = '{"coached": {"coach": "a", "owner": "a"}}'
+LION_NO_TAG = '{"lion": {"mane": true, "owner": "a"}}'
+LION_NO_PET = '{"lion": {"tag": "a", "owner": "a"}}'
 
 
 @pytest.mark.cli_doc(
@@ -173,6 +180,16 @@ def test_required_names_in_union_variant_outputs(output_file: Path, output_model
         pytest.param((OPTION, DISTRIBUTE), BRANCHES_VALID, NO_PET, "missing", id="on-distribute"),
         pytest.param((OPTION,), BRANCHES_VALID, NO_LABEL, "missing", id="on-site-parts"),
         pytest.param((OPTION, DISTRIBUTE), BRANCHES_VALID, NO_LABEL, "missing", id="on-site-parts-distribute"),
+        pytest.param((OPTION,), BRANCHES_VALID, NO_TAG, "missing", id="on-alias-siblings"),
+        pytest.param((OPTION,), BRANCHES_VALID, BADGE_NO_PET, "missing", id="on-site-parts-all-of"),
+        pytest.param(
+            (OPTION, DISTRIBUTE), BRANCHES_VALID, BADGE_NO_PET, "missing", id="on-site-parts-all-of-distribute"
+        ),
+        pytest.param((OPTION,), BRANCHES_VALID, COACH_NO_PET, "missing", id="on-inline-all-of"),
+        pytest.param((OPTION, DISTRIBUTE), BRANCHES_VALID, COACH_NO_PET, "missing", id="on-inline-all-of-distribute"),
+        pytest.param((OPTION,), BRANCHES_VALID, LION_NO_TAG, "missing", id="on-cycle-siblings"),
+        pytest.param((OPTION,), BRANCHES_VALID, LION_NO_PET, "missing", id="on-cycle-siblings-no-pet"),
+        pytest.param((OPTION, DISTRIBUTE), BRANCHES_VALID, LION_NO_PET, "missing", id="on-cycle-siblings-distribute"),
         pytest.param(
             (OPTION, "--name-allof-union-members-after-branches"),
             BRANCHES_VALID,
@@ -191,9 +208,12 @@ def test_union_branch_of_union(
     in its union; ``KeywordPet``'s branch declares ``name`` beside its anyOf of a ``$ref`` and an inline object;
     ``AliasedPet``'s branch is an alias of ``Cat``; ``TamedDog`` is a ``$ref`` to ``Puppy`` beside ``tamer``;
     ``TrainedDog`` an allOf of ``Puppy`` and ``trainer``; ``Labelled`` requires ``label`` beside its oneOf of ``Cat``
-    and ``Puppy``; ``Looping`` names itself. Without the option those branches
-    give a variant of the other member alone, so a payload that is no pet is accepted, and the inline oneOf gives no
-    variant; with it each object branch has a variant, and ``Looping``'s own branch stays as it is.
+    and ``Puppy``; ``Looping`` names itself. ``TaggedPet``'s branch is ``CatAlias`` beside a required ``tag``,
+    ``BadgedPet`` requires ``badge`` beside its oneOf of ``Cat`` and ``TrainedDog``, and ``CoachedPet``'s inline oneOf
+    has an allOf requiring ``coach`` beside it; ``TaggedLion``'s branch is ``Lion`` beside a required ``tag``, an allOf
+    of ``Animal``, whose oneOf lists ``Lion``. Without the option those branches give a variant of the other member
+    alone, so a payload that is no pet is accepted, and the inline oneOf gives no variant; with it each object branch
+    has a variant, those of ``TaggedPet`` and ``TaggedLion`` keep ``tag``, and ``Looping``'s own branch stays as it is.
     """
     with (
         contextlib.nullcontext()

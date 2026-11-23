@@ -4837,52 +4837,69 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         branch is read by ``_branch_reading``: an alias stands for the class of the schema it names; a schema that holds
         an ``anyOf`` or a ``oneOf`` of its own (no ``allOf`` beside it) for the models of its branches, parsed again at
         the site below the branch's path as an allOf member's union is (``_parse_all_of_union_parts``, so the branches
-        of a branch flatten into one part); and any other schema holding a union, or a ``$ref`` branch built with the
-        parts of its site (``with_site``, its ``$ref`` read through aliases), for the variants that schema gives as an
-        allOf (``_union_variant_models``). None where the branch is its own model.
+        of a branch flatten into one part); and any other schema holding a union, or any branch built with the parts of
+        its site (``with_site``), for the variants of an allOf over that schema as one inline member, read with its own
+        allOf members and its union alike, beside the site's parts (``_union_variant_models``). The member is read
+        within the walk and itself, so a union in it that leads back to one of them stays its own model. None where
+        the branch is its own model.
         """
         if models := self._parsed_branch_models(branch.data_type, branch.written):
             return models
         if (read := self._branch_reading(branch, walk.within)) is None:
             return None
-        if branch.with_site is not None and branch.parsed.ref:
-            member = branch.parsed.model_copy(update={"ref": _inherited_schemas.alias_target(self, branch.parsed.ref)})
-            location = None if isinstance(read, str) else read.schema_location
-            return self._union_variant_models(
-                name,
-                branch.with_site.model_copy(update={"allOf": [member, *branch.with_site.allOf[1:]]}),
-                branch.path,
-                walk.within.union(filter(None, (location,))),
-            )
-        if isinstance(read, str):
+        if isinstance(read, str) and branch.with_site is None:
             return [self._add_ref(read)]
-        if bool(read.anyOf) != bool(read.oneOf) and not read.allOf:
+        if (
+            not isinstance(read, str)
+            and branch.with_site is None
+            and bool(read.anyOf) != bool(read.oneOf)
+            and not read.allOf
+        ):
             nested: list[list[Reference]] = []
             self._parse_all_of_union_parts(name, read, branch.path, nested, walk)
             return nested[0]
-        site = read if read.allOf else read.model_construct(allOf=[read]).with_schema_location(read.schema_location)
+        member = (
+            branch.parsed.model_copy(update={"ref": read})
+            if isinstance(read, str)
+            else _inherited_schemas.read_within(read, walk.within.union(filter(None, (read.schema_location,))))
+        )
+        site = (
+            branch.with_site.model_copy(update={"allOf": [member, *branch.with_site.allOf[1:]]})
+            if branch.with_site is not None
+            else member.model_construct(allOf=[member]).with_schema_location(member.schema_location)
+        )
         return self._union_variant_models(name, site, branch.path, walk.within)
 
     def _branch_reading(self, branch: _UnionBranch, within: frozenset[SchemaLocation]) -> JsonSchemaObject | str | None:
         """Return what a branch of an allOf's union is read as where it stands for other models than its own.
 
-        The branch is the schema it is (an inline branch without the union keywords its site merged into it), or the one
-        its ``$ref`` names through aliases (``alias_target``), with the keywords beside that schema's own ``$ref``
-        (``_merges_ref_siblings``). Such a schema that holds an ``anyOf`` or a ``oneOf`` (its own, or one its allOf
-        members hold, ``held_unions``) is returned; the ``$ref`` an alias names is returned as text. None for any other
-        branch, for a ``$ref`` an ``--external-ref-mapping`` maps, for a union ``within`` the walk, and under
+        A ``$ref`` branch names the schema its ``$ref`` ends at through aliases (``alias_target``), with the keywords
+        beside that schema's own ``$ref`` (``_merges_ref_siblings``). A branch alone is read as the schema it names; an
+        inline branch, and a ``$ref`` branch with sibling keywords, which is no alias, as its parse reads it, merged
+        with those keywords, without the union keywords its site merged into it (any that neither it nor the schema it
+        names holds); where the parse leaves the ``$ref`` beside them (a target that refers back to itself), the schema
+        it names is one more allOf member of them. Such a schema that holds an ``anyOf`` or a ``oneOf`` (its own, or one
+        its allOf members hold, ``held_unions``) is returned; the ``$ref`` an alias names is returned as text. None for
+        any other branch, for a ``$ref`` an ``--external-ref-mapping`` maps, for a union ``within`` the walk, and under
         ``legacy-union-branch-of-union-as-one``, which warns where the branch stands for other models.
         """
         written = branch.written
         if written.ref and self._resolve_external_ref_mapping(written.ref) is not None:
             return None
         target = _inherited_schemas.alias_target(self, written.ref) if written.ref else None
-        read = written if target is None else self._load_ref_schema_object(target)
-        if read.ref and _merges_ref_siblings(read):
-            read = self._merge_ref_with_schema(read)
+        named = written if target is None else self._load_ref_schema_object(target)
+        if named.ref and _merges_ref_siblings(named):
+            named = self._merge_ref_with_schema(named)
+        parsed = branch.parsed.model_copy(
+            update={key: [] for key in ("anyOf", "oneOf") if not (getattr(written, key) or getattr(named, key))}
+        )
+        alone = target is not None and not _merges_ref_siblings(written)
+        if not alone and parsed.ref:
+            parsed = parsed.model_copy(update={"ref": None, "allOf": [named, *parsed.allOf]})
+        read = named if target is None or alone else parsed
         unions = [*([read] if read.anyOf or read.oneOf else []), *_all_of_values.held_unions(self, read)]
         if any(union.schema_location in within for union in unions) or not (
-            unions or (target not in {None, written.ref} and not read.ref)
+            unions or (alone and target != written.ref and not named.ref)
         ):
             return None
         if "legacy-union-branch-of-union-as-one" in self._legacy_intersection:
@@ -4896,9 +4913,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         if not unions:
             return target
-        if target is not None:
-            return read
-        return branch.parsed.model_copy(update={key: [] for key in ("anyOf", "oneOf") if not getattr(written, key)})
+        return named if alone else parsed
 
     def _union_variant_models(
         self, name: str, site: JsonSchemaObject, path: list[str], within: frozenset[SchemaLocation]

@@ -235,6 +235,123 @@ class Labelled1(Cat):
     label: str
 
 
+class TaggedPet1Base(BaseModel):
+    meow: bool
+    tag: str
+
+
+class TaggedPetBase(Owned):
+    pass
+
+
+class TaggedPet1(TaggedPet1Base, TaggedPetBase):
+    pass
+
+
+class TaggedPetBigDog(BigDog, TaggedPetBase):
+    pass
+
+
+class TaggedPet(RootModel[TaggedPet1 | TaggedPetBigDog]):
+    root: TaggedPet1 | TaggedPetBigDog
+
+
+class BadgedPet1Base(Cat):
+    badge: str
+
+
+class BadgedPet2(BaseModel):
+    badge: str
+
+
+class BadgedPetBase(BaseModel):
+    trainer: str | None = None
+    badge: str
+
+
+class BadgedPetSmallDog(SmallDog, BadgedPetBase):
+    badge: str
+
+
+class BadgedPetTinyDog(TinyDog, BadgedPetBase):
+    badge: str
+
+
+class BadgedPetBase1(Owned):
+    badge: str
+
+
+class BadgedPet1(BadgedPet1Base, BadgedPetBase1):
+    pass
+
+
+class BadgedPet21(BadgedPetSmallDog, BadgedPetBase1):
+    badge: str
+    owner: str
+
+
+class BadgedPet3(BadgedPetTinyDog, BadgedPetBase1):
+    badge: str
+    owner: str
+
+
+class BadgedPet(RootModel[BadgedPet1 | BadgedPet21 | BadgedPet3]):
+    root: BadgedPet1 | BadgedPet21 | BadgedPet3
+
+
+class CoachedPetBase(BaseModel):
+    coach: str
+
+
+class CoachedPetBigDog(BigDog, CoachedPetBase):
+    pass
+
+
+class CoachedPetSmallDog(SmallDog, CoachedPetBase):
+    pass
+
+
+class CoachedPetBase1(Owned):
+    pass
+
+
+class CoachedPetCat(Cat, CoachedPetBase1):
+    pass
+
+
+class CoachedPet2(CoachedPetBigDog, CoachedPetBase1):
+    owner: str
+
+
+class CoachedPet3(CoachedPetSmallDog, CoachedPetBase1):
+    owner: str
+
+
+class CoachedPet(RootModel[CoachedPetCat | CoachedPet2 | CoachedPet3]):
+    root: CoachedPetCat | CoachedPet2 | CoachedPet3
+
+
+class LionBase(BaseModel):
+    mane: bool
+
+
+class BirdBase(BaseModel):
+    wings: int
+
+
+class TaggedLionBase(BaseModel):
+    tag: str
+    mane: bool
+
+
+class TaggedLionBase1(Owned):
+    pass
+
+
+class TaggedLionCat(Cat, TaggedLionBase1):
+    pass
+
+
 class CyclePetBase(Owned):
     pass
 
@@ -297,6 +414,14 @@ class CyclePet(RootModel[CyclePetCat | CyclePetLooping]):
     root: CyclePetCat | CyclePetLooping
 
 
+class Dog(RootModel[BigDog | Puppy]):
+    root: BigDog | Puppy
+
+
+class Pet(RootModel[Cat | Dog]):
+    root: Cat | Dog
+
+
 class Model(BaseModel):
     owned: OwnedPet | None = None
     inline: InlinePet | None = None
@@ -306,14 +431,63 @@ class Model(BaseModel):
     layered: LayeredPet | None = None
     cycle: CyclePet | None = None
     labelled: LabelledPet | None = None
+    tagged: TaggedPet | None = None
+    badged: BadgedPet | None = None
+    coached: CoachedPet | None = None
+    lion: TaggedLion | None = None
 
 
-class Dog(RootModel[BigDog | Puppy]):
-    root: BigDog | Puppy
+class Animal(RootModel[Union["Lion", "Bird"]]):
+    root: Union["Lion", "Bird"]
 
 
-class Pet(RootModel[Cat | Dog]):
-    root: Cat | Dog
+class Bird(RootModel[Union["BirdLion", "BirdBird"]]):
+    root: Union["BirdLion", "BirdBird"]
+
+
+class BirdLion(BirdBase):
+    pass
+
+
+class BirdBird(BirdBase):
+    pass
+
+
+class Lion(RootModel[Union["LionLion", "LionBird"]]):
+    root: Union["LionLion", "LionBird"]
+
+
+class LionLion(LionBase):
+    pass
+
+
+class LionBird(LionBase):
+    pass
+
+
+class TaggedLion(RootModel[Union["TaggedLion1", "TaggedLion2", TaggedLionCat]]):
+    root: Union["TaggedLion1", "TaggedLion2", TaggedLionCat]
+
+
+class TaggedLionLion(TaggedLionBase):
+    pass
+
+
+class TaggedLionBird(TaggedLionBase):
+    pass
+
+
+class TaggedLion1(TaggedLionLion, TaggedLionBase1):
+    owner: str
+
+
+class TaggedLion2(TaggedLionBird, TaggedLionBase1):
+    owner: str
 
 
 Looping.model_rebuild()
+Model.model_rebuild()
+Animal.model_rebuild()
+Bird.model_rebuild()
+Lion.model_rebuild()
+TaggedLion.model_rebuild()

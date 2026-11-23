@@ -134,6 +134,79 @@ class Labelled1(Cat):
     label: str
 
 
+class TaggedPet1(BaseModel):
+    meow: bool
+    tag: str
+
+
+class TaggedPet2(Owned):
+    pass
+
+
+class TaggedPet3(TaggedPet1, TaggedPet2):
+    pass
+
+
+class TaggedPet4(BigDog, TaggedPet2):
+    pass
+
+
+class TaggedPet(RootModel[TaggedPet3 | TaggedPet4]):
+    root: TaggedPet3 | TaggedPet4
+
+
+class BadgedPet1(Cat):
+    badge: str
+
+
+class BadgedPet2(BaseModel):
+    badge: str
+
+
+class BadgedPet3(Owned):
+    badge: str
+
+
+class BadgedPet4(BadgedPet1, BadgedPet3):
+    pass
+
+
+class BadgedPet5(BadgedPet2, BadgedPet3):
+    pass
+
+
+class BadgedPet(RootModel[BadgedPet4 | BadgedPet5]):
+    root: BadgedPet4 | BadgedPet5
+
+
+class CoachedPet1(Owned):
+    pass
+
+
+class CoachedPet2(Cat, CoachedPet1):
+    pass
+
+
+class CoachedPet(RootModel[CoachedPet2]):
+    root: CoachedPet2
+
+
+class Lion1(BaseModel):
+    mane: bool
+
+
+class Bird1(BaseModel):
+    wings: int
+
+
+class TaggedLion1(Owned):
+    pass
+
+
+class TaggedLion3(Cat, TaggedLion1):
+    pass
+
+
 class CyclePet1(Owned):
     pass
 
@@ -235,6 +308,47 @@ class Model(BaseModel):
     layered: LayeredPet | None = None
     cycle: CyclePet | None = None
     labelled: LabelledPet | None = None
+    tagged: TaggedPet | None = None
+    badged: BadgedPet | None = None
+    coached: CoachedPet | None = None
+    lion: TaggedLion | None = None
+
+
+class Animal(RootModel[Union["Lion", "Bird"]]):
+    root: Union["Lion", "Bird"]
+
+
+class Bird(RootModel[Union["Bird2", "Bird3"]]):
+    root: Union["Bird2", "Bird3"]
+
+
+class Bird2(Bird1):
+    pass
+
+
+class Bird3(Bird1):
+    pass
+
+
+class Lion(RootModel["Lion2"]):
+    root: "Lion2"
+
+
+class Lion2(Lion1):
+    pass
+
+
+class TaggedLion(RootModel[Union["TaggedLion2", TaggedLion3]]):
+    root: Union["TaggedLion2", TaggedLion3]
+
+
+class TaggedLion2(TaggedLion1):
+    pass
 
 
 Looping.model_rebuild()
+Model.model_rebuild()
+Animal.model_rebuild()
+Bird.model_rebuild()
+Lion.model_rebuild()
+TaggedLion.model_rebuild()

@@ -9,7 +9,11 @@
     "tamed": {"$ref": "#/$defs/TamedPet"},
     "layered": {"$ref": "#/$defs/LayeredPet"},
     "cycle": {"$ref": "#/$defs/CyclePet"},
-    "labelled": {"$ref": "#/$defs/LabelledPet"}
+    "labelled": {"$ref": "#/$defs/LabelledPet"},
+    "tagged": {"$ref": "#/$defs/TaggedPet"},
+    "badged": {"$ref": "#/$defs/BadgedPet"},
+    "coached": {"$ref": "#/$defs/CoachedPet"},
+    "lion": {"$ref": "#/$defs/TaggedLion"}
   },
   "$defs": {
     "OwnedPet": {"allOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Owned"}]},
@@ -55,6 +59,46 @@
       "properties": {"label": {"type": "string"}},
       "required": ["label"],
       "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Puppy"}]
+    },
+    "TaggedPet": {
+      "allOf": [
+        {"oneOf": [{"$ref": "#/$defs/CatAlias", "properties": {"tag": {"type": "string"}}, "required": ["tag"]}, {"$ref": "#/$defs/BigDog"}]},
+        {"$ref": "#/$defs/Owned"}
+      ]
+    },
+    "BadgedPet": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {"badge": {"type": "string"}},
+          "required": ["badge"],
+          "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/TrainedDog"}]
+        },
+        {"$ref": "#/$defs/Owned"}
+      ]
+    },
+    "CoachedPet": {
+      "allOf": [
+        {
+          "oneOf": [
+            {"$ref": "#/$defs/Cat"},
+            {
+              "oneOf": [{"$ref": "#/$defs/BigDog"}, {"$ref": "#/$defs/SmallDog"}],
+              "allOf": [{"type": "object", "properties": {"coach": {"type": "string"}}, "required": ["coach"]}]
+            }
+          ]
+        },
+        {"$ref": "#/$defs/Owned"}
+      ]
+    },
+    "Animal": {"oneOf": [{"$ref": "#/$defs/Lion"}, {"$ref": "#/$defs/Bird"}]},
+    "Lion": {"allOf": [{"$ref": "#/$defs/Animal"}, {"type": "object", "properties": {"mane": {"type": "boolean"}}, "required": ["mane"]}]},
+    "Bird": {"allOf": [{"$ref": "#/$defs/Animal"}, {"type": "object", "properties": {"wings": {"type": "integer"}}, "required": ["wings"]}]},
+    "TaggedLion": {
+      "allOf": [
+        {"oneOf": [{"$ref": "#/$defs/Lion", "properties": {"tag": {"type": "string"}}, "required": ["tag"]}, {"$ref": "#/$defs/Cat"}]},
+        {"$ref": "#/$defs/Owned"}
+      ]
     },
     "CyclePet": {"allOf": [{"$ref": "#/$defs/Looping"}, {"$ref": "#/$defs/Owned"}]},
     "Looping": {"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Looping"}]}

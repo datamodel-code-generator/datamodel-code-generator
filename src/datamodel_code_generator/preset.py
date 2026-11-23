@@ -1531,9 +1531,9 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(distribute_allof_over_object_branches=True),
         description=(
             "Give an allOf over an anyOf or oneOf one union variant per object branch, also where a branch is itself "
-            "an anyOf or oneOf, named by a $ref or written there, and have each variant require every name a part of "
-            "the allOf requires, typed as the field its branch declares, so a variant no longer accepts a payload "
-            "without such a name or with a value its branch rejects."
+            "an anyOf or oneOf, named by a $ref or written there, and have each variant declare every name a part of "
+            "the allOf requires as a required field, typed as its branch declares it, so a variant needs such a name, "
+            "and output types that validate values reject one its branch rejects."
         ),
     ),
     PresetOptionGroup(
