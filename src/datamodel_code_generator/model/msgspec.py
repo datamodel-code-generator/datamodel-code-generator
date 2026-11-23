@@ -726,6 +726,7 @@ class Struct(DataModel):
     _READ_BY_MSGSPEC: ClassVar[bool] = True
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
+    HIDING_FIELD_RESOLUTION: ClassVar[Literal["field", "type"] | None] = "field"
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT

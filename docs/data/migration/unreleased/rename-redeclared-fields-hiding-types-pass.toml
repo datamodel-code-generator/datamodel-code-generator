@@ -1,0 +1,9 @@
+[[change]]
+id = "rename-redeclared-fields-hiding-types-pass"
+category = "internal"
+title = "Declare the pass that follows renamed fields hiding types"
+summary = "The pass follow_hiding_field_renames is declared with its after edges, which add provisional reads to the pipeline table output."
+refs = ["#7103"]
+covers = [
+    "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
+]

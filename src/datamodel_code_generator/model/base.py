@@ -2408,6 +2408,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = False
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = False
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = False
+    HIDING_FIELD_RESOLUTION: ClassVar[Literal["field", "type"] | None] = None
+    """How a type checker is told a field that the class body assigns from the type its name hides, if it is.
+
+    ``"field"`` renames the field and keeps its wire name as an alias, ``"type"`` renames the type where the field has
+    no alias to keep it by; None leaves the field (the class body does not assign it)."""
     NORMALIZES_FIELD_NAMES: ClassVar[bool] = False
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = False
     WRITES_QUOTED_NAMES_IN_TYPING_GENERICS: ClassVar[bool] = False

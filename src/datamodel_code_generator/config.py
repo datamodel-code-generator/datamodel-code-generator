@@ -362,6 +362,8 @@ class ParserConfig(BaseModel):
     use_unmapped_variant_tag_values: bool = False
     read_mapping_keys_by_schema_tag_type: bool = False
     use_root_types_for_mixed_union_map_keys: bool = False
+    rename_redeclared_fields_hiding_types: bool = False
+    rename_fields_hiding_types_from_type_checkers: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False

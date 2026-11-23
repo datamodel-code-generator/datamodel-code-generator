@@ -1,0 +1,9 @@
+[[change]]
+id = "rename-fields-hiding-types-from-type-checkers-presets"
+extends = "rename-fields-hiding-types-from-type-checkers"
+covers = [
+    "main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-standard].model.py",
+]

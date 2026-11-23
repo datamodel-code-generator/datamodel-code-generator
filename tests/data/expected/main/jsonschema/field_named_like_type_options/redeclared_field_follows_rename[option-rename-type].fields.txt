@@ -1,0 +1,6 @@
+Base: ['Pet']
+Owner: ['Pet']
+Mid: ['Pet']
+Leaf: ['Pet']
+Plain: ['Pet']
+Hiding: ['Pet']

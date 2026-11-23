@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kennel",
+  "type": "object",
+  "properties": {
+    "aliased": {"$ref": "#/$defs/Aliased"},
+    "crowded": {"$ref": "#/$defs/Crowded"},
+    "both": {"$ref": "#/$defs/Both"},
+    "sibling": {"$ref": "#/$defs/Sibling"}
+  },
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "Dog": {"type": "object", "properties": {"bark": {"type": "boolean"}}},
+    "Cat": {"type": "object", "properties": {"purr": {"type": "boolean"}}},
+    "Mixin": {"type": "object", "properties": {"note": {"type": "string"}}},
+    "Base": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Pet"}}},
+    "Aliased": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"animal": {"$ref": "#/$defs/Dog"}}}]},
+    "Crowded": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"properties": {"Pet": {"$ref": "#/$defs/Dog"}, "Pet_1": {"type": "string"}}}
+      ]
+    },
+    "Both": {"allOf": [{"$ref": "#/$defs/Base"}, {"$ref": "#/$defs/Mixin"}]},
+    "Sibling": {"allOf": [{"$ref": "#/$defs/Mixin"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]}
+  }
+}

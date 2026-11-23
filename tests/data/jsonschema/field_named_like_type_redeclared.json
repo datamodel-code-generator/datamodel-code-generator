@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kennel",
+  "type": "object",
+  "properties": {
+    "owner": {"$ref": "#/$defs/Owner"},
+    "leaf": {"$ref": "#/$defs/Leaf"},
+    "hiding": {"$ref": "#/$defs/Hiding"}
+  },
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "Dog": {"type": "object", "properties": {"bark": {"type": "boolean"}}},
+    "Cat": {"type": "object", "properties": {"purr": {"type": "boolean"}}},
+    "Base": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Pet"}}},
+    "Owner": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]},
+    "Mid": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]},
+    "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
+    "Plain": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
+    "Hiding": {"allOf": [{"$ref": "#/$defs/Plain"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
+  }
+}

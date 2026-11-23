@@ -138,6 +138,8 @@ reviewed-safe read_yaml_1_1_numbers_as_text
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix
 reviewed-safe remove_unused_models_beside_type_overrides
+reviewed-safe rename_fields_hiding_types_from_type_checkers
+reviewed-safe rename_redeclared_fields_hiding_types
 reviewed-safe rename_submodules_hidden_by_classes
 reviewed-safe reuse_model
 reviewed-safe reuse_scope

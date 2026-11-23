@@ -1432,6 +1432,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_unmapped_variant_tag_values = config.use_unmapped_variant_tag_values
         self.read_mapping_keys_by_schema_tag_type = config.read_mapping_keys_by_schema_tag_type
         self.use_root_types_for_mixed_union_map_keys = config.use_root_types_for_mixed_union_map_keys
+        self.rename_redeclared_fields_hiding_types = config.rename_redeclared_fields_hiding_types
+        self.rename_fields_hiding_types_from_type_checkers = config.rename_fields_hiding_types_from_type_checkers
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
         self.tag_msgspec_by_payload_name = config.tag_msgspec_by_payload_name
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias
