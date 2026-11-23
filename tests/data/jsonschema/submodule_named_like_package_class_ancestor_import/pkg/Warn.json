@@ -1,1 +1,1 @@
-{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Detail", "type": "object", "properties": {"message": {"type": "string"}, "note": {"$ref": "Warn/deep.json"}}}
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Detail", "description": "A detail of a package that imports from the root package.", "type": "object", "properties": {"message": {"type": "string"}, "note": {"$ref": "Warn/deep.json"}}}

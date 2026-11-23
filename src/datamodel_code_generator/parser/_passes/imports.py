@@ -2511,7 +2511,7 @@ def render(parser: RenderHost[ConfigT, ContextT, ResultT], run: FinishRun[Config
     _raise_hidden_class_refusal(parser)
 
 
-def _raise_hidden_class_refusal(parser: RenderHost[Any, Any, Any]) -> None:
+def _raise_hidden_class_refusal(parser: RenderHost[ConfigT, ContextT, ResultT]) -> None:
     """Raise the refusal of a class its package's submodule hides, unless the run parses again with new seeds.
 
     The parse again keeps the refusal (``Parser.hidden_class_refusal``), and the run raises it where it keeps this
