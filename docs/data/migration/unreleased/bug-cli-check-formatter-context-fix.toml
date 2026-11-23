@@ -1,0 +1,10 @@
+[[change]]
+id = "bug-cli-check-formatter-context-fix"
+category = "api"
+title = "A check or JSON run reads a custom formatter's relative paths where the output lies"
+summary = "--check and --output-format json build the custom formatter in the directory of the real output, as the run that writes does, so a relative path of --custom-formatters-kwargs is found; they built it in a staging directory, where it was not."
+refs = ["#6945"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
