@@ -33,42 +33,42 @@ class Base(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Pet | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Pet | None, Field(alias='Pet')] = None
 
 
 class Owner(Base):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Dog | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Dog | None, Field(alias='Pet')] = None
 
 
 class Mid(Base):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Dog | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Dog | None, Field(alias='Pet')] = None
 
 
 class Leaf(Mid):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Cat | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Cat | None, Field(alias='Pet')] = None
 
 
 class Plain(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Dog | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Dog | None, Field(alias='Pet')] = None
 
 
 class Hiding(Plain):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Pet | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Pet | None, Field(alias='Pet')] = None
 
 
 class Bridge(Base):
@@ -82,14 +82,14 @@ class Below(Bridge):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Cat | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Cat | None, Field(alias='Pet')] = None
 
 
 class Top(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Dog | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Dog | None, Field(alias='Pet')] = None
 
 
 class Middle(Top):
@@ -103,7 +103,7 @@ class Bottom(Middle):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    pet: Annotated[Pet | None, Field(alias='Pet')] = None
+    Pet_1: Annotated[Pet | None, Field(alias='Pet')] = None
 
 
 class Kennel(BaseModel):

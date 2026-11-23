@@ -671,7 +671,7 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
     pytest.param(
         JSON_SCHEMA_DATA_PATH / "field_named_like_type_redeclared.json",
         "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
+        ["--output-model-type", "pydantic_v2.BaseModel", "--no-snake-case-field"],
         id="rename-redeclared-fields-hiding-types",
     ),
     pytest.param(
