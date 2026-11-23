@@ -23,9 +23,11 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   reference are read or written only by the store module, their class's module and the modules their row names.
 - ``call-owners`` (``MUT204``): the def and class homes of ``scripts/decision_homes.py``
   (`scripts._decision_home_reads.checked_homes`), read at run time (called, subclassed, handed on or read as a value:
-  ``references = "reads"``; an annotation and a name imported only under ``if TYPE_CHECKING:`` read none) only by the
-  home modules and the adapter sites of their rows; the parse methods that dispatch tables hold, callable only where
-  the tables are built; and the outputs that builder records mark by a callee, built only by the builder and its parts.
+  ``references = "reads"``; an annotation and a name imported only under ``if TYPE_CHECKING:`` read none, and a name
+  bound to the home by itself counts only where it is read by name, not through ``self``, ``cls`` or its class) only by
+  the home modules and the adapter sites of their rows, where a class site's own body counts as the code around it; the
+  parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
+  records mark by a callee, built only by the builder and its parts.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder (the guard of the builder
   records also allows ``typed_children`` reads; heki cannot tell the method a read is followed by, so such a read
   outside the builder is a finding, and none exists in the package today); and the private members of

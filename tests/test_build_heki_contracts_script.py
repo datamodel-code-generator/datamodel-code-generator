@@ -162,7 +162,9 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 
     assert result.returncode == 0, (
         "heki findings the baseline does not record: keep the write, read or call inside its owners "
-        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of the "
+        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of a decision "
+        "home (a home: contract), go through an adapter site of its row, or name the reader in the row's Adapters "
+        "cell and its sites (scripts/decision_homes.py); for a read of the "
         "environment (EFF201), key the decision on an option or a static rule (the help of each report). If the "
         "findings only moved "
         "(a function was renamed or moved), delete scripts/heki_baseline.toml and run heki check --config "

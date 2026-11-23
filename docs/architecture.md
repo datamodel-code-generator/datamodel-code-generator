@@ -1632,16 +1632,18 @@ its sites, the defs, classes and modules its adapters cell names. `scripts/build
 from those records, and `tests/test_decision_homes.py` fails for a home or site that `src/` does not define and for one
 its cell does not name. heki's contracts (`scripts/build_heki_contracts.py`) report code of the package outside a row's
 home modules and sites that reads a def or class home of the row at run time (an annotation and a name imported only
-under `if TYPE_CHECKING:` read none, and a method, constant, exception class or module home is not checked); today's
-readers that no row lists are in `scripts/heki_baseline.toml`, which may only shrink. The builder homes that L1 states
-(the parse method each position chooses from its dispatch table, the one builder of object maps, the resolver that names
-models) are records of the same file (`BUILDER_HOMES`), each with its passage of this page: the test fails where a parse
-method a table row holds is called outside the tables, where a table's `choose` is called or the table is read (other
-than by `typed_children`) outside its position, and where a call with an output's mark (`is_dict=True` or the `"dict"`
-slot flags under `parser/`, a `Reference` built by its constructor, `model_construct` or `model_validate`) is made
-outside its builder and the parts it hands the output to; the marks are syntactic, so a `Reference` built by
-`model_copy` or a flag computed from a variable slot is not seen; today's bypasses are in `BUILDER_BYPASSES` of
-`tests/decision_home_allowlist.py`, which may only shrink.
+under `if TYPE_CHECKING:` read none; a name bound to a home by itself, such as `factory = Home` in a class body, counts
+where it is read by name but not through `self`, `cls` or its class; a class site's own body counts as the code around
+the class; and a method, constant, exception class or module home is not checked); today's readers that no row lists are
+in `scripts/heki_baseline.toml`, which may only shrink. The builder homes that L1 states (the parse method each position
+chooses from its dispatch table, the one builder of object maps, the resolver that names models) are records of the same
+file (`BUILDER_HOMES`), each with its passage of this page: the test fails where a parse method a table row holds is
+called outside the tables, where a table's `choose` is called or the table is read (other than by `typed_children`)
+outside its position, and where a call with an output's mark (`is_dict=True` or the `"dict"` slot flags under `parser/`,
+a `Reference` built by its constructor, `model_construct` or `model_validate`) is made outside its builder and the parts
+it hands the output to; the marks are syntactic, so a `Reference` built by `model_copy` or a flag computed from a
+variable slot is not seen; today's bypasses are in `BUILDER_BYPASSES` of `tests/decision_home_allowlist.py`, which may
+only shrink.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
 names has one record in `scripts/legacy_rows.py`: what it keeps, what deletes it (`fix`: the issue whose fix does, or
