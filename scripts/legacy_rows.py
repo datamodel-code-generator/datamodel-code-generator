@@ -100,7 +100,8 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "without `--read-mapping-keys-by-schema-tag-type`, a variant's tags are read against the tag field it "
             "declares, which an earlier union may have written as its `Literal`, else the nearest one it inherits "
             "from an ancestor whose tag field no union wrote, so a mapping key reads as text or as an integer by the "
-            "order of the unions (`parser/_tag_plan.py:_declared_type`)"
+            "order of the unions, and as text where the field names a root model or a type alias of an integer "
+            "(`parser/_tag_plan.py:_declared_type`, `declared_tag_type`)"
         ),
         fix=KEEP,
         witness=(

@@ -4,8 +4,6 @@ The validator is the payload suite's source validator (``source_schema_validator
 payload is the payload suite's (``PayloadRuntime`` and ``model_verdict``). A cell differs from the schema by any of
 ``KINDS``:
 
-``import-fails``
-    the generated module does not import, lacks the checked name, or Pydantic cannot build a validator for it;
 ``model-raises``
     the model raises on a payload with an error that is no rejection;
 ``rejects-valid``
@@ -20,8 +18,9 @@ payload is the payload suite's (``PayloadRuntime`` and ``model_verdict``). A cel
 A shape is generated with ``run_main_with_args`` and its module imported with ``_generated_model``, the helpers of the
 main tests, which store no output; a generation that does not exit cleanly fails the test there, as in the payload
 suite, so it is no kind of a cell. A ``Batch`` holds several rows of one document (the decision tables): it is
-generated and imported once, and each row is judged on its own payloads; a module that does not import is the
-``import-fails`` finding of every row.
+generated and imported once, and each row is judged on its own payloads. A module that does not import, lacks the
+checked name or has no validator fails the test: every module of the families imports since #7102, and such a failure
+is fixed in the default output, never kept.
 TypedDict and standard dataclasses have no runtime of their own; their annotations
 are judged by a Pydantic ``TypeAdapter``, which validates both. msgspec Structs are judged by ``msgspec.convert``, as
 the payload suite does.
@@ -65,7 +64,7 @@ IMPORT_FAILS: Final = "import-fails"
 MODEL_RAISES: Final = "model-raises"
 REJECTS_VALID: Final = "rejects-valid"
 ACCEPTS_INVALID: Final = "accepts-invalid"
-KINDS: Final = (IMPORT_FAILS, MODEL_RAISES, REJECTS_VALID, ACCEPTS_INVALID)
+KINDS: Final = (MODEL_RAISES, REJECTS_VALID, ACCEPTS_INVALID)
 """Every way a cell can differ from its schema."""
 
 
@@ -333,7 +332,7 @@ class Cell:
     """The smallest witness of each kind the cell shows (``KINDS``, or a relation of ``relations.py``): a payload as
     JSON, or the error."""
     verdicts: tuple[str, ...] | None = None
-    """The model's verdict on each payload of the shape's pool (``model_verdict``), or None where it has no model."""
+    """The model's verdict on each payload of the shape's pool (``model_verdict``), or None for a cell not judged."""
 
     @property
     def params(self) -> dict[str, object]:
@@ -342,7 +341,7 @@ class Cell:
 
 
 class _UnusableCellError(Exception):
-    """Raised when a cell has no model to judge; it holds the kind and the error."""
+    """Raised when a generated module has no model to judge; it holds the kind and the error."""
 
     def __init__(self, kind: str, detail: str) -> None:
         super().__init__(kind, detail)
@@ -512,14 +511,11 @@ def judge(
     """
     known = truth(shape)
     output = _generate(shape.document, "jsonschema", backend, contract, directory, extra)
-    try:
-        with _loaded(output, [shape.name], backend) as (runtime,):
-            verdicts = lax_verdicts(runtime, known)
-            witnesses = witnesses_of(runtime, known, verdicts)
-            if strict:
-                verdicts = strict_verdicts(runtime, known)
-    except _UnusableCellError as unusable:
-        return Cell(shape, backend, contract, {unusable.kind: unusable.detail})
+    with _loaded(output, [shape.name], backend) as (runtime,):
+        verdicts = lax_verdicts(runtime, known)
+        witnesses = witnesses_of(runtime, known, verdicts)
+        if strict:
+            verdicts = strict_verdicts(runtime, known)
     return Cell(shape, backend, contract, _findings(witnesses), verdicts)
 
 
@@ -536,15 +532,12 @@ def judge_batch(batch: Batch, backend: str, contract: str, directory: Path, *, j
     shapes = [row_shape(batch, row) for row in batch.rows]
     truths = [_truth(_case(batch.family, batch.schema(row), batch.document), row.payloads) for row in batch.rows]
     output = _generate(batch.document, batch.input_file_type, backend, contract, directory)
-    try:
-        with _loaded(output, [row.name for row in batch.rows], backend) as runtimes:
-            verdicts = list(itertools.starmap(lax_verdicts, zip(runtimes, truths, strict=True)))
-            found = [
-                _findings(_witnesses(runtime, known, row_verdicts, judges_null=judges_null))
-                for runtime, known, row_verdicts in zip(runtimes, truths, verdicts, strict=True)
-            ]
-    except _UnusableCellError as unusable:
-        return tuple(Cell(shape, backend, contract, {unusable.kind: unusable.detail}) for shape in shapes)
+    with _loaded(output, [row.name for row in batch.rows], backend) as runtimes:
+        verdicts = list(itertools.starmap(lax_verdicts, zip(runtimes, truths, strict=True)))
+        found = [
+            _findings(_witnesses(runtime, known, row_verdicts, judges_null=judges_null))
+            for runtime, known, row_verdicts in zip(runtimes, truths, verdicts, strict=True)
+        ]
     return tuple(
         Cell(shape, backend, contract, findings, row_verdicts)
         for shape, findings, row_verdicts in zip(shapes, found, verdicts, strict=True)

@@ -197,6 +197,10 @@ __all__ = [
 InlineVariantTags: TypeAlias = "Mapping[int, tuple[tuple[DataModelFieldBase, DiscriminatorValue], ...]]"
 """The fields with one tag of each inline variant that may take the tag it inherits, by variant id, with their tags."""
 
+TagTypeRow: TypeAlias = Literal["schema-type", "legacy-tag-type-from-earlier-union"]
+"""How a variant's tag field type is read (``_declared_type``): as the schema declares it, under
+``--read-mapping-keys-by-schema-tag-type``, or as an earlier union may have written it, as released."""
+
 UnionWrittenTags: TypeAlias = "Mapping[tuple[int, str], DeclaredTagType | None]"
 """The variants whose tag field a union wrote, by variant id and tag property, with the type their own tag field
 declared before the write, None where the union added the field (``TagPlan.union_written``)."""
@@ -951,7 +955,8 @@ class DeclaredTagType:
     """The type of a variant's tag field as its tags are read against it (``_declared_type``).
 
     ``enum_source`` is the Enum typing it, ``literals`` the ``Literal`` values it is or names
-    (``_admitted_tag_values``), ``scalar`` the JSON kind of its one non-null scalar leaf, ``keys_stay_text`` tells
+    (``_admitted_tag_values``), ``scalar`` the JSON kind of its non-null scalar leaves where they share one
+    (``declared_tag_type``), ``keys_stay_text`` tells
     that it is still typed by its Enum under ``--use-enum-values-in-discriminator``, which writes the members the keys
     name, ``values`` holds every value it admits where each is a tag value (``_admitted_tag_values``), and
     ``holds_enum_members`` tells that it is typed by an Enum or holds the members of one.
@@ -965,8 +970,14 @@ class DeclaredTagType:
     holds_enum_members: bool
 
 
-def declared_tag_type(tag_field: DataModelFieldBase, *, enum_member_tags: bool) -> DeclaredTagType:
-    """Return the type of a tag field as mapping keys are read against it (``DeclaredTagType``)."""
+def declared_tag_type(tag_field: DataModelFieldBase, *, enum_member_tags: bool, row: TagTypeRow) -> DeclaredTagType:
+    """Return the type of a tag field as mapping keys are read against it (``DeclaredTagType``).
+
+    Its scalar is the kind its non-null leaves share, read through the unions of its type and the root models and type
+    aliases it names (``_iter_discriminator_data_types``), so a field typed by a root model of an integer reads its keys
+    as integers. Row ``legacy-tag-type-from-earlier-union`` reads it from the one non-null type the field's own type
+    or each member of it is, so a field that names such a root model or type alias reads its keys as text.
+    """
     data_type = tag_field.data_type
     enum_source = data_type.find_source(Enum)
     leaves = [leaf for leaf in data_type.data_types or [data_type] if leaf.type != NONE]
@@ -974,10 +985,19 @@ def declared_tag_type(tag_field: DataModelFieldBase, *, enum_member_tags: bool) 
     literals = (leaf.literals if leaf is not None else []) or (
         [] if enum_source is not None else [*_admitted_tag_values(tag_field)]
     )
+    if row == "legacy-tag-type-from-earlier-union":
+        scalar = SCALAR_TAG_TYPES.get(leaf.type) if leaf is not None and leaf.type else None
+    else:
+        kinds = {
+            SCALAR_TAG_TYPES.get(leaf.type or "")
+            for leaf, _, _ in _iter_discriminator_data_types((data_type,))
+            if leaf.reference is not None or leaf.type != NONE
+        }
+        scalar = kinds.pop() if len(kinds) == 1 else None
     return DeclaredTagType(
         enum_source,
         tuple(literals),
-        SCALAR_TAG_TYPES.get(leaf.type) if leaf is not None and leaf.type else None,
+        scalar,
         enum_source is not None and enum_member_tags and not data_type.enum_member_literals,
         _admitted_tag_values(tag_field),
         any(
@@ -999,14 +1019,12 @@ def _declared_type(
     (``TagPlan.union_written``), so the variant reads alike whichever union writes the field first.
     """
     enum_member_tags = reading.enum_member_tags
-    row: Literal["schema-type", "legacy-tag-type-from-earlier-union"] = (
-        "schema-type" if reading.schema_key_types else "legacy-tag-type-from-earlier-union"
-    )
+    row: TagTypeRow = "schema-type" if reading.schema_key_types else "legacy-tag-type-from-earlier-union"
     if row == "legacy-tag-type-from-earlier-union":
         tag_field = _declared_tag_field(
             variant, field_name, mode, property_name=property_name, union_written=reading.union_written
         )
-        return None if tag_field is None else declared_tag_type(tag_field, enum_member_tags=enum_member_tags)
+        return None if tag_field is None else declared_tag_type(tag_field, enum_member_tags=enum_member_tags, row=row)
     written = reading.union_written
     for owner in (variant, *_inherited_models(variant, "nearest-first")):
         if (key := (id(owner), property_name)) in written:
@@ -1014,7 +1032,7 @@ def _declared_type(
                 return recorded
             continue
         if (tag_field := next(_own_tag_fields(owner, field_name, mode), None)) is not None:
-            return declared_tag_type(tag_field, enum_member_tags=enum_member_tags)
+            return declared_tag_type(tag_field, enum_member_tags=enum_member_tags, row=row)
     return None
 
 
@@ -1171,16 +1189,6 @@ class _VariantTagFacts:
             self.reading.enum_member_tags
             and (declared := self._declared_tag_type()) is not None
             and declared.holds_enum_members
-        )
-
-    def _declared_tag_field(self) -> DataModelFieldBase | None:
-        """Return the tag field the variant declares, else the nearest it inherits from a schema."""
-        return _declared_tag_field(
-            self.model,
-            self.field_name,
-            self.field_name_mode,
-            property_name=self.property_name,
-            union_written=self.reading.union_written,
         )
 
     def path_segment(self) -> str:
@@ -2229,7 +2237,9 @@ class TagPlan:
         if _find_discriminator_value(own_fields) is None:
             self.first_tags[key] = VariantTags(variant, property_name, values, union_name, {})
             self.union_written[key] = (
-                declared_tag_type(own_fields[0], enum_member_tags=view.reading.enum_member_tags) if own_fields else None
+                declared_tag_type(own_fields[0], enum_member_tags=view.reading.enum_member_tags, row="schema-type")
+                if own_fields
+                else None
             )
 
     def record_collapsed_tags(
