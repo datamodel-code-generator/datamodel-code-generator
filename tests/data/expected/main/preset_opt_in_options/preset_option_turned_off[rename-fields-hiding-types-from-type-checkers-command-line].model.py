@@ -3,37 +3,44 @@
 
 from __future__ import annotations
 
-from msgspec import UNSET, Struct, UnsetType, field
+from dataclasses import dataclass, field
 
 
-class Address(Struct):
-    city: str | UnsetType = UNSET
+@dataclass
+class Address:
+    city: str | None = None
 
 
-class Phone(Struct):
-    number: str | UnsetType = UNSET
+@dataclass
+class Phone:
+    number: str | None = None
 
 
-class Tag(Struct):
-    label: str | UnsetType = UNSET
+@dataclass
+class Tag:
+    label: str | None = None
 
 
-class Contact(Struct):
-    contact: Phone = field(name='Contact')
-    phone: Phone | UnsetType = field(name='Phone', default=UNSET)
+@dataclass
+class Contact:
+    Contact: Phone
+    Phone: Phone | None = field(default_factory=lambda: None)
 
 
+@dataclass
 class Business(Contact):
-    phone: Address | UnsetType = field(name='Phone', default=UNSET)
-    tag: Tag | UnsetType = field(name='Tag', default=UNSET)
+    Phone: Address | None = None
+    Tag: Tag | None = field(default_factory=lambda: None)
 
 
+@dataclass
 class Branch(Contact):
-    phone: Phone | UnsetType = field(name='Phone', default=UNSET)
+    Phone: Phone | None = field(default_factory=lambda: None)
 
 
-class Model(Struct):
-    address: Address = field(name='Address')
-    phone: Phone | UnsetType = field(name='Phone', default=UNSET)
-    tag: list[Tag] | UnsetType = field(name='Tag', default=UNSET)
-    contact: Contact | UnsetType = field(name='Contact', default=UNSET)
+@dataclass
+class Model:
+    Address: Address
+    Phone: Phone | None = field(default_factory=lambda: None)
+    Tag: list[Tag] | None = field(default_factory=lambda: None)
+    Contact: Contact | None = field(default_factory=lambda: None)

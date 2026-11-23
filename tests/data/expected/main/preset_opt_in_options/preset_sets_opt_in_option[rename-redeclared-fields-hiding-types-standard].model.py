@@ -71,6 +71,41 @@ class Hiding(Plain):
     pet: Annotated[Pet | None, Field(alias='Pet')] = None
 
 
+class Bridge(Base):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    note: str | None = None
+
+
+class Below(Bridge):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    pet: Annotated[Cat | None, Field(alias='Pet')] = None
+
+
+class Top(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    pet: Annotated[Dog | None, Field(alias='Pet')] = None
+
+
+class Middle(Top):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    note: str | None = None
+
+
+class Bottom(Middle):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    pet: Annotated[Pet | None, Field(alias='Pet')] = None
+
+
 class Kennel(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -78,3 +113,5 @@ class Kennel(BaseModel):
     owner: Owner | None = None
     leaf: Leaf | None = None
     hiding: Hiding | None = None
+    below: Below | None = None
+    bottom: Bottom | None = None

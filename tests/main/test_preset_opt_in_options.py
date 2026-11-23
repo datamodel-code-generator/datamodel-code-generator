@@ -677,7 +677,7 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
     pytest.param(
         JSON_SCHEMA_DATA_PATH / "field_named_like_type_assigned.json",
         "jsonschema",
-        ["--output-model-type", "msgspec.Struct"],
+        ["--output-model-type", "dataclasses.dataclass"],
         id="rename-fields-hiding-types-from-type-checkers",
     ),
 )
@@ -1126,7 +1126,7 @@ def test_preset_sets_opt_in_option(
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "field_named_like_type_assigned.json",
             "jsonschema",
-            ["--output-model-type", "msgspec.Struct"],
+            ["--output-model-type", "dataclasses.dataclass"],
             "--rename-fields-hiding-types-from-type-checkers",
             "--no-rename-fields-hiding-types-from-type-checkers",
             id="rename-fields-hiding-types-from-type-checkers",

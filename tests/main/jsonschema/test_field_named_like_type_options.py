@@ -31,7 +31,7 @@ def _fields_of_the_key(model: type) -> str:
     """Return, for each class of the module, the names of its fields that read the wire key ``Pet``."""
     namespace = vars(sys.modules[model.__module__])
     lines = []
-    for name in ("Base", "Owner", "Mid", "Leaf", "Plain", "Hiding"):
+    for name in ("Base", "Owner", "Mid", "Leaf", "Plain", "Hiding", "Bridge", "Below", "Top", "Middle", "Bottom"):
         fields = namespace[name].model_fields
         lines.append(f"{name}: {sorted(field for field, info in fields.items() if (info.alias or field) == 'Pet')}\n")
     return "".join(lines)
@@ -68,6 +68,8 @@ def test_redeclared_field_follows_rename(extra_args: list[str], output_file: Pat
     ``Owner`` redeclares ``Pet: Pet`` of ``Base`` as ``Pet: Dog``, ``Leaf`` redeclares it a third time down a chain, and
     ``Hiding`` is the reverse: its base redeclares nothing and it is the subclass whose own type hides the name. Without
     the option these classes hold two fields for the key, as in 0.100.0; under ``rename-type`` no field is renamed.
+    ``Below`` and ``Top`` redeclare the field across a class that only inherits it (``Bridge``, ``Middle``), below the
+    renamed field and above it.
     """
     run_main_and_assert(
         input_path=REDECLARED,

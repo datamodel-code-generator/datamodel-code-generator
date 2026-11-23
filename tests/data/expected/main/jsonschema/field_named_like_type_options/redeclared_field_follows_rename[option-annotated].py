@@ -45,7 +45,29 @@ class Hiding(Plain):
     Pet_1: Annotated[Pet | None, Field(alias='Pet')] = None
 
 
+class Bridge(Base):
+    note: str | None = None
+
+
+class Below(Bridge):
+    Pet_1: Annotated[Cat | None, Field(alias='Pet')] = None
+
+
+class Top(BaseModel):
+    Pet_1: Annotated[Dog | None, Field(alias='Pet')] = None
+
+
+class Middle(Top):
+    note: str | None = None
+
+
+class Bottom(Middle):
+    Pet_1: Annotated[Pet | None, Field(alias='Pet')] = None
+
+
 class Kennel(BaseModel):
     owner: Owner | None = None
     leaf: Leaf | None = None
     hiding: Hiding | None = None
+    below: Below | None = None
+    bottom: Bottom | None = None

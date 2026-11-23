@@ -70,6 +70,41 @@ class Hiding(Plain):
     Pet_1: Pet | None = Field(None, alias='Pet')
 
 
+class Bridge(Base):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    note: str | None = None
+
+
+class Below(Bridge):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    Pet_1: Cat | None = Field(None, alias='Pet')
+
+
+class Top(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    Pet_1: Dog | None = Field(None, alias='Pet')
+
+
+class Middle(Top):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    note: str | None = None
+
+
+class Bottom(Middle):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    Pet_1: Pet | None = Field(None, alias='Pet')
+
+
 class Kennel(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -77,3 +112,5 @@ class Kennel(BaseModel):
     owner: Owner | None = None
     leaf: Leaf | None = None
     hiding: Hiding | None = None
+    below: Below | None = None
+    bottom: Bottom | None = None

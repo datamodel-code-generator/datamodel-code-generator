@@ -5,7 +5,9 @@
   "properties": {
     "owner": {"$ref": "#/$defs/Owner"},
     "leaf": {"$ref": "#/$defs/Leaf"},
-    "hiding": {"$ref": "#/$defs/Hiding"}
+    "hiding": {"$ref": "#/$defs/Hiding"},
+    "below": {"$ref": "#/$defs/Below"},
+    "bottom": {"$ref": "#/$defs/Bottom"}
   },
   "$defs": {
     "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
@@ -16,6 +18,11 @@
     "Mid": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]},
     "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
     "Plain": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
-    "Hiding": {"allOf": [{"$ref": "#/$defs/Plain"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
+    "Hiding": {"allOf": [{"$ref": "#/$defs/Plain"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]},
+    "Bridge": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"note": {"type": "string"}}}]},
+    "Below": {"allOf": [{"$ref": "#/$defs/Bridge"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
+    "Top": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
+    "Middle": {"allOf": [{"$ref": "#/$defs/Top"}, {"properties": {"note": {"type": "string"}}}]},
+    "Bottom": {"allOf": [{"$ref": "#/$defs/Middle"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
   }
 }

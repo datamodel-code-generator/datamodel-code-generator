@@ -43,7 +43,29 @@ class Hiding(Plain):
     Pet_1: Pet | None = Field(None, alias='Pet')
 
 
+class Bridge(Base):
+    note: str | None = None
+
+
+class Below(Bridge):
+    Pet: Cat | None = None
+
+
+class Top(BaseModel):
+    Pet: Dog | None = None
+
+
+class Middle(Top):
+    note: str | None = None
+
+
+class Bottom(Middle):
+    Pet_1: Pet | None = Field(None, alias='Pet')
+
+
 class Kennel(BaseModel):
     owner: Owner | None = None
     leaf: Leaf | None = None
     hiding: Hiding | None = None
+    below: Below | None = None
+    bottom: Bottom | None = None

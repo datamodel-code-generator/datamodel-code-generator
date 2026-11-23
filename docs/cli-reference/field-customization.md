@@ -4647,7 +4647,9 @@ family that was renamed, and overrides it; without it the output is as in 0.100.
       "properties": {
         "owner": {"$ref": "#/$defs/Owner"},
         "leaf": {"$ref": "#/$defs/Leaf"},
-        "hiding": {"$ref": "#/$defs/Hiding"}
+        "hiding": {"$ref": "#/$defs/Hiding"},
+        "below": {"$ref": "#/$defs/Below"},
+        "bottom": {"$ref": "#/$defs/Bottom"}
       },
       "$defs": {
         "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
@@ -4658,7 +4660,12 @@ family that was renamed, and overrides it; without it the output is as in 0.100.
         "Mid": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]},
         "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
         "Plain": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
-        "Hiding": {"allOf": [{"$ref": "#/$defs/Plain"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
+        "Hiding": {"allOf": [{"$ref": "#/$defs/Plain"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]},
+        "Bridge": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"note": {"type": "string"}}}]},
+        "Below": {"allOf": [{"$ref": "#/$defs/Bridge"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
+        "Top": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
+        "Middle": {"allOf": [{"$ref": "#/$defs/Top"}, {"properties": {"note": {"type": "string"}}}]},
+        "Bottom": {"allOf": [{"$ref": "#/$defs/Middle"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
       }
     }
     ```
@@ -4715,10 +4722,32 @@ family that was renamed, and overrides it; without it the output is as in 0.100.
             Pet_1: Pet | None = Field(None, alias='Pet')
 
 
+        class Bridge(Base):
+            note: str | None = None
+
+
+        class Below(Bridge):
+            Pet_1: Cat | None = Field(None, alias='Pet')
+
+
+        class Top(BaseModel):
+            Pet_1: Dog | None = Field(None, alias='Pet')
+
+
+        class Middle(Top):
+            note: str | None = None
+
+
+        class Bottom(Middle):
+            Pet_1: Pet | None = Field(None, alias='Pet')
+
+
         class Kennel(BaseModel):
             owner: Owner | None = None
             leaf: Leaf | None = None
             hiding: Hiding | None = None
+            below: Below | None = None
+            bottom: Bottom | None = None
         ```
 
         <!-- fmt: on -->
@@ -4773,10 +4802,32 @@ family that was renamed, and overrides it; without it the output is as in 0.100.
             Pet_1: Pet | None = Field(None, alias='Pet')
 
 
+        class Bridge(Base):
+            note: str | None = None
+
+
+        class Below(Bridge):
+            Pet: Cat | None = None
+
+
+        class Top(BaseModel):
+            Pet: Dog | None = None
+
+
+        class Middle(Top):
+            note: str | None = None
+
+
+        class Bottom(Middle):
+            Pet_1: Pet | None = Field(None, alias='Pet')
+
+
         class Kennel(BaseModel):
             owner: Owner | None = None
             leaf: Leaf | None = None
             hiding: Hiding | None = None
+            below: Below | None = None
+            bottom: Bottom | None = None
         ```
 
         <!-- fmt: on -->

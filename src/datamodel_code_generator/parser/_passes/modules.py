@@ -2190,10 +2190,13 @@ def change_field_name(
 
 
 def _holds_wire_key(model: DataModel, old: str, new: str) -> bool:
-    """Return whether the model holds the wire key ``old``, as its field ``old`` or as its field ``new`` aliased."""
+    """Return whether the model's class holds the wire key ``old``, as its field ``old`` or its field ``new`` aliased.
+
+    A field the class inherits counts as one it declares, so a walk goes on through a class that only inherits it.
+    """
     return any(
         (field.name == old and field.alias in {None, old}) or (field.name == new and field.alias == old)
-        for field in model.fields
+        for field in model.effective_fields
     )
 
 
@@ -2203,10 +2206,10 @@ def follow_hiding_field_renames(parser: ModulesHost, run: ModulesRun) -> None:
     The renames of ``change_field_name`` and ``rename_fields_hiding_types`` are recorded for the family of the class
     (``_hiding_field_names``). A class that redeclares the field with a type its name does not hide has no reason of
     its own to rename it, so it would hold a second field for the wire key its base renamed. The rename follows along
-    the classes that hold that wire key: bases and subclasses of a class that holds the renamed field, and no class
-    that only shares another base with one. A field of another wire key keeps its name, and so does a field in a class
-    that has a field of the new name already. The classes of a module are processed before the modules that come
-    after it, so this runs once every module is.
+    the classes that hold that wire key, declared or inherited: bases and subclasses of a class that holds the renamed
+    field, and no class that only shares another base with one. A field of another wire key keeps its name, and so does
+    a field in a class that holds a field of the new name already, declared or inherited. The classes of a module are
+    processed before the modules that come after it, so this runs once every module is.
     """
     models = [model for ctx in run.contexts for model in ctx.models]
     derived_models = _derived_models(_parsed_and_module_models(parser, models))
@@ -2222,7 +2225,7 @@ def follow_hiding_field_renames(parser: ModulesHost, run: ModulesRun) -> None:
             for member in _model_family(
                 start, derived_models, keeps=lambda kin, old=old, new=new: _holds_wire_key(kin, old, new)
             ).values():
-                if any(field.name == new and field.alias != old for field in member.fields):
+                if any(field.name == new and field.alias != old for field in member.effective_fields):
                     continue
                 for field in member.fields:
                     if field.name == old and field.alias in {None, old}:
