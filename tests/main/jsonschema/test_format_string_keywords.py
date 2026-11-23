@@ -34,6 +34,7 @@ VALID = {
 }
 INVALID: tuple[tuple[str, object], ...] = (
     ("email", "abcdefgh@example.org"),
+    ("email", "a@b.org"),
     ("avatar", "YWJjZGVmZ2g="),
     ("home", "http://a.io"),
     ("home", "https://example.org/a/very/long/path"),
@@ -44,14 +45,9 @@ INVALID: tuple[tuple[str, object], ...] = (
 
 
 def _verdicts(model: type[pydantic.BaseModel]) -> str:
-    """Return whether the model accepts the valid document and rejects each invalid value."""
-    lines = []
-    try:
-        model.model_validate(VALID)
-    except pydantic.ValidationError:
-        lines.append("valid: rejected\n")
-    else:
-        lines.append("valid: accepted\n")
+    """Return the verdict on the valid document, which the model must accept, and on each invalid value."""
+    model.model_validate(VALID)
+    lines = ["valid: accepted\n"]
     for name, value in INVALID:
         try:
             model.model_validate({**VALID, name: value})

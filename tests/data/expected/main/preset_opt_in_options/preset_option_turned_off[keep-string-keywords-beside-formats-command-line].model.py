@@ -29,7 +29,7 @@ class Contact(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    email: Annotated[EmailStr | None, Field(max_length=12)] = None
+    email: Annotated[EmailStr | None, Field(max_length=12, pattern='\\.io$')] = None
     avatar: (
         Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)] | None
     ) = None

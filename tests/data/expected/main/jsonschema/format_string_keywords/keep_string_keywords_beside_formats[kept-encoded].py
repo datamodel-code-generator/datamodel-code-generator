@@ -25,7 +25,7 @@ class Link(RootModel[str]):
 
 
 class Contact(BaseModel):
-    email: EmailStr | None = Field(None, max_length=12)
+    email: EmailStr | None = Field(None, max_length=12, pattern='\\.io$')
     avatar: (
         Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)] | None
     ) = None

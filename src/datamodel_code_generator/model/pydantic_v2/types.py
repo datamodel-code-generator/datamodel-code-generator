@@ -529,12 +529,10 @@ class DataTypeManager(_DataTypeManagerBase):
         """Return the class of a format with the string keywords beside it, ``Annotated[<class>, Field(...)]``.
 
         None where the schema declares none of them (``--keep-string-keywords-beside-formats``, row
-        ``legacy-format-types-drop-string-keywords``).
+        ``legacy-format-types-drop-string-keywords``). The type map writes each such class as an import.
         """
-        if (import_ := self.type_map[types].import_) is None:
-            return None
         data_type_kwargs = self.transform_kwargs(dict(kwargs), string_kwargs)
-        if not data_type_kwargs:
+        if not data_type_kwargs or (import_ := self.type_map[types].import_) is None:
             return None
         if self.PATTERN_KEY in data_type_kwargs:
             data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])

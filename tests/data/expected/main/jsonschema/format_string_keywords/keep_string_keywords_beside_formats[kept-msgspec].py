@@ -14,7 +14,7 @@ Link: TypeAlias = Annotated[str, Meta(max_length=20)]
 
 
 class Contact(Struct):
-    email: Annotated[str, Meta(max_length=12)] | UnsetType = UNSET
+    email: Annotated[str, Meta(max_length=12, pattern='\\.io$')] | UnsetType = UNSET
     avatar: Annotated[str, Meta(max_length=8)] | UnsetType = UNSET
     home: Annotated[str, Meta(max_length=20, pattern='^https')] | UnsetType = UNSET
     emails: list[Email] | UnsetType = UNSET

@@ -1,5 +1,6 @@
 valid: accepted
 invalid email='abcdefgh@example.org': rejected
+invalid email='a@b.org': rejected
 invalid avatar='YWJjZGVmZ2g=': rejected
 invalid home='http://a.io': rejected
 invalid home='https://example.org/a/very/long/path': rejected

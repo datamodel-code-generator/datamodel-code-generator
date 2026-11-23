@@ -2465,7 +2465,7 @@ keywords an `allOf` member adds beside a `$ref` to it.
       "title": "Contact",
       "type": "object",
       "properties": {
-        "email": {"type": "string", "format": "email", "maxLength": 12},
+        "email": {"type": "string", "format": "email", "maxLength": 12, "pattern": "\\.io$"},
         "avatar": {"type": "string", "format": "byte", "maxLength": 8},
         "home": {"type": "string", "format": "uri", "maxLength": 20, "pattern": "^https"},
         "emails": {"type": "array", "items": {"type": "string", "format": "email", "maxLength": 12}},
@@ -2502,7 +2502,7 @@ keywords an `allOf` member adds beside a `$ref` to it.
 
 
         class Contact(BaseModel):
-            email: Annotated[EmailStr, Field(max_length=12)] | None = None
+            email: Annotated[EmailStr, Field(pattern=r'\.io$', max_length=12)] | None = None
             avatar: (
                 Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)] | None
             ) = None

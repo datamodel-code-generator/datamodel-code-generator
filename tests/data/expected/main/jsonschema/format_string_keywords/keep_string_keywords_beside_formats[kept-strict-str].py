@@ -17,7 +17,7 @@ from pydantic import (
 
 
 class Contact(BaseModel):
-    email: Annotated[EmailStr, Field(max_length=12)] | None = None
+    email: Annotated[EmailStr, Field(pattern=r'\.io$', max_length=12)] | None = None
     avatar: (
         Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)] | None
     ) = None
