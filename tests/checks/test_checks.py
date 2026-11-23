@@ -74,10 +74,13 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
 
     The determinism tests run two generator processes that report into the file of their test process. The CRT's append
     on Windows is a seek to the end and then a write, so two writers wrote at the same offset and broke their lines.
+
+    Each process reads a start pipe of its own (#7404). Windows runs the calls on a synchronous pipe one at a time,
+    across every handle inherited from it: while one process waited in its read of a shared start pipe, the next one
+    stopped in its startup's ``GetFileType`` on that pipe before it said it was ready, and the test waited for it.
     """
     report, lines = tmp_path / "report.jsonl", 100
-    start_read, start_write = os.pipe()
-    readies = [os.pipe() for _ in range(4)]
+    starts, readies = [os.pipe() for _ in range(4)], [os.pipe() for _ in range(4)]
     processes = [
         subprocess.Popen(
             [sys.executable, "-c", _APPENDS_ONCE_STARTED, str(report), f"process {number}", str(lines)],
@@ -85,10 +88,10 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
             stdin=start_read,
             stdout=ready_write,
         )
-        for number, (_, ready_write) in enumerate(readies)
+        for number, ((start_read, _), (_, ready_write)) in enumerate(zip(starts, readies, strict=True))
     ]
-    os.close(start_read)
-    for _, ready_write in readies:
+    for (start_read, _), (_, ready_write) in zip(starts, readies, strict=True):
+        os.close(start_read)
         os.close(ready_write)
     mode = Mode(Area.STORE_WRITES, report)
 
@@ -99,7 +102,8 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
     for ready_read, _ in readies:
         os.read(ready_read, 64)
         os.close(ready_read)
-    os.close(start_write)
+    for _, start_write in starts:
+        os.close(start_write)
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(append, [f"thread {number}" for number in range(4)]))
     statuses = [process.wait() for process in processes]

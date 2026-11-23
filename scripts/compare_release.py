@@ -2000,6 +2000,12 @@ class Evidence:
             if probe["unit"] == unit["index"] and index not in self.ran[unit["side"]]
         ]
 
+    def group_problems(self) -> list[str]:
+        """Return why the input groups are incomplete: some compared nothing, or none ran."""
+        empty = sum(not counts[0] for counts in self.groups.values())
+        problems = [f"input groups that compared nothing: {empty}"] if empty else []
+        return [*problems, *([] if self.groups else ["no input group"])]
+
     def report(self, tests: dict[str, set[int]] | None) -> list[str]:
         """Print the evidence and return why it is incomplete.
 
@@ -2015,11 +2021,9 @@ class Evidence:
                 if shown or count
             )
             print(f"evidence: input group {name}: {text}{nothing}")
-        empty = sum(not counts[0] for counts in self.groups.values())
-        problems = [f"input groups that compared nothing: {empty}"] if empty else []
+        problems = self.group_problems()
         if not self.groups:
             print("evidence: input groups: none, the selection matched no input")
-            problems.append("no input group")
         problems += self._report_units(tests)
         for refusal in sorted(self.refused):
             print(f"evidence: refused on head only: {refusal}")

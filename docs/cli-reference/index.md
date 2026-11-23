@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 64 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 42 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 43 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 74 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -343,6 +343,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
 - [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
+- [`--read-mapping-keys-by-schema-tag-type`](field-customization.md#read-mapping-keys-by-schema-tag-type)
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly)
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list)
 - [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type)

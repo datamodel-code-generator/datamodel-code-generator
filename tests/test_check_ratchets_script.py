@@ -113,10 +113,6 @@ import pytest
 def test_d() -> None:
     pytest.importorskip("json")
 """,
-    "scripts/generation_store_allowlist.toml": """["src/pkg/d.py"."risky"]
-'_cache[...]' = 2
-witness = "--input schema.json"
-""",
     "tests/assert_helper_allowlists.py": FUTURE
     + """
 from pathlib import Path

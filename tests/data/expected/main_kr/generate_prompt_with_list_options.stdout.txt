@@ -106,7 +106,7 @@
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--read-uuid6-uuid7-uuid8-formats`: Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...
-- `--strict-types`: Enable strict type validation for specified Python types.
+- `--strict-types`: Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.
 - `--type-mappings`: Override default type mappings for schema formats.
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.
 - `--type-overrides-replace-whole-type`: Make every `--type-overrides` value of a field replace the field's whol...
@@ -169,6 +169,7 @@
 - `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
 - `--no-read-length-keywords-by-type`
+- `--no-read-mapping-keys-by-schema-tag-type`
 - `--no-read-msgspec-union-bounds-exactly`
 - `--no-read-object-keywords-by-type`
 - `--no-snake-case-field`
@@ -184,6 +185,7 @@
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
+- `--read-mapping-keys-by-schema-tag-type`: Read discriminator mapping keys as values of the tag type the schema...
 - `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
 - `--read-object-keywords-by-type`: Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
@@ -952,6 +954,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         declared array writes minLength/maxLength and a
                         declared string minItems/maxItems as their length
                         bounds, as in 0.88.0
+  --read-mapping-keys-by-schema-tag-type, --no-read-mapping-keys-by-schema-tag-type
+                        Read the keys of a discriminator mapping as values of
+                        the type the schema declares for the tag property (an
+                        integer enum's key '2' is the integer 2), also where
+                        an earlier discriminated union already wrote the tag
+                        field of the variant or of the base it inherits it
+                        from, so a key reads alike whichever union comes
+                        first; without it such a key is read against the
+                        Literal the earlier union wrote, or stays text (as in
+                        0.100.0).
   --read-msgspec-union-bounds-exactly, --no-read-msgspec-union-bounds-exactly
                         msgspec.Struct output only: decide whether the int
                         member of a union with a number member drops its Meta
@@ -989,7 +1001,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.
-  --strict-types {str,bytes,int,float,bool} [{str,bytes,int,float,bool} ...]
+  --strict-types {str,bytes,int,float,bool,datetime,date,time} [{str,bytes,int,float,bool,datetime,date,time} ...]
                         Use strict types
   --type-mappings TYPE_MAPPINGS [TYPE_MAPPINGS ...]
                         Override default type mappings. Format:
@@ -2252,7 +2264,7 @@ Recommend a final CLI command for the user's schema and target runtime. Include:
 
 - `--use-annotated` also enables `--field-constraints`; prefer it for constrained Pydantic v2 fields.
 - `--openapi-include-paths` only has an effect when `--openapi-scopes paths` is included.
-- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, or `bytes`.
+- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, `bytes`, `datetime`, `date`, or `time`.
 - `--use-specialized-enum` requires `--target-python-version >= 3.11`.
 - `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, `--check`, and `--diff-against`; not for `--watch`.
 - `--output-format-json-schema` accepts `config`, `generate-prompt`, `generation`, `model-metadata`, `recommend-options`, or `structured-output`; use `config` for JSON configuration schemas.

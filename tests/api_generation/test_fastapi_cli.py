@@ -1032,6 +1032,27 @@ def test_fastapi_cli_api_scope_required(
     )
 
 
+def test_fastapi_cli_strict_date_time_refused(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server whose models hold a strict date or time type, which its text values cannot satisfy."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*PYTHON, *BACKEND, *FORMATTERS, "--disable-timestamp", "--strict-types", "datetime", *SERVER],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: --strict-types datetime is not supported with --generate-server: the generated server reads "
+            "date and time values from text, which strict mode rejects\n"
+        ),
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
+    )
+
+
 @pytest.mark.parametrize(
     ("options", "stderr"),
     [

@@ -664,3 +664,89 @@ def test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits(output_f
             "--merge-message-trait-headers",
         ],
     )
+
+
+def test_main_asyncapi_component_schema_plain_name_anchors(output_file: Path) -> None:
+    """Resolve a reference to the plain-name `$id` or `$anchor` of a component schema, as OpenAPI input does (#6841)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "plain-name-anchors.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_message_payload_plain_name_anchor(output_file: Path) -> None:
+    """Resolve a message payload that is a reference to the plain-name `$anchor` of a component schema (#6841)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "plain-name-anchor-payload.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_schema_format_bare_json_schema_media_type(output_file: Path) -> None:
+    """Read `application/schema;version=draft-07` as a JSON Schema schemaFormat, as the AsyncAPI parser does (#6937)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "schema-format-bare-json-schema.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_reference_to_multi_format_schema_object(output_file: Path) -> None:
+    """Unwrap a Multi Format Schema Object a payload or headers `$ref` names, through a chain of references (#6936)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "multi-format-schema-refs.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_multi_format_schema_refs",
+        model_name="NotesNotePayload",
+        valid_json='{"text": "a"}',
+        invalid_json='{"text": 5}',
+        expected_error_type="string_type",
+    )
+
+
+def test_main_asyncapi_reference_to_multi_format_schema_object_of_another_document(output_file: Path) -> None:
+    """Unwrap a Multi Format Schema Object a payload `$ref` names in another document (#6936)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "multi-format-schema-ref-external.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
+def test_main_asyncapi_plain_name_anchor_in_multi_format_schema_object(output_file: Path) -> None:
+    """Resolve a plain-name `$anchor` inside the schema a component Multi Format Schema Object holds (#6841)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "plain-name-anchor-wrapped-schema.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_component_aliases_of_multi_format_schema_object(output_file: Path) -> None:
+    """Keep each component alias of a Multi Format Schema Object as its own class over the schema it holds (#6936)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "multi-format-schema-component-aliases.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_multi_format_schema_component_aliases",
+        model_name="LegacyLabel",
+        valid_json='{"name": "a"}',
+        invalid_json='{"name": 5}',
+        expected_error_type="string_type",
+    )

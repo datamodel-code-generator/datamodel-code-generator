@@ -111,7 +111,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
-from datamodel_code_generator._target_types import TypeTables, is_none, present
+from datamodel_code_generator._target_types import TypeTables, admits_none, is_none, present
 from datamodel_code_generator.enums import AsyncAPIVersion, DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
@@ -1729,16 +1729,21 @@ class _Projector:
         if not self.inline and (known := self.projected.get(id(data_type))) is not None:
             return known[1]
         projected = self._container(data_type, self._base(data_type))
-        if self._admits_none(data_type) and projected != ImportedType(IMPORT_ANY):
-            base = projected
-            projected = _ordered_union(
-                (projected, NoneType()),
-                preserve_order=data_type.preserve_union_member_order,
-                hint=lambda _: self.hints.composed(data_type, base=base, is_optional=True),
-            )
+        if self._admits_none(data_type):
+            projected = self.optional(data_type, projected)
         if not self.inline:
             self.projected[id(data_type)] = data_type, projected
         return projected
+
+    def optional(self, data_type: DataType, projected: TypeView) -> TypeView:
+        """Return a projected type with None, spelled as the model's hint of the type adds it; Any holds None."""
+        if projected == ImportedType(IMPORT_ANY):
+            return projected
+        return _ordered_union(
+            (projected, NoneType()),
+            preserve_order=data_type.preserve_union_member_order,
+            hint=lambda _: self.hints.composed(data_type, base=projected, is_optional=True),
+        )
 
     def _admits_none(self, data_type: DataType) -> bool:
         """Return whether a type takes None, as the model's hint of it does (``DataType.admits_none``).
@@ -2226,6 +2231,7 @@ def _field_facts(
         explicit_name,
         field.required if backend == "typeddict" else in_init and default_kind == "absent",
         in_init,
+        _default(field.default) if _default_state(field.default) == "value" else None,
     )
 
 
@@ -2478,28 +2484,31 @@ class _Models:
                     continue
                 explicit = resolver.explicit_field_alias(field, model.reference, model_type)
                 annotation_null = field_admits_none(field)
+                wire_null = self.wire_null(model, field, annotation_null=annotation_null)
+                if annotation_null and wire_null and not admits_none(projected):
+                    projected = projector.optional(field.data_type, projected)
                 self.facts[slot] = _field_facts(
                     field,
                     projected,
                     backend,
                     model._field_assignment_facts(field),  # ruff: ignore[private-member-access]
                     annotation_null=annotation_null,
-                    wire_null=self.wire_null(model, field, annotation_null=annotation_null),
+                    wire_null=wire_null,
                     explicit_name=explicit is not None and explicit[0] == field.name,
                 )
 
     def wire_null(self, model: DataModel, field: DataModelFieldBase, *, annotation_null: bool) -> bool:
         """Return whether a field's wire value may be JSON null, as the helper selectors read its JSON types.
 
-        A decided ``nullable`` says so, and so does the null of a ``type`` list; without either, a property takes the
-        null its own type accepts, or the ``nullable: true`` its schema declares (through field copies) where its
-        annotation accepts None and its own type is known to accept none. A decided ``nullable`` leaves out the null
-        the own type accepts (row ``legacy-wire-null-ignores-nullable-false``), and the own type's null is the one
-        ``preexisting_null`` reads, no null value of an enum and none of a type it cannot read, where
-        ``TypeTables.takes_null`` reads both (row ``legacy-wire-null-unknown-type``).
+        A ``nullable: true`` says so, and so does the null of a ``type`` list; otherwise a property takes the null its
+        own type accepts, which a ``nullable: false`` beside it does not take away, as the model's own type keeps it,
+        or the ``nullable: true`` its schema declares (through field copies) where its annotation accepts None and its
+        own type is known to accept none. The own type's null is the one ``preexisting_null`` reads, no null value of
+        an enum and none of a type it cannot read, where ``TypeTables.takes_null`` reads both (row
+        ``legacy-wire-null-unknown-type``).
         """
-        if field.nullable is not None or field.type_has_null:
-            return bool(field.nullable or field.type_has_null)
+        if field.nullable or field.type_has_null:
+            return True
         if self.context(model, field)[0] != "property":
             return False
         own = self.preexisting_null(field.data_type)
@@ -2574,7 +2583,8 @@ class _Models:
         """Return whether a field's own type accepts None before the field adds optionality.
 
         A reference accepts the null of the schema it names (``DataType.names_nullable_model``), an alias that of its
-        value.
+        value, and a root model that of its root as well. A field of an emitted model holds the variant or terminal of
+        each model it names, which is emitted, so every reference binds a symbol.
         """
         pending = [data_type]
         references: dict[int, tuple[Reference, bool]] = {}
@@ -2603,16 +2613,19 @@ class _Models:
         unknown = opaque
         for reference, named in references.values():
             binding = self.binder.reference(reference, "neutral")
-            nullable = (
-                None if binding is None else self.alias_nullable(binding.symbol, set()) if binding.is_alias else named
-            )
+            assert binding is not None
+            nullable: bool | None = named
+            if binding.is_alias:
+                nullable = self.alias_nullable(binding.symbol, set())
+            elif not named and self.binder.models[binding.symbol].IS_ROOT_MODEL:
+                nullable = self.alias_nullable(binding.symbol, set()) is True
             if nullable is True:
                 return True
             unknown |= nullable is None
         return None if unknown else False
 
     def alias_nullable(self, symbol: SymbolId, active: set[SymbolId]) -> bool | None:
-        """Return whether a type alias's value accepts None, None when its producer is unknown."""
+        """Return whether a type alias's or a root model's value accepts None, None when its producer is unknown."""
         if symbol in self.alias_nulls:
             return self.alias_nulls[symbol]
         model = self.binder.models[symbol]
@@ -4397,6 +4410,7 @@ class _Contracts(_Octets):
                     member.model_facts.type,
                     declared,
                     self.documents.borrow(declared),
+                    member.model_facts.default,
                 )
             )
         return tuple(found)
@@ -4406,14 +4420,16 @@ class _Contracts(_Octets):
     ) -> WireDeclaration:
         """Bind a query or header parameter of a channel's handshake, typed as the models type its property.
 
-        The binding's object is a model, so each of its properties is a field, whose type is the parameter's, as a
-        model gives an OpenAPI parameter's schema its type, and whose default, description and keywords, through its
-        reference chain, are the parameter's. It is used at the channel's binding of its protocol, `binding`.
+        The binding's object is a model, so each of its properties is a field, whose type and default are the
+        parameter's, as a model gives an OpenAPI parameter's schema its type, and whose description and keywords,
+        through its reference chain, are the parameter's. It is used at the channel's binding of its protocol,
+        `binding`.
         """
         member = parameter.member
         declared = member.schema
         self.binder.declaration_types.setdefault(declared, member.type)
-        written = self._recorded(declared)
+        written = self._annotations(declared)
+        self.parser.schema_records[declared] = _SchemaRecord(member.default, _keywords(written))
         used = use_site.child("bindings", binding, parameter.location, member.name)
         use = self.use_id(owner, "parameter", declared, used, declared, location=parameter.location, name=member.name)
         facts: dict[str, YamlValue] = {"name": member.name, "in": parameter.location, "required": member.required}
@@ -4428,17 +4444,19 @@ class _Contracts(_Octets):
             self.media_facts((self.use(use, declared),), declared, "parameter", None),
         )
 
-    def _recorded(self, declared: SchemaLocation) -> dict[str, YamlValue]:
-        """Record the default and keywords a schema of a channel gives through its reference chain, and return them.
+    def _recorded(self, declared: SchemaLocation) -> None:
+        """Record the default and keywords a schema of a channel gives through its reference chain."""
+        self.parser.schema_records.setdefault(declared, _record(self._annotations(declared)))
+
+    def _annotations(self, declared: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the default and keywords a schema of a channel gives through its reference chain.
 
         Each location is read from its loaded document (``site_facts_of``), its reference resolved as the parser
         resolves it (``loaded_target``).
         """
-        written = self.parser.ref_annotations(
+        return self.parser.ref_annotations(
             declared, lambda location: site_facts_of(self.documents.borrow(location), location, self.loaded_target)
         )
-        self.parser.schema_records.setdefault(declared, _record(written))
-        return written
 
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""

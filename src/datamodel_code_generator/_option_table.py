@@ -1301,6 +1301,14 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "in 0.97.0). A msgspec Struct keeps its one tag.",
     ),
     toggle(
+        (Section.TYPING, _C.FIELD),
+        "--read-mapping-keys-by-schema-tag-type",
+        help="Read the keys of a discriminator mapping as values of the type the schema declares for the tag property "
+        "(an integer enum's key '2' is the integer 2), also where an earlier discriminated union already wrote the tag "
+        "field of the variant or of the base it inherits it from, so a key reads alike whichever union comes first; "
+        "without it such a key is read against the Literal the earlier union wrote, or stays text (as in 0.100.0).",
+    ),
+    toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-standard-collections",
         help="Use standard collections for type hinting (list, dict). Default: enabled",

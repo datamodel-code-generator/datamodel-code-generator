@@ -125,6 +125,7 @@ The 20261120 presets keep the 20261118 options and add:
 
 The 20261123 presets keep the 20261120 options and add:
 
+- Mapping keys by the schema's tag type (`--read-mapping-keys-by-schema-tag-type`): Read the keys of a discriminator mapping as values of the type the schema declares for the tag property, such as the integer 2 for the key '2' of an integer enum, also where an earlier discriminated union wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first.
 - Merged allOf members intersected (`--intersect-merged-allof-members`): Read the allOf members the generator merges into one schema keyword by keyword, as JSON Schema validates them: a property several merged object members declare takes the type, null and multipleOf they all admit and the members' own allOf members, a named allOf of a $ref and value members keeps the enum of every member, a map $ref beside property counts stays a map with the counts, and a length or pattern beside a $ref to base64 text is checked on the text.
 
 ## Older presets

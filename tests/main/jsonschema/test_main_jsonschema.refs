@@ -9225,6 +9225,29 @@ use_annotated	main/jsonschema/main_jsonschema/main_strict_decimal_beside_a_field
 	main/jsonschema/main_jsonschema/main_strict_types_all.py
 [test_main_strict_types_all_with_field_constraints]
 	main/jsonschema/main_jsonschema/main_strict_types_all_with_field_constraints.py
+[test_main_strict_types_date_time]
+annotated	main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].py
+annotated	main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].rejected.txt
+date-classes	main/jsonschema/main_jsonschema/main_strict_types_date_time[date-classes].py
+date-classes	main/jsonschema/main_jsonschema/main_strict_types_date_time[date-classes].rejected.txt	= main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].rejected.txt
+lax	main/jsonschema/main_jsonschema/main_strict_types_date_time[lax].py
+lax	main/jsonschema/main_jsonschema/main_strict_types_date_time[lax].rejected.txt
+pydantic-dataclass	main/jsonschema/main_jsonschema/main_strict_types_date_time[pydantic-dataclass].py
+pydantic-dataclass	main/jsonschema/main_jsonschema/main_strict_types_date_time[pydantic-dataclass].rejected.txt	= main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].rejected.txt
+root-model-type-alias	main/jsonschema/main_jsonschema/main_strict_types_date_time[root-model-type-alias].py
+root-model-type-alias	main/jsonschema/main_jsonschema/main_strict_types_date_time[root-model-type-alias].rejected.txt	= main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].rejected.txt
+strict	main/jsonschema/main_jsonschema/main_strict_types_date_time[strict].py	= main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].py
+strict	main/jsonschema/main_jsonschema/main_strict_types_date_time[strict].rejected.txt	= main/jsonschema/main_jsonschema/main_strict_types_date_time[annotated].rejected.txt
+[test_main_strict_types_date_time_beside_fields_named_like_them]
+	main/jsonschema/main_jsonschema/main_strict_types_date_time_beside_fields_named_like_them.py
+[test_main_strict_types_date_time_kept]
+dataclass	main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[dataclass].py
+msgspec	main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[msgspec].py
+pendulum	main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[pendulum].py
+[test_main_strict_types_date_time_numbers]
+	main/jsonschema/main_jsonschema/main_strict_types_date_time_numbers.py
+[test_main_strict_types_date_time_root_model_regex_engine]
+	main/jsonschema/main_jsonschema/main_strict_types_date_time_root_model_regex_engine.py
 [test_main_strict_types_keep_constraints]
 extra_args0	main/jsonschema/main_jsonschema/main_strict_types_keep_constraints[extra_args0].py
 extra_args0	main/jsonschema/main_jsonschema/main_strict_types_keep_constraints[extra_args0].rejected.txt	= main/jsonschema/strict_types_constraints/rejected.txt

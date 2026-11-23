@@ -395,10 +395,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_binding.py:_Projector._admits_none` (`DataType.admits_none` of a node; a reference that binds no "
             "symbol is read through as the type it stands for, which holds the None of its model already, and adds "
             "only its own None), `_Projector._structural` (`DataType.items_admit_none` of a container whose items are "
-            "several schemas), `field_admits_none` for an annotation (`_Models.field_facts` and "
-            "`_Models.alias_nullable`, whose field's own null is `field_renders_none`'s); not yet: the null of the "
-            "wire, `_Models.wire_null` over `_Models.preexisting_null` (rows `legacy-wire-null-ignores-nullable-false` "
-            "and `legacy-wire-null-unknown-type`)"
+            "several schemas), `field_admits_none` for an annotation (`_Models.field_facts`, whose field type takes "
+            "the None the annotation adds where the wire admits null, and `_Models.alias_nullable`, whose field's own "
+            "null is `field_renders_none`'s); not yet: the null of the wire, `_Models.wire_null` over "
+            "`_Models.preexisting_null` (row `legacy-wire-null-unknown-type`)"
         ),
         sites=(
             Home("types.py", "DataType.admits_none"),
@@ -1327,7 +1327,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "prediction (`legacy-any-key`), and a variant a mapping names taking only its keys, not the other values "
             "its tag field admits, without `--use-unmapped-variant-tag-values` (`legacy-mapped-tags-only`); a variant "
             "whose tag field admits several values takes those no mapping key and no other variant claim "
-            "(`own-field-values`), a msgspec Struct, which takes one tag, only where they are one"
+            "(`own-field-values`), a msgspec Struct, which takes one tag, only where they are one or where it has no "
+            "name (an inline variant); a null the tag field admits is no tag at L5"
         ),
         homes=(
             Home("model/_decisions/tag_value.py", "field_tag"),
@@ -1432,10 +1433,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "which the passes write through the store in the order they read them: whether a union can be tagged, the "
             "Python name of its tag field, the tags of each variant and the form each tag field takes, which msgspec "
             "unions take struct tags, and which `discriminator=` Pydantic cannot build once every module wrote its "
-            "tags (the lone variant of a union without a tag, a variant whose root has a default, two choices that "
-            "hold one tag in the tag fields that were written); the L6 decision, which L6 writes the same way, base by "
-            "base in the order of the reference graph: which msgspec structs below tagged bases take the tags their "
-            "fields redeclare, opt out of the tag they inherit, or declare the fields of their bases; the class "
+            "tags (the lone variant of a union without a tag, a variant whose tag field admits None or reads its tag "
+            "through a RootModel on a target before Pydantic 2.13, a variant whose root has a default, two choices "
+            "that hold one tag in the tag fields that were written); the L6 decision, which L6 writes the same way, "
+            "base by base in the order of the reference graph: which msgspec structs below tagged bases take the tags "
+            "their fields redeclare, opt out of the tag they inherit, or declare the fields of their bases; the class "
             "constants of a backend these read are the rows of `TagCapabilities` (`variant_takes_tag`, "
             "`writes_argument`, `struct_tags`, `bool_tags`, `literal_holds_members`, `flattens_layouts`), a variant's "
             "from its own class"
@@ -7921,7 +7923,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the schemas generation reads (`parser/asyncapi.py:AsyncAPIParser._iter_schema_format_schemas`, which "
             "refuses a wrapper without a `schema` or with a `schemaFormat` that is no string, "
-            "`_check_multi_format_schema_object`), the schemas the recommender measures "
+            "`_check_multi_format_schema_object`), the schemas a document declares as schema resources "
+            "(`parser/_schema_documents.py:implicit_schema_resources`: the schema a component wrapper holds), "
+            "the schemas the recommender measures "
             "(`_recommend/_signals.py:_unwrap`: the component schemas of an AsyncAPI document, and the payloads and "
             "headers of its messages), and the `schemaFormat` of the payload a client codes "
             "(`_asyncapi_connections.py:_Reader.message`; where its schema is, the walk records)"
@@ -7929,6 +7933,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         sites=(
             Home("parser/asyncapi.py", "AsyncAPIParser._iter_schema_format_schemas"),
             Home("parser/asyncapi.py", "_check_multi_format_schema_object"),
+            Home("parser/_schema_documents.py", "implicit_schema_resources"),
             Home("_recommend/_signals.py", "_unwrap"),
             Home("_asyncapi_connections.py", "_Reader.message"),
         ),

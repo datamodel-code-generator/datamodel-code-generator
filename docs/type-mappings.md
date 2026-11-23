@@ -235,6 +235,36 @@ Generates Pydantic strict types that don't perform type coercion during validati
 | `float` | `StrictFloat` | Strings, integers |
 | `bool` | `StrictBool` | Strings, integers |
 | `bytes` | `StrictBytes` | Strings |
+| `datetime` | `Annotated[AwareDatetime, Strict()]` (the type `--output-datetime-class` picks) | Numbers, read as a Unix time in lax mode |
+| `date` | `Annotated[date, Strict()]` (the type `--output-date-class` picks) | Numbers, read as a Unix time in lax mode |
+| `time` | `Annotated[time, Strict()]` | Numbers, read as seconds in lax mode |
+
+`datetime`, `date` and `time` apply to string formats only (`date-time`, `date-time-local`, `date`, `time`,
+`time-local`). An integer or number with `format: date-time` holds a Unix time and a number with `format: time` holds
+seconds, so those keep the lax type. The pendulum types of `--use-pendulum` accept only their own instances already and
+are not changed.
+
+Strict mode reads JSON and Python input differently. `model_validate_json()` still accepts ISO strings, but Python input
+must be `datetime`, `date` or `time` objects: `Event(at="2020-01-01T00:00:00Z")` and `Event.model_validate({...})` fail.
+A default that Pydantic validates is Python input too, so a field whose `$ref` names a root model with a `default`
+fails when the field is left out ([#7380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7380)).
+The generated server and client read date and time values from text, so `--generate-server` and `--generate-client`
+stop with an error when `--strict-types` holds `datetime`, `date` or `time`.
+
+```bash
+datamodel-codegen --input openapi.yaml --output models.py \
+  --output-model-type pydantic_v2.BaseModel --strict-types datetime
+```
+
+```python
+class TestObject(RootModel[Annotated[AwareDatetime, Strict()]]):
+    root: Annotated[AwareDatetime, Strict()]
+
+
+TestObject.model_validate_json('"2020-01-01T00:00:00Z"')  # accepted
+TestObject(-1)  # ValidationError, accepted without --strict-types datetime
+TestObject("2020-01-01T00:00:00Z")  # ValidationError: strict mode wants a datetime in Python input
+```
 
 A `format: byte` string stays `Base64Str`, or `Base64Bytes` with `--type-mappings string+byte=binary`, which decode
 base64 text, also with `--strict-types str` or `bytes`. With `minLength` or `maxLength`, such bytes are written as

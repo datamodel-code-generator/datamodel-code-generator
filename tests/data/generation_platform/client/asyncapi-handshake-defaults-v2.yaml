@@ -1,0 +1,50 @@
+asyncapi: 2.6.0
+info:
+  title: Ticker stream
+  version: 1.0.0
+servers:
+  live:
+    url: wss://ticker.example.com
+    protocol: wss
+channels:
+  /ticks:
+    bindings:
+      ws:
+        query:
+          type: object
+          required: [market]
+          properties:
+            market:
+              $ref: '#/components/schemas/Market'
+            token:
+              $ref: '#/components/schemas/Token'
+            alias:
+              $ref: '#/components/schemas/TokenAlias'
+            beside:
+              $ref: '#/components/schemas/TokenAlias'
+              default: near
+            own:
+              type: string
+              default: mine
+        headers:
+          type: object
+          properties:
+            X-Token:
+              $ref: '#/components/schemas/TokenAlias'
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            price:
+              type: number
+components:
+  schemas:
+    Market:
+      type: string
+      default: eu
+    TokenAlias:
+      $ref: '#/components/schemas/Token'
+    Token:
+      type: string
+      default: base

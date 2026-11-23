@@ -506,6 +506,16 @@ Typing customization:
                         declared array writes minLength/maxLength and a
                         declared string minItems/maxItems as their length
                         bounds, as in 0.88.0
+  --read-mapping-keys-by-schema-tag-type, --no-read-mapping-keys-by-schema-tag-type
+                        Read the keys of a discriminator mapping as values of
+                        the type the schema declares for the tag property (an
+                        integer enum's key '2' is the integer 2), also where
+                        an earlier discriminated union already wrote the tag
+                        field of the variant or of the base it inherits it
+                        from, so a key reads alike whichever union comes
+                        first; without it such a key is read against the
+                        Literal the earlier union wrote, or stays text (as in
+                        0.100.0).
   --read-msgspec-union-bounds-exactly, --no-read-msgspec-union-bounds-exactly
                         msgspec.Struct output only: decide whether the int
                         member of a union with a number member drops its Meta
@@ -543,7 +553,7 @@ Typing customization:
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.
-  --strict-types {str,bytes,int,float,bool} [{str,bytes,int,float,bool} ...]
+  --strict-types {str,bytes,int,float,bool,datetime,date,time} [{str,bytes,int,float,bool,datetime,date,time} ...]
                         Use strict types
   --type-mappings TYPE_MAPPINGS [TYPE_MAPPINGS ...]
                         Override default type mappings. Format:

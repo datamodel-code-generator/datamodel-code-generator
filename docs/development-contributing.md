@@ -66,8 +66,8 @@ Use helpers such as `run_main_and_assert`, `run_main_url_and_assert`,
 `assert_warnings_contain` where they fit. Prefer full expected-file or inline
 snapshot comparisons for generated output over substring checks.
 
-Tests do not need to name expected files. Write the test with the helpers (input
-and arguments only), run `pytest '<test>'`, and commit every file it writes:
+Tests never name expected files: no helper takes an expected path or directory.
+Write the test with the helpers (input and arguments only), run `pytest '<test>'`, and commit every file it writes:
 `tests/data/expected/**` and the `.refs` files, which can include those of other
 modules that share output with it; `git add -A tests` stages them all and the
 run lists them. To accept changed
@@ -77,8 +77,8 @@ Review the resulting `git diff` before committing.
 
 A test's outputs are stored under its own name. With the run and tree helpers, its
 second and later unnamed outputs of one kind are numbered; `assert_output` allows
-only one unnamed output per test, so later calls need `name=` or an explicit
-expected path. `name="warnings"` names one (the run helpers, the tree helpers and
+only one unnamed output per test, so later calls need `name=`.
+`name="warnings"` names one (the run helpers, the tree helpers and
 `assert_output` take it), and two outputs under
 one name in one test must be equal, which is how a test compares two runs.
 `against=` (on `assert_output`, `assert_directory_content` and
@@ -88,7 +88,7 @@ runtime (`_runtime`), and stores nothing.
 `assert_output(text, suffix=".py")` keeps a stored suffix other than `.txt`
 (`.json` stores a JSON value); `derived_stdout=True` compares stdout beside a
 written output, and `stdout_suffix=".py"` stores a stdout module as `.py`. The
-tree helpers without an expected directory store the files their `pattern`
+tree helpers store the files their `pattern`
 selects as the test's tree, and `run_generate_and_assert(expected_error=...)`
 without `expected_error_match` stores the error text.
 
@@ -615,11 +615,12 @@ new ones: delete `scripts/heki_baseline.toml` and run the command with
 `--update-baseline` again; the keys must not rise. The sites of the
 environment boundary count under a key of their own,
 `allowlist:heki-baseline:EFF201`, so a new read of the environment is never
-paid for by another finding. Each other site of the baseline repeats a
-violation that another key already budgets (`allowlist:UNLISTED_CALLERS`,
-`allowlist:host-private-access`, the generation store allowlist,
-`allowlist:BUILDER_BYPASSES`), so a new violation of a recorded rule raises
-both keys and needs both `[[approved]]` entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
+paid for by another finding. Each other site of the baseline, except the
+writes outside the store operations that only heki checks, repeats a violation
+that another key already budgets (`allowlist:UNLISTED_CALLERS`,
+`allowlist:host-private-access`, `allowlist:BUILDER_BYPASSES`), so a new
+violation of such a rule raises both keys and needs both `[[approved]]`
+entries, and a fix lowers both. `# heki: ignore[...]` comments and `# noqa`
 comments that name a heki rule count as `heki-ignore:<rule>` keys.
 
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
@@ -724,42 +725,48 @@ Parser code should not directly assign `data_type.reference`, `model.fields`,
 helpers. Read dependency information through `GenerationIndex` queries instead
 of using `Reference.children` as a reverse index.
 
-The local pre-commit hook `generation-store-usage` runs
-`scripts/check_generation_store_usage.py`, which checks `parser/`, the
-parser-facing hooks in `model/` and `types.py`, and caches kept in the
-`__dict__` of data types, fields and models, against the attribute-to-fact
-table in `scripts/fact_tables.py`. The hook runs when a
-parser file changes; after editing `model/`, `types.py` or the table, run the
-script yourself (the test suite runs it too).
-
-Writes that bypassed the store when the checker learned them are listed in
-`scripts/generation_store_allowlist.toml`, by path, function and target with a
-count. The list only shrinks:
+heki checks every write of a fact, presentation or cache attribute of the
+graph: `scripts/build_heki_contracts.py` writes a `write-owners` contract of
+`scripts/heki.toml` for the rows of `scripts/fact_tables.py` (and for the model
+lists of the parser run state, `Parser.results` and `ModuleContext.models`)
+that only the store operations the rows name may write. Each write is judged in
+the function that makes it. Writes that bypassed the store when the contracts
+were written are recorded in `scripts/heki_baseline.toml` (see the heki
+paragraph above), which only shrinks:
 
 - A new write outside a store operation fails. Route it through a store
-  operation instead of adding an entry.
-- When you route a write, the entry no longer matches and the check fails
-  until you remove it or lower its count. `python
-  scripts/check_generation_store_usage.py --write-allowlist` does that for you;
-  it refuses to add entries or raise counts.
-- A refactor that moves a write to another function renames its entry by
-  hand (path, function or target) without raising the total count.
-- A new attribute on `DataType`, a field or a model needs a row in
-  `ATTRIBUTE_FACTS`; a model method that parser code calls and that reaches a
-  fact write needs an entry in `PARSER_HOOK_METHODS` of the checker, or in
-  `CONSTRUCTION_METHODS` or `RENDER_ENTRY_POINTS` with a reason.
+  operation instead of recording it.
+- When you route a write, the baseline entry no longer matches: run `heki
+  check --config scripts/heki.toml --baseline scripts/heki_baseline.toml
+  --update-baseline src`, which only removes entries.
+- A refactor that moves a write to another function moves its entry: delete
+  the baseline and run the same command again; the keys must not rise.
 
-The runtime write guard (the `STORE_WRITES` debug check below) sees the same
-writes while the generator runs, also where the scan cannot follow them. Every
-test runs it, and a test fails when its generations write outside a store
-operation at a place the allowlist does not list. A write that only the guard
-sees is listed with a witness instead of a count: `target = "arguments"`, the
-`datamodel-codegen` arguments of one run that makes the write.
-`python scripts/check_generation_store_usage.py --witnesses` runs every witness
-and reports the entries whose witness no longer makes their write; remove those.
-Witness entries are never added for new writes either. When the scan learns to
-find a write that a witness covers, `--write-allowlist` turns the witness into a
-count entry; that move is the only one that may raise the counted total.
+The methods that write the graph for the store operations that run them (the
+hooks such as `process_const` and `set_base_class`, and the reference mutators
+such as `replace_data_type` and `replace_reference`) and the bookkeeping of a
+reference (`Reference.children`, `loaded`, `source`) are listed in
+`STORE_MEMBERS` of `scripts/fact_tables.py`. Each method gets a `call-owners`
+contract: only the store module, the method's own class and the other listed
+methods may call it, and it may write what the store module writes. A call of
+one from a parser pass is a `MUT204` finding (`MUT207` on a receiver whose class
+heki cannot tell, such as an unannotated parameter or a callback), and a read of
+`Reference.children` outside `reference.py`, `_graph_links.py` and the store a
+`MUT203` one.
+
+The local pre-commit hook `generation-store-usage` runs
+`scripts/check_generation_store_usage.py`, which checks the table itself: a new
+attribute on `DataType`, a field or a model, and a new `__dict__` key that
+`parser/`, `model/` or `types.py` writes, needs a row in `ATTRIBUTE_FACTS`, and
+a row that names nothing the sources declare or write fails. heki can judge a
+write only of an attribute or key that a row names. The hook runs when a parser
+file changes; after editing `model/`, `types.py` or the table, run the script
+yourself (the test suite runs it too).
+
+The runtime write guard (the `STORE_WRITES` debug check below) sees the writes
+while the generator runs, also where heki cannot follow them. Every test runs
+it, and a test fails when its generations write outside a store operation in a
+function where the heki baseline records no such write of the attribute.
 
 If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
 `NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in
@@ -799,9 +806,9 @@ script checks the declarations, `scripts/check_pass_pipeline.py` checks the tabl
 made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
-`scripts/generation_store_allowlist.toml` lists, so `1` would stop every generation. Unless you set the variable,
+`scripts/heki_baseline.toml` records, so `1` would stop every generation. Unless you set the variable,
 `tests/conftest.py` (`StoreWritesCheck`) sets it to `report:<file>` during each test, with one file per test process,
-and fails the test for a write of the package that the allowlist does not list.
+and fails the test for a write of the package that the baseline does not record.
 
 | Area | Checks |
 | --- | --- |
@@ -872,6 +879,16 @@ included), the exception classes the CLI module handled, messages (errors by cla
 frames), exit status, the refusal of a single output file before a modular run, and the options and their values on
 each side, and fails on any difference. A cell that fails alike on both sides is not compared where the timeout or
 the memory cap stopped both or where every cell of its input fails on both sides; the run prints how many.
+
+The fixtures and catalog cells are fixed inputs. To also try schemas nobody wrote down, run
+`python -m scripts.shape_families_random --identity`: it draws compositions of the shape families
+(`tests/main/shape_families/compose.py`, one family's shape placed inside another's), generates each on your checkout
+and on the merge base with `origin/main` (pass another branch as its argument) through the gate's workers and
+arguments, and fails on any difference the gate's identity mode would report. Without `--identity` it compares with
+the latest release instead: there a difference fails unless a change record covers its cell (the label is
+`composition:<levels>/<family>/<parameter>=<value>,.../...`, so `input = ["composition:*/**/tagged/**"]` with
+`input_file_type = "jsonschema"` names every composition with a `tagged` level), and each model is also held to the
+validator. `--budget` (seconds) and `--examples` bound a run, and `--seed` replays one.
 
 Against a git revision both scripts also say whether the compared runs ran what your commits change, counted by code
 object (a module or class body, a function, a lambda, a generator expression; `scripts/_change_units.py`). What your

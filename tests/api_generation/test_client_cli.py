@@ -1174,6 +1174,27 @@ def test_client_cli_api_scope_required(
     )
 
 
+def test_client_cli_strict_date_time_refused(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client whose models hold a strict date or time type, which its text values cannot satisfy."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, "--strict-types", "date", *CLIENT],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: --strict-types date is not supported with --generate-client: the generated client reads "
+            "date and time values from text, which strict mode rejects\n"
+        ),
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "client"],
+    )
+
+
 def test_client_cli_model_output_required(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

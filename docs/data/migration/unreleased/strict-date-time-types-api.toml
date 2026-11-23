@@ -1,0 +1,14 @@
+[[change]]
+id = "strict-date-time-types-api"
+category = "api"
+title = "Public names for the strict date and time types"
+summary = "The StrictTypes members datetime, date and time, the Pydantic import IMPORT_STRICT and the data type StrictAnnotatedDataType are added, and PROMPT_GUIDANCE_SECTIONS lists the new values; nothing is removed."
+refs = ["#2500"]
+decision = ["#2500"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.types.StrictTypes"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
