@@ -8608,15 +8608,23 @@ def test_main_unique_items_as_set_by_value(extra_args: list[str], expected_repr:
     )
 
 
-def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path) -> None:
-    """Read the fields a frozen dataclass set item inherits in its class's order and nearest first, under by-value sets.
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="without-option"),
+        pytest.param(["--read-set-item-fields-in-class-order"], id="class-order"),
+    ],
+)
+def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path, extra_args: list[str]) -> None:
+    """Read the fields a frozen dataclass set item inherits nearest first, and in its class's order with the option.
 
     ``Levels`` inherits ``x`` from ``B``, a direct base, and from ``Z``, the base of ``A``: the class takes ``Z``'s list
-    (C3), which does not hash, so ``levels`` is a list; up to 0.100.0 the fields were read nearest first only, ``x`` was
-    ``B``'s string and ``levels`` a set that a payload with ``x`` fails to build (#6997). ``Reverse`` is the other way
-    round: the class takes ``W``'s string, nearest first reads ``U``'s list (row ``legacy-unique-sets-level-order``),
-    so ``reverse`` stays a list. ``Diamond`` reaches ``Y`` through ``P`` and ``Q`` and reads it once; its fields hash,
-    so ``diamond`` is a set.
+    (C3), which does not hash. Nearest first ``x`` is ``B``'s string, so without the option (row
+    ``legacy-unique-sets-class-fields-unread``) ``levels`` is a set that a payload with ``x`` fails to build, as in
+    0.100.0 (#6997); --read-set-item-fields-in-class-order also reads the class's fields, so ``levels`` is a list.
+    ``Reverse`` is the other way round: the class takes ``W``'s string, nearest first reads ``U``'s list (row
+    ``legacy-unique-sets-level-order``), so ``reverse`` stays a list either way. ``Diamond`` reaches ``Y`` through
+    ``P`` and ``Q`` and reads it once; its fields hash, so ``diamond`` is a set.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
@@ -8631,6 +8639,7 @@ def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path) -
             "--formatters",
             "builtin",
             "--disable-timestamp",
+            *extra_args,
         ],
         force_exec_validation=True,
     )
@@ -8639,8 +8648,8 @@ def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path) -
 def test_main_unique_items_as_set_by_value_inherited_fields_pydantic_dataclass(output_file: Path) -> None:
     """Keep a list of Pydantic dataclass items whose class takes an inherited field that does not hash (#6997).
 
-    ``Levels`` takes ``Z``'s list ``x`` in its class's order, so ``levels`` is a list and a payload whose item holds
-    ``x`` parses; a set of such items fails to build.
+    Under --read-set-item-fields-in-class-order ``Levels`` takes ``Z``'s list ``x`` in its class's order, so ``levels``
+    is a list and a payload whose item holds ``x`` parses; a set of such items fails to build.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
@@ -8652,6 +8661,7 @@ def test_main_unique_items_as_set_by_value_inherited_fields_pydantic_dataclass(o
             "--frozen-dataclasses",
             "--use-unique-items-as-set",
             "--use-unique-items-as-set-by-value",
+            "--read-set-item-fields-in-class-order",
             "--formatters",
             "builtin",
             "--disable-timestamp",

@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 309>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 310>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -535,6 +535,7 @@ class BaseGenerateConfig(BaseModel)
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
     use_unique_items_as_set_by_value: bool = False
+    read_set_item_fields_in_class_order: bool = False
     use_tuple_for_fixed_items: bool = False
     use_tuple_for_closed_arrays: bool = False
     use_tuple_for_fixed_length_arrays: bool = False
@@ -722,7 +723,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 309>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 310>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -920,6 +921,7 @@ class ParserConfig(BaseModel)
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
     use_unique_items_as_set_by_value: bool = False
+    read_set_item_fields_in_class_order: bool = False
     use_tuple_for_fixed_items: bool = False
     use_tuple_for_closed_arrays: bool = False
     use_tuple_for_fixed_length_arrays: bool = False
@@ -5039,7 +5041,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 309>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 310>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -6007,6 +6009,7 @@ class ParserConfigDict(TypedDict)
     use_operation_id_as_name: NotRequired[bool]
     use_unique_items_as_set: NotRequired[bool]
     use_unique_items_as_set_by_value: NotRequired[bool]
+    read_set_item_fields_in_class_order: NotRequired[bool]
     use_tuple_for_fixed_items: NotRequired[bool]
     use_tuple_for_closed_arrays: NotRequired[bool]
     use_tuple_for_fixed_length_arrays: NotRequired[bool]
@@ -6424,6 +6427,7 @@ class BaseGenerateConfig(TypedDict)
     use_operation_id_as_name: NotRequired[bool]
     use_unique_items_as_set: NotRequired[bool]
     use_unique_items_as_set_by_value: NotRequired[bool]
+    read_set_item_fields_in_class_order: NotRequired[bool]
     use_tuple_for_fixed_items: NotRequired[bool]
     use_tuple_for_closed_arrays: NotRequired[bool]
     use_tuple_for_fixed_length_arrays: NotRequired[bool]

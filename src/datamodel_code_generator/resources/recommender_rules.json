@@ -1155,6 +1155,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
     },
+    "read_set_item_fields_in_class_order": {
+      "not_recommended": "preset",
+      "reason": "Under --use-unique-items-as-set-by-value only: set by the 20261123 presets; the recommendation starts from a preset."
+    },
     "read_uuid6_uuid7_uuid8_formats": {
       "not_recommended": "preset",
       "reason": "Set by the 20261120 presets; the recommendation starts from a preset."

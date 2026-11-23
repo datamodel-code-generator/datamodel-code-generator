@@ -174,16 +174,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 274 | Shared generation options. |
-| `GenerateConfig` | 289 | Public `generate()` configuration. |
-| `ParserConfig` | 228 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 230 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 241 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 244 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 231 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 231 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 230 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 231 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 275 | Shared generation options. |
+| `GenerateConfig` | 290 | Public `generate()` configuration. |
+| `ParserConfig` | 229 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 231 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 242 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 245 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 232 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 232 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 231 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 232 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1817,7 +1817,8 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | `legacy-root-most-first` | the tag fields a variant inherits are read from the root-most ancestor down (`parser/_tag_plan.py:_inherited_models`, the order of `DataModel.iter_all_fields`) for the Python name the variants of a union share, the tag and tag field of a variant a nested choice gives a union, the tag field of the one variant a union names and the tags an inline variant inherits (read before its own), where the generated class has the field of the nearest ancestor and the other readers take that one (`nearest-first`); a union whose nested variant thus keeps an optional tag in the field its class has is now written without `discriminator=` (`settle_site`, `dropped-nested-untagged`), so its module imports, and the variant keeps its tag fields (#6875) | keep |
 | `legacy-direct-bases-first` | the Enum typing the tag field a variant inherits is read from its direct bases in their order, then from the other ancestors nearest first (`parser/_tag_plan.py:_inherited_tag_enum`), so a later direct base comes before the ancestors of an earlier one, which the generated class resolves first | keep |
 | `legacy-struct-hash-last-base-first` | under `--use-unique-items-as-set`, whether a msgspec struct hashes (`model/msgspec.py:Struct._class_hash`) reads `frozen` and `eq` from the chain that takes the last base first (`_struct_chain(order="graph")`), where msgspec takes each from the first base first (the `listed` chain, as `array_like` does): where two bases set `frozen` differently, a set may be written of structs msgspec cannot hash. This is today's order, kept: the two orders differ only in a configuration nobody writes (opposite `frozen` on two parents of one struct) | keep |
-| `legacy-unique-sets-level-order` | under `--use-unique-items-as-set-by-value`, the fields a set item model has with its bases are read nearest first too, each name from the first model that declares it (`parser/_unique_sets.py:_ByValue.fields`, `ReferenceGraph.level_order`), besides the fields of its C3 order, which the generated class takes: a name a base two levels up and a later direct base both declare is read from the later base as well, so where only that field does not hash the items stay a list (the class's field hashes; #6997 made the other direction, a set of items whose class's field does not hash, a list) | keep |
+| `legacy-unique-sets-level-order` | under `--use-unique-items-as-set-by-value`, the fields a set item model has with its bases are read nearest first, each name from the first model that declares it (`parser/_unique_sets.py:_ByValue.fields`, `ReferenceGraph.level_order`), also beside the fields of its C3 order, which the generated class takes and `--read-set-item-fields-in-class-order` reads too: a name a base two levels up and a later direct base both declare is read from the later base as well, so where only that field does not hash the items stay a list (the class's field hashes) | keep |
+| `legacy-unique-sets-class-fields-unread` | without `--read-set-item-fields-in-class-order`, whether a set item model hashes by value under `--use-unique-items-as-set-by-value` reads only the fields its bases declare nearest first (`parser/_unique_sets.py:_ByValue.fields`), not those of its C3 order, which the generated class takes: where a base two levels up and a later direct base both declare a field and the class takes the one that does not hash, the uniqueItems array is a set its items cannot be added to (#6997) | keep |
 | `legacy-cycle-through-scalar` | the check for a `$ref` cycle (`parser/_schema_refs.py:is_ref_circular`) counts a pointer that walks through a scalar as a target that cannot be loaded, so a `$ref` to it keeps its siblings unmerged, where the other readers of a pointer find nothing there | keep |
 | `legacy-cycle-walk-reads-values-whole` | the check for a `$ref` cycle (`parser/_schema_refs.py:walk_ref_cycle`, `_json_schema.py:subschema_entries` with `whole`) reads the value of a subschema keyword other than a map whole when it is an object or an array, whatever shape the keyword gives it, and the arrays in an array: under `not: [{"$ref": "#/definitions/A"}]` in `A`, a `$ref` to `A` with siblings keeps them unmerged, where the other walkers read no subschema there | keep |
 | `legacy-read-document-every-key` | the read of a whole document (`parser/_schema_reading.py:_document_child_entries`, under `--use-single-value-enum-as-const`, `--read-format-as-annotation` or `--read-kubernetes-extensions`) reads every key of a schema object but the data keywords and extensions, also one `_DOCUMENT_KEYWORDS` does not list: a schema under an unknown keyword that a `$ref` names (`#/definitions/Settings/meta/mode`) is read, where `$ref` edges read the listed keywords only | keep |

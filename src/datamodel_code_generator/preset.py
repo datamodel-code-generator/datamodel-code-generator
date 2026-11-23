@@ -1494,6 +1494,15 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "members are read elsewhere, so such a model keeps the fields of the schema the alias names."
         ),
     ),
+    PresetOptionGroup(
+        title="Set item fields read in class order",
+        config=PresetConfig(read_set_item_fields_in_class_order=True),
+        description=(
+            "Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of its "
+            "class bases, so a uniqueItems array of models whose class takes an inherited field that does not hash "
+            "stays a list instead of a set those items cannot be added to."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 

@@ -1963,6 +1963,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_union_operator",
         "use_unique_items_as_set",
         "use_unique_items_as_set_by_value",
+        "read_set_item_fields_in_class_order",
         "use_tuple_for_fixed_items",
         "use_tuple_for_closed_arrays",
         "use_closed_typed_dict",

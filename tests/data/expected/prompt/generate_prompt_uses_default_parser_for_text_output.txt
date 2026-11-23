@@ -69,6 +69,7 @@
 - `--no-read-format-as-annotation`
 - `--no-read-inherited-property-schemas-in-mro-order`
 - `--no-read-kubernetes-extensions`
+- `--no-read-set-item-fields-in-class-order`
 - `--no-read-unevaluated-properties`
 - `--no-read-uuid6-uuid7-uuid8-formats`
 - `--no-type-overrides-replace-whole-type`
@@ -104,6 +105,7 @@
 - `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
 - `--read-inherited-property-schemas-in-mro-order`: Give a required inherited property the schema its allOf pare...
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
+- `--read-set-item-fields-in-class-order`
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--read-uuid6-uuid7-uuid8-formats`: Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...
 - `--strict-types`: Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.

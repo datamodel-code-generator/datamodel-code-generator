@@ -3053,12 +3053,11 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         "legacy-unique-sets-level-order",
         (
             "under `--use-unique-items-as-set-by-value`, the fields a set item model has with its bases are read "
-            "nearest first too, each name from the first model that declares it "
-            "(`parser/_unique_sets.py:_ByValue.fields`, `ReferenceGraph.level_order`), besides the fields of its C3 "
-            "order, which the generated class takes: a name "
+            "nearest first, each name from the first model that declares it "
+            "(`parser/_unique_sets.py:_ByValue.fields`, `ReferenceGraph.level_order`), also beside the fields of its "
+            "C3 order, which the generated class takes and `--read-set-item-fields-in-class-order` reads too: a name "
             "a base two levels up and a later direct base both declare is read from the later base as well, so where "
-            "only that field does not hash the items stay a list (the class's field hashes; #6997 made the other "
-            "direction, a set of items whose class's field does not hash, a list)"
+            "only that field does not hash the items stay a list (the class's field hashes)"
         ),
         fix=KEEP,
         witness=(
@@ -3074,6 +3073,32 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--formatters",
             "builtin",
         ),
+    ),
+    LegacyRow(
+        "legacy-unique-sets-class-fields-unread",
+        (
+            "without `--read-set-item-fields-in-class-order`, whether a set item model hashes by value under "
+            "`--use-unique-items-as-set-by-value` reads only the fields its bases declare nearest first "
+            "(`parser/_unique_sets.py:_ByValue.fields`), not those of its C3 order, which the generated class takes: "
+            "where a base two levels up and a later direct base both declare a field and the class takes the one that "
+            "does not hash, the uniqueItems array is a set its items cannot be added to (#6997)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/unique_items_by_value_inherited_fields.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--frozen-dataclasses",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-set-item-fields-in-class-order",
     ),
     LegacyRow(
         "legacy-cycle-through-scalar",

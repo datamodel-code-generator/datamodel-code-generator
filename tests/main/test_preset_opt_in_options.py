@@ -146,6 +146,7 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--read-mapping-keys-by-schema-tag-type",
     "--intersect-merged-allof-members",
     "--read-allof-parents-as-their-models",
+    "--read-set-item-fields-in-class-order",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
@@ -620,6 +621,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-allof-parents-as-their-models",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
+        "jsonschema",
+        ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"],
+        id="read-set-item-fields-in-class-order",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -989,6 +996,13 @@ def test_preset_sets_opt_in_option(
             "--read-allof-parents-as-their-models",
             "--no-read-allof-parents-as-their-models",
             id="read-allof-parents-as-their-models",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
+            ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"],
+            "--read-set-item-fields-in-class-order",
+            "--no-read-set-item-fields-in-class-order",
+            id="read-set-item-fields-in-class-order",
         ),
     ],
 )

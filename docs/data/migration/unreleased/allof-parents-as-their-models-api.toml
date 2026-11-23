@@ -1,8 +1,8 @@
 [[change]]
 id = "allof-parents-as-their-models-api"
 category = "api"
-title = "Public names for --read-allof-parents-as-their-models"
-summary = "The option adds its config fields; nothing is removed or changed."
+title = "Public names for --read-allof-parents-as-their-models and --read-set-item-fields-in-class-order"
+summary = "The options add their config fields; nothing is removed or changed."
 refs = ["#1"]
 decision = ["#1"]
 kind = "python-api"

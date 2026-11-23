@@ -1425,6 +1425,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),
+        "--read-set-item-fields-in-class-order",
+        help="Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of "
+        "its class bases (C3) when deciding whether its instances hash: where a base two levels up and a later direct "
+        "base both declare a field and the class takes the one that does not hash, the uniqueItems array stays a "
+        "list; without it only the field the nearest base declares is read and such an array is a set whose items "
+        "fail to hash, as in 0.100.0",
+    ),
+    toggle(
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-tuple-for-fixed-items",
         help="Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items "
         "length",
