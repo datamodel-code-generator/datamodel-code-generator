@@ -1,0 +1,55 @@
+[[change]]
+id = "variant-tags-that-admit-null"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "Discriminated variants whose tag also admits null"
+summary = "A union that writes discriminator= over a variant whose tag field admits None is written without it, as Pydantic reads no such tag and the module failed to import (#7102); a null in the variant's enum is no tag, so it takes the enum's values instead of its schema name or, inline, the internal path marker (#7357), and an inline msgspec variant of several values takes them in its tag field and stays untagged. Variant classes keep their names, fields and the null their schema admits."
+refs = ["#7405"]
+decision = ["#7405"]
+covers = [
+    "main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[default].py",
+    "main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[tagged-unions].py",
+    "main/openapi/variant_tag_values/strictly_nullable_tags[pydantic_v2.BaseModel].payloads.txt",
+    "main/openapi/variant_tag_values/strictly_nullable_tags[pydantic_v2.BaseModel].py",
+    "main/openapi/variant_tag_values/strictly_nullable_tags[pydantic_v2.dataclass].payloads.txt",
+    "main/openapi/variant_tag_values/strictly_nullable_tags[pydantic_v2.dataclass].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[dataclasses.dataclass-default].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[dataclasses.dataclass-default].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[dataclasses.dataclass-enum-values].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[dataclasses.dataclass-enum-values].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[dataclasses.dataclass-force-optional].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[dataclasses.dataclass-force-optional].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[msgspec.Struct-default].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[msgspec.Struct-default].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[msgspec.Struct-enum-values].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[msgspec.Struct-enum-values].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[msgspec.Struct-force-optional].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[msgspec.Struct-force-optional].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.BaseModel-default].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.BaseModel-default].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.BaseModel-enum-values].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.BaseModel-enum-values].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.BaseModel-force-optional].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.BaseModel-force-optional].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.dataclass-default].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.dataclass-default].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.dataclass-enum-values].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.dataclass-enum-values].py",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.dataclass-force-optional].payloads.txt",
+    "main/openapi/variant_tag_values/tags_that_admit_null[pydantic_v2.dataclass-force-optional].py",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/openapi/variant_tag_values",
+    "tests/data/openapi/variant_tag_values/inline_several_values.yaml",
+    "tests/data/openapi/variant_tag_values/nullable_tags.yaml",
+    "tests/data/openapi/variant_tag_values/nullable_tags_strict.yaml",
+    "tests/data/openapi/variant_tag_values/nullable_values.yaml",
+]
+backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"
+aspects = ["config", "type"]
+match = "^\\[(type|config)\\] (nullable_tags:|nullable_tags_strict:|nullable_values:|inline_several_values:)?\\w+(:kind: |: \\{'tag'|: (Union\\[)?Annotated\\[Union\\[[\\w, ]+\\], discriminator='kind'\\](, \\w+\\])? -> Union\\[)"

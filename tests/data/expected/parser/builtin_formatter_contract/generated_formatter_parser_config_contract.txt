@@ -118,6 +118,7 @@ reviewed-safe read_ids_with_empty_fragment
 reviewed-safe read_inherited_property_schemas_in_mro_order
 reviewed-safe read_kubernetes_extensions
 reviewed-safe read_length_keywords_by_type
+reviewed-safe read_mapping_keys_by_schema_tag_type
 reviewed-safe read_msgspec_union_bounds_exactly
 reviewed-safe read_nullable_beside_type_list
 reviewed-safe read_object_keywords_by_type

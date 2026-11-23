@@ -16,6 +16,8 @@ read-kubernetes-extensions-command-line	main/preset_opt_in_options/preset_option
 read-kubernetes-extensions-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].model.py
 read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].model.py
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].model.py
+read-mapping-keys-by-schema-tag-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-mapping-keys-by-schema-tag-type-command-line].model.py
+read-mapping-keys-by-schema-tag-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-mapping-keys-by-schema-tag-type-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-mapping-keys-by-schema-tag-type-command-line].model.py
 read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].model.py
 read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].model.py
 read-ref-siblings-in-closed-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].model.py
@@ -127,6 +129,8 @@ read-kubernetes-extensions-practical	main/preset_opt_in_options/preset_sets_opt_
 read-kubernetes-extensions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-kubernetes-extensions-standard].model.py
 read-length-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-practical].model.py
 read-length-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-standard].model.py
+read-mapping-keys-by-schema-tag-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-mapping-keys-by-schema-tag-type-practical].model.py
+read-mapping-keys-by-schema-tag-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-mapping-keys-by-schema-tag-type-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-mapping-keys-by-schema-tag-type-practical].model.py
 read-msgspec-union-bounds-exactly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].model.py
 read-msgspec-union-bounds-exactly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].model.py
 read-nullable-beside-type-list-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-practical].model.py

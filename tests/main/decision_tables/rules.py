@@ -375,7 +375,7 @@ _SEVERAL_TAGS_RAISE: Final = (
     {"form": ("enum2-int",), "count": (3,), "backend": (MSGSPEC,)},
     {"form": _ENUM2, "shared": (False,), "backend": (MSGSPEC,)},
     {"form": _ENUM2, **_SHARED_PAIR, "mapping": (True,), "backend": (MSGSPEC,)},
-    {"form": ("enum2-int",), **_SHARED_PAIR, "nullable": (False,), "backend": (MSGSPEC,)},
+    {"form": ("enum2-int",), **_SHARED_PAIR, "backend": (MSGSPEC,)},
 )
 """The rows whose msgspec union of a variant with several tags raises under both contracts."""
 
@@ -384,19 +384,16 @@ TAGS: Final[tuple[Kept, ...]] = (
         ISSUE,
         "#7102",
         tags.TABLE,
-        "import-fails",
-        DEFAULT,
-        ({"nullable": (True,), "backend": (PYDANTIC_V2,)},),
-        "a discriminator whose tag also admits null fails the import of the Pydantic v2 model",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        tags.TABLE,
         "rejects-valid",
         PRESET,
         (
-            {"form": ("enum1-str", *_ENUM2), "nullable": (True,), "mapping": (False,), "backend": (PYDANTIC_V2,)},
+            {
+                "form": ("enum1-str", *_ENUM2),
+                "count": (3,),
+                "nullable": (True,),
+                "mapping": (False,),
+                "backend": (PYDANTIC_V2,),
+            },
             {"nullable": (True,), "kind": ("anyOf",), "backend": (PYDANTIC_V2,)},
         ),
         "a discriminator whose tag also admits null: the model imports and rejects a tag or the null tag",
@@ -430,11 +427,13 @@ TAGS: Final[tuple[Kept, ...]] = (
         "rejects-valid",
         BOTH,
         (
+            {"form": ("enum2-str",), **_SHARED_PAIR, "nullable": (True,), "mapping": (False,), "backend": (MSGSPEC,)},
             {
-                "form": ("enum1-str", *_ENUM2),
+                "form": ("enum2-int",),
                 **_SHARED_PAIR,
                 "nullable": (True,),
                 "mapping": (False,),
+                "kind": ("anyOf",),
                 "backend": (MSGSPEC,),
             },
             {
@@ -502,7 +501,7 @@ TAGS: Final[tuple[Kept, ...]] = (
         tags.TABLE,
         "rejects-valid",
         DEFAULT,
-        ({"form": _ENUM2, "nullable": (False,), "mapping": (True,), "shared": (True,), "backend": (PYDANTIC_V2,)},),
+        ({"form": _ENUM2, "mapping": (True,), "shared": (True,), "backend": (PYDANTIC_V2,)},),
         "a variant keeps the tags of the first union that tags it, so a later union's own tag of it is refused "
         "(fixed by --merge-shared-variant-tags)",
     ),

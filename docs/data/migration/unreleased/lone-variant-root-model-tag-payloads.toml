@@ -1,0 +1,23 @@
+[[change]]
+id = "lone-variant-root-model-tag-payloads"
+extends = "lone-variant-root-model-tag"
+covers = [
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_var~3e5a8c38.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_var~59a6bfd7.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_var~e7176574.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~254e9e6a.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~ce220490.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~d5a0980c.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_variant_tag_~0278c40c.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_variant_tag_~31007c6a.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_variant_tag_~68ffaef3.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_variant_tag_valu~1cfdd3b0.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_variant_tag_valu~aee8a18f.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_variant_tag_valu~b1680e46.errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_variant_tag_values_lone_root_model_tag.yaml].txt",
+]
+
+[[change.cells]]
+input = ["tests/data/openapi/variant_tag_values/lone_root_model_tag.yaml"]
+backends = ["pydantic_v2.BaseModel"]
+options = "*"

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, RootModel
 
 
 class RequiredTagType(RootModel[Literal['required']]):
@@ -54,7 +54,7 @@ class Pets(BaseModel):
 
 
 class LoneRequired(RootModel[RequiredTag]):
-    root: RequiredTag = Field(..., discriminator='type')
+    root: RequiredTag
 
 
 class LoneOptional(RootModel[OptionalTag]):

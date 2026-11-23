@@ -97,6 +97,7 @@ from datamodel_code_generator.reference import (
     unique_items_of,
 )
 from datamodel_code_generator.types import (
+    NONE,
     DataType,
     DefaultValueRecipe,
     _union_members,
@@ -1260,12 +1261,25 @@ def _module_name_of(model_path_to_module_name: Mapping[str, str], reference: Ref
 class _FieldTagFacts:
     """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the models its type names.
 
-    The models are the Enum and the root model or type alias its type names.
+    The models are the Enum and the root model or type alias its type names. A null is no tag: the None member of a
+    union the field's type is, a null value and an Enum member whose value is null are left out, so the type the
+    facts read is the one member a union of it and None holds (``_tag_type``).
     """
 
     field: DataModelFieldBase
     read: frozenset[int] = frozenset()
     """The root models whose fields the facts are read through, so a cycle of root models gives no tag."""
+    keeps_null: bool = False
+    """Read the field's type as it is, None member included, as row ``legacy-literal-only`` of ``field_tag`` reads a
+    field that redeclares the tag field of a tagged msgspec base."""
+
+    def _tag_type(self) -> DataType:
+        """Return the field's type, or the one member that is no None of the union of it and None it is."""
+        data_type = self.field.data_type
+        if self.keeps_null or not data_type.data_types:
+            return data_type
+        members = [member for member in data_type.data_types if member.reference or member.type != NONE]
+        return members[0] if len(members) == 1 and len(members) < len(data_type.data_types) else data_type
 
     def has_const(self) -> bool:
         """Return whether the field has a ``const`` other than None."""
@@ -1276,31 +1290,40 @@ class _FieldTagFacts:
         return self.field.extras.get("const")
 
     def literals(self) -> list[DiscriminatorValue]:
-        """Return the values of the ``Literal`` the field's type is."""
-        return self.field.data_type.literals
+        """Return the values of the ``Literal`` the field's type is (``_tag_type``)."""
+        return self._tag_type().literals
 
     def enum_member(self) -> tuple[int, Any]:
-        """Return how many members the Enum the field's type names has, and the first one's value.
+        """Return how many members other than null the Enum the field's type names has, and the first one's value.
 
-        A union that wrote the field as ``Literal[<Enum>.<member>]`` detached its reference to the Enum, which is then
-        found through the members, so a later union reads the tag the first one read.
+        A member whose value is null is no tag. A union that wrote the field as ``Literal[<Enum>.<member>]`` detached
+        its reference to the Enum, which is then found through the members, so a later union reads the tag the first
+        one read.
         """
-        fields = enum_source.fields if (enum_source := _annotated_enum(self.field.data_type)) else []
-        return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
+        enum_source = _annotated_enum(self.field.data_type)
+        values = [
+            value
+            for member in (enum_source.fields if enum_source else ())
+            if (value := get_raw_enum_member_value(member.default)) is not None
+        ]
+        return (len(values), values[0]) if values else (0, None)
 
     def values(self) -> tuple[object, ...] | None:
         """Return every value the field admits, or None where its type admits values of a kind beside those.
 
         They are its ``const``, else, through the unions of its type and the root models and type aliases it names
         (``_iter_discriminator_data_types``), the values of each ``Literal``, of the Enum members written as one and of
-        each Enum, each once (``type-and-value``), as ``_written_tag_keys`` reads a written tag field. An object or an
-        array among them is no tag, so the field gives None.
+        each Enum, each once (``type-and-value``), as ``_written_tag_keys`` reads a written tag field. A null, as a
+        member, a value or a member of the union, is none of them, as a null tags no variant. An object or an array
+        among them is no tag, so the field gives None.
         """
         if self.has_const():
             return (self.const(),)
         found: dict[object, object] = {}
         for leaf, _, _ in _iter_discriminator_data_types((self.field.data_type,)):
             source = None if leaf.reference is None else leaf.reference.source
+            if source is None and leaf.type == NONE:
+                continue
             if isinstance(source, Enum):
                 values = [get_raw_enum_member_value(member.default) for member in source.fields]
             elif (members := enum_member_literal_values(leaf)) is not None or leaf.literals:
@@ -1309,7 +1332,7 @@ class _FieldTagFacts:
                 return None
             if any(isinstance(value, dict | list) for value in values):
                 return None
-            found |= {tag_key(value, "type-and-value"): value for value in values}
+            found |= {tag_key(value, "type-and-value"): value for value in values if value is not None}
         return tuple(found.values())
 
     def referenced_tag(self) -> FieldTag | None:
@@ -1317,7 +1340,7 @@ class _FieldTagFacts:
 
         A one-value enum the field references is such a model under ``--enum-field-as-literal``.
         """
-        data_type = self.field.data_type
+        data_type = self._tag_type()
         if data_type.data_types or (reference := data_type.reference) is None:
             return None
         source = reference.source

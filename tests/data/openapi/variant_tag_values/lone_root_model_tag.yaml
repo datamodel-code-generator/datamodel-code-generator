@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: A discriminated union of one variant whose tag is a $ref to a const, version: "1"}
+paths: {}
+components:
+  schemas:
+    CardType:
+      const: card
+    Card:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: "#/components/schemas/CardType"
+        number:
+          type: string
+    PaymentMethod:
+      oneOf:
+        - $ref: "#/components/schemas/Card"
+      discriminator:
+        propertyName: type
