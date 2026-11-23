@@ -9653,8 +9653,9 @@ msgspec has no decoder for `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Net
 holds one of them (`format: ipv4`, `ipv6`, `ipv4-network`, `ipv6-network` or `path`) under
 `--use-standard-primitive-types` decodes only with a `dec_hook`, and a union of such types is refused when the Struct
 is built. With this option the field is `str`, as without `--use-standard-primitive-types`, and a document that holds
-it decodes; `UUID`, `Decimal` and the date types keep their classes, which msgspec decodes. The other output model
-types keep the standard library classes.
+it decodes; `UUID`, `Decimal` and the date types keep their classes, which msgspec decodes. A union that joins such a
+format with one of those classes (`str | UUID`) is still refused; `--merge-msgspec-str-like-union-members` writes it as
+one `str`. The other output model types keep the standard library classes.
 
 **Related:** [`--use-standard-primitive-types`](#use-standard-primitive-types)
 
