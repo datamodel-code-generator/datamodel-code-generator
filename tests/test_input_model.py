@@ -986,9 +986,10 @@ _UNSERIALIZABLE_HOLDERS = {
     "hooks": (
         "from collections.abc import Callable\n"
         "from dataclasses import dataclass\n"
-        "from typing import Annotated, Generic, TypedDict, TypeVar\n\n"
+        "from typing import Annotated, Generic, TypeVar\n\n"
         "from pydantic import BaseModel, Field, RootModel\n"
-        "from pydantic.dataclasses import dataclass as pydantic_dataclass\n\n"
+        "from pydantic.dataclasses import dataclass as pydantic_dataclass\n"
+        "from typing_extensions import TypedDict\n\n"
         "T = TypeVar('T')\n\n\n"
         "@dataclass\n"
         "class Hook:\n"
@@ -1034,8 +1035,8 @@ _UNSERIALIZABLE_HOLDERS = {
         "    run: Callable[[int], int]\n"
     ),
     "second": (
-        "from collections.abc import Callable\n"
-        "from typing import TypedDict\n\n\n"
+        "from collections.abc import Callable\n\n"
+        "from typing_extensions import TypedDict\n\n\n"
         "class Hook(TypedDict):\n"
         "    stop: Callable[[str], str]\n"
     ),
