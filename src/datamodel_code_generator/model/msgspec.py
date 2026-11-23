@@ -108,6 +108,7 @@ from datamodel_code_generator.reference import FieldNameResolver, ModelType, fie
 from datamodel_code_generator.types import (
     NONE,
     DataType,
+    Types,
     _copy_data_type,
     _is_value_literal,
     _qualified_type_path,
@@ -2298,6 +2299,14 @@ class DataTypeManager(_DataTypeManager):
     REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.regex_engines
     WRITES_UNTYPED_VALUE_TYPE: ClassVar[bool] = False
     """msgspec decodes neither ``pydantic.JsonValue`` nor a recursive alias, and decodes ``Any`` into JSON values."""
+    _UNDECODED_STANDARD_PRIMITIVE_TYPES: ClassVar[frozenset[Types]] = frozenset({
+        Types.ipv4,
+        Types.ipv6,
+        Types.ipv4_network,
+        Types.ipv6_network,
+        Types.path,
+    })
+    """msgspec has no decoder for the ``ipaddress`` classes or ``Path``: they are decoded as ``str``, which it reads."""
 
     @property
     @override

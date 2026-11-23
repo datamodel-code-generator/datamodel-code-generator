@@ -1554,6 +1554,15 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "class of --use-generic-base-class, so the model keeps their members and their import is used."
         ),
     ),
+    PresetOptionGroup(
+        title="str for the formats msgspec cannot decode",
+        config=PresetConfig(use_str_for_formats_msgspec_cannot_decode=True),
+        description=(
+            "Under --use-standard-primitive-types, write str for ipv4, ipv6, ipv4-network, ipv6-network and path in "
+            "msgspec.Struct output, whose msgspec has no decoder for IPv4Address, IPv6Address, IPv4Network, "
+            "IPv6Network and Path, so a document that holds them decodes."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 

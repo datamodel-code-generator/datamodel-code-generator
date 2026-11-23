@@ -402,6 +402,7 @@ class ParserConfig(BaseModel):
     custom_formatters_kwargs: dict[str, Any] | None = None
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
+    use_str_for_formats_msgspec_cannot_decode: bool = False
     use_object_type: bool = False
     untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None

@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info:
+  title: Network
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Host:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          type: string
+          format: ipv4
+        address_v6:
+          type: string
+          format: ipv6
+        network:
+          type: string
+          format: ipv4-network
+        network_v6:
+          type: string
+          format: ipv6-network
+        location:
+          type: string
+          format: path
+        gateway:
+          type: string
+          format: ipv4
+          nullable: true
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        either_address:
+          oneOf:
+            - type: string
+              format: ipv4
+            - type: string
+              format: ipv6
+        id:
+          type: string
+          format: uuid
+    Address:
+      type: string
+      format: ipv6

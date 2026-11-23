@@ -1,0 +1,8 @@
+[[change]]
+id = "use-str-for-formats-msgspec-cannot-decode-surface"
+extends = "use-str-for-formats-msgspec-cannot-decode"
+covers = [
+    "input_model/config_class.txt",
+    "main/main_general/show_help[False].txt",
+    "main/main_general/show_help[True].txt",
+]

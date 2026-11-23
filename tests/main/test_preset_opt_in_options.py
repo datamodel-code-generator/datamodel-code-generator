@@ -152,6 +152,7 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--use-root-types-for-mixed-union-map-keys",
     "--read-refs-in-their-resources",
     "--keep-bases-beside-generic-base-class",
+    "--use-str-for-formats-msgspec-cannot-decode",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
@@ -666,6 +667,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ],
         id="keep-bases-beside-generic-base-class",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "use_standard_primitive_types.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="use-str-for-formats-msgspec-cannot-decode",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -1108,6 +1115,14 @@ def test_preset_sets_opt_in_option(
             "--keep-bases-beside-generic-base-class",
             "--no-keep-bases-beside-generic-base-class",
             id="keep-bases-beside-generic-base-class",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "use_standard_primitive_types.json",
+            "jsonschema",
+            ["--output-model-type", "msgspec.Struct"],
+            "--use-str-for-formats-msgspec-cannot-decode",
+            "--no-use-str-for-formats-msgspec-cannot-decode",
+            id="use-str-for-formats-msgspec-cannot-decode",
         ),
     ],
 )
