@@ -8,7 +8,7 @@
     "outer": {"type": "object", "additionalProperties": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Chain"}]}, "additionalProperties": {"type": "integer"}}}
   },
   "$defs": {
-    "Unit": {"type": "string", "enum": ["kg", "lb"]},
+    "Unit": {"type": "string", "pattern": "^(kg|lb)$"},
     "Ext": {"type": "string", "pattern": "^x-"},
     "Chain": {"$ref": "#/$defs/Ext"},
     "Limits": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}}

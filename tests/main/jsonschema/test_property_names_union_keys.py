@@ -32,12 +32,12 @@ if TYPE_CHECKING:
     ],
 )
 def test_property_names_root_model_union_keys(extra_args: list[str], output_file: Path) -> None:
-    """Type the RootModels that a union map key names by their root types, as RootModel instances cannot be dict keys.
+    """Type the RootModels that a union map key of RootModels names by their root types, as instances cannot be keys.
 
-    A key that matches a RootModel member of the union raised ``TypeError`` (#6933). Every position of a union key
-    is typed like a key that names the RootModel alone: a ``propertyNames`` ``anyOf`` or ``oneOf`` beside enum
-    members, the map of a RootModel, the items of a list, a map in a map
-    value and a member that names another RootModel. Frozen RootModels keep their class, which hashes.
+    A key of RootModel members alone raised ``TypeError`` for every key it accepts (#6933). Every position of such a
+    union key is typed like a key that names the RootModel alone: a ``propertyNames`` ``anyOf`` or ``oneOf``, the map
+    of a RootModel, the items of a list, a map in a map value and a member that names another RootModel. Frozen
+    RootModels keep their class, which hashes.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_union_keys.json",
@@ -57,7 +57,7 @@ def test_property_names_root_model_union_keys(extra_args: list[str], output_file
             "outer": {"o": {"x-d": 1, "lb": 2}},
         }),
         invalid_json=json.dumps({"direct": {"zz": 1}}),
-        expected_error_type="enum",
+        expected_error_type="string_pattern_mismatch",
     )
 
 
@@ -84,7 +84,7 @@ def test_property_names_root_model_union_key_roots(extra_args: list[str], output
         model_name="Model",
         valid_json='{"either": {"kg": 1, "e-a": 2, "long-key": 3}, "recursive": {"r1": 1}}',
         invalid_json='{"recursive": {"x": 1}}',
-        expected_error_type="enum",
+        expected_error_type="string_pattern_mismatch",
     )
 
 
@@ -123,6 +123,8 @@ MIXED_PAYLOADS: tuple[tuple[str, str], ...] = (
     ("mixed", "zz"),
     ("ids", UUID_KEY),
     ("ids", "plain"),
+    ("units", "kg"),
+    ("units", "x-a"),
     ("anything", "x-a"),
     ("anything", "zz"),
 )
@@ -147,14 +149,14 @@ def _key_verdicts(model: type[pydantic.BaseModel]) -> str:
 
 @pytest.mark.cli_doc(
     options=[OPTION],
-    option_description="""Type the RootModel members of a union map key with a plain member by their root types.
+    option_description="""Type the RootModel members of a union map key with a non-RootModel member by their root types.
 
-A `propertyNames` `anyOf` of a `str` with a `maxLength` and a RootModel of a uuid-format string is written with the
-RootModel class, which Pydantic cannot hash, so a key that only the RootModel matches raises `TypeError`, and a key that
-both match is read by the `str`, as in 0.100.0. With the option the member is written as its root type
-(`dict[constr(max_length=64) | UUID, int]`), as the key of a RootModel alone is, and a key that both match parses as
-the `UUID`. A key whose members are all references (RootModels or enums) is typed by the root types with or
-without the option.""",
+A `propertyNames` `anyOf` of an enum, or of a `str` with a `maxLength`, and a RootModel is written with the RootModel
+class, which Pydantic cannot hash, so a key that only the RootModel matches raises `TypeError`, and a key that both
+match is read by the other member, as in 0.100.0. With the option the member is written as its root type
+(`dict[constr(max_length=64) | UUID, int]`), as the key of a RootModel alone is. For JSON input, a key that both the
+`str` and a uuid-format RootModel match parses as the `UUID`; for a Python dict input it stays a `str`. A key whose
+members are all RootModels is typed by the root types with or without the option.""",
     input_schema="jsonschema/property_names_root_model_mixed_union_keys.json",
     cli_args=[OPTION],
     golden_output="main/jsonschema/property_names_union_keys/property_names_root_model_mixed_union_keys[option].py",
@@ -170,11 +172,12 @@ without the option.""",
     ],
 )
 def test_property_names_root_model_mixed_union_keys(extra_args: list[str], output_file: Path) -> None:
-    """Type the RootModel members of a union key that has a plain member only under the option.
+    """Type the RootModel members of a union key that has a non-RootModel member only under the option.
 
-    Without it the key keeps the RootModel class, as in 0.100.0, and a key that both a ``str`` and a uuid-format
-    RootModel match parses as ``str``. With it the root types are written and that key parses as ``UUID``; a union
-    key of ``Any`` and a RootModel is typed by the root type either way.
+    Without it the key keeps the RootModel class, as in 0.100.0: a key that only the RootModel matches raises
+    ``TypeError`` (an enum beside a pattern RootModel, the shape of #6933, parses only the enum's keys), and a key that both
+    a ``str`` and a uuid-format RootModel match parses as ``str``. With it the root types are written and that key
+    parses as ``UUID`` from JSON.
     """
     run_main_and_assert(
         input_path=MIXED_KEYS,

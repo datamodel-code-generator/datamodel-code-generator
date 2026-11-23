@@ -274,7 +274,7 @@ EXCLUDED_CASES: dict[str, str] = {
         "test_compound_property_names_compatibility covers them",
     ),
     "jsonschema/property_names_root_model_mixed_union_keys.json": (
-        "a union key with a plain member keeps its RootModel class unless --use-root-types-for-mixed-union-map-keys "
+        "a union key with a non-RootModel member keeps its RootModel class unless --use-root-types-for-mixed-union-map-keys "
         "is set, as in 0.100.0, so a key that only the RootModel matches raises TypeError; "
         "test_property_names_root_model_mixed_union_keys covers both sides"
     ),

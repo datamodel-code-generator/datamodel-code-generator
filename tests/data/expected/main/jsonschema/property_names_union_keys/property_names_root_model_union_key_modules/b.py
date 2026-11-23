@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, RootModel, constr
 
 
@@ -13,9 +11,8 @@ class B(BaseModel):
     pass
 
 
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+class Unit(RootModel[constr(pattern=r'^(kg|lb)$')]):
+    root: constr(pattern=r'^(kg|lb)$')
 
 
 class Ext(RootModel[constr(pattern=r'^x-')]):

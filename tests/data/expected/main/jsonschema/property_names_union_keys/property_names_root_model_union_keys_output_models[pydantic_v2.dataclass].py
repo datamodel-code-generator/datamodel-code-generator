@@ -4,17 +4,13 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Annotated
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
-
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+Unit = TypeAliasType("Unit", Annotated[str, Field(pattern=r'^(kg|lb)$')])
 
 
 Ext = TypeAliasType("Ext", Annotated[str, Field(pattern=r'^x-')])

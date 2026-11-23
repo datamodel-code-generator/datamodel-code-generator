@@ -4,15 +4,13 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Annotated
 
 from pydantic import BaseModel, Field, RootModel, StringConstraints
 
 
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+class Unit(RootModel[str]):
+    root: Annotated[str, Field(pattern='^(kg|lb)$')]
 
 
 class Ext(RootModel[str]):
@@ -24,20 +22,49 @@ class Chain(RootModel[Ext]):
 
 
 class Limits(
-    RootModel[dict[Unit | Annotated[str, StringConstraints(pattern=r'^x-')], int]]
+    RootModel[
+        dict[
+            Annotated[str, StringConstraints(pattern=r'^(kg|lb)$')]
+            | Annotated[str, StringConstraints(pattern=r'^x-')],
+            int,
+        ]
+    ]
 ):
-    root: dict[Unit | Annotated[str, StringConstraints(pattern=r'^x-')], int]
+    root: dict[
+        Annotated[str, StringConstraints(pattern=r'^(kg|lb)$')]
+        | Annotated[str, StringConstraints(pattern=r'^x-')],
+        int,
+    ]
 
 
 class Model(BaseModel):
     direct: (
-        dict[Unit | Annotated[str, StringConstraints(pattern=r'^x-')], int] | None
+        dict[
+            Annotated[str, StringConstraints(pattern=r'^(kg|lb)$')]
+            | Annotated[str, StringConstraints(pattern=r'^x-')],
+            int,
+        ]
+        | None
     ) = None
     limits: Limits | None = None
     rows: (
-        list[dict[Unit | Annotated[str, StringConstraints(pattern=r'^x-')], int]] | None
+        list[
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^(kg|lb)$')]
+                | Annotated[str, StringConstraints(pattern=r'^x-')],
+                int,
+            ]
+        ]
+        | None
     ) = None
     outer: (
-        dict[str, dict[Unit | Annotated[str, StringConstraints(pattern=r'^x-')], int]]
+        dict[
+            str,
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^(kg|lb)$')]
+                | Annotated[str, StringConstraints(pattern=r'^x-')],
+                int,
+            ],
+        ]
         | None
     ) = None

@@ -1,1 +1,1 @@
-{"title": "B", "type": "object", "$defs": {"Unit": {"type": "string", "enum": ["kg", "lb"]}, "Ext": {"type": "string", "pattern": "^x-"}}}
+{"title": "B", "type": "object", "$defs": {"Unit": {"type": "string", "pattern": "^(kg|lb)$"}, "Ext": {"type": "string", "pattern": "^x-"}}}

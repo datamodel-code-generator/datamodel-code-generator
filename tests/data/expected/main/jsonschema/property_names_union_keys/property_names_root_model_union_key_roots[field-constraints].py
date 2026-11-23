@@ -4,22 +4,31 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Union
 
 from pydantic import BaseModel, Field, RootModel, constr
 
 
 class Model(BaseModel):
-    either: dict[Unit | constr(pattern=r'^e-') | constr(min_length=6), int] | None = (
-        None
-    )
-    recursive: dict[Unit | constr(pattern=r'^r') | list[Recursive], int] | None = None
+    either: (
+        dict[
+            constr(pattern=r'^(kg|lb)$')
+            | constr(pattern=r'^e-')
+            | constr(min_length=6),
+            int,
+        ]
+        | None
+    ) = None
+    recursive: (
+        dict[
+            constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^r') | list[Recursive], int
+        ]
+        | None
+    ) = None
 
 
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+class Unit(RootModel[str]):
+    root: str = Field(..., pattern='^(kg|lb)$')
 
 
 class Either1(RootModel[str]):

@@ -1310,11 +1310,12 @@ OPTIONS: Final[tuple[Option, ...]] = (
     toggle(
         (Section.TYPING, _C.FIELD),
         "--use-root-types-for-mixed-union-map-keys",
-        help="Type the RootModel members of a map key that is a union with a plain member (`propertyNames` `anyOf` of "
-        "a `str` with a `maxLength` and a uuid-format RootModel) by their root types, as the key of a RootModel is "
-        "typed (`dict[str | UUID, int]`); without it such a key keeps the RootModel class, which Pydantic cannot "
-        "hash, and the plain member reads the keys it matches, as in 0.100.0. A key whose members are all "
-        "references is typed by the root types with or without the option",
+        help="Type the RootModel members of a map key that is a union with a non-RootModel member (`propertyNames` "
+        "`anyOf` of an enum, or of a `str` with a `maxLength`, and a RootModel) by their root types, as the key of a "
+        "RootModel is typed (`dict[str | UUID, int]`); without it such a key keeps the RootModel class, which "
+        "Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and the other member reads "
+        "the keys it matches, as in 0.100.0. A key whose members are all RootModels is typed by the root types "
+        "with or without the option",
     ),
     toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),

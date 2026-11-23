@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Literal, TypeAlias, TypedDict
+from typing import TypeAlias, TypedDict
 
 from typing_extensions import NotRequired
 
-Unit: TypeAlias = Literal['kg', 'lb']
+Unit: TypeAlias = str
 
 
 Ext: TypeAlias = str

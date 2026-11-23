@@ -5,7 +5,7 @@ kind = "default-output"
 action = "review"
 source = "release-note"
 title = "A map key names the root type of its RootModel members"
-summary = "A map key that is a union (propertyNames anyOf or oneOf) whose members are all references, a one-member wrapper of a RootModel included, was written with the RootModel class, which Pydantic cannot use as a dict key, so a key that matches that member raised TypeError. The member is now written as its root type, as a key that names the RootModel alone is; the class itself stays. A union key with a member that is no reference (a str, a constr call, Any) keeps the RootModel class unless --use-root-types-for-mixed-union-map-keys is set."
+summary = "A map key that is a union (propertyNames anyOf or oneOf) whose members are all RootModels, a one-member wrapper of a RootModel included, was written with the RootModel class, which Pydantic cannot use as a dict key, so every key the union accepts raised TypeError. The members are now written as their root types, as a key that names the RootModel alone is; the class itself stays. A union key with a member that is no RootModel (a str, a constr call, an enum, Any) keeps the RootModel class unless --use-root-types-for-mixed-union-map-keys is set."
 refs = ["#7434"]
 decision = ["#7434"]
 covers = [
@@ -24,13 +24,6 @@ covers = [
     "main/jsonschema/property_names_union_keys/property_names_root_model_union_keys_output_models[dataclasses.dataclass].py",
     "main/jsonschema/property_names_union_keys/property_names_root_model_union_keys_output_models[pydantic_v2.dataclass].py",
     "main/jsonschema/property_names_union_keys/property_names_root_model_union_keys_output_models[typing.TypedDict].py",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_jsonschema_prop~d2e7d4c0.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~148ff7ba.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~834b86e9.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~2233f896.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~2dfe5b5b.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~e861a6ff.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~f6404cb2.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_property_~5f814957.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_property_~f2de9b94.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_property_names_root_model_union_keys.json].errors.txt",
@@ -43,8 +36,46 @@ input = [
     "tests/data/jsonschema/property_names_root_model_union_key_modules/a.json",
     "tests/data/jsonschema/property_names_root_model_union_key_roots.json",
     "tests/data/jsonschema/property_names_root_model_union_keys.json",
-    "tests/data/jsonschema/property_names_root_model_mixed_union_keys.json",
 ]
 backends = ["pydantic_v2.BaseModel"]
 options = "*"
+aspects = ["type"]
+
+[[change.cells]]
+input = ["payload:jsonschema/property_names_root_model_union_keys.json"]
+backends = ["pydantic_v2.BaseModel"]
+options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp"]]
+aspects = ["type"]
+input_file_type = "jsonschema"
+
+[[change.cells]]
+input = ["tests/data/jsonschema/compound_property_names"]
+backends = ["pydantic_v2.BaseModel"]
+options = [
+    [],
+    ["--strip-default-none"],
+    ["--strip-default-none", "--keyword-only"],
+    ["--strip-default-none", "--use-default-factory-for-optional-nested-models"],
+]
+aspects = ["type"]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/property_names_root_model_key_unions.json"]
+backends = ["pydantic_v2.BaseModel"]
+options = [
+    ["--preset", "standard-py312-20260619"],
+    ["--preset", "practical-py312-20260619"],
+    ["--preset", "standard-py312-20260826"],
+    ["--preset", "practical-py312-20260826"],
+    ["--preset", "standard-py312-20260909"],
+    ["--preset", "practical-py312-20260909"],
+    ["--preset", "standard-py312-20261015"],
+    ["--preset", "practical-py312-20261015"],
+    ["--preset", "standard-py312-20261017"],
+    ["--preset", "practical-py312-20261017"],
+    ["--preset", "standard-py312-20261027"],
+    ["--preset", "practical-py312-20261027"],
+    ["--preset", "standard-py312-20261104"],
+    ["--preset", "practical-py312-20261104"],
+]
 aspects = ["type"]

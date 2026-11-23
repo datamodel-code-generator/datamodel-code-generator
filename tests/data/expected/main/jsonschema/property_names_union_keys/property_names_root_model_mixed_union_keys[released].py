@@ -15,6 +15,7 @@ class Model(BaseModel):
     open: dict[str | Ext, int] | None = None
     mixed: dict[Unit | constr(pattern=r'^y-') | Ext, int] | None = None
     ids: dict[constr(max_length=64) | Id, int] | None = None
+    units: dict[Unit | Ext, int] | None = None
     anything: dict[Any | Ext, int] | None = None
 
 

@@ -275,7 +275,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-plain-alias-for-recursive-models": "Write the type alias of a model that names itself as a plain alias i...",
     "--use-root-model-sequence-interface": "Make non-null sequence-like Pydantic v2 RootModel classes implement col...",
     "--use-root-model-type-alias": "Generate RootModel as type alias format for better mypy support.",
-    "--use-root-types-for-mixed-union-map-keys": "Type the RootModel members of a union map key with a plain member...",
+    "--use-root-types-for-mixed-union-map-keys": "Type the RootModel members of a union map key with a non-RootMode...",
     "--use-schema-description": "Use schema description as class docstring.",
     "--use-serialization-alias": "Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).",
     "--use-serialize-as-any": "Wrap fields with subtypes in Pydantic's SerializeAsAny.",

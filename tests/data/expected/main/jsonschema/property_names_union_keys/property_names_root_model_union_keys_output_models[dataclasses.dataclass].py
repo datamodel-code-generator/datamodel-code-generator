@@ -5,13 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import TypeAlias
 
-
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+Unit: TypeAlias = str
 
 
 Ext: TypeAlias = str

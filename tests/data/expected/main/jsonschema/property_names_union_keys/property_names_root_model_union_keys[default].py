@@ -4,14 +4,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, RootModel, constr
 
 
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+class Unit(RootModel[constr(pattern=r'^(kg|lb)$')]):
+    root: constr(pattern=r'^(kg|lb)$')
 
 
 class Ext(RootModel[constr(pattern=r'^x-')]):
@@ -22,12 +19,21 @@ class Chain(RootModel[Ext]):
     root: Ext
 
 
-class Limits(RootModel[dict[Unit | constr(pattern=r'^x-'), int]]):
-    root: dict[Unit | constr(pattern=r'^x-'), int]
+class Limits(
+    RootModel[dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int]]
+):
+    root: dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int]
 
 
 class Model(BaseModel):
-    direct: dict[Unit | constr(pattern=r'^x-'), int] | None = None
+    direct: dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int] | None = (
+        None
+    )
     limits: Limits | None = None
-    rows: list[dict[Unit | constr(pattern=r'^x-'), int]] | None = None
-    outer: dict[str, dict[Unit | constr(pattern=r'^x-'), int]] | None = None
+    rows: (
+        list[dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int]] | None
+    ) = None
+    outer: (
+        dict[str, dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int]]
+        | None
+    ) = None

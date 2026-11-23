@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, constr
 
-from . import b
-
 
 class A(BaseModel):
-    limits: dict[b.Unit | constr(pattern=r'^x-'), int] | None = None
+    limits: dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int] | None = (
+        None
+    )

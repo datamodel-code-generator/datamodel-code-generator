@@ -41,7 +41,7 @@
 | [`--use-field-description-example`](#use-field-description-example) | Add field examples to docstrings. |
 | [`--use-inline-field-description`](#use-inline-field-description) | Add field descriptions as inline comments. |
 | [`--use-one-model-per-ref-site`](#use-one-model-per-ref-site) | Give an object `$ref` with sibling keywords one model per pl... |
-| [`--use-root-types-for-mixed-union-map-keys`](#use-root-types-for-mixed-union-map-keys) | Type the RootModel members of a union map key with a plain m... |
+| [`--use-root-types-for-mixed-union-map-keys`](#use-root-types-for-mixed-union-map-keys) | Type the RootModel members of a union map key with a non-Roo... |
 | [`--use-schema-description`](#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing ... |
 | [`--use-single-line-docstring`](#use-single-line-docstring) | Emit short docstrings on a single line. |
@@ -6389,14 +6389,14 @@ splits the models, the model of a place is parsed where it is first met, so a ch
 
 ## `--use-root-types-for-mixed-union-map-keys` {#use-root-types-for-mixed-union-map-keys}
 
-Type the RootModel members of a union map key with a plain member by their root types.
+Type the RootModel members of a union map key with a non-RootModel member by their root types.
 
-A `propertyNames` `anyOf` of a `str` with a `maxLength` and a RootModel of a uuid-format string is written with the
-RootModel class, which Pydantic cannot hash, so a key that only the RootModel matches raises `TypeError`, and a key that
-both match is read by the `str`, as in 0.100.0. With the option the member is written as its root type
-(`dict[constr(max_length=64) | UUID, int]`), as the key of a RootModel alone is, and a key that both match parses as
-the `UUID`. A key whose members are all references (RootModels or enums) is typed by the root types with or
-without the option.
+A `propertyNames` `anyOf` of an enum, or of a `str` with a `maxLength`, and a RootModel is written with the RootModel
+class, which Pydantic cannot hash, so a key that only the RootModel matches raises `TypeError`, and a key that both
+match is read by the other member, as in 0.100.0. With the option the member is written as its root type
+(`dict[constr(max_length=64) | UUID, int]`), as the key of a RootModel alone is. For JSON input, a key that both the
+`str` and a uuid-format RootModel match parses as the `UUID`; for a Python dict input it stays a `str`. A key whose
+members are all RootModels is typed by the root types with or without the option.
 
 !!! tip "Usage"
 
@@ -6418,6 +6418,7 @@ without the option.
         "open": {"type": "object", "propertyNames": {"anyOf": [{"type": "string"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
         "mixed": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"type": "string", "pattern": "^y-"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
         "ids": {"type": "object", "propertyNames": {"anyOf": [{"type": "string", "maxLength": 64}, {"$ref": "#/$defs/Id"}]}, "additionalProperties": {"type": "integer"}},
+        "units": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
         "anything": {"type": "object", "propertyNames": {"anyOf": [{}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}}
       },
       "$defs": {
@@ -6454,6 +6455,7 @@ without the option.
                 None
             )
             ids: dict[constr(max_length=64) | UUID, int] | None = None
+            units: dict[Unit | constr(pattern=r'^x-'), int] | None = None
             anything: dict[Any | constr(pattern=r'^x-'), int] | None = None
 
 
@@ -6494,6 +6496,7 @@ without the option.
             open: dict[str | Ext, int] | None = None
             mixed: dict[Unit | constr(pattern=r'^y-') | Ext, int] | None = None
             ids: dict[constr(max_length=64) | Id, int] | None = None
+            units: dict[Unit | Ext, int] | None = None
             anything: dict[Any | Ext, int] | None = None
 
 

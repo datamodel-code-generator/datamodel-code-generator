@@ -4,18 +4,20 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, constr
 
 
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
-
-
 class Model(BaseModel):
-    direct: dict[Unit | constr(pattern=r'^x-'), int] | None = None
-    limits: dict[Unit | constr(pattern=r'^x-'), int] | None = None
-    rows: list[dict[Unit | constr(pattern=r'^x-'), int]] | None = None
-    outer: dict[str, dict[Unit | constr(pattern=r'^x-'), int]] | None = None
+    direct: dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int] | None = (
+        None
+    )
+    limits: dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int] | None = (
+        None
+    )
+    rows: (
+        list[dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int]] | None
+    ) = None
+    outer: (
+        dict[str, dict[constr(pattern=r'^(kg|lb)$') | constr(pattern=r'^x-'), int]]
+        | None
+    ) = None

@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, ConfigDict, RootModel, constr
 
 
-class Unit(Enum):
-    kg = 'kg'
-    lb = 'lb'
+class Unit(RootModel[constr(pattern=r'^(kg|lb)$')]):
+    model_config = ConfigDict(
+        frozen=True,
+    )
+    root: constr(pattern=r'^(kg|lb)$')
 
 
 class Ext(RootModel[constr(pattern=r'^x-')]):

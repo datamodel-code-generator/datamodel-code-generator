@@ -933,10 +933,10 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     LegacyRow(
         "legacy-mixed-union-key-root-models",
         (
-            "without `--use-root-types-for-mixed-union-map-keys`, a map key that is a union with a plain member "
-            "(`str`, a `constr` call, a `Literal`, `Any`) keeps the RootModel class of its other members, which "
-            "Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and a key both match is "
-            "read by the plain member (`parser/_passes/modules.py:type_dict_keys_by_root_types`)"
+            "without `--use-root-types-for-mixed-union-map-keys`, a map key that is a union with a member that is "
+            "no RootModel (`str`, a `constr` call, a `Literal`, `Any`, an enum) keeps the RootModel class of its "
+            "other members, which Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and "
+            "a key both match is read by the other member (`parser/_passes/modules.py:type_dict_keys_by_root_types`)"
         ),
         fix=KEEP,
         witness=(

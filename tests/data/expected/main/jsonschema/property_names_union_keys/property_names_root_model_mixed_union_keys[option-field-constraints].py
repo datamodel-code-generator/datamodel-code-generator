@@ -25,6 +25,7 @@ class Model(BaseModel):
         None
     )
     ids: dict[constr(max_length=64) | UUID, int] | None = None
+    units: dict[Unit | constr(pattern=r'^x-'), int] | None = None
     anything: dict[Any | constr(pattern=r'^x-'), int] | None = None
 
 
