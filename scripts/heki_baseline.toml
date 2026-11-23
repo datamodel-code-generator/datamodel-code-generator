@@ -6907,27 +6907,6 @@ count = 1
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "_class_named_like_submodule"
 rule_code = "MUT204"
-target = "datamodel_code_generator._graph.reach"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_class_named_like_submodule"
-rule_code = "MUT204"
-target = "datamodel_code_generator._module_paths.dotted_module"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_class_named_like_submodule"
-rule_code = "MUT204"
-target = "datamodel_code_generator._module_paths.is_within_name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_class_named_like_submodule"
-rule_code = "MUT204"
 target = "datamodel_code_generator._module_paths.module_parts"
 count = 1
 
@@ -6936,13 +6915,6 @@ path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "_class_named_like_submodule"
 rule_code = "MUT204"
 target = "datamodel_code_generator._module_paths.written_path"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_class_named_like_submodule"
-rule_code = "MUT204"
-target = "datamodel_code_generator.parser._passes._import_edges.module_import_edges"
 count = 1
 
 [[entries]]
@@ -7168,13 +7140,6 @@ qualname = "submodules_hidden_by_packages"
 rule_code = "MUT204"
 target = "datamodel_code_generator._module_paths.written_path"
 count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "submodules_hidden_by_packages"
-rule_code = "MUT204"
-target = "datamodel_code_generator.parser._passes._import_edges._written_package"
-count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"

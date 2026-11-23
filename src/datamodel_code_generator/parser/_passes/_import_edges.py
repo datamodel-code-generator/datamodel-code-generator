@@ -37,6 +37,7 @@ from datamodel_code_generator._module_paths import (
     dotted_name,
     is_below,
     is_package_init,
+    is_within_name,
     module_parts,
     package_path,
     relative_level,
@@ -73,6 +74,7 @@ __all__ = [
     "import_cycle_seeds",
     "import_plan",
     "inherits_one_of",
+    "init_loads",
     "module_dependency_graph",
     "module_import_edges",
     "relative_import_targets",
@@ -205,6 +207,24 @@ def module_import_edges(
         for package, nodes in exported_modules(exporters, all_exports_scope).items():
             edges.setdefault(".".join(package), set()).update(".".join(node[0]) for node in nodes)
     return edges
+
+
+def init_loads(
+    edges: Mapping[str, set[str]], package: ModulePath, modules: Iterable[tuple[str, ...]]
+) -> frozenset[str]:
+    """Return the modules the ``__init__.py`` of ``package`` loads, by dotted name, or none if it loads no ``modules``.
+
+    Its imports run before its classes are defined, so a module it loads, or one that a module it imports loads
+    (``edges``, from ``module_import_edges``), binds its name in the package first and the class then takes the name.
+    A module that the ``__init__.py`` loads runs before the class exists, so it reads the module under the name; any
+    other module runs after it and reads the class. The refusal of a class beside a module
+    (``reject_class_named_like_submodule``) and the import of the models of that module from the module itself
+    (``submodules_hidden_by_packages``) both read this.
+    """
+    loaded = frozenset(reach([".".join(package)], lambda importer: edges.get(importer, ())))
+    return (
+        loaded if any(is_within_name(name, ".".join(module)) for module in modules for name in loaded) else frozenset()
+    )
 
 
 def module_dependency_graph(

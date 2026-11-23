@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 import operator
 from collections import defaultdict
-from functools import partial
+from functools import cache, partial
 from itertools import chain, repeat
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
@@ -21,7 +21,6 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, WIDENED_VALUES_KEY, int_beyond_values
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SLOT_CLASSES
-from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import counted, english_list, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -86,6 +85,7 @@ from datamodel_code_generator.parser._passes._import_edges import (
     failing_import_reads,
     import_cycle_seeds,
     import_plan,
+    init_loads,
     module_import_edges,
     relative_import_targets,
     runs_into_import_cycle,
@@ -2099,9 +2099,11 @@ def submodules_hidden_by_packages(
     shared ones and on a target with native deferred annotations its own (``_writes_module_future_annotations``):
     those hide the submodule from every module. It defines its classes after its imports, so a class hides the
     submodule from every module but the ``__init__.py`` itself, and only where the ``__init__.py`` imports from the
-    submodule, for a type or for the class of an enum member literal: the submodule is then loaded before the class
-    takes the name, and no later import of it replaces the class. A module names the hidden modules by their module
-    names, as ``reference_import_target`` reads them.
+    submodule, for a type or for the class of an enum member literal, or loads it as it runs (``init_loads``: an
+    import, a module it imports, ``--all-exports-scope``): the submodule is then loaded before the class takes the
+    name, and no later import of it replaces the class. A module that the ``__init__.py`` loads as it runs reads the
+    submodule under its name before the class exists, so a load of that kind hides it only from the other modules.
+    A module names the hidden modules by their module names, as ``reference_import_target`` reads them.
     """
     treat_dot_as_module, module_names = parser.treat_dot_as_module, naming.model_path_to_module_name
 
@@ -2119,7 +2121,15 @@ def submodules_hidden_by_packages(
         for ctx in contexts
         if ctx.models and (package := _written_package(ctx, treat_dot_as_module=treat_dot_as_module)) is not None
     }
+
+    @cache
+    def import_edges() -> dict[str, set[str]]:
+        return module_import_edges(
+            contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=config.all_exports_scope
+        )
+
     hidden: dict[ModulePath, tuple[set[tuple[str, ...]], set[tuple[str, ...]]]] = {}
+    unloaded: dict[ModulePath, tuple[set[tuple[str, ...]], set[str]]] = {}
     for ctx in contexts:
         parts = module_parts(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
         if not (ctx.models and parts and (init := inits.get(package := parts[:-1])) is not None):
@@ -2131,13 +2141,18 @@ def submodules_hidden_by_packages(
         ):
             for found in hidden.setdefault(package, (set(), set())):
                 found.update(modules)
-        elif any(model.class_name == name for model in init.models) and any(
-            is_within(named, module)
-            for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
-            for module in modules
-        ):
-            hidden.setdefault(package, (set(), set()))[1].update(modules)
-    if not hidden:
+        elif any(model.class_name == name for model in init.models):
+            if any(
+                is_within(named, module)
+                for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
+                for module in modules
+            ):
+                hidden.setdefault(package, (set(), set()))[1].update(modules)
+            elif loaded := init_loads(import_edges(), package, modules):
+                late_modules, late_loaded = unloaded.setdefault(package, (set(), set()))
+                late_modules.update(modules)
+                late_loaded.update(loaded)
+    if not hidden and not unloaded:
         return {}
     result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
     for ctx in contexts:
@@ -2147,6 +2162,13 @@ def submodules_hidden_by_packages(
             for hidden_package, (from_init, from_others) in hidden.items()
             for module in (from_init if hidden_package == package else from_others)
         }
+        written = written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module)
+        modules.update(
+            module
+            for (late_modules, late_loaded) in unloaded.values()
+            if written not in late_loaded
+            for module in late_modules
+        )
         if modules:
             result[ctx.module] = frozenset(modules)
     return result
@@ -2572,8 +2594,7 @@ def _class_named_like_submodule(
                 written_modules[source] for source, _, _ in forwarder.names
             )
     for path, name, module, file in clashes:
-        loaded = reach([dotted_module(path)], lambda importer: edges.get(importer, ()))
-        if not any(is_within_name(loaded_name, ".".join(module)) for loaded_name in loaded):
+        if not init_loads(edges, path[:-1], [module]):
             return path, name, module, file
     return None
 

@@ -3645,16 +3645,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(
             Home("parser/_passes/_import_edges.py", "relative_import_targets"),
             Home("parser/_passes/_import_edges.py", "module_import_edges"),
+            Home("parser/_passes/_import_edges.py", "init_loads"),
             Home("parser/_passes/_import_edges.py", "_written_package"),
         ),
-        core="`parser/_passes/_import_edges.py`: `relative_import_targets`, `module_import_edges`, `_written_package`",
+        core=(
+            "`parser/_passes/_import_edges.py`: `relative_import_targets`, `module_import_edges`, `init_loads`, "
+            "`_written_package`"
+        ),
         adapters=(
             "every caller calls the core: the modules the written modules load "
             "(`parser/_passes/imports.py:_loaded_modules`, for the imports of a package's `__init__.py` that a loaded "
             "submodule hides), the refusal of a block written with a part Python cannot import by "
             "(`parser/_passes/imports.py:reject_unimportable_imports`), the refusal of a class named like a module "
             "below its package, unless the package loads the module first "
-            "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders) "
+            "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders, "
+            "and `_class_named_like_submodule`), "
+            "the import of the models of a submodule from the submodule where its package loads it before its class "
+            "(`parser/_passes/imports.py:submodules_hidden_by_packages`) "
             "and the packages whose `__init__.py` a module writes (the aliases of `parser/_passes/imports.py` for the "
             "names a package's submodules hide)"
         ),
@@ -3662,6 +3669,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_passes/imports.py", "_loaded_modules"),
             Home("parser/_passes/imports.py", "reject_unimportable_imports"),
             Home("parser/_passes/imports.py", "reject_class_named_like_submodule"),
+            Home("parser/_passes/imports.py", "_class_named_like_submodule"),
+            Home("parser/_passes/imports.py", "submodules_hidden_by_packages"),
             Home("__init__.py"),
         ),
     ),
@@ -7103,7 +7112,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/graphql.py:GraphQLParser._resolve_typename_collisions`; "
             "`_client/target.py:_HelperDigests.contract`; `input_model.py:_native_generic_field_paths`; "
             "`model/pydantic_v2/base_model.py:has_lookaround_pattern` (the models whose patterns a Pydantic dataclass "
-            "reads, row `legacy-dataclass-follows-every-reference`)"
+            "reads, row `legacy-dataclass-follows-every-reference`); "
+            "`parser/_passes/_import_edges.py:init_loads` (the modules a package's `__init__.py` loads)"
         ),
         sites=(
             Home("_reference_graph.py", "ReferenceGraph.reached"),
@@ -7116,6 +7126,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_client/target.py", "_HelperDigests.contract"),
             Home("input_model.py", "_native_generic_field_paths"),
             Home("model/pydantic_v2/base_model.py", "has_lookaround_pattern"),
+            Home("parser/_passes/_import_edges.py", "init_loads"),
         ),
     ),
     DecisionHome(

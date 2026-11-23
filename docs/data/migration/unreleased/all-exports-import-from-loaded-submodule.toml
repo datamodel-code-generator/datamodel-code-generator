@@ -1,0 +1,30 @@
+[[change]]
+id = "all-exports-import-from-loaded-submodule"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "A package class beside a same-named submodule that its __init__.py loads first no longer hides the submodule's models"
+summary = "Where a package's __init__.py loads a submodule while its imports run (--all-exports-scope re-exports it, or a module it imports loads it) and also defines a class of the submodule's name, the modules that use a model of the submodule now import it from the submodule, as the output already did where the __init__.py names a type of the submodule. They read the class through the package: a Pydantic module failed at import with AttributeError, and the other backends failed where the annotations are resolved (type hints, msgspec decoding). They no longer bind the class name through that import."
+refs = ["#1"]
+covers = [
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-dataclasses].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-dataclasses]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-msgspec].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-msgspec]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-recursive].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-recursive]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-treat-dot-as-module].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-treat-dot-as-module]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package_loaded_through_module.payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package_loaded_through_module/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_submodule~904f30c4.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_submodule_nam~51d4dde6.errors.txt",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/submodule_named_like_package_class_loaded_by_module"]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"

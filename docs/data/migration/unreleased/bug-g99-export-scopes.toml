@@ -1,0 +1,6 @@
+[[change]]
+id = "bug-g99-export-scopes"
+extends = "allof-parents-as-their-models"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

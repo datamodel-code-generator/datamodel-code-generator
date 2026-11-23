@@ -3951,6 +3951,21 @@ def _decode_with_generated_model(output_model_type: str, model: Any, payload: st
     return f"{payload}: accepted {decoded!r}"
 
 
+def _decoded_package_verdicts(
+    output_dir: Path, output_model_type: str, decoded: list[tuple[str, str, list[str]]]
+) -> str:
+    """Import the generated package as Python does, its first module first, and describe each payload's decoding."""
+    verdicts = []
+    with _generated_package_module(output_dir, decoded[0][0]):
+        for module_path, model_name, payloads in decoded:
+            module = importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
+            verdicts += [
+                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+                for payload in payloads
+            ]
+    return "\n".join(verdicts) + "\n"
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
 @pytest.mark.parametrize("target_python_version", ["3.10", "3.11"])
 def test_main_jsonschema_class_named_like_builtin_beside_submodule(
@@ -4403,6 +4418,26 @@ class a later rename moves off its name keeps its name.""",
             ],
             id="renamed-files",
         ),
+        *(
+            pytest.param(
+                "submodule_named_like_package_class_files",
+                output_model_type,
+                "3.10",
+                ["--all-exports-scope", *scope_args],
+                [
+                    ("api", "Order", ['{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}']),
+                    ("pkg", "Warn", ['{"count": 1}', '{"count": "x"}']),
+                ],
+                id=f"class-files-all-exports-{suffix}",
+            )
+            for output_model_type, suffix, scope_args in (
+                ("pydantic_v2.BaseModel", "children", ["children"]),
+                ("pydantic_v2.BaseModel", "recursive", ["recursive"]),
+                ("pydantic_v2.BaseModel", "treat-dot-as-module", ["recursive", "--treat-dot-as-module"]),
+                ("dataclasses.dataclass", "children-dataclasses", ["children"]),
+                ("msgspec.Struct", "children-msgspec", ["children"]),
+            )
+        ),
         pytest.param(
             "submodule_named_like_renamed_package_class_files",
             "pydantic_v2.BaseModel",
@@ -4553,15 +4588,7 @@ def test_main_jsonschema_submodule_hidden_by_package(
         ],
         force_exec_validation=True,
     )
-    verdicts = []
-    with _generated_package_module(output_dir, decoded[0][0]):
-        for module_path, model_name, payloads in decoded:
-            module = importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
-            verdicts += [
-                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
-                for payload in payloads
-            ]
-    assert_output("\n".join(verdicts) + "\n", name="payloads")
+    assert_output(_decoded_package_verdicts(output_dir, output_model_type, decoded), name="payloads")
 
 
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
@@ -4593,15 +4620,39 @@ def test_main_jsonschema_forwarded_class_beside_loaded_submodule(output_dir: Pat
         ("pkg.api", "Order", ['{"detail": {"message": "m"}, "warn": {"count": 1}}', '{"detail": {"message": 1}}']),
         ("pkg", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
     ]
-    verdicts = []
-    with _generated_package_module(output_dir, "pkg.api"):
-        for module_path, model_name, payloads in decoded:
-            module = importlib.import_module(f"{output_dir.name}.{module_path}")
-            verdicts += [
-                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
-                for payload in payloads
-            ]
-    assert_output("\n".join(verdicts) + "\n", name="payloads")
+    assert_output(_decoded_package_verdicts(output_dir, output_model_type, decoded), name="payloads")
+
+
+def test_main_jsonschema_submodule_hidden_by_package_loaded_through_module(output_dir: Path) -> None:
+    """Import a model of a submodule from it where the package's ``__init__.py`` loads it through another module.
+
+    Without an export scope, ``pkg/__init__.py`` imports ``pkg/other.py`` (``Warn.other``), which imports
+    ``pkg/Warn.py`` while the ``__init__.py`` runs, before its class ``Warn`` is defined: the class keeps the name, so
+    the refusal of a class beside a module does not apply. ``other`` runs in that import and keeps reading the module
+    by its name, and ``api``, which runs after the class exists, imports the model of the submodule from it (#7120).
+    The package is imported as Python imports it, a package before its modules: the code validation of the stored
+    outputs runs a module before its package, and ``pkg/other.py`` would then read the class.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "submodule_named_like_package_class_loaded_by_module",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+    decoded = [
+        ("api", "Order", ['{"detail": {"message": "m"}, "warn": {"count": 1}}', '{"detail": {"message": 1}}']),
+        ("pkg", "Warn", ['{"count": 1, "other": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+    ]
+    assert_output(_decoded_package_verdicts(output_dir, "pydantic_v2.BaseModel", decoded), name="payloads")
 
 
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])

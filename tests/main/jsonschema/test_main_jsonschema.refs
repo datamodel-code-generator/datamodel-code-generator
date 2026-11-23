@@ -7898,6 +7898,16 @@ class-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-dataclasses.dataclass]/
 class-enum-member-literals	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-enum-member-literals].payloads.txt
 class-enum-member-literals	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-enum-member-literals]/
+class-files-all-exports-children	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+class-files-all-exports-children	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children]/
+class-files-all-exports-children-dataclasses	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-dataclasses].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+class-files-all-exports-children-dataclasses	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-dataclasses]/
+class-files-all-exports-children-msgspec	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-msgspec].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+class-files-all-exports-children-msgspec	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-children-msgspec]/
+class-files-all-exports-recursive	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-recursive].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+class-files-all-exports-recursive	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-recursive]/
+class-files-all-exports-treat-dot-as-module	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-treat-dot-as-module].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+class-files-all-exports-treat-dot-as-module	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-treat-dot-as-module]/	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-recursive]/
 class-loaded-by-enum-member-literal	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-loaded-by-enum-member-literal].payloads.txt
 class-loaded-by-enum-member-literal	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-loaded-by-enum-member-literal]/
 class-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-msgspec.Struct].payloads.txt
@@ -7990,6 +8000,9 @@ renamed-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_b
 renamed-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel]/
 renamed-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel-exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
 renamed-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel-exact-imports]/
+[test_main_jsonschema_submodule_hidden_by_package_loaded_through_module]
+	main/jsonschema/main_jsonschema/submodule_hidden_by_package_loaded_through_module.payloads.txt
+	main/jsonschema/main_jsonschema/submodule_hidden_by_package_loaded_through_module/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]
