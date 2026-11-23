@@ -32,8 +32,6 @@ covers = [
 
 [[change.cells]]
 input = [
-    "tests/data/jsonschema/property_names_root_model_union_key_modules",
-    "tests/data/jsonschema/property_names_root_model_union_key_modules/a.json",
     "tests/data/jsonschema/property_names_root_model_union_key_roots.json",
     "tests/data/jsonschema/property_names_root_model_union_keys.json",
 ]
@@ -42,10 +40,19 @@ options = "*"
 aspects = ["type"]
 
 [[change.cells]]
+input = [
+    "tests/data/jsonschema/property_names_root_model_union_key_modules",
+    "tests/data/jsonschema/property_names_root_model_union_key_modules/a.json",
+]
+backends = ["pydantic_v2.BaseModel"]
+options = "*"
+aspects = ["type", "import-path-removed"]
+
+[[change.cells]]
 input = ["payload:jsonschema/property_names_root_model_union_keys.json"]
 backends = ["pydantic_v2.BaseModel"]
 options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp"]]
-aspects = ["type"]
+aspects = ["type", "payload-verdict"]
 input_file_type = "jsonschema"
 
 [[change.cells]]
