@@ -58,7 +58,8 @@ class Mark(NamedTuple):
     """The mark of a built output: a call of ``callee``, with ``keyword`` bound to ``value`` where one is asked."""
 
     callee: str
-    """The function, method or class called, as the dotted path of its definition (a heki target)."""
+    """The function, method or class called, as the dotted path of its definition (a heki target); a method also
+    names that member of each Protocol of the package that declares it."""
     keyword: str = ""
     """A parameter the call binds, by keyword or by position as Python binds it (``_container_flags(obj, "dict")``
     binds ``slot``), also through a ``**`` dict display; ``""``: none is asked."""
@@ -70,13 +71,15 @@ class BuilderHome(NamedTuple):
     """One builder home: what it builds, the passage of the page that states it, the builder, and how to find a bypass.
 
     A record with a ``table`` stands for a position of L1: its builder chooses the parse method from that dispatch table
-    (``parser/_schema_dispatch.py``) and is the only reader of the table, and the parse methods the table's rows hold
-    run only through the tables. A record with ``marks`` stands for an output: a call with one of those marks is made
-    only in the builder and its ``parts``. A mark is a call of a class or a subclass (or its
-    ``model_construct``/``model_validate``) or of a function, and where it asks for one, a parameter that the call binds
-    to a constant (heki's argument-list targets). An output built by ``model_copy``, by a flag computed from a variable
-    slot (``{CONTAINER_FLAGS[slot]: True}``) or by a flag dict that is handed on before it reaches the call carries no
-    mark and is not seen.
+    (``parser/_schema_dispatch.py``) and is the only reader of the table besides the scopes that only ask it for
+    ``typed_children``, and the parse methods the table's rows hold run only through the tables. A record with ``marks``
+    stands for an output: a call with one of those marks is made only in the builder and its ``parts``. A mark is a call
+    of a class or a subclass (or its ``model_construct``/``model_validate``) or of a function, and where it asks for
+    one, a parameter that the call binds to a constant (heki's argument-list targets). An output built by
+    ``model_copy``, by a flag computed from a variable slot (``{CONTAINER_FLAGS[slot]: True}``) or by a flag dict that
+    is handed on, merged or chosen by a condition before it reaches the call carries no mark and is not seen, nor is a
+    call on a receiver heki cannot type (an unannotated parameter), through ``functools.partial``, or of
+    ``DataType.model_construct``/``model_validate``, whose keywords heki cannot bind.
     """
 
     output: str
@@ -8239,11 +8242,6 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
             Mark(callee="datamodel_code_generator.types.DataType", keyword="is_dict", value=True),
             Mark(
                 callee="datamodel_code_generator.parser.jsonschema.JsonSchemaParser._container_flags",
-                keyword="slot",
-                value="dict",
-            ),
-            Mark(
-                callee="datamodel_code_generator.parser._object_maps.ObjectMapsHost._container_flags",
                 keyword="slot",
                 value="dict",
             ),

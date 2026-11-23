@@ -5782,14 +5782,14 @@ attribution = "lexical"
 
 [[read-owners]]
 name = "table:parser/jsonschema.py:JsonSchemaParser._DEFINITION_TABLE"
-targets = ["datamodel_code_generator.parser.jsonschema.JsonSchemaParser._DEFINITION_TABLE"]
-allowed-readers = ["datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_schema_obj", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_schema_obj.*"]
+targets = ["datamodel_code_generator.parser._rw_split.RwSplitHost._DEFINITION_TABLE", "datamodel_code_generator.parser.jsonschema.JsonSchemaParser._DEFINITION_TABLE"]
+allowed-readers = ["datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_schema_obj", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_schema_obj.*", "datamodel_code_generator.parser._rw_split:get_ref_schema_rw_model_reference_facts"]
 attribution = "lexical"
 
 [[read-owners]]
 name = "table:parser/jsonschema.py:JsonSchemaParser._FIELD_TABLE"
-targets = ["datamodel_code_generator.parser.jsonschema.JsonSchemaParser._FIELD_TABLE"]
-allowed-readers = ["datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_item", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_item.*"]
+targets = ["datamodel_code_generator.parser._rw_split.RwSplitHost._FIELD_TABLE", "datamodel_code_generator.parser.jsonschema.JsonSchemaParser._FIELD_TABLE"]
+allowed-readers = ["datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_item", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_item.*", "datamodel_code_generator.parser._rw_split:typed_field_site"]
 attribution = "lexical"
 
 [[read-owners]]

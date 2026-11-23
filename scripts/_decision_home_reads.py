@@ -331,3 +331,23 @@ def held_parse_methods(repo: Repo, records: Iterable[BuilderHome], package: str 
     `scripts/build_heki_contracts.py` writes a heki contract per method: only the modules of the tables call it.
     """
     return sorted(_held_builds(_Reads(repo, package), _holders(repo, records, package)))
+
+
+def typed_children_readers(repo: Repo, table: Home, package: str = PACKAGE_DIR) -> list[Home]:
+    """Return the scopes of a package whose every read of a recorded table asks it for ``typed_children``.
+
+    Such a scope reads what the rows of the table type, not which row parses a site, so it may read the table besides
+    the builder; a scope that also reads the table otherwise (its ``choose``, a name bound to it) is none. heki cannot
+    tell the method a read is followed by, so `scripts/build_heki_contracts.py` names these scopes as readers.
+    """
+    reads = _Reads(repo, package)
+    parents: dict[str, dict[int, ast.AST]] = {}
+    only: dict[Home, bool] = {}
+    for rel, node, scope in reads.reads(table):
+        if rel not in parents:
+            tree = repo.model(rel).tree
+            parents[rel] = {id(child): parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
+        parent = parents[rel].get(id(node))
+        home = Home(rel.removeprefix(package), scope_name(scope))
+        only[home] = only.get(home, True) and isinstance(parent, ast.Attribute) and parent.attr == "typed_children"
+    return sorted(home for home, typed in only.items() if typed)
