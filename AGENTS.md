@@ -47,16 +47,16 @@ becomes final and where a decision belongs.
   path.
 - Don't change nodes in place that other models share; replace them in each holder through the generation store's
   mutation APIs.
-- heki checks fact writes against the write-owner contracts that `scripts/build_heki_contracts.py` builds from
-  `scripts/fact_tables.py` (`scripts/heki.toml`); its baseline `scripts/heki_baseline.toml` only shrinks. Route a new
-  write through the store instead of recording it, and run `heki check --config scripts/heki.toml --baseline
-  scripts/heki_baseline.toml --update-baseline src` after routing one. A call of a method the store runs
-  (`STORE_MEMBERS`: `replace_data_type`, `set_base_class`, `process_const`, ...) outside the store is a `MUT204`
-  finding (`MUT207` on a receiver whose class heki cannot tell), and a read of `Reference.children` a `MUT203` one:
-  call the store operation or ask the generation index instead. `scripts/check_generation_store_usage.py` checks
-  that every attribute and `__dict__` key the model graph writes has a row in the table.
-- Every test also runs the runtime write guard (`DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`): a test that fails with
-  "... is written outside store operations" made a write the heki baseline does not record; route it the same way.
+- heki is the one check that graph facts change only inside store operations: the pre-commit hook `heki` and
+  `tests/test_build_heki_contracts_script.py` check every write site against the write-owner contracts that
+  `scripts/build_heki_contracts.py` builds from `scripts/fact_tables.py` (`scripts/heki.toml`); its baseline
+  `scripts/heki_baseline.toml` only shrinks. Route a new write through the store instead of recording it, and run
+  `heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml --update-baseline src` after routing
+  one. A call of a method the store runs (`STORE_MEMBERS`: `replace_data_type`, `set_base_class`, `process_const`,
+  ...) outside the store is a `MUT204` finding (`MUT207` on a receiver whose class heki cannot tell), and a read of
+  `Reference.children` a `MUT203` one: call the store operation or ask the generation index instead.
+  `scripts/check_generation_store_usage.py` checks that every attribute and `__dict__` key the model graph writes has
+  a row in the table.
 - Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; the
   finality check of the test suite (`tests/checks/finality.py`) runs it inside the scope of that declaration; a pass
   that conflicts with an earlier one of its segment needs an `after` edge with

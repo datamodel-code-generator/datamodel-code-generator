@@ -61,7 +61,7 @@ from tests.checks.areas import Area, Mode
 
 print("ready", flush=True)
 sys.stdin.read()
-mode = Mode(Area.STORE_WRITES, Path(sys.argv[1]))
+mode = Mode(Area.FACT_FINALITY, Path(sys.argv[1]))
 for index in range(int(sys.argv[3])):
     mode.record("appended", writer=sys.argv[2], index=index, padding="x" * 4096)
 """
@@ -72,8 +72,9 @@ its standard input."""
 def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
     """Processes and threads that append to one report at once each write every line of theirs whole (#7374).
 
-    The determinism tests run two generator processes that report into the file of their test process. The CRT's append
-    on Windows is a seek to the end and then a write, so two writers wrote at the same offset and broke their lines.
+    The determinism tests ran two generator processes that reported into the file of their test process. The CRT's
+    append on Windows is a seek to the end and then a write, so two writers wrote at the same offset and broke their
+    lines.
 
     Each process reads a start pipe of its own (#7404). Windows runs the calls on a synchronous pipe one at a time,
     across every handle inherited from it: while one process waited in its read of a shared start pipe, the next one
@@ -93,7 +94,7 @@ def test_concurrent_appends_write_whole_lines(tmp_path: Path) -> None:
     for (start_read, _), (_, ready_write) in zip(starts, readies, strict=True):
         os.close(start_read)
         os.close(ready_write)
-    mode = Mode(Area.STORE_WRITES, report)
+    mode = Mode(Area.FACT_FINALITY, report)
 
     def append(writer: str) -> None:
         for index in range(lines):

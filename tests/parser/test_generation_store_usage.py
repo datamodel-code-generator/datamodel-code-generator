@@ -1,4 +1,4 @@
-"""Tests for the attribute-to-fact table check and the naming of the runtime write guard's reports.
+"""Tests for the attribute-to-fact table check.
 
 heki checks the writes against the contracts built from the table (``tests/test_build_heki_contracts_script.py``).
 """
@@ -6,20 +6,14 @@ heki checks the writes against the contracts built from the table (``tests/test_
 from __future__ import annotations
 
 import importlib.util
-import json
-import shutil
-import subprocess
 import sys
-import sysconfig
 from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
-import tomllib
 from inline_snapshot import snapshot
 
-from scripts.fact_tables import STORE_MEMBERS, MemberUse
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -129,164 +123,6 @@ def test_cli_reports_table_problems(monkeypatch: pytest.MonkeyPatch, capsys: pyt
             ),
         ],
     ))
-
-
-def test_runtime_writes_are_named_as_heki_names_its_findings() -> None:
-    """A write the guard reports in a scope of a baseline entry gets that entry's key; one heki never found fails."""
-    checker = _load_checker()
-    entries = tomllib.loads((checker.ROOT / checker.HEKI_BASELINE).read_text(encoding="utf-8"))["entries"]
-    written = [
-        (entry["path"], entry["qualname"], entry["target"].partition("[")[0].rpartition(".")[2], entry["rule_code"])
-        for entry in entries
-        if entry["rule_code"] in checker.WRITE_RULES and entry["qualname"] != "<module>"
-    ]
-    starts = {
-        (path, checker.finding_scope(scope)): scope.node.lineno
-        for path in {path for path, *_ in written}
-        for scope in checker.read_model(checker.ROOT / path).scopes
-        if scope.kind == "function"
-    }
-    lines = [
-        json.dumps({
-            "area": "STORE_WRITES",
-            "message": f"write {index}",
-            "path": path,
-            "line": starts[path, function],
-            "attribute": attribute,
-            "operation": "=",
-            "key": None,
-        })
-        for index, (path, function, attribute, _) in enumerate(written)
-    ]
-    other_area = json.dumps({"area": "SCHEMA_LOCATIONS", "message": "models without a schema location"})
-    outside = json.dumps({"area": "STORE_WRITES", "path": "/tmp/custom_parser.py", "line": 1})
-    path, function, _, rule = next(item for item in written if item[3] == "MUT201")
-    unknown = json.dumps({
-        "area": "STORE_WRITES",
-        "message": "unknown write",
-        "path": path,
-        "line": starts[path, function],
-        "attribute": "never_written_here",
-        "operation": "=",
-        "key": None,
-    })
-
-    writes = checker.runtime_writes([*lines, other_area, outside])
-
-    assert Counter(rule for *_, rule in written) == snapshot(Counter({"MUT201": 136, "MUT205": 39}))
-    assert [write.key for write in writes] == [(path, function, attribute) for path, function, attribute, _ in written]
-    assert checker.runtime_problems(lines) == []
-    checker.check_runtime_writes(lines)
-    with pytest.raises(AssertionError) as error:
-        checker.check_runtime_writes([unknown])
-    assert str(error.value) == (
-        f"unknown write; route it through a GenerationStore operation (scripts/heki_baseline.toml records no write "
-        f"of 'never_written_here' by {function} in {path})"
-    )
-    assert rule == "MUT201"
-
-
-def test_runtime_guard_knows_no_write_of_a_method_only_the_store_runs() -> None:
-    """A method of ``STORE_MEMBERS`` writes for the store: run outside a store operation, its write fails the guard."""
-    checker = _load_checker()
-    methods = {member.name for member in STORE_MEMBERS if member.use is MemberUse.CALL}
-    path = f"{checker.SOURCE_ROOT.as_posix()}/model/base.py"
-    line = next(
-        scope.node.lineno
-        for scope in checker.read_model(checker.ROOT / path).scopes
-        if checker.finding_scope(scope) == "DataModel.set_base_class"
-    )
-    report = json.dumps({
-        "area": "STORE_WRITES",
-        "message": "base_classes is written outside store operations",
-        "path": path,
-        "line": line,
-        "attribute": "base_classes",
-        "operation": "=",
-        "key": None,
-    })
-
-    known = [key for key in checker.load_known_writes() if key[1].rpartition(".")[2] in methods]
-
-    assert (known, checker.runtime_problems([report])) == (
-        [],
-        [
-            (
-                "base_classes is written outside store operations; route it through a GenerationStore operation "
-                f"(scripts/heki_baseline.toml records no write of 'base_classes' by DataModel.set_base_class in {path})"
-            )
-        ],
-    )
-
-
-NESTED_SCOPES = """\
-from pkg.model import Field
-field = Field()
-field.required = True
-
-
-class Pass:
-    def run(self, field: Field):
-        field.required = True
-
-        def inner():
-            field.required = False
-
-        apply = lambda: setattr(field, "required", True)
-        [setattr(item, "required", True) for item in (field,)]
-        return inner, apply
-
-    class Nested:
-        async def later(self, field: Field):
-            field.required = True
-
-
-def build(field: Field):
-    class Local:
-        def method(self):
-            field.required = True
-
-    return Local
-"""
-"""Writes at module level, in a method, a nested function, a lambda, a comprehension, a nested class and a class
-inside a function."""
-
-
-@pytest.mark.allow_direct_assert("the names heki gives are its verdict, not a stored output")
-def test_function_at_names_lines_as_heki_names_its_findings(tmp_path: Path) -> None:
-    """Each write is named by the scope heki reports it in: ``<locals>`` after a function, lambdas left out."""
-    checker = _load_checker()
-    package = tmp_path / "src" / "pkg"
-    package.mkdir(parents=True)
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "pkg"\nrequires-python = ">=3.11"\n')
-    (package / "__init__.py").write_text("")
-    (package / "model.py").write_text("class Field:\n    def __init__(self) -> None:\n        self.required = False\n")
-    (package / "nested.py").write_text(NESTED_SCOPES)
-    (tmp_path / "contracts.toml").write_text(
-        '[lint]\nselect = ["MUT201"]\n\n[[write-owners]]\nname = "required"\ntargets = ["Field.required"]\n'
-        'allowed-writers = []\nattribution = "lexical"\n'
-    )
-    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
-
-    result = subprocess.run(
-        [heki, "check", "--config", "contracts.toml", "--output-format", "json", "src"],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    found = [(item["line"], item["qualname"]) for item in json.loads(result.stdout)]
-    assert found == [
-        (3, "<module>"),
-        (8, "Pass.run"),
-        (11, "Pass.run.<locals>.inner"),
-        (13, "Pass.run"),
-        (14, "Pass.run"),
-        (19, "Pass.Nested.later"),
-        (25, "build.<locals>.Local.method"),
-    ], result.stderr
-    assert [(line, checker.function_at(package / "nested.py", line)) for line, _ in found] == found
 
 
 def test_a_module_the_model_cannot_read_is_a_problem(tmp_path: Path) -> None:
