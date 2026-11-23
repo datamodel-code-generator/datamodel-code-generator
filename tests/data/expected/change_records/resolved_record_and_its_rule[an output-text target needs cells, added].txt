@@ -1,0 +1,11 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "output-text",
+  "cells": 0
+ },
+ "why": [],
+ "problems": [
+  "entry x: category output-text names the cells it covers ([[change.cells]])"
+ ]
+}

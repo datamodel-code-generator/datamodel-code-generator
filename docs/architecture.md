@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 281 | Shared generation options. |
-| `GenerateConfig` | 296 | Public `generate()` configuration. |
-| `ParserConfig` | 235 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 237 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 248 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 251 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 238 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 238 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 237 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 238 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 282 | Shared generation options. |
+| `GenerateConfig` | 297 | Public `generate()` configuration. |
+| `ParserConfig` | 236 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 238 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 249 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 252 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 239 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 239 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 238 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 239 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -860,7 +860,7 @@ entry.
 | CROSS_MODULE | `import_removed_reuse_canonicals` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | MODELS_EXIST, MODULE_IMPORTS, MODULE_MEMBERSHIP | Skipped unless: reuse removed a duplicate that a model named (_removed_reuse_users). Removed by the step that writes imports from module import plans. After `tag_fields_of_tagged_bases`: repairs the imports of every module once the fields reused structs copy from their bases import theirs. After `flatten_narrowed_inherited_fields`: repairs the imports of every module once the fields models copy from their bases import theirs. |
 | CROSS_MODULE | `import_renamed_types` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | CLASS_NAMES, MODULE_IMPORTS | Skipped unless: a field-type rename, or a collapsed-root rename that changed the class name, was recorded. Removed by the step that writes imports from module import plans. After `tag_fields_of_tagged_bases`: imports renamed types once the fields reused structs copy from their bases import theirs. After `flatten_narrowed_inherited_fields`: imports renamed types once the fields models copy from their bases import theirs. After `import_removed_reuse_canonicals`: imports renamed types next to the canonicals of removed reuse duplicates. |
 | CROSS_MODULE | `import_enum_member_literal_classes` | global | repair | FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | DEFAULTS, FIELD_TYPES, MODULE_IMPORTS | Skipped unless: --use-enum-values-in-discriminator, or a const narrows a value to an enum member (_const_narrowed_values). Removed by the step that writes imports from module import plans. After `import_renamed_types`: imports literal classes next to the renamed types. After `warn_enums_admitting_other_values`: the warning reads the enum types before literal classes replace them. |
-| CROSS_MODULE | `apply_generic_base_class` | global | transform | BASES, MODELS_EXIST | BASES | Inserts the generated base model, in the module an earlier attempt seeded where its import failed, and rewrites the base classes; B1 follows. Runs when: use_generic_base_class with a configuration for the base class. |
+| CROSS_MODULE | `apply_generic_base_class` | global | transform | BASES, MODELS_EXIST | BASES, CLASS_NAMES, IMPORT_ALIASES, MODULE_IMPORTS | Inserts the generated base model, in the module an earlier attempt seeded where its import failed, renames it while a kept base or another class or import of the output binds its name, and rewrites the base classes; B1 follows. Runs when: use_generic_base_class with a configuration for the base class. |
 | RENDER_PREPARATION | `assign_forward_reference_fields` | module | transform | ASSIGNMENT_FORM, FIELD_ORDER | DEFAULTS, FIELD_ORDER, FIELD_TYPES, MODEL_ORDER | Runs when: use_annotated with deferred annotations. |
 | RENDER_PREPARATION | `fix_constructor_field_ordering` | global | transform | FIELD_ORDER, FIELD_SET, FORCED_ASSIGNMENT, IMPORT_ALIASES, KEYWORD_ONLY, MODULE_IMPORTS, REQUIRED | ASSIGNMENT_FORM, BACKEND_CONFIG, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, MODEL_KIND, MODULE_IMPORTS, NULLABLE, REQUIRED | Orders constructor fields so that fields without a default come first, reading the fields of bases, each model after its bases; an inherited field that bases put after a default gets a keyword-only copy. Skipped unless: a model orders keyword-only fields (SUPPORTS_KW_ONLY) or restores the fields it inherits (restore_required_inherited_field_state). After `assign_forward_reference_fields`: a field written by assignment is a dataclass default, which ordering reads from the bases of every module. |
 | RENDER_PREPARATION | `settle_module_unused_models` | global | bookkeeping | - | - | Keeps live the unused models that removal leaves written in a merged module (#5905). Runs when: a module leaves models unused. |
@@ -1659,6 +1659,7 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | Row | Keeps | Fix |
 | --- | --- | --- |
 | `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it and is written as it | keep |
+| `legacy-generic-base-drops-configured-bases` | without `--keep-bases-beside-generic-base-class`, the generated base class of `--use-generic-base-class` replaces the bases of a model none of whose bases is a generated model, so a class that `--base-class-map`, `customBasePath` or `--base-class` names, or that an `--external-ref-mapping` or `x-python-import` schema the model extends stands for, is not inherited and its import stays unused (`parser/_passes/cross_module.py:_bases_beside_generic`) | keep |
 | `legacy-msgspec-float-bounds` | without `--read-msgspec-union-bounds-exactly`, the check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past `2**53` is the integer of its binary value (`int(1e300)`), where the schema models read the decimal that is written (`10**300`), and the int member of a union can keep a constraint that rejects an integer the float member accepts | keep |
 | `legacy-mapped-tags-only` | without `--use-unmapped-variant-tag-values`, a discriminated variant a mapping key names takes only its mapping keys, not the other values its tag field admits that no key and no other variant claim (`model/_decisions/tag_value.py:variant_tags`) | keep |
 | `legacy-tag-type-from-earlier-union` | without `--read-mapping-keys-by-schema-tag-type`, a variant's tags are read against the tag field it declares, which an earlier union may have written as its `Literal`, else the nearest one it inherits from an ancestor whose tag field no union wrote, so a mapping key reads as text or as an integer by the order of the unions, and as text where the field names a root model or a type alias of an integer (`parser/_tag_plan.py:_declared_type`, `declared_tag_type`) | keep |

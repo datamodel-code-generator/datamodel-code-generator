@@ -6,13 +6,13 @@ the parser comes in through ``CrossModuleHost``, which ``Parser`` satisfies stru
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator._model_keys import keyed_or_path
 from datamodel_code_generator._module_paths import dotted_name
-from datamodel_code_generator.imports import Import
+from datamodel_code_generator.imports import Import, _import_bindings
 from datamodel_code_generator.model._decisions.tag_value import enum_tag_as_values
 from datamodel_code_generator.model.base import (
     GENERIC_BASE_CLASS_NAME,
@@ -112,6 +112,10 @@ class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
         """Whether the models take keyword-only arguments."""
 
     @property
+    def keep_bases_beside_generic_base_class(self) -> bool:
+        """Whether a model keeps the classes it is configured to inherit beside the generated base class."""
+
+    @property
     def use_generic_base_class(self) -> bool:
         """Whether the models share a generated base class."""
 
@@ -139,6 +143,9 @@ class CrossModuleRun(ModuleScopeView, Protocol):
 
 
 _GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")
+_CLASH_SUFFIX: Final = "Model"
+"""What the generic base class adds to its name where a base kept beside it binds that name (``TagModel`` of a ``Tag``
+class an import binds is the same rule)."""
 
 
 def _flattener(
@@ -393,6 +400,73 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                 parser._graph_builder.name_enum_member_literal_class(data_type, enum_class)
 
 
+def _bases_beside_generic(
+    parser: CrossModuleHost, model: DataModel, default_import: Import | None
+) -> list[BaseClassDataType]:
+    """Return the bases of ``model`` that stay beside the generic base class, which stands in for the default base.
+
+    Row ``legacy-generic-base-drops-configured-bases``: the model keeps its bases only where one is a generated model,
+    so a base that is a class (one ``--base-class-map``, ``customBasePath`` or ``--base-class`` names, or a stand-in
+    that ``--external-ref-mapping`` or ``x-python-import`` imports) is dropped and its import stays unused. Under
+    ``--keep-bases-beside-generic-base-class`` every base but the default one of the output model type stays.
+    """
+    bases = model.base_classes
+    row: Literal["configured-bases", "legacy-generic-base-drops-configured-bases"] = (
+        "configured-bases"
+        if parser.keep_bases_beside_generic_base_class
+        else "legacy-generic-base-drops-configured-bases"
+    )
+    if row == "legacy-generic-base-drops-configured-bases":
+        return bases if any(base.reference for base in bases) else []
+    return [base for base in bases if base.reference or base.import_ != default_import]
+
+
+def _bases_with_generic(
+    model: DataModel, generic: BaseClassDataType, kept: list[BaseClassDataType]
+) -> list[BaseClassDataType]:
+    """Return the bases of ``model`` that keeps ``kept`` beside the generic base class, in the order it lists them.
+
+    The generic base class stands where its options win over those of classes that are no generated model, as a class
+    body's configuration wins over its bases without a generic base class: last where the last base wins (Pydantic
+    merges the ``model_config`` of the bases in order), first where the first base gives an option the bases set
+    differently (``FIRST_BASE_CONFIGURES``, msgspec). A generated base keeps the released order, the generic base
+    class first; no test reaches it, as a model whose base is a target model is skipped before this point.
+    """
+    if any(base.reference for base in kept):  # pragma: no cover - not proven unreachable
+        return [generic, *kept]
+    return [generic, *kept] if model.FIRST_BASE_CONFIGURES else [*kept, generic]
+
+
+def _bound_names(
+    run: CrossModuleRun,
+    generic: DataModel,
+    kept: list[BaseClassDataType],
+    default_import: Import | None,
+) -> set[str]:
+    """Return the names the generic base class ``generic`` may not take: those that other classes and imports bind.
+
+    They are the classes of the run, the imports of its modules (the default import of the output model type aside,
+    which the generic base class replaces) and the bases ``kept`` beside it. The imports every module shares
+    (``--additional-imports``) are not: the generic base class takes the name over them, as a generated class does
+    over one no type of its module writes (``change_imported_model_name``). Class names and module imports become final
+    only at render, but no later pass binds a name of the generic base class: a class named like the default base is
+    renamed at parse, and the imports added later bind names of the output type's library (``Field``, ``ConfigDict``).
+    """
+    default = (default_import.from_, default_import.import_) if default_import is not None else None
+    return (
+        {model.class_name for ctx in run.contexts for model in ctx.models if model is not generic}
+        | {binding for ctx in run.contexts for key, binding in _import_bindings(ctx.imports) if key != default}
+        | {import_.binding_name for base in kept if (import_ := base.import_) is not None and not base.reference}
+    )
+
+
+def _unbound_generic_name(name: str, bound_names: set[str]) -> str:
+    """Return ``name``, with ``_CLASH_SUFFIX`` added while another class or import of the output binds it."""
+    while name in bound_names:
+        name += _CLASH_SUFFIX
+    return name
+
+
 def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Add the configured generic base class to the first root module and make top-level target models inherit it.
 
@@ -434,15 +508,20 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     if base_class_model is None:
         return
 
+    original_base_class = parser.data_model_type.BASE_CLASS
+    original_import = Import.from_full_path(original_base_class) if original_base_class else None
     base_class_model.file_path = first_root_file_path
     parser._generic_base_model = base_class_model
     parser._graph_builder.set_module_models(first_root_models, [base_class_model, *first_root_models])
     parser._graph_builder.register_model(base_class_model)
+    if parser.keep_bases_beside_generic_base_class:
+        kept = [base for model in all_target_models for base in _bases_beside_generic(parser, model, original_import)]
+        bound_names = _bound_names(run, base_class_model, kept, original_import)
+        if (name := _unbound_generic_name(base_class_ref.name, bound_names)) != base_class_ref.name:
+            parser._graph_builder.rename_model(base_class_model, reference_name=name, scheme="imported-name")
 
     base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)
 
-    original_base_class = parser.data_model_type.BASE_CLASS
-    original_import = Import.from_full_path(original_base_class) if original_base_class else None
     for module, _, target_models, imports, init in modules_with_targets:
         for model in target_models:
             if original_import:  # pragma: no branch
@@ -450,10 +529,9 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
                 model._additional_imports = [i for i in additional_imports if i != original_import]
             if inherits_one_of(model, all_target_models):
                 continue
-            if any(bc.reference for bc in model.base_classes):  # pragma: no cover - not proven unreachable
-                parser._graph_builder.set_base_classes(model, [base_class_dt, *model.base_classes])
-            else:
-                parser._graph_builder.set_base_classes(model, [base_class_dt])
+            parser._graph_builder.set_base_classes(
+                model, _bases_with_generic(model, base_class_dt, _bases_beside_generic(parser, model, original_import))
+            )
         if module != first_root_module and original_import:
             parser._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)
             parser._import_ledger.append(

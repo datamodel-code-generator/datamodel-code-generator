@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 316>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 317>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -443,6 +443,7 @@ class BaseGenerateConfig(BaseModel)
     allow_extra_fields: bool = False
     extra_fields: str | None = None
     use_generic_base_class: bool = False
+    keep_bases_beside_generic_base_class: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
     class_name_prefix: str | None = None
@@ -729,7 +730,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 316>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 317>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -872,6 +873,7 @@ class ParserConfig(BaseModel)
     allow_extra_fields: bool = False
     extra_fields: str | None = None
     use_generic_base_class: bool = False
+    keep_bases_beside_generic_base_class: bool = False
     force_optional_for_required_fields: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
@@ -1754,6 +1756,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     IS_ROOT_MODEL: ClassVar[bool] = False
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
+    FIRST_BASE_CONFIGURES: ClassVar[bool] = False
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(_get_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_field_participates_in_constructor)
@@ -2356,6 +2359,7 @@ class Struct(DataModel)
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     HIDING_FIELD_RESOLUTION: ClassVar[Literal['field', 'type'] | None] = 'field'
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True
+    FIRST_BASE_CONFIGURES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
         uses _ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel('_ANNOTATED_CONSTRAINTS_CONTEXT')
@@ -3391,6 +3395,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.generate_schema_validators
     self.check_pattern_maps_strictly
     self.use_generic_base_class
+    self.keep_bases_beside_generic_base_class
     self.generic_base_class_config
     self.model_resolver
     self.class_name
@@ -5070,7 +5075,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 316>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 317>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5092,7 +5097,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 312>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 313>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5994,6 +5999,7 @@ class ParserConfigDict(TypedDict)
     allow_extra_fields: NotRequired[bool]
     extra_fields: NotRequired[str | None]
     use_generic_base_class: NotRequired[bool]
+    keep_bases_beside_generic_base_class: NotRequired[bool]
     force_optional_for_required_fields: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
@@ -6381,6 +6387,7 @@ class BaseGenerateConfig(TypedDict)
     allow_extra_fields: NotRequired[bool]
     extra_fields: NotRequired[str | None]
     use_generic_base_class: NotRequired[bool]
+    keep_bases_beside_generic_base_class: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
     class_name_prefix: NotRequired[str | None]

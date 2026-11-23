@@ -728,6 +728,7 @@ class Struct(DataModel):
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     HIDING_FIELD_RESOLUTION: ClassVar[Literal["field", "type"] | None] = "field"
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True
+    FIRST_BASE_CONFIGURES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS: ClassVar[bool] = True

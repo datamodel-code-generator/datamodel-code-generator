@@ -1169,11 +1169,12 @@ APPLY_GENERIC_BASE_CLASS = PassDecl(
     Phase.CROSS_MODULE,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.BASES),
+    reads=_facts(Fact.BASES, RenderFact.CLASS_NAMES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
     writes=_facts(Fact.BASES, Fact.MODELS_EXIST),
     summary=(
-        "Inserts the generated base model, in the module an earlier attempt seeded where its import failed, and "
-        "rewrites the base classes; B1 follows."
+        "Inserts the generated base model, in the module an earlier attempt seeded where its import failed, "
+        "renames it while a kept base or another class or import of the output binds its name, and rewrites the "
+        "base classes; B1 follows."
     ),
     condition="use_generic_base_class with a configuration for the base class",
 )

@@ -1,0 +1,11 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "notice",
+  "cells": 1
+ },
+ "why": [],
+ "problems": [
+  "entry x: cells 1 of category notice needs match"
+ ]
+}

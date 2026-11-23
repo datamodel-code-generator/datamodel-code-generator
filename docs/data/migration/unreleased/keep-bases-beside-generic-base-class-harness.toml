@@ -1,0 +1,9 @@
+[[change]]
+id = "keep-bases-beside-generic-base-class-harness"
+category = "harness"
+title = "Pass summary of the where script"
+summary = "The where script prints the summary of the generic base class pass, which now says it renames the generated base class where a kept base binds its name; the package writes the same output."
+refs = ["#7430"]
+covers = [
+    "where_script/where_answers[pass].txt",
+]

@@ -1,0 +1,32 @@
+openapi: "3.0.0"
+info:
+  title: Modules
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    models.Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    models.Owner:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/models.Pet"
+    models.BaseModelModel:
+      type: object
+      properties:
+        note:
+          type: string
+    things.Thing:
+      type: object
+      properties:
+        label:
+          type: string
+    things.Gadget:
+      type: object
+      properties:
+        thing:
+          $ref: "#/components/schemas/things.Thing"

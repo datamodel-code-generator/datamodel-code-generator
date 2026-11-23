@@ -49,6 +49,32 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-generic-base-drops-configured-bases",
+        (
+            "without `--keep-bases-beside-generic-base-class`, the generated base class of `--use-generic-base-class` "
+            "replaces the bases of a model none of whose bases is a generated model, so a class that "
+            "`--base-class-map`, `customBasePath` or `--base-class` names, or that an `--external-ref-mapping` or "
+            "`x-python-import` schema the model extends stands for, is not inherited and its import stays unused "
+            "(`parser/_passes/cross_module.py:_bases_beside_generic`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/generic_base_class_bases/api.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
+            "--base-class-map",
+            '{"Tag": "mypkg.base.TagBase"}',
+            "--formatters",
+            "builtin",
+        ),
+        option="--keep-bases-beside-generic-base-class",
+    ),
+    LegacyRow(
         "legacy-msgspec-float-bounds",
         (
             "without `--read-msgspec-union-bounds-exactly`, the check of a msgspec union reads the bound of a float "
