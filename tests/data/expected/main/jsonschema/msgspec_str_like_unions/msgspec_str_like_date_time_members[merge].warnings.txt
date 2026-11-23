@@ -1,0 +1,2 @@
+warning: --merge-msgspec-str-like-union-members writes Model.at with str in place of its str-like members time, UUID, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.when with str in place of its str-like members date, datetime, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
