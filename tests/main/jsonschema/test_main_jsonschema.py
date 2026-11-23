@@ -8626,12 +8626,10 @@ and the array stays a list.""",
         "--read-set-item-fields-in-class-order",
     ],
     golden_output=(
-        "main/preset_opt_in_options/"
-        "preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py"
+        "main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py"
     ),
     comparison_output=(
-        "main/preset_opt_in_options/"
-        "preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py"
+        "main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py"
     ),
     related_options=["--use-unique-items-as-set"],
 )
