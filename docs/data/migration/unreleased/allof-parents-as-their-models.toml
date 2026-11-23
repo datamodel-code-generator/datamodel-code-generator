@@ -3,7 +3,7 @@ id = "allof-parents-as-their-models"
 category = "new-surface"
 title = "Read allOf parents as their models under an option"
 summary = "--read-allof-parents-as-their-models reads a parent written as a $ref beside sibling keywords with the schema its $ref names, so a model written before that parent types and requires an inherited property as it does after it (#6868); writes again as required a property some allOf parent requires where another parent declares it optional (#7331); and reads the members of an allOf root model site as allOf members are read elsewhere, so under --intersect-combined-schema-keywords an alias of an object model beside a member that adds only a type or required names keeps the fields of the schema the alias names (#7309). Without it the output is that of 0.100.0."
-refs = ["#1"]
+refs = ["#7400"]
 surface = ["--read-allof-parents-as-their-models"]
 covers = [
     "input_model/config_class.txt",

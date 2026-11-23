@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 283 | Shared generation options. |
-| `GenerateConfig` | 298 | Public `generate()` configuration. |
-| `ParserConfig` | 237 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 239 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 250 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 253 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 240 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 240 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 239 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 240 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 284 | Shared generation options. |
+| `GenerateConfig` | 299 | Public `generate()` configuration. |
+| `ParserConfig` | 238 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 240 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 251 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 254 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 241 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 241 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 240 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 241 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1660,6 +1660,7 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | --- | --- | --- |
 | `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it and is written as it | keep |
 | `legacy-generic-base-drops-configured-bases` | without `--keep-bases-beside-generic-base-class`, the generated base class of `--use-generic-base-class` replaces the bases of a model none of whose bases is a generated model, so a class that `--base-class-map`, `customBasePath` or `--base-class` names, or that an `--external-ref-mapping` or `x-python-import` schema the model extends stands for, is not inherited and its import stays unused (`parser/_passes/cross_module.py:_bases_beside_generic`) | keep |
+| `legacy-standard-primitive-types-without-decoder` | without `--use-str-for-formats-msgspec-cannot-decode`, `--use-standard-primitive-types` writes `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network` and `Path` for the formats `ipv4`, `ipv6`, `ipv4-network`, `ipv6-network` and `path` of msgspec output, which msgspec decodes only with a `dec_hook` (`types.py:DataTypeManager.use_str_for_formats_msgspec_cannot_decode`) | keep |
 | `legacy-msgspec-float-bounds` | without `--read-msgspec-union-bounds-exactly`, the check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past `2**53` is the integer of its binary value (`int(1e300)`), where the schema models read the decimal that is written (`10**300`), and the int member of a union can keep a constraint that rejects an integer the float member accepts | keep |
 | `legacy-mapped-tags-only` | without `--use-unmapped-variant-tag-values`, a discriminated variant a mapping key names takes only its mapping keys, not the other values its tag field admits that no key and no other variant claim (`model/_decisions/tag_value.py:variant_tags`) | keep |
 | `legacy-tag-type-from-earlier-union` | without `--read-mapping-keys-by-schema-tag-type`, a variant's tags are read against the tag field it declares, which an earlier union may have written as its `Literal`, else the nearest one it inherits from an ancestor whose tag field no union wrote, so a mapping key reads as text or as an integer by the order of the unions, and as text where the field names a root model or a type alias of an integer (`parser/_tag_plan.py:_declared_type`, `declared_tag_type`) | keep |

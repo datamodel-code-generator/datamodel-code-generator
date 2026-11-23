@@ -154,6 +154,7 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--keep-bases-beside-generic-base-class",
     "--rename-redeclared-fields-hiding-types",
     "--rename-fields-hiding-types-from-type-checkers",
+    "--use-str-for-formats-msgspec-cannot-decode",
     "--distribute-allof-over-object-branches",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
@@ -682,6 +683,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         id="rename-fields-hiding-types-from-type-checkers",
     ),
     pytest.param(
+        JSON_SCHEMA_DATA_PATH / "use_standard_primitive_types.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="use-str-for-formats-msgspec-cannot-decode",
+    ),
+    pytest.param(
         JSON_SCHEMA_DATA_PATH / "allof_union_object_branches" / "required_names.json",
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
@@ -1137,6 +1144,14 @@ def test_preset_sets_opt_in_option(
             "--rename-fields-hiding-types-from-type-checkers",
             "--no-rename-fields-hiding-types-from-type-checkers",
             id="rename-fields-hiding-types-from-type-checkers",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "use_standard_primitive_types.json",
+            "jsonschema",
+            ["--output-model-type", "msgspec.Struct"],
+            "--use-str-for-formats-msgspec-cannot-decode",
+            "--no-use-str-for-formats-msgspec-cannot-decode",
+            id="use-str-for-formats-msgspec-cannot-decode",
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "allof_union_object_branches" / "required_names.json",

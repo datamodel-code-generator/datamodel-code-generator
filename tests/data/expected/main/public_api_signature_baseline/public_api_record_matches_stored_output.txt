@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 318>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 319>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -621,6 +621,7 @@ class BaseGenerateConfig(BaseModel)
     custom_formatters: list[str] | None = None
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
+    use_str_for_formats_msgspec_cannot_decode: bool = False
     use_object_type: bool = False
     untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None
@@ -731,7 +732,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 318>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 319>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -1040,6 +1041,7 @@ class ParserConfig(BaseModel)
     custom_formatters_kwargs: dict[str, Any] | None = None
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
+    use_str_for_formats_msgspec_cannot_decode: bool = False
     use_object_type: bool = False
     untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None
@@ -5077,7 +5079,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 318>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 319>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5099,7 +5101,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 314>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 315>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5516,6 +5518,7 @@ class DataTypeManager(ABC)
     type_map: dict[Types, DataType]
     def __init__(self, python_version: PythonVersion=PythonVersionMin, use_standard_collections: bool=False, use_generic_container_types: bool=False, strict_types: Sequence[StrictTypes] | None=None, use_non_positive_negative_number_constrained_types: bool=False, use_decimal_for_multiple_of: bool=False, use_union_operator: bool=False, use_pendulum: bool=False, use_standard_primitive_types: bool=False, use_object_type: bool=False, target_datetime_class: DatetimeClassType | None=None, target_date_class: DateClassType | None=None, treat_dot_as_module: bool | None=None, use_serialize_as_any: bool=False) -> None
     def use_untyped_value_type(self, untyped_value_type: str | None) -> None
+    def use_str_for_formats_msgspec_cannot_decode(self, *, enabled: bool) -> None
     def use_target_pydantic_version(self, target_pydantic_version: TargetPydanticVersion | None) -> None
     @abstractmethod
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType
@@ -6167,6 +6170,7 @@ class ParserConfigDict(TypedDict)
     custom_formatters_kwargs: NotRequired[dict[str, Any] | None]
     use_pendulum: NotRequired[bool]
     use_standard_primitive_types: NotRequired[bool]
+    use_str_for_formats_msgspec_cannot_decode: NotRequired[bool]
     use_object_type: NotRequired[bool]
     untyped_value_type: NotRequired[str | None]
     http_query_parameters: NotRequired[Sequence[tuple[str, str]] | None]
@@ -6563,6 +6567,7 @@ class BaseGenerateConfig(TypedDict)
     custom_formatters: NotRequired[list[str] | None]
     use_pendulum: NotRequired[bool]
     use_standard_primitive_types: NotRequired[bool]
+    use_str_for_formats_msgspec_cannot_decode: NotRequired[bool]
     use_object_type: NotRequired[bool]
     untyped_value_type: NotRequired[str | None]
     http_query_parameters: NotRequired[Sequence[tuple[str, str]] | None]

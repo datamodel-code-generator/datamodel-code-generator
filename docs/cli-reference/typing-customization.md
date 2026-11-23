@@ -56,6 +56,7 @@
 | [`--use-specialized-enum`](#use-specialized-enum) | Generate StrEnum/IntEnum for string/integer enums (Python 3.... |
 | [`--use-standard-collections`](#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](#use-standard-primitive-types) | Use Python standard library types for string formats instead... |
+| [`--use-str-for-formats-msgspec-cannot-decode`](#use-str-for-formats-msgspec-cannot-decode) | Write str for the formats msgspec cannot decode under `--use... |
 | [`--use-strict-str-for-base64`](#use-strict-str-for-base64) | Make a `format: byte` string strict under `--strict-types st... |
 | [`--use-total-false-for-typed-dict`](#use-total-false-for-typed-dict) | Generate TypedDict declarations with `total=False`. |
 | [`--use-tuple-for-closed-arrays`](#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other ite... |
@@ -10154,6 +10155,279 @@ output types. Pydantic already uses these types by default.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-str-for-formats-msgspec-cannot-decode` {#use-str-for-formats-msgspec-cannot-decode}
+
+Write str for the formats msgspec cannot decode under `--use-standard-primitive-types`.
+
+msgspec has no decoder for `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network` and `Path`, so a Struct that
+holds one of them (`format: ipv4`, `ipv6`, `ipv4-network`, `ipv6-network` or `path`) under
+`--use-standard-primitive-types` decodes only with a `dec_hook`, and a union of such types is refused when the Struct
+is built. With this option the field is `str`, as without `--use-standard-primitive-types`, and a document that holds
+it decodes; `UUID`, `Decimal` and the date types keep their classes, which msgspec decodes. A union that joins such a
+format with one of those classes (`str | UUID`) is still refused; `--merge-msgspec-str-like-union-members` writes it as
+one `str`. The other output model types keep the standard library classes.
+
+**Related:** [`--use-standard-primitive-types`](#use-standard-primitive-types)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input msgspec_standard_primitive_types.json --output-model-type msgspec.Struct --target-python-version 3.11 --use-standard-primitive-types --use-str-for-formats-msgspec-cannot-decode # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-str-for-formats-msgspec-cannot-decode` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "type": "string",
+          "format": "ipv4"
+        },
+        "address_v6": {
+          "type": "string",
+          "format": "ipv6"
+        },
+        "network": {
+          "type": "string",
+          "format": "ipv4-network"
+        },
+        "network_v6": {
+          "type": "string",
+          "format": "ipv6-network"
+        },
+        "location": {
+          "type": "string",
+          "format": "path"
+        },
+        "nullable_address": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "ipv4"
+        },
+        "default_address": {
+          "type": "string",
+          "format": "ipv4",
+          "default": "10.0.0.1"
+        },
+        "default_location": {
+          "type": "string",
+          "format": "path",
+          "default": "/etc"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "ipv6"
+          }
+        },
+        "networks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "ipv4-network"
+          }
+        },
+        "locations": {
+          "type": "object",
+          "patternProperties": {
+            "^a": {
+              "type": "string",
+              "format": "path"
+            }
+          }
+        },
+        "either_address": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "ipv4"
+            },
+            {
+              "type": "string",
+              "format": "ipv6"
+            }
+          ]
+        },
+        "address_or_count": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv4"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "endpoint": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "format": "ipv4"
+            },
+            {
+              "type": "string",
+              "format": "path"
+            }
+          ],
+          "items": false
+        },
+        "short_address": {
+          "type": "string",
+          "format": "ipv4",
+          "maxLength": 15
+        },
+        "alias": {
+          "$ref": "#/$defs/Alias"
+        },
+        "device": {
+          "$ref": "#/$defs/Device"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "$defs": {
+        "Alias": {
+          "type": "string",
+          "format": "ipv6"
+        },
+        "Device": {
+          "type": "object",
+          "properties": {
+            "gateway": {
+              "type": "string",
+              "format": "ipv4"
+            },
+            "subnets": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "ipv6-network"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_standard_primitive_types.json
+
+        from __future__ import annotations
+
+        from typing import Annotated, TypeAlias
+        from uuid import UUID
+
+        from msgspec import UNSET, Meta, Struct, UnsetType
+
+        Alias: TypeAlias = str
+
+
+        class Device(Struct):
+            gateway: str | UnsetType = UNSET
+            subnets: list[str] | UnsetType = UNSET
+
+
+        class Model(Struct):
+            address: str
+            address_v6: str | UnsetType = UNSET
+            network: str | UnsetType = UNSET
+            network_v6: str | UnsetType = UNSET
+            location: str | UnsetType = UNSET
+            nullable_address: str | None | UnsetType = UNSET
+            default_address: str | UnsetType = '10.0.0.1'
+            default_location: str | UnsetType = '/etc'
+            addresses: list[str] | UnsetType = UNSET
+            networks: dict[str, str] | UnsetType = UNSET
+            locations: dict[str, str] | UnsetType = UNSET
+            either_address: str | UnsetType = UNSET
+            address_or_count: str | int | UnsetType = UNSET
+            endpoint: Annotated[list[str], Meta(max_length=2)] | UnsetType = UNSET
+            short_address: Annotated[str, Meta(max_length=15)] | UnsetType = UNSET
+            alias: Alias | UnsetType = UNSET
+            device: Device | UnsetType = UNSET
+            id: UUID | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_standard_primitive_types.json
+
+        from __future__ import annotations
+
+        from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+        from pathlib import Path
+        from typing import Annotated, TypeAlias
+        from uuid import UUID
+
+        from msgspec import UNSET, Meta, Struct, UnsetType
+
+        Alias: TypeAlias = IPv6Address
+
+
+        class Device(Struct):
+            gateway: IPv4Address | UnsetType = UNSET
+            subnets: list[IPv6Network] | UnsetType = UNSET
+
+
+        class Model(Struct):
+            address: IPv4Address
+            address_v6: IPv6Address | UnsetType = UNSET
+            network: IPv4Network | UnsetType = UNSET
+            network_v6: IPv6Network | UnsetType = UNSET
+            location: Path | UnsetType = UNSET
+            nullable_address: IPv4Address | None | UnsetType = UNSET
+            default_address: IPv4Address | UnsetType = '10.0.0.1'
+            default_location: Path | UnsetType = '/etc'
+            addresses: list[IPv6Address] | UnsetType = UNSET
+            networks: dict[str, IPv4Network] | UnsetType = UNSET
+            locations: dict[str, Path] | UnsetType = UNSET
+            either_address: IPv4Address | IPv6Address | UnsetType = UNSET
+            address_or_count: IPv4Address | int | UnsetType = UNSET
+            endpoint: Annotated[list[IPv4Address | Path], Meta(max_length=2)] | UnsetType = (
+                UNSET
+            )
+            short_address: IPv4Address | UnsetType = UNSET
+            alias: Alias | UnsetType = UNSET
+            device: Device | UnsetType = UNSET
+            id: UUID | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

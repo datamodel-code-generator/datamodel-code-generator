@@ -416,6 +416,14 @@ class Pet(Struct):
 recursive alias, and decodes `Any` into JSON values already, so untyped values stay `Any`. The other output types write
 them as the given type (see [`--untyped-value-type`](cli-reference/typing-customization.md#untyped-value-type)).
 
+`--use-standard-primitive-types` (which the dated presets turn on for msgspec) writes `UUID` for the UUID formats, which
+msgspec decodes, and `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network` and `Path` for `ipv4`, `ipv6`,
+`ipv4-network`, `ipv6-network` and `path`, for which msgspec has no decoder: those fields decode only with a `dec_hook`,
+and a union of them is refused when the Struct is built.
+[`--use-str-for-formats-msgspec-cannot-decode`](cli-reference/typing-customization.md#use-str-for-formats-msgspec-cannot-decode)
+writes `str` for those five formats instead, so the documents decode; the 20261123 presets set it. The other output
+types still write the standard library classes for these formats.
+
 ### Discriminated unions
 
 msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field

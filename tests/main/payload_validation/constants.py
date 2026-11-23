@@ -932,6 +932,8 @@ PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS = (
     "jsonschema/native_decimal_default_constrained.json",
     "jsonschema/serialized_decimal_default_multiple_of.json",
     "jsonschema/msgspec_union_member_constraints.json",
+    "openapi/variant_tag_values/scalar_kind_mapped.yaml::components.schemas.MultipleNumberA",
+    "openapi/variant_tag_values/scalar_kind_mapped.yaml::components.schemas.MultipleNumberB",
 )
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON = (
     "Pydantic before 2.5.2 rejects schema-valid negative float multipleOf values"
@@ -1031,12 +1033,14 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                 "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
                 "('at most N items after validation, not N')",
             ),
-            PayloadBackend.PYDANTIC_V2_DATACLASS: {
-                "jsonschema/type_overrides_replace_whole_type.json": (
-                    "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
-                    "('at most N items after validation, not N')"
+            PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
+                (
+                    "jsonschema/allof_map_member_counts_no_merge.json",
+                    "jsonschema/type_overrides_replace_whole_type.json",
                 ),
-            },
+                "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
+                "('at most N items after validation, not N')",
+            ),
         },
     ),
     (
@@ -1120,6 +1124,17 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: tuple[
                         "jsonschema/prefix_items_positions_unchecked.json",
                     ),
                     "Pydantic before 2.6.0 dumps a boolean item of a prefixItems tuple as 0",
+                ),
+            },
+        },
+    ),
+    (
+        "2.10.0",
+        {
+            PayloadBackend.PYDANTIC_V2: {
+                "jsonschema/allof_base64_member_constraints.json": (
+                    "Pydantic before 2.10.0 dumps a base64 value with a trailing newline, which the schema's "
+                    "maxLength counts"
                 ),
             },
         },

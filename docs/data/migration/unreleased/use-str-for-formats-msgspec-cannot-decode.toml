@@ -1,0 +1,32 @@
+[[change]]
+id = "use-str-for-formats-msgspec-cannot-decode"
+category = "new-surface"
+title = "Write str for the formats msgspec cannot decode under an option"
+summary = "--use-str-for-formats-msgspec-cannot-decode writes str for the formats ipv4, ipv6, ipv4-network, ipv6-network and path of msgspec output under --use-standard-primitive-types, where msgspec has no decoder for IPv4Address, IPv6Address, IPv4Network, IPv6Network and Path, so a Struct that holds them rejects every document unless the caller decodes them with a dec_hook, and a union of them is refused when the Struct is built (#7342); UUID, Decimal and the dates keep their classes; without the option msgspec output keeps the standard library classes, as in 0.100.0."
+refs = ["#7342"]
+surface = ["--use-str-for-formats-msgspec-cannot-decode"]
+covers = [
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[option].payloads.txt",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[option].py",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[preset_20260619].payloads.txt",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[preset_20260619].py",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[preset_20261123].payloads.txt",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[preset_20261123].py",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[released].payloads.txt",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[released].py",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[without_option].payloads.txt",
+    "main/jsonschema/msgspec_standard_primitive_types/msgspec_standard_primitive_types[without_option].py",
+    "main/openapi/msgspec_standard_primitive_types/openapi[option].payloads.txt",
+    "main/openapi/msgspec_standard_primitive_types/openapi[option].py",
+    "main/openapi/msgspec_standard_primitive_types/openapi[released].payloads.txt",
+    "main/openapi/msgspec_standard_primitive_types/openapi[released].py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_msgspec_stan~e6ce9d05.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_msgspec_stan~fc554f11.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_msgspec_standard~9d5c591d.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_msgspec_standard~f88dc8fe.errors.txt",
+    "main/preset_opt_in_options/preset_option_turned_off[use-str-for-formats-msgspec-cannot-decode-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[use-str-for-formats-msgspec-cannot-decode-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[use-str-for-formats-msgspec-cannot-decode-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[use-str-for-formats-msgspec-cannot-decode-standard].model.py",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_msgspec_standard_primitive_types.yaml].txt",
+]

@@ -1,0 +1,92 @@
+{
+  "valid": [
+    {
+      "address": "192.0.2.1"
+    },
+    {
+      "address": "192.0.2.1",
+      "address_v6": "2001:db8::1",
+      "network": "10.0.0.0/8",
+      "network_v6": "2001:db8::/32",
+      "location": "/etc/hosts",
+      "nullable_address": null,
+      "default_address": "10.1.2.3",
+      "default_location": "/var",
+      "addresses": [
+        "::1",
+        "2001:db8::2"
+      ],
+      "networks": {
+        "lan": "192.168.0.0/16"
+      },
+      "locations": {
+        "a1": "/tmp/a"
+      },
+      "either_address": "2001:db8::3",
+      "address_or_count": 3,
+      "endpoint": [
+        "192.0.2.7",
+        "/run/sock"
+      ],
+      "short_address": "192.0.2.255",
+      "alias": "fe80::1",
+      "device": {
+        "gateway": "192.0.2.254",
+        "subnets": [
+          "2001:db8:1::/48"
+        ]
+      },
+      "id": "123e4567-e89b-12d3-a456-426614174000"
+    },
+    {
+      "address": "192.0.2.1",
+      "nullable_address": "192.0.2.9",
+      "address_or_count": "192.0.2.10",
+      "either_address": "192.0.2.11"
+    }
+  ],
+  "invalid": [
+    {
+      "address": 1
+    },
+    {
+      "address_v6": 1
+    },
+    {
+      "network": 1
+    },
+    {
+      "location": 1
+    },
+    {
+      "addresses": [
+        1
+      ]
+    },
+    {
+      "networks": {
+        "lan": 1
+      }
+    },
+    {
+      "either_address": 1
+    },
+    {
+      "address_or_count": true
+    },
+    {
+      "alias": 1
+    },
+    {
+      "device": {
+        "gateway": 1
+      }
+    },
+    {
+      "id": 1
+    },
+    {
+      "id": "not-a-uuid"
+    }
+  ]
+}
