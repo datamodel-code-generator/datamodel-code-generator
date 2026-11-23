@@ -1,0 +1,6 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "AOwner", "type": "object",
+ "properties": {"owner": {"$ref": "#/$defs/Owner"}},
+ "$defs": {
+   "Dog": {"type": "object", "properties": {"bark": {"type": "boolean"}}},
+   "Owner": {"allOf": [{"$ref": "b_base.json#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]}
+ }}

@@ -1159,6 +1159,49 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--use-root-types-for-mixed-union-map-keys",
     ),
     LegacyRow(
+        "legacy-redeclared-hiding-field-keeps-name",
+        (
+            "without `--rename-redeclared-fields-hiding-types`, a field that a subclass redeclares keeps its name "
+            "where the field of its base is renamed because it is named like its type (`Pet_1` with `alias='Pet'`), "
+            "so the subclass holds two fields that read the key "
+            "(`parser/_passes/modules.py:follow_hiding_field_renames`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/field_named_like_type_redeclared.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--rename-redeclared-fields-hiding-types",
+    ),
+    LegacyRow(
+        "legacy-field-hides-type-from-checkers",
+        (
+            "without `--rename-fields-hiding-types-from-type-checkers`, a msgspec or dataclass field that the class "
+            "body assigns keeps its name and its type's name where they are equal, which a type checker reads as the "
+            "field (`parser/_passes/modules.py:renames_hiding_fields`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/field_named_like_type_assigned.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--rename-fields-hiding-types-from-type-checkers",
+    ),
+    LegacyRow(
         "legacy-root-type-nullable-ungated",
         "a root field is nullable by `nullable` without `--strict-nullable`",
         fix=5054,

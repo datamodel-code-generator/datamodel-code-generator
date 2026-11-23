@@ -1,0 +1,7 @@
+[[change]]
+id = "rename-redeclared-fields-hiding-types-presets"
+extends = "rename-redeclared-fields-hiding-types"
+covers = [
+    "main/preset_opt_in_options/preset_sets_opt_in_option[rename-redeclared-fields-hiding-types-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[rename-redeclared-fields-hiding-types-standard].model.py",
+]

@@ -698,7 +698,7 @@ RENAME_FIELDS_HIDING_TYPES = PassDecl(
     ),
     writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, RenderFact.CLASS_NAMES),
     after=(After("refresh_field_config", "the field config is refreshed with the aliases before renaming"),),
-    condition="an output that renames fields",
+    condition="an output that renames fields, or --rename-fields-hiding-types-from-type-checkers",
 )
 REMOVE_OVERRIDDEN_MODELS = PassDecl(
     "remove_overridden_models",
@@ -778,6 +778,35 @@ APPLY_BASE_CLASS_TYPE_OVERRIDES = PassDecl(
     trigger=Trigger("--type-overrides gives a model-level key", _facts(Fact.TYPE_OVERRIDES)),
 )
 
+FOLLOW_HIDING_FIELD_RENAMES = PassDecl(
+    "follow_hiding_field_renames",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_NAMES),
+    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES),
+    summary=(
+        "After every module is processed: holds a field that a class redeclares under the name its family gave the "
+        "field that hides its type, so the class has one field for the wire key."
+    ),
+    condition="--rename-redeclared-fields-hiding-types or --rename-fields-hiding-types-from-type-checkers",
+    after=(
+        After("record_decimal_alias_models", "the Decimal check reads the field names as parsed"),
+        After("alias_shadowed_imports", "the import aliases read the field names as parsed"),
+        After("reuse_model", "reuse reads the field names of the models it merges as parsed"),
+        After("change_field_name", "applies the renames it recorded for the family"),
+        After(
+            "restore_inherited_field_names_for_unique_aliases",
+            "the inherited names it restores are those before a family rename",
+        ),
+        After("refresh_field_config", "the field config is refreshed with the aliases before renaming"),
+        After("rename_fields_hiding_types", "applies the renames it recorded for the family"),
+        After("apply_field_type_overrides", "scoped overrides name the fields as parsed"),
+        After(
+            "fix_constructor_field_ordering_early", "the early ordering reads the names before every field has its own"
+        ),
+    ),
+)
 SETTLE_KEPT_PARENT_ROOTS = PassDecl(
     "settle_kept_parent_roots",
     Phase.MODULES,
@@ -1942,6 +1971,7 @@ PASS_DECLS: tuple[PassDecl, ...] = (
     FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY,
     SNAPSHOT_MODULE_UNUSED_MODELS,
     APPLY_BASE_CLASS_TYPE_OVERRIDES,
+    FOLLOW_HIDING_FIELD_RENAMES,
     SETTLE_KEPT_PARENT_ROOTS,
     WRITE_RULE_ALIASES_AS_CLASSES,
     NAME_INNER_MODELS_IN_RULES,

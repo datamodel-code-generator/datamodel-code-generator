@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 67 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 45 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 47 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 76 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -42,6 +42,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
 | [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) | Requires | Always | [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled | `--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`. |
 | [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Requires | Always | [`--snake-case-field`](field-customization.md#snake-case-field) enabled | `--original-field-name-delimiter` can not be used without `--snake-case-field`. |
+| [`--rename-fields-hiding-types-from-type-checkers`](field-customization.md#rename-fields-hiding-types-from-type-checkers) | Implies | Always | [`--rename-redeclared-fields-hiding-types`](field-customization.md#rename-redeclared-fields-hiding-types) enabled | - |
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
 | [`--keyword-only`](model-customization.md#keyword-only) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.10+` | `--keyword-only` requires `--target-python-version` 3.10 or higher for dataclasses. |
@@ -363,6 +364,8 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides)
+- [`--rename-fields-hiding-types-from-type-checkers`](field-customization.md#rename-fields-hiding-types-from-type-checkers)
+- [`--rename-redeclared-fields-hiding-types`](field-customization.md#rename-redeclared-fields-hiding-types)
 - [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes)
 - [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type)
 - [`--reuse-model`](model-customization.md#reuse-model)

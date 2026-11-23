@@ -180,6 +180,8 @@
 - `--no-read-mapping-keys-by-schema-tag-type`
 - `--no-read-msgspec-union-bounds-exactly`
 - `--no-read-object-keywords-by-type`
+- `--no-rename-fields-hiding-types-from-type-checkers`
+- `--no-rename-redeclared-fields-hiding-types`
 - `--no-snake-case-field`
 - `--no-use-bounds-for-float-const`
 - `--no-use-field-description`
@@ -198,6 +200,8 @@
 - `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
 - `--read-object-keywords-by-type`: Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
+- `--rename-fields-hiding-types-from-type-checkers`: Tell a field named like its type from that type for type ch...
+- `--rename-redeclared-fields-hiding-types`: Give a field that a subclass redeclares the name its base's field w...
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 - `--set-default-enum-member`: Use the legacy flag for deserializing enum defaults.
 - `--snake-case-field`: Convert field names to snake_case format.

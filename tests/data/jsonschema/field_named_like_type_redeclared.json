@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kennel",
+  "type": "object",
+  "properties": {
+    "owner": {"$ref": "#/$defs/Owner"},
+    "leaf": {"$ref": "#/$defs/Leaf"},
+    "hiding": {"$ref": "#/$defs/Hiding"},
+    "below": {"$ref": "#/$defs/Below"},
+    "bottom": {"$ref": "#/$defs/Bottom"}
+  },
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "Dog": {"type": "object", "properties": {"bark": {"type": "boolean"}}},
+    "Cat": {"type": "object", "properties": {"purr": {"type": "boolean"}}},
+    "Base": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Pet"}}},
+    "Owner": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]},
+    "Mid": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"Pet": {"$ref": "#/$defs/Dog"}}}]},
+    "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
+    "Plain": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
+    "Hiding": {"allOf": [{"$ref": "#/$defs/Plain"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]},
+    "Bridge": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"note": {"type": "string"}}}]},
+    "Below": {"allOf": [{"$ref": "#/$defs/Bridge"}, {"properties": {"Pet": {"$ref": "#/$defs/Cat"}}}]},
+    "Top": {"type": "object", "properties": {"Pet": {"$ref": "#/$defs/Dog"}}},
+    "Middle": {"allOf": [{"$ref": "#/$defs/Top"}, {"properties": {"note": {"type": "string"}}}]},
+    "Bottom": {"allOf": [{"$ref": "#/$defs/Middle"}, {"properties": {"Pet": {"$ref": "#/$defs/Pet"}}}]}
+  }
+}
