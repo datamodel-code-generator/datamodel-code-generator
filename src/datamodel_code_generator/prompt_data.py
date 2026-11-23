@@ -186,6 +186,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
     "--read-ref-siblings-in-closed-allof-members": "Read every keyword beside a `$ref` that a closed allOf member e...",
     "--read-schema-version-per-document": "Read each document by the schema version it declares.",
+    "--read-set-item-fields-in-class-order": "Read the fields a set item inherits in its class's order, so an unhas...",
     "--read-single-allof-refs-in-their-documents": "Read the target of an allOf of one `$ref` in the document that ...",
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",
     "--read-uuid6-uuid7-uuid8-formats": "Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...",

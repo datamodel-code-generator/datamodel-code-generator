@@ -8608,6 +8608,33 @@ def test_main_unique_items_as_set_by_value(extra_args: list[str], expected_repr:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--read-set-item-fields-in-class-order"],
+    option_description="""Read the fields a set item inherits in its class's order, so an unhashable one keeps a list.
+
+A frozen dataclass item of a `--use-unique-items-as-set` set is a set only if its fields hash. A field the class
+inherits from two bases is read nearest base first by default, which can find a hashable `str` where the class itself
+takes a base's unhashable list; the generated set then fails to build from a payload with that field. With
+`--read-set-item-fields-in-class-order` the fields are read in the class's own order (C3), so such a field is a list
+and the array stays a list.""",
+    input_schema="jsonschema/unique_items_by_value_inherited_fields.json",
+    cli_args=[
+        "--output-model-type",
+        "dataclasses.dataclass",
+        "--frozen-dataclasses",
+        "--use-unique-items-as-set",
+        "--read-set-item-fields-in-class-order",
+    ],
+    golden_output=(
+        "main/preset_opt_in_options/"
+        "preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py"
+    ),
+    comparison_output=(
+        "main/preset_opt_in_options/"
+        "preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py"
+    ),
+    related_options=["--use-unique-items-as-set"],
+)
 @pytest.mark.parametrize(
     "extra_args",
     [
