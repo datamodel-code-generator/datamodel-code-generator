@@ -2274,11 +2274,30 @@ class BaseLayoutView(NamedTuple):
 
     ``is_slot`` accepts the fields that keep a slot whatever that processing does, ``layout_model`` gives the model
     whose layout a model may take from it, and ``is_opaque`` tells the models whose layout the generator does not know.
+    ``_FINAL_LAYOUT_VIEW`` is how the output has them once every module is processed.
     """
 
     is_slot: Callable[[DataModelFieldBase], bool]
     layout_model: Callable[[DataModel], DataModel]
     is_opaque: Callable[[DataModel], bool]
+
+
+def _is_instance_field(field: DataModelFieldBase) -> bool:
+    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
+    return not field.is_class_var
+
+
+def _same_model(model: DataModel) -> DataModel:
+    """Return the model itself as the model whose layout it has."""
+    return model
+
+
+def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001
+    """Return that only a configured base, which the layout check finds itself, hides the slots of a model."""
+    return False
+
+
+_FINAL_LAYOUT_VIEW = BaseLayoutView(_is_instance_field, _same_model, _is_never_opaque)
 
 
 def _model_written(field: DataModelFieldBase, *, keeps_none: bool = False) -> ModelWritten:

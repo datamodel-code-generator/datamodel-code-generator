@@ -1,0 +1,16 @@
+[[change]]
+id = "bug-g10-msgspec-reuse-internal"
+category = "internal"
+title = "List the final layout flattening in the pipeline listings"
+summary = "The pipeline trace, the provisional reads and the where listing name the new L6 pass."
+refs = ["#7445"]
+covers = [
+    "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
+    "parser/pipeline/trace_matches_golden[jsonschema].txt",
+    "parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt",
+    "parser/pipeline/trace_matches_golden[openapi-modules].txt",
+    "parser/pipeline/trace_matches_golden[renamed-sequence-roots].txt",
+    "parser/pipeline/trace_matches_golden[typed-dict-import-overrides].txt",
+    "where_script/where_answers[fact].txt",
+    "where_script/where_grammar[all].txt",
+]

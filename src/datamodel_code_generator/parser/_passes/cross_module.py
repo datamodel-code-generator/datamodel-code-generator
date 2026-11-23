@@ -15,12 +15,14 @@ from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator.imports import Import, _import_bindings
 from datamodel_code_generator.model._decisions.tag_value import enum_tag_as_values
 from datamodel_code_generator.model.base import (
+    _FINAL_LAYOUT_VIEW,
     GENERIC_BASE_CLASS_NAME,
     GENERIC_BASE_CLASS_PATH,
     BaseClassDataType,
     DataModel,
     _find_base_classes,
     _walk_bases_first,
+    linearize_data_models,
 )
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
@@ -225,6 +227,21 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
     ):
         if model._declares_inherited_fields():
             flatten(model)
+
+
+def flatten_conflicting_final_layouts(parser: FlattenAcrossModulesHost, run: CrossModuleRun) -> None:
+    """Make each model whose generated bases the output cannot combine, as every module leaves them, drop its bases.
+
+    The layout flattening of L4 sees the layouts as the processing of each module may leave them and predicts what
+    reuse merges, which it cannot know before it runs. A model it left whole, on the prediction that a base duplicates
+    another, that the processing then left conflicting would fail the final check of the output; here the layouts
+    are final, so it declares the fields of its generated bases itself (``_flattener``), the models with fewer
+    ancestors first. Only a msgspec Struct decides to.
+    """
+    flatten = _flattener(parser, run, "flatten-conflicting-final-layouts")
+    joins = (model for ctx in run.contexts for model in ctx.models if len(model.base_classes) > 1)
+    for model in sorted(joins, key=lambda model: len(linearize_data_models([model]))):
+        model.flatten_conflicting_base_layouts(_FINAL_LAYOUT_VIEW, flatten)
 
 
 def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRun) -> None:

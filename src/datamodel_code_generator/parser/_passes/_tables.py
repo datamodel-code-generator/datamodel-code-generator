@@ -694,6 +694,10 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 when=lambda self, _: self._tag_capabilities.struct_tags,
             ),
             PassSpec(
+                "flatten_conflicting_final_layouts",
+                cross_module.flatten_conflicting_final_layouts,
+            ),
+            PassSpec(
                 "flatten_narrowed_inherited_fields",
                 cross_module.flatten_narrowed_inherited_fields,
                 when=lambda self, _: self.data_model_type._KEEPS_INHERITED_FIELD_TYPES,

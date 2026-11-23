@@ -78,6 +78,7 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _forbids_unknown_fields_marked,
     _has_opaque_custom_base,
+    _is_instance_field,
     _keeps_stripped_place,
     _ModelKeys,
     _nested_model_factory,
@@ -626,24 +627,6 @@ def _union_leaves(data_type: DataType) -> Sequence[DataType]:
     return ()
 
 
-def _is_instance_field(field: DataModelFieldBase) -> bool:
-    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
-    return not field.is_class_var
-
-
-def _same_model(model: DataModel) -> DataModel:
-    """Return the model itself as the model whose layout it has."""
-    return model
-
-
-def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001
-    """Return that only a configured base, which the layout check finds itself, hides the slots of a model."""
-    return False
-
-
-_FINAL_LAYOUT_VIEW = BaseLayoutView(_is_instance_field, _same_model, _is_never_opaque)
-
-
 def _user_struct_option_items(model: DataModel) -> Iterable[tuple[str, Any]]:
     return _user_struct_options(model).items()
 
@@ -801,12 +784,10 @@ class Struct(DataModel):
     @classmethod
     @override
     def render_module_code(cls, models: list[DataModel]) -> str:
-        """Reject incompatible generated Struct layouts before rendering a module."""
+        """Refuse the fields msgspec cannot rename to before rendering a module."""
         for model in models:
             if isinstance(model, cls):
                 cls._validate_renamed_field_names(model)
-                if len(model.base_classes) > 1:
-                    cls._validate_base_layouts(model)
         return ""
 
     @staticmethod
@@ -820,9 +801,7 @@ class Struct(DataModel):
         return _has_opaque_custom_base(model, Struct.BASE_CLASS) or view.is_opaque(model)
 
     @staticmethod
-    def _find_layout_conflict(
-        bases: Sequence[DataModel], view: BaseLayoutView = _FINAL_LAYOUT_VIEW
-    ) -> tuple[DataModel, DataModel] | None:
+    def _find_layout_conflict(bases: Sequence[DataModel], view: BaseLayoutView) -> tuple[DataModel, DataModel] | None:
         """Find independent slot owners with linear storage for compatible graphs.
 
         Field introduction depths distinguish inherited slots from extensions.
@@ -941,18 +920,6 @@ class Struct(DataModel):
     ) -> list[DataModelFieldBase]:
         """Return the fields in the order the constructor needs."""
         return self.order_fields_for_construction(super().flatten_base_layouts(adopt_field))
-
-    def _validate_base_layouts(self) -> None:
-        """Allow empty mixins and shared layouts, but reject independent slot extensions."""
-        if self._uses_custom_root_template:
-            return
-        if conflict := self._find_layout_conflict(self._generated_layout_bases()):
-            other, base = conflict
-            msg = (
-                f"msgspec.Struct model {stable_repr(self.class_name)} has incompatible layouts from generated bases "
-                f"{stable_repr(other.class_name)} and {stable_repr(base.class_name)}."
-            )
-            raise Error(msg)
 
     def _validate_renamed_field_names(self) -> None:
         """Refuse a field that renames to a name msgspec refuses (``_renamed_field_name_refused``), naming where it is.

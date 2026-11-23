@@ -1,0 +1,23 @@
+{
+  "convert": {
+    "x": "s",
+    "a": "a"
+  },
+  "decode": {
+    "x": "s",
+    "a": "a"
+  },
+  "fields": [
+    "x",
+    "a"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}
