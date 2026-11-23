@@ -1,0 +1,2 @@
+refused: int_type
+given: Top(cnt=Cnt(root=5))

@@ -7715,6 +7715,12 @@ def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra
     )
 
 
+_INPUT_NAME_FILES: dict[str, object] = {
+    "--aliases": {"rawData": ["raw_data", "rawData"]},
+    "--extra-template-data": {"Blob": {"config": {"alias_generator": "to_camel"}}},
+}
+
+
 @pytest.mark.parametrize(
     ("extra_args", "key"),
     [
@@ -7723,23 +7729,30 @@ def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra
         pytest.param(["--snake-case-field", "--use-serialization-alias"], "rawData", id="serialization-alias"),
         pytest.param(["--snake-case-field", "--aliases"], "rawData", id="validation-aliases"),
         pytest.param(["--snake-case-field", "--allow-population-by-field-name"], "raw_data", id="field-name"),
+        pytest.param(["--snake-case-field", "--no-alias", "--extra-template-data"], "raw_data", id="alias-generator"),
+        pytest.param(
+            ["--snake-case-field", "--base-class", "explicit_alias_base.NamespaceBase"], "rawData", id="opaque-base"
+        ),
     ],
 )
 def test_main_strict_types_default_read_under_the_input_names(
-    output_file: Path, extra_args: list[str], key: str
+    output_file: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str], key: str
 ) -> None:
     """Test a default is followed by the names Pydantic reads a field under, so a key it ignores keeps validation.
 
     The default of ``blob`` names ``key``: Pydantic reads ``rawData`` only where the field keeps that alias, and
     ``raw_data`` where the config populates by field name, so only there does it reach the strict bytes type; the
-    other outputs keep ``validate_default`` and a ``Blob`` instance. A payload under both names still validates
-    ``blob``.
+    other outputs keep ``validate_default`` and a ``Blob`` instance. An alias generator without population by field
+    name reads neither name the field has, and a base class the generator does not read may change the names, so
+    both keep ``validate_default`` as before (the opaque base's default stays refused). A payload under both names
+    still validates ``blob``.
     """
+    monkeypatch.syspath_prepend(str(DATA_PATH / "python"))
     args = list(extra_args)
-    if args[-1] == "--aliases":
-        aliases = output_file.with_name("aliases.json")
-        aliases.write_text(json.dumps({"rawData": ["raw_data", "rawData"]}), encoding="utf-8")
-        args.append(str(aliases))
+    if (content := _INPUT_NAME_FILES.get(args[-1])) is not None:
+        path = output_file.with_name("input_names.json")
+        path.write_text(json.dumps(content), encoding="utf-8")
+        args.append(str(path))
     _run_jsonschema_dict(
         {
             "title": "Top",
@@ -7757,9 +7770,74 @@ def test_main_strict_types_default_read_under_the_input_names(
     )
     with _generated_model(output_file, "strict_types_default_read_under_the_input_names", "Top") as model:
         validate = _model_json_validator(model)
-        top = validate("{}")
+        try:
+            blob = repr(validate("{}").blob)
+        except ValidationError as error:
+            blob = "refused " + ", ".join(item["type"] for item in error.errors())
         given = validate(json.dumps({"blob": {"rawData": "a", "raw_data": "a"}}))
-    assert_output(f"blob: {top.blob!r}\ngiven blob: {given.blob!r}\n", name="loaded")
+    assert_output(f"blob: {blob}\ngiven blob: {given.blob!r}\n", name="loaded")
+
+
+@pytest.mark.parametrize(
+    ("schema", "strict_type", "warning", "payload"),
+    [
+        pytest.param(
+            {"$defs": {"Cnt": {"type": "integer"}}, "properties": {"cnt": {"$ref": "#/$defs/Cnt", "default": "5"}}},
+            "int",
+            None,
+            {"cnt": 5},
+            id="number",
+        ),
+        pytest.param(
+            {
+                "$defs": {
+                    "Pet": {
+                        "type": "object",
+                        "required": ["name"],
+                        "properties": {"born": {"type": "string", "format": "date-time"}, "name": {"type": "string"}},
+                    }
+                },
+                "properties": {"pet": {"$ref": "#/$defs/Pet", "default": {"born": "2020-01-01T00:00:00Z"}}},
+            },
+            "datetime",
+            "lacks required fields",
+            {"pet": {"born": "2020-01-01T00:00:00Z", "name": "a"}},
+            id="required",
+        ),
+    ],
+)
+def test_main_strict_types_default_invalid_as_json_input(
+    output_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    schema: dict[str, object],
+    strict_type: str,
+    warning: str | None,
+    payload: dict[str, object],
+) -> None:
+    """Test a default Pydantic refuses as JSON input too keeps ``validate_default``, which reports it.
+
+    Text for a strict integer and an object that lacks a required field are no valid input either way, so the output
+    keeps validating them as before (#7380 drops it only for a default a strict type takes as JSON input), and the
+    warning on the incomplete default stays. A valid payload still validates.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    with pytest.warns(UserWarning, match=warning) if warning else nullcontext():
+        _run_jsonschema_dict(
+            {"title": "Top", "type": "object", **schema},
+            output_file,
+            extra_args=[
+                *("--strict-types", strict_type),
+                *("--formatters", "builtin", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    with _generated_model(output_file, "strict_types_default_invalid_as_json_input", "Top") as model:
+        validate = _model_json_validator(model)
+        given = validate(json.dumps(payload))
+        with pytest.raises(ValidationError) as refused:
+            validate("{}")
+    errors = ", ".join(item["type"] for item in refused.value.errors())
+    assert_output(f"refused: {errors}\ngiven: {given!r}\n", name="loaded")
 
 
 @LEGACY_BLACK_SKIP

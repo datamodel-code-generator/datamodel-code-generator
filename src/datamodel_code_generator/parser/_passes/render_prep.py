@@ -270,8 +270,9 @@ def _contains_model_reference(data_type: DataType, *, root_model_aliases: bool =
 def _needs_validate_default(data_type: DataType, default: object, *, root_model_aliases: bool = False) -> bool:
     """Check if a field needs validate_default=True to coerce defaults into model instances.
 
-    Not when Pydantic would refuse the default as Python input (``default_refused_as_python_input``): the field is then
-    written without it, as a field of such a type without a model is.
+    Not when Pydantic would take the default as JSON input but refuse it as Python input
+    (``default_refused_as_python_input``): the field is then written without it, as a field of such a type without a
+    model is.
     """
     return _contains_model_reference(
         data_type, root_model_aliases=root_model_aliases

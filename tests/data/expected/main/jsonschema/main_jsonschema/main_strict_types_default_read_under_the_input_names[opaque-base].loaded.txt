@@ -1,0 +1,2 @@
+blob: refused bytes_type
+given blob: Blob(raw_data=b'a')

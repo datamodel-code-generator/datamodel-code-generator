@@ -2269,6 +2269,19 @@ def _default_state(default: object) -> DefaultState:
     return "undefined" if default is UNDEFINED else "none" if default is None else "value"
 
 
+class InputNames(NamedTuple):
+    """The names Pydantic reads the fields of a model under, as the config the model applies sets them."""
+
+    by_alias: bool
+    """Whether it reads a field under its aliases."""
+    by_name: bool
+    """Whether it also reads a field under its name."""
+    generated: bool
+    """Whether an alias generator gives an alias to a field that has none."""
+    settled: bool
+    """Whether the config sets them all: no configured base class the generator does not read may change them."""
+
+
 class BaseLayoutView(NamedTuple):
     """How the layouts of generated bases look before the processing of each module changes them.
 
@@ -3067,9 +3080,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether the config the model applies selects ``python-re``: a model with no config does not."""
         return False
 
-    def validates_by(self) -> tuple[bool, bool]:  # noqa: PLR6301
-        """Return whether input names a field by its alias and by its name: a model with no config, by alias only."""
-        return True, False
+    def validates_by(self) -> InputNames:  # noqa: PLR6301
+        """Return the names input gives the fields under: a model with no config reads them by alias only."""
+        return InputNames(by_alias=True, by_name=False, generated=False, settled=True)
 
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
         """Yield the Pydantic constructs that the model's rendering writes, each with the field that writes it.

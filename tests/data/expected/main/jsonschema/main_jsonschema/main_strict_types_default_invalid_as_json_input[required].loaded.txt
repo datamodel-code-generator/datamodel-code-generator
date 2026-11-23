@@ -1,0 +1,2 @@
+refused: datetime_type, missing
+given: Top(pet=Pet(born=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=TzInfo(0)), name='a'))

@@ -2184,7 +2184,7 @@ def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid",
     extra: Literal["allow", "forbid", "ignore"] | None = "ignore" if known is None else None
     if "extra" in (items if known is None else known):
         extra = _EXTRAS.get(_syntax_value(items["extra"]).value, "ignore")
-    return extra, model.validates_by()[1]
+    return extra, model.validates_by().by_name
 
 
 def _field_facts(

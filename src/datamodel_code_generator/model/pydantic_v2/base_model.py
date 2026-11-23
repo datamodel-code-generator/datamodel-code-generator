@@ -75,6 +75,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
+    InputNames,
     _base_walk,
     _builtin_renderer,
     _default_state,
@@ -314,6 +315,13 @@ _NO_ALIAS_INTERNAL_KEY = "_no_alias"
 _PIN_ALIASES_INTERNAL_KEY = "_pin_aliases_with_alias_generator"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
+_INPUT_NAME_CONFIG_KEYS: frozenset[str] = frozenset({
+    _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
+    "validate_by_alias",
+    "validate_by_name",
+    "populate_by_name",
+})
+"""The config items that set the names Pydantic reads the fields of a model under (``validates_by``)."""
 _RENDERED_NONE = "None"
 _COMPILED_PATTERN_KEY = "_compiled_python_pattern"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
@@ -1992,18 +2000,22 @@ class _PydanticV2Model(DataModel):
         return self._applied_config()[0]
 
     @override
-    def validates_by(self) -> tuple[bool, bool]:
-        """Return whether Pydantic validates the fields by alias and by field name, from the config the model applies.
+    def validates_by(self) -> InputNames:
+        """Return the names Pydantic reads the fields under, from the config the model applies (``applied_config``).
 
         By field name as Pydantic settles it: by ``validate_by_name``, else by ``populate_by_name``, else where
-        ``validate_by_alias`` is false; by alias unless ``validate_by_alias`` is false. An item that a configured base
-        class the generator does not read may set counts as unset.
+        ``validate_by_alias`` is false; by alias unless ``validate_by_alias`` is false. They are settled unless a
+        configured base class the generator does not read may set one of these items or ``alias_generator``.
         """
-        items = self._applied_config_items()
+        items, known = self.applied_config()
         by_alias = items.get("validate_by_alias") != "False"
-        if (by_name := items.get("validate_by_name", items.get("populate_by_name"))) is not None:
-            return by_alias, by_name == "True"
-        return by_alias, not by_alias
+        by_name = items.get("validate_by_name", items.get("populate_by_name"))
+        return InputNames(
+            by_alias=by_alias,
+            by_name=not by_alias if by_name is None else by_name == "True",
+            generated=items.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY, _RENDERED_NONE) != _RENDERED_NONE,
+            settled=known is None or known.issuperset(_INPUT_NAME_CONFIG_KEYS),
+        )
 
     @abstractmethod
     def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:

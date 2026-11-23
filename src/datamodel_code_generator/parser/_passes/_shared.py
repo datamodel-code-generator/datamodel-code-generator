@@ -120,7 +120,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
-    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.model.base import DataModelFieldBase, InputNames
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
@@ -250,6 +250,10 @@ _STRICT_TEXT_REFUSING_CONSTRAINED_IMPORTS: Final[frozenset[tuple[str, str]]] = f
     ("pydantic", name) for name in ("conbytes", "conint", "confloat", "condecimal")
 )
 """The constrained types a strict type is written as, by import: ``strict`` is one of their keyword arguments."""
+_JSON_TEXT_REFUSING_IMPORTS: Final[frozenset[tuple[str, str]]] = frozenset(
+    ("pydantic", name) for name in ("StrictInt", "StrictFloat", "StrictBool", "conint", "confloat", "condecimal")
+)
+"""The strict types that refuse text as JSON input too: a number or a bool, unlike bytes, a date or a time."""
 
 
 def _is_none_type(data_type: DataType) -> bool:
@@ -257,25 +261,33 @@ def _is_none_type(data_type: DataType) -> bool:
     return data_type.type == NONE and not data_type.data_types and data_type.reference is None
 
 
-def _read_key(field: DataModelFieldBase, value: dict[Any, Any], *, by_alias: bool, by_name: bool) -> str | None:
+def _read_key(field: DataModelFieldBase, value: dict[Any, Any], names: InputNames) -> str | None:
     """Return the key of ``value`` Pydantic reads a field from, by the config of its model (``validates_by``).
 
     Pydantic reads the aliases first, where the model validates by alias: the validation aliases, else the alias unless
-    it is the serialization alias. It reads the field name where the field has none of them or the model validates by
-    name. A name an alias generator gives is left out, so a default is never read under a name Pydantic ignores.
+    it is the serialization alias. It reads the field name where the model validates by name, or where the field has
+    none of them and no alias generator gives it one. A name an alias generator gives is left out, so a default is
+    never read under a name Pydantic ignores.
     """
     aliases = field.validation_aliases or (
         () if field.use_serialization_alias or field.alias is None else (field.alias,)
     )
-    names = (*(aliases if by_alias else ()), *((field.name,) if by_name or not aliases else ()))
-    return next((name for name in names if name in value), None)
+    by_name = names.by_name or not (aliases or names.generated)
+    read = (*(aliases if names.by_alias else ()), *((field.name,) if by_name else ()))
+    return next((name for name in read if name in value), None)
 
 
-def _refuses_python_text(data_type: DataType) -> bool:
-    """Return whether strict mode refuses text as Python input for the type: a strict bytes, date, time or number."""
+def _refuses_text(data_type: DataType, *, json: bool) -> bool:
+    """Return whether strict mode refuses text for the type, as JSON input where ``json`` says so.
+
+    As Python input it refuses text for a strict bytes, date, time, number or bool, and as JSON input only for a
+    strict number or bool.
+    """
     if (import_ := data_type.import_) is None:
         return False
     key = (import_.from_ or "", import_.import_)
+    if json and key not in _JSON_TEXT_REFUSING_IMPORTS:
+        return False
     if key in _STRICT_TEXT_REFUSING_IMPORTS:
         return data_type.strict
     return key in _STRICT_TEXT_REFUSING_CONSTRAINED_IMPORTS and (
@@ -286,14 +298,29 @@ def _refuses_python_text(data_type: DataType) -> bool:
 def default_refused_as_python_input(
     data_type: DataType, default: object, model_of: Callable[[Reference], DataModel | None]
 ) -> bool:
-    """Return whether the default of a field, read as Python input, reaches a type that takes JSON text only.
+    """Return whether Pydantic takes the default of a field as JSON input but refuses it as Python input.
 
     Pydantic validates a default as Python input, where a strict bytes, date or time type refuses the text of a JSON
-    document, so every instance of a model with such a default fails (#7380). The default is followed through
-    mappings, lists and the models ``model_of`` gives for a reference, one model at a time for a value (a root model
-    that names itself reads the same value again), and each key of an object under the names its model's config
-    reads it by (``_read_key``). The items of a tuple with a type per position are read by that position's
-    type, and a union refuses a value when every member does.
+    document, so every instance of a model with such a default fails (#7380). A default Pydantic refuses as JSON input
+    too, text for a strict number or bool or an object that lacks a required field, is valid neither way, and
+    validating it keeps reporting that (``_default_refused``).
+    """
+    return _default_refused(data_type, default, model_of, json=False) and not _default_refused(
+        data_type, default, model_of, json=True
+    )
+
+
+def _default_refused(
+    data_type: DataType, default: object, model_of: Callable[[Reference], DataModel | None], *, json: bool
+) -> bool:
+    """Return whether Pydantic refuses the default as Python input, or as JSON input (``json``), as far as it is known.
+
+    The default is followed through mappings, lists and the models ``model_of`` gives for a reference, one model at a
+    time for a value (a root model that names itself reads the same value again), and each key of an object under the
+    names its model's config reads it by (``_read_key``); an object whose names a configured base class the generator
+    does not read may change is not followed. As JSON input an object also refuses a value that lacks a field it
+    requires. The items of a tuple with a type per position are read by that position's type, and a union refuses a
+    value when every member does.
     """
     visiting: set[tuple[int, int]] = set()
 
@@ -311,7 +338,12 @@ def default_refused_as_python_input(
             return any(members_refuse(members, item) for item in items)
         if members:
             return members_refuse(members, value)
-        return isinstance(value, str) and _refuses_python_text(node)
+        return isinstance(value, str) and _refuses_text(node, json=json)
+
+    def field_refuses(field: DataModelFieldBase, value: dict[Any, Any], names: InputNames) -> bool:
+        if (key := _read_key(field, value, names)) is None:
+            return json and requires_value(field)
+        return refused(field.data_type, value[key])
 
     def model_refuses(model: DataModel | None, value: object) -> bool:
         key = (id(model), id(value))
@@ -321,11 +353,11 @@ def default_refused_as_python_input(
         try:
             if model.form != "object":
                 return bool(model.fields) and refused(model.fields[0].data_type, value)
-            by_alias, by_name = model.validates_by()
-            return isinstance(value, dict) and any(
-                (name := _read_key(field, value, by_alias=by_alias, by_name=by_name)) is not None
-                and refused(field.data_type, value[name])
-                for field in get_effective_fields(model)
+            names = model.validates_by()
+            return (
+                names.settled
+                and isinstance(value, dict)
+                and any(field_refuses(field, value, names) for field in get_effective_fields(model))
             )
         finally:
             visiting.discard(key)
