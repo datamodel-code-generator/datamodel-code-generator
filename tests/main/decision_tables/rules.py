@@ -136,24 +136,6 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
         "the property counts an allOf member adds to a referenced map are left out at a definition and in array "
         "items, also with --use-site-models-for-constrained-refs (row legacy-all-of-map-counts-dropped)",
     ),
-    Kept(
-        ISSUE,
-        "#7342",
-        constraints.TABLE,
-        "rejects-valid",
-        PRESET,
-        ({"type": ("ipv4",), "position": ("direct", "all-of-member", "ref-sibling"), "backend": (MSGSPEC,)},),
-        "with --use-standard-primitive-types (in the preset) msgspec gets IPv4Address, which msgspec cannot decode",
-    ),
-    Kept(
-        ISSUE,
-        "#7342",
-        constraints.TABLE,
-        "model-raises",
-        PRESET,
-        ({"type": ("ipv4",), "position": ("union-member",), "backend": (MSGSPEC,)},),
-        "the same in a union, where msgspec refuses the type outright",
-    ),
 )
 """The known differences of the constraint applicability table."""
 
