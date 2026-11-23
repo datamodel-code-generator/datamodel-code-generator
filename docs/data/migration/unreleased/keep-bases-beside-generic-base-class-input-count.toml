@@ -1,0 +1,6 @@
+[[change]]
+id = "keep-bases-beside-generic-base-class-input-count"
+extends = "keep-bases-beside-generic-base-class"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

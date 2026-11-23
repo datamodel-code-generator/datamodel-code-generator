@@ -3,7 +3,7 @@ id = "keep-bases-beside-generic-base-class"
 category = "new-surface"
 title = "Keep the configured bases beside the generic base class under an option"
 summary = "--keep-bases-beside-generic-base-class keeps the classes a model is configured to inherit (--base-class-map, customBasePath, --base-class, and the class an --external-ref-mapping or x-python-import schema it extends stands for) beside the generated base class of --use-generic-base-class, so Tag(TagBase, BaseModel) and Price(Money, BaseModel) keep the fields of Money (#7316), and the generated base class is named BaseModelModel where a kept class is named BaseModel; without it the model takes the generated base class alone and the import stays unused."
-refs = ["#1"]
+refs = ["#7430"]
 surface = ["--keep-bases-beside-generic-base-class"]
 covers = [
     "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-kept].py",
