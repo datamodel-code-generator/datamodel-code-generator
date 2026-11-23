@@ -1,7 +1,7 @@
-"""Read the decision homes of scripts/decision_homes.py in the package: who calls them, and what builders hold.
+"""Read the decision homes of scripts/decision_homes.py in the package: who may read them, and what builders hold.
 
-The caller guard and the builder guard of `tests/test_decision_homes.py` and the heki contracts of
-`scripts/build_heki_contracts.py` read the same homes, callers and held parse methods from here.
+The builder guard of `tests/test_decision_homes.py` and the heki contracts of `scripts/build_heki_contracts.py` read
+the same homes and held parse methods from here.
 """
 
 from __future__ import annotations
@@ -45,16 +45,6 @@ def missing(home: Home, repo: Repo | None = None) -> str | None:
     if home.name and not any(found.qualname == home.name for found in repo.definitions(home.name, path)):
         return f"{home.path} defines no {home.name}"
     return None
-
-
-class Caller(NamedTuple):
-    """A run-time read of a home outside the home modules and the adapter sites of every row that holds the home."""
-
-    home: str
-    """The home as ``path:name``."""
-    caller: str
-    """The scope that reads it as ``path:qualname`` (``<module>`` for the module's own code)."""
-    line: int
 
 
 def _callable_homes(records: Iterable[DecisionHome]) -> dict[Home, tuple[set[str], set[Home]]]:
@@ -101,12 +91,12 @@ def _is_exception(repo: Repo, path: str, name: str) -> bool:
 def checked_homes(
     repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR
 ) -> list[tuple[Home, Found, set[str], set[Home]]]:
-    """Return the def and class homes of records that the caller guard checks, with what may call each.
+    """Return the def and class homes of records whose readers heki checks, with what may read each.
 
     Each comes with its definition in the package and the home modules and adapter sites of every row that holds it
     (`_callable_homes`). A home that is an exception class (it derives from ``BaseException``) is not checked: its
     record states where the type is defined, not who may raise or catch it. `scripts/build_heki_contracts.py` writes
-    the same homes as heki contracts.
+    a contract per home: only those modules and sites read it at run time.
     """
     checked: list[tuple[Home, Found, set[str], set[Home]]] = []
     for home, (modules, sites) in _callable_homes(records).items():
@@ -118,32 +108,6 @@ def checked_homes(
                 continue
             checked.append((home, found, modules, sites))
     return checked
-
-
-def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR) -> list[Caller]:
-    """Return the run-time reads of a def or class home of records in a package outside the modules and sites.
-
-    Paths of homes, sites and callers are relative to the package directory, ``src/datamodel_code_generator/`` unless
-    given.
-
-    `Repo.module_reads` finds the references; a store binds the name and one in an annotation names a type, so neither
-    calls the home. A site is a def or a class (and the scopes inside it), or a whole module. The homes are those
-    `checked_homes` returns.
-    """
-    callers: list[Caller] = []
-    for home, found, modules, sites in checked_homes(repo, records, package):
-        for rel, references in repo.module_reads(found).items():
-            module = rel.removeprefix(package)
-            if not rel.startswith(package) or module in modules:
-                continue
-            callers += [
-                Caller(f"{home.path}:{home.name}", f"{module}:{scope}", reference.line)
-                for reference in references
-                if reference.context == "load" and not reference.annotation
-                for scope in [scope_name(reference.scope)]
-                if not any(_covers(site, module, scope) for site in sites)
-            ]
-    return sorted(callers)
 
 
 DISPATCH = f"{PACKAGE}.parser._schema_dispatch"

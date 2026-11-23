@@ -57,9 +57,8 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (the sum of the site counts of
   its entries: ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other
   key budgets, ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture
-  checks, the callers of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``) and the bypasses of builder
-  homes (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one is written in a form this script
-  cannot read).
+  checks and the bypasses of builder homes (``allowlist:BUILDER_BYPASSES``) (``allowlist:<NAME>:unreadable`` when one
+  is written in a form this script cannot read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -311,7 +310,7 @@ ALLOWLISTS = (
         }),
     ),
     ("tests/generated_import_closure_allowlist.py", frozenset({"UNBOUND_NAME_VIOLATIONS"})),
-    ("tests/decision_home_allowlist.py", frozenset({"UNLISTED_CALLERS", "BUILDER_BYPASSES"})),
+    ("tests/decision_home_allowlist.py", frozenset({"BUILDER_BYPASSES"})),
     ("scripts/check_architecture_boundaries.py", frozenset({"DEFAULT_ALLOWLIST"})),
     ("tests/test_checks_are_run.py", frozenset({"UNREACHED"})),
 )
