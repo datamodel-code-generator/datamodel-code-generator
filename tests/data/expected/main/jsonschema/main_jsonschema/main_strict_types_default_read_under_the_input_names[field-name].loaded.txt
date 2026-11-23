@@ -1,2 +1,0 @@
-blob: {'raw_data': ''}
-given blob: Blob(raw_data=b'a')

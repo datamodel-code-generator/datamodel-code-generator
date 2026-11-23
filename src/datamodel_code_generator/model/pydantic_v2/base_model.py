@@ -75,7 +75,6 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
-    FieldInputNames,
     _base_walk,
     _builtin_renderer,
     _default_state,
@@ -315,13 +314,6 @@ _NO_ALIAS_INTERNAL_KEY = "_no_alias"
 _PIN_ALIASES_INTERNAL_KEY = "_pin_aliases_with_alias_generator"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
-_INPUT_NAME_CONFIG_KEYS: frozenset[str] = frozenset({
-    _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
-    "validate_by_alias",
-    "validate_by_name",
-    "populate_by_name",
-})
-"""The config items that set the names Pydantic reads the fields of a model under (``validates_by``)."""
 _RENDERED_NONE = "None"
 _COMPILED_PATTERN_KEY = "_compiled_python_pattern"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
@@ -1998,24 +1990,6 @@ class _PydanticV2Model(DataModel):
     def _applied_config_items(self) -> dict[str, str]:
         """Return the config items Pydantic applies to the model that the generator reads."""
         return self._applied_config()[0]
-
-    @override
-    def validates_by(self) -> FieldInputNames:
-        """Return the names Pydantic reads the fields under, from the config the model applies (``applied_config``).
-
-        By field name as Pydantic settles it: by ``validate_by_name``, else by ``populate_by_name``, else where
-        ``validate_by_alias`` is false; by alias unless ``validate_by_alias`` is false. They are settled unless a
-        configured base class the generator does not read may set one of these items or ``alias_generator``.
-        """
-        items, known = self.applied_config()
-        by_alias = items.get("validate_by_alias") != "False"
-        by_name = items.get("validate_by_name", items.get("populate_by_name"))
-        return FieldInputNames(
-            by_alias=by_alias,
-            by_name=not by_alias if by_name is None else by_name == "True",
-            generated=items.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY, _RENDERED_NONE) != _RENDERED_NONE,
-            settled=known is None or known.issuperset(_INPUT_NAME_CONFIG_KEYS),
-        )
 
     @abstractmethod
     def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:

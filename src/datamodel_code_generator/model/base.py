@@ -2269,19 +2269,6 @@ def _default_state(default: object) -> DefaultState:
     return "undefined" if default is UNDEFINED else "none" if default is None else "value"
 
 
-class FieldInputNames(NamedTuple):
-    """The names Pydantic reads the fields of a model under, as the config the model applies sets them."""
-
-    by_alias: bool
-    """Whether it reads a field under its aliases."""
-    by_name: bool
-    """Whether it also reads a field under its name."""
-    generated: bool
-    """Whether an alias generator gives an alias to a field that has none."""
-    settled: bool
-    """Whether the config sets them all: no configured base class the generator does not read may change them."""
-
-
 class BaseLayoutView(NamedTuple):
     """How the layouts of generated bases look before the processing of each module changes them.
 
@@ -2389,10 +2376,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     IS_ALIAS: ClassVar[bool] = False
     IS_ROOT_MODEL: ClassVar[bool] = False
-    _INPUT_NAMES: ClassVar[FieldInputNames] = FieldInputNames(
-        by_alias=True, by_name=False, generated=False, settled=True
-    )
-    """The names input gives the fields of a model without config under: by alias only (``validates_by``)."""
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
@@ -3083,10 +3066,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _builds_patterns_with_python_engine(self) -> bool:  # noqa: PLR6301
         """Return whether the config the model applies selects ``python-re``: a model with no config does not."""
         return False
-
-    def validates_by(self) -> FieldInputNames:
-        """Return the names input gives the fields under: a model with no config reads them by alias only."""
-        return self._INPUT_NAMES
 
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
         """Yield the Pydantic constructs that the model's rendering writes, each with the field that writes it.
