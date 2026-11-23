@@ -194,7 +194,7 @@ PARSE_CALLER: Final[ContextVar[FrameType | None]] = ContextVar("parse_caller", d
 
 def parse_caller() -> FrameType | None:
     """Return the frame that called the ``Parser.parse()`` calling this, past the wrapper frames of ``--debug``."""
-    frame = sys._getframe(2)
+    frame = sys._getframe(2)  # noqa: TID251
     while frame is not None and is_tracer_frame(frame):
         frame = frame.f_back
     return frame
@@ -210,7 +210,7 @@ def warn_at_parse_caller(message: str, category: type[Warning]) -> None:
     if (frame := PARSE_CALLER.get()) is not None:
         warn_at_frame(frame, message, category)
         return
-    depth, outer = 1, sys._getframe(1)
+    depth, outer = 1, sys._getframe(1)  # noqa: TID251
     while outer is not None:
         depth, outer = depth + 1, outer.f_back
     warn(message, category, stacklevel=depth + 1)

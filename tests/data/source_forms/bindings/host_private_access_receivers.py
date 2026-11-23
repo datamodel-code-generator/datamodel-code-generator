@@ -1,5 +1,5 @@
 """#7025 Host private access: only a method's ``self`` or ``cls`` reaches every member.
-layers: host
+layers: parser
 """
 from __future__ import annotations
 

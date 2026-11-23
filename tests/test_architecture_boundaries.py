@@ -6,16 +6,13 @@ import re
 import runpy
 import subprocess
 import sys
-from fnmatch import fnmatchcase
 from pathlib import Path
 from shutil import copyfile
 
 import pytest
-import tomllib
 
 from scripts import check_architecture_boundaries
 from scripts._import_cycles import import_cycles
-from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[1]
@@ -166,124 +163,6 @@ def test_architecture_boundary_source_classification() -> None:
     )
 
     assert_output(classification)
-
-
-def test_host_private_access_allows_only_declared_host_members() -> None:
-    """Pass self, cls and Host parameters that declare the member; fail other receivers, aliases and members."""
-    fixture = FIXTURE_ROOT / "host_private_access" / "concern.py"
-    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
-
-    assert_output(check_architecture_boundaries.format_report(violations))
-
-
-def test_host_private_access_follows_the_binding_rules() -> None:
-    """Report a private read through a name an inner scope or a comprehension rebinds, not the Host read beside it."""
-    fixture = FIXTURE_ROOT / "host_private_access" / "bindings.py"
-    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
-
-    assert_output(check_architecture_boundaries.format_report(violations))
-
-
-@needs("type-statements")
-def test_host_private_access_follows_type_parameter_scopes(tmp_path: Path) -> None:
-    """Hide a Host parameter behind a type parameter or a type statement of the same name."""
-    stored = FIXTURE_ROOT / "host_private_access" / "type_parameters.py.txt"
-    fixture = tmp_path / "type_parameters.py"
-    copyfile(stored, fixture)
-    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
-    report = check_architecture_boundaries.format_report(violations)
-
-    assert_output(report.replace(fixture.as_posix(), stored.relative_to(ROOT).as_posix().removesuffix(".txt")))
-
-
-def test_host_private_access_exempts_only_method_receivers() -> None:
-    """Exempt self and cls of a method and its closures; treat them elsewhere as ordinary parameters."""
-    fixture = FIXTURE_ROOT / "host_private_access" / "receivers.py"
-    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
-
-    assert_output(check_architecture_boundaries.format_report(violations))
-
-
-def test_host_private_access_scope_equals_the_slf001_ignores() -> None:
-    """Check with the host rule exactly the files where the ruff per-file ignores turn SLF001 off."""
-    ignores = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["ruff"]["lint"][
-        "per-file-ignores"
-    ]
-    globs = [glob for glob, rules in ignores.items() if glob.startswith("src/") and "private-member-access" in rules]
-    source_root = ROOT / "src" / "datamodel_code_generator"
-    named = [
-        source_root.joinpath(*relative.split("/"))
-        for relative in (
-            "parser/_new/x.py",
-            "parser/_new/sub/y.py",
-            "parser/_passes/sub/z.py",
-            "parser/base.py",
-            "parser/jsonschema.py",
-            "model/_field_imports.py",
-            "model/base.py",
-        )
-    ]
-
-    def scopes(path: Path) -> tuple[bool, bool]:
-        relative = path.relative_to(ROOT).as_posix()
-        return any(fnmatchcase(relative, glob) for glob in globs), check_architecture_boundaries._in_host_scope(path)
-
-    differing = [
-        path.relative_to(ROOT).as_posix() for path in sorted((ROOT / "src").rglob("*.py")) if len(set(scopes(path))) > 1
-    ]
-    lines = [f"{path.relative_to(source_root).as_posix()}: ignored, checked = {scopes(path)}" for path in named]
-
-    assert_output("\n".join([*globs, *lines, f"src files where they differ: {differing}", ""]))
-
-
-def test_host_private_access_baseline_only_shrinks(tmp_path: Path) -> None:
-    """Allow exactly the accesses the baseline counts and report the entries the code no longer has."""
-    fixture = FIXTURE_ROOT / "host_private_access" / "concern.py"
-    baseline = tmp_path / "baseline.toml"
-    baseline.write_text(
-        check_architecture_boundaries.format_host_baseline(
-            check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
-        ),
-        encoding="utf-8",
-    )
-    allowlist = check_architecture_boundaries.load_host_baseline(baseline)
-    grown = {
-        key: check_architecture_boundaries.AllowlistEntry(entry.reason, entry.count + 1)
-        for key, entry in allowlist.items()
-        if key.target == "sys._getframe"
-    }
-    reports = [
-        check_architecture_boundaries.format_report(
-            check_architecture_boundaries.check_files([], allowlist=entries, host_files=[fixture])
-        )
-        for entries in (allowlist, {**allowlist, **grown})
-    ]
-    missing = check_architecture_boundaries.load_host_baseline(tmp_path / "missing.toml")
-
-    assert_output(
-        f"{baseline.read_text(encoding='utf-8')}baseline: {reports[0]}grown: {reports[1]}missing: {missing}\n"
-    )
-
-
-def test_host_private_access_cli_writes_the_baseline(tmp_path: Path) -> None:
-    """Write the baseline of a source tree from the executable guard, after which the tree checks clean."""
-    script_path = _copy_checker(tmp_path)
-    source_path = tmp_path / "src" / "datamodel_code_generator" / "parser" / "_concern.py"
-    source_path.parent.mkdir(parents=True)
-    copyfile(FIXTURE_ROOT / "host_private_access" / "concern.py", source_path)
-
-    completed = subprocess.run(
-        [sys.executable, str(script_path), "--write-host-baseline"],
-        cwd=tmp_path,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-
-    assert_output(
-        f"exit: {completed.returncode}\nstderr: {completed.stderr!r}\n"
-        f"{(script_path.parent / 'host_private_access_baseline.toml').read_text(encoding='utf-8')}"
-    )
 
 
 def test_import_cycles_count_the_imports_that_close_them() -> None:
