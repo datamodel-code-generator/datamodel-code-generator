@@ -1,6 +1,3 @@
 [[change]]
 id = "resource-ref-input-count"
 extends = "read-refs-in-their-resources"
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]
