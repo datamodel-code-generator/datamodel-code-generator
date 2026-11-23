@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import TYPE_CHECKING
 
 import pytest
@@ -132,13 +133,17 @@ MIXED_PAYLOADS: tuple[tuple[str, str], ...] = (
 
 
 def _key_verdicts(model: type[pydantic.BaseModel]) -> str:
-    """Return, for each payload, the type of the parsed key or the error the key raised."""
+    """Return, for each payload, the type of the parsed key or the error the key raised.
+
+    Python words the unhashable error differently from 3.14 on, so only the part both wordings share is kept.
+    """
     lines = []
     for name, key in MIXED_PAYLOADS:
         try:
             parsed = getattr(model.model_validate_json(json.dumps({name: {key: 1}})), name)
         except TypeError as error:
-            verdict = f"TypeError: {error}"
+            unhashable = re.search(r"unhashable type: '(\w+)'", str(error))
+            verdict = f"TypeError: {unhashable.group(0) if unhashable else error}"
         except ValueError:
             verdict = "rejected"
         else:
