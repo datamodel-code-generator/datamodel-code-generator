@@ -89,11 +89,14 @@ class Lane:
         """Return whether some entry of the lane runs a test at or below a node (``tests/x.py::test_y``, a module).
 
         An entry runs it where it selects the node, something that holds it or something below it (one parameter of
-        the test), and leaves out nothing that holds the node: leaving out one parameter still runs the others.
+        the test), and leaves out nothing that holds the deeper of the two: leaving out one parameter still runs the
+        others, and leaving out the one parameter it selects runs nothing.
         """
         return any(
-            not any(_within(node, path) for path in excluded)
-            and (tests is None or any(_within(node, path) or _within(path, node) for path in tests))
+            any(
+                not any(_within(deeper, path) for path in excluded)
+                for deeper in ((node,) if tests is None else _deeper(node, tests))
+            )
             for tests, excluded in self._entries
         )
 
@@ -110,6 +113,11 @@ class Lane:
             excluded=tuple(sorted(set(self.excluded) & set(other.excluded))),
             entries=(*self._entries, *other._entries),
         )
+
+
+def _deeper(node: str, tests: tuple[str, ...]) -> tuple[str, ...]:
+    """Return, for each selected path that holds a node or lies below it, the deeper of the two."""
+    return tuple(node if _within(node, path) else path for path in tests if _within(node, path) or _within(path, node))
 
 
 def _within(node: str, path: str) -> bool:

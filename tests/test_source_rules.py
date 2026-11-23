@@ -1680,11 +1680,13 @@ def test_joined_entries_keep_their_own_exclusions() -> None:
     """A node one entry leaves out is not run because another entry selects a path that covers it.
 
     A node runs where some test at or below it runs: leaving out one parameter still runs the test's others, and
-    selecting one parameter runs its test and module, not the module's other tests.
+    selecting one parameter runs its test and module, not the module's other tests, unless the entry also leaves
+    that parameter out.
     """
     first = Lane("lane", {}, ("tests/a.py",), ("tests/a.py::test_x", "tests/a.py::test_w[one]"))
     second = Lane("lane", {}, ("tests/b.py", "tests/a.py::test_y[one]", "tests/d.py::test_v[one]"), ())
-    lane = first.joined(second)
+    third = Lane("lane", {}, ("tests/e.py::test_t[one]", "tests/e.py::test_s[one]"), ("tests/e.py::test_t[one]",))
+    lane = first.joined(second).joined(third)
     nodes = [
         "tests/a.py::test_x",
         "tests/a.py::test_z",
@@ -1696,6 +1698,9 @@ def test_joined_entries_keep_their_own_exclusions() -> None:
         "tests/d.py::test_v",
         "tests/d.py",
         "tests/d.py::test_u",
+        "tests/e.py::test_t",
+        "tests/e.py::test_s",
+        "tests/e.py",
     ]
 
     assert_output("".join(f"{node}: {lane.runs(node)}\n" for node in nodes))
