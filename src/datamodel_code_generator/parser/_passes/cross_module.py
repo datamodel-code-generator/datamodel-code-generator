@@ -448,7 +448,9 @@ def _bound_names(
     They are the classes of the run, the imports of its modules (the default import of the output model type aside,
     which the generic base class replaces) and the bases ``kept`` beside it. The imports every module shares
     (``--additional-imports``) are not: the generic base class takes the name over them, as a generated class does
-    over one no type of its module writes (``change_imported_model_name``).
+    over one no type of its module writes (``change_imported_model_name``). Class names and module imports become final
+    only at render, but no later pass binds a name of the generic base class: a class named like the default base is
+    renamed at parse, and the imports added later bind names of the output type's library (``Field``, ``ConfigDict``).
     """
     default = (default_import.from_, default_import.import_) if default_import is not None else None
     return (
