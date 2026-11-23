@@ -605,16 +605,8 @@ class DictKeyVisitor(ast.NodeVisitor):
                 self._check_container(target, container, key)
 
     def _check_container(self, node: ast.AST, container: ast.expr, key: ast.AST | None) -> None:
-        match container:
-            case ast.Attribute(attr="__dict__", value=receiver):
-                if not self._excluded(receiver):
-                    self._record(node, key)
-            case ast.Call(func=function, args=[receiver]) if _spelled(self.model, function) == "vars":
-                if not self._excluded(receiver):
-                    self._record(node, key)
-            case _:
-                if (alias := self._alias_read(container)) is not None:
-                    self._record(node, key if alias.key is None else alias.key)
+        if (alias := self._alias_of(container)) is not None:
+            self._record(node, key if alias.key is None else alias.key)
 
     def _record(self, node: ast.AST, key: ast.AST | str | None) -> None:
         """Record a write of a named key; a computed key is heki's to report (``MUT205``)."""
@@ -681,6 +673,10 @@ class DictKeyVisitor(ast.NodeVisitor):
             case ast.Call(func=function, args=[receiver, ast.Constant(value="__dict__"), *_]) if _spelled(
                 self.model, function
             ) == "getattr" and not self._excluded(receiver):
+                return _Alias()
+            case ast.Call(func=function, args=[receiver]) if _spelled(
+                self.model, function
+            ) == "vars" and not self._excluded(receiver):
                 return _Alias()
         return self._alias_read(value)
 

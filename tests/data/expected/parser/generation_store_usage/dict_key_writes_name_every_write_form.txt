@@ -18,4 +18,6 @@
 29 write alias_entry
 30 write alias_entry
 34 write getattr
-36 write walrus
+35 write getattr_direct
+37 write vars_alias
+39 write walrus

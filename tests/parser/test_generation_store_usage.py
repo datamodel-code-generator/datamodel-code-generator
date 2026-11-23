@@ -338,6 +338,9 @@ def write(field, name, pair):
     computed.clear()
     got = getattr(field, "__dict__")
     got["getattr"] = 1
+    getattr(field, "__dict__")["getattr_direct"] = 1
+    state = vars(field)
+    state["vars_alias"] = 1
     if (walrus := field.__dict__) is not None:
         walrus["walrus"] = 1
     rebound = values
@@ -362,6 +365,9 @@ class Parser:
         vars(self)["state"] = 1
         own = getattr(self, "__dict__")
         own["state"] = 1
+        getattr(self, "__dict__")["state"] = 1
+        state = vars(self)
+        state["state"] = 1
         obj.__dict__["schema"] = 1
         quoted.__dict__["schema"] = 1
         action.__dict__["marker"] = True
@@ -385,10 +391,10 @@ def concern_function(parser: Host) -> None:
     )
 
     assert _key_writes(source) == snapshot("""\
-16 Parser.method other_copy
-18 Parser.method rebuilt
-19 Parser.method built
-26 concern_function unrelated
+19 Parser.method other_copy
+21 Parser.method rebuilt
+22 Parser.method built
+29 concern_function unrelated
 """)
 
 
