@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "ruff:TID251@src"
+head = 2
+pr = 7431
+decision = ["#7431"]
+reason = "the private-access rule moves to heki contracts; heki cannot name sys._getframe (a private member of another module), so ruff banned-api holds its two calls in parser/_pipeline.py until heki can"

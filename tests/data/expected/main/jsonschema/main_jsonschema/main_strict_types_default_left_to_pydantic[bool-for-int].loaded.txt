@@ -1,0 +1,2 @@
+refused: f.count int_type
+given: Top(f=None)

@@ -6565,14 +6565,14 @@ path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "required_fields_a_default_lacks"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model._views.DataTypeView._[!_]*"
-count = 2
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "required_fields_a_default_lacks"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._views.DataTypeView._[!_]*"
-count = 2
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
@@ -7629,13 +7629,6 @@ path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "defer_recursive_containers"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "deserialize_decimal_default"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
 count = 1
 
 [[entries]]

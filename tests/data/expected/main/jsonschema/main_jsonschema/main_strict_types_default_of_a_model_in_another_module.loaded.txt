@@ -1,0 +1,2 @@
+day: Day(root=datetime.date(2020, 1, 1))
+node: Node(on=Day(root=datetime.date(2020, 1, 2)), data=b'x', next=Node(on=Day(root=datetime.date(2020, 1, 3)), data=None, next=None, kids=None), kids=[Node(on=None, data=b'k', next=None, kids=None)])
