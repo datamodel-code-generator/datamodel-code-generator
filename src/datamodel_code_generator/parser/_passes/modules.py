@@ -414,7 +414,7 @@ class ModulesHost(
 
     @property
     def use_root_types_for_mixed_union_map_keys(self) -> bool:
-        """Whether a union map key with a non-RootModel member is typed by the root types of its RootModel members too."""
+        """Whether a union map key with a non-RootModel member is typed by the root types of its RootModels too."""
 
     @property
     def use_tuple_for_closed_arrays(self) -> bool:
@@ -2820,10 +2820,10 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
     named inside the root type a key takes is typed the same way, and a cycle of them stops at the first repeated
     model. A root type that cannot be a dict key keeps the root model. A key that is a reference is read, and so is
     a union key, through its members: Pydantic validates a key by the member that matches it most exactly, a root
-    model among them. A union key with a member that is no such RootModel (``_names_only_root_models``) keeps its RootModel
-    members unless ``--use-root-types-for-mixed-union-map-keys`` is set: 0.100.0 parsed the keys that member
-    matches, and the root types can read a key that both match as another type (a uuid-format root: a ``UUID``). A key that the copies
-    of a collapsed root type share
+    model among them. A union key with a member that is no such RootModel (``_names_only_root_models``) keeps its
+    RootModel members unless ``--use-root-types-for-mixed-union-map-keys`` is set: 0.100.0 parsed the keys that member
+    matches, and the root types can read a key that both match as another type (a uuid-format root: a ``UUID``). A
+    key that the copies of a collapsed root type share
     (``GenerationIndex.inlined_holders_of``) is replaced in each holder as the module of its model reaches it, with
     the imports of that module, and leaves its reference once no holder keeps it: the holder that kept it otherwise
     named the root model through a key that no longer names it. Each changed model refreshes its backend config, as a

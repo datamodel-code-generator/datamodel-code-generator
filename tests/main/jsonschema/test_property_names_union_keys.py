@@ -175,9 +175,9 @@ def test_property_names_root_model_mixed_union_keys(extra_args: list[str], outpu
     """Type the RootModel members of a union key that has a non-RootModel member only under the option.
 
     Without it the key keeps the RootModel class, as in 0.100.0: a key that only the RootModel matches raises
-    ``TypeError`` (an enum beside a pattern RootModel, the shape of #6933, parses only the enum's keys), and a key that both
-    a ``str`` and a uuid-format RootModel match parses as ``str``. With it the root types are written and that key
-    parses as ``UUID`` from JSON.
+    ``TypeError`` (an enum beside a pattern RootModel, the shape of #6933, parses only the enum's keys), and a key
+    that both a ``str`` and a uuid-format RootModel match parses as ``str``. With it the root types are written and
+    that key parses as ``UUID`` from JSON.
     """
     run_main_and_assert(
         input_path=MIXED_KEYS,
