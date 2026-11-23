@@ -20,14 +20,8 @@ covers = [
 ]
 
 [[change.cells]]
-input = ["tests/data/jsonschema/allof_enum_member_of_constrained_ref.json"]
+input = ["tests/data/jsonschema/allof_enum_member_of_constrained_ref.json", "payload:jsonschema/allof_enum_member_of_constrained_ref.json"]
 backends = ["msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 options = "*"
-match = "^\\[(exit\\] 2 -> 0$|kind\\] Settlement: RootModel -> Enum$|type\\] Payment:settlement: (msgspec\\.UnsetType -> Union\\[Settlement, msgspec\\.UnsetType\\]|None -> Union\\[None, Settlement\\])$|message\\] removed handled: datamodel_code_generator\\.Error$|message\\] removed Payment uses a \\$ref chain that loops back without reaching a schema, which (msgspec cannot decode|Pydantic cannot build): Settlement |warning\\] removed builtins\\.UserWarning: msgspec\\.Meta does not take max_length, min_length on ; Payment\\.settlement is generated without)"
-
-[[change.cells]]
-input = ["payload:jsonschema/allof_enum_member_of_constrained_ref.json"]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
-options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp"]]
 input_file_type = "jsonschema"
-match = "^\\[(exit\\] 2 -> 0$|kind\\] Settlement: RootModel -> Enum$|type\\] Payment:settlement: (msgspec\\.UnsetType -> Union\\[Settlement, msgspec\\.UnsetType\\]|None -> Union\\[None, Settlement\\])$|message\\] removed handled: datamodel_code_generator\\.Error$|message\\] removed Payload uses a \\$ref chain that loops back without reaching a schema, which (msgspec cannot decode|Pydantic cannot build): Settlement |warning\\] removed builtins\\.UserWarning: msgspec\\.Meta does not take max_length, min_length on ; Payment\\.settlement is generated without)"
+match = "^\\[(exit\\] 2 -> 0$|kind\\] Settlement: RootModel -> Enum$|type\\] Payment:settlement: (msgspec\\.UnsetType -> Union\\[Settlement, msgspec\\.UnsetType\\]|None -> Union\\[None, Settlement\\])$|message\\] removed handled: datamodel_code_generator\\.Error$|message\\] removed Pay(ment|load) uses a \\$ref chain that loops back without reaching a schema, which (msgspec cannot decode|Pydantic cannot build): Settlement |warning\\] removed builtins\\.UserWarning: msgspec\\.Meta does not take max_length, min_length on ; Payment\\.settlement is generated without)"
