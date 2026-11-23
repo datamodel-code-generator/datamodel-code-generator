@@ -48,3 +48,13 @@ covers = [
     "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_untagged_base-api].txt",
     "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_untagged_base-cli].txt",
 ]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/allof_any_of_enum_branch_object_keywords.json",
+    "tests/data/jsonschema/schema_intersection/allof_union_member_declarations.json",
+    "tests/data/jsonschema/unique_items_by_value_inherited_fields.json",
+]
+backends = ["msgspec.Struct"]
+options = "*"
+match = "^\\[(exit\\] 2 -> 0$|message\\] removed handled: datamodel_code_generator\\.Error$|message\\] removed msgspec\\.Struct model '[^']+' has incompatible layouts from generated bases )"

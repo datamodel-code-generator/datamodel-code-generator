@@ -12351,7 +12351,6 @@
         "tests/main/jsonschema/test_main_jsonschema.py::test_msgspec_enum_diagnostics_preserve_supported_representations[large_aliases-cli]": 1299,
         "tests/main/jsonschema/test_main_jsonschema.py::test_msgspec_inheritance_preserve_compatible_layouts[jsonschema_long_chain-cli]": 1764,
         "tests/main/jsonschema/test_main_jsonschema.py::test_msgspec_inheritance_preserve_compatible_layouts[jsonschema_redundant_dag-cli]": 2926,
-        "tests/main/jsonschema/test_main_jsonschema.py::test_msgspec_inheritance_reject_conflicting_layouts[jsonschema_untagged_base-cli]": 1721,
         "tests/main/jsonschema/test_main_jsonschema.py::test_pattern_property_intersections[builtin-cli-True-undeclared_required_object]": 1354,
         "tests/main/jsonschema/test_main_jsonschema.py::test_reuse_tree_single_first_root_validation[False-False-recursive-cli]": 1674,
         "tests/main/jsonschema/test_main_jsonschema.py::test_schema_validator_mapping_inputs[api-builtin]": 3699,

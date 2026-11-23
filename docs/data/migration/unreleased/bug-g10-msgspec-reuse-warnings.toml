@@ -1,0 +1,16 @@
+[[change]]
+id = "bug-g10-msgspec-reuse-warnings"
+category = "notice"
+title = "Warn about untagged msgspec unions of a run that now generates"
+summary = "A msgspec run that stopped with incompatible layouts under --reuse-model now generates, so it shows the warning that msgspec cannot decode a union whose Struct types are not all tagged."
+refs = ["#7446"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change.cells]]
+input = ["tests/data/jsonschema/schema_intersection/allof_union_member_declarations.json"]
+backends = ["msgspec.Struct"]
+options = "*"
+aspects = ["warning", "message"]
+match = "^\\[(warning\\] added (builtins\\.UserWarning: msgspec cannot decode the union |builtins\\.FutureWarning: Default formatters will change|datamodel_code_generator\\.NamingHintWarning: )|message\\] removed handled: datamodel_code_generator\\.Error$|message\\] removed msgspec\\.Struct model '[^']+' has incompatible layouts from generated bases )"
