@@ -7922,10 +7922,14 @@ class-loaded-by-enum-member-literal	main/jsonschema/main_jsonschema/submodule_hi
 class-loaded-by-enum-member-literal	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-loaded-by-enum-member-literal]/
 class-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-msgspec.Struct].payloads.txt
 class-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-msgspec.Struct]/
+class-nested-ancestor-import-all-exports-children	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-nested-ancestor-import-all-exports-children].payloads.txt
+class-nested-ancestor-import-all-exports-children	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-nested-ancestor-import-all-exports-children]/
 class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-dataclasses.dataclass].payloads.txt
 class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-pydantic_v2.BaseModel]/
 class-root-cycle	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle].payloads.txt
 class-root-cycle	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle]/
+class-root-import-all-exports-children	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-all-exports-children].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle].payloads.txt
+class-root-import-all-exports-children	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-all-exports-children]/
 empty-package	main/jsonschema/main_jsonschema/submodule_hidden_by_package[empty-package].payloads.txt
 empty-package	main/jsonschema/main_jsonschema/submodule_hidden_by_package[empty-package]/
 future-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-all-exports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt

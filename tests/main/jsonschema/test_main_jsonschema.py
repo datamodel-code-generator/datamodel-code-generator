@@ -4542,6 +4542,32 @@ class a later rename moves off its name keeps its name.""",
             ],
             id="class-root-cycle",
         ),
+        pytest.param(
+            "submodule_named_like_nested_package_class_ancestor_import.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--all-exports-scope", "children"],
+            [
+                (
+                    "a.api",
+                    "Order",
+                    ['{"detail": {"message": "m"}, "warn": {"count": 1}}', '{"detail": {"message": 1}}'],
+                ),
+                ("a.b", "Warn", ['{"count": 1, "common": {"code": "c"}}', '{"count": "x"}']),
+            ],
+            id="class-nested-ancestor-import-all-exports-children",
+        ),
+        pytest.param(
+            "submodule_named_like_package_class_root_import.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--all-exports-scope", "children"],
+            [
+                ("", "Top", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("pkg", "Warn", ['{"count": 1, "common": {"code": "c"}}', '{"count": "x"}']),
+            ],
+            id="class-root-import-all-exports-children",
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -40838,6 +40864,12 @@ def test_main_jsonschema_refuses_keyword_module(
             id="root-import",
         ),
         pytest.param(
+            "submodule_named_like_package_class_beside_keyword_directory",
+            [],
+            "the class 'Warn' in the package 'main.pkg' beside the module 'main.pkg.Warn' (main/pkg/Warn.py)",
+            id="beside-keyword-directory",
+        ),
+        pytest.param(
             "shared_module_named_like_root_class",
             [
                 "--rename-submodules-hidden-by-classes",
@@ -40868,7 +40900,9 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
     ``--all-exports-scope`` re-exports a module of it) the output works and is written. An import of the root package
     (``from .. import common``) loads nothing while the ``__init__.py`` runs, as the root has started before it, so the
-    root's own import of ``pkg.Warn`` runs after the class is defined and the run fails. The class names are the final
+    root's own import of ``pkg.Warn`` runs after the class is defined and the run fails. The refusal is judged before
+    the modules are written, so it is the error a run reports where writing them fails too (a directory named like the
+    keyword ``class``). The class names are the final
     ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a
     collapsed root model), and a class that an import cycle merge moves into ``pkg/_internal.py`` is bound by the
     ``__init__.py`` that re-exports it. The refusal names --rename-submodules-hidden-by-classes, which renames such a
@@ -40883,7 +40917,11 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
         "module."
     )
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+        input_path=next(
+            path
+            for path in (JSON_SCHEMA_DATA_PATH / input_name, JSON_SCHEMA_DATA_PATH / f"{input_name}.json")
+            if path.exists()
+        ),
         output_path=output_dir,
         input_file_type="jsonschema",
         extra_args=[

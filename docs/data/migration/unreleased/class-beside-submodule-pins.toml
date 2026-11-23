@@ -1,0 +1,11 @@
+[[change]]
+id = "class-beside-submodule-pins"
+category = "harness"
+title = "Pins of a package class beside a same-named submodule that keep their output"
+summary = "Stored outputs of new inputs whose output equals 0.100.0: the payload decodings of a layout parsed again for an import cycle, and the payload records of a directory named like a keyword; the package writes the same output"
+refs = ["#7444"]
+covers = [
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle].payloads.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_submodule~5634820c.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_submodule_nam~74388894.errors.txt",
+]
