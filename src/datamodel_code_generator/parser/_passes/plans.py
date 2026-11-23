@@ -27,13 +27,11 @@ from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import reuse_candidate_key
 from datamodel_code_generator.parser._passes._shared import (
-    ConstructorInfoHost,
     DataModelTypeHost,
     GraphBuilderHost,
     InheritedFieldHost,
     RecursionFactsHost,
     ReuseOptionsHost,
-    _stand_ins_of,
     override_required_field,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts
@@ -52,11 +50,8 @@ if TYPE_CHECKING:
 __all__ = [
     "FlattenHost",
     "PlansHost",
-    "TypeOverriddenBasesHost",
     "flatten_conflicting_base_layouts",
-    "inherits_type_override",
     "record_emitting_modules",
-    "replaced_by_type_override",
     "reset_per_run_state",
     "set_circular_root_model_paths",
     "unconstrain_union_members_in_modules",
@@ -76,14 +71,6 @@ class FlattenHost(InheritedFieldHost, GraphBuilderHost, Protocol):
     @property
     def keep_defaults_of_inherited_required_fields(self) -> bool:
         """Whether a field only a base requires keeps its default (``--keep-defaults-of-inherited-required-fields``)."""
-
-
-class TypeOverriddenBasesHost(ConstructorInfoHost, Protocol):
-    """The model-level type overrides, and the generated models of the bases they replaced."""
-
-    @property
-    def _model_type_override_imports(self) -> dict[str, Import]:
-        """The imports of the types that override models, by model name."""
 
 
 class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelTypeHost, TagPlanHost, Protocol):
@@ -186,6 +173,7 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
         layout_models,
         field_namer(parser.model_resolver, parser.field_name_model_type),
     )
+    overrides = parser._model_type_override_imports
 
     def is_slot(field: DataModelFieldBase) -> bool:
         names = tag_names.get(id(field.parent), frozenset())
@@ -194,33 +182,11 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     view = BaseLayoutView(
         is_slot,
         lambda model: duplicates.get(id(model), model),
-        lambda model: replaced_by_type_override(parser, model.reference),
+        lambda model: model_type_override(overrides, model.reference, row="class-name") is not None,
     )
     for model in _walk_bases_first(joins):
         if len(model.base_classes) > 1:
             model.flatten_conflicting_base_layouts(view, partial(flatten_base_layouts, parser))
-
-
-def replaced_by_type_override(parser: TypeOverriddenBasesHost, reference: Reference) -> bool:
-    """Return whether a model-level type override replaces the model of ``reference``.
-
-    The generator does not know the layout of the type that replaces it, as it does not know a configured base class.
-    """
-    return model_type_override(parser._model_type_override_imports, reference, row="class-name") is not None
-
-
-def inherits_type_override(parser: TypeOverriddenBasesHost, model: DataModel) -> bool:
-    """Return whether a base of ``model`` is a type that a model-level override put in place of a generated model.
-
-    The override replaced the base once its module was processed (``modules.apply_base_class_type_overrides``), which
-    keeps the model it replaced as the stand-in of the base; the model is then read as ``replaced_by_type_override``
-    reads it before.
-    """
-    stand_ins = _stand_ins_of(parser, "stand-ins")
-    return any(
-        (reference := stand_ins.get(id(base))) is not None and replaced_by_type_override(parser, reference)
-        for base in model.base_classes
-    )
 
 
 def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:

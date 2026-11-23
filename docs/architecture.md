@@ -1960,12 +1960,15 @@ right one.
   merge, [#6998](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6998), or a discriminator
   field that stayed a slot), is flattened once every module is processed
   (`parser/_passes/cross_module.py:flatten_conflicting_final_layouts`, with the layouts as the output has them, bases
-  with fewer ancestors first). Both passes treat a model that a type override replaces as a layout they do not know
-  (`parser/_passes/plans.py:replaced_by_type_override`; at L6 the base that took its place, `inherits_type_override`)
-  and leave a model that has it or inherits it as it is, unless L4 found the conflict before it reached the override;
-  a conflict there is rejected when the module is rendered (`model/msgspec.py:Struct._validate_base_layouts` through
-  `render_module_code`). Making those facts final earlier, as a discriminator tag plan and reuse groups computed
-  before L5, lets the L4 flattening read plans instead of predictions.
+  with fewer ancestors first). A model whose layout the generator does not know (a configured base, or a model that a
+  type override replaces) stops the L4 walk of the bases where it meets it, so L4 keeps the model whole unless it
+  found the conflict first; L4 reads an `x-python-import` or `--external-ref-mapping` base as the generated stand-in
+  it still is then. L6 reads it over the whole ancestry: a configured base, or a base that the output imports in
+  place of a generated model (a type override, `x-python-import` or `--external-ref-mapping`, recorded with its
+  stand-in), leaves a model that has or inherits it as it is, whichever of its bases conflict. A conflict there is rejected when the module is
+  rendered (`model/msgspec.py:Struct._validate_base_layouts` through `render_module_code`). Making those facts final
+  earlier, as a discriminator tag plan and reuse groups computed before L5, lets the L4 flattening read plans instead
+  of predictions.
 - **`--strip-default-none` constructor order** (Pydantic dataclasses, msgspec Structs): two readers answered "does the
   class body give this field a default?" differently. The Pydantic dataclass template keeps `= None` when the rendered
   type admits None, and msgspec Structs write `UNSET` or `None` for every optional field, while the constructor

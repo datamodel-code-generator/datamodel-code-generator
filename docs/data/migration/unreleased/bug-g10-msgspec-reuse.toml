@@ -51,7 +51,9 @@ covers = [
 
 [[change.cells]]
 input = [
+    "tests/data/graphql/interface_mro.graphql",
     "tests/data/jsonschema/allof_any_of_enum_branch_object_keywords.json",
+    "tests/data/jsonschema/schema_intersection",
     "tests/data/jsonschema/schema_intersection/allof_union_member_declarations.json",
     "tests/data/jsonschema/unique_items_by_value_inherited_fields.json",
 ]

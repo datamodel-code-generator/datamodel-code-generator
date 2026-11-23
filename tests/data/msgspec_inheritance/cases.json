@@ -980,5 +980,97 @@
       "{\"Z\": \"msgspec.inspect.Type\"}"
     ],
     "error": true
+  },
+  {
+    "name": "jsonschema_overridden_indirect_base",
+    "schema": "jsonschema_reuse_type_differs_indirect_base.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "Y": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"Y\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "x": 1,
+      "y": "y",
+      "d": 2
+    },
+    "invalid": {
+      "x": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_indirect_base",
+    "schema": "jsonschema_reuse_type_differs_indirect_base.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "Y": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"Y\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "x": 1,
+      "y": "y",
+      "d": 2
+    },
+    "invalid": {
+      "x": "s"
+    }
+  },
+  {
+    "name": "jsonschema_reuse_overridden_indirect_base",
+    "schema": "jsonschema_reuse_type_differs_indirect_base.json",
+    "format": "jsonschema",
+    "options": {
+      "reuse_model": true,
+      "type_overrides": {
+        "Y": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--reuse-model",
+      "--type-overrides",
+      "{\"Y\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": true
+  },
+  {
+    "name": "jsonschema_reuse_configured_indirect_base",
+    "schema": "jsonschema_reuse_type_differs_indirect_base.json",
+    "format": "jsonschema",
+    "options": {
+      "reuse_model": true,
+      "base_class_map": {
+        "Y": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--reuse-model",
+      "--base-class-map",
+      "{\"Y\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": true
+  },
+  {
+    "name": "jsonschema_reuse_imported_ancestor",
+    "schema": "jsonschema_reuse_imported_ancestor.json",
+    "format": "jsonschema",
+    "options": {
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model"
+    ],
+    "error": true
   }
 ]
