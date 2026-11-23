@@ -2685,7 +2685,9 @@ def reject_class_named_like_submodule(
     go by, so the run fails and names both. Under --rename-submodules-hidden-by-classes, where the renames of the
     submodules disagree with the names the packages bind here (``_final_class_seeds``), the run is parsed again with
     those names instead, and the refusal is kept for the run (``Parser.hidden_class_refusal``), which raises it if
-    the parse again does not import.
+    the parse again does not import. Otherwise the refusal waits for the import check of the output
+    (``render_modules``): where the output runs into an import cycle, the parse again lays the modules out anew and
+    the run raises it only if that parse does not import either.
     """
     config, treat_dot_as_module = parser.config, parser.treat_dot_as_module
     bindings = _package_bindings(contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module)
@@ -2700,8 +2702,8 @@ def reject_class_named_like_submodule(
         parser.import_cycle_seeds_to_apply = seeds
         parser.hidden_class_refusal = refusal
         parser.fails_to_import = refusal is not None
-    elif refusal is not None:
-        raise Error(refusal)
+    else:
+        parser.hidden_class_refusal = refusal
 
 
 def reject_unimportable_imports(
@@ -2765,7 +2767,9 @@ def render_modules(
     """Render the shared result mapping and apply final output-only transformations.
 
     Every relative import block that a module writes is kept (``_record_written_imports``) for the import check of a
-    modular output (``check_import_reads``).
+    modular output (``check_import_reads``). A class that a submodule of its package hides
+    (``reject_class_named_like_submodule``) is refused after that check, unless the output runs into an import cycle
+    and is parsed again.
     """
     future_imports = parser._import_ledger.extract_future(parser.imports, _FUTURE_IMPORTS)
     future_imports_str = str(future_imports)
@@ -2818,6 +2822,8 @@ def render_modules(
     check_import_reads(
         parser, results, contexts, merges, written, use_deferred_annotations=config.use_deferred_annotations
     )
+    if parser.import_cycle_seeds_to_apply is None and (refusal := parser.hidden_class_refusal) is not None:
+        raise Error(refusal)
     return results
 
 

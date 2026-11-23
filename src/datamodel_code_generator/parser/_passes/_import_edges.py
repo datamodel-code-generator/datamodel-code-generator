@@ -217,11 +217,19 @@ def init_loads(
     Its imports run before its classes are defined, so a module it loads, or one that a module it imports loads
     (``edges``, from ``module_import_edges``), binds its name in the package first and the class then takes the name.
     A module that the ``__init__.py`` loads runs before the class exists, so it reads the module under the name; any
-    other module runs after it and reads the class. The refusal of a class beside a module
+    other module runs after it and reads the class. An ancestor package of ``package`` has started running before the
+    ``__init__.py`` does, so an import of it loads nothing: the walk neither takes it nor follows its edges (its
+    imports and ``--all-exports-scope`` re-exports). The refusal of a class beside a module
     (``reject_class_named_like_submodule``) and the import of the models of that module from the module itself
     (``submodules_hidden_by_packages``) both read this.
     """
-    loaded = frozenset(reach([".".join(package)], lambda importer: edges.get(importer, ())))
+    running = {".".join(package[:depth]) for depth in range(len(package))}
+    loaded = frozenset(
+        reach(
+            [".".join(package)],
+            lambda importer: (target for target in edges.get(importer, ()) if target not in running),
+        )
+    )
     return (
         loaded if any(is_within_name(name, ".".join(module)) for module in modules for name in loaded) else frozenset()
     )

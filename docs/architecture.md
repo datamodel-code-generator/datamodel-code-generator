@@ -669,14 +669,17 @@ makes it import. Before the first module it refuses a package whose `__init__.py
 (`parser/_passes/imports.py:reject_class_named_like_submodule`): loading `pkg.Warn` binds `Warn` over the class of `pkg/__init__.py`,
 or over the class it re-exports as the forwarder of an import cycle merge. It reads the final class names and import plans, and passes the package
 whose `__init__.py` loads the module while its imports run, before its classes are defined or re-exported (`module_import_edges`, the
-`--all-exports-scope` re-exports and the imports of the forwarders included). Under `--rename-submodules-hidden-by-classes` it
+`--all-exports-scope` re-exports and the imports of the forwarders included; an import of a package above it loads nothing, as that
+package has started first). Under `--rename-submodules-hidden-by-classes` it
 first compares the names each package's `__init__.py` binds (its classes, or the names its forwarder re-exports) with the
 submodule renames of L3, which a later pass can contradict by renaming a class (`--field-type-collision-strategy rename-type`,
 an import that shadows it, `--collapse-root-models-name-strategy parent`). A package disagrees where a name it binds
 names a submodule, or where a submodule was renamed for a name it no longer binds; where the names of such packages grow
 the seeds (`ImportCycleSeeds.package_classes`, which only grow), the run parses again with them and keeps the refusal its
 output would raise (`Parser.hidden_class_refusal`), which `_parse_with_import_cycle_seeds` raises where it keeps that
-attempt; otherwise the refusal stands, for a module L3 cannot rename (the shared module of tree-scope reuse). `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
+attempt; otherwise the refusal stands, for a module L3 cannot rename (the shared module of tree-scope reuse). A refusal
+is raised after the import check of the output (`check_import_reads`), unless that check seeds a parse again: the
+refusal is then kept the same way, as the parse again lays out the modules of an import cycle anew. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
 (`model/__init__.py:get_data_model_types`). Rendering a type hint and collecting a field's imports write no
 nullability: `type_hint` renders the None of the type, of the nullable model it names and, for a union, of the members

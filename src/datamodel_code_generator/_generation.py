@@ -1991,8 +1991,8 @@ def _parse_with_import_cycle_seeds(run: _GenerationRun, parsed: _Attempt, replac
     kept where every module of its output imports; otherwise, or where a parse again fails, the first one is, so a
     layout only changes where that makes it import. The first parse reported the warnings, so the parses again report
     none; the parses not kept are disposed once the kept one is bound, as they share loaded documents. A kept parse
-    that holds the refusal of a class its package's submodule hides (``hidden_class_refusal``, which
-    --rename-submodules-hidden-by-classes keeps while it seeds a parse again) raises it once every parse is disposed,
+    that holds the refusal of a class its package's submodule hides (``hidden_class_refusal``, which a parse keeps
+    while it seeds a parse again) raises it once every parse is disposed,
     the parsers that the caller replaces by this run (``replaced``) included.
     """
     attempts = [parsed]

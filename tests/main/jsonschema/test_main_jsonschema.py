@@ -4420,7 +4420,7 @@ class a later rename moves off its name keeps its name.""",
         ),
         *(
             pytest.param(
-                "submodule_named_like_package_class_files",
+                input_name,
                 output_model_type,
                 "3.10",
                 ["--all-exports-scope", *scope_args],
@@ -4428,7 +4428,11 @@ class a later rename moves off its name keeps its name.""",
                     ("api", "Order", ['{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}']),
                     ("pkg", "Warn", ['{"count": 1}', '{"count": "x"}']),
                 ],
-                id=f"class-files-all-exports-{suffix}",
+                id=f"{prefix}-all-exports-{suffix}",
+            )
+            for input_name, prefix in (
+                ("submodule_named_like_package_class_files", "class-files"),
+                ("submodule_named_like_package_class_ancestor_import", "class-ancestor-import"),
             )
             for output_model_type, suffix, scope_args in (
                 ("pydantic_v2.BaseModel", "children", ["children"]),
@@ -4527,6 +4531,17 @@ class a later rename moves off its name keeps its name.""",
             ],
             id="renamed-forwarded",
         ),
+        pytest.param(
+            "submodule_named_like_package_class_root_cycle.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [],
+            [
+                ("", "Top", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("pkg", "Warn", ['{"count": 1, "common": {"code": "c"}}', '{"count": "x"}']),
+            ],
+            id="class-root-cycle",
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -4547,15 +4562,16 @@ def test_main_jsonschema_submodule_hidden_by_package(
     new import too (``Literal[Kind.book]``, not ``Literal[annotations.Kind.book]``, #6069), a const beside the enum and
     a tag of ``--use-enum-values-in-discriminator`` alike, without the module import the type it replaced counted;
     msgspec writes such tags as values and imports nothing for them. Under ``--all-exports-scope`` the export imports of
-    the ``__init__.py`` load the submodule: where they
-    run before ``api`` the old import worked and only its form changes; where ``from . import api`` runs first it
-    failed. The enum members that ``--set-default-enum-member`` writes into defaults follow the new import
-    (``Kind.book``, not ``annotations.Kind.book``), a model named like an import of the module or a shared one takes
-    another name (``Counter_1`` beside ``collections.Counter``), and an ``__init__.py`` that loads ``pkg.Warn`` only for
-    the class of an enum member literal keeps its class bound too. Where ``pkg/__init__.py`` imports ``typing.Any``
-    and the output loads ``pkg/Any.py`` (#6066), ``from . import Any`` gave ``typing.Any``, and once the submodule
-    was loaded its name replaced the import that the classes of the ``__init__.py`` name: the import is now
-    ``Any_aliased``, unless no module loads ``pkg/Any.py``, and the validation helper of
+    the ``__init__.py`` load the submodule: where they run before ``api`` the old import worked and only its form
+    changes; where ``from . import api`` runs first it failed, also where ``pkg/__init__.py`` imports
+    ``from .. import common``: the root package has started before it, so the root's export of ``api`` loads nothing
+    while ``pkg/__init__.py`` runs. The enum members that ``--set-default-enum-member`` writes into defaults follow the
+    new import (``Kind.book``, not ``annotations.Kind.book``), a model named like an import of the module or a shared
+    one takes another name (``Counter_1`` beside ``collections.Counter``), and an ``__init__.py`` that loads
+    ``pkg.Warn`` only for the class of an enum member literal keeps its class bound too. Where ``pkg/__init__.py``
+    imports ``typing.Any`` and the output loads ``pkg/Any.py`` (#6066), ``from . import Any`` gave ``typing.Any``, and
+    once the submodule was loaded its name replaced the import that the classes of the ``__init__.py`` name: the import
+    is now ``Any_aliased``, unless no module loads ``pkg/Any.py``, and the validation helper of
     ``--generate-schema-validators`` follows it (``BaseModel_aliased``). Where ``pkg/api.py`` imports
     ``pydantic.BaseModel`` or ``typing.Literal`` beside ``from . import BaseModel`` or ``from . import Literal``
     (#6105), the later import named both: the models of ``pkg/BaseModel.py`` and ``pkg/Literal.py`` are imported from
@@ -4569,8 +4585,10 @@ def test_main_jsonschema_submodule_hidden_by_package(
     beside the import of ``decimal.Decimal``, ``Warn`` of ``--collapse-root-models-name-strategy parent``) the run is
     parsed again and renames that submodule (``pkg/Warn_1_.py``), and keeps a submodule whose class a later rename moves
     off its name (``pkg/Warn.py`` beside ``Warn_1``); a class that an import cycle merge moves into ``pkg/_internal.py``
-    is still bound by ``pkg/__init__.py``, so its submodule stays renamed. The models are decoded after the first module
-    named is imported, in one import of the package.
+    is still bound by ``pkg/__init__.py``, so its submodule stays renamed. Where the first parse would refuse the class
+    but its output runs into an import cycle (``pkg/__init__.py`` imports ``Common`` from the root package, which
+    imports ``pkg``), the refusal waits for the parse again, whose merge into ``_internal.py`` writes the class and
+    imports. The models are decoded after the first module named is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -40814,6 +40832,12 @@ def test_main_jsonschema_refuses_keyword_module(
             id="forwarded",
         ),
         pytest.param(
+            "submodule_named_like_package_class_root_import",
+            [],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+            id="root-import",
+        ),
+        pytest.param(
             "shared_module_named_like_root_class",
             [
                 "--rename-submodules-hidden-by-classes",
@@ -40842,7 +40866,9 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     Importing ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class, so the models that use the class failed to import
     or decode (#6067). The names are the models' and the files', so the run fails and names the class and the module;
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
-    ``--all-exports-scope`` re-exports a module of it) the output works and is written. The class names are the final
+    ``--all-exports-scope`` re-exports a module of it) the output works and is written. An import of the root package
+    (``from .. import common``) loads nothing while the ``__init__.py`` runs, as the root has started before it, so the
+    root's own import of ``pkg.Warn`` runs after the class is defined and the run fails. The class names are the final
     ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a
     collapsed root model), and a class that an import cycle merge moves into ``pkg/_internal.py`` is bound by the
     ``__init__.py`` that re-exports it. The refusal names --rename-submodules-hidden-by-classes, which renames such a
