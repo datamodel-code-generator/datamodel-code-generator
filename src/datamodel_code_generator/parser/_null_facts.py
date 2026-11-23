@@ -53,6 +53,7 @@ NullSite: TypeAlias = Literal[
     "root-type",
     "multiple-types-root",
     "array-field",
+    "item",
     "enum",
     "enum-literal",
     "combined-branch",
@@ -87,6 +88,9 @@ NullSite: TypeAlias = Literal[
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
 * ``array-field``: the field of an array (``parser/_value_keywords.py:resolve_array_field_required_nullable``).
+* ``item``: the type an array item, a tuple item or a map value is built as
+  (``parser/_object_maps.py:with_item_null``), a type of an array, a map or an ``allOf`` that no field
+  holds the null of; a scalar type and an object model have written it by their own rows.
 * ``enum``: a null in the ``enum`` of an Enum class (``JsonSchemaParser.parse_enum``, ``_enum_entries_skip_null``).
 * ``enum-literal``: a null among the values of an enum written as a ``Literal``
   (``JsonSchemaParser._literal_values_type``).
@@ -144,6 +148,8 @@ NullRule: TypeAlias = Literal[
     "array-strict",
     "legacy-array-nullable-ungated",
     "array-not-nullable",
+    "strict-nullable-item",
+    "legacy-item-null-by-form",
     "enum-null-as-nullable",
     "enum-null-member",
     "enum-without-null",
@@ -225,6 +231,12 @@ NullRule: TypeAlias = Literal[
   ``nullable`` its schema declares.
 * ``legacy-array-nullable-ungated``: without it, ``nullable`` makes an array field optional and nullable.
 * ``array-not-nullable``: otherwise an array field with a default is not nullable, one without is undecided.
+* ``strict-nullable-item``: with ``--keep-null-of-nullable-items`` (``NullMode.keep_null_of_nullable_items``),
+  ``nullable: true`` under ``--strict-nullable`` adds null to the type of an item or a value of any form, unless the
+  schema lists an ``enum`` or sets a ``const``, which keep rejecting null as OpenAPI 3.0.3 reads them, or the
+  ``nullable`` is one a combined schema copied into its branch, whose union admits it (``legacy-map-copied-nullable``).
+* ``legacy-item-null-by-form``: otherwise a scalar type and an object model write their own null and an array, a map
+  or an ``allOf`` of one ``$ref`` write none, so such an item or value rejects null.
 * ``enum-null-as-nullable``: the null of a string or ``nullable`` enum makes its class nullable instead of a member.
 * ``enum-null-member``: the null of another enum is a member unless the class decides otherwise.
 * ``enum-without-null``: the enum lists no null.
@@ -302,7 +314,9 @@ class NullMode:
     that excludes null drops the null of the ``anyOf`` or ``oneOf`` members beside it (row
     ``type-excludes-member-null``). ``read_nullable_beside_type_list``: ``--read-nullable-beside-type-list``, under
     which the root of a ``type`` list with an object writes the null its ``nullable`` declares (row
-    ``multiple-types-root-declared``).
+    ``multiple-types-root-declared``). ``keep_null_of_nullable_items``: ``--keep-null-of-nullable-items``, under which
+    the type of an item or a value writes the null its ``nullable`` declares under ``--strict-nullable`` (row
+    ``strict-nullable-item``).
     """
 
     strict_nullable: bool = False
@@ -311,6 +325,7 @@ class NullMode:
     nullable_as_type_list: bool = False
     type_excludes_member_null: bool = False
     read_nullable_beside_type_list: bool = False
+    keep_null_of_nullable_items: bool = False
 
 
 NO_NULL_MODE: NullMode = NullMode()
@@ -486,6 +501,15 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0915
             if sources.nullable:
                 return NullFacts("legacy-array-nullable-ungated", admits_null=True, required=False)
             return NullFacts("array-not-nullable", admits_null=False if has_default else None, required=not has_default)
+        case "item":
+            if (
+                mode.strict_nullable
+                and mode.keep_null_of_nullable_items
+                and sources.nullable is True
+                and not (sources.enum_set or sources.const_set or sources.copied_nullable)
+            ):
+                return NullFacts("strict-nullable-item", admits_null=True)
+            return NullFacts("legacy-item-null-by-form", admits_null=False)
         case "enum":
             if not sources.enum_null:
                 return NullFacts("enum-without-null", admits_null=False)

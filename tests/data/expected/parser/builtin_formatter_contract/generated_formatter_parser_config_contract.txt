@@ -86,10 +86,12 @@ reviewed-safe keep_enum_member_values
 reviewed-safe keep_false_dataclass_arguments
 reviewed-safe keep_field_defaults_off_branch_roots
 reviewed-safe keep_model_order
+reviewed-safe keep_null_of_nullable_items
 reviewed-safe keep_reference_null_on_collapsed_root_models
 reviewed-safe keep_reference_null_on_merged_models
 reviewed-safe keep_self_referencing_array_items
 reviewed-safe keep_shared_members_on_collapsed_root_models
+reviewed-safe keep_string_keywords_beside_formats
 reviewed-safe keyword_only
 reviewed-safe known_third_party
 reviewed-safe merge_msgspec_str_like_union_members

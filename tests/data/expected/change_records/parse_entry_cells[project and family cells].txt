@@ -1,0 +1,25 @@
+{
+ "cells": [
+  {
+   "input": [
+    "project:a/*"
+   ],
+   "backends": null,
+   "options": null,
+   "input_file_type": "openapi",
+   "aspects": null,
+   "match": null
+  },
+  {
+   "input": [
+    "family:*"
+   ],
+   "backends": null,
+   "options": null,
+   "input_file_type": "jsonschema",
+   "aspects": null,
+   "match": null
+  }
+ ],
+ "problems": []
+}

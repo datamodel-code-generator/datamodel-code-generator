@@ -1,22 +1,16 @@
-"""Debug checks that watch how the passes of one parse change the model graph.
+"""The finality check of how the passes of one parse change the model graph (``FACT_FINALITY``).
 
-Two check areas share this module. With neither variable set, a parse loads nothing of it, and the scopes the wrappers
-of ``parse.py`` open around the pipeline of ``parser/base.py`` (the pass scopes of segments and modules, the scope of
-each pass and decision, the module checkpoints) are one shared no-op.
+With ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` off, a parse loads nothing of this module, and the scopes the
+wrappers of ``parse.py`` open around the pipeline of ``parser/base.py`` (the scope of each pass and decision, the module
+checkpoints) are one shared no-op. That graph facts change only inside store operations is heki's check (the
+``write-owners`` contracts of ``scripts/heki.toml``), not this module's.
 
-``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``: after L1, a data type, a field or a model may change a fact or
-presentation attribute of ``ATTRIBUTE_FACTS`` only while a ``GenerationStore`` operation that some row names in
-``store_ops`` runs. Any such operation accepts any guarded write; which pass and phase may write which attribute is the
-finality check's. A write outside every store operation is reported with the line that wrote it, the parser method it
-ran in and the pass scope and phase of the pipeline (``ParseChecks.scope``), once per line and parse; the construction
-of an object (its ``__init__`` and what that calls) writes freely.
-
-``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: every pass runs inside ``ParseChecks.fact_pass`` with its declaration
-from ``scripts/pass_decls.py`` (``parse.run_pass``). The parse keeps one fingerprint per model: the
-values of the ``fact`` rows of ``ATTRIBUTE_FACTS`` on the model, its fields and every data type of their types and of
-its bases, holding the objects it keys. When a pass ends, the fingerprints of the models it touched are compared with
-the stored ones: for a module pass the models of its module and the models they reference, the models that guarded
-writes and store operations reached during the pass, and the models the pass reported changed
+Every pass runs inside ``ParseChecks.fact_pass`` with its declaration from ``scripts/pass_decls.py``
+(``parse.run_pass``). The parse keeps one fingerprint per model: the values of the ``fact`` rows of ``ATTRIBUTE_FACTS``
+on the model, its fields and every data type of their types and of its bases, holding the objects it keys. When a pass
+ends, the fingerprints of the models it touched are compared with the stored ones: for a module pass the models of its
+module and the models they reference, the models that guarded writes and store operations reached during the pass,
+and the models the pass reported changed
 (``GenerationStore.note_changed_models``, ``DataModelFieldBase.invalidate_semantic_caches``). With
 ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP`` on as well, a global pass that transforms or repairs compares
 every model. Every model is compared whenever the pipeline enters a phase (``GenerationStore.enter_phase``), which
@@ -55,12 +49,12 @@ or ``data_types`` after B1, although ``FIELD_TYPES`` of those rows is final at B
 violations of today's pipeline with a witness each; they are reported with ``report:<path>`` and never raise.
 Presentation rows, parser state, module imports and rows a model class computes with a property are not fingerprinted.
 
-Machinery shared by both areas: ``parse_checks`` opens the state of one parse when either area is on, and
-``ParseChecks.arm`` arms it at the end of L1 (``parse.run_steps``): ``DataType``, ``DataModelFieldBase`` and
-``DataModel`` get a ``__setattr__`` guard (they inherit theirs, so leaving deletes it again), each store operation of
-the parser's store runs in a write scope, and the list attributes of the parsed graph, and the lists store operations
-set, are replaced by ``_GuardedList`` copies: a list keeps being shared by the objects that shared it, but not with
-other references to the original list, and ``type(x) is list`` is false for it. The copies outlive the parse; once no
+Machinery: ``parse_checks`` opens the state of one parse, and ``ParseChecks.arm`` arms it at the end of L1
+(``parse.run_steps``): ``DataType``, ``DataModelFieldBase`` and ``DataModel`` get a ``__setattr__`` guard (they inherit
+theirs, so leaving deletes it again), each store operation of the parser's store runs in an operation scope
+(``ParseChecks.operations``), and the list attributes of the parsed graph, and the lists store operations set, are
+replaced by ``_GuardedList`` copies: a list keeps being shared by the objects that shared it, but not with other
+references to the original list, and ``type(x) is list`` is false for it. The copies outlive the parse; once no
 parse is armed they act as plain lists, and they copy and pickle as plain lists. Writes through ``object.__setattr__``,
 through ``__dict__``, into dict attributes, and into lists that an object got outside a store operation after arming are
 not seen by the guards; the finality check sees their effect at the next comparison. A store operation that writes one
@@ -79,14 +73,13 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field, fields, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum, unique
-from functools import cache, cached_property, wraps
+from functools import cached_property, wraps
 from inspect import getattr_static
-from itertools import chain, repeat, takewhile, zip_longest
+from itertools import chain, repeat, zip_longest
 from operator import is_, methodcaller
 from pathlib import Path
 from threading import Lock
-from traceback import walk_stack
-from types import CodeType, MappingProxyType, ModuleType
+from types import MappingProxyType, ModuleType
 from typing import TYPE_CHECKING, Any, Final, SupportsIndex
 from weakref import ref
 
@@ -112,13 +105,11 @@ from scripts import pass_decls as decls
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
     RENDER_FACT_FREEZE_POINTS,
-    STORE_MEMBERS,
     Access,
     AttributeFact,
     Fact,
     FactKind,
     FreezePoint,
-    MemberUse,
     RenderFact,
 )
 from scripts.pass_decls import PassDecl, PassKind, Scope
@@ -127,7 +118,6 @@ from tests.checks.areas import Area, Mode
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Sequence
-    from types import FrameType
 
     from datamodel_code_generator.parser.generation import GenerationStore
 
@@ -145,7 +135,7 @@ __all__ = [
 
 NO_SCOPE: Final = nullcontext()
 PARSE_CHECKS: Final[ContextVar[ParseChecks | None]] = ContextVar("parse_checks", default=None)
-"""The checks of the parse that runs, while ``STORE_WRITES`` or ``FACT_FINALITY`` is on."""
+"""The checks of the parse that runs, while ``FACT_FINALITY`` is on."""
 
 
 class GuardedView:
@@ -158,9 +148,6 @@ class GuardedView:
 
 _PACKAGE_ROOT: Final = Path(datamodel_code_generator.__file__).parent
 _PACKAGE: Final = _PACKAGE_ROOT.name
-_SOURCE_PREFIX: Final = f"src/{_PACKAGE}"
-_STORE_MODULE: Final = f"{_SOURCE_PREFIX}/parser/generation.py"
-_CONSTRUCTORS: Final = frozenset({"__init__", "__post_init__", "model_post_init"})
 _GUARDED_KINDS: Final = frozenset({FactKind.FACT, FactKind.PRESENTATION})
 _GUARDED_ACCESS: Final = frozenset({Access.ATTRIBUTE, Access.CONTAINER})
 _GUARDED_CLASSES: Final = (DataType, DataModelFieldBase, DataModel)
@@ -178,7 +165,6 @@ _LIST_MUTATORS: Final = (
     "reverse",
     "sort",
 )
-_KEYED_MUTATORS: Final = frozenset({"__delitem__", "__setitem__", "pop"})
 
 
 def _rows_by_owner() -> dict[str, tuple[frozenset[str], frozenset[str]]]:
@@ -209,26 +195,6 @@ def _guarded_names(cls: type) -> tuple[frozenset[str], frozenset[str]]:
 _STORE_OPERATIONS: Final = frozenset(store_op for row in ATTRIBUTE_FACTS for store_op in row.store_ops)
 
 
-def _module_name(path: str) -> str:
-    """Return the dotted module of a path relative to the package directory."""
-    return ".".join((_PACKAGE, *Path(path).with_suffix("").parts))
-
-
-def _store_methods() -> dict[type, frozenset[str]]:
-    """Return, by owner class, the methods of the ``CALL`` rows of ``STORE_MEMBERS`` (modules imported above)."""
-    methods: dict[type, set[str]] = {}
-    for member in STORE_MEMBERS:
-        if member.use is MemberUse.CALL:
-            methods.setdefault(getattr(sys.modules[_module_name(member.path)], member.owner), set()).add(member.name)
-    return {owner: frozenset(names) for owner, names in methods.items()}
-
-
-_STORE_METHODS: Final = _store_methods()
-"""The methods that write the graph for the store (``STORE_MEMBERS``): their writes are the store's while it runs them.
-
-heki lets only the store module and the methods' own classes call them; a store function may run one outside the
-window of a named operation (after the ``yield`` of a replacement it hands a pass), and that write is the store's too.
-"""
 _ITEM_OPERATIONS: Final = frozenset(
     store_op for row in ATTRIBUTE_FACTS if row.access is Access.ITEM for store_op in row.store_ops
 )
@@ -239,72 +205,19 @@ model of another module that the pass compares nowhere else.
 """
 
 
-def _source_path(filename: str) -> str:
-    """Return a writer's file as the store checker names it: package files from ``src/``, others as given."""
-    path = Path(filename)
-    if path.is_relative_to(_PACKAGE_ROOT):
-        return f"{_SOURCE_PREFIX}/{path.relative_to(_PACKAGE_ROOT).as_posix()}"
-    return path.as_posix()
-
-
-def _key_kind(operation: str, args: tuple[Any, ...]) -> str | None:
-    """Return how a list mutator addresses its list: by ``slice``, by ``index``, or as a whole (None)."""
-    if operation not in _KEYED_MUTATORS or not args:
-        return None
-    return "slice" if isinstance(args[0], slice) else "index"
-
-
-@cache
-def _is_store_method(code: CodeType) -> bool:
-    """Return whether ``code`` is a method of ``_STORE_METHODS`` or an override of one in a class of the package.
-
-    The method is found by its module and qualified name: a function that only shares a member's name is none.
-    """
-    path = Path(code.co_filename)
-    if not path.is_relative_to(_PACKAGE_ROOT):
-        return False
-    owner_name, _, name = code.co_qualname.rpartition(".")
-    owner = getattr(sys.modules.get(_module_name(path.relative_to(_PACKAGE_ROOT).as_posix())), owner_name, None)
-    return isinstance(owner, type) and any(
-        name in names and issubclass(owner, base) for base, names in _STORE_METHODS.items()
-    )
-
-
-def _run_by_the_store(frame: FrameType) -> bool:
-    """Return whether ``frame`` runs a method of ``_STORE_METHODS`` that the store module called.
-
-    The methods may call each other; the frame right after the chain of them is a function of the store module. A
-    callback a pass hands the store is no such chain, also when it calls one of the methods.
-    """
-    caller = frame
-    while caller is not None and _is_store_method(caller.f_code):
-        caller = caller.f_back
-    return caller is not frame and caller is not None and _source_path(caller.f_code.co_filename) == _STORE_MODULE
-
-
-def _qualified_name(frame: FrameType) -> str:
-    return getattr(frame.f_code, "co_qualname", frame.f_code.co_name)
-
-
-def _stack(frame: FrameType) -> Iterator[FrameType]:
-    return (item for item, _ in walk_stack(frame))
-
-
 @final
 class _GuardedList(list[Any]):  # ruff: ignore[subclass-builtin]
     """A list attribute of the parsed graph whose mutators report to the checks of the parse."""
 
-    __slots__ = ("_attribute", "_holder", "_owner")
+    __slots__ = ("_attribute", "_holder")
 
     _attribute: str
     _holder: ref[Any]
-    _owner: str
 
     @classmethod
     def of(cls, items: Iterable[Any], holder: object, attribute: str) -> _GuardedList:
         """Return a guarded list holding ``items``, as the attribute of ``holder``."""
         guarded = cls(items)
-        guarded._owner = type(holder).__name__
         guarded._holder = ref(holder)
         guarded._attribute = attribute
         return guarded
@@ -323,11 +236,17 @@ def _guarded_mutator(name: str) -> Callable[..., Any]:
     mutate = getattr(list, name)
 
     def mutator(self: _GuardedList, *args: Any, **kwargs: Any) -> Any:
-        if (checks := _current_checks()) is None or not checks.armed:
+        if (
+            (checks := _current_checks()) is None
+            or (finality := checks.finality) is None
+            or (holder := self._holder()) is None
+        ):
             return mutate(self, *args, **kwargs)
-        before = checks.on_list_write(self, name, args)
+        finality.touch(holder)
+        before = tuple(self)
         result = mutate(self, *args, **kwargs)
-        checks.judge_list_write(self, before)
+        if len(before) != len(self) or any(old is not new for old, new in zip(before, self, strict=True)):
+            finality.judge_write(holder, self._attribute)
         return result
 
     mutator.__name__ = name
@@ -340,8 +259,8 @@ for _name in _LIST_MUTATORS:
 
 def _guarded_setattr(original: Callable[[Any, str, Any], None]) -> Callable[[Any, str, Any], None]:
     def __setattr__(self: Any, name: str, value: Any) -> None:  # ruff: ignore[dunder-function-name]
-        if (checks := _current_checks()) is not None and checks.armed:
-            value = checks.on_setattr(self, name, value, sys._getframe(1))
+        if (checks := _current_checks()) is not None and (finality := checks.finality) is not None:
+            value = checks.on_setattr(finality, self, name, value)
         original(self, name, value)
 
     return __setattr__
@@ -1710,34 +1629,21 @@ class _GuardedItems(Mapping[str, Any]):
 @final
 @dataclass(slots=True)
 class ParseChecks:
-    """The debug checks of one parse: the store write guard and the finality check, whichever areas are on."""
+    """The finality check of one parse."""
 
-    parser: object
-    writes: Mode | None
-    """How the store write guard handles a write outside store operations, or None when the area is off."""
-    finality_mode: Mode | None
+    finality_mode: Mode
     finality: _Finality | None = None
-    scopes: list[tuple[str, Phase]] = field(default_factory=list)
-    """The pass scopes of the pipeline open now, innermost last."""
+    """The finality check from the end of L1 on, while the parse is armed."""
     operations: list[str] = field(default_factory=list)
-    """The store operations running now, innermost last."""
-    _store: GenerationStore | None = None
+    """The store operations running now, innermost last: the lists they set become guarded lists."""
     passes: dict[int, tuple[object, object]] = field(default_factory=dict)
     """The instrumented spec of each pass that ran, by the id of its spec, with the spec (``parse.run_pass``)."""
-    _reported: set[tuple[str, int, str, str, str | None]] = field(default_factory=set)
+    _store: GenerationStore | None = None
+    """The store ``arm`` started to guard, set first so that ``disarm`` undoes a partial arming too."""
     _attributes: dict[type, tuple[frozenset[str], frozenset[str]]] = field(default_factory=dict)
 
-    @property
-    def armed(self) -> bool:
-        """Whether L1 is over, so that writes are watched."""
-        return self._store is not None
-
-    def scope(self, name: str, phase: Phase) -> AbstractContextManager[None]:
-        """Name the scope and phase that guarded writes inside are reported with."""
-        return _scope(self, name, phase)
-
     def fact_pass(self, decl: PassDecl, models: Sequence[DataModel] | None) -> AbstractContextManager[None]:
-        """Run the pass ``decl`` declares inside the finality check; a no-op when that area is off."""
+        """Run the pass ``decl`` declares inside the finality check; a no-op before the parse is armed."""
         return NO_SCOPE if (finality := self.finality) is None else finality.pass_scope(decl, models)
 
     @contextmanager
@@ -1746,7 +1652,7 @@ class ParseChecks:
 
         Such a pass may change no memo revision, entry of the import ledger, parser attribute or run-state field
         (another object, unless equal; the same container, unless its size changed; the value of a ``cached_property``
-        is a read and left out) and warn nothing; then the finality check, when it is on, compares every model under
+        is a read and left out) and warn nothing; then the finality check, once armed, compares every model under
         ``decl`` without its writes, named ``<pass> (trigger absent)``, so a changed fact is ``undeclared``. An
         exception propagates, as the skip would not raise.
         """
@@ -1772,41 +1678,39 @@ class ParseChecks:
                 )
 
     def module_checkpoint(self, models: list[DataModel]) -> AbstractContextManager[None]:
-        """Process the module whose models are ``models`` inside the finality check; a no-op when that area is off."""
+        """Process the module of ``models`` inside the finality check; a no-op before the parse is armed."""
         return NO_SCOPE if (finality := self.finality) is None else finality.module_scope(models)
 
-    def arm(self, store: GenerationStore, scope: str) -> None:
-        """Guard the classes, the lists of the parsed graph and the store operations, in ``scope`` of SETTLE."""
+    def arm(self, store: GenerationStore) -> None:
+        """Guard the classes, the lists of the parsed graph and the store operations, and start the finality check."""
         self._store = store
-        self.scopes.append((scope, Phase.SETTLE))
         _CLASS_GUARDS.install()
         for name in sorted(_STORE_OPERATIONS):
             setattr(store, name, _store_operation(self, name, getattr(store, name)))
         lists: dict[int, _GuardedList] = {}
         for owner in _graph_objects(store.models):
             self._guard_lists(owner, lists)
-        if (mode := self.finality_mode) is not None:
-            finality = self.finality = _Finality(
-                mode,
-                store,
-                self._guard_lists,
-                sweep=areas.mode(Area.FACT_FINALITY_SWEEP) is not None,
-            )
-            enter_phase = store.enter_phase
-            note_changed_models = store.note_changed_models  # ty: ignore[deprecated]
+        finality = self.finality = _Finality(
+            self.finality_mode,
+            store,
+            self._guard_lists,
+            sweep=areas.mode(Area.FACT_FINALITY_SWEEP) is not None,
+        )
+        enter_phase = store.enter_phase
+        note_changed_models = store.note_changed_models  # ty: ignore[deprecated]
 
-            def note_checked_models(*models: object) -> None:
-                finality.mark(models)
-                note_changed_models(*models)  # ty: ignore[deprecated]
+        def note_checked_models(*models: object) -> None:
+            finality.mark(models)
+            note_changed_models(*models)  # ty: ignore[deprecated]
 
-            def enter_checked_phase(phase: Phase) -> None:
-                finality.leave_phase()
-                enter_phase(phase)
-                if phase is Phase.IMPORTS:
-                    finality.check_ordering_reads()
+        def enter_checked_phase(phase: Phase) -> None:
+            finality.leave_phase()
+            enter_phase(phase)
+            if phase is Phase.IMPORTS:
+                finality.check_ordering_reads()
 
-            store.__dict__["enter_phase"] = enter_checked_phase
-            store.__dict__["note_changed_models"] = note_checked_models
+        store.__dict__["enter_phase"] = enter_checked_phase
+        store.__dict__["note_changed_models"] = note_checked_models
 
     def disarm(self) -> None:
         """Give the classes and the store back their own behaviour."""
@@ -1833,83 +1737,16 @@ class ParseChecks:
                     guarded = lists[id(value)] = _GuardedList.of(value, owner, name)
                 values[name] = guarded
 
-    def on_setattr(self, owner: object, name: str, value: Any, frame: FrameType) -> Any:
+    def on_setattr(self, finality: _Finality, owner: object, name: str, value: Any) -> Any:
         """Watch a guarded write; a list a store operation sets becomes a guarded list."""
         attributes, containers = self._guarded(type(owner))
         if name not in attributes:
             return value
-        if (finality := self.finality) is not None:
-            finality.touch(owner)
-            finality.judge_write(owner, name, value)
-        if self.operations:
-            if name in containers and type(value) is list:
-                return _GuardedList.of(value, owner, name)
-            return value
-        if (mode := self.writes) is not None and not _constructing(owner, frame):
-            self.report_write(mode, type(owner).__name__, name, "=", None, frame)
+        finality.touch(owner)
+        finality.judge_write(owner, name, value)
+        if self.operations and name in containers and type(value) is list:
+            return _GuardedList.of(value, owner, name)
         return value
-
-    def on_list_write(self, guarded: _GuardedList, operation: str, args: tuple[Any, ...]) -> tuple[Any, ...] | None:
-        """Watch a mutation of a guarded list by the caller of its mutator; return the items to judge it against."""
-        before = None
-        if (finality := self.finality) is not None and (holder := guarded._holder()) is not None:
-            finality.touch(holder)
-            before = tuple(guarded)
-        if (mode := self.writes) is not None and not self.operations:
-            self.report_write(
-                mode,
-                guarded._owner,
-                guarded._attribute,
-                operation,
-                _key_kind(operation, args),
-                sys._getframe(2),
-            )
-        return before
-
-    def judge_list_write(self, guarded: _GuardedList, before: tuple[Any, ...] | None) -> None:
-        """Judge a mutation of a guarded list that changed its items; one that left them as they were writes nothing."""
-        if (
-            before is not None
-            and (finality := self.finality) is not None
-            and (holder := guarded._holder()) is not None
-            and (len(before) != len(guarded) or any(old is not new for old, new in zip(before, guarded, strict=True)))
-        ):
-            finality.judge_write(holder, guarded._attribute)
-
-    def report_write(
-        self, mode: Mode, owner: str, attribute: str, operation: str, key: str | None, frame: FrameType
-    ) -> None:
-        """Raise for a write outside store operations, or report it once per writing line and parse.
-
-        A write a method of ``_STORE_METHODS`` makes while a function of the store module runs it is the store's.
-        """
-        if _run_by_the_store(frame):
-            return
-        filename, line = frame.f_code.co_filename, frame.f_lineno
-        if (seen := (filename, line, attribute, operation, key)) in self._reported:
-            return
-        self._reported.add(seen)
-        scope, phase = self.scopes[-1]
-        path = _source_path(filename)
-        function = _qualified_name(frame)
-        caller = next(
-            (_qualified_name(item) for item in _stack(frame) if item.f_locals.get("self") is self.parser), None
-        )
-        written = f"{owner}.{attribute}" if operation == "=" else f"{owner}.{attribute}.{operation}()"
-        mode.violation(
-            f"{written} is written outside store operations by {function} ({path}:{line}), "
-            f"in {caller or scope} during {phase.name}",
-            owner=owner,
-            attribute=attribute,
-            operation=operation,
-            key=key,
-            path=path,
-            line=line,
-            function=function,
-            caller=caller,
-            scope=scope,
-            phase=phase.name,
-        )
 
 
 def _sized(value: object) -> tuple[object, int | None]:
@@ -1942,12 +1779,6 @@ def _unchanged(before: tuple[object, int | None] | None, after: tuple[object, in
     """Return whether a value of the snapshot stayed: the same object of the same size, or an equal one."""
     (old, old_size), (new, new_size) = before or (_MISSING, None), after or (_MISSING, None)
     return old_size == new_size and (old is new or old == new)
-
-
-def _constructing(owner: object, frame: FrameType) -> bool:
-    """Return whether the write comes from the construction of ``owner``: its ``__init__`` and what that calls."""
-    frames = takewhile(lambda item: item.f_locals.get("self") is owner, _stack(frame))
-    return any(item.f_code.co_name in _CONSTRUCTORS for item in frames)
 
 
 def _graph_objects(models: Iterable[Any]) -> Iterator[object]:
@@ -1998,24 +1829,15 @@ def guarded_facts(finality: _Finality, facts: FinalFacts) -> FinalFacts:
 
 
 @contextmanager
-def parse_checks(parser: object) -> Generator[None, None, None]:
-    """Open the checks of one parse of ``parser``, when an area that watches writes is on (``parse.run_steps``).
+def parse_checks(mode: Mode) -> Generator[None, None, None]:
+    """Open the finality check of one parse, which handles its violations as ``mode`` says (``parse.run_steps``).
 
     A violation raises ``CheckFailure`` when the mode raises.
     """
-    checks = ParseChecks(parser, areas.mode(Area.STORE_WRITES), areas.mode(Area.FACT_FINALITY))
+    checks = ParseChecks(mode)
     token = PARSE_CHECKS.set(checks)
     try:
         yield
     finally:
         PARSE_CHECKS.reset(token)
         checks.disarm()
-
-
-@contextmanager
-def _scope(checks: ParseChecks, name: str, phase: Phase) -> Generator[None, None, None]:
-    checks.scopes.append((name, phase))
-    try:
-        yield
-    finally:
-        checks.scopes.pop()

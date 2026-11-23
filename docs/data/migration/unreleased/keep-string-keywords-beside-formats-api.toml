@@ -1,0 +1,14 @@
+[[change]]
+id = "keep-string-keywords-beside-formats-api"
+category = "api"
+title = "Public names for --keep-string-keywords-beside-formats"
+summary = "The option adds its config fields; nothing is removed or changed."
+refs = ["#7198", "#7345", "#7181"]
+decision = ["#7198", "#7345", "#7181"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

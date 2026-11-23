@@ -1473,6 +1473,27 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Null kept on nullable items",
+        config=PresetConfig(keep_null_of_nullable_items=True),
+        description=(
+            "Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, a "
+            "map value of any form, a nested array, a map or an allOf of one $ref included, as it "
+            "is written for a scalar or an object. The option adds no null to an enum or a const; an enum that "
+            "lists null admits it with or without the option."
+        ),
+    ),
+    PresetOptionGroup(
+        title="String keywords kept beside formats",
+        config=PresetConfig(keep_string_keywords_beside_formats=True),
+        description=(
+            "Keep the minLength, maxLength and pattern beside a string format that Pydantic output writes as a "
+            "class no constr call constrains: an email takes them in Annotated[EmailStr, Field(...)], "
+            "a byte writes them in front of the base64 decoding and a uri is the plain string they check; an output "
+            "that writes a date or UUID format as str, as msgspec does, keeps the keywords an allOf member adds "
+            "beside a $ref to it."
+        ),
+    ),
+    PresetOptionGroup(
         title="References in their schema resources",
         config=PresetConfig(read_refs_in_their_resources=True),
         description=(

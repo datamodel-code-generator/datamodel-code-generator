@@ -9733,20 +9733,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser._get_constrained_data_type"
-rule_code = "MUT204"
-target = "datamodel_code_generator._constraint_applicability.constrained_type_keyword_order"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser._get_constrained_data_type"
-rule_code = "MUT204"
-target = "datamodel_code_generator._constraint_applicability.other_kind_keywords"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser._get_ref_body"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"

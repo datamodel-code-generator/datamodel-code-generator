@@ -10,8 +10,8 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 63 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 43 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 74 | Model generation behavior |
+| 🏷️ [Field Customization](field-customization.md) | 44 | Field naming and docstring behavior |
+| 🏗️ [Model Customization](model-customization.md) | 75 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -262,10 +262,12 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots)
 - [`--keep-first-character-of-path-keys`](openapi-only-options.md#keep-first-character-of-path-keys)
 - [`--keep-model-order`](model-customization.md#keep-model-order)
+- [`--keep-null-of-nullable-items`](model-customization.md#keep-null-of-nullable-items)
 - [`--keep-reference-null-on-collapsed-root-models`](model-customization.md#keep-reference-null-on-collapsed-root-models)
 - [`--keep-reference-null-on-merged-models`](model-customization.md#keep-reference-null-on-merged-models)
 - [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items)
 - [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models)
+- [`--keep-string-keywords-beside-formats`](field-customization.md#keep-string-keywords-beside-formats)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
 ### L {#l}

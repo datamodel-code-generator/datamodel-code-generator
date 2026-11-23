@@ -265,7 +265,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "without `--strict-nullable` (`legacy-root-type-nullable-ungated`, `legacy-array-nullable-ungated`; "
             "`allOf` sites read it so by the allOf intersection's null rule, `all-of-own-null`), a copied `nullable` "
             "leaves a map without "
-            "null (`legacy-map-copied-nullable`), a `Literal` enum reads its null value alone "
+            "null (`legacy-map-copied-nullable`), an array, a map or an `allOf` of one `$ref` as an item, a value or "
+            "a union member writes no null (`legacy-item-null-by-form`), a `Literal` enum reads its null value alone "
             "(`legacy-enum-literal-value-only`), and OpenAPI's `nullable` counts as a type list only after the type is "
             "first built (`legacy-nullable-as-type-list`); the step that writes rendered nullability once at render "
             "preparation deletes the three use-site rows "
@@ -301,7 +302,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`JsonSchemaParser.parse_combined_schema`), `_enum_entries_skip_null`, `JsonSchemaParser`: "
             "`get_object_field`, `_get_data_type`, `_get_python_type_override`, `_object_nullable`, "
             "`_create_registered_root_model`, `get_ref_data_type` and `_cache_ref_data_type_facts`, "
-            "`_parse_ref_nullable_only_item`, `_build_constrained_type_union`, `parse_array_fields`, "
+            "`_parse_ref_nullable_only_item`, "
+            "`_build_constrained_type_union`, `parse_array_fields`, "
             "`_parse_root_type_with_context`, `_parse_multiple_types_with_properties`, `parse_enum`, "
             "`_literal_values_type`, `_add_nullable_combined_schema_branches`, `_enforced_value_keywords`, "
             "`_reads_enum_as_const`, `_all_of_part_admits_null` (site `all-of-union`, read by `parse_all_of` for the "
@@ -310,7 +312,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`merge_inherited_type_shape_dict`, `mark_partial_inherited_fields`, `get_inherited_schema_types`; "
             "`parser/_value_keywords.py`: `resolve_array_field_required_nullable`, `extract_const_enum_from_combined`; "
             "`parser/_all_of_values.py`: `merge_all_of_root_schema`, `all_of_root_value_schema`; "
-            "`parser/_object_maps.py:object_map_admits_null`; `parser/graphql.py:GraphQLParser.parse_field` "
+            "`parser/_object_maps.py`: `object_map_admits_null`, `with_item_null` (site `item`, read where an array "
+            "item, a tuple item or a map value is typed); `parser/graphql.py:GraphQLParser.parse_field` "
             "(`GraphQLParser._null_mode`); the converters `parser/avro.py` (`NULL_SCHEMA`), `parser/protobuf.py` "
             "(`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py:_XMLSchemaConverter._apply_common_element_metadata` "
             "(`nillable`)"
@@ -355,6 +358,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_all_of_values.py", "merge_all_of_root_schema"),
             Home("parser/_all_of_values.py", "all_of_root_value_schema"),
             Home("parser/_object_maps.py", "object_map_admits_null"),
+            Home("parser/_object_maps.py", "with_item_null"),
             Home("parser/graphql.py", "GraphQLParser.parse_field"),
             Home("parser/graphql.py", "GraphQLParser._null_mode"),
             Home("parser/xmlschema.py", "_XMLSchemaConverter._apply_common_element_metadata"),
@@ -645,6 +649,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`legacy-root-tuple-lengths`, `legacy-root-records-by-option`, `legacy-all-of-root-format-kinds`, "
             "`legacy-undeclared-keywords-off-literal`, `legacy-override-keeps-string-keywords`, "
             "`legacy-class-override-keeps-container`, `legacy-anyurl-keeps-string-keywords`, "
+            "`legacy-format-types-drop-string-keywords`, "
             "`legacy-reference-takes-every-keyword`, `legacy-length-keywords-across-kinds` keep today's disagreeing "
             "sites"
         ),
@@ -670,6 +675,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_constraint_applicability.py", "property_consumed_keywords"),
             Home("_constraint_applicability.py", "keyword_kinds"),
             Home("_constraint_applicability.py", "all_of_root_keyword_kinds"),
+            Home("_constraint_applicability.py", "format_keyword_form"),
             Home("_constraint_applicability.py", "constrained_type_keyword_order"),
             Home("_constraint_applicability.py", "shape_meta_keywords"),
             Home("_constraint_applicability.py", "meta_keywords"),
@@ -698,7 +704,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`key_count_keywords`, `member_keywords`, `literal_number_keywords`, `DeclaredKinds`, `kind_keywords`, "
             "`declared_keywords`, `other_kind_keywords`, `split_declared_keywords`, `declared_string_keywords_taken`, "
             "`length_reading`, `untaken_values`, `undeclared_keywords_taken`, `property_consumed_keywords`, "
-            "`keyword_kinds`, `all_of_root_keyword_kinds`, `constrained_type_keyword_order`, `shape_meta_keywords`, "
+            "`keyword_kinds`, `all_of_root_keyword_kinds`, `format_keyword_form`, `constrained_type_keyword_order`, "
+            "`shape_meta_keywords`, "
             "`meta_keywords`, `overridden_declared_constraints`, `resplit_overridden_constraints`, `untaken_minimums`; "
             "`ConstraintOptions`, `enforced_keywords`, `literal_enforces_every_keyword`, `writes_beside_literal`, "
             "`literal_met_keywords`, `field_form_zero_bound`, `decimal_field_form`, `strict_decimal_multiple`, "
@@ -719,7 +726,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(sites `_PROPERTY_SITE` for `get_object_field`, with the zero-bound keywords of an object property, and "
             "`_ROOT_SITE` for `_parse_root_type_with_context`); the zero-bound keywords of "
             "`parser/_inherited_schemas.py:drop_incompatible_inherited_constraints`; the format step of "
-            "`parser/_all_of_values.py:handle_allof_root_model_with_constraints`; `parser/_type_overrides.py`: "
+            "`parser/_all_of_values.py:handle_allof_root_model_with_constraints`; the format step of "
+            "`parser/jsonschema.py:JsonSchemaParser._get_constrained_data_type`, `types.py:DataTypeManager."
+            "format_keyword_form` and `writes_format_as_text`, and `model/pydantic_v2/types.py:DataTypeManager."
+            "_annotated_format_type`; `parser/_type_overrides.py`: "
             "`decide_overridden_constraints` (with `_untaken_container_counts`) and `mark_untaken_constraints`; "
             "`parser/_passes/modules.py:_discriminator_tag_constraints` (the tag keyword); "
             "`model/msgspec.py:DataModelField._meta_keywords`, `_dropped_meta_keywords` and "
@@ -764,6 +774,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/msgspec.py", "DataModelField._literal_decided_meta_keywords"),
             Home("types.py", "DataTypeManager.constraint_options"),
             Home("types.py", "DataTypeManager.encodes_constrained_base64"),
+            Home("types.py", "DataTypeManager.format_keyword_form"),
+            Home("types.py", "DataTypeManager.writes_format_as_text"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_constrained_data_type"),
+            Home("model/pydantic_v2/types.py", "DataTypeManager._annotated_format_type"),
             Home("parser/_value_keywords.py", "type_enforced_keywords"),
             Home("parser/_value_keywords.py", "_enforcing_leaves"),
             Home("parser/_value_keywords.py", "can_hold_array"),
