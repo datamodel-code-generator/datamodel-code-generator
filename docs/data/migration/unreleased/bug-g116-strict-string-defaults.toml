@@ -3,7 +3,7 @@ id = "bug-g116-strict-string-defaults"
 category = "default-fix"
 title = "A default Pydantic validates holds the values strict types read from its JSON text"
 summary = "With --strict-types bytes, datetime, date, time or a strict Decimal, a field whose type names a model and whose default holds the text or number of a JSON document was written Field(<default>, validate_default=True). Pydantic validates that default as Python input, where strict mode refuses the JSON value, so every instance that left the field out failed. The default is now written as the values Pydantic reads from the JSON default: bytes for a strict bytes, datetime_module.date.fromisoformat(...) and the like for an RFC 3339 date, time or datetime, Decimal(...) for a strict Decimal, through root models, objects, lists, sets, tuples and mappings. validate_default stays, so Pydantic still validates the value; text that is no RFC 3339 date or time, a value under a union of several types, bytes under a configured base class the generator cannot read and an object key the field is not written to read are left as written, so Pydantic reports them as before. Only outputs that failed at every construction without the field change; model_json_schema() shows the default as Pydantic serializes the converted value."
-refs = ["#7420"]
+refs = ["#7420", "#7380"]
 decision = ["#7420"]
 kind = "default-output"
 action = "review"

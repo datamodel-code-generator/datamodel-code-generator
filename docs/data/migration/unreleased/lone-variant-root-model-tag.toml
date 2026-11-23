@@ -6,7 +6,7 @@ action = "none"
 source = "release-note"
 title = "A lone variant's RootModel tag writes no discriminator unless the target is Pydantic 2.14"
 summary = "A union of one variant whose tag field is a RootModel of a Literal (a $ref to a const or one-value enum) is written without discriminator= unless --target-pydantic-version is 2.14, as Pydantic reads a tag through a RootModel only from 2.13 and the module failed to import on the releases an unset or older target allows (#7327); on Pydantic 2.13 and later the union accepts and rejects the same payloads, and class names, fields and parsed values stay."
-refs = ["#7405"]
+refs = ["#7405", "#7327"]
 covers = [
     "main/openapi/main_openapi/discriminator_enum_tag_variants[discriminator_enum_tag_variants-pydantic_v2.BaseModel-extra_args5].py",
     "main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].py",

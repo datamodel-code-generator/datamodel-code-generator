@@ -6,7 +6,7 @@ action = "review"
 source = "release-note"
 title = "A named allOf whose merged root is an enum class is written as that enum"
 summary = "A named allOf of an untyped constraint $ref and a typed enum member, such as allOf: [{$ref: ThreeLetters}, {type: string, enum: [GBP, JPY]}], stopped with \"a $ref chain that loops back\" for Pydantic and msgspec output, and under --collapse-root-models and the presets wrote a field or a root model that accepted no value of the enum; it is now written as its enum class, which accepts the values of the enum. Standard dataclasses keep Any without --intersect-merged-allof-members."
-refs = ["#7399"]
+refs = ["#7399", "#7314"]
 decision = ["#7314"]
 covers = [
     "main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[released-dataclasses.dataclass].py",
