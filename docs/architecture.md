@@ -749,10 +749,9 @@ of `parser/_pipeline.py`: a `PassSpec` runs one pass, named as its declaration, 
 `ForEachModule` runs passes module by module; a `HookCall` calls an overridable method whose default runs a sub-table; a
 `Segment` enters a phase on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`), then runs its
 steps. The labels that only the checks read live in `scripts/pass_decls.py`: the boundary each segment enters
-(`BOUNDARY_BEFORE`: `PARSED`, B1, `DECIDED`, B2), the pass scope of a segment's guarded writes (`SCOPE_NAMES`) and the
-sub-table of each hook (`HOOK_BODIES`). The `Runner` is the only caller of a pass; the finality check of the test suite
-(`tests/checks/parse.py`) runs each one inside the scope of its declaration with the models it compares
-(`CHECKED_MODELS`); steps call passes through the parser instance, so overrides and `--debug` tracing apply as to any
+(`BOUNDARY_BEFORE`: `PARSED`, B1, `DECIDED`, B2) and the sub-table of each hook (`HOOK_BODIES`). The `Runner` is the
+only caller of a pass; the finality check of the test suite (`tests/checks/parse.py`) runs each one inside the scope
+of its declaration with the models it compares (`CHECKED_MODELS`); steps call passes through the parser instance, so overrides and `--debug` tracing apply as to any
 method. The diagnostics warnings that name the code calling
 `parse()` (the dangling and schema-resource references, and each `enum` that lists no value, which the schema objects of
 a document collect as they are validated) find that frame however deep the pipeline is (`warn_at_parse_caller`).
@@ -1275,33 +1274,15 @@ nothing the sources declare or write. Writes through the parser itself (`self`) 
 (parameters annotated `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from
 them) write no model-graph key. A module the source model cannot read is a problem of its own.
 
-The runtime write guard (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same
-rule while the generator runs in the test suite, for writes heki cannot follow (for example an alias that an in-place
-operator rebinds, or a receiver that no binding of the function holds). It arms at the end of L1:
-`DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
-`ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared where the originals were shared; they
-are not `list` exactly and outlive the parse, acting as plain lists afterwards), each store operation named in a row's
-`store_ops` runs in a write scope, and the pipeline of `parser/_passes/_tables.py` runs in pass scopes (`ParseChecks.scope`:
-`_build_module_structure` in STRUCTURE, the `plan` segment in PLAN, each `_process_single_module` in MODULES, the
-`cross_module` and `generic_base_class` segments in CROSS_MODULE, the `decide` segment in DECIDE, the
-`render_preparation` segment, `_finalize_modules` included, in RENDER_PREPARATION, the `finish` segment in IMPORTS and the
-`render` segment in RENDER; before them, SETTLE; inert without an armed guard). A write outside every store
-operation is reported once per line and parse with the line that wrote it, the parser method running and the pass
-scope and phase; the construction of an object (its `__init__` and what that calls) writes freely. Any store operation
-accepts any guarded write, and the phase is not checked: which operation and phase may write which attribute is left
-to the finality checks. With the area off nothing is installed. The guard does
-not see writes through `object.__setattr__`, through `__dict__`, into dict attributes, or into a list an object got
-outside a store operation after L1. The guards, the guarded lists and the store-operation scopes belong to the checks
-of one parse (`parse_checks`, armed by `ParseChecks.arm`), which the finality check shares: a parse loads
-`tests/checks/finality.py` and installs them only when either area is on, and the guard reports writes only when
-`STORE_WRITES` is on, while the finality check uses them to learn which models a pass touched.
-
-The test suite runs the guard in every test (`tests/conftest.py:StoreWritesCheck`): it reports into a file of the test
-process, and after each test the checker names each write of the package by its path, the function that contains the
-reported line, named as heki names its findings (`<locals>` after an enclosing function; lambdas and comprehensions
-belong to the function around them), and the attribute (`runtime_writes`). The test fails for a write that the heki
-baseline does not record: a `MUT201` entry records writes of its attribute in its function, a `MUT205` entry (an
-object or name heki cannot resolve) writes of any attribute there.
+heki's contracts are the one check of this rule: they judge every write site of `src/`, whether a test reaches it or
+not, and report a write through a receiver heki cannot resolve (`MUT205`) instead of passing it. The write guards of
+the finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`) watch the same
+attributes at run time, but only to learn which models a pass touched and, from a freeze point on, to judge a write
+where it is made: at the end of L1 `DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the
+fact and presentation attributes of `ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared
+where the originals were shared; they are not `list` exactly and outlive the parse, acting as plain lists afterwards),
+and each store operation named in a row's `store_ops` runs in an operation scope, so that the lists it sets are
+guarded too. With the area off nothing is installed.
 
 Current behaviour that a decision reading the index must allow for:
 

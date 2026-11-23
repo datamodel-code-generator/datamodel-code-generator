@@ -13,7 +13,7 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   ``scripts/fact_tables.py`` outside the parser run state, and the run-state rows that name store operations (the
   model lists ``Parser.results`` and ``ModuleContext.models``), one contract per kind and set of store operations; the
   operations and the generation store module may write the attributes, and each write is judged in the scope that
-  holds it, as the runtime write guard names it. A ``__dict__`` key row names the value of its constant; a
+  holds it. A ``__dict__`` key row names the value of its constant; a
   cached-property row also forbids the decorator on its owner.
 - ``call-owners``, ``read-owners`` and ``write-owners`` of the members of the graph only the store may use
   (``STORE_MEMBERS`` of ``scripts/fact_tables.py``): each method that writes the graph for the store operations that

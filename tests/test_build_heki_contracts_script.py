@@ -219,13 +219,105 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
     ), result.stderr
 
 
+SEEDED_WRITE_FORMS = """\
+from copy import deepcopy
+
+from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+from datamodel_code_generator.parser.generation import GenerationStore
+
+
+def through_the_store(store: GenerationStore, model: DataModel) -> None:
+    store.set_fields(model, list(model.fields))
+
+
+def reorder(model: DataModel) -> None:
+    model.fields.reverse()
+    model.fields[:] = model.fields[::-1]
+    model.fields[0] = model.fields[0]
+    model.fields.insert(0, model.fields.pop())
+    model.fields.sort(reverse=True)
+
+
+def reorder_a_copy(model: DataModel) -> None:
+    copied = deepcopy(model.fields)
+    copied.reverse()
+
+
+def mark_through_an_alias(field: DataModelFieldBase) -> None:
+    extras = field.extras
+    extras["seen"] = True
+
+
+def rebase_in_a_callback(models: list[DataModel]) -> list[None]:
+    return list(map(lambda owner: owner.set_base_class(), models))
+
+
+def set_base_class(model: DataModel) -> None:
+    model.fields = []
+
+
+def clear_untyped(models):
+    for model in models:
+        model.fields = []
+"""
+"""Writes of fact rows by a pass: through a store operation, by every list mutator, to a deep copy, through a container
+alias, by a store-only method that a callback calls on an untyped receiver, by a function that only shares the name
+of such a method, and through a receiver whose class heki cannot tell."""
+SEEDED_FIELD_CLASS = """
+
+class DataModelFieldBase:
+    def __init__(self) -> None:
+        self.extras: dict[str, object] = {}
+"""
+"""A field class for the seeded ``model/base.py``, whose ``extras`` a write form aliases."""
+
+
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Path) -> None:
+    """Each list mutator, a write through an alias and a store-only call in a callback are findings, once per call.
+
+    The store operation and the copy, which no graph object holds, are none; a function named like a method only the
+    store runs is judged by the attribute it writes, and a write through a receiver heki cannot resolve is ``MUT205``.
+    """
+    package = {
+        **SEEDED_PACKAGE,
+        f"{PACKAGE}/model/base.py": SEEDED_PACKAGE[f"{PACKAGE}/model/base.py"] + SEEDED_FIELD_CLASS,
+        f"{PACKAGE}/parser/forms.py": SEEDED_WRITE_FORMS,
+    }
+    for name, text in package.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+
+    result = _heki("--output-format", "json", cwd=tmp_path)
+
+    found = [
+        (item["qualname"], item["rule_code"], item["target"], item["line"])
+        for item in json.loads(result.stdout)
+        if Path(item["path"]).name == "forms.py"
+    ]
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("reorder", "MUT201", "DataModel.fields", 12),
+            ("reorder", "MUT201", "DataModel.fields", 13),
+            ("reorder", "MUT201", "DataModel.fields", 14),
+            ("reorder", "MUT201", "DataModel.fields", 15),
+            ("reorder", "MUT201", "DataModel.fields", 15),
+            ("reorder", "MUT201", "DataModel.fields", 16),
+            ("mark_through_an_alias", "MUT201", "DataModelFieldBase.extras", 26),
+            ("rebase_in_a_callback", "MUT207", "set_base_class", 30),
+            ("set_base_class", "MUT201", "DataModel.fields", 34),
+            ("clear_untyped", "MUT205", "fields", 39),
+        ],
+    ), result.stderr
+
+
 @pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
     """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.
 
     A call handed to a private helper is the helper's, not its caller's, as the baseline records it by the scope that
-    holds it; the runtime write guard names a write by the function that makes it, as heki names it with lexical
-    attribution.
+    holds it; a write is the function's that makes it, as heki names it with lexical attribution.
     """
     contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
     judged = [

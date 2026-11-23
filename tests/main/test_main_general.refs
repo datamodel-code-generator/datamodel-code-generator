@@ -961,10 +961,8 @@ custom-unset	main/main_general/generate_with_empty_formatters[custom-unset].py	=
 [test_generated_pydantic_v2_model_accepts_runtime_value]
 	main/main_general/generated_pydantic_v2_model_accepts_runtime_value.py
 [test_generation_without_parse_checks]
-constructor-ordering-checks_off0	main/main_general/generation_without_parse_checks[constructor-ordering-checks_off0].py
-constructor-ordering-checks_off1	main/main_general/generation_without_parse_checks[constructor-ordering-checks_off1].py	= main/main_general/generation_without_parse_checks[constructor-ordering-checks_off0].py
-decisions-checks_off0	main/main_general/generation_without_parse_checks[decisions-checks_off0].py
-decisions-checks_off1	main/main_general/generation_without_parse_checks[decisions-checks_off1].py	= main/main_general/generation_without_parse_checks[decisions-checks_off0].py
+constructor-ordering	main/main_general/generation_without_parse_checks[constructor-ordering].py
+decisions	main/main_general/generation_without_parse_checks[decisions].py
 [test_header_replaces_lone_surrogate_of_file_name]
 command	main/main_general/header_replaces_lone_surrogate_of_file_name[command].py
 filename	main/main_general/header_replaces_lone_surrogate_of_file_name[filename].py
