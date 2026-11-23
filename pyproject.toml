@@ -242,6 +242,9 @@ lint.per-file-ignores."!src/datamodel_code_generator/_runtime/**" = [
   # generated packages with its comments, so it keeps the rule.
   "too-many-arguments",
 ]
+lint.per-file-ignores."!src/datamodel_code_generator/{model/_field_imports,parser/_*}.py" = [
+  "banned-api", # The ban holds sys._getframe where private-member-access is off; elsewhere that rule reports it.
+]
 lint.per-file-ignores."scripts/*.py" = [
   "implicit-namespace-package", # no implicit namespace
   "print",                      # print is fine for CLI scripts
@@ -283,7 +286,7 @@ lint.per-file-ignores."src/datamodel_code_generator/model/_constraints.py" = [
   "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/model/_field_imports.py" = [
-  "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+  "private-member-access", # heki's host-private contracts own it here (scripts/heki.toml).
 ]
 lint.per-file-ignores."src/datamodel_code_generator/model/base.py" = [
   "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
@@ -304,10 +307,10 @@ lint.per-file-ignores."src/datamodel_code_generator/model/pydantic_v2/base_model
   "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/parser/_*.py" = [
-  "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+  "private-member-access", # heki's host-private contracts own it here (scripts/heki.toml).
 ]
 lint.per-file-ignores."src/datamodel_code_generator/parser/_passes/*.py" = [
-  "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+  "private-member-access", # heki's host-private contracts own it here (scripts/heki.toml).
 ]
 lint.per-file-ignores."src/datamodel_code_generator/parser/_schema_object.py" = [
   "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
@@ -345,6 +348,10 @@ lint.per-file-ignores."tests/**/*.py" = [
   "too-many-public-methods",            # too many public methods in test classes is fine
   "too-many-statements",                # can have longer test methods
 ]
+lint.flake8-tidy-imports.banned-api."sys._getframe".msg = """\
+  sys._getframe is private to CPython. heki's host contracts cannot name another module's members yet, so this ban \
+  keeps new uses out of the modules they check.\
+  """
 lint.isort = { known-first-party = [
   "datamodel_code_generator",
   "tests",
