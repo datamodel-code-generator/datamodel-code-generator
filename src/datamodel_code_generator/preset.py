@@ -1545,6 +1545,15 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "document names its schema, and a resource the run holds is never fetched."
         ),
     ),
+    PresetOptionGroup(
+        title="Configured bases beside the generic base class",
+        config=PresetConfig(keep_bases_beside_generic_base_class=True),
+        description=(
+            "Keep the classes a model is configured to inherit, from --base-class-map, customBasePath, --base-class "
+            "or the class an --external-ref-mapping or x-python-import schema stands for, beside the generated base "
+            "class of --use-generic-base-class, so the model keeps their members and their import is used."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 

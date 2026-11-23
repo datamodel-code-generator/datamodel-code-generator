@@ -80,6 +80,7 @@ reviewed-safe infer_union_variant_names
 reviewed-safe intersect_allof_keywords
 reviewed-safe intersect_combined_schema_keywords
 reviewed-safe intersect_merged_allof_members
+reviewed-safe keep_bases_beside_generic_base_class
 reviewed-safe keep_constrained_root_models_in_every_container
 reviewed-safe keep_defaults_of_inherited_required_fields
 reviewed-safe keep_enum_literal_aliases

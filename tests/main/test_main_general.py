@@ -1916,6 +1916,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "treat_dot_as_module",
         "strict_dotted_module_names",
         "rename_submodules_hidden_by_classes",
+        "keep_bases_beside_generic_base_class",
         "use_schema_description",
         "use_title_as_name",
         "infer_union_discriminators",

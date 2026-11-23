@@ -96,6 +96,7 @@ class BaseGenerateConfig(TypedDict):
     allow_extra_fields: NotRequired[bool]
     extra_fields: NotRequired[str | None]
     use_generic_base_class: NotRequired[bool]
+    keep_bases_beside_generic_base_class: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
     class_name_prefix: NotRequired[str | None]

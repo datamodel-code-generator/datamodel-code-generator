@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 66 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 45 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 75 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 76 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -25,7 +25,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 36 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 43 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -254,6 +254,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### K {#k}
 
+- [`--keep-bases-beside-generic-base-class`](model-customization.md#keep-bases-beside-generic-base-class)
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container)
 - [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs)
 - [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields)
