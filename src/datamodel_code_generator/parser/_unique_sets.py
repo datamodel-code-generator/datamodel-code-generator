@@ -92,6 +92,7 @@ class _ByValue:
         "_alias_order",
         "_alias_sets",
         "_keeps_tuples",
+        "_reads_class_fields",
         "aliases",
         "class_hash",
         "live",
@@ -105,6 +106,7 @@ class _ByValue:
         }
         self.value_keys = {key for key, class_hash in self.class_hash.items() if class_hash == "value"}
         self._keeps_tuples = facts.options.keeps_tuples
+        self._reads_class_fields = "legacy-unique-sets-class-fields-unread" not in facts.options.kept_rows
         self._alias_order = self._aliases_first()
         self.aliases: dict[ModelKey, bool] = {}
         self._alias_sets: dict[ModelKey, set[int]] = {}
@@ -279,23 +281,32 @@ class _ByValue:
         return _takes_json_scalar(node, value)
 
     def fields(self, model: ModelView) -> Iterator[FieldView]:
-        """Yield the fields of a model and of the live models it inherits from, each model once and each name once.
+        """Yield the fields whose values decide whether the instances of a model hash: its own and those it inherits.
 
         A name is the field of the first model that declares it, the model before its bases, as a field a model
-        declares again replaces the one it inherits in its instances. Row ``legacy-unique-sets-level-order``: the models
-        are read nearest first (`ReferenceGraph.level_order`), so a name declared by a base two levels up and by a later
-        direct base is the later base's field, where the class's C3 order takes the first. The members of an enum are
-        no fields of its instances, which are the members themselves.
+        declares again replaces the one it inherits in its instances. The models are read nearest first (row
+        ``legacy-unique-sets-level-order``, `ReferenceGraph.level_order`), so a name declared by a base two levels up
+        and by a later direct base is the later base's field, where the class takes the first. Under
+        --read-set-item-fields-in-class-order the fields of the class's C3 order (``ModelView.effective_fields``) are
+        read too, and a model hashes by value only where the fields of both readings hash: the class's own fields
+        decide it, so a set of its instances never holds a value that does not hash (#6997), and where only the level
+        order reads a field that does not hash its list stays as in 0.100.0. Without the option (row
+        ``legacy-unique-sets-class-fields-unread``) only the level order is read, as in 0.100.0. Each field is read
+        once. The members of an enum are no fields of its instances, which are the members themselves.
         """
         if model.form == "enum":
             return
         walk = walk_graph(GraphSnapshot.BASES, EdgeKind.BASE, (model,), _view_key, self._bases)
         names: set[str | None] = set()
+        read: set[int] = set()
         for key in walk.graph.level_order(walk.starts[0], EdgeKind.BASE):
             for field in walk.node_of[key].fields:
                 if field.name is None or field.name not in names:
                     names.add(field.name)
+                    read.add(id(field))
                     yield field
+        if self._reads_class_fields:
+            yield from (field for field in model.effective_fields if id(field) not in read)
 
     def _bases(self, model: ModelView) -> Iterator[ModelView]:
         """Return the live models a model names as its bases."""

@@ -1376,6 +1376,17 @@ external-cli-Nested	input_model/union_caller_extensions[external-cli-Nested].txt
 external-cli-Serializable	input_model/union_caller_extensions[external-cli-Serializable].runtime.txt	= input_model/union_caller_extensions[builtin-api-Serializable].runtime.txt
 external-cli-Serializable	input_model/union_caller_extensions[external-cli-Serializable].schema.txt	= input_model/union_caller_extensions[builtin-api-Serializable].schema.txt
 external-cli-Serializable	input_model/union_caller_extensions[external-cli-Serializable].txt	= input_model/union_caller_extensions[builtin-cli-Serializable].txt
+[test_input_model_unserializable_fields_of_held_classes]
+generic-dataclass	input_model/unserializable_fields_of_held_classes[generic-dataclass].txt
+held-classes	input_model/unserializable_fields_of_held_classes[held-classes].txt
+held-classes-reuse-foreign	input_model/unserializable_fields_of_held_classes[held-classes-reuse-foreign].txt
+nested-held-classes	input_model/unserializable_fields_of_held_classes[nested-held-classes].txt
+pydantic-dataclass-by-alias	input_model/unserializable_fields_of_held_classes[pydantic-dataclass-by-alias].txt
+pydantic-dataclass-by-name	input_model/unserializable_fields_of_held_classes[pydantic-dataclass-by-name].txt
+root-model-root	input_model/unserializable_fields_of_held_classes[root-model-root].txt
+same-named-classes	input_model/unserializable_fields_of_held_classes[same-named-classes].txt
+same-named-classes-reuse-all	input_model/unserializable_fields_of_held_classes[same-named-classes-reuse-all].txt
+two-models	input_model/unserializable_fields_of_held_classes[two-models].txt
 [test_input_model_validation_property_winners]
 builtin-api-AllSkipped	input_model/validation_property_winners[builtin-api-AllSkipped].py
 builtin-api-AllSkipped	input_model/validation_property_winners[builtin-api-AllSkipped].runtime.txt

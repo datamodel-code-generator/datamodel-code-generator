@@ -178,8 +178,7 @@ def test_custom_renderer_can_disable_deserialized_defaults() -> None:
         fields=[field],
     )
 
-    render_prep.deserialize_default_value(parser, model, field)
-
+    assert render_prep.deserialize_default_value(parser, model, field, None) is None
     assert DataModel.SUPPORTS_DESERIALIZED_DEFAULT_VALUES
     assert not model.SUPPORTS_DESERIALIZED_DEFAULT_VALUES
     assert field.default == "1.23"
@@ -207,7 +206,7 @@ def test_custom_data_type_manager_fails_closed_without_value_semantics() -> None
         fields=[field],
     )
 
-    assert not render_prep.deserialize_default_value(parser, model, field)
+    assert render_prep.deserialize_default_value(parser, model, field, None) is None
     assert field.default == "1.23"
     assert not field.runtime_expression_imports
 

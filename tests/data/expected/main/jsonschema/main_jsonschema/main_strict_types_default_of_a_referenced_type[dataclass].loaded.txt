@@ -1,0 +1,17 @@
+checksum: '' (JSON input: b'')
+day: '2020-01-01' (JSON input: datetime.date(2020, 1, 1))
+clock: '10:20:30' (JSON input: datetime.time(10, 20, 30))
+stamp: '2020-01-01T00:00:00Z' (JSON input: datetime.datetime(2020, 1, 1, 0, 0, tzinfo=TzInfo(0)))
+stamp_offset: '2020-01-01 10:00:00.5+01:00' (JSON input: datetime.datetime(2020, 1, 1, 10, 0, 0, 500000, tzinfo=TzInfo(3600)))
+nested: 'abc' (JSON input: b'abc')
+wrapped: 'w' (JSON input: b'w')
+rec: Rec(data=b'xy', on=datetime.date(2020, 1, 2), nm='n')
+child: Child(data=b'c', on=None, nm=None, created_at=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))))
+days: ['2020-01-01', '2020-01-03'] (JSON input: [datetime.date(2020, 1, 1), datetime.date(2020, 1, 3)])
+by_key: {'a': '2020-01-01T00:00:00Z'} (JSON input: {'a': datetime.datetime(2020, 1, 1, 0, 0, tzinfo=TzInfo(0))})
+pair: ['2020-01-04', 3] (JSON input: (datetime.date(2020, 1, 4), 3))
+digest: 'abc' (JSON input: b'abc')
+amount: 1.5
+name: 'x'
+encoded: 'aGk=' (JSON input: 'hi')
+unique_days: ['2020-01-05'] (JSON input: [datetime.date(2020, 1, 5)])

@@ -1,0 +1,2 @@
+refused: f model_type
+given: Top(f=None)

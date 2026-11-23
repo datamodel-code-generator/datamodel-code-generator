@@ -1,0 +1,13 @@
+[[change]]
+id = "bug-g116-json-bytes-api"
+category = "api"
+title = "Name the strict default recipes and whether a model reads JSON bytes as UTF-8 text"
+summary = "reads_json_bytes_as_text() of the Pydantic v2 models tells whether validating a model reads bytes from JSON text as the text's UTF-8 bytes: True where the config it applies is known (no configured base class the generator cannot read), as the generator writes no val_json_bytes. DataTypeManager.STRICT_DEFAULT_VALUE_RECIPES and get_strict_default_value_recipe() give the recipe (new DefaultValueRecipe members Bytes, Date, Time and DateTime) of the strict bytes, date, time and datetime types whose JSON value is written as its Python value in a default Pydantic validates; GraphBuilder.set_field_runtime_default() writes such a default with the imports its runtime expressions name. Strict bytes are written as bytes only where a Pydantic v2 model answers True."
+refs = ["#7420"]
+decision = ["#7420"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

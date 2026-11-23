@@ -246,8 +246,13 @@ are not changed.
 
 Strict mode reads JSON and Python input differently. `model_validate_json()` still accepts ISO strings, but Python input
 must be `datetime`, `date` or `time` objects: `Event(at="2020-01-01T00:00:00Z")` and `Event.model_validate({...})` fail.
-A default that Pydantic validates is Python input too, so a field whose `$ref` names a root model with a `default`
-fails when the field is left out ([#7380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7380)).
+A default that Pydantic validates (`validate_default=True`, written where the field's type names a model) is Python
+input too, so such a default is written as the values Pydantic reads from the schema's JSON default: bytes for a strict
+`bytes`, `date`, `time` and `datetime` objects built from RFC 3339 text, and a `Decimal` for a strict `Decimal`
+([#7380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7380)). Pydantic still validates
+the value. Text that is no RFC 3339 date or time, a union of several types, bytes under a configured base class
+the generator cannot read and an object key the field is not written to read are left as written, so Pydantic reports
+them as before when the field is left out.
 The generated server and client read date and time values from text, so `--generate-server` and `--generate-client`
 stop with an error when `--strict-types` holds `datetime`, `date` or `time`.
 

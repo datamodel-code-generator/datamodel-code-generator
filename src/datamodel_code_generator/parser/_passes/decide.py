@@ -72,7 +72,11 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
         modules,
         lambda data_type, model_of: keywords(data_type, version, model_of),
         DecisionOptions(
-            keeps_tuples=parser.use_tuple_for_closed_arrays, user_imports=bool(parser.config.additional_imports)
+            keeps_tuples=parser.use_tuple_for_closed_arrays,
+            user_imports=bool(parser.config.additional_imports),
+            kept_rows=frozenset()
+            if parser.config.read_set_item_fields_in_class_order
+            else frozenset({"legacy-unique-sets-class-fields-unread"}),
         ),
         lambda member, member_keywords: manager.constrained_string_member(member, member_keywords, **member_options),
     )

@@ -1,0 +1,17 @@
+checksum: RootModel[Annotated[bytes, Strict(strict=True)]](root=b'')
+day: RootModel[Annotated[date, Strict(strict=True)]](root=datetime.date(2020, 1, 1))
+clock: RootModel[Annotated[time, Strict(strict=True)]](root=datetime.time(10, 20, 30))
+stamp: RootModel[Annotated[AwareDatetime, Strict(strict=True)]](root=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.timezone.utc))
+stamp_offset: RootModel[Annotated[AwareDatetime, Strict(strict=True)]](root=datetime.datetime(2020, 1, 1, 10, 0, 0, 500000, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))))
+nested: RootModel[RootModel[Annotated[bytes, Strict(strict=True)]]](root=RootModel[Annotated[bytes, Strict(strict=True)]](root=b'abc'))
+wrapped: RootModel[RootModel[Annotated[bytes, Strict(strict=True)]]](root=RootModel[Annotated[bytes, Strict(strict=True)]](root=b'w'))
+rec: Rec(data=b'xy', on=datetime.date(2020, 1, 2), nm='n')
+child: Child(data=b'c', on=None, nm=None, created_at=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))))
+days: [RootModel[Annotated[date, Strict(strict=True)]](root=datetime.date(2020, 1, 1)), RootModel[Annotated[date, Strict(strict=True)]](root=datetime.date(2020, 1, 3))]
+by_key: {'a': RootModel[Annotated[AwareDatetime, Strict(strict=True)]](root=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.timezone.utc))}
+pair: (RootModel[Annotated[date, Strict(strict=True)]](root=datetime.date(2020, 1, 4)), 3)
+digest: RootModel[Annotated[bytes, Strict(strict=True), Len]](root=b'abc')
+amount: RootModel[Annotated[float, Strict(strict=True), Interval, MultipleOf, NoneType]](root=1.5)
+name: RootModel[str](root='x')
+encoded: RootModel[Annotated[str, EncodedStr]](root='hi')
+unique_days: [RootModel[Annotated[date, Strict(strict=True)]](root=datetime.date(2020, 1, 5))]

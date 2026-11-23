@@ -15,6 +15,7 @@
 | [`--import-overrides`](#import-overrides) | Override modules for generated imports by symbol name. |
 | [`--intersect-allof-keywords`](#intersect-allof-keywords) | Combine the keywords of every part of an `allOf`, a `$ref` w... |
 | [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords) | Combine the keywords beside an `anyOf` or `oneOf` with each ... |
+| [`--intersect-merged-allof-members`](#intersect-merged-allof-members) | Read the allOf members that are merged into one schema keywo... |
 | [`--keep-enum-member-values`](#keep-enum-member-values) | Give an enum class a value base only when it keeps every mem... |
 | [`--no-use-closed-typed-dict`](#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
@@ -23,11 +24,13 @@
 | [`--open-enums`](#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-allof-parents-as-their-models`](#read-allof-parents-as-their-models) | Read each allOf parent as its model holds it. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
 | [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
 | [`--read-format-as-annotation`](#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema... |
 | [`--read-inherited-property-schemas-in-mro-order`](#read-inherited-property-schemas-in-mro-order) | Give a required inherited property the schema its allOf pare... |
 | [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
+| [`--read-set-item-fields-in-class-order`](#read-set-item-fields-in-class-order) | Read the fields a set item inherits in its class's order, so... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
 | [`--read-uuid6-uuid7-uuid8-formats`](#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID v... |
 | [`--strict-types`](#strict-types) | Enable strict type validation for str, bytes, int, float, bo... |
@@ -2930,6 +2933,387 @@ admits null where every part of the `allOf` does.
 
 ---
 
+## `--intersect-merged-allof-members` {#intersect-merged-allof-members}
+
+Read the allOf members that are merged into one schema keyword by keyword.
+
+Where several `$ref` members declare one property differently, the members are merged into one model. Without this
+option the later member's `type`, null and `multipleOf` win and a member's own allOf members are dropped, as in
+0.100.0: `count` is a `float` though one member admits integers only, `step` a multiple of 2 though the other member
+asks for a multiple of 3, and `status`, which a member's own allOf adds, is missing, so `{"status": "s"}` is rejected
+by the closed model. With it the property takes what every declaration admits (`int`, a multiple of 6, `int`) and the
+members' own allOf members are merged too. A property a member declares `false` (`legacy`) is written as `Any`, as
+the same property written without allOf is, so the model does not reject its values. The option also keeps the `enum`
+of every member of a named allOf of a `$ref` and value members, keeps a `$ref` to a map beside property counts or
+`propertyNames` a map with them, and checks a length or `pattern` beside a `$ref` to base64 text on the text where the
+output checks base64 constraints on the text.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input allof_merged_member_values.json --intersect-merged-allof-members # (1)!
+    ```
+
+    1. :material-arrow-left: `--intersect-merged-allof-members` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Order",
+      "type": "object",
+      "$defs": {
+        "Num": {
+          "type": "number"
+        },
+        "Base": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          }
+        },
+        "Item": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "$ref": "#/$defs/Num"
+            },
+            "step": {
+              "type": "integer",
+              "multipleOf": 2
+            },
+            "code": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "kind": {
+              "type": "string"
+            },
+            "note": {
+              "type": "string"
+            },
+            "legacy": {
+              "type": "string"
+            }
+          }
+        },
+        "Counted": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "step": {
+              "type": "integer",
+              "multipleOf": 3
+            },
+            "code": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "maxLength": 5
+            }
+          }
+        },
+        "Shipment": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/Counted"
+                },
+                {
+                  "$ref": "#/$defs/Item"
+                }
+              ]
+            },
+            "lines": {
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Counted"
+                  },
+                  {
+                    "$ref": "#/$defs/Item"
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/Base"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Sealed": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Counted"
+            },
+            {
+              "$ref": "#/$defs/Item"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "count": true,
+                "step": true,
+                "code": true,
+                "kind": true,
+                "note": true
+              },
+              "allOf": [
+                {
+                  "$ref": "#/$defs/Base"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/Counted"
+        },
+        {
+          "$ref": "#/$defs/Item"
+        },
+        {
+          "unevaluatedProperties": false,
+          "properties": {
+            "count": true,
+            "step": true,
+            "code": true,
+            "kind": true,
+            "note": true,
+            "legacy": false
+          },
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            },
+            true,
+            {
+              "$ref": "#/$defs/Counted"
+            },
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "count"
+                  ]
+                },
+                {
+                  "required": [
+                    "step"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_merged_member_values.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
+
+
+        class Order(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: Any | None = None
+            status: str | None = None
+
+
+        class Num(RootModel[float]):
+            root: float
+
+
+        class Base(BaseModel):
+            status: str | None = None
+
+
+        class Item(BaseModel):
+            count: Num | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: str | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Counted(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=3) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+
+
+        class Summary(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Line(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+            status: str | None = None
+
+
+        class Shipment(BaseModel):
+            summary: Summary | None = None
+            lines: list[Line] | None = None
+
+
+        class Sealed(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: int | None = None
+            step: conint(multiple_of=6) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_merged_member_values.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
+
+
+        class Order(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: Any | None = None
+            step: Any | None = None
+            code: Any | None = None
+            kind: Any | None = None
+            note: Any | None = None
+            legacy: Any | None = None
+
+
+        class Num(RootModel[float]):
+            root: float
+
+
+        class Base(BaseModel):
+            status: str | None = None
+
+
+        class Item(BaseModel):
+            count: Num | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: str | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Counted(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=3) | None = None
+            code: int | None = None
+            kind: constr(max_length=5) | None = None
+
+
+        class Summary(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Line(BaseModel):
+            count: int | None = None
+            step: conint(multiple_of=2) | None = None
+            code: int | str | None = None
+            kind: constr(max_length=5) | None = None
+            note: str | None = None
+            legacy: str | None = None
+
+
+        class Shipment(BaseModel):
+            summary: Summary | None = None
+            lines: list[Line] | None = None
+
+
+        class Sealed(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            count: Any | None = None
+            step: Any | None = None
+            code: Any | None = None
+            kind: Any | None = None
+            note: Any | None = None
+            legacy: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--keep-enum-member-values` {#keep-enum-member-values}
 
 Give an enum class a value base only when it keeps every member value.
@@ -4429,6 +4813,245 @@ or 'datetime' for standard Python datetime objects.
 
 ---
 
+## `--read-allof-parents-as-their-models` {#read-allof-parents-as-their-models}
+
+Read each allOf parent as its model holds it.
+
+A parent written as a `$ref` beside sibling keywords (`Parent: {$ref: Base, properties: {extra: ...}}`) is one model
+built from the merge of both. Without this option a model that names it in an `allOf` reads only its sibling keywords
+when it is written before that parent: a property it only requires is typed `Any`, a property it narrows is `Any`, and a
+property the `$ref` target requires stays optional, as in 0.100.0. With `--read-allof-parents-as-their-models` the
+parent is read as its merge, so the model is the same wherever it is written. A property one parent declares optional
+and another requires (`allOf: [PetBase, Named]` with only `Named` requiring `name`) is written again in the model as
+required, as if the model listed it in `required`; without the option the class takes it from its bases, optional
+where the first base Pydantic or dataclasses read declares it optional, and a TypedDict takes the last base. Under
+`--intersect-combined-schema-keywords`, which reads an alias member as the schema it names, an allOf of an alias of an
+object model and a member that adds only a type or required names keeps the fields of that schema too, instead of
+becoming a root model of a dict. A field whose allOf names one model and adds only `required` names (`inline` in the
+example) stays that model, which does not require them, with or without this option; that site is decided by
+`--intersect-combined-schema-keywords`, which writes a model of the field that requires them. Apart from such a field,
+a payload the schema rejects for a required or narrowed inherited property is rejected. A payload valid for the schema
+parses to the same values, but where a union of variants takes its discriminator only because a variant now requires
+its tag: a variant that leaves the optional tag out is then read without the tag value it took as a default before.
+
+**Related:** [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords), [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order), [`--read-inherited-property-schemas-in-mro-order`](#read-inherited-property-schemas-in-mro-order)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input ref_sibling_parents.json --read-allof-parents-as-their-models # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-allof-parents-as-their-models` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "required_name": {"$ref": "#/$defs/RequiredName"},
+        "narrowed": {"$ref": "#/$defs/Narrowed"},
+        "target_requires": {"$ref": "#/$defs/TargetRequires"},
+        "chain": {"$ref": "#/$defs/Chain"},
+        "inline": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
+        "target_parents": {"$ref": "#/$defs/TargetParents"}
+      },
+      "$defs": {
+        "RequiredName": {"allOf": [{"$ref": "#/$defs/Parent"}], "required": ["name"]},
+        "Narrowed": {"allOf": [{"$ref": "#/$defs/Parent"}], "properties": {"name": {"minLength": 3}}},
+        "TargetRequires": {
+          "allOf": [{"$ref": "#/$defs/RequiringParent"}],
+          "properties": {"name": {"type": "string", "minLength": 3}}
+        },
+        "Chain": {"allOf": [{"$ref": "#/$defs/ChainParent"}], "required": ["name"]},
+        "ChainParent": {"$ref": "#/$defs/Parent", "properties": {"more": {"type": "integer"}}},
+        "Parent": {"$ref": "#/$defs/Base", "properties": {"extra": {"type": "string"}}},
+        "RequiringParent": {"$ref": "#/$defs/RequiringBase", "properties": {"extra": {"type": "string"}}},
+        "Base": {"type": "object", "properties": {"name": {"type": "string"}}},
+        "RequiringBase": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+        "TargetParents": {"allOf": [{"$ref": "#/$defs/GrandParent"}], "required": ["level"]},
+        "GrandParent": {"$ref": "#/$defs/GrandBase", "properties": {"extra": {"type": "string"}}},
+        "GrandBase": {"allOf": [{"$ref": "#/$defs/Grand"}], "properties": {"name": {"type": "string"}}},
+        "Grand": {"type": "object", "properties": {"level": {"type": "integer"}}}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  ref_sibling_parents.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, constr
+
+
+        class ChainParent(BaseModel):
+            name: str | None = None
+            extra: str | None = None
+            more: int | None = None
+
+
+        class Parent(BaseModel):
+            name: str | None = None
+            extra: str | None = None
+
+
+        class RequiringParent(BaseModel):
+            name: str
+            extra: str | None = None
+
+
+        class Base(BaseModel):
+            name: str | None = None
+
+
+        class RequiringBase(BaseModel):
+            name: str
+
+
+        class Grand(BaseModel):
+            level: int | None = None
+
+
+        class RequiredName(Parent):
+            name: str
+
+
+        class Narrowed(Parent):
+            name: constr(min_length=3) | None = None
+
+
+        class TargetRequires(RequiringParent):
+            name: constr(min_length=3)
+
+
+        class Chain(ChainParent):
+            name: str
+
+
+        class GrandParent(Grand):
+            name: str | None = None
+            extra: str | None = None
+
+
+        class GrandBase(Grand):
+            name: str | None = None
+
+
+        class TargetParents(GrandParent):
+            level: int
+
+
+        class Model(BaseModel):
+            required_name: RequiredName | None = None
+            narrowed: Narrowed | None = None
+            target_requires: TargetRequires | None = None
+            chain: Chain | None = None
+            inline: Parent | None = None
+            target_parents: TargetParents | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  ref_sibling_parents.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, constr
+
+
+        class ChainParent(BaseModel):
+            name: str | None = None
+            extra: str | None = None
+            more: int | None = None
+
+
+        class Parent(BaseModel):
+            name: str | None = None
+            extra: str | None = None
+
+
+        class RequiringParent(BaseModel):
+            name: str
+            extra: str | None = None
+
+
+        class Base(BaseModel):
+            name: str | None = None
+
+
+        class RequiringBase(BaseModel):
+            name: str
+
+
+        class Grand(BaseModel):
+            level: int | None = None
+
+
+        class RequiredName(Parent):
+            name: Any
+
+
+        class Narrowed(Parent):
+            name: Any | None = None
+
+
+        class TargetRequires(RequiringParent):
+            name: constr(min_length=3) | None = None
+
+
+        class Chain(ChainParent):
+            name: Any
+
+
+        class GrandParent(Grand):
+            name: str | None = None
+            extra: str | None = None
+
+
+        class GrandBase(Grand):
+            name: str | None = None
+
+
+        class TargetParents(GrandParent):
+            level: Any
+
+
+        class Model(BaseModel):
+            required_name: RequiredName | None = None
+            narrowed: Narrowed | None = None
+            target_requires: TargetRequires | None = None
+            chain: Chain | None = None
+            inline: Parent | None = None
+            target_parents: TargetParents | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--read-allof-parents-in-mro-order` {#read-allof-parents-in-mro-order}
 
 Read the allOf parents of every inherited schema in the order of the class bases.
@@ -5446,6 +6069,225 @@ the field.
                 ..., description='WidgetSpec defines the desired state of Widget.'
             )
             status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--read-set-item-fields-in-class-order` {#read-set-item-fields-in-class-order}
+
+Read the fields a set item inherits in its class's order, so an unhashable one keeps a list.
+
+A frozen dataclass item of a `--use-unique-items-as-set` set is a set only if its fields hash. A field the class
+inherits from two bases is read nearest base first by default, which can find a hashable `str` where the class itself
+takes a base's unhashable list; the generated set then fails to build from a payload with that field. With
+`--read-set-item-fields-in-class-order` the fields are read in the class's own order (C3), so such a field is a list
+and the array stays a list.
+
+**Related:** [`--use-unique-items-as-set`](#use-unique-items-as-set)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input unique_items_by_value_inherited_fields.json --output-model-type dataclasses.dataclass --frozen-dataclasses --use-unique-items-as-set --read-set-item-fields-in-class-order # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-set-item-fields-in-class-order` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Holder",
+      "type": "object",
+      "properties": {
+        "levels": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Levels"}},
+        "diamond": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Diamond"}},
+        "reverse": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Reverse"}}
+      },
+      "definitions": {
+        "Z": {"type": "object", "properties": {"x": {"type": "array", "items": {"type": "string"}}}},
+        "A": {"allOf": [{"$ref": "#/definitions/Z"}], "properties": {"a": {"type": "string"}}},
+        "B": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "Levels": {"allOf": [{"$ref": "#/definitions/A"}, {"$ref": "#/definitions/B"}]},
+        "Y": {"type": "object", "properties": {"y": {"type": "string"}}},
+        "P": {"allOf": [{"$ref": "#/definitions/Y"}], "properties": {"p": {"type": "string"}}},
+        "Q": {"allOf": [{"$ref": "#/definitions/Y"}], "properties": {"q": {"type": "string"}}},
+        "Diamond": {"allOf": [{"$ref": "#/definitions/P"}, {"$ref": "#/definitions/Q"}]},
+        "W": {"type": "object", "properties": {"w": {"type": "string"}}},
+        "V": {"allOf": [{"$ref": "#/definitions/W"}], "properties": {"v": {"type": "string"}}},
+        "U": {"type": "object", "properties": {"w": {"type": "array", "items": {"type": "string"}}}},
+        "Reverse": {"allOf": [{"$ref": "#/definitions/V"}, {"$ref": "#/definitions/U"}]}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  unique_items_by_value_inherited_fields.json
+
+        from __future__ import annotations
+
+        from dataclasses import dataclass
+
+
+        @dataclass(frozen=True)
+        class Z:
+            x: list[str] | None = None
+
+
+        @dataclass(frozen=True)
+        class A(Z):
+            a: str | None = None
+
+
+        @dataclass(frozen=True)
+        class B:
+            x: str | None = None
+
+
+        @dataclass(frozen=True)
+        class Levels(A, B):
+            pass
+
+
+        @dataclass(frozen=True)
+        class Y:
+            y: str | None = None
+
+
+        @dataclass(frozen=True)
+        class P(Y):
+            p: str | None = None
+
+
+        @dataclass(frozen=True)
+        class Q(Y):
+            q: str | None = None
+
+
+        @dataclass(frozen=True)
+        class Diamond(P, Q):
+            pass
+
+
+        @dataclass(frozen=True)
+        class W:
+            w: str | None = None
+
+
+        @dataclass(frozen=True)
+        class V(W):
+            v: str | None = None
+
+
+        @dataclass(frozen=True)
+        class U:
+            w: list[str] | None = None
+
+
+        @dataclass(frozen=True)
+        class Reverse(V, U):
+            pass
+
+
+        @dataclass(frozen=True)
+        class Holder:
+            levels: list[Levels] | None = None
+            diamond: set[Diamond] | None = None
+            reverse: list[Reverse] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  unique_items_by_value_inherited_fields.json
+
+        from __future__ import annotations
+
+        from dataclasses import dataclass
+
+
+        @dataclass(frozen=True)
+        class Z:
+            x: list[str] | None = None
+
+
+        @dataclass(frozen=True)
+        class A(Z):
+            a: str | None = None
+
+
+        @dataclass(frozen=True)
+        class B:
+            x: str | None = None
+
+
+        @dataclass(frozen=True)
+        class Levels(A, B):
+            pass
+
+
+        @dataclass(frozen=True)
+        class Y:
+            y: str | None = None
+
+
+        @dataclass(frozen=True)
+        class P(Y):
+            p: str | None = None
+
+
+        @dataclass(frozen=True)
+        class Q(Y):
+            q: str | None = None
+
+
+        @dataclass(frozen=True)
+        class Diamond(P, Q):
+            pass
+
+
+        @dataclass(frozen=True)
+        class W:
+            w: str | None = None
+
+
+        @dataclass(frozen=True)
+        class V(W):
+            v: str | None = None
+
+
+        @dataclass(frozen=True)
+        class U:
+            w: list[str] | None = None
+
+
+        @dataclass(frozen=True)
+        class Reverse(V, U):
+            pass
+
+
+        @dataclass(frozen=True)
+        class Holder:
+            levels: set[Levels] | None = None
+            diamond: set[Diamond] | None = None
+            reverse: list[Reverse] | None = None
         ```
 
         <!-- fmt: on -->

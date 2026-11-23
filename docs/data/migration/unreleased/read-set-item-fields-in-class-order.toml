@@ -1,0 +1,15 @@
+[[change]]
+id = "read-set-item-fields-in-class-order"
+category = "new-surface"
+title = "Read the inherited fields of set item models in their class order under an option"
+summary = "--read-set-item-fields-in-class-order, under --use-unique-items-as-set-by-value, also reads the fields a set item model takes in the order of its class bases when deciding whether its instances hash: where a base two levels up and a later direct base both declare a field and the class takes the one that does not hash, the uniqueItems array stays a list instead of a set those items cannot be added to (#6997). Without it the output is that of 0.100.0."
+refs = ["#7400"]
+surface = ["--read-set-item-fields-in-class-order"]
+covers = [
+    "main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields[class-order].py",
+    "main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields_pydantic_dataclass.py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-standard].model.py",
+]

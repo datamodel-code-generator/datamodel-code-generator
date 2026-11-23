@@ -1,0 +1,21 @@
+[[change]]
+id = "preset-20261123-allof-members"
+extends = "preset-20261123"
+covers = [
+    "build_preset_docs_script/build_preset_docs_json_format.txt",
+    "build_preset_docs_script/preset_metadata_renderers.preset_history_markdown.txt",
+    "build_preset_docs_script/preset_metadata_renderers.presets_json.txt",
+    "build_preset_docs_script/preset_metadata_renderers.presets_markdown.txt",
+    "input_model/config_class.txt",
+    "main/main_general/show_help[False].txt",
+    "main/main_general/show_help[True].txt",
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+    "main_kr/generate_prompt_basic.stdout.txt",
+    "main_kr/generate_prompt_json.stdout.txt",
+    "main_kr/generate_prompt_with_list_options.stdout.txt",
+    "main_kr/generate_prompt_with_options.stdout.txt",
+    "main_kr/generate_prompt_with_question.stdout.txt",
+    "main_kr/help_shows_new_options.txt",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+    "prompt/generate_prompt_uses_default_parser_for_text_output.txt",
+]

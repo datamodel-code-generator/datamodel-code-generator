@@ -104,7 +104,6 @@
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."required_fields_a_default_lacks"]
 "data_type._writes_nothing_of_its_own" = 1
-"member._renders_none" = 1
 
 ["src/datamodel_code_generator/parser/_passes/_tables.py"."<module>"]
 "self._base_stand_in_imports" = 1
@@ -254,9 +253,6 @@
 ["src/datamodel_code_generator/parser/_passes/render_prep.py"."defer_recursive_containers"]
 "container._set_forward_reference" = 1
 "nested._is_quoted_reference" = 1
-
-["src/datamodel_code_generator/parser/_passes/render_prep.py"."deserialize_decimal_default"]
-"field._set_runtime_expression_imports" = 1
 
 ["src/datamodel_code_generator/parser/_passes/render_prep.py"."disable_union_operator_for_forward_ref"]
 "holder._is_container" = 1

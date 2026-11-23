@@ -424,6 +424,8 @@ class BaseGenerateConfig(BaseModel):
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False
     distribute_allof_over_unions: bool = False
+    intersect_merged_allof_members: bool = False
+    read_allof_parents_as_their_models: bool = False
     read_allof_parents_in_mro_order: bool = False
     read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
@@ -460,6 +462,7 @@ class BaseGenerateConfig(BaseModel):
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
     use_unique_items_as_set_by_value: bool = False
+    read_set_item_fields_in_class_order: bool = False
     use_tuple_for_fixed_items: bool = False
     use_tuple_for_closed_arrays: bool = False
     use_tuple_for_fixed_length_arrays: bool = False

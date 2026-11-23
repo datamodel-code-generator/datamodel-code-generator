@@ -93,6 +93,7 @@ from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DataType,
+    DefaultValueRecipe,
     StrictTypes,
     Types,
     UnionIntFloat,
@@ -213,6 +214,12 @@ _STRICT_DATE_TIME_KINDS: Final[Mapping[_ImportKey, StrictTypes]] = MappingProxyT
 
 Pydantic has no strict class for them; the pendulum types are absent, as Pydantic accepts only their instances.
 """
+_TEMPORAL_DEFAULT_VALUE_RECIPES: Final = MappingProxyType({
+    StrictTypes.date: DefaultValueRecipe.Date,
+    StrictTypes.time: DefaultValueRecipe.Time,
+    StrictTypes.datetime: DefaultValueRecipe.DateTime,
+})
+"""The default recipe of each date and time kind of ``_STRICT_DATE_TIME_KINDS``."""
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 _ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
 _STRICT_ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_STRICT_STR, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
@@ -270,6 +277,10 @@ class DataTypeManager(_DataTypeManagerBase):
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
         _import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
         _import_key(IMPORT_CONDECIMAL): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    })
+    STRICT_DEFAULT_VALUE_RECIPES = MappingProxyType({
+        **dict.fromkeys(map(_import_key, (IMPORT_STRICT_BYTES, IMPORT_CONBYTES)), DefaultValueRecipe.Bytes),
+        **{key: _TEMPORAL_DEFAULT_VALUE_RECIPES[kind] for key, kind in _STRICT_DATE_TIME_KINDS.items()},
     })
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Upload",
+  "type": "object",
+  "$defs": {
+    "Blob": {
+      "type": "string",
+      "format": "byte"
+    }
+  },
+  "properties": {
+    "thumbnail": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Blob"
+        },
+        {
+          "maxLength": 8
+        }
+      ]
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Blob"
+          },
+          {
+            "maxLength": 8
+          }
+        ]
+      }
+    }
+  }
+}

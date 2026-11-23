@@ -1,0 +1,5 @@
+[
+  "/few maxProperties {\"neighbour0\": \"a\", \"neighbour1\": \"a\", \"neighbour2\": \"a\", \"neighbour3\": \"a\", \"neighbour4\": \"a\"}: invalid, model accepts",
+  "/few maxProperties {\"neighbour0\": \"a\", \"neighbour1\": \"a\", \"neighbour2\": \"a\", \"neighbour3\": \"a\"}: invalid, model accepts",
+  "/few maxProperties {\"neighbour0\": \"a\", \"neighbour1\": \"a\", \"neighbour2\": \"a\"}: invalid, model accepts"
+]

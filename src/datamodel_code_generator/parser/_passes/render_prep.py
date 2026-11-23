@@ -12,11 +12,12 @@ from __future__ import annotations
 import dataclasses
 from decimal import Decimal, InvalidOperation
 from itertools import chain, takewhile
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast, runtime_checkable
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
+from datamodel_code_generator._container_kinds import ARRAYS, GENERIC_CONTAINERS, MAPPINGS, SETS
+from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._message_text import english_list, for_count
@@ -24,6 +25,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
 from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.hashability import set_items_may_keep_builtin_hash
 from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, MemberFacts, assemble_union
@@ -69,6 +71,7 @@ from datamodel_code_generator.parser._passes._shared import (
     has_import_override,
     module_member_keys,
     normalize_default_value_constraints,
+    register_runtime_expression,
     required_fields_a_default_lacks,
     resolve_default_value_descriptor,
     run_unused_models,
@@ -78,10 +81,12 @@ from datamodel_code_generator.parser._passes._warnings import warn_as_parser_bas
 from datamodel_code_generator.python_literal import (
     PythonCode,
     PythonRuntimeExpression,
+    _rfc3339_expression,
     _text_constructor_expression,
     represent_python_value,
+    runtime_expression_imports,
 )
-from datamodel_code_generator.types import DataType, _copy_data_type, type_expr_of
+from datamodel_code_generator.types import DataType, DefaultValueRecipe, _copy_data_type, _sole_member, type_expr_of
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -90,6 +95,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.config import ParserConfig
+    from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._render_plan import (
         AssignmentFacts,
         FieldRenderPlan,
@@ -462,6 +468,7 @@ def set_validate_default_on_fields(
     deserialized_default = False
     incomplete: list[str] = []
     root_model_aliases = parser.config.use_validate_default_for_root_model_type_aliases
+    builder, import_overrides = parser._graph_builder, parser._import_overrides
     for model in models:
         if isinstance(model, Enum):
             continue
@@ -472,25 +479,26 @@ def set_validate_default_on_fields(
                 lacks := required_fields_a_default_lacks(model_field, _model_named)
             ):
                 incomplete.append(_incomplete_model_default(model, model_field, *lacks))
-            deserialized_default = (
-                deserialize_default_value(
-                    parser,
-                    model,
-                    model_field,
-                )
-                or deserialized_default
-            )
             if (
                 _needs_validate_default(model_field.data_type, root_model_aliases=root_model_aliases)
                 and model_field.enable_structured_default_validation()
             ):
-                parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)
+                builder.set_field_extra(model_field, "validate_default", value=True)
+            if (value := deserialize_default_value(parser, model, model_field, import_overrides)) is None:
+                continue
+            imports = runtime_expression_imports(value)
+            builder.set_field_runtime_default(
+                model_field, value, tuple(dict.fromkeys((*model_field.runtime_expression_imports, *imports)))
+            )
+            if imports:
+                register_runtime_expression(parser)
+                deserialized_default = True
     if deserialized_default:
         normalize_default_value_constraints(
             parser,
             models,
             data_type_manager=parser.data_type_manager,
-            import_overrides=parser._import_overrides,
+            import_overrides=import_overrides,
         )
     if incomplete:
         warn_as_parser_base(_incomplete_model_defaults_message(incomplete), UserWarning, stacklevel=2)
@@ -523,19 +531,40 @@ def deserialize_default_value(
     parser: RenderPrepHost,
     model: DataModel,
     field: DataModelFieldBase,
-) -> bool:
-    """Deserialize one backend-declared scalar default or record its warning."""
+    import_overrides: dict[str, str] | None,
+) -> object | None:
+    """Return the default of a field as the Python value its type gives it, None to keep it as it is.
+
+    Where Pydantic validates the default (``validate_default``), the strict types it reaches take the value
+    ``_validated_default_value`` gives; otherwise one backend-declared scalar default under
+    ``--deserialize-default-values`` (``deserialize_decimal_default``, which records the warning of a default it
+    cannot take). A type whose imports ``import_overrides`` redirect keeps its default.
+    """
     if (
         not model.SUPPORTS_DESERIALIZED_DEFAULT_VALUES
         or field.has_default_factory
         or isinstance(field.default, (PythonCode, PythonRuntimeExpression))
     ):
-        return False
+        return None
+    if (
+        field.extras.get("validate_default") is True
+        and (
+            value := _validated_default_value(
+                parser.data_type_manager,
+                import_overrides,
+                model,
+                field,
+                alias_generator=bool(parser.config.alias_generator),
+            )
+        )
+        is not field.default
+    ):
+        return value
     if (resolved := resolve_default_value_descriptor(parser.data_type_manager, field.data_type)) is None:
-        return False
+        return None
     annotation_import, descriptor = resolved
-    if has_import_override(parser._import_overrides, annotation_import, descriptor.constructor_import):
-        return False
+    if has_import_override(import_overrides, annotation_import, descriptor.constructor_import):
+        return None
     return deserialize_decimal_default(parser, model, field, descriptor)
 
 
@@ -544,25 +573,193 @@ def deserialize_decimal_default(
     model: DataModel,
     field: DataModelFieldBase,
     descriptor: DefaultValueDescriptor,
-) -> bool:
-    """Deserialize one Decimal recipe after backend classification."""
+) -> object | None:
+    """Return the Decimal default of one Decimal recipe after backend classification, or record its warning."""
     default_type = type(field.default)
     if default_type.__module__ == "decimal" and default_type.__name__ == "Decimal":
         # Retain the constructor identity for alias resolution.
-        value = str(field.default)
-    elif descriptor.option_kind not in parser.deserialize_default_value_types:
+        return _text_constructor_expression(descriptor.constructor_import, str(field.default))
+    if (
+        descriptor.option_kind not in parser.deserialize_default_value_types
+        or (value := _deserialized_value(descriptor.recipe, descriptor.constructor_import, field.default)) is None
+    ):
         record_decimal_default_warning(parser, model, field)
-        return False
-    else:
+        return None
+    return value
+
+
+def _deserialized_value(recipe: DefaultValueRecipe, constructor_import: Import | None, value: object) -> object | None:
+    """Return the Python value the JSON value ``value`` gives under ``recipe``, None for no value.
+
+    A ``Decimal`` is built from the text of a number or of a string (``Decimal('1.5')``); bytes are the UTF-8 bytes of a
+    string, as Pydantic reads JSON bytes (``val_json_bytes='utf8'``, its default); a date, time or datetime is the
+    object an RFC 3339 string gives, built at run time from its ISO text (``_rfc3339_expression``). A bool, and a
+    value of another JSON type, has none.
+    """
+    if isinstance(value, bool):
+        return None
+    match recipe:
+        case DefaultValueRecipe.Decimal:
+            if not isinstance(value, int | float | str) or constructor_import is None:
+                return None
+            try:
+                text = str(Decimal(str(value)))
+            except (InvalidOperation, ValueError):
+                return None
+            return _text_constructor_expression(constructor_import, text)
+        case DefaultValueRecipe.Bytes:
+            return value.encode() if isinstance(value, str) else None
+    return _rfc3339_expression(_TEMPORAL_KINDS[recipe], value) if isinstance(value, str) else None
+
+
+@runtime_checkable
+class _ReadsJsonBytes(Protocol):
+    """A model whose config tells how validating it reads bytes from JSON text: the Pydantic v2 models."""
+
+    def reads_json_bytes_as_text(self) -> bool:
+        """Return whether validating the model reads bytes from JSON text as the text's UTF-8 bytes."""
+
+
+def _strict_recipe(manager: DataTypeManager, node: DataType) -> tuple[DefaultValueRecipe, Import | None] | None:
+    """Return the recipe of a strict scalar type and the import its value names, None for a type that has none.
+
+    ``Decimal`` keeps the recipe and constructor of its ``--deserialize-default-values`` descriptor; bytes, date, time
+    and datetime take theirs from ``DataTypeManager.STRICT_DEFAULT_VALUE_RECIPES`` (bytes are a literal and name none).
+    """
+    if (descriptor := manager.get_default_value_descriptor(node)) is not None:
+        return descriptor.recipe, descriptor.constructor_import
+    if (recipe := manager.get_strict_default_value_recipe(node)) is None:
+        return None
+    return recipe, None if recipe is DefaultValueRecipe.Bytes else IMPORT_DATETIME_MODULE
+
+
+_TEMPORAL_KINDS: Final = {
+    DefaultValueRecipe.Date: "date",
+    DefaultValueRecipe.Time: "time",
+    DefaultValueRecipe.DateTime: "datetime",
+}
+"""The ``datetime`` module class each temporal recipe builds."""
+
+
+def _validated_default_value(
+    manager: DataTypeManager,
+    import_overrides: dict[str, str] | None,
+    model: DataModel,
+    field: DataModelFieldBase,
+    *,
+    alias_generator: bool,
+) -> object:
+    """Return the default of ``field`` with each JSON value a strict type refuses as Python input deserialized.
+
+    Pydantic validates the default as Python input, where a strict type refuses the JSON value it reads from a JSON
+    document: text for bytes, a date, a time or a datetime, a number for a ``Decimal`` (#7380). Each such value takes
+    the Python value of its recipe (``_deserialized_value``); Pydantic still validates the default and judges it. A
+    type is strict as written: its import (``StrictBytes``), ``Annotated[<type>, Strict()]`` or ``strict=True`` among
+    its arguments. The default is followed through the model a reference names (an enum keeps it, a root model or type
+    alias reads it by its type, an object model reads each key under the field that reads it whatever the config,
+    ``_certain_input_names``, and keeps the others, which Pydantic may not read at all), a union with
+    one member beside ``None`` (``_sole_member``; which member of a larger union takes a value is Pydantic's choice),
+    the items of an array (by position in a tuple with a type per position) and the values of a mapping. Bytes are
+    read from text only where the config of the model that holds them reads JSON bytes as UTF-8 text
+    (``_ReadsJsonBytes``). A value the recipe gives nothing for, or one under a type whose imports an
+    override redirects, is kept, and a container is copied only where it changes.
+    """
+    visiting: set[tuple[int, int]] = set()
+
+    def read(node: DataType, value: object, holder: DataModel) -> object:
+        if (reference := node.reference) is not None:
+            return model_value(_model_named(reference), value, holder)
+        if node in ARRAYS and isinstance(value, _ARRAY_VALUES):
+            return array_value(node, value, holder)
+        if node in MAPPINGS and isinstance(value, dict):
+            member = _sole_member(node.data_types)
+            return (
+                value
+                if member is None
+                else _copied_mapping(value, {k: read(member, v, holder) for k, v in value.items()})
+            )
+        if node.data_types:
+            return value if (member := _sole_member(node.data_types)) is None else read(member, value, holder)
+        return leaf_value(node, value, holder)
+
+    def array_value(node: DataType, value: _ArrayValue, holder: DataModel) -> object:
+        if node.is_tuple and node.tuple_item_count is None:
+            items = [read(member, item, holder) for member, item in zip(node.data_types, value, strict=False)]
+            return _copied_items(value, [*items, *list(value)[len(items) :]])
+        member = _sole_member(node.data_types)
+        return value if member is None else _copied_items(value, [read(member, item, holder) for item in value])
+
+    def leaf_value(node: DataType, value: object, holder: DataModel) -> object:
+        if (
+            not (node.strict or (node.kwargs or {}).get("strict") is True)
+            or (strict_recipe := _strict_recipe(manager, node)) is None
+            or (
+                strict_recipe[0] is DefaultValueRecipe.Bytes
+                and not (isinstance(holder, _ReadsJsonBytes) and holder.reads_json_bytes_as_text())
+            )
+            or has_import_override(import_overrides, *filter(None, (node.import_, strict_recipe[1])))
+        ):
+            return value
+        return value if (converted := _deserialized_value(*strict_recipe, value)) is None else converted
+
+    def model_value(target: DataModel | None, value: object, holder: DataModel) -> object:
+        key = (id(target), id(value))
+        if target is None or target.form == "enum" or key in visiting:
+            return value
+        visiting.add(key)
         try:
-            value = str(Decimal(str(field.default)))
-        except (InvalidOperation, TypeError, ValueError):
-            record_decimal_default_warning(parser, model, field)
-            return False
-    parser._graph_builder.set_field_default(field, _text_constructor_expression(descriptor.constructor_import, value))
-    field._set_runtime_expression_imports((descriptor.constructor_import,))
-    parser._register_runtime_expression()
-    return True
+            if target.form != "object":
+                inner = holder if target.form == "alias" else target
+                return read(target.fields[0].data_type, value, inner) if target.fields else value
+            if not isinstance(value, dict):
+                return value
+            fields = {
+                name: field
+                for field in target.effective_fields
+                for name in _certain_input_names(field, alias_generator=alias_generator)
+            }
+            return _copied_mapping(
+                value,
+                {
+                    key: read(fields[key].data_type, item, target) if key in fields else item
+                    for key, item in value.items()
+                },
+            )
+        finally:
+            visiting.discard(key)
+
+    return read(field.data_type, field.default, model)
+
+
+def _certain_input_names(field: DataModelFieldBase, *, alias_generator: bool) -> tuple[str, ...]:
+    """Return the names Pydantic reads the field from in every config the generator writes, as the field is written.
+
+    Its validation aliases, else its alias unless it is only the serialization alias, else its name where no alias
+    generator gives it another. A config the generator does not write (a configured base class it cannot read,
+    ``validate_by_alias=False`` given as template data) may read others; ``parser/_schema_validators.field_input_names``
+    lists every name Pydantic may read instead.
+    """
+    if field.validation_aliases:
+        return tuple(field.validation_aliases)
+    if field.alias is not None and not field.use_serialization_alias:
+        return (field.alias,)
+    return () if alias_generator or field.name is None else (field.name,)
+
+
+_ARRAY_VALUES: Final = (list, tuple, set, frozenset)
+"""The values a default of an array type holds: a JSON array, or a set ``--use-unique-items-as-set`` wrote."""
+_ArrayValue: TypeAlias = "list[object] | tuple[object, ...] | set[object] | frozenset[object]"
+"""A value of one of the kinds of ``_ARRAY_VALUES``."""
+
+
+def _copied_items(value: _ArrayValue, items: list[object]) -> object:
+    """Return ``value``, or a container of its type with ``items`` where one of them is another object."""
+    return value if unchanged(items, value) else type(value)(items)
+
+
+def _copied_mapping(value: dict[object, object], items: dict[object, object]) -> dict[object, object]:
+    """Return ``value``, or ``items`` where one of its values is another object."""
+    return value if unchanged(items.values(), value.values()) else items
 
 
 def record_decimal_default_warning(parser: RenderPrepHost, model: DataModel, field: DataModelFieldBase) -> None:

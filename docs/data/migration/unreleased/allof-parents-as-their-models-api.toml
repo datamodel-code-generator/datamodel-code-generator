@@ -1,0 +1,14 @@
+[[change]]
+id = "allof-parents-as-their-models-api"
+category = "api"
+title = "Public names for --read-allof-parents-as-their-models and --read-set-item-fields-in-class-order"
+summary = "The options add their config fields; nothing is removed or changed."
+refs = ["#1"]
+decision = ["#1"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
