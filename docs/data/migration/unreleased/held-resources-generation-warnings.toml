@@ -2,15 +2,15 @@
 id = "held-resources-generation-warnings"
 category = "notice"
 title = "Warnings of a run that reads a held schema where its URL loads nothing"
-summary = "A run that failed on the read of a URL another document of the run declares now generates, so it shows the warnings of the generation it reaches, such as the notice that Black and isort become optional, and a modular result written to standard output stops with the message that it needs an output directory."
+summary = "A run that failed on the read of a URL another document of the run declares now generates, so it shows the warnings of the generation it reaches, such as the notice that Black and isort become optional and the warnings of references resolved for compatibility, and a modular result written to standard output stops with the message that it needs an output directory."
 refs = ["#7159", "#6999"]
 kind = "warning"
 action = "none"
 source = "release-note"
 
 [[change.cells]]
-input = ["tests/data/jsonschema/held_root_anchor", "tests/data/jsonschema/held_root_ids_store"]
+input = ["tests/data/jsonschema/held_root_anchor", "tests/data/jsonschema/held_root_ids_store", "tests/data/openapi/component_embedded_ids"]
 backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "typing.TypedDict"]
 options = "*"
 aspects = ["warning", "message"]
-match = "^\\[(warning\\] added builtins\\.FutureWarning: (Black/isort will become optional|Default formatters will change)|message\\] removed (HTTP 404 error fetching https://example\\.com/schemas/|handled: datamodel_code_generator\\.SchemaFetchError$)|message\\] added first attempt: \\{\"code\": 2, \"handled\": \\[\"datamodel_code_generator\\.Error\"\\], \"messages\": \"Modular references require an output directory)"
+match = "^\\[(warning\\] added builtins\\.FutureWarning: (Black/isort will become optional|Default formatters will change)|warning\\] added datamodel_code_generator\\.SchemaResourceRefWarning: \\$ref '[^']+' in [^ ]+ (is resolved against the document|loads the referenced document) for compatibility|message\\] removed (HTTP 404 error fetching https://example\\.com/schemas/|handled: datamodel_code_generator\\.SchemaFetchError$)|message\\] added first attempt: \\{\"code\": 2, \"handled\": \\[\"datamodel_code_generator\\.Error\"\\], \"messages\": \"Modular references require an output directory)"

@@ -19,6 +19,6 @@ covers = [
 ]
 
 [[change.cells]]
-input = ["tests/data/jsonschema/held_root_anchor", "tests/data/jsonschema/held_root_ids_store"]
+input = ["tests/data/jsonschema/held_root_anchor", "tests/data/jsonschema/held_root_ids_store", "tests/data/openapi/component_embedded_ids"]
 backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "typing.TypedDict"]
 options = "*"
