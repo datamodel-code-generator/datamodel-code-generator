@@ -296,7 +296,7 @@ AsyncAPI documents are supported with `--input-file-type asyncapi`. The parser g
 | `schemaFormat` family | Status | Notes |
 |-----------------------|--------|-------|
 | AsyncAPI Schema Object | ✅ Supported | Default when omitted |
-| JSON Schema | ✅ Supported | `application/schema+json` and `application/schema+yaml` |
+| JSON Schema | ✅ Supported | `application/schema`, `application/schema+json` and `application/schema+yaml` |
 | OpenAPI Schema Object | ✅ Supported | `application/vnd.oai.openapi...` |
 | Apache Avro | ✅ Supported | `application/vnd.apache.avro...` |
 | Protocol Buffers | ✅ Supported | `application/vnd.google.protobuf`; inline source and local imports are resolved |

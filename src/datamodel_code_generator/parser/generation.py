@@ -29,11 +29,11 @@ Contributor guide:
   list-method contract test deliberately fails when Python adds an unclassified
   method so new mutation paths cannot silently leave facts stale.
 
-The pre-commit hook backed by ``scripts/check_generation_store_usage.py``
-guards the parser package against common direct mutations. When adding a new
-store mutation API, add it to ``SITE_EFFECTS`` or ``NO_SITE_EFFECT``, which make up
-``GENERATION_STORE_MUTATION_METHODS``, so the checker and its tests stay aligned
-with the public parser-facing surface, and give ``GraphBuilder`` its delegating method.
+heki's write-owner contracts (``scripts/heki.toml``, built from the rows of
+``scripts/fact_tables.py``) guard the package against writes outside these
+operations. When adding a new store mutation API, add it to ``SITE_EFFECTS`` or
+``NO_SITE_EFFECT``, which make up ``GENERATION_STORE_MUTATION_METHODS`` (a row may
+name only those in its ``store_ops``), and give ``GraphBuilder`` its delegating method.
 """
 
 # ruff: noqa: D105, FURB189

@@ -53,7 +53,7 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``expected:env-override`` and ``expected:conditional``: the ``.refs`` lines that carry an environment predicate
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
-  and the direct-assert exemption list, the generation store allowlist, the host baseline
+  and the direct-assert exemption list, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (the sum of the site counts of
   its entries: ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other
   key budgets, ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture
@@ -143,7 +143,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 SCRIPT = "scripts/check_ratchets.py"
-STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
 HEKI_BASELINE = "scripts/heki_baseline.toml"
 HEKI_OWN_KEY_RULES = frozenset({"EFF201"})
@@ -224,6 +223,8 @@ HEKI_RULES = {
     "lock-or-tx-held-across-io": "EFF106",
     "lock-reacquired-while-held": "EFF109",
     "exclusive-object-fanout": "EFF110",
+    "set-order-output": "EFF112",
+    "recursion-error-as-value": "EFF114",
     "unretained-async-task": "EFF107",
     "effect-boundary-violation": "EFF201",
     "loop-carried-concat": "DATA101",
@@ -377,9 +378,6 @@ ADVICE = {
     "coverage-config": "An omitted or excluded file is never measured: reach it with tests instead.",
     "ty-config": "A ty rule set below error hides its findings: fix them and keep the rule an error.",
     "pytest-config": "Fix the warning's cause, or assert it with pytest.warns, instead of filtering it for all tests.",
-    "store-allowlist": (
-        "Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it."
-    ),
     "allowlist": "Allowlist entries only shrink: fix the violation instead of listing it.",
     STORED_LIST: (
         "A stored list of known gaps only shrinks: the new line is a regression of the generated output (or, for a "
@@ -1035,10 +1033,6 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
         tally.add("allowlist:direct-assert-exempt-files", "pyproject.toml")
     _host_baseline_tally(tally, root)
     _heki_baseline_tally(tally, root)
-    for value in _toml_leaves(root, STORE_ALLOWLIST):
-        counted = isinstance(value, int)
-        for _ in range(value if counted else 1):
-            tally.add(f"store-allowlist:{'counted' if counted else 'witness'}", STORE_ALLOWLIST)
     for path, names in ALLOWLISTS:
         module = (
             ast.parse((root / path).read_bytes()) if (root / path).is_file() else ast.Module(body=[], type_ignores=[])

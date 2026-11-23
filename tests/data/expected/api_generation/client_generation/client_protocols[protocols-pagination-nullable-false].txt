@@ -1,0 +1,3 @@
+# protocols-pagination-nullable-false
+render pydantic_v2.BaseModel
+  Error: --client-protocols['items.all'].continuation.end: The cursor of 'items.all' can read null, which no end condition covers

@@ -1,0 +1,14 @@
+[[change]]
+id = "asyncapi-readers-shared-public-names"
+category = "api"
+decision = ["#6937"]
+action = "review"
+source = "release-note"
+kind = "python-api"
+affects = { python_api = ["datamodel_code_generator.parser.asyncapi.JSON_SCHEMA_FORMATS"] }
+title = "Public name of the AsyncAPI JSON Schema media types lists application/schema"
+summary = "parser.asyncapi.JSON_SCHEMA_FORMATS gains the bare application/schema media type; the models are written as before."
+refs = ["#6937"]
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

@@ -352,7 +352,8 @@ class ModelFieldFacts:
     it (``model/_field_imports.py:field_admits_none``). `explicit_name` says an `--aliases` entry
     of the field's class scope gave its name, which is never renamed. `constructor_required` says the model's
     constructor requires the field, and `in_init` that the field takes part in it, as the model's assignment facts
-    tell.
+    tell. `default` is the field's default when it is a JSON boolean, number or string, whatever the backend writes
+    of it (a TypedDict writes none).
     """
 
     required: bool
@@ -367,6 +368,7 @@ class ModelFieldFacts:
     explicit_name: bool
     constructor_required: bool
     in_init: bool
+    default: LiteralScalar | None = None
 
 
 @dataclass(frozen=True, slots=True)
