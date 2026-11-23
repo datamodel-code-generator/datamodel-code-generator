@@ -53,11 +53,10 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``expected:env-override`` and ``expected:conditional``: the ``.refs`` lines that carry an environment predicate
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
-  and the direct-assert exemption list, the host baseline
-  (``allowlist:host-private-access``, the sum of its access counts), heki's baseline (the sum of the site counts of
-  its entries: ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other
-  key budgets, ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture
-  checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
+  and the direct-assert exemption list, heki's baseline (the sum of the site counts of its entries:
+  ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other key budgets,
+  ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture checks
+  (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -77,7 +76,7 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``source-rule:unreadable``: a file that parses and that the source model refuses, with its error, which no source
   rule can read.
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
-  or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
+  or ``--config`` argument) or an allowlist or baseline this script cannot read. Such a key always fails under
   ``--enforce``, because what it hides cannot be counted.
 
 The source comments and calls are counted in every ``.py`` and ``.pyi`` file outside ``tests/data``, whether ruff
@@ -141,7 +140,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 SCRIPT = "scripts/check_ratchets.py"
-HOST_BASELINE = "scripts/host_private_access_baseline.toml"
 HEKI_BASELINE = "scripts/heki_baseline.toml"
 HEKI_OWN_KEY_RULES = frozenset({"EFF201"})
 """The heki rules whose baseline sites count under a key of their own: no other key budgets them, so a new site cannot
@@ -393,10 +391,6 @@ ADVICE = {
         )
         for rule in SOURCE_RULES
     },
-    "allowlist:host-private-access": (
-        "Host baseline entries only shrink: declare the member on the Host Protocol the function takes, "
-        "or move the code into the class."
-    ),
     "unreadable": (
         "Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config "
         "(put those in pyproject.toml), so that the counter can read them."
@@ -969,25 +963,6 @@ def _method_owner(statement: ast.stmt, names: frozenset[str]) -> str:
     return _listed_name(owner, names)
 
 
-def _toml_leaves(root: Path, path: str) -> list[object]:
-    """Return the values of an allowlist file of ``["file"."function"]`` tables, or [] where there is none."""
-    file = root / path
-    tables = tomllib.loads(file.read_text(encoding="utf-8")) if file.is_file() else {}
-    return [value for table in tables.values() for entry in table.values() for value in entry.values()]
-
-
-def _host_baseline_tally(tally: Tally, root: Path) -> None:
-    """Count the accesses of the host baseline; a file that is not tables of integer counts is unreadable."""
-    try:
-        counts = _toml_leaves(root, HOST_BASELINE)
-    except (tomllib.TOMLDecodeError, AttributeError):
-        counts = [None]
-    for count in counts:
-        key = "allowlist:host-private-access" + ("" if type(count) is int else ":unreadable")
-        for _ in range(count if type(count) is int else 1):
-            tally.add(key, HOST_BASELINE)
-
-
 def _heki_baseline_tally(tally: Tally, root: Path) -> None:
     """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule.
 
@@ -1028,7 +1003,6 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
         tally.add("pytest-config:filterwarnings-ignore", "pyproject.toml")
     for _ in pytest.get("ini_options", {}).get("assert_helper_direct_assert_exempt_files", []):
         tally.add("allowlist:direct-assert-exempt-files", "pyproject.toml")
-    _host_baseline_tally(tally, root)
     _heki_baseline_tally(tally, root)
     for path, names in ALLOWLISTS:
         module = (

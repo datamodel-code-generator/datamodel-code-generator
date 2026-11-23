@@ -1473,6 +1473,17 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Root types for mixed union map keys",
+        config=PresetConfig(use_root_types_for_mixed_union_map_keys=True),
+        description=(
+            "Type the RootModel members of a map key that is a union with a non-RootModel member, such as a "
+            "propertyNames anyOf of an enum, or of a string with a maxLength, and a RootModel, by their root types, "
+            "so a key that only the RootModel matches is accepted, and a key that both match parses as its root "
+            "type, here a UUID for JSON input, as it does where the key names the RootModel alone. A Python dict "
+            "input keeps such a key as a str."
+        ),
+    ),
+    PresetOptionGroup(
         title="Null kept on nullable items",
         config=PresetConfig(keep_null_of_nullable_items=True),
         description=(

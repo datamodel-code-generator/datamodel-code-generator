@@ -982,6 +982,128 @@ def test_input_model_nested_model_with_callable(tmp_path: Path) -> None:
     )
 
 
+_UNSERIALIZABLE_HOLDERS = {
+    "hooks": (
+        "from collections.abc import Callable\n"
+        "from dataclasses import dataclass\n"
+        "from typing import Annotated, Generic, TypeVar\n\n"
+        "from pydantic import BaseModel, Field, RootModel\n"
+        "from pydantic.dataclasses import dataclass as pydantic_dataclass\n"
+        "from typing_extensions import TypedDict\n\n"
+        "T = TypeVar('T')\n\n\n"
+        "@dataclass\n"
+        "class Hook:\n"
+        "    name: str\n"
+        "    callback: Callable[[int], int]\n\n\n"
+        "class Probe(TypedDict):\n"
+        "    check: Callable[[str], bool] | None\n\n\n"
+        "@pydantic_dataclass\n"
+        "class Task:\n"
+        "    run: Callable[[], None]\n\n\n"
+        "@pydantic_dataclass\n"
+        "class Aliased:\n"
+        "    run: Annotated[Callable[[], None], Field(alias='runner')]\n\n\n"
+        "class Handler(RootModel[Callable[[int], int]]):\n"
+        "    pass\n\n\n"
+        "class Inner(BaseModel):\n"
+        "    callback: Callable[[int], int]\n\n\n"
+        "@dataclass\n"
+        "class Outer:\n"
+        "    inner: Inner\n"
+        "    hooks: list[Hook]\n"
+        "    fallback: Callable[[int], int] | None = None\n\n\n"
+        "class Holder(BaseModel):\n"
+        "    hook: Hook\n"
+        "    probe: Probe\n"
+        "    task: Task\n"
+        "    handler: Handler\n\n\n"
+        "class Deep(BaseModel):\n"
+        "    outer: Outer\n\n\n"
+        "class AliasedHolder(BaseModel):\n"
+        "    task: Aliased\n\n\n"
+        "@dataclass\n"
+        "class Box(Generic[T]):\n"
+        "    callback: Callable[[T], T]\n\n\n"
+        "class GenericHolder(BaseModel):\n"
+        "    box: Box[int]\n"
+    ),
+    "first": (
+        "from collections.abc import Callable\n"
+        "from dataclasses import dataclass\n\n\n"
+        "@dataclass\n"
+        "class Hook:\n"
+        "    run: Callable[[int], int]\n"
+    ),
+    "second": (
+        "from collections.abc import Callable\n\n"
+        "from typing_extensions import TypedDict\n\n\n"
+        "class Hook(TypedDict):\n"
+        "    stop: Callable[[str], str]\n"
+    ),
+    "both": (
+        "from pydantic import BaseModel\n\n"
+        "import first\n"
+        "import second\n\n\n"
+        "class Both(BaseModel):\n"
+        "    first: first.Hook\n"
+        "    second: second.Hook\n"
+    ),
+}
+
+
+_ALL_KEYS = "--field-include-all-keys"
+
+
+@pytest.mark.parametrize(
+    ("input_models", "extra_args"),
+    [
+        pytest.param(["hooks:Holder"], [_ALL_KEYS], id="held-classes"),
+        pytest.param(
+            ["hooks:Holder"], ["--input-model-ref-strategy", "reuse-foreign"], id="held-classes-reuse-foreign"
+        ),
+        pytest.param(["hooks:Deep"], [_ALL_KEYS], id="nested-held-classes"),
+        pytest.param(["hooks:Handler"], [], id="root-model-root"),
+        pytest.param(["hooks:Holder", "hooks:Deep"], [], id="two-models"),
+        pytest.param(
+            ["hooks:AliasedHolder"], ["--read-input-model-dataclass-fields-by-alias"], id="pydantic-dataclass-by-alias"
+        ),
+        pytest.param(["hooks:AliasedHolder"], [_ALL_KEYS], id="pydantic-dataclass-by-name"),
+        pytest.param(["hooks:GenericHolder"], [_ALL_KEYS], id="generic-dataclass"),
+        pytest.param(["both:Both"], [_ALL_KEYS], id="same-named-classes"),
+        pytest.param(["both:Both"], ["--input-model-ref-strategy", "reuse-all"], id="same-named-classes-reuse-all"),
+    ],
+)
+def test_input_model_unserializable_fields_of_held_classes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, input_models: list[str], extra_args: list[str]
+) -> None:
+    """A field JSON Schema cannot express keeps its Python type in every kind of class the model holds (#6885).
+
+    The class of a definition is the class the schema generation recorded for it, not a Pydantic model found by name:
+    a dataclass, a TypedDict, a Pydantic dataclass and a ``RootModel`` held by the model keep their ``Callable``
+    fields where the output used to type them ``str``, and so does a ``RootModel`` as the input.
+    ``first.Hook`` and ``second.Hook`` share a name and each keeps its own field. A Pydantic dataclass read by name,
+    not by alias, and a generic dataclass (the class recorded for ``Box[int]`` is ``Box``, whose annotation names ``T``)
+    have no field to pair, and their internal marker leaves no trace in the output (``--field-include-all-keys``
+    writes every key of a field). The input modules are written for the test.
+    """
+    monkeypatch.chdir(tmp_path)
+    for module, source in _UNSERIALIZABLE_HOLDERS.items():
+        monkeypatch.delitem(sys.modules, module, raising=False)
+        (tmp_path / f"{module}.py").write_text(source, encoding="utf-8")
+    first, *others = input_models
+    run_input_model_and_assert(
+        input_model=first,
+        output_path=tmp_path / "output.py",
+        extra_args=[
+            *(arg for other in others for arg in ("--input-model", other)),
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 def test_input_model_custom_class(tmp_path: Path) -> None:
     """Test that custom classes trigger handle_invalid_for_json_schema."""
     run_input_model_and_assert(

@@ -8,10 +8,12 @@ heki is a development dependency (the ``test`` dependency group). ``scripts/buil
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
 import sysconfig
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 import pytest
@@ -621,6 +623,172 @@ def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
             ("naming.py", "rename", "MUT204", "model.Ref"),
         ],
     ), result.stderr
+
+
+SEEDED_HOST_ACCESS = """\
+from typing import Protocol
+
+from datamodel_code_generator.parser.base import Parser
+
+
+class CountHost(Protocol):
+    _count: int
+
+    def _reset(self) -> None: ...
+
+
+class Counter(Protocol):
+    _count: int
+
+
+class NarrowCount(CountHost, Protocol):
+    pass
+
+
+class Child(Parser):
+    def bump(self) -> None:
+        self._count += 1
+        self._reset()
+
+
+def through_the_host(parser: CountHost) -> int:
+    parser._reset()
+    parser._count = 1
+    return parser._count
+
+
+def through_the_class(parser: Parser) -> int:
+    parser._reset()
+    parser._count = 1
+    return parser._count
+
+
+def through_a_key(parser: Parser) -> object:
+    parser.__dict__["_count"] = 2
+    return getattr(parser, "_count")
+
+
+def through_other_protocols(counter: Counter, narrow: NarrowCount) -> int:
+    return counter._count + narrow._count
+
+
+def untyped(parser) -> int:
+    return parser._count + len(parser.__class__.__name__)
+"""
+"""A concern module (``parser/_*``) reaching the private members of ``Parser``, which ``parser/base.py`` defines.
+
+A method of a subclass on its own receiver and a ``*Host`` Protocol that declares the member reach them; the class
+itself, a ``__dict__`` key or ``getattr`` name, a Protocol of the module that is no ``*Host``, a subprotocol of a
+Host and an untyped receiver do not. Dunders are none of the targets."""
+SEEDED_HOST_PACKAGE = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/base.py": (
+        "class Parser:\n    def __init__(self) -> None:\n        self._count = 0\n\n"
+        "    def _reset(self) -> None:\n        self._count = 0\n\n\n"
+        "def outside_the_concern(parser: Parser) -> int:\n    return parser._count\n"
+    ),
+    f"{PACKAGE}/parser/_concern.py": SEEDED_HOST_ACCESS,
+}
+
+
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_private_access_of_the_concern_modules(tmp_path: Path) -> None:
+    """A concern module reads, calls or writes another class's private member only through its receiver or a Host.
+
+    The host contracts report every other access, also by ``__dict__`` key or ``getattr`` name, and one heki cannot
+    tie to a class; a module outside the concern modules is ruff's (SLF001).
+    """
+    for name, text in SEEDED_HOST_PACKAGE.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    contracts.write_text("\n".join(build_heki_contracts.host_contracts(repo)), encoding="utf-8")
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (item["qualname"], item["rule_code"], item["target"].removeprefix(f"{PACKAGE_NAME}."), item["line"])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("through_a_key", "MUT201", "parser.base.Parser._[!_]*", 39),
+            ("through_a_key", "MUT203", "parser.base.Parser._[!_]*", 40),
+            ("through_other_protocols", "MUT203", "parser._concern.Counter._[!_]*", 44),
+            ("through_other_protocols", "MUT203", "parser._concern.NarrowCount._[!_]*", 44),
+            ("through_the_class", "MUT201", "parser.base.Parser._[!_]*", 34),
+            ("through_the_class", "MUT203", "parser.base.Parser._[!_]*", 35),
+            ("through_the_class", "MUT204", "parser.base.Parser._[!_]*", 33),
+            ("untyped", "MUT206", "_count", 48),
+        ],
+    ), result.stderr
+
+
+@pytest.mark.allow_direct_assert("a scope that drifts from the ruff ignores must fail the test, not be stored")
+def test_host_contracts_cover_the_files_where_slf001_is_off() -> None:
+    """The host contracts check exactly the files where the ruff per-file ignores turn SLF001 off.
+
+    ruff's ``banned-api`` holds ``sys._getframe`` in the same files, which a negated per-file ignore names.
+    """
+    ignores = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["ruff"]["lint"][
+        "per-file-ignores"
+    ]
+    globs = [glob for glob, rules in ignores.items() if glob.startswith("src/") and "private-member-access" in rules]
+    (banned,) = [glob for glob, rules in ignores.items() if "banned-api" in rules]
+    head, alternatives, tail = re.fullmatch(r"!(.*)\{(.*)\}(.*)", banned).groups()
+    banned_globs = [f"{head}{alternative}{tail}" for alternative in alternatives.split(",")]
+
+    def scopes(relative: str) -> tuple[bool, bool, bool]:
+        return (
+            any(fnmatchcase(relative, glob) for glob in globs),
+            build_heki_contracts.in_host_scope(ROOT / relative),
+            any(fnmatchcase(relative, glob) for glob in banned_globs),
+        )
+
+    named = {
+        relative: scopes(f"{PACKAGE}/{relative}")
+        for relative in (
+            "parser/_new/x.py",
+            "parser/_new/sub/y.py",
+            "parser/_passes/sub/z.py",
+            "parser/base.py",
+            "parser/jsonschema.py",
+            "model/_field_imports.py",
+            "model/base.py",
+        )
+    }
+    differing = [
+        relative
+        for path in sorted((ROOT / "src").rglob("*.py"))
+        if len(set(scopes(relative := path.relative_to(ROOT).as_posix()))) > 1
+    ]
+
+    inside, outside = (True, True, True), (False, False, False)
+    assert (named, scopes("tests/parser/_x.py"), differing) == (
+        {
+            "parser/_new/x.py": inside,
+            "parser/_new/sub/y.py": inside,
+            "parser/_passes/sub/z.py": inside,
+            "parser/base.py": outside,
+            "parser/jsonschema.py": outside,
+            "model/_field_imports.py": inside,
+            "model/base.py": outside,
+        },
+        outside,
+        [],
+    )
 
 
 @pytest.mark.allow_direct_assert(

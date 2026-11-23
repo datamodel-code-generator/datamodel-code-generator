@@ -38,11 +38,6 @@ heki-baseline-unreadable-count	check_ratchets_script/check_ratchets_against_base
 heki-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[heki-baseline-unreadable].txt
 hidden-by-config	check_ratchets_script/check_ratchets_against_base[hidden-by-config].txt
 hook-exclude-widened	check_ratchets_script/check_ratchets_against_base[hook-exclude-widened].txt
-host-baseline-grows	check_ratchets_script/check_ratchets_against_base[host-baseline-grows].txt
-host-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[host-baseline-shrinks].txt
-host-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
-host-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
-host-baseline-unreadable-value	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-value].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 import-cycles	check_ratchets_script/check_ratchets_against_base[import-cycles].txt
 import-cycles-ignored-files	check_ratchets_script/check_ratchets_against_base[import-cycles-ignored-files].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt

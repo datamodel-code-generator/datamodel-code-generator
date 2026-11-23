@@ -1,6 +1,6 @@
 """#7025 Host private access: type parameters and type statements hide a Host parameter (Python 3.12 syntax).
 min-python: 3.12
-layers: host
+layers: parser
 """
 from __future__ import annotations
 

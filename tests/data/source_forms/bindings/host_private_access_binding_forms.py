@@ -1,5 +1,5 @@
 """#7025 Host private access: every binding form of an inner scope hides a Host parameter of the scopes around it.
-layers: host
+layers: parser
 """
 from __future__ import annotations
 
