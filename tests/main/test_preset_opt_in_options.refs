@@ -42,6 +42,8 @@ read-uuid6-uuid7-uuid8-formats-command-line	main/preset_opt_in_options/preset_op
 read-uuid6-uuid7-uuid8-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].model.py
 read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
 read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
+rename-fields-hiding-types-from-type-checkers-command-line	main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-command-line].model.py
+rename-fields-hiding-types-from-type-checkers-pyproject	main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-command-line].model.py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
 use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
 use-root-types-for-mixed-union-map-keys-command-line	main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-command-line].model.py
@@ -181,6 +183,10 @@ read-yaml-1-1-numbers-as-text-practical	main/preset_opt_in_options/preset_sets_o
 read-yaml-1-1-numbers-as-text-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].model.py
 remove-unused-models-beside-type-overrides-practical	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].model.py
 remove-unused-models-beside-type-overrides-standard	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].model.py
+rename-fields-hiding-types-from-type-checkers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-practical].model.py
+rename-fields-hiding-types-from-type-checkers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-practical].model.py
+rename-redeclared-fields-hiding-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-redeclared-fields-hiding-types-practical].model.py
+rename-redeclared-fields-hiding-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-redeclared-fields-hiding-types-standard].model.py
 rename-submodules-hidden-by-classes-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical].tree/
 rename-submodules-hidden-by-classes-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-standard].tree/	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical].tree/
 singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].model.py

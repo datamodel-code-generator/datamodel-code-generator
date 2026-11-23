@@ -342,7 +342,7 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
             s.model_list,
             use_deferred_annotations=s.config.use_deferred_annotations,
         ),
-        when=lambda self, _: self.data_model_type.SUPPORTS_FIELD_RENAMING,
+        when=lambda self, _: modules.renames_hiding_fields(self),
     ),
     PassSpec("remove_overridden_models", late(modules.remove_overridden_models)),
     PassSpec(
@@ -637,6 +637,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 "process_single_module",
                 late(modules.process_each_module),
                 per_module=True,
+            ),
+            PassSpec(
+                "follow_hiding_field_renames",
+                late(modules.follow_hiding_field_renames),
+                when=lambda self, _: modules.follows_hiding_field_renames(self),
             ),
             PassSpec(
                 "settle_kept_parent_roots",

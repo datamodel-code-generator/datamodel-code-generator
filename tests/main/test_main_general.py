@@ -1993,6 +1993,8 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_field_description_example",
         "use_single_line_docstring",
         "use_frozen_field",
+        "rename_redeclared_fields_hiding_types",
+        "rename_fields_hiding_types_from_type_checkers",
         "check_pattern_maps_strictly",
         "use_type_checking_imports",
         "dedupe_request_response_variants",

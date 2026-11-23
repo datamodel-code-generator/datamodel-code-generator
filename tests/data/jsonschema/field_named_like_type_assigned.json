@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "required": ["Address"],
+  "properties": {
+    "Address": {"$ref": "#/$defs/Address"},
+    "Phone": {"$ref": "#/$defs/Phone"},
+    "Tag": {"type": "array", "items": {"$ref": "#/$defs/Tag"}},
+    "Contact": {"$ref": "#/$defs/Contact"}
+  },
+  "$defs": {
+    "Address": {"type": "object", "properties": {"city": {"type": "string"}}},
+    "Phone": {"type": "object", "properties": {"number": {"type": "string"}}},
+    "Tag": {"type": "object", "properties": {"label": {"type": "string"}}},
+    "Contact": {
+      "type": "object",
+      "required": ["Contact"],
+      "properties": {"Contact": {"$ref": "#/$defs/Phone"}, "Phone": {"$ref": "#/$defs/Phone"}}
+    },
+    "Business": {
+      "allOf": [
+        {"$ref": "#/$defs/Contact"},
+        {"properties": {"Phone": {"$ref": "#/$defs/Address"}, "Tag": {"$ref": "#/$defs/Tag"}}}
+      ]
+    },
+    "Branch": {"allOf": [{"$ref": "#/$defs/Contact"}, {"properties": {"Phone": {"$ref": "#/$defs/Phone"}}}]}
+  }
+}

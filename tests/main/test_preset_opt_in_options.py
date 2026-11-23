@@ -152,6 +152,8 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--use-root-types-for-mixed-union-map-keys",
     "--read-refs-in-their-resources",
     "--keep-bases-beside-generic-base-class",
+    "--rename-redeclared-fields-hiding-types",
+    "--rename-fields-hiding-types-from-type-checkers",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
@@ -666,6 +668,18 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ],
         id="keep-bases-beside-generic-base-class",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "field_named_like_type_redeclared.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--no-snake-case-field"],
+        id="rename-redeclared-fields-hiding-types",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "field_named_like_type_assigned.json",
+        "jsonschema",
+        ["--output-model-type", "dataclasses.dataclass"],
+        id="rename-fields-hiding-types-from-type-checkers",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -1108,6 +1122,14 @@ def test_preset_sets_opt_in_option(
             "--keep-bases-beside-generic-base-class",
             "--no-keep-bases-beside-generic-base-class",
             id="keep-bases-beside-generic-base-class",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_named_like_type_assigned.json",
+            "jsonschema",
+            ["--output-model-type", "dataclasses.dataclass"],
+            "--rename-fields-hiding-types-from-type-checkers",
+            "--no-rename-fields-hiding-types-from-type-checkers",
+            id="rename-fields-hiding-types-from-type-checkers",
         ),
     ],
 )

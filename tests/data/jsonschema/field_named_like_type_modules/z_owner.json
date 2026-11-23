@@ -1,0 +1,5 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "ZOwner", "type": "object",
+ "properties": {"owner": {"$ref": "#/$defs/Keeper"}},
+ "$defs": {
+   "Keeper": {"allOf": [{"$ref": "y_base.json#/$defs/Shelter"}, {"properties": {"Pet": {"$ref": "a_owner.json#/$defs/Dog"}}}]}
+ }}

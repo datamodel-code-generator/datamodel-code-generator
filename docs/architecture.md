@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 280 | Shared generation options. |
-| `GenerateConfig` | 295 | Public `generate()` configuration. |
-| `ParserConfig` | 234 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 236 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 247 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 250 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 237 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 237 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 236 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 237 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 282 | Shared generation options. |
+| `GenerateConfig` | 297 | Public `generate()` configuration. |
+| `ParserConfig` | 236 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 238 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 249 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 252 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 239 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 239 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 238 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 239 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -837,13 +837,14 @@ entry.
 | MODULES | `type_const_narrowed_values` | module | transform | FIELD_TYPES, MODULE_IMPORTS | FIELD_TYPES | Types each value by the const that narrows the enum it names. Skipped unless: a const narrows a value to an enum member (_const_narrowed_values). After `apply_discriminator_type`: narrows the types that tags wrote. |
 | MODULES | `set_one_literal_on_default` | module | transform | DEFAULTS, NULLABLE, REQUIRED | FIELD_TYPES, REQUIRED | Runs when: use_one_literal_as_default. |
 | MODULES | `refresh_field_config` | module | transform | BACKEND_CONFIG | CONSTRAINTS, DEFAULTS, FIELD_ALIASES, NULLABLE, REQUIRED | Lets each model refresh its backend field configuration (model hook). |
-| MODULES | `rename_fields_hiding_types` | module | transform | CLASS_NAMES, FIELD_ALIASES, FIELD_NAMES, FIELD_TYPES | BASES, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_SET, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Runs when: an output that renames fields. After `refresh_field_config`: the field config is refreshed with the aliases before renaming. |
+| MODULES | `rename_fields_hiding_types` | module | transform | CLASS_NAMES, FIELD_ALIASES, FIELD_NAMES, FIELD_TYPES | BASES, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_SET, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Runs when: an output that renames fields, or --rename-fields-hiding-types-from-type-checkers. After `refresh_field_config`: the field config is refreshed with the aliases before renaming. |
 | MODULES | `remove_overridden_models` | module | transform | MODELS_EXIST | BASES, CLASS_NAMES, TYPE_OVERRIDES | Keeps the models that a model-level --type-overrides replaces, the stand-ins and the empty models of x-python-import schemas that no model names (#5533) out of the module. |
 | MODULES | `apply_field_type_overrides` | module | transform | CONSTRAINTS, FIELD_TYPES, MODULE_IMPORTS, TYPE_OVERRIDES | FIELD_NAMES, TYPE_OVERRIDES | Skipped unless: --type-overrides gives a key. After `remove_overridden_models`: overrides apply to the models kept after model-level overrides (#4958). |
 | MODULES | `type_dict_keys_by_root_types` | module | transform | BACKEND_CONFIG, FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | CONSTRAINTS, FIELD_TYPES, METADATA, MODEL_KIND, MODULE_MEMBERSHIP | Types each dict key that names a root model whose instances cannot be dict keys by its root type. After `apply_field_type_overrides`: types dict keys after field types are overridden. |
 | MODULES | `fix_constructor_field_ordering_early` | module | transform | FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED | BACKEND_CONFIG, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, MODEL_KIND, NULLABLE, REQUIRED | Orders constructor fields while the modules are processed, before every field has its final name. Runs when: without --order-constructor-fields-by final-names. Skipped unless: a model orders keyword-only fields (SUPPORTS_KW_ONLY) or restores the fields it inherits (restore_required_inherited_field_state). |
 | MODULES | `snapshot_module_unused_models` | module | bookkeeping | - | - |  |
 | MODULES | `apply_base_class_type_overrides` | module | transform | BASES, MODULE_IMPORTS, TYPE_OVERRIDES | TYPE_OVERRIDES | Skipped unless: --type-overrides gives a model-level key. After `type_dict_keys_by_root_types`: both add module imports; base overrides come after field types are final. |
+| MODULES | `follow_hiding_field_renames` | global | transform | FIELD_ALIASES, FIELD_NAMES | FIELD_NAMES | After every module is processed: holds a field that a class redeclares under the name its family gave the field that hides its type, so the class has one field for the wire key. Runs when: --rename-redeclared-fields-hiding-types or --rename-fields-hiding-types-from-type-checkers. After `record_decimal_alias_models`: the Decimal check reads the field names as parsed. After `alias_shadowed_imports`: the import aliases read the field names as parsed. After `reuse_model`: reuse reads the field names of the models it merges as parsed. After `change_field_name`: applies the renames it recorded for the family. After `restore_inherited_field_names_for_unique_aliases`: the inherited names it restores are those before a family rename. After `refresh_field_config`: the field config is refreshed with the aliases before renaming. After `rename_fields_hiding_types`: applies the renames it recorded for the family. After `apply_field_type_overrides`: scoped overrides name the fields as parsed. After `fix_constructor_field_ordering_early`: the early ordering reads the names before every field has its own. |
 | MODULES | `settle_kept_parent_roots` | global | transform | FIELD_TYPES, IMPORT_ALIASES, MODELS_EXIST, MODULE_IMPORTS | CLASS_NAMES, MODELS_EXIST, MODULE_MEMBERSHIP | After every module is processed: makes the later holders of a root model that the `parent` strategy of `collapse_root_models` kept follow its first holder where the root model still has its inner model's class name, and warns for the others. Runs when: --collapse-root-models-name-strategy parent --field-type-collision-strategy rename-type. After `remove_overridden_models`: reads the models that model-level overrides kept. After `apply_field_type_overrides`: redirects only the holder types that field overrides left. After `type_dict_keys_by_root_types`: the holders it redirects name object models, which no dict key names. After `fix_constructor_field_ordering_early`: a redirected holder keeps its name, default and requiredness; only its type names the same-named inner model. After `apply_base_class_type_overrides`: adds module imports once every module has written its own. |
 | MODULES | `write_rule_aliases_as_classes` | global | transform | IMPORT_ALIASES, MODEL_KIND, MODULE_IMPORTS | CLASS_NAMES, MODELS_EXIST, MODEL_KIND, MODULE_MEMBERSHIP | After every module is processed: writes each type alias that holds schema validator rules and that `collapse_root_models` left written as the RootModel class, under its model key, and imports the models of other modules that its rules name. Runs when: --generate-schema-validators. After `settle_kept_parent_roots`: reads which root models stay written once the kept roots are decided. After `type_dict_keys_by_root_types`: the aliases written as classes are object maps, which no dict key names. After `apply_base_class_type_overrides`: imports what the rules of the new classes name once every module has written its imports. |
 | MODULES | `name_inner_models_in_rules` | global | transform | FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | CLASS_NAMES, MODELS_EXIST, MODULE_MEMBERSHIP | After every module is processed: makes the schema validator rules that name a root model the `parent` strategy of `collapse_root_models` replaced name its inner model, and imports it in their modules. Runs when: --generate-schema-validators --collapse-root-models-name-strategy parent. After `write_rule_aliases_as_classes`: the aliases written as classes import what their rules name, which this pass then redirects. After `fix_constructor_field_ordering_early`: the types of rules are no constructor fields. After `settle_kept_parent_roots`: reads the root models it retires. |
@@ -949,6 +950,15 @@ Provisional reads, from the explicit edges:
 - `apply_discriminator_type` reads FIELD_TYPES before `type_const_narrowed_values` writes it: narrows the types that tags wrote.
 - `refresh_field_config` reads FIELD_ALIASES before `rename_fields_hiding_types` writes it: the field config is refreshed with the aliases before renaming.
 - `remove_overridden_models` reads TYPE_OVERRIDES before `apply_field_type_overrides` writes it: overrides apply to the models kept after model-level overrides (#4958).
+- `record_decimal_alias_models` reads FIELD_NAMES before `follow_hiding_field_renames` writes it: the Decimal check reads the field names as parsed.
+- `alias_shadowed_imports` reads FIELD_NAMES before `follow_hiding_field_renames` writes it: the import aliases read the field names as parsed.
+- `reuse_model` reads FIELD_ALIASES, FIELD_NAMES before `follow_hiding_field_renames` writes it: reuse reads the field names of the models it merges as parsed.
+- `change_field_name` reads FIELD_NAMES before `follow_hiding_field_renames` writes it: applies the renames it recorded for the family.
+- `restore_inherited_field_names_for_unique_aliases` reads FIELD_ALIASES, FIELD_NAMES before `follow_hiding_field_renames` writes it: the inherited names it restores are those before a family rename.
+- `refresh_field_config` reads FIELD_ALIASES before `follow_hiding_field_renames` writes it: the field config is refreshed with the aliases before renaming.
+- `rename_fields_hiding_types` reads FIELD_NAMES before `follow_hiding_field_renames` writes it: applies the renames it recorded for the family.
+- `apply_field_type_overrides` reads FIELD_NAMES before `follow_hiding_field_renames` writes it: scoped overrides name the fields as parsed.
+- `fix_constructor_field_ordering_early` reads FIELD_NAMES before `follow_hiding_field_renames` writes it: the early ordering reads the names before every field has its own.
 - `type_dict_keys_by_root_types` reads FIELD_TYPES before `settle_kept_parent_roots` writes it: the holders it redirects name object models, which no dict key names.
 - `fix_constructor_field_ordering_early` reads FIELD_TYPES before `settle_kept_parent_roots` writes it: a redirected holder keeps its name, default and requiredness; only its type names the same-named inner model.
 - `type_dict_keys_by_root_types` reads MODEL_KIND before `write_rule_aliases_as_classes` writes it: the aliases written as classes are object maps, which no dict key names.
@@ -1702,6 +1712,8 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | `legacy-map-copied-nullable` | a `nullable` copied into a combined branch leaves its map without null (the owner kept it) | keep |
 | `legacy-item-null-by-form` | without `--keep-null-of-nullable-items`, under `--strict-nullable` an array item, a tuple item or a map value that is a scalar or an object keeps the null its `nullable` declares, and one that is an array, a map or an `allOf` of one `$ref` rejects null | keep |
 | `legacy-mixed-union-key-root-models` | without `--use-root-types-for-mixed-union-map-keys`, a map key that is a union with a member that is no RootModel (`str`, a `constr` call, a `Literal`, `Any`, an enum) keeps the RootModel class of its other members, which Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and a key both match is read by the other member (`parser/_passes/modules.py:type_dict_keys_by_root_types`) | keep |
+| `legacy-redeclared-hiding-field-keeps-name` | without `--rename-redeclared-fields-hiding-types`, a field that a subclass redeclares keeps its name where the field of its base is renamed because it is named like its type (`Pet_1` with `alias='Pet'`), so the subclass holds two fields that read the key (`parser/_passes/modules.py:follow_hiding_field_renames`) | keep |
+| `legacy-field-hides-type-from-checkers` | without `--rename-fields-hiding-types-from-type-checkers`, a msgspec or dataclass field that the class body assigns keeps its name and its type's name where they are equal, which a type checker reads as the field (`parser/_passes/modules.py:renames_hiding_fields`) | keep |
 | `legacy-root-type-nullable-ungated` | a root field is nullable by `nullable` without `--strict-nullable` | #5054 |
 | `legacy-multiple-types-nullable-not-recorded` | a type list with an object records only the type list's null; `--read-nullable-beside-type-list` reads `nullable` too | keep |
 | `legacy-array-nullable-ungated` | an array field is nullable by `nullable` without `--strict-nullable` | #5054 |

@@ -1554,6 +1554,24 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "class of --use-generic-base-class, so the model keeps their members and their import is used."
         ),
     ),
+    PresetOptionGroup(
+        title="Redeclared fields renamed with their base",
+        config=PresetConfig(rename_redeclared_fields_hiding_types=True),
+        description=(
+            "Give a field that a subclass redeclares the name its base's field was given where that field is renamed "
+            "because it is named like its type, so the subclass holds one field for the key instead of its own "
+            "beside the inherited renamed one."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Fields named like their types told apart for type checkers",
+        config=PresetConfig(rename_fields_hiding_types_from_type_checkers=True),
+        description=(
+            "Rename a msgspec field, or a dataclass type, that a field the class body assigns hides from type "
+            "checkers because it is named like it, the way Pydantic output renames the field: the msgspec field keeps "
+            "the wire name in name=, and a dataclass, which has no alias, renames the type."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 

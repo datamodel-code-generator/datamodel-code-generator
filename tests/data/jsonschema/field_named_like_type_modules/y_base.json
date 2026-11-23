@@ -1,0 +1,5 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "YBase", "type": "object",
+ "properties": {"base": {"$ref": "#/$defs/Shelter"}},
+ "$defs": {
+   "Shelter": {"type": "object", "properties": {"Pet": {"$ref": "pets.json#/$defs/Pet"}}}
+ }}
