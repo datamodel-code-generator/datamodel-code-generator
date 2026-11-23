@@ -15,7 +15,7 @@ import it.
 
 from __future__ import annotations
 
-import sys
+import inspect
 import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -194,12 +194,22 @@ def frame_at(stacklevel: int) -> FrameType:
     that called ``warn_x``. The frames of the wrappers that ``--debug`` puts around the functions it traces are not
     counted past the first.
     """
-    depth = 2
+    frame = _frame_back(inspect.currentframe(), 2)
     for _ in range(stacklevel - 1):
-        depth += 1
-        while is_tracer_frame(sys._getframe(depth)):  # noqa: SLF001
-            depth += 1
-    return sys._getframe(depth)  # noqa: SLF001
+        frame = _frame_back(frame, 1)
+        while is_tracer_frame(frame):
+            frame = _frame_back(frame, 1)
+    return frame
+
+
+def _frame_back(frame: FrameType | None, steps: int) -> FrameType:
+    """Return the frame ``steps`` calls above ``frame``; raise ``ValueError`` past the top of the stack."""
+    for _ in range(steps):
+        frame = frame.f_back if frame is not None else None
+    if frame is None:
+        msg = "call stack is not deep enough"
+        raise ValueError(msg)
+    return frame
 
 
 def warn_at_frame(frame: FrameType, message: str, category: type[Warning], *, module: str | None = None) -> None:

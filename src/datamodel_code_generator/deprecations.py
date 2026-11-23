@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import os
 import sys
 import warnings
@@ -428,7 +429,8 @@ def _stacklevel_at_caller() -> int:
     constructor), so a ``module=`` filter matches the caller's module. A CLI invocation does not use it (see
     ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own.
     """
-    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
+    current = inspect.currentframe()
+    frame: FrameType | None = current.f_back if current is not None else None
     level = outermost = 1
     while frame is not None:
         if frame.f_code.co_filename.startswith(_PACKAGE_DIR):
