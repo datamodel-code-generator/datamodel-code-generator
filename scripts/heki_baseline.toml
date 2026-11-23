@@ -3292,6 +3292,13 @@ target = "datamodel_code_generator._runtime.model_codecs.media.json_value"
 count = 1
 
 [[entries]]
+path = "src/datamodel_code_generator/_runtime/model_codecs/msgspec_structs.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator._runtime.model_codecs.shared.ValidatingCodec"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/_runtime/model_codecs/parameters.py"
 qualname = "_content"
 rule_code = "MUT204"
@@ -3299,10 +3306,31 @@ target = "datamodel_code_generator._runtime.model_codecs.media.json_text"
 count = 1
 
 [[entries]]
+path = "src/datamodel_code_generator/_runtime/model_codecs/pydantic_adapters.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator._runtime.model_codecs.shared.ValidatingCodec"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_runtime/model_codecs/stdlib_dataclasses.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator._runtime.model_codecs.shared.ModelCodec"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/_runtime/model_codecs/stdlib_dataclasses.py"
 qualname = "DataclassCodec.decode"
 rule_code = "MUT204"
 target = "datamodel_code_generator._runtime.model_codecs.media.json_value"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_runtime/model_codecs/stdlib_typeddicts.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator._runtime.model_codecs.shared.ModelCodec"
 count = 1
 
 [[entries]]
@@ -3461,6 +3489,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/_shared_types.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.enums._ExitCode"
+count = 4
+
+[[entries]]
+path = "src/datamodel_code_generator/_shared_types.py"
 qualname = "InvalidClassNameError.__init__"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
@@ -3545,6 +3580,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/_target_binding.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.enums.DataclassArguments"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_target_binding.py"
 qualname = "_Binder._reference_null"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._decisions.nullability.reference_null"
@@ -3625,6 +3667,13 @@ path = "src/datamodel_code_generator/_target_binding.py"
 qualname = "_read_required"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_target_binding.py"
+qualname = "bind_operations"
+rule_code = "MUT204"
+target = "datamodel_code_generator._target_naming.TargetNames"
 count = 1
 
 [[entries]]
@@ -4276,6 +4325,13 @@ path = "src/datamodel_code_generator/model/_render_plan.py"
 qualname = "field_call_text"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.call_text"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/base.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.enums.DataclassArguments"
 count = 1
 
 [[entries]]
@@ -5655,6 +5711,13 @@ path = "src/datamodel_code_generator/parser/_field_copies.py"
 qualname = "_copy_resolved_inherited_field"
 rule_code = "MUT203"
 target = "datamodel_code_generator.reference._BaseModel._*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_field_copies.py"
+qualname = "_copy_resolved_inherited_field"
+rule_code = "MUT204"
+target = "datamodel_code_generator._user_keys.ClassScope"
 count = 1
 
 [[entries]]
@@ -7871,9 +7934,44 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/naming.py"
+qualname = "_claimed_references"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser._naming.Composed"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/naming.py"
+qualname = "_claims"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser._naming.AllOfPart"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/naming.py"
+qualname = "_claims"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser._naming.Composed"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/naming.py"
 qualname = "_claims"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._naming.NameClaim"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/naming.py"
+qualname = "_claims"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser._naming.Ordinal"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/naming.py"
+qualname = "_claims"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser._naming.Tag"
 count = 1
 
 [[entries]]
@@ -9236,6 +9334,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/asyncapi.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser.jsonschema.JsonSchemaParser"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/asyncapi.py"
 qualname = "AsyncAPIParser._iter_schema_format_schemas"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._schema_object._named_path"
@@ -9271,6 +9376,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/avro.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser.jsonschema.JsonSchemaParser"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/avro.py"
 qualname = "AvroParser._finalize_structured_imports"
 rule_code = "MUT201"
 target = "DataModelFieldBase.default"
@@ -9295,6 +9407,13 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "<module>"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "Parser.__init__"
+rule_code = "MUT204"
+target = "datamodel_code_generator._user_keys.ConstructionKeys"
 count = 1
 
 [[entries]]
@@ -9957,6 +10076,13 @@ count = 4
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/openapi.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser.jsonschema.JsonSchemaParser"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/openapi.py"
 qualname = "OpenAPIParser._collect_discriminator_document"
 rule_code = "MUT204"
 target = "datamodel_code_generator._document_reader.as_mapping"
@@ -10034,6 +10160,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/protobuf.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser.jsonschema.JsonSchemaParser"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/protobuf.py"
 qualname = "_ProtoInputPreparer._write_missing_weak_imports"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
@@ -10086,6 +10219,13 @@ path = "src/datamodel_code_generator/parser/xmlschema.py"
 qualname = "<module>"
 rule_code = "MUT204"
 target = "datamodel_code_generator._caches.BoundedLru"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/xmlschema.py"
+qualname = "<module>"
+rule_code = "MUT204"
+target = "datamodel_code_generator.parser.jsonschema.JsonSchemaParser"
 count = 1
 
 [[entries]]

@@ -19,6 +19,12 @@ class Integer(BaseModel):
     value: int
 
 
+class ScalarDefaults(Integer):
+    count: Optional[int] = 1
+    ratio: Optional[float] = 1.5
+    flag: Optional[bool] = True
+
+
 class Inherited(Integer):
     label: Optional[str] = 'x'
 
@@ -71,7 +77,7 @@ MODELS = {
     'inherited_mutable_base': FrozenChild,
     'integer': Integer, 'nested': Nested, 'inherited': Inherited,
     'recursive': Recursive, 'tuple': TupleItem, 'literal': LiteralItem,
-    'enum': EnumItem, 'classvar': Classvar, 'packaged': Integer,
+    'enum': EnumItem, 'classvar': Classvar, 'packaged': Integer, 'scalar_defaults': ScalarDefaults,
 }
 
 

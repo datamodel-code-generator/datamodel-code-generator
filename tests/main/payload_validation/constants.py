@@ -548,6 +548,19 @@ EXCLUDED_CASES: dict[str, str] = {
         "Cat's tag property admits only objects, which tag no variant, as in 0.97.0; "
         "test_object_values_of_a_tag_property pins it"
     ),
+    **dict.fromkeys(
+        (
+            f"openapi/variant_tag_values/scalar_kind_mapped.yaml::components.schemas.{name}Union"
+            for name in (
+                *("Int", "BoundedInt", "Number", "BoundedNumber", "FractionNumber", "DecimalNumber", "MultipleNumber"),
+                *("Flag", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt", "PositiveNumber"),
+                *("NegativeNumber", "NonNegativeNumber", "NonPositiveNumber"),
+            )
+        ),
+        _UNCONSTRAINED_TAG_REASON + "here the variants take an integer, number or boolean tag from a scalar type, so "
+        "a payload tagged 2 with the first variant's properties is schema-valid; "
+        "test_scalar_tag_mapping_keys pins the tags",
+    ),
     "openapi/variant_tag_values/integer_kind_mapped.yaml::components.schemas.Pet": (
         _UNCONSTRAINED_TAG_REASON
         + "here both variants take their integer tag from one enum $ref, so a payload tagged 1 "

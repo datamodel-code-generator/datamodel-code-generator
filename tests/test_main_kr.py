@@ -1908,6 +1908,89 @@ output = "{output_path.as_posix()}"
 
 
 @pytest.mark.parametrize(
+    "mode",
+    [
+        pytest.param([], id="write"),
+        pytest.param(["--check"], id="check"),
+        pytest.param(["--output-format", "json"], id="json"),
+    ],
+)
+def test_custom_formatter_resolves_relative_resources_from_the_output_in_every_mode(
+    tmp_path: Path, mode: list[str]
+) -> None:
+    """Read a relative path of the formatter kwargs where the output lies, also in a check or JSON output (#6945)."""
+    output_path = tmp_path / "generated" / "models.py"
+    output_path.parent.mkdir()
+    shutil.copyfile(
+        DATA_PATH / "python" / "custom_formatters" / "license_example.txt", output_path.parent / "license.txt"
+    )
+    args = [
+        "--input",
+        str(JSON_SCHEMA_DATA_PATH / "person.json"),
+        "--input-file-type",
+        "jsonschema",
+        "--output",
+        str(output_path),
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+        "--custom-formatters",
+        "tests.data.python.custom_formatters.add_license",
+        "--custom-formatters-kwargs",
+        '{"license_file": "license.txt"}',
+    ]
+    with chdir(tmp_path):
+        run_main_with_args(args)
+        run_main_with_args([*args, *mode])
+
+    assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
+
+
+def test_custom_formatter_resolves_relative_resources_from_the_output_directory_with_ruff(tmp_path: Path) -> None:
+    """Read a relative path of the formatter kwargs where a directory output lies, also in the deferred Ruff step."""
+    output_dir = tmp_path / "generated" / "models"
+    output_dir.mkdir(parents=True)
+    shutil.copyfile(DATA_PATH / "python" / "custom_formatters" / "license_example.txt", output_dir / "license.txt")
+    with chdir(tmp_path):
+        run_main_with_args([
+            *("--input", str(OPEN_API_DATA_PATH / "modular.yaml"), "--input-file-type", "openapi"),
+            *("--output", "generated/models"),
+            *("--disable-timestamp", "--formatters", "ruff-format"),
+            *("--custom-formatters", "tests.data.python.custom_formatters.add_license"),
+            *("--custom-formatters-kwargs", '{"license_file": "license.txt"}'),
+        ])
+
+    assert_directory_content(output_dir)
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected_exit"),
+    [
+        pytest.param(["--check"], Exit.DIFF, id="check"),
+        pytest.param(["--output-format", "json"], Exit.OK, id="json"),
+    ],
+)
+def test_custom_formatter_check_of_an_output_in_a_missing_directory(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], mode: list[str], expected_exit: Exit
+) -> None:
+    """Run a check or JSON output whose directory does not exist yet in the nearest directory that does (#6945)."""
+    shutil.copyfile(DATA_PATH / "python" / "custom_formatters" / "license_example.txt", tmp_path / "license.txt")
+    with chdir(tmp_path):
+        run_main_with_args(
+            [
+                *("--input", str(JSON_SCHEMA_DATA_PATH / "person.json"), "--input-file-type", "jsonschema"),
+                *("--output", str(tmp_path / "generated" / "missing" / "models.py")),
+                *("--disable-timestamp", "--formatters", "builtin"),
+                *("--custom-formatters", "tests.data.python.custom_formatters.add_license"),
+                *("--custom-formatters-kwargs", '{"license_file": "license.txt"}'),
+                *mode,
+            ],
+            expected_exit=expected_exit,
+            capsys=capsys,
+        )
+
+
+@pytest.mark.parametrize(
     ("args", "message"),
     [
         (["--all-jobs", "--watch", "--check"], "--watch and --check cannot be used together"),

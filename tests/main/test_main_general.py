@@ -7774,6 +7774,41 @@ def test_main_builtin_template_data_is_non_executing(
     )
 
 
+@pytest.mark.parametrize(
+    "schema",
+    [
+        pytest.param('{"title": "Model", "type": "object", "properties": {"name": {"type": "string"}}}', id="model"),
+        pytest.param('{"title": "Model", "type": "string"}', id="root-model"),
+    ],
+)
+def test_main_pydantic_v2_config_warns_for_keys_it_leaves_out(output_file: Path, tmp_path: Path, schema: str) -> None:
+    """Warn for the keys of the config template data that a Pydantic v2 model leaves out of model_config (#7001)."""
+    input_path = tmp_path / "schema.json"
+    input_path.write_text(schema, encoding="utf-8")
+    template_data_path = tmp_path / "extra_template_data.json"
+    template_data_path.write_text(
+        json.dumps({"Model": {"config": {"validate_assignment": True, "str_strip_whitespace": True, "frozen": True}}}),
+        encoding="utf-8",
+    )
+    with pytest.warns(
+        UserWarning, match="The config of Model sets 'validate_assignment', 'str_strip_whitespace', which"
+    ):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--extra-template-data",
+                str(template_data_path),
+            ],
+        )
+
+
 def test_main_rejects_reserved_builtin_template_data(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
     """Reject code-bearing template context keys before built-in output is written."""
     run_main_and_assert(

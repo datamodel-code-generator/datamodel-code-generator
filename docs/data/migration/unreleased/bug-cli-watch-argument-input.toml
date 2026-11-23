@@ -1,0 +1,10 @@
+[[change]]
+id = "bug-cli-watch-argument-input"
+category = "api"
+title = "A watch holding the remote lock watches the input an argument gives"
+summary = "A run with --watch that holds the remote lock watches the path of --input, not the input of pyproject.toml."
+refs = ["#7047"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
