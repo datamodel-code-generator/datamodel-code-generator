@@ -41811,3 +41811,209 @@ def test_main_enum_literal_of_collapsed_alias_modules(
         runtime_validation_model_name=model_name,
         runtime_validation_data=payload,
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-refs-in-their-resources"],
+    option_description="""Read each `$ref` in the schema resource that encloses it, and every `$id`, `$anchor` and
+`$dynamicAnchor` wherever a document holds schemas.
+
+A `$defs` member with its own `$id` is a schema resource: a pointer written inside it, such as `#/$defs/Code`, names
+that resource's `$defs`. Without this option a `$defs` member that holds definitions but no schema keywords is read
+for its entries alone, so its `$id` declares nothing and the pointer names the root's `Code`; the field then accepts
+the root's values instead of the resource's. The option also reads a schema an OpenAPI operation, webhook or component
+holds inline as a resource of its own, names the schema a plain-name anchor of another document declares (a
+`$dynamicAnchor`, an anchor in a version namespace, a draft-07 `$id: "#name"`, an OpenAPI component's `$anchor`), and
+never fetches a URL a document of the run declares; without it those give `Any` models or a request, as in 0.100.0.""",
+    input_schema="jsonschema/embedded_resource_definitions.json",
+    cli_args=["--read-refs-in-their-resources"],
+    golden_output="main/jsonschema/main_jsonschema/read_refs_in_their_resources[option].py",
+    comparison_output="main/jsonschema/main_jsonschema/read_refs_in_their_resources[default].py",
+    primary=True,
+)
+@pytest.mark.parametrize("option", ["default", "option"])
+def test_read_refs_in_their_resources(option: str, output_file: Path) -> None:
+    """Read a pointer inside a `$defs` member that declares its own `$id` against that member (#6946).
+
+    `Wrap` bundles a schema resource (`$id: https://example.com/wrap.json`) whose `Status` and `Alias` refer to
+    `#/$defs/Code`, the resource's own `Code`. It is reached by `<id>#/$defs/Status`, by the pointer
+    `#/$defs/Wrap/$defs/Status` and through an allOf. Without the option the pointer names the root's `Code` (x, y);
+    under --read-refs-in-their-resources it names the resource's (a, b).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(["--read-refs-in-their-resources"] if option == "option" else []),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("document", ["local_document_from_remote", "local_document_from_remote_embedded"])
+def test_local_document_entered_from_remote(document: str, output_file: Path) -> None:
+    """Resolve the references of a local document from its own location where a remote one refers back to it (#6999).
+
+    `in/a.json` declares `$id: https://example.com/schemas/a.json` and refers to `b.json`, which `--http-local-ref-path`
+    reads from the store; `b.json` refers back to `a.json` by an anchor and by pointers. The references inside `a.json`
+    resolve as they do when it is the input, also through an embedded `$id`, instead of against its `$id` URL, which
+    the store does not hold (up to 0.100.0 the run failed).
+    """
+    root = JSON_SCHEMA_DATA_PATH / document
+    run_main_and_assert(
+        input_path=root / "in" / "a.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--http-local-ref-path",
+            str(root / "store"),
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("option", ["default", "option"])
+@pytest.mark.parametrize("order", ["before", "after"])
+def test_held_root_ids_named_by_url(
+    order: str, option: str, mock_httpx_get: HttpxGetMockFactory, output_dir: Path
+) -> None:
+    """Read the input that declares the `$id` URL another input of the directory refers to, without fetching it.
+
+    `owner.json` refers to the `$id` of a sibling input by its absolute URL, which answers 404. Up to 0.100.0 the run
+    fetched the URL and failed. Without the option the sibling is read where it is parsed first (`before`) and the
+    URL is still requested; where it is parsed later (`after`) the run fails as before (row
+    `legacy-inputs-prepared-as-parsed`). Under --read-refs-in-their-resources every input is read first and nothing
+    is requested.
+    """
+    url = f"https://example.com/schemas/{'pet' if order == 'before' else 'animal'}.json"
+    fetches = option == "default"
+    httpx_get_mock = mock_httpx_get(*([MockHttpxResponse(url, "", 404)] * 2 if fetches else []))
+    with pytest.warns(FutureWarning, match="Remote \\$ref fetching") if fetches else nullcontext():
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "held_root_ids" / order,
+            output_path=output_dir,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                *(["--read-refs-in-their-resources"] if option == "option" else []),
+            ],
+            expected_exit=Exit.ERROR if fetches and order == "after" else Exit.OK,
+        )
+    assert_httpx_get_kwargs(httpx_get_mock, called=fetches)
+
+
+@pytest.mark.parametrize("option", ["default", "option"])
+def test_held_root_id_served_by_local_store(option: str, output_dir: Path) -> None:
+    """Read the `$id` URL another input declares from --http-local-ref-path where the store serves it, as released.
+
+    `user.json` refers to the `$id` of the sibling input `a_kept.json`, and the store holds a copy of that URL with one
+    more property. Without the option the store copy is read even under --no-allow-remote-refs, as in 0.100.0 (row
+    `legacy-held-resource-fetched`); under --read-refs-in-their-resources the input that declares the URL is read.
+    """
+    root = JSON_SCHEMA_DATA_PATH / "held_root_ids_store"
+    run_main_and_assert(
+        input_path=root / "in",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--no-allow-remote-refs",
+            "--http-local-ref-path",
+            str(root / "store"),
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(["--read-refs-in-their-resources"] if option == "option" else []),
+        ],
+    )
+
+
+@pytest.mark.parametrize("option", ["default", "option"])
+def test_held_root_anchor_named_by_url(option: str, output_dir: Path) -> None:
+    """Read an anchor of the input that declares the `$id` URL another input of the directory refers to.
+
+    `owner.json` refers to `https://example.com/schemas/pet.json#name`, an `$anchor` below the root `$id` of the
+    sibling `a_pet.json`, which no document embeds. Under --no-allow-remote-refs the URL is not read, so the anchor
+    names the sibling's `Name` instead of the run failing on the refused read (up to 0.100.0), with and without
+    --read-refs-in-their-resources.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "held_root_anchor",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--no-allow-remote-refs",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(["--read-refs-in-their-resources"] if option == "option" else []),
+        ],
+    )
+
+
+def test_read_refs_in_their_resources_numbered_definitions(output_file: Path) -> None:
+    """Read numbered definitions of a YAML document, a boolean definition and a version namespace, under the option.
+
+    `$defs` holds `1` and `2`, YAML integers, one with an `$anchor`, and `Anything: true`. Under
+    --read-refs-in-their-resources each is read as the schema it is, as without the option. The version namespace
+    `v1` declares `$id`, so its member `Entry` is read in that resource: its `$anchor` names
+    `https://example.com/v1.json#entry` and its `#/$defs/Code` names the namespace's `Code`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "numbered_definitions.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--read-refs-in-their-resources",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_read_refs_in_their_resources_first_input_dialect(tmp_path: Path, output_dir: Path) -> None:
+    """Read the schema version of the first input for the run when every input is read first, under the option.
+
+    `a_owner.json` declares draft-04 and `b_pet.json` declares no version, so under --schema-version-mode strict the
+    run reads draft-04 `definitions` (`Tag`) and no draft-04 warning, as without --read-refs-in-their-resources. An
+    input that holds a list is skipped with a warning, as without the option.
+    """
+    shutil.copytree(JSON_SCHEMA_DATA_PATH / "first_input_dialect", input_dir := tmp_path / "in")
+    (input_dir / "z_list.json").write_text("[]", encoding="utf-8")
+    with pytest.warns(UserWarning, match="is empty or not a dict"):
+        run_main_and_assert(
+            input_path=input_dir,
+            output_path=output_dir,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--read-refs-in-their-resources",
+                "--schema-version-mode",
+                "strict",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+        )

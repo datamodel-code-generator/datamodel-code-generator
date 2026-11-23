@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "User", "type": "object", "properties": {"kept": {"$ref": "https://example.com/schemas/kept.json"}}}

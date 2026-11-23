@@ -150,6 +150,7 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--read-allof-parents-as-their-models",
     "--read-set-item-fields-in-class-order",
     "--use-root-types-for-mixed-union-map-keys",
+    "--read-refs-in-their-resources",
     "--keep-bases-beside-generic-base-class",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
@@ -651,6 +652,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         id="use-root-types-for-mixed-union-map-keys",
     ),
     pytest.param(
+        JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-refs-in-their-resources",
+    ),
+    pytest.param(
         JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json",
         "jsonschema",
         [
@@ -1079,6 +1086,14 @@ def test_preset_sets_opt_in_option(
             "--use-root-types-for-mixed-union-map-keys",
             "--no-use-root-types-for-mixed-union-map-keys",
             id="use-root-types-for-mixed-union-map-keys",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
+            "jsonschema",
+            [],
+            "--read-refs-in-their-resources",
+            "--no-read-refs-in-their-resources",
+            id="read-refs-in-their-resources",
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json",

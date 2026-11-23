@@ -1,0 +1,35 @@
+[[change]]
+id = "read-refs-in-their-resources"
+category = "new-surface"
+title = "Read each reference in its schema resource under an option"
+summary = "--read-refs-in-their-resources reads every $id, $anchor and $dynamicAnchor wherever a document holds schemas and each $ref in the schema resource that encloses it: a pointer inside a $defs member with its own $id names that member's definitions, a schema an OpenAPI operation, webhook or component holds inline is a resource, a plain-name anchor of another document names the schema that declares it, every input is read before the first is parsed, and a URL the run holds is never requested; without it the output is that of 0.100.0."
+refs = ["#6946", "#7179", "#7158"]
+surface = ["--read-refs-in-their-resources"]
+covers = [
+    "input_model/config_class.txt",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_declarations[default].py",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_declarations[option].py",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_in_passed_namespace_read_in_resources.py",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_released_search_read_in_resources.py",
+    "main/jsonschema/main_jsonschema/held_root_anchor_named_by_url[option]/",
+    "main/jsonschema/main_jsonschema/held_root_ids_named_by_url[after-option]/",
+    "main/jsonschema/main_jsonschema/held_root_ids_named_by_url[before-option]/",
+    "main/jsonschema/main_jsonschema/read_refs_in_their_resources[default].py",
+    "main/jsonschema/main_jsonschema/read_refs_in_their_resources[option].py",
+    "main/jsonschema/main_jsonschema/read_refs_in_their_resources_first_input_dialect/",
+    "main/jsonschema/main_jsonschema/read_refs_in_their_resources_numbered_definitions.py",
+    "main/main_general/show_help[False].txt",
+    "main/main_general/show_help[True].txt",
+    "main/openapi/main_openapi/anchor_of_component_by_document_url[external_anchor_component_api.yaml-default].py",
+    "main/openapi/main_openapi/anchor_of_component_by_document_url[external_anchor_component_api.yaml-option].py",
+    "main/openapi/main_openapi/anchor_of_component_by_document_url[self_anchor_ref.yaml-default].py",
+    "main/openapi/main_openapi/anchor_of_component_by_document_url[self_anchor_ref.yaml-option].py",
+    "main/openapi/main_openapi/component_embedded_id_absolute_ref[option].py",
+    "main/openapi/main_openapi/operation_schema_resources[default].py",
+    "main/openapi/main_openapi/operation_schema_resources[option].py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-refs-in-their-resources-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-refs-in-their-resources-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-refs-in-their-resources-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-refs-in-their-resources-standard].model.py",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+]

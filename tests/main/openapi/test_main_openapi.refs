@@ -706,6 +706,11 @@ msgspec	main/openapi/main_openapi/allof_with_anyof_ref_inferred_tags[msgspec].py
 	main/openapi/main_openapi/allof_with_required_inherited_fields_force_optional.py
 [test_main_openapi_allof_with_required_inherited_nested_object]
 	main/openapi/main_openapi/allof_with_required_inherited_nested_object.py
+[test_main_openapi_anchor_of_component_by_document_url]
+external_anchor_component/api.yaml-default	main/openapi/main_openapi/anchor_of_component_by_document_url[external_anchor_component_api.yaml-default].py
+external_anchor_component/api.yaml-option	main/openapi/main_openapi/anchor_of_component_by_document_url[external_anchor_component_api.yaml-option].py
+self_anchor_ref.yaml-default	main/openapi/main_openapi/anchor_of_component_by_document_url[self_anchor_ref.yaml-default].py
+self_anchor_ref.yaml-option	main/openapi/main_openapi/anchor_of_component_by_document_url[self_anchor_ref.yaml-option].py
 [test_main_openapi_anchor_refs]
 	main/openapi/main_openapi/anchor_refs.py
 [test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer]
@@ -952,12 +957,22 @@ reused-holder	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[
 wrapper-in-other-module	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[wrapper-in-other-module]/	= main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-holders-exact-imports-parent]/
 [test_main_openapi_complex_reference]
 	main/openapi/main_openapi/complex_reference.py
+[test_main_openapi_component_embedded_id_absolute_ref]
+allowed-not-found	main/openapi/main_openapi/component_embedded_id_absolute_ref[allowed-not-found].py	= main/openapi/main_openapi/component_embedded_remote_ids.py
+not-found	main/openapi/main_openapi/component_embedded_id_absolute_ref[not-found].py	= main/openapi/main_openapi/component_embedded_remote_ids.py
+option	main/openapi/main_openapi/component_embedded_id_absolute_ref[option].py	= main/openapi/main_openapi/component_embedded_remote_ids.py
+served	main/openapi/main_openapi/component_embedded_id_absolute_ref[served].py
+[test_main_openapi_component_embedded_id_own_url_ref]
+ref	main/openapi/main_openapi/component_embedded_id_own_url_ref[ref].py
+url	main/openapi/main_openapi/component_embedded_id_own_url_ref[url].py
 [test_main_openapi_component_embedded_ids]
 	main/openapi/main_openapi/component_embedded_ids.py	= main/openapi/component_embedded_ids.py
 [test_main_openapi_component_embedded_ids_inferred_input_type]
 	main/openapi/main_openapi/component_embedded_ids_inferred_input_type.py	= main/openapi/component_embedded_ids.py
 [test_main_openapi_component_embedded_remote_ids]
 	main/openapi/main_openapi/component_embedded_remote_ids.py
+[test_main_openapi_component_embedded_urn_id]
+	main/openapi/main_openapi/component_embedded_urn_id.py
 [test_main_openapi_const]
 	main/openapi/main_openapi/const.py
 [test_main_openapi_const_field]
@@ -1789,6 +1804,10 @@ two-documents	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse
 two-documents	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[two-documents].txt
 [test_main_openapi_one_of_body_without_member_types_beside_properties]
 	main/openapi/main_openapi/one_of_body_without_member_types_beside_properties.txt
+[test_main_openapi_operation_schema_resources]
+default	main/openapi/main_openapi/operation_schema_resources[default].py
+option	main/openapi/main_openapi/operation_schema_resources[option].py
+option-dataclass	main/openapi/main_openapi/operation_schema_resources[option-dataclass].py
 [test_main_openapi_override_required_all_of_field]
 	main/openapi/main_openapi/override_required_all_of_field.py
 [test_main_openapi_parameter_content]

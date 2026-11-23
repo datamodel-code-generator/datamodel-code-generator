@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info: {title: Notes, version: "1"}
+paths:
+  /notes:
+    get:
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            $id: https://example.com/filter.json
+            type: object
+            properties:
+              tag: {$ref: "#/$defs/Tag"}
+            $defs:
+              Tag: {type: string, minLength: 2}
+      responses:
+        "200":
+          description: A note.
+          content:
+            application/json:
+              schema:
+                $id: https://example.com/note.json
+                type: object
+                properties:
+                  title: {$ref: "#/$defs/Title"}
+                $defs:
+                  Title: {type: string, maxLength: 10}
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $id: https://example.com/draft.json
+              type: object
+              properties:
+                body: {$ref: "#/$defs/Body"}
+              $defs:
+                Body: {type: string, maxLength: 100}
+      responses:
+        "201": {description: Created.}
+webhooks:
+  noteCreated:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $id: https://example.com/event.json
+              type: object
+              properties:
+                kind: {$ref: "#/$defs/Kind"}
+              $defs:
+                Kind: {type: string, enum: [created, deleted]}
+      responses:
+        "200": {description: Received.}
