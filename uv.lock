@@ -754,6 +754,9 @@ fastapi = [
 fix = [
     { name = "prek" },
 ]
+heki = [
+    { name = "heki" },
+]
 isort6 = [
     { name = "isort", version = "6.1.0", source = { registry = "https://pypi.org/simple" } },
 ]
@@ -775,7 +778,6 @@ test = [
     { name = "cryptography" },
     { name = "diff-cover" },
     { name = "email-validator" },
-    { name = "heki" },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
     { name = "inline-snapshot" },
@@ -799,7 +801,6 @@ type = [
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
-    { name = "heki" },
     { name = "httpx2", extra = ["http2", "ws"] },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
@@ -942,6 +943,7 @@ fastapi = [
     { name = "uvicorn", specifier = ">=0.54" },
 ]
 fix = [{ name = "prek", specifier = ">=0.2.22" }]
+heki = [{ name = "heki", specifier = "==0.2.4" }]
 isort6 = [{ name = "isort", specifier = ">=6,<7" }]
 isort7 = [{ name = "isort", specifier = ">=7,<8" }]
 pkg-meta = [
@@ -959,7 +961,6 @@ test = [
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
-    { name = "heki", specifier = "==0.2.4" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
     { name = "inline-snapshot", specifier = ">=0.37" },
@@ -983,7 +984,6 @@ type = [
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
-    { name = "heki", specifier = "==0.2.4" },
     { name = "httpx2", specifier = ">=2,<3" },
     { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },

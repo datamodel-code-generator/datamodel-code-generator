@@ -57,6 +57,9 @@ jobs:
           - tox_env: graphqlcore33
             name: graphqlcore33
             coverage_name: graphqlcore33
+          - tox_env: heki
+            name: heki
+            coverage_name: heki
     runs-on: ubuntu-24.04
     env:
       OS: ubuntu-24.04

@@ -1,0 +1,29 @@
+[[change]]
+id = "heki-dependency-group"
+category = "harness"
+title = "Install heki only where its tests run"
+summary = "heki moves from the test dependency group to its own group, which dev and one CI lane install; a heki capability keeps its tests to that lane, and a hook's pinned dependencies must be locked versions; the outputs of the pre-commit hook tests count as internal; the package writes the same output"
+refs = ["#7441"]
+covers = [
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-complete].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-pull-request-complete].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-complete].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-executed-exclusion].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-input].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-lines].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-no-source].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-pull-request].txt",
+    "ci_coverage_script/coverage_artifact_cli[entrypoint-report-stale-data].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-complete].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-pull-request-complete].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-complete].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-executed-exclusion].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-missing-input].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-missing-lines].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-no-source].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-pull-request].txt",
+    "ci_coverage_script/coverage_artifact_cli[subprocess-report-stale-data].txt",
+    "ci_workflow/workflow_matrix_and_coverage_contract.txt",
+    "pre_commit_hooks/a_hook_pin_the_lock_does_not_hold_is_reported.txt",
+    "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
+]

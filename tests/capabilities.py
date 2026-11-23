@@ -86,6 +86,10 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
         "Python 3.11 has no type statements (PEP 695): their errors read differently there",
     ),
     "windows": (("platform==win32",), "Windows reports paths, processes and network errors in its own way"),
+    "heki": (
+        ("heki>=0",),
+        "the test runs the heki binary, which only the heki dependency group installs (tox run -e heki, or dev)",
+    ),
 }
 """Every capability a test may need or its output may vary with: its clauses over the facts and why."""
 

@@ -605,8 +605,9 @@ cycles of every import, function-local and `TYPE_CHECKING` ones included, and
 function or not, move what the modules share into a module that imports none
 of them.
 
-heki, a development dependency of the `test` group, checks the same records
-statically: `scripts/build_heki_contracts.py` writes `scripts/heki.toml` from
+heki, a development dependency of its own `heki` group (which `dev` includes;
+of CI, only the `heki` lane of `tox run -e heki` installs it, and the tests that
+run it need the `heki` capability), checks the same records statically: `scripts/build_heki_contracts.py` writes `scripts/heki.toml` from
 the fact rows of `scripts/fact_tables.py`, the homes and builders of
 `scripts/decision_homes.py` and the concern modules above, and
 `tests/test_build_heki_contracts_script.py` runs
