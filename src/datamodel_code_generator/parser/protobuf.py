@@ -20,7 +20,7 @@ from typing_extensions import Unpack
 
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
-from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._paths import input_files_under
 from datamodel_code_generator._process import run_captured
 from datamodel_code_generator._python_syntax import normalize_newlines as normalize_newlines
 from datamodel_code_generator._shared_types import Error, SchemaParseError
@@ -430,7 +430,7 @@ class _ProtoInputPreparer:
             if source.is_dir():
                 return [
                     self._write_sanitized_file(path, temp_path, source)
-                    for path in files_under(source, "*.proto", order="name")
+                    for path in input_files_under(source, "*.proto", order="name", encoding=self.parser.encoding)
                 ]
             return [self._write_sanitized_file(source, temp_path, self.parser.base_path)]
         if isinstance(source, list):
@@ -806,7 +806,11 @@ class ProtobufParser(JsonSchemaParser):
     def _lexical_source_files(self) -> Sequence[Path]:
         """Return persistent local sources without protoc's temporary sanitized copies."""
         if isinstance(self.source, Path):
-            return sorted(self.source.rglob("*.proto")) if self.source.is_dir() else [self.source]
+            return (
+                input_files_under(self.source, "*.proto", encoding=self.encoding)
+                if self.source.is_dir()
+                else [self.source]
+            )
         return self.source if isinstance(self.source, list) else ()
 
     def _persistent_include_paths(self, input_files: Sequence[Path]) -> tuple[Path, ...]:

@@ -69,7 +69,7 @@ from datamodel_code_generator._mro import c3_merge as c3_merge
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
-from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._paths import input_files_under
 from datamodel_code_generator._python_syntax import normalize_newlines as normalize_newlines
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._records import mutable_record, record
@@ -1691,7 +1691,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         The generator's own output and model metadata inside the directory are not inputs (``DirectoryInputFilter``).
         """
-        files = files_under(directory, order="name")
+        files = input_files_under(directory, order="name", encoding=self.encoding)
         if (input_filter := self._source_context.directory_input_filter) is None:
             return ((path, None) for path in files)
         return input_filter.iter_files(files, self.encoding)

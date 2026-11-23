@@ -1,0 +1,2 @@
+UserWarning: Pydantic does not take pattern on AnyUrl; Request.site is generated without this constraint.
+DefaultValueTypeWarning: 1 Decimal default value was emitted as serialized data instead of Decimal: Request.amount. Generated output is unchanged. Use --deserialize-default-values decimal to enable Decimal deserialization.

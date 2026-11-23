@@ -1,0 +1,7 @@
+[[change]]
+id = "bug-cli-hidden-inputs-api"
+extends = "bug-cli-hidden-binary-inputs"
+refs = ["#7128"]
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

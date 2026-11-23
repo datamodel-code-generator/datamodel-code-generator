@@ -1,0 +1,7 @@
+[[change]]
+id = "bug-cli-check-formatter-context-ruff"
+extends = "bug-cli-check-formatter-context"
+refs = ["#6945"]
+covers = [
+    "main_kr/custom_formatter_resolves_relative_resources_from_the_output_directory_with_ruff/",
+]

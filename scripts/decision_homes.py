@@ -4,9 +4,9 @@ One ``DecisionHome`` per row of the table under "One home per decision" in ``doc
 ``scripts/build_architecture_docs.py`` writes that table from ``DECISION_HOMES``. The three cells stay the Markdown the
 page shows; ``homes`` is what checks read: every definition of the pure core that the core cell names, where it is
 defined (never where it is imported), and ``sites``: the defs, classes and modules of the adapters cell, the scopes
-besides the home modules that may call a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
-does not define, for one its own cell does not name, and for a caller of a home outside them that
-``tests/decision_home_allowlist.py`` does not list.
+besides the home modules that may read a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
+does not define and for one its own cell does not name; heki's contracts (``scripts/build_heki_contracts.py``) report
+a reader of a home outside them that ``scripts/heki_baseline.toml`` does not record.
 
 One ``BuilderHome`` per builder home that the L1 prose of the page states (the parse method a dispatch table
 chooses at each position, the one builder of object maps, the resolver that names models): the builder, the passage of
@@ -2086,12 +2086,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_paths.py`: `existing_ancestor`, `missing_root`, `creation_root`",
         adapters=(
-            "`_generation.py:_refuse_uncreatable_paths`; `_publication.py`: `publication_anchor`, "
+            "`_generation.py`: `_refuse_uncreatable_paths`, `chdir` (the working directory of a run whose output "
+            "directory does not exist yet); `_publication.py`: `publication_anchor`, "
             "`staging_directory_for`, `_create_target_parent`; `remote_lock.py:_nearest_existing_directory`; "
             "`watch_dependencies.py:_nearest_existing_directory`"
         ),
         sites=(
             Home("_generation.py", "_refuse_uncreatable_paths"),
+            Home("_generation.py", "chdir"),
             Home("_publication.py", "publication_anchor"),
             Home("_publication.py", "staging_directory_for"),
             Home("_publication.py", "_create_target_parent"),
@@ -5715,10 +5717,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "option was turned off with), `_warn_of_replaced_options` (the stage or the source that gave the option "
             "that turns it on), `_resolve_run_options` (the record of a config); `_cli_config.py:Config._run_options` "
             "(the record a command-line config carries); `__main__.py`: `_main` (the record of a command, and the "
-            "merged values a watch is staged and configured with), `_rerun_copy` (the pyproject.toml values alone, "
-            "which a watch is configured with again where a batch job or the transaction of a lock runs the resolved "
-            "config once more, so a path an argument gives is then watched where pyproject.toml names it, row "
-            "`lock-reentry-watch-values-pyproject-only`), `_get_job_config`, `_run_watched_jobs`, "
+            "merged values a watch is staged and configured with), `_rerun_copy` (the merged values, which a "
+            "watch is configured with again where a batch job or the transaction of a lock runs the resolved config "
+            "once more), `_get_job_config`, `_run_watched_jobs`, "
             "`_apply_model_run_options` (the deprecation of the `--use-annotated` default where the option is not "
             "given), `_collect_naming_hint`, `_target_usage_errors`, `_run_recommend_options`; `_target_cli.py`: "
             "`_implied` (the settings the target set, which its notice and both JSON payloads name), `_implied_notice` "

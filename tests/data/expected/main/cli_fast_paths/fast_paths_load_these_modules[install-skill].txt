@@ -18,6 +18,7 @@
     "datamodel_code_generator._module_paths",
     "datamodel_code_generator._option_names",
     "datamodel_code_generator._option_table",
+    "datamodel_code_generator._paths",
     "datamodel_code_generator._process_state",
     "datamodel_code_generator._records",
     "datamodel_code_generator._registry_render",
