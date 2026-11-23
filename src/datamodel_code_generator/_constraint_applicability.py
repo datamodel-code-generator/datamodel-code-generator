@@ -13,7 +13,7 @@ Legacy rows, each named by the function that decides it:
   at a root, an item or a union member.
 * ``legacy-all-of-root-format-kinds`` (``all_of_root_keyword_kinds``): an ``allOf`` root merged with constraints keeps
   the keywords of the kinds its format names, silently, before the field split decides the declared ones by the
-  emitted type.
+  emitted type; ``--keep-string-keywords-beside-formats`` decides a string format by the emitted type, a ``str``.
 * ``legacy-exact-ints-as-floats`` (``exact_float``): the schema models read an int constraint as a float where one
   equals it and is written as it, and keep the int only where a float would differ.
 * ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``): the ``Literal`` of a ``const`` or an
@@ -27,6 +27,10 @@ Legacy rows, each named by the function that decides it:
   final type removes it with the render-time drop): a type that names ``AnyUrl`` takes every keyword a declared string
   holds, and the Pydantic outputs leave out every constraint of a field whose type holds it outside a container when
   they write the field, with a warning.
+* ``legacy-format-types-drop-string-keywords`` (``format_keyword_form``): without
+  ``--keep-string-keywords-beside-formats`` a Pydantic string whose format is written as a class that is no ``constr``
+  (``AnyUrl``, ``EmailStr``, ``Base64Str``) is written without the string keywords beside it, unless
+  ``--field-constraints`` writes them, and ``AnyUrl`` leaves them out of a field form with a warning.
 * ``legacy-msgspec-float-bounds`` (``union_bound_arithmetic``): without ``--read-msgspec-union-bounds-exactly`` the
   check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past ``2**53`` is
   the integer of its binary value, where the schema models read the decimal that is written.
@@ -45,7 +49,7 @@ builds the public tables of ``DataTypeManager`` from it while it is imported, an
 from __future__ import annotations
 
 import operator
-from dataclasses import replace
+from dataclasses import field, replace
 from fractions import Fraction
 from math import ceil, floor, inf, isfinite
 from types import MappingProxyType
@@ -95,6 +99,7 @@ __all__ = [
     "WIDENED_VALUES_KEY",
     "ConstraintOptions",
     "DeclaredKinds",
+    "FormatKeywordForm",
     "OutputKeywords",
     "RenderDrop",
     "all_of_root_keyword_kinds",
@@ -108,6 +113,7 @@ __all__ = [
     "engine_pattern_types",
     "exact_float",
     "field_form_zero_bound",
+    "format_keyword_form",
     "holds_number_format",
     "inexact_float_divisor",
     "int_beyond_values",
@@ -377,6 +383,11 @@ _ZERO_BOUND_CLASSES: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType({
     "NonPositiveFloat": ("maximum",),
 })
 
+FormatKeywordForm: TypeAlias = Literal["annotated", "text"]
+"""How an output keeps the string keywords beside a format it writes as a class that no ``con*`` call constrains:
+``annotated`` writes them as ``Annotated[<class>, Field(...)]`` where the class takes them, ``text`` writes the format
+as the plain string the keywords check."""
+
 
 @final
 @record
@@ -393,7 +404,9 @@ class OutputKeywords:
     ``writes_constrained_types`` tells that the type manager writes scalar constraints into ``con*`` types, and
     ``mapping_classes`` are the classes whose length counts their keys and on which the output checks one.
     ``regex_engines`` are the engines the models compile a ``pattern`` on (``_regex_syntax.read_pattern``): none for
-    the standard-library outputs, Python's ``re`` for msgspec, and Rust beside it for Pydantic.
+    the standard-library outputs, Python's ``re`` for msgspec, and Rust beside it for Pydantic. ``format_keyword_forms``
+    maps a mapped type (a ``types.py:Types`` name) written as a class that is no ``con*`` call to how the output keeps
+    the string keywords beside it (``format_keyword_form``).
 
     The number rows say which values the output writes: ``int_values`` is the range of the ints it takes as a number
     constraint, an ``Enum`` or ``Literal`` value or a tag (None when it takes every int), and
@@ -414,6 +427,7 @@ class OutputKeywords:
     drops_non_finite_bounds: bool
     refused_literal_types: tuple[type, ...]
     regex_engines: frozenset[str] = frozenset()
+    format_keyword_forms: Mapping[str, FormatKeywordForm] = field(default_factory=lambda: MappingProxyType({}))
 
 
 BASE_OUTPUT: Final = OutputKeywords(
@@ -441,6 +455,11 @@ PYDANTIC_OUTPUT: Final = replace(
     zero_bound_classes=_ZERO_BOUND_CLASSES,
     writes_constrained_types=True,
     regex_engines=frozenset({"rust", "python"}),
+    format_keyword_forms=MappingProxyType({
+        "uri": "text",
+        "email": "annotated",
+        "byte": "annotated",
+    }),
 )
 """The rows of the Pydantic type manager: its constrained and strict types, and ``multipleOf`` on a ``timedelta``."""
 MSGSPEC_OUTPUT: Final = replace(
@@ -611,6 +630,7 @@ class ConstraintOptions:
     use_strict_str_for_base64: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
 
 
 def _class_keywords(zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None) -> tuple[str, ...]:
@@ -717,11 +737,11 @@ def strict_decimal_multiple(options: ConstraintOptions, *, strict: bool) -> bool
 def encoded_str_field_form(options: ConstraintOptions) -> bool:
     """Return whether a field form writes a string decoded from base64 text with its constraints in front of decoding.
 
-    It does under ``use_encoded_str_for_constrained_base64``, so Pydantic checks them on the text, as the schema does;
-    otherwise ``Annotated[Base64Str, Field(...)]`` and ``Base64Str | None = Field(...)`` check them on the decoded
-    text, as in 0.88.0.
+    It does under ``use_encoded_str_for_constrained_base64`` and under ``keep_string_keywords_beside_formats``, so
+    Pydantic checks them on the text, as the schema does; otherwise ``Annotated[Base64Str, Field(...)]`` and
+    ``Base64Str | None = Field(...)`` check them on the decoded text, as in 0.88.0.
     """
-    return options.use_encoded_str_for_constrained_base64
+    return options.use_encoded_str_for_constrained_base64 or options.keep_string_keywords_beside_formats
 
 
 def strict_encoded_str(options: ConstraintOptions, *, strict: bool) -> bool:
@@ -791,14 +811,17 @@ def holds_number_format(mapped_type: str) -> bool:
 
 
 def constrained_type_keyword_order(
-    mapped_type: str, *, encoded_str: bool = False, by_type: bool = False
+    mapped_type: str, *, encoded_str: bool = False, by_type: bool = False, format_form: FormatKeywordForm | None = None
 ) -> tuple[str, ...]:
     """Return the keywords a ``con*`` type of the mapped type (a ``types.py:Types`` name) takes, in argument order.
 
     A string decoded from base64 text takes the string keywords where a field form writes them in front of its
     decoding (``encoded_str``, ``encoded_str_field_form``). A string reads ``minItems`` and ``maxItems`` as its lengths
-    unless ``by_type`` (``length_keywords_by_type``; row ``legacy-length-keywords-across-kinds``).
+    unless ``by_type`` (``length_keywords_by_type``; row ``legacy-length-keywords-across-kinds``). A format that
+    ``format_keyword_form`` writes ``annotated`` takes the string keywords in the call that annotates its class.
     """
+    if format_form == "annotated":
+        return STRING_KEYWORD_ORDER
     if mapped_type in _NUMBER_TYPES:
         return NUMBER_KEYWORD_ORDER
     if mapped_type == "string":
@@ -808,14 +831,36 @@ def constrained_type_keyword_order(
     return STRING_KEYWORD_ORDER if mapped_type == "byte" and encoded_str else ()
 
 
-def all_of_root_keyword_kinds(schema_type: str, mapped_type: str) -> frozenset[str] | None:
+def _keeps(options: ConstraintOptions, row: str) -> bool:
+    """Return whether the output keeps the ``legacy-*`` row ``row`` of this module: the option that fixes it is off."""
+    return row == "legacy-format-types-drop-string-keywords" and not options.keep_string_keywords_beside_formats
+
+
+def format_keyword_form(
+    options: ConstraintOptions, forms: Mapping[str, FormatKeywordForm], mapped_type: str
+) -> FormatKeywordForm | None:
+    """Return how an output keeps the string keywords beside a format mapped to ``mapped_type``, None for no change.
+
+    Under ``keep_string_keywords_beside_formats`` the ``forms`` of the output's type manager decide
+    (``format_keyword_forms``).
+    Row ``legacy-format-types-drop-string-keywords``: otherwise a format written as ``AnyUrl``, ``EmailStr``,
+    or ``Base64Str`` leaves them out, as in 0.100.0.
+    """
+    if _keeps(options, "legacy-format-types-drop-string-keywords"):
+        return None
+    return forms.get(mapped_type)
+
+
+def all_of_root_keyword_kinds(schema_type: str, mapped_type: str, *, text: bool = False) -> frozenset[str] | None:
     """Return the JSON kinds whose keywords an ``allOf`` root keeps for its format, or None to keep its schema type's.
 
     A string format mapped to a date, time, UUID or IP type keeps no keyword, one mapped to a number type keeps the
     number keywords and one mapped to a string type the string keywords (row ``legacy-all-of-root-format-kinds``).
+    Under ``keep_string_keywords_beside_formats`` the emitted type decides: a format an output writes as a plain
+    string (``text``) keeps the string keywords.
     """
     if schema_type == "string" and mapped_type in _NO_STRING_KEYWORD_FORMAT_TYPES:
-        return NO_KEYWORDS
+        return frozenset({"string"}) if text else NO_KEYWORDS
     if mapped_type in _NUMBER_TYPES:
         return frozenset({"number"})
     if mapped_type in _STRING_FORMAT_TYPES:

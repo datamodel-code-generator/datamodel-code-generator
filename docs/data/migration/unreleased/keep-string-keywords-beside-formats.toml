@@ -1,0 +1,32 @@
+[[change]]
+id = "keep-string-keywords-beside-formats"
+category = "new-surface"
+title = "Keep the string keywords beside a format"
+summary = "--keep-string-keywords-beside-formats keeps the minLength, maxLength and pattern beside a string format that Pydantic output writes as a class no constr call constrains: an email or password takes them in Annotated[EmailStr, Field(...)], a byte checks them on the base64 text, a uri with a keyword is the plain string they check, and msgspec output keeps the keywords an allOf member adds beside a $ref to a string with a date or UUID format."
+refs = ["#7198", "#7345", "#7181"]
+surface = ["--keep-string-keywords-beside-formats"]
+covers = [
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-annotated].payloads.txt",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-annotated].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-dataclass].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-encoded].payloads.txt",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-encoded].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-field-constraints].payloads.txt",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-field-constraints].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-msgspec].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-pydantic-dataclass].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-strict-str].payloads.txt",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept-strict-str].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept].payloads.txt",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[kept].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[released].payloads.txt",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats[released].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats_all_of[kept-msgspec-standard].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats_all_of[kept-msgspec].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats_all_of[kept-pydantic].py",
+    "main/jsonschema/format_string_keywords/keep_string_keywords_beside_formats_all_of[released-msgspec].py",
+    "main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-standard].model.py",
+]

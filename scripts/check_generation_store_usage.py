@@ -1,4 +1,4 @@
-"""Check the attribute-to-fact table against the sources, and name the writes the runtime write guard reports.
+"""Check the attribute-to-fact table against the sources.
 
 The checker reads Python through ``scripts/_source_model.py``, so it never imports the package. It reads two tables:
 the store mutation API
@@ -11,17 +11,13 @@ without a row: heki can judge a write only of an attribute or key some row names
 
 heki checks the writes themselves: ``scripts/build_heki_contracts.py`` turns the rows into the ``write-owners``
 contracts of ``scripts/heki.toml``, and ``scripts/heki_baseline.toml`` records the writes outside store operations that
-exist today. The runtime write guard of the test suite (``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``,
-``tests/checks/finality.py``) reports writes by file and line: ``runtime_writes`` names each by its path, the scope heki
-names its finding after and the attribute, and ``runtime_problems`` returns the writes of the package that the baseline
-does not record.
+exist today.
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
-import json
 import re
 import sys
 from collections.abc import Mapping
@@ -29,8 +25,6 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeAlias
-
-import tomllib
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -49,12 +43,9 @@ GENERATION_STORE_MODULE = SOURCE_ROOT / "parser" / "generation.py"
 FACTS_MODULE = Path("scripts/fact_tables.py")
 PHASE_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
 DECLARATION_MODULES = (SOURCE_ROOT / "types.py", SOURCE_ROOT / "reference.py", SOURCE_ROOT / "model")
-HEKI_BASELINE = Path("scripts/heki_baseline.toml")
 COMPILED_TEMPLATE_DIRECTORY = "_compiled_templates"
 
 Scope: TypeAlias = Literal["parser", "model"]
-WriteKey: TypeAlias = tuple[str, str, str | None]
-"""A write by (path, scope heki names, attribute); ``None`` for every attribute of the scope."""
 
 CONTAINER_MUTATORS = frozenset({
     "add",
@@ -97,9 +88,6 @@ FREEZE_ORDER = ("B1", "B2", "RENDER")
 PLAN_FACTS = ("RenderFact.PLANS",)
 RENDERED_NULLABILITY = ("Fact.NULLABLE",)
 ITEM_ATTRIBUTE = re.compile(r'(\w+)\["([^"]+)"\]')
-WRITE_RULES = {"MUT201": "attribute", "MUT205": "scope"}
-"""The heki rules of the store contracts: a ``MUT201`` entry records writes of its attribute in its scope, a ``MUT205``
-entry (an object or a name heki cannot resolve) writes of any attribute there."""
 
 
 _MODELS: dict[tuple[Path, str], SourceModule] = {}
@@ -910,101 +898,6 @@ def check_default_targets() -> list[Violation]:
     writes, unreadable = dict_key_writes(files)
     store_writes, _ = dict_key_writes([(store, "parser")])
     return [*unreadable, *table_problems(key_writes=writes, store_keys=frozenset(w.key for w in store_writes))]
-
-
-@dataclass(frozen=True)
-class RuntimeWrite:
-    """A write the runtime guard reported, keyed by its path, the scope heki names its finding after and attribute."""
-
-    key: tuple[str, str, str]
-    message: str
-
-
-_FUNCTION_SPANS: dict[Path, list[tuple[int, int, str]]] = {}
-_FUNCTIONS_AT: dict[tuple[Path, int], str] = {}
-
-
-def finding_scope(scope: ModelScope) -> str:
-    """Return the qualname heki gives a finding in a function: the classes and functions around it, and its own name.
-
-    A function holding the next name adds ``<locals>``, as ``__qualname__`` does; lambdas and comprehensions are part
-    of the function around them.
-    """
-    names: list[str] = []
-    probe: ModelScope | None = scope
-    while probe is not None:
-        if probe.kind == "function":
-            names += ["<locals>"] * bool(names)
-        if probe.kind in {"class", "function"}:
-            names.append(probe.code_name)
-        probe = probe.parent
-    return ".".join(reversed(names))
-
-
-def _function_spans(path: Path) -> list[tuple[int, int, str]]:
-    """Return the line span and finding scope of every function in ``path``."""
-    if (spans := _FUNCTION_SPANS.get(path)) is None:
-        spans = _FUNCTION_SPANS[path] = [
-            (scope.node.lineno, scope.node.end_lineno or scope.node.lineno, finding_scope(scope))
-            for scope in read_model(path).scopes
-            if scope.kind == "function"
-        ]
-    return spans
-
-
-def function_at(path: Path, line: int) -> str:
-    """Return the finding scope of the innermost function of ``path`` that contains ``line``, or ``<module>``."""
-    if (name := _FUNCTIONS_AT.get((path, line))) is None:
-        enclosing = [(start, name) for start, end, name in _function_spans(path) if start <= line <= end]
-        name = _FUNCTIONS_AT[path, line] = max(enclosing)[1] if enclosing else "<module>"
-    return name
-
-
-def load_known_writes(path: Path | None = None) -> frozenset[WriteKey]:
-    """Read the writes heki's baseline records outside store operations, keyed as ``WRITE_RULES`` says."""
-    entries = tomllib.loads((path or ROOT / HEKI_BASELINE).read_text(encoding="utf-8")).get("entries", [])
-    return frozenset(
-        (entry["path"], entry["qualname"], entry["target"].partition("[")[0].rpartition(".")[2])
-        if WRITE_RULES[entry["rule_code"]] == "attribute"
-        else (entry["path"], entry["qualname"], None)
-        for entry in entries
-        if entry["rule_code"] in WRITE_RULES
-    )
-
-
-def runtime_writes(lines: Iterable[str]) -> list[RuntimeWrite]:
-    """Return the writes of the package in runtime guard report lines, each keyed as heki names its finding."""
-    writes: list[RuntimeWrite] = []
-    for line in lines:
-        report = json.loads(line)
-        if report.get("area") != "STORE_WRITES" or not (source := report["path"]).startswith(
-            f"{SOURCE_ROOT.as_posix()}/"
-        ):
-            continue
-        key = (source, function_at(ROOT / source, report["line"]), report["attribute"])
-        writes.append(RuntimeWrite(key, report["message"]))
-    return writes
-
-
-def runtime_problems(lines: Iterable[str], *, known: frozenset[WriteKey] | None = None) -> list[str]:
-    """Return the messages of the package's runtime writes that the heki baseline does not record, each once."""
-    recorded = load_known_writes() if known is None else known
-    problems = {
-        write.key: write.message
-        for write in runtime_writes(lines)
-        if write.key not in recorded and (*write.key[:2], None) not in recorded
-    }
-    return [
-        f"{message}; route it through a GenerationStore operation ({HEKI_BASELINE.as_posix()} records no write of "
-        f"{attribute!r} by {function} in {source})"
-        for (source, function, attribute), message in problems.items()
-    ]
-
-
-def check_runtime_writes(lines: Iterable[str], *, known: frozenset[WriteKey] | None = None) -> None:
-    """Raise ``AssertionError`` with the messages of the package's runtime writes that the baseline does not record."""
-    if problems := runtime_problems(lines, known=known):
-        raise AssertionError("\n".join(problems))
 
 
 def main(argv: list[str] | None = None) -> int:

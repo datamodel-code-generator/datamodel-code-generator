@@ -997,7 +997,8 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
                 and (
                     kinds := all_of_root_keyword_kinds(
                         schema_type,
-                        parser._get_schema_type(merged_schema, schema_type, format_).name,
+                        (mapped := parser._get_schema_type(merged_schema, schema_type, format_)).name,
+                        text=parser.data_type_manager.writes_format_as_text(mapped),
                     )
                 )
                 is not None

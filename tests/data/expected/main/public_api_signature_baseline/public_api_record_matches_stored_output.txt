@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 308>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 310>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -502,6 +502,7 @@ class BaseGenerateConfig(BaseModel)
     read_allof_parents_in_mro_order: bool = False
     read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
+    keep_null_of_nullable_items: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False
     set_default_enum_member: bool = False
@@ -572,6 +573,7 @@ class BaseGenerateConfig(BaseModel)
     read_length_keywords_by_type: bool = False
     read_object_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
     read_input_model_dataclass_fields_by_alias: bool = False
     reuse_every_reached_input_model_type: bool = False
     use_site_models_for_constrained_refs: bool = False
@@ -721,7 +723,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 308>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 310>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -949,6 +951,7 @@ class ParserConfig(BaseModel)
     read_length_keywords_by_type: bool = False
     read_object_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
     use_site_models_for_constrained_refs: bool = False
     use_one_model_per_ref_site: bool = False
     original_field_name_delimiter: str | None = None
@@ -1013,6 +1016,7 @@ class ParserConfig(BaseModel)
     read_allof_parents_in_mro_order: bool = False
     read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
+    keep_null_of_nullable_items: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False
     known_third_party: list[str] | None = None
@@ -2794,6 +2798,10 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType)
     @property
     @override
     def type_hint(self) -> str
+class AnnotatedFormatDataType(AnnotatedConstraintDataType)
+    @property
+    @override
+    def annotated_base_type(self) -> str
 class AnnotatedStringDataType(PydanticV2DataType)
     annotated_string: ClassVar[bool] = True
     @property
@@ -2809,6 +2817,7 @@ class DataTypeManager(_DataTypeManagerBase)
     PATTERN_KEY: ClassVar[str] = 'pattern'
     HOSTNAME_REGEX: ClassVar[str] = HOSTNAME_REGEX
     WRITES_ENCODED_STR: ClassVar[bool] = True
+    FORMAT_KEYWORD_FORMS: ClassVar[Mapping[str, _applicability.FormatKeywordForm]] = _applicability.PYDANTIC_OUTPUT.format_keyword_forms
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(_applicability.PYDANTIC_OUTPUT.zero_bound_classes)
     CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = _applicability.PYDANTIC_OUTPUT.type_keywords
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (*_DataTypeManagerBase.KNOWN_TYPE_IMPORTS, pydantic_imports)
@@ -4250,7 +4259,7 @@ UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP = datamodel_code_generator.model.runtime_v
 Union = typing.Union
 UniqueItemsPathStep = datamodel_code_generator.model.runtime_validation.UniqueItemsPathStep
 ValidationInfo = pydantic.ValidationInfo
-def all_of_root_keyword_kinds(schema_type: str, mapped_type: str) -> frozenset[str] | None
+def all_of_root_keyword_kinds(schema_type: str, mapped_type: str, *, text: bool=False) -> frozenset[str] | None
     # identity datamodel_code_generator._constraint_applicability.all_of_root_keyword_kinds
 and_ = operator.and_
 def bounds_admit_no_value(schema: Mapping[str, Any]) -> bool
@@ -5037,7 +5046,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 308>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 310>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5059,7 +5068,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 304>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 306>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5450,11 +5459,13 @@ class DataTypeManager(ABC)
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
     use_strict_str_for_base64: bool = False
     WRITES_ENCODED_STR: ClassVar[bool] = False
+    FORMAT_KEYWORD_FORMS: ClassVar[Mapping[str, _applicability.FormatKeywordForm]] = _applicability.BASE_OUTPUT.format_keyword_forms
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(_applicability.BASE_OUTPUT.zero_bound_classes)
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
@@ -5485,6 +5496,8 @@ class DataTypeManager(ABC)
     def copy_data_type(data_type: DataType) -> DataType
     @property
     def constraint_options(self) -> _applicability.ConstraintOptions
+    def format_keyword_form(self, types: Types) -> _applicability.FormatKeywordForm | None
+    def writes_format_as_text(self, types: Types) -> bool
     @property
     def encodes_constrained_base64(self) -> bool
     @classmethod
@@ -6035,6 +6048,7 @@ class ParserConfigDict(TypedDict)
     read_length_keywords_by_type: NotRequired[bool]
     read_object_keywords_by_type: NotRequired[bool]
     read_msgspec_union_bounds_exactly: NotRequired[bool]
+    keep_string_keywords_beside_formats: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
     use_one_model_per_ref_site: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]
@@ -6099,6 +6113,7 @@ class ParserConfigDict(TypedDict)
     read_allof_parents_in_mro_order: NotRequired[bool]
     read_inherited_property_schemas_in_mro_order: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]
+    keep_null_of_nullable_items: NotRequired[bool]
     keep_field_defaults_off_branch_roots: NotRequired[bool]
     keep_enum_member_values: NotRequired[bool]
     known_third_party: NotRequired[list[str] | None]
@@ -6388,6 +6403,7 @@ class BaseGenerateConfig(TypedDict)
     read_allof_parents_in_mro_order: NotRequired[bool]
     read_inherited_property_schemas_in_mro_order: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]
+    keep_null_of_nullable_items: NotRequired[bool]
     keep_field_defaults_off_branch_roots: NotRequired[bool]
     keep_enum_member_values: NotRequired[bool]
     set_default_enum_member: NotRequired[bool]
@@ -6453,6 +6469,7 @@ class BaseGenerateConfig(TypedDict)
     read_length_keywords_by_type: NotRequired[bool]
     read_object_keywords_by_type: NotRequired[bool]
     read_msgspec_union_bounds_exactly: NotRequired[bool]
+    keep_string_keywords_beside_formats: NotRequired[bool]
     read_input_model_dataclass_fields_by_alias: NotRequired[bool]
     reuse_every_reached_input_model_type: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
@@ -6611,6 +6628,9 @@ class ConstraintOptions
     use_strict_str_for_base64: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
+# named by the signature of datamodel_code_generator.types.DataTypeManager
+FormatKeywordForm: TypeAlias = Literal['annotated', 'text']
 # named by the signature of datamodel_code_generator.util.read_yaml_text
 _T = TypeVar('_T')
 # named by the signature of datamodel_code_generator.watch_dependencies.WatchDependencies

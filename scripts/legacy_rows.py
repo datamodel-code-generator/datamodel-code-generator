@@ -1006,6 +1006,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-item-null-by-form",
+        (
+            "without `--keep-null-of-nullable-items`, under `--strict-nullable` an array item, a tuple item or a map "
+            "value that is a scalar or an object keeps the null its `nullable` declares, and one "
+            "that is an array, a map or an `allOf` of one `$ref` rejects null"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/nullable_item_forms.yaml",
+            "--input-file-type",
+            "openapi",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--strict-nullable",
+            "--disable-timestamp",
+        ),
+        option="--keep-null-of-nullable-items",
+    ),
+    LegacyRow(
         "legacy-root-type-nullable-ungated",
         "a root field is nullable by `nullable` without `--strict-nullable`",
         fix=5054,
@@ -1226,19 +1248,24 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     ),
     LegacyRow(
         "legacy-all-of-root-format-kinds",
-        "an allOf root keeps, silently, the keywords of the kinds its format names",
+        (
+            "without `--keep-string-keywords-beside-formats`, an allOf root keeps, silently, the keywords of the kinds "
+            "its format names, so a date or UUID format drops the string keywords of the root also where the output "
+            "writes it as `str`"
+        ),
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/jsonschema/allof_outer_constraints/date_time.json",
+            "tests/data/jsonschema/format_string_keywords_all_of.json",
             "--input-file-type",
             "jsonschema",
+            "--output-model-type",
+            "msgspec.Struct",
             "--disable-timestamp",
-            "--allof-merge-mode",
-            "none",
             "--formatters",
             "builtin",
         ),
+        option="--keep-string-keywords-beside-formats",
     ),
     LegacyRow(
         "legacy-undeclared-keywords-off-literal",
@@ -1404,8 +1431,11 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     ),
     LegacyRow(
         "legacy-anyurl-keeps-string-keywords",
-        "`AnyUrl` takes every string keyword and Pydantic then drops them all at render",
-        fix=7198,
+        (
+            "without `--keep-string-keywords-beside-formats`, `AnyUrl` takes every string keyword and Pydantic then "
+            "drops them all at render"
+        ),
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/legacy_rows/jsonschema_witnesses/anyurl_keywords.json",
@@ -1418,6 +1448,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--disable-timestamp",
             "--field-constraints",
         ),
+        option="--keep-string-keywords-beside-formats",
+    ),
+    LegacyRow(
+        "legacy-format-types-drop-string-keywords",
+        (
+            "without `--keep-string-keywords-beside-formats`, a Pydantic string whose format is written as `EmailStr`, "
+            "`Base64Str` or `AnyUrl` is written without its `minLength`, `maxLength` and `pattern`, "
+            "silently, unless `--field-constraints` writes them"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/format_string_keywords.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--keep-string-keywords-beside-formats",
     ),
     LegacyRow(
         "legacy-length-keywords-across-kinds",

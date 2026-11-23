@@ -2,7 +2,7 @@
 
 Every run checks the tables of ``src/datamodel_code_generator/parser/_passes/_tables.py`` (``Parser`` runs them
 through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declares each pass by the name of its
-``PassSpec`` and labels the tables (``BOUNDARY_BEFORE``, ``SCOPE_NAMES``, ``HOOK_BODIES``):
+``PassSpec`` and labels the tables (``BOUNDARY_BEFORE``, ``HOOK_BODIES``):
 
 * the table runs every declaration of ``PASS_DECLS`` once, in the order ``PASS_DECLS`` lists them;
 * each pass runs in the phase its segment enters, module passes in module bodies and global passes elsewhere;
@@ -84,7 +84,6 @@ from scripts.pass_decls import (  # noqa: E402
     DECISION_DECLS,
     HOOK_BODIES,
     PASS_DECLS,
-    SCOPE_NAMES,
     After,
     Boundary,
     PassDecl,
@@ -225,9 +224,8 @@ def label_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[
     hooks = {step.name for step in _walk(pipeline) if isinstance(step, HookCall)}
     return [
         *(
-            f"{table} names {name}, which is no segment of the tables"
-            for table, names in (("BOUNDARY_BEFORE", BOUNDARY_BEFORE), ("SCOPE_NAMES", SCOPE_NAMES))
-            for name in sorted(names.keys() - segments)
+            f"BOUNDARY_BEFORE names {name}, which is no segment of the tables"
+            for name in sorted(BOUNDARY_BEFORE.keys() - segments)
         ),
         *(f"HOOK_BODIES names {name}, which is no hook of the tables" for name in sorted(HOOK_BODIES.keys() - hooks)),
         *(f"hook {name} has no body in HOOK_BODIES" for name in sorted(hooks - HOOK_BODIES.keys())),

@@ -1,0 +1,13 @@
+{"rows": [[1.0], null]}: rejected
+{"rows": [["x"]]}: rejected
+{"by_name": {"a": null}}: rejected
+{"counted_rows": [null, [1.0]]}: accepted
+{"grid_maps": [{"k": "v"}, null]}: rejected
+{"nested_maps": {"a": null}}: rejected
+{"by_pattern": {"ax": null}}: rejected
+{"pair": [null, "x"]}: rejected
+{"owners": [null, {"name": "n"}]}: rejected
+{"owners": [1]}: rejected
+{"owner_map": {"a": null}}: rejected
+{"kinds": ["a"]}: accepted
+{"kinds": [null]}: rejected

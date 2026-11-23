@@ -1,0 +1,6 @@
+[[change]]
+id = "bug-g34-strict-nullable-sites-2"
+extends = "read-mapping-keys-api"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

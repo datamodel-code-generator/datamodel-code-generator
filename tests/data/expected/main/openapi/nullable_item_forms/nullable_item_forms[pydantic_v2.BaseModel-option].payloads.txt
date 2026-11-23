@@ -1,0 +1,13 @@
+{"rows": [[1.0], null]}: accepted
+{"rows": [["x"]]}: rejected (float_parsing)
+{"by_name": {"a": null}}: accepted
+{"counted_rows": [null, [1.0]]}: accepted
+{"grid_maps": [{"k": "v"}, null]}: accepted
+{"nested_maps": {"a": null}}: accepted
+{"by_pattern": {"ax": null}}: accepted
+{"pair": [null, "x"]}: accepted
+{"owners": [null, {"name": "n"}]}: accepted
+{"owners": [1]}: rejected (model_type)
+{"owner_map": {"a": null}}: accepted
+{"kinds": ["a"]}: accepted
+{"kinds": [null]}: rejected (enum)

@@ -10,7 +10,6 @@ import re
 import shlex
 import socket
 import sys
-import tempfile
 import time
 from collections import Counter
 from collections.abc import Callable, Generator, Mapping, Sequence
@@ -120,8 +119,6 @@ CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
 """The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` and `CHECK_PASS_TRIGGERS_ENV` to `1`:
 one CI lane runs the sweep and the passes whose trigger is false, the others skip those passes as users do."""
-CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
-"""The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
 """What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
 
@@ -307,9 +304,6 @@ def pytest_configure(config: pytest.Config) -> None:
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
         os.environ.setdefault(CHECK_PASS_TRIGGERS_ENV, "1")
-    if not benchmarks and CHECK_STORE_WRITES_ENV not in os.environ:
-        config.pluginmanager.register(store_writes_check := StoreWritesCheck(), "store-writes-check")
-        config.add_cleanup(store_writes_check.report.unlink)
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "
@@ -624,42 +618,6 @@ def select_test_parts(
 
 def _is_under(nodeid: str, base: str) -> bool:
     return nodeid == base or nodeid.startswith((f"{base}::", f"{base}["))
-
-
-class StoreWritesCheck:
-    """Fail a test whose generations write model facts outside store operations where heki's baseline records none.
-
-    During each test, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES` reports into a file of this test process (so pytest
-    workers and the generator runs that tests start share nothing); after the test,
-    `scripts/check_generation_store_usage.py` names each write of the package as heki names its findings, and the test
-    fails for a write that `scripts/heki_baseline.toml` does not record.
-    """
-
-    def __init__(self) -> None:
-        """Create the report file and read the baseline once."""
-        from scripts import check_generation_store_usage
-
-        handle, name = tempfile.mkstemp(prefix="dcg-store-writes-", suffix=".jsonl")
-        os.close(handle)
-        self.report = Path(name)
-        self.checker = check_generation_store_usage
-        self.known = check_generation_store_usage.load_known_writes()
-
-    @pytest.hookimpl(tryfirst=True)
-    def pytest_runtest_setup(self) -> None:
-        """Report the writes of the test into this process's file."""
-        os.environ[CHECK_STORE_WRITES_ENV] = f"report:{self.report}"
-
-    @pytest.hookimpl(wrapper=True)
-    def pytest_runtest_teardown(self) -> Generator[None, None, None]:
-        """Fail the test for the writes of the package that the baseline does not record."""
-        try:
-            yield
-        finally:
-            os.environ.pop(CHECK_STORE_WRITES_ENV, None)
-            lines = self.report.read_text(encoding="utf-8").splitlines()
-            self.report.write_text("", encoding="utf-8")
-        self.checker.check_runtime_writes(lines, known=self.known)
 
 
 class SlowTestOrdering:

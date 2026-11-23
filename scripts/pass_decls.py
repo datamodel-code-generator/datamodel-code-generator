@@ -11,9 +11,8 @@ rows are declared from the code; ``after`` edges order the passes whose facts co
 every declaration in execution order and is the source of the generated pass table in ``docs/architecture.md``;
 ``DECISION_DECLS`` declares the decisions of the decision registries (``parser/_phases.py``) by name.
 
-The tables carry no label that only the checks read: ``BOUNDARY_BEFORE`` names the segments that enter a boundary,
-``SCOPE_NAMES`` the pass scope of a segment's guarded writes and ``HOOK_BODIES`` the table that the default
-implementation of each hook runs.
+The tables carry no label that only the checks read: ``BOUNDARY_BEFORE`` names the segments that enter a boundary and
+``HOOK_BODIES`` the table that the default implementation of each hook runs.
 """
 
 from __future__ import annotations
@@ -45,7 +44,6 @@ __all__ = [
     "RENAME_SUBMODULES_HIDDEN_BY_CLASSES",
     "REPLACE_MERGED_UNIQUE_LIST_TO_SET",
     "REPLACE_UNHASHABLE_UNIQUE_SET_TO_LIST",
-    "SCOPE_NAMES",
     "SETTLE_MODULE_UNUSED_MODELS",
     "SET_VALIDATE_DEFAULT_ON_FIELDS",
     "TYPE_USERS_OF_LOOPING_REF_CHAINS_BY_ANY",
@@ -2033,17 +2031,6 @@ BOUNDARY_BEFORE: Final = {
     "imports": Boundary.RENDER_READY,
 }
 """The boundary each segment enters before its steps, by segment name; ``MODULE_DONE`` ends each module body."""
-SCOPE_NAMES: Final = {
-    "structure": "Parser._build_module_structure",
-    "plan": "Parser.parse",
-    "cross_module": "Parser.parse",
-    "generic_base_class": "Parser.parse",
-    "decide": "Parser.parse",
-    "render_preparation": "Parser.parse",
-    "finish": "Parser.parse",
-    "render": "Parser.__render_modules",
-}
-"""The pass scope in which the finality check reports the guarded writes of a segment, by segment name."""
 HOOK_BODIES: Final = {
     "build_module_structure": "STRUCTURE_BODY",
     "process_single_module": "MODULE_BODY",
