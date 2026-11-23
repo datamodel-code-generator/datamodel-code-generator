@@ -1,0 +1,16 @@
+asyncapi: 2.6.0
+info:
+  title: A schemaFormat with the bare JSON Schema media type
+  version: 1.0.0
+channels:
+  /things:
+    subscribe:
+      message:
+        schemaFormat: application/schema;version=draft-07
+        payload:
+          type: object
+          properties:
+            name:
+              type: string
+          required:
+            - name

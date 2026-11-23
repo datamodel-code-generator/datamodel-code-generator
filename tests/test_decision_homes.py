@@ -1,7 +1,7 @@
 """Tests for the decision homes of scripts/decision_homes.py: homes and sites are definitions their rows name.
 
-Only the home modules and the adapter sites of a row call its homes, or a caller the baseline still lists. The passes
-a placement row puts its decision after are declared and write a fact the row reads.
+heki's contracts (`scripts/build_heki_contracts.py`) keep the reads of a row's homes inside its home modules and
+adapter sites. The passes a placement row puts its decision after are declared and write a fact the row reads.
 """
 
 from __future__ import annotations
@@ -13,15 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from scripts._decision_home_reads import (
-    Bypass,
-    Caller,
-    builder_bypasses,
-    builder_problems,
-    default_repo,
-    missing,
-    unlisted_callers,
-)
+from scripts._decision_home_reads import Bypass, builder_bypasses, builder_problems, default_repo, missing
 from scripts.build_architecture_docs import (
     DECISION_BEGIN_MARKER,
     DECISION_END_MARKER,
@@ -43,7 +35,7 @@ from scripts.decision_homes import (
 from scripts.fact_tables import Fact, RenderFact
 from scripts.pass_decls import DECISION_DECLS, PASS_DECLS
 from scripts.where import SPAN, Page, Repo
-from tests.decision_home_allowlist import BUILDER_BYPASSES, UNLISTED_CALLERS
+from tests.decision_home_allowlist import BUILDER_BYPASSES
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -133,27 +125,6 @@ def test_decision_homes_are_defined_in_src() -> None:
     problems = _problems(DECISION_HOMES)
 
     assert not problems, "\n".join(problems)
-
-
-@pytest.mark.allow_direct_assert("the guard of the homes must fail the test, not be stored as an expected output")
-def test_only_the_home_modules_and_adapter_sites_call_a_home() -> None:
-    """A home is called only by its row's home modules and adapter sites, or by a caller the baseline still lists.
-
-    The baseline (`tests/decision_home_allowlist.py`) holds the callers of today's code that no row lists; it only
-    shrinks (`scripts/check_ratchets.py` counts it), so an entry the code no longer has must go.
-    """
-    found = {(caller.home, caller.caller) for caller in unlisted_callers(default_repo(), DECISION_HOMES)}
-    listed = {(home, caller) for home, callers in UNLISTED_CALLERS.items() for caller in callers}
-    new = [f"{caller} calls {home}" for home, caller in sorted(found - listed)]
-    stale = [f"{caller} calls {home}" for home, caller in sorted(listed - found)]
-
-    assert not new, (
-        "calls of a home outside its row's modules and adapter sites: call it through an adapter site of the row, or "
-        "name the caller in the row's Adapters cell and its sites (scripts/decision_homes.py):\n" + "\n".join(new)
-    )
-    assert not stale, "callers tests/decision_home_allowlist.py lists that no longer call: remove them\n" + "\n".join(
-        stale
-    )
 
 
 @pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
@@ -273,69 +244,6 @@ def test_decision_home_check_fails_on_seeded_records() -> None:
             "the adapters cell names `NULL_SCHEMA` after parser/avro.py, no whole-module site"
         ),
         "seeded: no home...: no home",
-    ]
-
-
-SEEDED_PACKAGE = {
-    "__init__.py": "from .core import decide\n",
-    "core.py": (
-        "class Rule:\n    def method(self) -> None:\n        pass\n\n\nTABLE = {}\n\n\n"
-        "def decide() -> Rule:\n    return Rule()\n\n\n"
-        "class Failure(Exception):\n    pass\n\n\nclass Detail(Failure):\n    pass\n"
-    ),
-    "adapter.py": (
-        "from .core import TABLE, Rule, decide\n\n\ndef site() -> None:\n    decide()\n\n\n"
-        "class Site:\n    def nested(self) -> None:\n        decide()\n\n\n"
-        "def typed(rule: Rule) -> object:\n    return TABLE\n\n\n"
-        "def bypass(value: object) -> bool:\n    return isinstance(value, Rule) and decide() is not None\n"
-    ),
-    "whole.py": "from .core import decide\n\nRESULT = decide()\n",
-    "raises.py": (
-        "from .core import Detail, Failure\n\n\n"
-        "def raised() -> None:\n    raise Failure('x')\n\n\n"
-        "def caught() -> bool:\n    try:\n        raise Detail\n    except Failure as error:\n"
-        "        return isinstance(error, Detail)\n"
-    ),
-    "through.py": (
-        "from . import core\nfrom datamodel_code_generator import decide\n\n\n"
-        "def by_module() -> None:\n    core.decide()\n\n\nby_package = decide()\n"
-    ),
-}
-"""A package whose ``core.py`` holds the homes: callers by name, by module attribute and through a re-export.
-
-``raises.py`` raises and catches the exception homes ``Failure`` and ``Detail`` (a subclass of it) outside ``core.py``:
-the guard does not report them.
-"""
-
-
-@pytest.mark.allow_direct_assert("the callers the guard finds in a seeded package are its verdict, not a stored output")
-def test_unlisted_callers_on_a_seeded_package(tmp_path: Path) -> None:
-    """Reads outside the home modules and sites are callers; a site's nested scopes, annotations and tables are not."""
-    package = tmp_path / "src" / PACKAGE
-    package.mkdir(parents=True)
-    (tmp_path / "scripts").mkdir()
-    for name, text in SEEDED_PACKAGE.items():
-        (package / name).write_text(text, encoding="utf-8")
-    record = DecisionHome(
-        "seeded",
-        homes=(
-            Home("core.py", "decide"),
-            Home("core.py", "Rule"),
-            Home("core.py", "TABLE"),
-            Home("core.py", "Rule.method"),
-            Home("core.py", "Failure"),
-            Home("core.py", "Detail"),
-        ),
-        core="",
-        adapters="",
-        sites=(Home("adapter.py", "site"), Home("adapter.py", "Site"), Home("whole.py")),
-    )
-
-    assert unlisted_callers(Repo(tmp_path, Page([], [], [], [])), [record]) == [
-        Caller("core.py:Rule", "adapter.py:bypass", 18),
-        Caller("core.py:decide", "adapter.py:bypass", 18),
-        Caller("core.py:decide", "through.py:<module>", 9),
-        Caller("core.py:decide", "through.py:by_module", 6),
     ]
 
 

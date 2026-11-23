@@ -1,0 +1,61 @@
+asyncapi: 3.0.0
+info:
+  title: References to Multi Format Schema Objects
+  version: 1.0.0
+servers:
+  socket:
+    host: probe.example.com
+    protocol: wss
+channels:
+  notes:
+    address: /notes
+    messages:
+      note:
+        headers:
+          $ref: '#/components/schemas/NoteHeaders'
+        payload:
+          $ref: '#/components/schemas/Note'
+  tags:
+    address: /tags
+    messages:
+      tag:
+        payload:
+          $ref: '#/components/schemas/TagAlias'
+operations:
+  receiveNotes:
+    action: receive
+    channel:
+      $ref: '#/channels/notes'
+  receiveTags:
+    action: receive
+    channel:
+      $ref: '#/channels/tags'
+components:
+  schemas:
+    Note:
+      schemaFormat: application/schema+json;version=draft-07
+      schema:
+        type: object
+        properties:
+          text:
+            type: string
+        required:
+          - text
+    NoteHeaders:
+      schemaFormat: application/schema+json;version=draft-07
+      schema:
+        type: object
+        properties:
+          traceId:
+            type: string
+    TagAlias:
+      $ref: '#/components/schemas/Tag'
+    Tag:
+      schemaFormat: application/schema+json;version=draft-07
+      schema:
+        type: object
+        properties:
+          label:
+            type: string
+        required:
+          - label

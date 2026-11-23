@@ -33,8 +33,6 @@ ruff-config:per-file:tests/**/*.py:S101            1       1       0
 ruff:FURB113@src                                   0       1      +1
 ruff:PLC0415@src                                   1       1       0
 source-rule:raw-skip                               0       1      +1
-store-allowlist:counted                            0       2      +2
-store-allowlist:witness                            0       1      +1
 ty-config:deprecated                               0       1      +1
 ty-config:unresolved-import                        0       1      +1
 ty-ignore:unresolved-import@src                    0       1      +1
@@ -108,12 +106,6 @@ ruff:FURB113@src rose by 1 (0 -> 1). Fix the finding instead of suppressing it. 
 
 source-rule:raw-skip rose by 1 (0 -> 1). Say what the test needs with a capability of tests/capabilities.py (`@needs("symlinks")`), adding one with its reason when none fits; delete a skip that no lane takes; `python scripts/check_source_rules.py --rule raw-skip` prints each site with its detail.
   tests/test_d.py: 0 -> 1 (lines 8)
-
-store-allowlist:counted rose by 2 (0 -> 2). Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it.
-  scripts/generation_store_allowlist.toml: 0 -> 2
-
-store-allowlist:witness rose by 1 (0 -> 1). Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it.
-  scripts/generation_store_allowlist.toml: 0 -> 1
 
 ty-config:deprecated rose by 1 (0 -> 1). A ty rule set below error hides its findings: fix them and keep the rule an error.
   pyproject.toml: 0 -> 1

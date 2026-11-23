@@ -1,0 +1,132 @@
+openapi: '3.1.0'
+info: {title: Discriminated unions whose variants' tag properties also admit null, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    CatKind:
+      type: string
+      enum: [cat]
+    TypeListCat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: [string, "null"], enum: [cat]}
+        name: {type: string}
+    TypeListDog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: [string, "null"], enum: [dog]}
+        bark: {type: boolean}
+    TypeList:
+      oneOf:
+        - $ref: '#/components/schemas/TypeListCat'
+        - $ref: '#/components/schemas/TypeListDog'
+      discriminator:
+        propertyName: kind
+    EnumNullCat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: [string, "null"], enum: [cat, null]}
+    EnumNullDog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: [string, "null"], enum: [dog, null]}
+    EnumNull:
+      oneOf:
+        - $ref: '#/components/schemas/EnumNullCat'
+        - $ref: '#/components/schemas/EnumNullDog'
+      discriminator:
+        propertyName: kind
+    SeveralNullCat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: [string, "null"], enum: [cat, kitty, null]}
+    SeveralNull:
+      oneOf:
+        - $ref: '#/components/schemas/SeveralNullCat'
+        - $ref: '#/components/schemas/EnumNullDog'
+      discriminator:
+        propertyName: kind
+    ConstOptionalCat:
+      type: object
+      properties:
+        kind: {type: [string, "null"], const: cat}
+    ConstOptionalDog:
+      type: object
+      properties:
+        kind: {type: [string, "null"], const: dog}
+    ConstOptional:
+      oneOf:
+        - $ref: '#/components/schemas/ConstOptionalCat'
+        - $ref: '#/components/schemas/ConstOptionalDog'
+      discriminator:
+        propertyName: kind
+    RefOrNullCat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          anyOf:
+            - $ref: '#/components/schemas/CatKind'
+            - type: 'null'
+    RefOrNull:
+      oneOf:
+        - $ref: '#/components/schemas/RefOrNullCat'
+        - $ref: '#/components/schemas/TypeListDog'
+      discriminator:
+        propertyName: kind
+    Inline:
+      oneOf:
+        - allOf:
+            - $ref: '#/components/schemas/EnumNullCat'
+            - properties:
+                note: {type: string}
+        - allOf:
+            - $ref: '#/components/schemas/EnumNullDog'
+            - properties:
+                note: {type: string}
+      discriminator:
+        propertyName: kind
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [bird]}
+    Nested:
+      oneOf:
+        - $ref: '#/components/schemas/TypeList'
+        - $ref: '#/components/schemas/Bird'
+      discriminator:
+        propertyName: kind
+    Mapped:
+      oneOf:
+        - $ref: '#/components/schemas/TypeListCat'
+        - $ref: '#/components/schemas/TypeListDog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/TypeListCat'
+          dog: '#/components/schemas/TypeListDog'
+    OptionalCat:
+      type: object
+      properties:
+        kind: {type: [string, "null"], enum: [cat]}
+    OptionalDog:
+      type: object
+      properties:
+        kind: {type: [string, "null"], enum: [dog]}
+    Optional:
+      oneOf:
+        - $ref: '#/components/schemas/OptionalCat'
+        - $ref: '#/components/schemas/OptionalDog'
+      discriminator:
+        propertyName: kind
+    Lone:
+      oneOf:
+        - $ref: '#/components/schemas/EnumNullCat'
+      discriminator:
+        propertyName: kind

@@ -1429,6 +1429,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.merge_shared_variant_tags = config.merge_shared_variant_tags
         self.use_unmapped_variant_tag_values = config.use_unmapped_variant_tag_values
+        self.read_mapping_keys_by_schema_tag_type = config.read_mapping_keys_by_schema_tag_type
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
         self.tag_msgspec_by_payload_name = config.tag_msgspec_by_payload_name
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias

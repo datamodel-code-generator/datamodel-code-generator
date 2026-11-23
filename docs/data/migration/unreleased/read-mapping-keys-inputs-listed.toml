@@ -1,0 +1,6 @@
+[[change]]
+id = "read-mapping-keys-inputs-listed"
+extends = "read-mapping-keys-by-schema-tag-type"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

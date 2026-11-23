@@ -1,0 +1,3 @@
+Second {"kind": "b", "name": "x"}: schema accepts, model accepts
+Second {"kind": "a"}: schema accepts, model rejects
+Second {"kind": "c"}: schema rejects, model accepts

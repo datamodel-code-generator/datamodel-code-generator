@@ -62,7 +62,7 @@ Scalar, date/time, and custom type mapping.
 | [`--read-kubernetes-extensions`](../typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](../typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--read-uuid6-uuid7-uuid8-formats`](../typing-customization.md#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they name. |
-| [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
+| [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for str, bytes, int, float, bool, datetime, date a... |
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](../typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
 | [`--type-overrides-replace-whole-type`](../typing-customization.md#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the field's whole type. |

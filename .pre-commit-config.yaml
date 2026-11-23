@@ -59,7 +59,7 @@ repos:
     name: Check parser GenerationStore usage
     entry: python scripts/check_generation_store_usage.py
     language: python
-    files: ^(src/datamodel_code_generator/parser/.*\.py|scripts/check_generation_store_usage\.py|scripts/fact_tables\.py|scripts/generation_store_allowlist\.toml|scripts/_source_model\.py)$
+    files: ^(src/datamodel_code_generator/parser/.*\.py|scripts/check_generation_store_usage\.py|scripts/fact_tables\.py|scripts/_source_model\.py|src/datamodel_code_generator/model/.*\.py|src/datamodel_code_generator/types\.py)$
     pass_filenames: false
   - id: architecture-boundaries
     name: Check architecture boundaries
@@ -89,6 +89,6 @@ repos:
     name: Check the package against the heki contracts
     entry: heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
     language: python
-    additional_dependencies: [heki==0.2.3]
+    additional_dependencies: [heki==0.2.4]
     files: ^(src/datamodel_code_generator/.*\.py|scripts/heki\.toml|scripts/heki_baseline\.toml)$
     pass_filenames: false

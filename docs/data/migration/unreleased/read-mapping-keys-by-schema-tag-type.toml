@@ -1,0 +1,49 @@
+[[change]]
+id = "read-mapping-keys-by-schema-tag-type"
+category = "new-surface"
+title = "Read mapping keys by the tag type the schema declares under an option"
+summary = "--read-mapping-keys-by-schema-tag-type reads a discriminator mapping key as a value of the type the schema declares for the tag property, also where an earlier union already wrote the tag field of the variant or of its base, so the key '2' of an integer enum is Literal[2] whichever union comes first (#7113); without it the key is read against the Literal the earlier union wrote, or stays text."
+refs = ["#7405"]
+surface = ["--read-mapping-keys-by-schema-tag-type"]
+covers = [
+    "input_model/config_class.txt",
+    "main/main_general/show_help[False].txt",
+    "main/main_general/show_help[True].txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_after_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_after_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_after_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_after_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_before_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_before_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_before_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_before_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_after_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_after_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_after_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_after_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_before_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_before_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_before_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[msgspec.Struct-mapping_key_before_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_after_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_after_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_after_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_after_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_before_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_before_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_before_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.BaseModel-mapping_key_before_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_after_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_after_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_after_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_after_union-released].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-option].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-option].py",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-released].payloads.txt",
+    "main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-released].py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-mapping-keys-by-schema-tag-type-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-mapping-keys-by-schema-tag-type-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-mapping-keys-by-schema-tag-type-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-mapping-keys-by-schema-tag-type-standard].model.py",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+]

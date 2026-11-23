@@ -8,7 +8,7 @@ call them through the parser.
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, Union
 
 from typing_extensions import Protocol, final
 
@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
 
 __all__ = [
+    "InferredDiscriminators",
     "TaggedUnionValue",
     "UnionTagReading",
     "UnionTagsHost",
@@ -64,6 +65,9 @@ __all__ = [
 ]
 
 TaggedUnionValue = Union[int, str]  # noqa: UP007
+InferredDiscriminators: TypeAlias = "dict[int, tuple[Mapping[str, object], Mapping[str, object]]]"
+"""The discriminator inferred at each union site, by the id of the site's ``extras``, with that dict
+(``set_tagged_union_discriminator``)."""
 UnionTagReading = Literal["legacy-branch-own-tags", "branch-and-all-of-tags"]
 """How the branches of a union are read for the property that tags them (``get_tagged_union_field_values``).
 
@@ -560,12 +564,19 @@ def set_tagged_union_discriminator(
     obj: JsonSchemaObject,
     combined_schemas: Sequence[JsonSchemaObject],
     reading: UnionTagReading,
+    inferred: InferredDiscriminators,
 ) -> None:
-    """Capture the discriminator of the property that tags every branch of a union, read as ``reading`` reads them."""
+    """Capture the discriminator of the property that tags every branch of a union, read as ``reading`` reads them.
+
+    It is recorded in ``inferred`` by the site's ``extras``, which every copy of the site object shares, and read where
+    the site's field takes its extras (``get_field_extras``); the schema object keeps what the document says, as a
+    ``$ref`` target is one object that every reader shares.
+    """
     if not (tag_data := get_tagged_union_field_values(parser, obj, combined_schemas, reading)):
         return
-    obj.extras["discriminator"] = tagged_union_discriminator(
-        obj.extras.get("discriminator"), literal_property=tag_data[0]
+    inferred[id(obj.extras)] = (
+        obj.extras,
+        tagged_union_discriminator(obj.extras.get("discriminator"), literal_property=tag_data[0]),
     )
 
 

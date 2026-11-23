@@ -17,7 +17,9 @@ from pathlib import Path
 import pytest
 import tomllib
 
-from scripts import check_ratchets
+from scripts import build_heki_contracts, check_ratchets
+from scripts.decision_homes import DecisionHome, Home
+from scripts.fact_tables import MemberUse, StoreMember
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
@@ -90,23 +92,43 @@ SEEDED_PACKAGE = {
     f"{PACKAGE}/model/__init__.py": "",
     f"{PACKAGE}/model/base.py": (
         "class DataModel:\n    def __init__(self) -> None:\n        self.fields: list[str] = []\n"
+        "        self.set_base_class()\n\n"
+        "    def set_base_class(self) -> None:\n        self.fields = []\n"
+    ),
+    f"{PACKAGE}/reference.py": (
+        "class Reference:\n    def __init__(self) -> None:\n"
+        "        self.children: list[object] = []\n        self.loaded = True\n"
     ),
     f"{PACKAGE}/parser/__init__.py": "",
     f"{PACKAGE}/parser/generation.py": (
         "from datamodel_code_generator.model.base import DataModel\n\n\n"
         "class GenerationStore:\n"
-        "    def set_fields(self, model: DataModel, fields: list[str]) -> None:\n        model.fields = fields\n"
+        "    def set_fields(self, model: DataModel, fields: list[str]) -> None:\n        model.fields = fields\n\n"
+        "    def reset_base_classes(self, model: DataModel) -> None:\n        model.set_base_class()\n"
+    ),
+    f"{PACKAGE}/parser/base.py": (
+        "class Parser:\n    def __init__(self) -> None:\n        self.results: list[str] = []\n"
     ),
     f"{PACKAGE}/parser/seeded.py": (
-        "from datamodel_code_generator.model.base import DataModel\n\n\n"
-        'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n'
+        "from datamodel_code_generator.model.base import DataModel\n"
+        "from datamodel_code_generator.parser.base import Parser\n"
+        "from datamodel_code_generator.reference import Reference\n\n\n"
+        'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n\n\n'
+        'def register(parser: Parser) -> None:\n    parser.results.append("model")\n\n\n'
+        "def rebase(model: DataModel) -> None:\n    model.set_base_class()\n\n\n"
+        "def users(reference: Reference) -> list[object]:\n    return reference.children\n\n\n"
+        "def unload(reference: Reference) -> None:\n    reference.loaded = False\n"
     ),
     f"{PACKAGE}/parser/seeded_env.py": SEEDED_ENVIRONMENT,
 }
-"""A package whose ``seeded.py`` writes ``DataModel.fields`` outside the store operations that the fact row names.
+"""A package whose ``seeded.py`` writes ``DataModel.fields`` and the run-state list ``Parser.results`` outside the
+store operations that their rows name, calls ``DataModel.set_base_class``, which only the store runs, and reads and
+writes the bookkeeping of a ``Reference``.
 
-``GenerationStore.set_fields``, one of those operations, writes it too: heki allows that write. ``seeded_env.py``
-holds `SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
+``GenerationStore.set_fields``, one of those operations, writes ``DataModel.fields`` too, ``Parser.__init__``
+builds ``results``, the store and the model's own initialization call ``set_base_class``, which writes ``fields`` for
+the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them all. ``seeded_env.py`` holds
+`SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
 """
 
 
@@ -140,7 +162,9 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 
     assert result.returncode == 0, (
         "heki findings the baseline does not record: keep the write, read or call inside its owners "
-        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of the "
+        "(scripts/build_heki_contracts.py names the records each contract comes from); for a read of a decision "
+        "home (a home: contract), go through an adapter site of its row, or name the reader in the row's Adapters "
+        "cell and its sites (scripts/decision_homes.py); for a read of the "
         "environment (EFF201), key the decision on an option or a static rule (the help of each report). If the "
         "findings only moved "
         "(a function was renamed or moved), delete scripts/heki_baseline.toml and run heki check --config "
@@ -156,6 +180,9 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
 def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_reads(tmp_path: Path) -> None:
     """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none.
+
+    A call of a method only the store runs (``STORE_MEMBERS``) outside the store and the method's class is a finding,
+    and so are a read and a write of a reference's bookkeeping outside its module.
 
     A read of the environment the package runs in is a finding too, in a function and in a module body, counted per
     site.
@@ -174,62 +201,135 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
     assert (result.returncode, found) == (
         1,
         [
+            (
+                f"{PACKAGE}/parser/seeded.py",
+                "rebase",
+                "MUT204",
+                "datamodel_code_generator.model.base.DataModel.set_base_class",
+                1,
+            ),
+            (f"{PACKAGE}/parser/seeded.py", "register", "MUT201", "Parser.results", 1),
             (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields", 1),
+            (f"{PACKAGE}/parser/seeded.py", "unload", "MUT201", "Reference.loaded", 1),
+            (f"{PACKAGE}/parser/seeded.py", "users", "MUT203", "Reference.children", 1),
             (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", environment, 14),
             (f"{PACKAGE}/parser/seeded_env.py", "old_python", "EFF201", environment, 1),
         ],
     ), result.stderr
 
 
-SEEDED_HOMES = {
-    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
-    f"{PACKAGE}/__init__.py": "",
-    f"{PACKAGE}/home.py": "def decide() -> int:\n    return 1\n",
-    f"{PACKAGE}/caller.py": (
-        "from datamodel_code_generator.home import decide\n\n\n"
-        "def run() -> int:\n    return decide()\n\n\n"
-        "def run_through_helper() -> int:\n    return _helper()\n\n\n"
-        "def _helper() -> int:\n    return decide()\n"
-    ),
-}
-"""A decision home that `run` and `run_through_helper` may call; the second hands the call to a private helper."""
-SEEDED_HOME_CONTRACT = """[[call-owners]]
-name = "home:home.py:decide"
-targets = ["datamodel_code_generator.home.decide"]
-allowed-callers = ["datamodel_code_generator.caller:run", "datamodel_code_generator.caller:run_through_helper"]
-references = "calls"
-subclasses = false
-attribution = "lexical"
-"""
-
-
 @pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
-    """Homes, builders, held parse methods and dispatch tables are judged where the call or read is written.
+    """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.
 
     The guards of the records (`scripts/_decision_home_reads.py`) report the scope that holds each read, so a call
-    handed to a private helper is the helper's, not its caller's.
+    handed to a private helper is the helper's, not its caller's; the runtime write guard names a write by the
+    function that makes it, as heki names it with lexical attribution.
     """
     contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
     judged = [
         (table["name"], table.get("attribution"))
-        for kind in ("call-owners", "read-owners")
+        for kind in ("call-owners", "read-owners", "write-owners")
         for table in contracts[kind]
-        if table["name"].startswith(("home:", "builder:", "held:", "table:"))
+        if table["name"].startswith((
+            "home:",
+            "builder:",
+            "held:",
+            "table:",
+            "fact:",
+            "presentation:",
+            "cache:",
+            "store-call:",
+            "store-read:",
+            "store-write:",
+        ))
     ]
 
-    assert judged
+    assert {name.partition(":")[0] for name, _ in judged} == {
+        "store-call",
+        "store-read",
+        "store-write",
+        "home",
+        "builder",
+        "held",
+        "table",
+        "fact",
+        "presentation",
+        "cache",
+    }
     assert [name for name, attribution in judged if attribution != "lexical"] == []
 
 
+SEEDED_HOMES = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "from .core import decide\n",
+    f"{PACKAGE}/core.py": (
+        "class Rule:\n    def method(self) -> None:\n        pass\n\n\nTABLE = {}\n\n\n"
+        "def decide() -> Rule:\n    return Rule()\n\n\n"
+        "class Failure(Exception):\n    pass\n\n\nclass Detail(Failure):\n    pass\n"
+    ),
+    f"{PACKAGE}/adapter.py": (
+        "from .core import TABLE, Rule, decide\n\n\ndef site() -> None:\n    decide()\n\n\n"
+        "class Site:\n    def nested(self) -> None:\n        decide()\n\n\n"
+        "def typed(rule: Rule) -> object:\n    return TABLE\n\n\n"
+        "def bypass(value: object) -> bool:\n    return isinstance(value, Rule) and decide() is not None\n\n\n"
+        "def run_through_helper() -> Rule:\n    return _helper()\n\n\n"
+        "def _helper() -> Rule:\n    return decide()\n"
+    ),
+    f"{PACKAGE}/whole.py": "from .core import decide\n\nRESULT = decide()\n",
+    f"{PACKAGE}/raises.py": (
+        "from .core import Detail, Failure\n\n\n"
+        "def raised() -> None:\n    raise Failure('x')\n\n\n"
+        "def caught() -> bool:\n    try:\n        raise Detail\n    except Failure as error:\n"
+        "        return isinstance(error, Detail)\n"
+    ),
+    f"{PACKAGE}/through.py": (
+        "from typing import TYPE_CHECKING\n\nfrom . import core\nfrom datamodel_code_generator import decide\n\n"
+        "if TYPE_CHECKING:\n    from .core import Rule\n\n    Checked = Rule | None\n\n\n"
+        "def by_module() -> None:\n    core.decide()\n\n\nby_package = decide()\n"
+    ),
+}
+"""A package whose ``core.py`` holds the homes: read by name, by module attribute and through a re-export.
+
+``adapter.py`` holds the sites ``site`` and ``Site``, ``whole.py`` is a site as a whole module. ``bypass`` reads
+``Rule`` and calls ``decide`` outside them, and ``run_through_helper`` hands the call to a private helper. ``typed``
+names ``Rule`` in an annotation and reads ``TABLE``, a constant home. ``raises.py`` raises and catches the exception
+homes ``Failure`` and ``Detail`` (a subclass of it), and ``through.py`` reads ``Rule`` in a type alias under ``if
+TYPE_CHECKING:``, where it imports ``Rule``.
+"""
+SEEDED_HOME_RECORD = DecisionHome(
+    "seeded",
+    homes=(
+        Home("core.py", "decide"),
+        Home("core.py", "Rule"),
+        Home("core.py", "TABLE"),
+        Home("core.py", "Rule.method"),
+        Home("core.py", "Failure"),
+        Home("core.py", "Detail"),
+    ),
+    core="",
+    adapters="",
+    sites=(Home("adapter.py", "site"), Home("adapter.py", "Site"), Home("whole.py")),
+)
+
+
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_judges_a_home_call_in_the_helper_that_makes_it(tmp_path: Path) -> None:
-    """With lexical attribution a call delegated to a private helper is reported at the helper, as the guard does."""
+def test_heki_reports_reads_of_a_home_outside_its_modules_and_sites(tmp_path: Path) -> None:
+    """A run-time read of a def or class home outside its row's home modules and sites is a finding; theirs is none.
+
+    A call, an ``isinstance`` check, a module attribute and a re-export read a home; an annotation, a name imported
+    only under ``if TYPE_CHECKING:``, a constant home and an exception home do not count. With lexical attribution a
+    call handed to a private helper is the helper's.
+    """
     for name, text in SEEDED_HOMES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(SEEDED_HOME_CONTRACT, encoding="utf-8")
+    contracts.write_text(
+        "\n".join(build_heki_contracts.decision_home_contracts(repo, [SEEDED_HOME_RECORD])), encoding="utf-8"
+    )
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -240,8 +340,20 @@ def test_heki_judges_a_home_call_in_the_helper_that_makes_it(tmp_path: Path) -> 
         check=False,
     )
 
-    found = [(item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)]
-    assert (result.returncode, found) == (1, [("_helper", "MUT204")]), result.stderr
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].rpartition(".")[2])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("adapter.py", "_helper", "MUT204", "decide"),
+            ("adapter.py", "bypass", "MUT204", "Rule"),
+            ("adapter.py", "bypass", "MUT204", "decide"),
+            ("through.py", "<module>", "MUT204", "decide"),
+            ("through.py", "by_module", "MUT204", "decide"),
+        ],
+    ), result.stderr
 
 
 @pytest.mark.allow_direct_assert(
@@ -258,3 +370,32 @@ def test_the_ratchet_knows_every_rule_of_the_pinned_heki() -> None:
 
     assert rules == check_ratchets.HEKI_RULES, result.stderr
     assert [code for code in rules.values() if not check_ratchets.HEKI_CODE.fullmatch(code)] == []
+
+
+@pytest.mark.parametrize(
+    ("member", "message"),
+    [
+        pytest.param(
+            StoreMember("types.py", "DataType", "never_defined", MemberUse.CALL),
+            "STORE_MEMBERS: types.py defines no method DataType.never_defined",
+            id="method",
+        ),
+        pytest.param(
+            StoreMember("reference.py", "Reference", "name", MemberUse.WRITE),
+            "STORE_MEMBERS: Reference.name has no bookkeeping row in ATTRIBUTE_FACTS",
+            id="attribute",
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
+def test_store_members_name_a_method_or_a_bookkeeping_row(
+    monkeypatch: pytest.MonkeyPatch, member: StoreMember, message: str
+) -> None:
+    """A ``STORE_MEMBERS`` row names a method its class defines, or a bookkeeping row of ``ATTRIBUTE_FACTS``."""
+    monkeypatch.setattr(build_heki_contracts, "STORE_MEMBERS", (member,))
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.store_member_contracts(repo)
+
+    assert str(stopped.value) == message

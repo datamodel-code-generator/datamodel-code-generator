@@ -51,6 +51,7 @@ SLOWEST_NODEID = (
     [
         ("short", 40, "short.part1.py"),
         ("a" * 40, 30, "aaaaaaaaaaaa~a5655941.part1.py"),
+        ("a" * 40, 15, "~78c50d32.py"),
     ],
 )
 def test_split_name(stem: str, limit: int, expected: str) -> None:
@@ -150,6 +151,10 @@ def test_against_without_git_compares_documents_on_disk(ledger: LedgerProject, t
     subprocess.run(["git", "add", "doc.md"], cwd=ledger.pytester.path, check=True)
     ledger.run("suite").assert_outcomes(passed=2)
     assert ledger.files() == {}
+    (ledger.pytester.path / "doc.md").unlink()
+    deleted = ledger.run("suite")
+    deleted.assert_outcomes(failed=1, passed=1)
+    assert "Expected file not found" in deleted.stdout.str()
 
 
 def test_assert_inputs_not_mutated_allows_unchanged_nested_values() -> None:
@@ -707,20 +712,17 @@ def ledger(
 
 SHARED = """
 import pytest
-from pathlib import Path
 
 from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent / "data" / "expected"
 
 
 @pytest.mark.parametrize("case", ["a", "b"])
 def test_y(case):
-    assert_output(OUTPUTS.get(case, "old\\n"), EXPECTED / "m" / "y.txt")
+    assert_output(OUTPUTS.get(case, "old\\n"))
 
 
 def test_z():
-    assert_output(OUTPUTS.get("z", "old\\n"), EXPECTED / "m" / "y.txt")
+    assert_output(OUTPUTS.get("z", "old\\n"))
 """
 
 
@@ -853,11 +855,15 @@ def test_ledger_reports_unrecorded_output(ledger: LedgerProject, env: dict[str, 
 
 def test_ledger_reports_missing_line_for_existing_file(ledger: LedgerProject) -> None:
     """A committed expected file without its .refs line names the sidecar to add."""
-    _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
+    _shared(ledger, a="a\n", b="b\n", z="z\n")
+    for name, text in (("m/y[a].txt", "a\n"), ("m/y[b].txt", "b\n"), ("m/z.txt", "z\n")):
+        ledger.store(name, text)
     result = ledger.run("suite/test_m.py::test_z", "--inline-snapshot=disable")
     result.assert_outcomes(failed=1)
     assert "suite/test_m.refs has no line for suite/test_m.py::test_z.\n" in result.stdout.str()
+    recorded = ledger.run("suite")
+    recorded.assert_outcomes(passed=3)
+    assert "expected: recorded 3 tests in suite/test_m.refs (their files already existed)" in recorded.stdout.str()
 
 
 NEW_VARYING_TEST = (
@@ -1039,67 +1045,65 @@ def test_ledger_varies_with_names_capabilities(ledger: LedgerProject) -> None:
 def test_ledger_shares_equal_output_and_reports_mismatch(ledger: LedgerProject) -> None:
     """Equal outputs share one file, and a mismatch fails with the fix and restore commands and the diff."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
-    created = ledger.run("suite")
-    created.assert_outcomes(passed=3)
-    assert "expected: recorded 3 tests in suite/test_m.refs (their files already existed)" in created.stdout.str()
+    ledger.run("suite").assert_outcomes(passed=3)
     ledger.write(
         "test_n.py",
         "from tests.conftest import assert_output\n\n\ndef test_same():\n    assert_output('old\\n')\n",
     )
     same = ledger.run("suite/test_n.py")
     assert (
-        "expected: test_same has the same output as m/y.txt; no new file; recorded in suite/test_n.refs"
+        "expected: test_same has the same output as m/y[a].txt; no new file; recorded in suite/test_n.refs"
         in same.stdout.str()
     )
-    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y.txt\n"
+    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y[a].txt\n"
     _shared(ledger, a="new\n")
     result = ledger.run("suite/test_m.py")
     result.assert_outcomes(failed=1, passed=2)
     output = result.stdout.str()
-    assert "Content mismatch: suite/test_m.py::test_y[a] expects m/y.txt (used by 4 tests).\n" in output
+    assert "Content mismatch: suite/test_m.py::test_y[a] expects m/y[a].txt (used by 4 tests).\n" in output
     assert (
         "If the new output is intended: pytest 'suite/test_m.py::test_y[a]' --inline-snapshot=fix && git add -A suite\n"
         in output
     )
-    assert "Otherwise: git checkout HEAD -- suite/data/expected/m/y.txt\n" in output
+    assert "Otherwise: git checkout HEAD -- suite/data/expected/m/y[a].txt\n" in output
 
 
 def test_ledger_fix_splits_then_merges_back(ledger: LedgerProject) -> None:
-    """Fixing one sharer splits it off; fixing the others merges them back onto the shared label."""
+    """Fixing one sharer splits it off; fixing the others changes the file they still share in place."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=3)
     _shared(ledger, z="new\n", a="new\n", b="new\n")
     split = ledger.run("suite/test_m.py::test_z", "--inline-snapshot=fix")
     split.assert_outcomes(passed=1)
     assert (
-        "expected: test_z split from 2 tests that share m/y.txt (their files are unchanged); stored at m/y~z.txt"
+        "expected: test_z split from 2 tests that share m/y[a].txt (their files are unchanged); stored at m/z.txt"
         in split.stdout.str()
     )
     assert "If they should change too: pytest 'suite/test_m.py::test_y[a]' 'suite/test_m.py::test_y[b]'" in (
         split.stdout.str()
     )
-    assert ledger.files() == {"m/y.txt": "old\n", "m/y~z.txt": "new\n"}
-    assert units.RefsIndex(ledger.suite).stored_path(ledger.expected / "m" / "y.txt") == ledger.expected / "m" / "y.txt"
+    assert ledger.files() == {"m/y[a].txt": "old\n", "m/z.txt": "new\n"}
+    assert (
+        units.RefsIndex(ledger.suite).stored_path(ledger.expected / "m" / "y[a].txt")
+        == ledger.expected / "m" / "y[a].txt"
+    )
     merged = ledger.run("suite/test_m.py::test_y", "--inline-snapshot=fix")
     merged.assert_outcomes(passed=2)
-    assert "expected: deleted m/y~z.txt (no test uses it)" in merged.stdout.str()
-    assert ledger.files() == {"m/y.txt": "new\n"}
-    assert ledger.refs() == HEADER + "[test_y]\na\tm/y.txt\nb\tm/y.txt\n[test_z]\n\tm/y.txt\n"
+    assert "expected: fixed m/y[a].txt in place (2 tests)" in merged.stdout.str()
+    assert ledger.files() == {"m/y[a].txt": "new\n", "m/z.txt": "new\n"}
+    assert ledger.refs() == HEADER + "[test_y]\na\tm/y[a].txt\nb\tm/y[b].txt\t= m/y[a].txt\n[test_z]\n\tm/z.txt\n"
 
 
 def test_ledger_fix_reruns_sharing_siblings(ledger: LedgerProject) -> None:
     """Fixing one parameter re-runs the parameters that share its file, so the file changes in place."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite/test_m.py::test_y").assert_outcomes(passed=2)
     _shared(ledger, a="new\n", b="new\n")
     result = ledger.run("suite/test_m.py::test_y[a]", "--inline-snapshot=fix")
     result.assert_outcomes(passed=2, deselected=1)
-    assert "expected: fixed m/y.txt in place (2 tests)" in result.stdout.str()
+    assert "expected: fixed m/y[a].txt in place (2 tests)" in result.stdout.str()
     assert "expected: re-ran 1 tests that share a changed file" in result.stdout.str()
-    assert ledger.files() == {"m/y.txt": "new\n"}
+    assert ledger.files() == {"m/y[a].txt": "new\n"}
 
 
 def test_ledger_drops_lines_of_renamed_tests(ledger: LedgerProject) -> None:
@@ -1175,13 +1179,13 @@ def test_ledger_tree_compares_only_the_files_its_pattern_selects(ledger: LedgerP
     """Generated files outside the pattern are neither compared nor stored, so a second run passes."""
     ledger.write(
         "test_m.py",
-        "from pathlib import Path\n\nfrom tests.conftest import assert_generated_modules_output\n\n\n"
+        "from tests.conftest import assert_generated_modules_output\n\n\n"
         "def test_g():\n"
         "    modules = {('pkg', '__init__.py'): 'a = 1\\n', ('pkg', 'py.typed'): ''}\n"
-        "    assert_generated_modules_output(modules, Path(__file__).parent / 'data' / 'expected' / 'g')\n",
+        "    assert_generated_modules_output(modules)\n",
     )
     ledger.run("suite").assert_outcomes(passed=1)
-    assert ledger.files() == {"g/pkg/__init__.py": "a = 1\n"}
+    assert ledger.files() == {"m/g/pkg/__init__.py": "a = 1\n"}
     ledger.run("suite").assert_outcomes(passed=1)
 
 
@@ -1344,9 +1348,10 @@ def test_ledger_requires_every_recorded_comparison(ledger: LedgerProject) -> Non
     ("body", "message"),
     [
         pytest.param(
-            'assert_output("x\\n", EXPECTED / "x.txt")\n    assert_output("y\\n", EXPECTED / "x.txt")',
-            "suite/test_m.py::test_a compares two different outputs against x.txt (diff below).\n"
-            "If they should be equal, fix the code; otherwise compare the second against its own expected file",
+            'assert_generated_modules_output({("a.py",): "x\\n"}, name="n")\n'
+            '    assert_generated_modules_output({("a.py",): "y\\n"}, name="n")',
+            "suite/test_m.py::test_a compares two different outputs against m/a.n/ (diff below).\n"
+            'If they should be equal, fix the code; otherwise name the second: name="second"',
             id="conflict",
         ),
         pytest.param(
@@ -1361,19 +1366,13 @@ def test_ledger_requires_every_recorded_comparison(ledger: LedgerProject) -> Non
             'assert_output(text, name="warnings")',
             id="unnamed",
         ),
-        pytest.param(
-            'assert_output("x\\n", EXPECTED.parent / "outside.txt")',
-            "Expected outputs live under tests/data/expected. Fix: remove the path argument (pytest names the file)",
-            id="outside",
-        ),
     ],
 )
 def test_ledger_rejects_ambiguous_outputs(ledger: LedgerProject, body: str, message: str) -> None:
-    """Two outputs for one label, several unnamed outputs, and new paths outside the expected root fail clearly."""
+    """Two outputs for one label and several unnamed outputs fail clearly."""
     ledger.write(
         "test_m.py",
-        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\n"
-        f'EXPECTED = Path(__file__).parent / "data" / "expected"\n\n\ndef test_a():\n    {body}\n',
+        f"from tests.conftest import assert_generated_modules_output, assert_output\n\n\ndef test_a():\n    {body}\n",
     )
     result = ledger.run("suite")
     result.assert_outcomes(failed=1)
@@ -1385,14 +1384,11 @@ def test_ledger_compares_trees(ledger: LedgerProject) -> None:
     ledger.write(
         "test_m.py",
         """
-        from pathlib import Path
-
         from tests.conftest import (
             assert_directory_content,
             assert_generated_modules_output,
         )
 
-        EXPECTED = Path(__file__).parent / "data" / "expected"
         MODULES = {("pkg", "__init__.py"): "", ("pkg", "a.py"): "A = 1\\n", ("README.md",): "# pkg\\n"}
 
 
@@ -1402,71 +1398,56 @@ def test_ledger_compares_trees(ledger: LedgerProject) -> None:
             for name, text in files.items():
                 (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
                 (tmp_path / name).write_text(text)
-            assert_directory_content(tmp_path, EXPECTED / "tree")
+            assert_directory_content(tmp_path)
 
 
         def test_whole():
-            assert_generated_modules_output(MODULES, EXPECTED / "whole", pattern="*")
+            assert_generated_modules_output(MODULES, pattern="*")
 
 
         def test_empty(tmp_path):
-            assert_directory_content(tmp_path, EXPECTED / "empty", pattern="*.md")
+            assert_directory_content(tmp_path, pattern="*.md")
         """,
     )
     ledger.run("suite").assert_outcomes(passed=3)
     assert ledger.files() == {
-        "tree/.b.py": "B = 1\n",
-        "tree/a.py": "A = 1\n",
-        "whole/README.md": "# pkg\n",
-        "whole/pkg/__init__.py": "",
-        "whole/pkg/a.py": "A = 1\n",
+        "m/pattern/.b.py": "B = 1\n",
+        "m/pattern/a.py": "A = 1\n",
+        "m/whole/README.md": "# pkg\n",
+        "m/whole/pkg/__init__.py": "",
+        "m/whole/pkg/a.py": "A = 1\n",
     }
     assert (
-        ledger.refs() == HEADER + "[test_empty]\n\tempty//*.md\n[test_pattern]\n\ttree//*.py\n[test_whole]\n\twhole/\n"
+        ledger.refs() == HEADER + "[test_empty]\n\tm/empty/\n[test_pattern]\n\tm/pattern/\n[test_whole]\n\tm/whole/\n"
     )
-    ledger.store("whole/pkg/b.py", "B = 2\n")
+    ledger.store("m/whole/pkg/b.py", "B = 2\n")
     result = ledger.run("suite")
     result.assert_outcomes(failed=1, passed=2)
     assert "missing: pkg/b.py" in result.stdout.str()
     fixed = ledger.run("suite", "--inline-snapshot=fix")
     fixed.assert_outcomes(passed=3)
-    assert "whole/pkg/b.py" not in ledger.files()
+    assert "m/whole/pkg/b.py" not in ledger.files()
 
 
-def test_ledger_json_values_and_direct_comparisons(ledger: LedgerProject, tmp_path: Path) -> None:
-    """JSON files hold encoded values; paths outside the tests root are compared directly, never written."""
-    other = tmp_path / "other"
-    other.mkdir()
-    (other / "a.py").write_text("A = 1\n", encoding="utf-8")
+def test_ledger_json_values(ledger: LedgerProject) -> None:
+    """JSON files hold encoded values."""
     ledger.write(
         "test_m.py",
-        f"""
-        from pathlib import Path
-
-        import pytest
-
-        from tests.conftest import assert_directory_content, assert_output
-
-        EXPECTED = Path(__file__).parent / "data" / "expected"
-        OTHER = Path({str(other)!r})
+        """
+        from tests.conftest import assert_output
 
 
         def test_json():
-            assert_output({{"b": [1, "x"]}}, EXPECTED / "value.json")
-            assert_output("text\\r\\n", EXPECTED / "text.json")
-
-
-        def test_direct():
-            assert_directory_content(OTHER, OTHER)
-            with pytest.raises(pytest.fail.Exception, match="Expected file not found"):
-                assert_output("x\\n", OTHER / "missing.txt")
-            with pytest.raises(pytest.fail.Exception, match="Content mismatch for"):
-                assert_output("B = 2\\n", OTHER / "a.py")
+            assert_output({"b": [1, "x"]}, name="value", suffix=".json")
+            assert_output("text\\r\\n", name="text", suffix=".json")
         """,
     )
-    ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.files() == {"text.json": '"text\\n"', "value.json": '{\n  "b": [\n    1,\n    "x"\n  ]\n}'}
-    ledger.run("suite").assert_outcomes(passed=2)
+    ledger.run("suite").assert_outcomes(passed=1)
+    assert ledger.files() == {
+        "m/json.text.json": '"text\\n"',
+        "m/json.value.json": '{\n  "b": [\n    1,\n    "x"\n  ]\n}',
+    }
+    ledger.run("suite").assert_outcomes(passed=1)
 
 
 ENVIRONMENT_TESTS = """
@@ -1855,40 +1836,37 @@ def test_ledger_resolves_cli_doc_paths(ledger: LedgerProject) -> None:
         "test_m.py",
         """
         import pytest
-        from pathlib import Path
 
         from tests.conftest import assert_generated_modules_output, assert_output
 
-        EXPECTED = Path(__file__).parent / "data" / "expected"
-
 
         @pytest.mark.cli_doc(
-            options=["--x"], option_description="x", cli_args=["--x"], golden_output="doc.txt",
-            version_outputs={"3.10": "doc.txt", "3.11": "tree", "3.12": "tree/a.py"},
-            extra_outputs=[{"title": "t", "path": "doc.txt"}], comparison_output="copy", input_schema="s.json",
-            model_outputs={"dataclass": "other.txt", "msgspec": "missing.txt"},
+            options=["--x"], option_description="x", cli_args=["--x"], golden_output="m/doc.txt",
+            version_outputs={"3.10": "m/doc.txt", "3.11": "m/tree", "3.12": "m/tree/a.py"},
+            extra_outputs=[{"title": "t", "path": "m/doc.txt"}], comparison_output="m/copy", input_schema="s.json",
+            model_outputs={"dataclass": "m/same.txt", "msgspec": "missing.txt"},
         )
         def test_doc():
-            assert_output("doc\\n", EXPECTED / "main" / "doc.txt")
+            assert_output("doc\\n")
 
 
         def test_same():
-            assert_output("doc\\n", EXPECTED / "other.txt")
+            assert_output("doc\\n")
 
 
         def test_tree():
-            assert_generated_modules_output({("a.py",): "A = 1\\n"}, EXPECTED / "main" / "tree")
+            assert_generated_modules_output({("a.py",): "A = 1\\n"})
 
 
         def test_copy():
-            assert_generated_modules_output({("a.py",): "A = 1\\n"}, EXPECTED / "main" / "copy")
+            assert_generated_modules_output({("a.py",): "A = 1\\n"})
         """,
     )
-    ledger.store("other.txt", "doc\n")
+    ledger.store("m/same.txt", "doc\n")
     ledger.run("suite/test_m.py::test_same").assert_outcomes(passed=1)
     ledger.run("suite/test_m.py::test_tree").assert_outcomes(passed=1)
     ledger.run("suite").assert_outcomes(passed=4)
-    assert "[test_copy]\n\tmain/copy//*.py\t= main/tree//*.py\n" in ledger.refs()
+    assert "[test_copy]\n\tm/copy/\t= m/tree/\n" in ledger.refs()
     config = ledger.pytester.parseconfigure("suite", "--collect-cli-docs")
     session = pytest.Session.from_config(config)
     config.hook.pytest_sessionstart(session=session)
@@ -1903,11 +1881,11 @@ def test_ledger_resolves_cli_doc_paths(ledger: LedgerProject) -> None:
         "option_description": None,
         "cli_args": None,
         "input_schema": "s.json",
-        "golden_output": "other.txt",
-        "version_outputs": {"3.10": "other.txt", "3.11": "tree", "3.12": "tree/a.py"},
-        "extra_outputs": [{"title": "t", "path": "other.txt"}],
-        "comparison_output": "main/tree",
-        "model_outputs": {"dataclass": "other.txt", "msgspec": "missing.txt"},
+        "golden_output": "m/same.txt",
+        "version_outputs": {"3.10": "m/same.txt", "3.11": "m/tree", "3.12": "m/tree/a.py"},
+        "extra_outputs": [{"title": "t", "path": "m/same.txt"}],
+        "comparison_output": "m/tree",
+        "model_outputs": {"dataclass": "m/same.txt", "msgspec": "missing.txt"},
     }
     config._ensure_unconfigure()
 
@@ -1937,25 +1915,23 @@ def test_fix_expected_script(
 def test_ledger_fix_selection_shapes(ledger: LedgerProject) -> None:
     """Fix runs that select several or all parameters of a test run exactly those, with nothing to re-run."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=3)
     _shared(ledger, a="new\n", b="new\n")
     both = ledger.run("suite/test_m.py::test_y[a]", "suite/test_m.py::test_y[b]", "--inline-snapshot=fix")
     both.assert_outcomes(passed=2)
     assert "re-ran" not in both.stdout.str()
-    assert ledger.files() == {"m/y.txt": "old\n", "m/y~y[a].txt": "new\n"}
+    assert ledger.files() == {"m/y[a]~y[a].txt": "new\n", "m/z.txt": "old\n"}
 
 
 def test_ledger_skips_rerun_beyond_budget(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
     """Siblings are re-run only within the time budget; past it, the fixed test splits off instead."""
     monkeypatch.setattr(shared_conftest, "SIBLING_RERUN_SECONDS", -1)
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=3)
     _shared(ledger, a="new\n", b="new\n")
     result = ledger.run("suite/test_m.py::test_y[a]", "--inline-snapshot=fix")
     result.assert_outcomes(passed=1, deselected=1)
-    assert "expected: test_y[a] split from 2 tests that share m/y.txt" in result.stdout.str()
+    assert "expected: test_y[a] split from 2 tests that share m/y[a].txt" in result.stdout.str()
 
 
 def test_ledger_unreferenced_file_at_label(ledger: LedgerProject) -> None:
@@ -1988,17 +1964,15 @@ def test_ledger_drops_empty_sidecar(ledger: LedgerProject) -> None:
 
 def test_ledger_groups_many_sharers_in_commands(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
     """The command for sharers that did not run names their tests, or functions and modules when there are many."""
-    functions = "".join(f"\n\ndef test_f{n}():\n    assert_output('old\\n', EXPECTED / 'y.txt')\n" for n in range(6))
+    functions = "".join(f"\n\ndef test_f{n}():\n    assert_output('old\\n')\n" for n in range(6))
     source = (
-        "import pytest\nfrom pathlib import Path\n\nfrom tests.conftest import assert_output\n\n"
-        'EXPECTED = Path(__file__).parent / "data" / "expected"\nNEW = set()\n\n\n'
+        "import pytest\n\nfrom tests.conftest import assert_output\n\nNEW = set()\n\n\n"
         '@pytest.mark.parametrize("case", [str(number) for number in range(8)])\n'
         "def test_y(case):\n"
-        '    assert_output("new\\n" if case in NEW else "old\\n", EXPECTED / "y.txt")\n'
+        '    assert_output("new\\n" if case in NEW else "old\\n")\n'
         f"{functions}"
     )
     ledger.write("test_m.py", source)
-    ledger.store("y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=14)
     ledger.write("test_m.py", source.replace("NEW = set()", "NEW = {'0'}"))
     split = ledger.run("suite/test_m.py::test_y[0]", "--inline-snapshot=fix", env={"PYTHONHASHSEED": "0"})
@@ -2052,125 +2026,143 @@ def test_ledger_class_tests_and_long_names(ledger: LedgerProject) -> None:
     )
 
 
+def test_ledger_refuses_a_plan_the_write_check_refuses(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A run whose plan the write check refuses writes nothing and fails; planned paths never trip it here."""
+
+    def refuse(*_: object) -> None:
+        msg = "test_m.refs: it resolves outside the tests root"
+        raise units.UnsafeWriteError(msg)
+
+    monkeypatch.setattr(shared_conftest, "write_files", refuse)
+    ledger.write("test_m.py", ONE_TEST)
+    result = ledger.run("suite")
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    assert "expected: test_m.refs: it resolves outside the tests root" in output
+    assert (ledger.files(), (ledger.suite / "test_m.refs").exists()) == ({}, False)
+
+
 def test_ledger_file_inside_shared_tree(ledger: LedgerProject) -> None:
     """A unit inside another test's stored tree is split off outside that tree, and is not deleted while covered."""
     ledger.write(
         "test_m.py",
         """
-        from pathlib import Path
-
         from tests.conftest import assert_generated_modules_output, assert_output
 
-        EXPECTED = Path(__file__).parent / "data" / "expected"
         X = "x\\n"
 
 
         def test_tree():
-            assert_generated_modules_output({("x.txt",): "x\\n", ("y.txt",): "y\\n"}, EXPECTED / "t", pattern="*")
+            assert_generated_modules_output({("x.txt",): "x\\n", ("y.txt",): "y\\n"}, pattern="*")
 
 
         def test_file():
-            assert_output(X, EXPECTED / "t" / "x.txt")
+            assert_output(X)
         """,
     )
-    ledger.run("suite/test_m.py::test_tree").assert_outcomes(passed=1)
-    ledger.run("suite/test_m.py::test_file").assert_outcomes(passed=1)
-    assert ledger.refs() == HEADER + "[test_file]\n\tt/x.txt\n[test_tree]\n\tt/\n"
+    ledger.store("m/tree/x.txt", "x\n")
+    ledger.store("m/tree/y.txt", "y\n")
+    (ledger.suite / "test_m.refs").write_text(
+        HEADER + "[test_file]\n\tm/file.txt\t= m/tree/x.txt\n[test_tree]\n\tm/tree/\n", encoding="utf-8"
+    )
+    ledger.run("suite").assert_outcomes(passed=2)
     source = (ledger.suite / "test_m.py").read_text(encoding="utf-8")
     ledger.write("test_m.py", source.replace('X = "x\\n"', 'X = "x2\\n"'))
     split = ledger.run("suite/test_m.py::test_file", "--inline-snapshot=fix")
-    assert "stored at t~file/x.txt" in split.stdout.str()
-    assert ledger.files() == {"t/x.txt": "x\n", "t/y.txt": "y\n", "t~file/x.txt": "x2\n"}
+    assert "stored at m/file.txt" in split.stdout.str()
+    assert ledger.files() == {"m/tree/x.txt": "x\n", "m/tree/y.txt": "y\n", "m/file.txt": "x2\n"}
     ledger.write("test_m.py", source.replace('X = "x\\n"', 'X = "x\\n"'))
     ledger.run("suite/test_m.py::test_file", "--inline-snapshot=fix").assert_outcomes(passed=1)
-    assert ledger.files() == {"t/x.txt": "x\n", "t/y.txt": "y\n", "t~file/x.txt": "x\n"}
+    assert ledger.files() == {"m/tree/x.txt": "x\n", "m/tree/y.txt": "y\n", "m/file.txt": "x\n"}
     ledger.write("test_m.py", source.replace('{("x.txt",): "x\\n", ("y.txt",): "y\\n"}', '{("y.txt",): "y\\n"}'))
     ledger.run("suite/test_m.py::test_tree", "--inline-snapshot=fix").assert_outcomes(passed=1)
-    assert ledger.files() == {"t/y.txt": "y\n", "t~file/x.txt": "x\n"}
+    assert ledger.files() == {"m/tree/y.txt": "y\n", "m/file.txt": "x\n"}
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
 
 
-@pytest.mark.parametrize(
-    ("tree", "glob", "member"),
-    [
-        pytest.param("t", "t", "x.txt", id="glob-in-tree"),
-        pytest.param("t/sub", "t", "sub/x.txt", id="tree-in-glob"),
-    ],
-)
-def test_ledger_fix_rewrites_overlapping_units_that_change_alike(
-    ledger: LedgerProject, tree: str, glob: str, member: str
-) -> None:
-    """Units that overlap stay shared and stored in place when a run gives their common file one new content."""
-    source = f"""
-        from pathlib import Path
+TREE_IN_GLOB = """
+    from tests.conftest import assert_generated_modules_output
 
-        from tests.conftest import assert_generated_modules_output
-
-        EXPECTED = Path(__file__).parent / "data" / "expected"
-        X = "x\\n"
+    X = "x\\n"
+    EXTRA = {{}}
 
 
-        def test_tree():
-            modules = {{("x.txt",): X, ("y.txt",): "y\\n"}}
-            assert_generated_modules_output(modules, EXPECTED / "{tree}", pattern="*")
-        """
-    glob_test = f"""
+    def test_tree():
+        assert_generated_modules_output({{("x.txt",): X, ("y.txt",): "y\\n"}}, pattern="*")
 
-        def test_glob():
-            modules = {{tuple("{member}".split("/")): X}}
-            assert_generated_modules_output(modules, EXPECTED / "{glob}", pattern="{member}")
-        """
+
+    def test_glob():
+        assert_generated_modules_output({{("sub", "x.txt"): X, **EXTRA}}, pattern="*")
+    """
+
+
+def _tree_in_glob(ledger: LedgerProject) -> str:
+    """Write a tree stored inside the directory of a pattern unit, as sidecars named such units before."""
+    source = TREE_IN_GLOB.format()
     ledger.write("test_m.py", source)
-    ledger.run("suite").assert_outcomes(passed=1)
-    ledger.write("test_m.py", source + glob_test)
+    ledger.store("m/g/sub/x.txt", "x\n")
+    ledger.store("m/g/sub/y.txt", "y\n")
+    (ledger.suite / "test_m.refs").write_text(
+        HEADER + "[test_glob]\n\tm/glob/\t= m/g//sub/x.txt\n[test_tree]\n\tm/tree/\t= m/g/sub/\n", encoding="utf-8"
+    )
     ledger.run("suite").assert_outcomes(passed=2)
-    refs = ledger.refs()
-    files = ledger.files()
-    ledger.write("test_m.py", (source + glob_test).replace('X = "x\\n"', 'X = "x2\\n"'))
+    return source
+
+
+def test_ledger_fix_rewrites_overlapping_units_that_change_alike(ledger: LedgerProject) -> None:
+    """Units that overlap stay shared and stored in place when a run gives their common file one new content.
+
+    The overlapping units come from sidecars that name a unit of files by a pattern, which no test writes any more.
+    """
+    source = _tree_in_glob(ledger)
+    ledger.write("test_m.py", source.replace('X = "x\\n"', 'X = "x2\\n"'))
     fixed = ledger.run("suite", "--inline-snapshot=fix")
     fixed.assert_outcomes(passed=2)
     assert "split" not in fixed.stdout.str()
-    assert ledger.files() == {**files, f"{tree}/x.txt": "x2\n"}
-    assert ledger.refs() == refs
+    assert ledger.files() == {"m/glob/sub/x.txt": "x2\n", "m/tree/x.txt": "x2\n", "m/tree/y.txt": "y\n"}
+    assert ledger.refs() == HEADER + "[test_glob]\n\tm/glob/\n[test_tree]\n\tm/tree/\n"
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
+
+
+def test_ledger_fix_keeps_a_pattern_unit_to_its_pattern(ledger: LedgerProject) -> None:
+    """A pattern unit that would gain a file its pattern does not select is not rewritten in place."""
+    source = _tree_in_glob(ledger)
+    ledger.write("test_m.py", source.replace("EXTRA = {}", 'EXTRA = {("sub", "z.txt"): "z\\n"}'))
+    ledger.run("suite", "--inline-snapshot=fix").assert_outcomes(passed=2)
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
 
 
 @pytest.mark.parametrize("depth", [90, 150])
 def test_ledger_long_split_names_fit_the_path_limit(ledger: LedgerProject, depth: int) -> None:
-    """A split of a file deep inside a stored tree gets a name that keeps its stored path within the path limit.
+    """A split of a test with a long name gets a name that keeps its stored path within the path limit.
 
-    The name budget counts the path below the tree: a digest replaces the end of the tree's name (90), or the name and
+    The name budget counts the path below the directory: a digest replaces the end of the name (90), or the name and
     the split mark when the mark alone does not fit (150).
     """
-    below = ("d" * depth, "x.txt")
-    function, tree, stem = "f" * 60, "g" * 60, "t" * 40
+    function = "f" * depth
     ledger.write(
         "test_m.py",
         f"""
-        from pathlib import Path
+        from tests.conftest import assert_output
 
-        from tests.conftest import assert_generated_modules_output, assert_output
-
-        EXPECTED = Path(__file__).parent / "data" / "expected"
         X = "x\\n"
 
 
-        def test_{tree}():
-            assert_generated_modules_output({{{below!r}: "x\\n"}}, EXPECTED / {stem!r}, pattern="*")
-
-
         def test_{function}():
-            assert_output(X, EXPECTED.joinpath({stem!r}, *{below!r}))
+            assert_output(X)
+
+
+        def test_other():
+            assert_output("x\\n")
         """,
     )
-    ledger.run(f"suite/test_m.py::test_{tree}").assert_outcomes(passed=1)
-    ledger.run(f"suite/test_m.py::test_{function}").assert_outcomes(passed=1)
+    ledger.run("suite").assert_outcomes(passed=2)
     source = (ledger.suite / "test_m.py").read_text(encoding="utf-8")
     ledger.write("test_m.py", source.replace('X = "x\\n"', 'X = "x2\\n"'))
     ledger.run(f"suite/test_m.py::test_{function}", "--inline-snapshot=fix").assert_outcomes(passed=1)
-    split = next(name for name in ledger.files() if not name.startswith(f"{stem}/"))
+    split = next(name for name, text in ledger.files().items() if text == "x2\n")
     assert len(f"suite/data/expected/{split}") <= 200
-    assert split.endswith("/".join(below))
+    assert split.startswith(f"m/{'f' * 80}")
 
 
 def test_ledger_tree_pattern_and_taken_names(ledger: LedgerProject) -> None:
@@ -2178,28 +2170,23 @@ def test_ledger_tree_pattern_and_taken_names(ledger: LedgerProject) -> None:
     ledger.write(
         "test_m.py",
         """
-        from pathlib import Path
-
         from tests.conftest import assert_generated_modules_output
 
-        EXPECTED = Path(__file__).parent / "data" / "expected"
         MODULES = {("a.py",): "A = 1\\n"}
 
 
         def test_py():
-            assert_generated_modules_output({("a.py",): "A = 1\\n"}, EXPECTED / "pkg")
+            assert_generated_modules_output({("a.py",): "A = 1\\n"})
 
 
         def test_whole():
-            assert_generated_modules_output(MODULES, EXPECTED / "whole", pattern="*")
+            assert_generated_modules_output(MODULES, pattern="*")
         """,
     )
     ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.refs() == HEADER + "[test_py]\n\tpkg//*.py\n[test_whole]\n\twhole/\t= pkg//*.py\n"
+    assert ledger.refs() == HEADER + "[test_py]\n\tm/py/\n[test_whole]\n\tm/whole/\t= m/py/\n"
     source = (ledger.suite / "test_m.py").read_text(encoding="utf-8")
-    without_py = source.replace(
-        'def test_py():\n    assert_generated_modules_output({("a.py",): "A = 1\\n"}, EXPECTED / "pkg")\n', ""
-    )
+    without_py = source.replace('def test_py():\n    assert_generated_modules_output({("a.py",): "A = 1\\n"})\n', "")
     ledger.write(
         "test_m.py",
         without_py.replace(
@@ -2208,19 +2195,19 @@ def test_ledger_tree_pattern_and_taken_names(ledger: LedgerProject) -> None:
     )
     fixed = ledger.run("suite", "--inline-snapshot=fix")
     fixed.assert_outcomes(passed=1)
-    assert ledger.refs() == HEADER + "[test_whole]\n\twhole/\n"
-    assert ledger.files() == {"whole/README.md": "r\n", "whole/a.py": "A = 1\n"}
+    assert ledger.refs() == HEADER + "[test_whole]\n\tm/whole/\n"
+    assert ledger.files() == {"m/whole/README.md": "r\n", "m/whole/a.py": "A = 1\n"}
 
 
 def test_ledger_numbers_taken_derived_names(ledger: LedgerProject) -> None:
     """A derived name that another file already takes gets a number."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=3)
-    ledger.store("m/y~z.txt", "someone else's\n")
+    ledger.store("m/z.txt", "someone else's\n")
+    ledger.store("m/z~z.txt", "someone else's\n")
     _shared(ledger, z="new\n")
     ledger.run("suite/test_m.py::test_z", "--inline-snapshot=fix").assert_outcomes(passed=1)
-    assert ledger.files()["m/y~z-2.txt"] == "new\n"
+    assert ledger.files()["m/z~z-2.txt"] == "new\n"
 
 
 def test_ledger_other_items_and_nested_modules(ledger: LedgerProject) -> None:
@@ -2955,7 +2942,7 @@ def test_generate_file(tmp_path):
 
 
 def test_ledger_generation_helpers_name_outputs(ledger: LedgerProject) -> None:
-    """Generation helpers without expected paths compare the output under the test's name, numbering later ones."""
+    """Generation helpers compare the output under the test's name, numbering later ones."""
     ledger.write("schema.json", '{"title": "A", "type": "object", "properties": {"x": {"type": "string"}}}')
     modular = Path(__file__).parent / "data" / "openapi" / "modular.yaml"
     ledger.write("test_main.py", GENERATION_TESTS.replace("SCHEMA = ", f"MODULAR = Path({str(modular)!r})\nSCHEMA = "))
@@ -3073,7 +3060,7 @@ def test_trees(tmp_path):
 
 
 def test_ledger_helpers_store_named_outputs_without_paths(ledger: LedgerProject) -> None:
-    """Helpers without an expected path store outputs under ``name``, ``suffix`` and stdout roles of their own.
+    """Helpers store outputs under ``name``, ``suffix`` and stdout roles of their own.
 
     Two runs under one name compare one stored output and must be equal; an expected error without a match pattern
     stores its text, and a tree helper without a directory stores the files its pattern selects as the test's tree.
@@ -3170,21 +3157,17 @@ def test_ledger_observe_ignores_failures(ledger: LedgerProject, tmp_path: Path) 
 def test_ledger_merges_and_moves_shared_units(ledger: LedgerProject) -> None:
     """A changed copy equal to another unit uses that unit; a unit left to one label moves to that label's path."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
-    ledger.store("other.txt", "new\n")
+    ledger.store("n/other.txt", "new\n")
     ledger.write(
         "test_n.py",
         """
-        from pathlib import Path
-
         from tests.conftest import assert_output
 
-        EXPECTED = Path(__file__).parent / "data" / "expected"
         SAME = "old\\n"
 
 
         def test_other():
-            assert_output("new\\n", EXPECTED / "other.txt")
+            assert_output("new\\n")
 
 
         def test_same():
@@ -3192,25 +3175,25 @@ def test_ledger_merges_and_moves_shared_units(ledger: LedgerProject) -> None:
         """,
     )
     ledger.run("suite").assert_outcomes(passed=5)
-    assert "[test_same]\n\tn/same.txt\t= m/y.txt\n" in ledger.refs("test_n")
+    assert "[test_same]\n\tn/same.txt\t= m/y[a].txt\n" in ledger.refs("test_n")
     source = (ledger.suite / "test_n.py").read_text(encoding="utf-8").replace('SAME = "old\\n"', 'SAME = "new\\n"')
     ledger.write("test_m.py", "def test_none():\n    pass\n")
     ledger.write("test_n.py", source)
     merged = ledger.run("suite", "--inline-snapshot=fix")
-    assert "expected: test_same now has the same output as other.txt; it uses that file" in merged.stdout.str()
-    assert "[test_same]\n\tn/same.txt\t= other.txt\n" in ledger.refs("test_n")
-    assert "m/y.txt" not in ledger.files()
-    without_other = source.replace('def test_other():\n    assert_output("new\\n", EXPECTED / "other.txt")\n', "")
+    assert "expected: test_same now has the same output as n/other.txt; it uses that file" in merged.stdout.str()
+    assert "[test_same]\n\tn/same.txt\t= n/other.txt\n" in ledger.refs("test_n")
+    assert "m/y[a].txt" not in ledger.files()
+    without_other = source.replace('def test_other():\n    assert_output("new\\n")\n', "")
     ledger.store("n/same.txt", "orphan\n")
     ledger.write("test_n.py", without_other)
     ledger.run("suite").assert_outcomes(passed=2)
-    assert "[test_same]\n\tn/same.txt\t= other.txt\n" in ledger.refs("test_n")
+    assert "[test_same]\n\tn/same.txt\t= n/other.txt\n" in ledger.refs("test_n")
     (ledger.expected / "n" / "same.txt").unlink()
     ledger.write("test_n.py", without_other + "\n\ndef test_more():\n    assert_output('more\\n')\n")
     ledger.run("suite").assert_outcomes(passed=3)
     assert "[test_same]\n\tn/same.txt\n" in ledger.refs("test_n")
     assert ledger.files()["n/same.txt"] == "new\n"
-    assert "other.txt" not in ledger.files()
+    assert "n/other.txt" not in ledger.files()
 
 
 def test_fix_expected_from_ci_and_all_environments(
@@ -3611,32 +3594,29 @@ def test_ledger_apply_session_checks_its_input(ledger: LedgerProject, tmp_path: 
 def test_ledger_merges_equal_outputs_fixed_in_one_run(ledger: LedgerProject) -> None:
     """Two stored files fixed to the same content in one run become one file; the other test points at it."""
     source = (
-        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\n"
-        'EXPECTED = Path(__file__).parent / "data" / "expected"\nA, B = "1\\n", "2\\n"\n\n\n'
-        'def test_a():\n    assert_output(A, EXPECTED / "a.txt")\n\n\n'
-        'def test_b():\n    assert_output(B, EXPECTED / "b.txt")\n'
+        'from tests.conftest import assert_output\n\nA, B = "1\\n", "2\\n"\n\n\n'
+        "def test_a():\n    assert_output(A)\n\n\n"
+        "def test_b():\n    assert_output(B)\n"
     )
     ledger.write("test_m.py", source)
     ledger.run("suite").assert_outcomes(passed=2)
     ledger.write("test_m.py", source.replace('A, B = "1\\n", "2\\n"', 'A, B = "3\\n", "3\\n"'))
     fixed = ledger.run("suite", "--inline-snapshot=fix")
     fixed.assert_outcomes(passed=2)
-    assert ledger.files() == {"a.txt": "3\n"}
-    assert ledger.refs() == HEADER + "[test_a]\n\ta.txt\n[test_b]\n\tb.txt\t= a.txt\n"
-    assert "expected: test_b now has the same output as a.txt; it uses that file" in fixed.stdout.str()
-    assert "expected: deleted b.txt (no test uses it)" in fixed.stdout.str()
+    assert ledger.files() == {"m/a.txt": "3\n"}
+    assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/b.txt\t= m/a.txt\n"
+    assert "expected: test_b now has the same output as m/a.txt; it uses that file" in fixed.stdout.str()
+    assert "expected: deleted m/b.txt (no test uses it)" in fixed.stdout.str()
 
 
 def test_ledger_merges_hand_copied_expected_file(ledger: LedgerProject) -> None:
     """A hand-written copy of a stored unit fails CI, and the local run records the test on the original instead."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=3)
-    ledger.store("copy.txt", "old\n")
+    ledger.store("n/copy.txt", "old\n")
     ledger.write(
         "test_n.py",
-        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\n\ndef test_copy():\n"
-        '    assert_output("old\\n", Path(__file__).parent / "data" / "expected" / "copy.txt")\n',
+        'from tests.conftest import assert_output\n\n\ndef test_copy():\n    assert_output("old\\n")\n',
     )
     ci = ledger.run("suite/test_n.py", env=GITHUB)
     ci.assert_outcomes(failed=1)
@@ -3646,10 +3626,10 @@ def test_ledger_merges_hand_copied_expected_file(ledger: LedgerProject) -> None:
     ]
     local = ledger.run("suite/test_n.py")
     local.assert_outcomes(passed=1)
-    assert "expected: test_copy has the same output as m/y.txt; no new file" in local.stdout.str()
-    assert "expected: deleted copy.txt (no test uses it)" in local.stdout.str()
-    assert ledger.refs("test_n") == HEADER + "[test_copy]\n\tcopy.txt\t= m/y.txt\n"
-    assert ledger.files() == {"m/y.txt": "old\n"}
+    assert "expected: test_copy has the same output as m/y[a].txt; no new file" in local.stdout.str()
+    assert "expected: deleted n/copy.txt (no test uses it)" in local.stdout.str()
+    assert ledger.refs("test_n") == HEADER + "[test_copy]\n\tn/copy.txt\t= m/y[a].txt\n"
+    assert ledger.files() == {"m/y[a].txt": "old\n"}
 
 
 def test_ledger_leaves_equal_units_outside_the_run(ledger: LedgerProject) -> None:
@@ -3781,24 +3761,21 @@ def test_ledger_sidecar_header(ledger: LedgerProject, edit: Callable[[str], str]
 
 
 SHARING = """
-from pathlib import Path
-
 from tests.conftest import assert_output
 
-EXPECTED = Path(__file__).parent / "data" / "expected" / "m"
 OUT = "same\\n"
 
 
 def test_s():
-    assert_output(OUT, EXPECTED / "s.txt")
+    assert_output(OUT)
 
 
 def test_w1():
-    assert_output("same\\n", EXPECTED / "w1.txt")
+    assert_output("same\\n")
 
 
 def test_w2():
-    assert_output("same\\n", EXPECTED / "w2.txt")
+    assert_output("same\\n")
 """
 
 
@@ -3814,7 +3791,7 @@ def test_ledger_storage_shared_by_other_labels_passes_ci(ledger: LedgerProject) 
     ledger.run("suite/test_m.py::test_s", "--inline-snapshot=fix").assert_outcomes(passed=1)
     assert ledger.files() == {"m/s.txt": "same\n", "m/s~s.txt": "new\n"}
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=3)
-    ledger.write("test_m.py", SHARING.replace('def test_s():\n    assert_output(OUT, EXPECTED / "s.txt")\n', ""))
+    ledger.write("test_m.py", SHARING.replace("def test_s():\n    assert_output(OUT)\n", ""))
     ledger.run("suite").assert_outcomes(passed=2)
     assert ledger.refs() == HEADER + "[test_w1]\n\tm/w1.txt\t= m/s.txt\n[test_w2]\n\tm/w2.txt\t= m/s.txt\n"
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
@@ -3825,26 +3802,22 @@ def test_ledger_case_only_label_difference_passes_ci(ledger: LedgerProject) -> N
     ledger.write(
         "test_m.py",
         """
-        from pathlib import Path
-
         from tests.conftest import assert_output
 
-        EXPECTED = Path(__file__).parent / "data" / "expected" / "m"
+
+        def test_A():
+            assert_output("upper\\n")
 
 
         def test_a():
-            assert_output("upper\\n", EXPECTED / "A.txt")
-
-
-        def test_b():
-            assert_output("lower\\n", EXPECTED / "a.txt")
+            assert_output("lower\\n")
         """,
     )
     ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.refs() == HEADER + "[test_a]\n\tm/A.txt\n[test_b]\n\tm/a.txt\t= m/a~b.txt\n"
+    assert ledger.refs() == HEADER + "[test_A]\n\tm/A.txt\n[test_a]\n\tm/a.txt\t= m/a~a.txt\n"
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
     ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.files() == {"m/A.txt": "upper\n", "m/a~b.txt": "lower\n"}
+    assert ledger.files() == {"m/A.txt": "upper\n", "m/a~a.txt": "lower\n"}
 
 
 def test_ledger_fix_over_a_module_keeps_lines_of_other_environments(ledger: LedgerProject) -> None:
@@ -3941,21 +3914,6 @@ def test_fix_expected_refuses_lanes_of_one_class_that_disagree(
     assert ledger.files() == {"m/a.txt": "x\n", storage: "y\n"}
 
 
-def test_ledger_refuses_writes_outside_its_files(ledger: LedgerProject) -> None:
-    """A run whose plan writes outside the expected files and sidecars of the tests root writes nothing and fails."""
-    (ledger.pytester.path / "test_out.py").write_text(
-        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\n\ndef test_out():\n"
-        "    assert_output('o\\n', Path(__file__).parent / 'suite' / 'data' / 'expected' / 'out.txt')\n",
-        encoding="utf-8",
-    )
-    result = ledger.run("test_out.py")
-    assert result.ret == pytest.ExitCode.TESTS_FAILED
-    output = result.stdout.str()
-    assert "expected: refused to write expected output; nothing was written:" in output
-    assert "test_out.refs: it resolves to" in output
-    assert (ledger.files(), (ledger.pytester.path / "test_out.refs").exists()) == ({}, False)
-
-
 @pytest.mark.parametrize(
     ("name", "reason"),
     [
@@ -3985,84 +3943,77 @@ def test_write_files_checks_every_path_first(tmp_path: Path, name: str, reason: 
 
 
 DUPLICATED_M = """
-from pathlib import Path
-
 import pytest
 
 from tests.conftest import assert_generated_modules_output, assert_output
 
-EXPECTED = Path(__file__).parent / "data" / "expected"
 SAME = "same\\n"
 X = {("x.py",): "X = 1\\n"}
 README = {("r.md",): "r\\n"}
 
 
 def test_a():
-    assert_output(SAME, EXPECTED / "m" / "a.txt")
+    assert_output(SAME)
 
 
 def test_b():
-    assert_output(SAME, EXPECTED / "m" / "b.txt")
+    assert_output(SAME)
 
 
 def test_x():
-    assert_output(SAME, EXPECTED / "m" / "x.txt")
+    assert_output(SAME)
 
 
 def test_y():
-    assert_output(SAME, EXPECTED / "m" / "y.txt")
+    assert_output(SAME)
 
 
 def test_z():
-    assert_output(SAME, EXPECTED / "m" / "z.txt")
+    assert_output(SAME)
 
 
 def test_tree1():
-    assert_generated_modules_output(X, EXPECTED / "t1")
+    assert_generated_modules_output(X)
 
 
 def test_tree2():
-    assert_generated_modules_output(X, EXPECTED / "t2")
+    assert_generated_modules_output(X)
 
 
 def test_file():
-    assert_output("X = 1\\n", EXPECTED / "f" / "x.py")
+    assert_output("X = 1\\n", suffix=".py")
 
 
 def test_inner():
-    assert_output("X = 1\\n", EXPECTED / "t1" / "x.py")
+    assert_output("X = 1\\n", suffix=".py")
 
 
 def test_empty1():
-    assert_generated_modules_output(README, EXPECTED / "e1")
+    assert_generated_modules_output(README)
 
 
 def test_empty2():
-    assert_generated_modules_output(README, EXPECTED / "e2")
+    assert_generated_modules_output(README)
 
 
 @pytest.mark.parametrize("case", ["one", "two"])
 def test_p(case):
-    assert_output(SAME, EXPECTED / "m" / "p.txt")
+    assert_output(SAME)
 
 
 def test_crlf():
-    assert_output(SAME, EXPECTED / "m" / "crlf.txt")
+    assert_output(SAME)
 """
 DUPLICATED_N = """
-from pathlib import Path
-
 from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent / "data" / "expected"
 
 
 def test_d():
-    assert_output("same\\n", EXPECTED / "n" / "d.txt")
+    assert_output("same\\n")
 
 
 def test_e():
-    assert_output("same\\n", EXPECTED / "n" / "e.txt")
+    assert_output("same\\n")
 """
 
 
@@ -4073,7 +4024,7 @@ def _duplicated(ledger: LedgerProject, capsys: pytest.CaptureFixture[str]) -> No
     for label in ("m/a.txt", "m/b.txt", "m/p.txt", "m/shared~x.txt", "n/e.txt"):
         ledger.store(label, "same\n")
     ledger.store("m/crlf.txt", "").write_bytes(b"same\r\n")
-    for label in ("t1/x.py", "t2/x.py", "f/x.py"):
+    for label in ("m/tree1/x.py", "m/tree2/x.py", "m/file.py"):
         ledger.store(label, "X = 1\n")
     line = units.RefLine
     (ledger.suite / "test_m.refs").write_text(
@@ -4081,14 +4032,14 @@ def _duplicated(ledger: LedgerProject, capsys: pytest.CaptureFixture[str]) -> No
             line("test_a", "", "m/a.txt"),
             line("test_b", "", "m/b.txt"),
             *(line(f"test_{name}", "", f"m/{name}.txt", storage="m/shared~x.txt") for name in "xyz"),
-            line("test_tree1", "", "t1//*.py"),
-            line("test_tree2", "", "t2//*.py"),
-            line("test_file", "", "f/x.py"),
-            line("test_inner", "", "t1/x.py"),
-            line("test_empty1", "", "e1//*.py"),
-            line("test_empty2", "", "e2//*.py"),
-            line("test_p", "one", "m/p.txt"),
-            line("test_p", "two", "m/p.txt"),
+            line("test_tree1", "", "m/tree1/"),
+            line("test_tree2", "", "m/tree2/"),
+            line("test_file", "", "m/file.py"),
+            line("test_inner", "", "m/inner.py", storage="m/tree1/x.py"),
+            line("test_empty1", "", "m/empty1/"),
+            line("test_empty2", "", "m/empty2/"),
+            line("test_p", "one", "m/p[one].txt", storage="m/p.txt"),
+            line("test_p", "two", "m/p[two].txt", storage="m/p.txt"),
             line("test_crlf", "", "m/crlf.txt"),
         ]),
         encoding="utf-8",
@@ -4116,28 +4067,29 @@ def test_fix_expected_deduplicates_stored_units(
         "Deduplicated: 1 references in 1 sidecars now use 1 stored units; deleted 0 stored files. "
         "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 5 files, 1 trees.\n"
     )
-    assert "[test_p]\none\tm/p.txt\t= m/b.txt\ntwo\tm/p.txt\n" in ledger.refs()
+    assert "[test_p]\none\tm/p[one].txt\t= m/b.txt\ntwo\tm/p[two].txt\t= m/p.txt\n" in ledger.refs()
     assert _fix_expected(ledger, monkeypatch, "suite/test_m.py", "--deduplicate") == 0
     assert capsys.readouterr().out == (
         "Deduplicated: 7 references in 1 sidecars now use 3 stored units; deleted 4 stored files. "
         "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 1 files, 0 trees.\n"
     )
     assert ledger.refs() == HEADER + (
-        "[test_a]\n\tm/a.txt\t= m/b.txt\n[test_b]\n\tm/b.txt\n[test_crlf]\n\tm/crlf.txt\n[test_empty1]\n\te1//*.py\n"
-        "[test_empty2]\n\te2//*.py\n[test_file]\n\tf/x.py\n[test_inner]\n\tt1/x.py\t= f/x.py\n"
-        "[test_p]\none\tm/p.txt\t= m/b.txt\ntwo\tm/p.txt\t= m/b.txt\n[test_tree1]\n\tt1//*.py\n"
-        "[test_tree2]\n\tt2//*.py\t= t1//*.py\n[test_x]\n\tm/x.txt\t= m/b.txt\n[test_y]\n\tm/y.txt\t= m/b.txt\n"
+        "[test_a]\n\tm/a.txt\t= m/b.txt\n[test_b]\n\tm/b.txt\n[test_crlf]\n\tm/crlf.txt\n"
+        "[test_empty1]\n\tm/empty1/\n[test_empty2]\n\tm/empty2/\n[test_file]\n\tm/file.py\n"
+        "[test_inner]\n\tm/inner.py\t= m/file.py\n"
+        "[test_p]\none\tm/p[one].txt\t= m/b.txt\ntwo\tm/p[two].txt\t= m/b.txt\n[test_tree1]\n\tm/tree1/\n"
+        "[test_tree2]\n\tm/tree2/\t= m/tree1/\n[test_x]\n\tm/x.txt\t= m/b.txt\n[test_y]\n\tm/y.txt\t= m/b.txt\n"
         "[test_z]\n\tm/z.txt\t= m/b.txt\n"
     )
     assert ledger.refs("test_n") == HEADER + "[test_d]\n\tn/d.txt\t= m/b.txt\n[test_e]\n\tn/e.txt\n"
-    assert sorted(ledger.files()) == ["f/x.py", "m/b.txt", "m/crlf.txt", "n/e.txt", "t1/x.py"]
+    assert sorted(ledger.files()) == ["m/b.txt", "m/crlf.txt", "m/file.py", "m/tree1/x.py", "n/e.txt"]
     assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
     assert capsys.readouterr().out.endswith(
         "deleted 1 stored files. Every line compares the same bytes as before.\n"
         "Remaining duplicates in all sidecars: 0 files, 0 trees.\n"
     )
     assert ledger.refs("test_n") == HEADER + "[test_d]\n\tn/d.txt\t= m/b.txt\n[test_e]\n\tn/e.txt\t= m/b.txt\n"
-    assert sorted(ledger.files()) == ["f/x.py", "m/b.txt", "m/crlf.txt", "t1/x.py"]
+    assert sorted(ledger.files()) == ["m/b.txt", "m/crlf.txt", "m/file.py", "m/tree1/x.py"]
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=16)
 
 
@@ -4152,70 +4104,51 @@ EXPECTED = Path(__file__).parent / "data" / "expected"
 
 
 def test_a():
-    assert_output("x\\n", EXPECTED / "m" / "a.txt")
-    assert stored_expected(EXPECTED / "m" / "a.txt").read_text() == "x\\n"
-
-
-def test_b():
-    assert_output("y\\n", EXPECTED / "m" / "a.txt")
-    assert stored_expected(EXPECTED / "m" / "a.txt").read_text() == "y\\n"
+    assert_output("x\\n")
+    assert stored_expected(EXPECTED / "r" / "a.txt").read_text() == "x\\n"
+    assert stored_expected(EXPECTED / "r" / "a.txt" / "inner") == EXPECTED / "r" / "a.txt" / "inner"
 
 
 def test_tree():
-    assert_generated_modules_output({("t.py",): "T = 1\\n"}, EXPECTED / "tree")
+    assert_generated_modules_output({("t.py",): "T = 1\\n"})
 
 
 def test_reader(tmp_path):
-    assert stored_expected(EXPECTED / "m" / "a.txt").read_text() == "x\\n"
-    assert stored_expected(EXPECTED / "tree" / "t.py") == EXPECTED / "copy" / "t.py"
-    assert stored_expected(EXPECTED / "tree" / "notes.txt") == EXPECTED / "tree" / "notes.txt"
+    assert stored_expected(EXPECTED / "r" / "a.txt").read_text() == "x\\n"
+    assert stored_expected(EXPECTED / "r" / "tree" / "t.py") == EXPECTED / "copy" / "t.py"
     assert stored_expected(EXPECTED / "unknown.txt") == EXPECTED / "unknown.txt"
     assert stored_expected(tmp_path) == tmp_path
-    assert stored_expected(EXPECTED / "o.txt").read_text() == "base\\n"
-    assert stored_expected(EXPECTED / "mixed" / "r.md") == EXPECTED / "mixed" / "r.md"
-    assert stored_expected(EXPECTED / "mixed" / "a.py") == EXPECTED / "pyfiles" / "a.py"
-    assert stored_expected(EXPECTED / "pair" / "p.py") == EXPECTED / "pair-one" / "p.py"
+    assert stored_expected(EXPECTED / "r" / "override.txt").read_text() == "base\\n"
+    assert stored_expected(EXPECTED / "r" / "pair[one]" / "p.py") == EXPECTED / "pair-one" / "p.py"
 
 
 def test_override():
-    assert_output("here\\n", EXPECTED / "o.txt", varies_with=("sys-monitoring", "no-sys-monitoring"))
-    assert stored_expected(EXPECTED / "o.txt").read_text() == "here\\n"
-
-
-def test_mixed():
-    modules = {("a.py",): "A = 1\\n", ("r.md",): "r\\n"}
-    assert_generated_modules_output(modules, EXPECTED / "mixed")
-    assert_generated_modules_output(modules, EXPECTED / "mixed", pattern="*.md")
-    assert stored_expected(EXPECTED / "mixed" / "a.py") == EXPECTED / "pyfiles" / "a.py"
+    assert_output("here\\n", varies_with=("sys-monitoring", "no-sys-monitoring"))
+    assert stored_expected(EXPECTED / "r" / "override.txt").read_text() == "here\\n"
 
 
 @pytest.mark.parametrize("name", ["one", "two"])
 def test_pair(name):
-    assert_generated_modules_output({("p.py",): f"P = '{name}'\\n"}, EXPECTED / "pair")
-    assert stored_expected(EXPECTED / "pair" / "p.py").read_text() == f"P = '{name}'\\n"
+    assert_generated_modules_output({("p.py",): f"P = '{name}'\\n"})
+    assert stored_expected(EXPECTED / "r" / f"pair[{name}]" / "p.py").read_text() == f"P = '{name}'\\n"
 """
 
 
 def test_stored_expected_follows_the_index(ledger: LedgerProject) -> None:
     """A test reads an expected file where the index stores it: its own applicable line first, then any test's line.
 
-    Its own line is the one that applies here (the Python class of ``test_override``) and covers files its tree labels
-    select (``pair``); other tests read a label's base line, stored at the label first (``o.txt``), and each pattern of
-    a directory (``mixed``). A file of a tree label's directory that the pattern does not select, an unrecorded path, a
-    path outside the expected root, and a read at import time (no running test; this project is not the
-    repository's) stay as named.
+    Its own line is the one that applies here (the Python class of ``test_override``) and covers the files of its tree
+    label (``pair``); other tests read a label's base line, stored at the label first (``override.txt``). An
+    unrecorded path, a path outside the expected root, and a read at import time (no running test; this project is
+    not the repository's) stay as named.
     """
     ledger.write("test_r.py", STORED_READS)
-    ledger.store("m/a.txt", "x\n")
-    ledger.store("m/a~b.txt", "y\n")
     ledger.store("copy/t.py", "T = 1\n")
-    ledger.store("tree/notes.txt", "n\n")
     for label, text in {
-        "o.txt": "base\n",
-        "o@here.txt": "here\n",
-        "o@old.txt": "old\n",
-        "mixed/r.md": "r\n",
-        "pyfiles/a.py": "A = 1\n",
+        "r/a.txt": "x\n",
+        "r/override.txt": "base\n",
+        "r/override@here.txt": "here\n",
+        "r/override@old.txt": "old\n",
         "pair-one/p.py": "P = 'one'\n",
         "pair-two/p.py": "P = 'two'\n",
     }.items():
@@ -4226,56 +4159,17 @@ def test_stored_expected_follows_the_index(ledger: LedgerProject) -> None:
     other = tuple(clause for clause in declared if clause not in here)
     (ledger.suite / "test_r.refs").write_text(
         units.format_refs([
-            line("test_a", "", "m/a.txt"),
-            line("test_b", "", "m/a.txt", storage="m/a~b.txt"),
-            line("test_tree", "", "tree//*.py", storage="copy//*.py"),
-            line("test_override", "", "o.txt"),
-            line("test_override", "", "o.txt", predicate=here, storage="o@here.txt"),
-            line("test_override", "", "o.txt", predicate=other, storage="o@old.txt"),
-            line("test_mixed", "", "mixed//*.py", storage="pyfiles//*.py"),
-            line("test_mixed", "", "mixed//*.md"),
-            line("test_pair", "one", "pair//*.py", storage="pair-one//*.py"),
-            line("test_pair", "two", "pair//*.py", storage="pair-two//*.py"),
+            line("test_a", "", "r/a.txt"),
+            line("test_tree", "", "r/tree/", storage="copy/"),
+            line("test_override", "", "r/override.txt"),
+            line("test_override", "", "r/override.txt", predicate=here, storage="r/override@here.txt"),
+            line("test_override", "", "r/override.txt", predicate=other, storage="r/override@old.txt"),
+            line("test_pair", "one", "r/pair[one]/", storage="pair-one/"),
+            line("test_pair", "two", "r/pair[two]/", storage="pair-two/"),
         ]),
         encoding="utf-8",
     )
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=8)
-
-
-READ_BY_NAME = """
-from pathlib import Path
-
-from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent / "data" / "expected"
-
-
-def test_q1():
-    assert_output("x\\n", EXPECTED / "q" / "l.txt")
-
-
-def test_q2():
-    assert_output("y\\n", EXPECTED / "q" / "l.txt")
-
-
-def test_q3():
-    assert_output("x\\n", EXPECTED / "c.txt")
-"""
-READ_BY_NAME_TOO = """
-from pathlib import Path
-
-from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent / "data" / "expected"
-
-
-def test_r1():
-    assert_output("x\\n", EXPECTED / "r" / "l.txt")
-
-
-def test_r2():
-    assert_output("y\\n", EXPECTED / "r" / "l.txt")
-"""
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=6)
 
 
 def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
@@ -4283,14 +4177,17 @@ def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
 ) -> None:
     """Units of a label whose references differ stay, so reading the label by name returns what it did.
 
+    Sidecars written before labels followed the test names hold such labels; the sidecars here are written by hand
+    and no run compares them.
+
     ``q/l.txt`` reads as its own copy (``x``); the shorter ``c.txt`` would survive otherwise, and ``q/l.txt`` would
     then read as ``b/q2.txt`` (``y``). A plan that does that anyway is refused although every line compares the same.
     ``r/l.txt`` and ``b/r2.txt`` repeat ``q/l.txt`` and ``b/q2.txt`` but stay for the same reason, and are reported.
     """
     from scripts import fix_expected
 
-    ledger.write("test_q.py", READ_BY_NAME)
-    ledger.write("test_r.py", READ_BY_NAME_TOO)
+    ledger.write("test_q.py", "def test_q1():\n    pass\n")
+    ledger.write("test_r.py", "def test_r1():\n    pass\n")
     stored = {"q/l.txt": "x\n", "b/q2.txt": "y\n", "c.txt": "x\n", "r/l.txt": "x\n", "b/r2.txt": "y\n"}
     for label, text in stored.items():
         ledger.store(label, text)
@@ -4333,7 +4230,6 @@ def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
         "[test_q1]\n\tq/l.txt\n[test_q2]\n\tq/l.txt\t= b/q2.txt\n[test_q3]\n\tc.txt\t= q/l.txt\n"
     )
     assert sorted(ledger.files()) == ["b/q2.txt", "b/r2.txt", "q/l.txt", "r/l.txt"]
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=5)
 
 
 def test_fix_expected_deduplicate_refuses(
@@ -4624,25 +4520,24 @@ def test_ledger_moves_units_to_free_labels_only(ledger: LedgerProject) -> None:
     The run reports every file it changed, other modules' sidecars included, with one command that stages them all.
     """
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.write(
         "test_n.py", "from tests.conftest import assert_output\n\n\ndef test_same():\n    assert_output('old\\n')\n"
     )
     ledger.run("suite").assert_outcomes(passed=4)
-    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y.txt\n"
+    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y[a].txt\n"
     ledger.store("n/SAME.txt", "unrelated\n")
     ledger.write("test_m.py", "def test_none():\n    pass\n")
     ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y.txt\n"
+    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y[a].txt\n"
     (ledger.expected / "n" / "SAME.txt").unlink()
     ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y.txt\n"
+    assert ledger.refs("test_n") == HEADER + "[test_same]\n\tn/same.txt\t= m/y[a].txt\n"
     ledger.write("test_o.py", ONE_TEST)
     moved = ledger.run("suite/test_o.py")
-    assert "expected: moved m/y.txt to n/same.txt, the label of every test that uses it" in moved.stdout.str()
+    assert "expected: moved m/y[a].txt to n/same.txt, the label of every test that uses it" in moved.stdout.str()
     assert (
-        "expected: changed suite/data/expected/m/y.txt, suite/data/expected/n/same.txt, suite/data/expected/o/a.txt, "
-        "suite/test_n.refs, suite/test_o.refs; stage them all: git add -A suite"
+        "expected: changed suite/data/expected/m/y[a].txt, suite/data/expected/n/same.txt, "
+        "suite/data/expected/o/a.txt, suite/test_n.refs, suite/test_o.refs; stage them all: git add -A suite"
     ) in moved.stdout.str()
     assert (ledger.refs("test_n"), ledger.files()) == (
         HEADER + "[test_same]\n\tn/same.txt\n",
@@ -4651,20 +4546,12 @@ def test_ledger_moves_units_to_free_labels_only(ledger: LedgerProject) -> None:
 
 
 def test_ledger_outside_labels_fail(ledger: LedgerProject) -> None:
-    """Labels outside the expected root fail when compared, and a sidecar line naming one is a hand edit."""
+    """A sidecar line naming a label outside the expected root is a hand edit."""
     outside = ledger.suite / "data" / "outside.txt"
     outside.write_text("in\n", encoding="utf-8")
     ledger.write(
-        "test_m.py",
-        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\n\n"
-        "def test_new():\n    assert_output('in\\n', Path(__file__).parent / 'data' / 'outside.txt')\n",
+        "test_m.py", "from tests.conftest import assert_output\n\n\ndef test_new():\n    assert_output('in\\n')\n"
     )
-    result = ledger.run("suite")
-    result.assert_outcomes(failed=1)
-    assert "Expected outputs live under tests/data/expected. Fix: remove the path argument" in result.stdout.str()
-    observed = ledger.run(f"--expected-observe={ledger.pytester.path / 'observed'}", "suite")
-    observed.assert_outcomes(failed=1)
-    assert "Expected outputs live under tests/data/expected" in observed.stdout.str()
     (ledger.suite / "test_m.refs").write_text(HEADER + "[test_new]\n\t../outside.txt\n", encoding="utf-8")
     edited = ledger.run("suite")
     edited.assert_outcomes(failed=2)
@@ -4700,35 +4587,31 @@ def test_ledger_missing_file_names_git_add(ledger: LedgerProject) -> None:
 def test_ledger_fix_restores_overwritten_shared_file(ledger: LedgerProject) -> None:
     """When every sharer of a hand-overwritten file runs, the largest group gets it back; the rest split off."""
     _shared(ledger)
-    ledger.store("m/y.txt", "old\n")
     ledger.run("suite").assert_outcomes(passed=3)
-    ledger.store("m/y.txt", "garbage\n")
+    ledger.store("m/y[a].txt", "garbage\n")
     _shared(ledger, a="new\n")
     fixed = ledger.run("suite", "--inline-snapshot=fix")
     fixed.assert_outcomes(passed=3)
     output = fixed.stdout.str()
-    assert "expected: fixed m/y.txt in place (2 tests)" in output
-    assert "expected: test_y[a] split from 2 tests that share m/y.txt; stored at m/y~y[a].txt" in output
+    assert "expected: fixed m/y[a].txt in place (2 tests)" in output
+    assert "expected: test_y[a] split from 2 tests that share m/y[a].txt; stored at m/y[a]~y[a].txt" in output
     assert "If they should change too" not in output
-    assert ledger.files() == {"m/y.txt": "old\n", "m/y~y[a].txt": "new\n"}
+    assert ledger.files() == {"m/y[a].txt": "old\n", "m/y[a]~y[a].txt": "new\n"}
 
 
 def test_ledger_empty_directory_is_free(ledger: LedgerProject) -> None:
     """An empty leftover directory does not push a tree to a derived name; quoted commands escape quotes."""
-    (ledger.expected / "lib" / "empty").mkdir(parents=True)
+    (ledger.expected / "m" / "tree" / "empty").mkdir(parents=True)
     ledger.write(
         "test_m.py",
         """
-        from pathlib import Path
-
         import pytest
 
         from tests.conftest import assert_generated_modules_output, assert_output
 
 
         def test_tree():
-            expected = Path(__file__).parent / "data" / "expected"
-            assert_generated_modules_output({("a.py",): "A = 1\\n"}, expected / "lib")
+            assert_generated_modules_output({("a.py",): "A = 1\\n"})
 
 
         @pytest.mark.parametrize("case", ["it's"])
@@ -4737,7 +4620,7 @@ def test_ledger_empty_directory_is_free(ledger: LedgerProject) -> None:
         """,
     )
     ledger.run("suite/test_m.py::test_tree").assert_outcomes(passed=1)
-    assert ledger.refs() == HEADER + "[test_tree]\n\tlib//*.py\n"
+    assert ledger.refs() == HEADER + "[test_tree]\n\tm/tree/\n"
     quoted = ledger.run("suite", "--inline-snapshot=disable").stdout.str()
     assert "Fix: pytest 'suite/test_m.py::test_quote[it'\"'\"'s]' && git add -A" in quoted
 
@@ -4788,29 +4671,6 @@ def test_fix_expected_repairs_sidecars(
     assert _fix_expected(ledger, monkeypatch, "--repair", "test_out.refs") == 2
     assert "refused to write expected output; nothing was written:" in capfd.readouterr().out
     assert (ledger.pytester.path / "test_out.refs").read_text(encoding="utf-8") == refs
-
-
-def test_ledger_merges_a_copy_into_its_label(ledger: LedgerProject) -> None:
-    """A derived copy whose label stores the same content is merged into that label by the next writing run."""
-    ledger.write("test_m.py", ONE_TEST + "\n\ndef test_b():\n    assert_output(OUT, EXPECTED)\n")
-    source = (ledger.suite / "test_m.py").read_text(encoding="utf-8")
-    ledger.write(
-        "test_m.py",
-        source.replace(
-            "OUT = ",
-            "from pathlib import Path\nEXPECTED = Path(__file__).parent / 'data' / 'expected' / 'm' / 'a.txt'\nOUT = ",
-        ),
-    )
-    ledger.run("suite").assert_outcomes(passed=2)
-    ledger.store("m/a~b.txt", "x\n")
-    (ledger.suite / "test_m.refs").write_text(
-        HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/a.txt\t= m/a~b.txt\n", encoding="utf-8"
-    )
-    ledger.write("test_n.py", ONE_TEST.replace("x", "n"))
-    merged = ledger.run("suite")
-    merged.assert_outcomes(passed=3)
-    assert "expected: deleted m/a~b.txt (no test uses it)" in merged.stdout.str()
-    assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/a.txt\n"
 
 
 def _refused_value_item(ledger: LedgerProject, refusal: str) -> tuple[dict[str, object], dict[str, object]]:

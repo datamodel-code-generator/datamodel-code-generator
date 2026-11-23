@@ -23,7 +23,7 @@ from coverage.config import DEFAULT_EXCLUDE
 from coverage.python import PythonParser
 
 from scripts import _behaviour_classify as behaviour_classify
-from scripts import _decision_home_reads as home_callers
+from scripts import _decision_home_reads as home_reads
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import (
@@ -899,19 +899,34 @@ def _check_runs(form: Path) -> list[Finding]:
         ]
 
 
+def _unquoted(target: str) -> str:
+    """Return a target without whitespace and double quotes, which a verdict's site list cannot hold."""
+    return re.sub(r"[\s\"]", "", target)
+
+
 def _generation_store_usage(form: Path) -> list[Finding]:
-    """Run the generation store check over a form's modules, as parser code and as model code."""
+    """Read the ``__dict__`` keys a form's modules write, as parser and as model code, as the fact table check does.
+
+    A module the model cannot read is a finding of its own.
+    """
     paths = sorted(form.rglob("*.py")) if form.is_dir() else [form]
     found = []
     for scope in typing.get_args(check_generation_store_usage.Scope):
-        for violation in check_generation_store_usage.scan_files([(path, scope) for path in paths]).violations:
-            place = violation.path.relative_to(form.parent).as_posix().removesuffix(".txt")
-            target = re.sub(r"[\s\"]", "", violation.target)
+        writes, problems = check_generation_store_usage.dict_key_writes([(path, scope) for path in paths])
+        readings = [
+            *(
+                (write.path, write.line, f"__dict__[{write.key}]", f"writes the key (in {write.function})")
+                for write in writes
+            ),
+            *((problem.path, problem.line, problem.target, problem.message) for problem in problems),
+        ]
+        for path, line, target, text in readings:
+            place = path.relative_to(form.parent).as_posix().removesuffix(".txt")
             found.append(
                 Finding(
-                    f"{scope}/{target}",
-                    _site(form, place, violation.line),
-                    f"{scope}: {place}:{violation.line}: {violation.message} (in {violation.function})",
+                    f"{scope}/{_unquoted(target)}",
+                    _site(form, place, line),
+                    f"{scope}: {place}:{line}: {target} {text}",
                 )
             )
     return found
@@ -1148,12 +1163,13 @@ def _public_api_record(form: Path) -> list[Finding]:
         ]
 
 
-def _decision_home_callers(form: Path) -> list[Finding]:
-    """Return the callers the decision-home guard finds when each module-level def or class of a form is a home.
+def _decision_home_contracts(form: Path) -> list[Finding]:
+    """Return the homes that get no heki contract when each module-level def or class of a form is a home.
 
     The form keeps its layout under ``scripts/`` (as `_where_disagreements` places it), which stands as the package:
-    each module is a row of its own definitions with no adapter site, so a read of a definition from another module of
-    the form is a caller and one from its own module is none.
+    each module is a row of its own definitions with no adapter site. `checked_homes` returns the homes that
+    ``scripts/build_heki_contracts.py`` writes a contract for; a class that derives from ``BaseException`` through
+    builtins or other classes of the form gets none.
     """
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
@@ -1167,25 +1183,24 @@ def _decision_home_callers(form: Path) -> list[Finding]:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         repo = where.Repo(root, where.Page([], [], [], []))
-        records = [
-            DecisionHome(
-                place,
-                homes=tuple(
-                    Home(place, scope.qualname)
-                    for scope in repo.model(path).scopes
-                    if scope.kind in where.DEFS and scope.parent is not None and scope.parent.kind == "module"
-                ),
-                core="",
-                adapters="",
-                sites=(),
-            )
+        homes = {
+            Home(place, scope.qualname): scope.line
             for path in sorted(repo.names)
             for place in [path.removeprefix("scripts/")]
+            for scope in repo.model(path).scopes
+            if scope.kind in where.DEFS and scope.parent is not None and scope.parent.kind == "module"
+        }
+        records = [
+            DecisionHome(
+                place, homes=tuple(home for home in homes if home.path == place), core="", adapters="", sites=()
+            )
+            for place in sorted({home.path for home in homes})
         ]
+        checked = {home for home, *_ in home_reads.checked_homes(repo, records, "scripts/")}
         return [
-            Finding("caller", _site(form, module, caller.line), f"{caller.caller}:{caller.line}: calls {caller.home}")
-            for caller in home_callers.unlisted_callers(repo, records, "scripts/")
-            for module in [caller.caller.partition(":")[0]]
+            Finding("unchecked", _site(form, home.path, line), f"{home.path}:{home.name}:{line}: no contract")
+            for home, line in homes.items()
+            if home not in checked
         ]
 
 
@@ -1220,9 +1235,7 @@ RULES: dict[str, RuleRun] = {
         _legacy_row_reads,
     ),
     "generation-store-usage": RuleRun(
-        "scripts.check_generation_store_usage",
-        frozenset({"bindings", "references", "imports"}),
-        _generation_store_usage,
+        "scripts.check_generation_store_usage", frozenset({"bindings", "references"}), _generation_store_usage
     ),
     "generated-import-closure": RuleRun(
         "tests.test_generated_import_closure", frozenset({"bindings", "references", "extents"}), _unbound_names
@@ -1247,9 +1260,7 @@ RULES: dict[str, RuleRun] = {
         "scripts._behaviour_classify", frozenset({"bindings", "imports", "references"}), _rule_b_of_unparsed_text
     ),
     "decision-home-callers": RuleRun(
-        "scripts._decision_home_reads",
-        frozenset({"bindings", "references", "imports", "extents"}),
-        _decision_home_callers,
+        "scripts._decision_home_reads", frozenset({"bindings", "references", "extents"}), _decision_home_contracts
     ),
     "changed-test-units": RuleRun("scripts.related_tests", frozenset({"references", "extents"}), _test_units),
     "shape-family-client-reads": RuleRun(

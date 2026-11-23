@@ -34,7 +34,7 @@ from urllib.parse import ParseResult, unquote, urljoin, urlparse
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator._document_reader import member_key, refuse_oversized_document
+from datamodel_code_generator._document_reader import held_schema, member_key, refuse_oversized_document
 from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
@@ -1052,6 +1052,12 @@ def implicit_schema_resources(
                 for name, schema in schemas.items():
                     if isinstance(schema, dict):
                         yield ("components", "schemas", name), schema
+                        if (
+                            "asyncapi" in raw
+                            and (held := held_schema(schema)) is not None
+                            and isinstance(held[0], dict)
+                        ):
+                            yield ("components", "schemas", name, "schema"), held[0]
     roles = parser._document_roles.get(document, ())
     yield from {path: schema for role in roles for path, schema in held_schemas(raw, role)}.items()
 

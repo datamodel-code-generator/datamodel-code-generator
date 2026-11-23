@@ -22,9 +22,9 @@ Columns of a row:
   its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts), after which no pass may write the attribute
   in the target pipeline. The finality checks still check each ``Fact`` at B1 unless a pass declares an exception.
   ``None`` for caches and bookkeeping.
-* ``store_ops``: the ``GenerationStore`` operations allowed to write it; every other write is listed in
-  ``scripts/generation_store_allowlist.toml`` until a later change routes it. Bookkeeping rows name none: holder
-  edges are enforced separately.
+* ``store_ops``: the ``GenerationStore`` operations allowed to write it (``scripts/build_heki_contracts.py`` makes them
+  the writers of a heki contract); every other write is recorded in ``scripts/heki_baseline.toml`` until a later
+  change routes it. Bookkeeping rows name none: holder edges are enforced separately.
 
 The checker enforces the kind rules: a fact row names a ``Fact``, a presentation row names only ``RenderFact``
 members, a cache row names no ``Fact``. Three exceptions are allowed: plan rows (``Parser`` snapshots that later
@@ -32,6 +32,13 @@ passes read) are fact rows that name only ``RenderFact.PLANS``; rows holding ren
 and the record of where a type's None comes from) name ``Fact.NULLABLE`` and freeze at B2: render preparation writes
 rendered nullability once, and only the null a msgspec field strips from its copied types is written at L7; the
 schema-validator plan cache names ``RenderFact.MODULE_CODE``, the code it holds.
+
+``STORE_MEMBERS`` lists the members of the graph that only the generation store, the member's own class (a method)
+or module (an attribute) and the modules a row names may use: the methods that write the graph for the store
+operations that run them (the hooks a store operation runs and the reference mutators: ``MemberUse.CALL``), and the
+bookkeeping attributes of a reference that its own module keeps (``MemberUse.READ``, ``MemberUse.WRITE``).
+``scripts/build_heki_contracts.py`` makes each row a heki contract and lets the methods write what the store module
+may write.
 """
 
 from __future__ import annotations
@@ -46,12 +53,15 @@ from datamodel_code_generator.parser._facts import Phase  # noqa: PLC2701
 __all__ = [
     "ATTRIBUTE_FACTS",
     "RENDER_FACT_FREEZE_POINTS",
+    "STORE_MEMBERS",
     "Access",
     "AttributeFact",
     "Fact",
     "FactKind",
     "FreezePoint",
+    "MemberUse",
     "RenderFact",
+    "StoreMember",
 ]
 
 
@@ -1203,3 +1213,60 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         access=Access.CONTAINER,
     ),
 )
+
+
+@unique
+class MemberUse(Enum):
+    """What only the generation store, the member's class or module and the modules its row names may do with it."""
+
+    CALL = "call"
+    """Call the method, or hand it on to be called; overrides of it in subclasses are the same member."""
+    READ = "read"
+    WRITE = "write"
+    """Write the attribute; the row names a bookkeeping row of ``ATTRIBUTE_FACTS``."""
+
+
+@final
+@record
+class StoreMember:
+    """One row of ``STORE_MEMBERS``: a member of a class of the graph, by the package-relative path of its module."""
+
+    path: str
+    owner: str
+    name: str
+    use: MemberUse
+    homes: tuple[str, ...] = ()
+    """The package-relative paths of the modules besides the store that may use the member.
+
+    A method is also used by its own class, an attribute by the module of its class.
+    """
+
+
+STORE_MEMBERS: tuple[StoreMember, ...] = (
+    StoreMember("model/base.py", "DataModel", "_write_additional_properties_type", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModel", "adopt_base_options", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModel", "assign_forward_reference_fields", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModel", "replace_children_in_models", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModel", "set_base_class", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModel", "set_reference_path", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModelFieldBase", "_process_const_as_literal", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModelFieldBase", "process_const", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModelFieldBase", "replace_data_type", MemberUse.CALL),
+    StoreMember("model/base.py", "DataModelFieldBase", "unconstrain_union_members", MemberUse.CALL),
+    StoreMember("reference.py", "Reference", "replace_children_references", MemberUse.CALL),
+    StoreMember("types.py", "DataType", "_update_type_null", MemberUse.CALL),
+    StoreMember("types.py", "DataType", "remove_reference", MemberUse.CALL),
+    StoreMember("types.py", "DataType", "replace_reference", MemberUse.CALL),
+    StoreMember("types.py", "DataType", "swap_with", MemberUse.CALL),
+    StoreMember("reference.py", "Reference", "children", MemberUse.READ, homes=("_graph_links.py",)),
+    StoreMember("reference.py", "Reference", "children", MemberUse.WRITE, homes=("_graph_links.py",)),
+    StoreMember("reference.py", "Reference", "loaded", MemberUse.WRITE),
+    StoreMember("reference.py", "Reference", "source", MemberUse.WRITE),
+)
+"""The members only the generation store, their own class or module and the modules a row names may use.
+
+``CALL`` rows are the methods that write the graph for the store operations that run them: the hooks those operations
+run (``process_const``, ``set_base_class``, ...) and the reference mutators. They may call each other, as they run only
+inside a store operation. The ``READ`` and ``WRITE`` rows keep the reverse edges and the loading state of a reference
+in its module; the parser asks the generation index for the users of a reference instead.
+"""

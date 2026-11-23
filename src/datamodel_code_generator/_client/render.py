@@ -82,7 +82,7 @@ from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS
 from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS
 from datamodel_code_generator._runtime.protocols.polling import _DEFAULTS as _POLL_LIMITS
 from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UPLOAD_LIMITS
-from datamodel_code_generator._target_contract import UnionType
+from datamodel_code_generator._target_contract import NoneType, UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope
@@ -97,7 +97,7 @@ from datamodel_code_generator._target_render import (
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import styled_without_none
+from datamodel_code_generator._target_types import admits_none, styled_without_none, without_none
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -454,6 +454,16 @@ class _Parts:
 
 
 _Key: TypeAlias = _Model | _Parts | str
+_PAIR: Final = 2
+
+
+def _nullable(key: _Key) -> UnionType | None:
+    """Return the type of a payload of a model type that is a union with None, or None."""
+    return (
+        value if isinstance(key, _Model) and isinstance(value := key.type, UnionType) and admits_none(value) else None
+    )
+
+
 _SURFACES: Final = {
     "form": ("bodies", "FormData", ()),
     "multipart": ("bodies", "MultipartData", ("bytes",)),
@@ -1191,7 +1201,7 @@ class _Typing:
     @staticmethod
     def values(module: TargetModule, key: _Parts) -> str:
         """Return the union of the value types of a response's parts."""
-        return module.union(*(_Typing.spell(module, value) for value in key.values))
+        return _Typing.union(module, key.values, "")
 
     def argument(self, module: TargetModule, parameter: ParameterSpec) -> str:
         """Return the type of one parameter's keyword argument, with UNSET when it is optional without a default.
@@ -1246,9 +1256,17 @@ class _Typing:
         keys = (key for response in spec.responses if response.success for key in self.payloads(response, media_type))
         return tuple(dict.fromkeys(keys))
 
-    def union(self, module: TargetModule, keys: Iterable[_Key], empty: str) -> str:
-        """Return the union of payload types in a module, or the spelling of an empty union."""
-        return module.union(*(self.spell(module, key) for key in keys)) or empty
+    @staticmethod
+    def union(module: TargetModule, keys: Iterable[_Key], empty: str) -> str:
+        """Return the union of payload types in a module, or the spelling of an empty union.
+
+        A union of several types holds the None of each once, last, as the model generator writes a union with None.
+        """
+        found = tuple(keys)
+        if len(found) < _PAIR or not any(map(_nullable, found)):
+            return module.union(*(_Typing.spell(module, key) for key in found)) or empty
+        present = (key if (value := _nullable(key)) is None else _Model(without_none(value)) for key in found)
+        return module.union(*(_Typing.spell(module, key) for key in present), module.hint(NoneType()))
 
     def body_surface(self, module: TargetModule, media: MediaSpec, *, asynchronous: bool) -> str:
         """Return the body type of one request media type in the sync or asyncio client."""

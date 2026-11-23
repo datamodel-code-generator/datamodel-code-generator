@@ -212,7 +212,7 @@ RULE_FAILURE_MESSAGES = {
         "Audits of every stored file below a directory are justified entries in JUSTIFIED_VIOLATIONS."
     ),
     EMBEDDED_SOURCE: (
-        "Generated files are pinned at their generated path, as the model tests pin them (assert_file_content, "
+        "Generated files are pinned at their generated path, as the model tests pin them (assert_output, "
         "assert_directory_content, assert_generated_modules_output), and two generations that must agree are "
         "compared as two trees under one name= of assert_exact_directory_content. A text or JSON expectation of a "
         "test under "

@@ -22,7 +22,12 @@ MODELS: Final[dict[type, Model]] = {
         (
             Field('verify', 'verify', omit_none=True),
             Field('ratio', 'ratio', omit_none=True),
-            Field('level', 'level', Choice((('object', models.Box),)), omit_none=True),
+            Field(
+                'level',
+                'level',
+                Choice((('string', None), ('number', None), ('object', models.Box))),
+                omit_none=True,
+            ),
             Field(
                 'mode',
                 'mode',

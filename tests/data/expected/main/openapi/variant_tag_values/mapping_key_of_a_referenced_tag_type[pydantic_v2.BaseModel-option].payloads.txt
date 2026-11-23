@@ -1,0 +1,8 @@
+Payment {"kind": 1, "number": "4"}: schema accepts, model accepts
+Payment {"kind": "1", "number": "4"}: schema rejects, model rejects
+Payment {"kind": 2, "amount": 5}: schema accepts, model accepts
+Payment {"kind": "3", "code": "x"}: schema accepts, model accepts
+Refund {"kind": 1, "number": "4"}: schema accepts, model accepts
+Refund {"kind": "1", "number": "4"}: schema rejects, model rejects
+Refund {"kind": 2, "amount": 5}: schema accepts, model accepts
+Refund {"kind": "3", "code": "x"}: schema rejects, model rejects

@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "Cat": {
+      "x-python-import": {
+        "module": "pets",
+        "name": "Cat"
+      }
+    },
+    "Dog": {
+      "x-python-import": {
+        "module": "pets",
+        "name": "Dog"
+      }
+    },
+    "Cat_2": {
+      "x-python-import": {
+        "module": "legacy_pets",
+        "name": "Cat"
+      }
+    },
+    "Kennel": {
+      "properties": {
+        "pet": {
+          "discriminator": {
+            "mapping": {
+              "cat": "#/$defs/Cat_2",
+              "dog": "#/$defs/Dog"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat_2"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ],
+          "title": "Pet"
+        }
+      },
+      "required": [
+        "pet"
+      ],
+      "title": "Kennel",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Kennel"
+    }
+  ],
+  "properties": {
+    "pet": {
+      "discriminator": {
+        "mapping": {
+          "dog": "#/$defs/Dog",
+          "kitten": "#/$defs/Cat"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ],
+      "title": "Pet"
+    }
+  },
+  "required": [
+    "pet"
+  ],
+  "title": "Pound",
+  "type": "object"
+}

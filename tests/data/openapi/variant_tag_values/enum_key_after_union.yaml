@@ -1,0 +1,40 @@
+openapi: '3.1.0'
+info: {title: An Enum mapping key naming a subclass of a variant an earlier union tagged, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Kind: {type: string, enum: [a, b, c]}
+    Base:
+      type: object
+      required: [kind]
+      properties:
+        kind: {$ref: '#/components/schemas/Kind'}
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          properties:
+            name: {type: string}
+    Other:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, const: c}
+    First:
+      oneOf:
+        - $ref: '#/components/schemas/Base'
+        - $ref: '#/components/schemas/Other'
+      discriminator:
+        propertyName: kind
+        mapping:
+          a: '#/components/schemas/Base'
+          c: '#/components/schemas/Other'
+    Second:
+      oneOf:
+        - $ref: '#/components/schemas/Child'
+        - $ref: '#/components/schemas/Other'
+      discriminator:
+        propertyName: kind
+        mapping:
+          b: '#/components/schemas/Child'
+          c: '#/components/schemas/Other'

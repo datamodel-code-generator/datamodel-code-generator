@@ -21,9 +21,17 @@ MODELS: Final[dict[type, Model]] = {
     models.Settings: Model(
         (
             Field(
-                'verify', 'verify', Choice((('string', models.Verify),)), omit_none=True
+                'verify',
+                'verify',
+                Choice((('string', models.Verify), ('boolean', models.Verify1))),
+                omit_none=True,
             ),
-            Field('ratio', 'ratio', Choice((('string', None),)), omit_none=True),
+            Field(
+                'ratio',
+                'ratio',
+                Choice((('number', models.Ratio), ('string', None))),
+                omit_none=True,
+            ),
             Field(
                 'level',
                 'level',
