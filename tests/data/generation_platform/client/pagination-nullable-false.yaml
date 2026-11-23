@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info: {title: Items, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - {name: cursor, in: query, required: false, schema: {type: string}}
+      responses:
+        "200":
+          description: A page of items.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Page"}
+components:
+  schemas:
+    MaybeText: {type: string, nullable: true}
+    Page:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {type: string}}
+        next: {nullable: false, allOf: [{$ref: "#/components/schemas/MaybeText"}]}

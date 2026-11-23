@@ -1,0 +1,17 @@
+[[change]]
+id = "client-wrapped-union-discriminator"
+category = "experimental"
+title = "Generated dataclass and TypedDict clients read a nullable discriminated union by its own discriminator"
+summary = "A property, array item or map value typed as a discriminated union or null (`anyOf: [{$ref: D}, {type: 'null'}]` with `D` a `oneOf` with a `discriminator`) stopped generation of dataclasses.dataclass and typing.TypedDict clients with 'needs a declared discriminator'. The codec now reads each model by the discriminator of the union it comes from, as it already did for `D` alone; several such unions join their declarations when they share the property."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7303"]
+affects = { experimental = ["cli-option.generate-client"] }
+covers = [
+    "api_generation/client_generation/client_render[codec-wrapped-discriminator].dataclasses_dataclass/",
+    "api_generation/client_generation/client_render[codec-wrapped-discriminator].msgspec_Struct/",
+    "api_generation/client_generation/client_render[codec-wrapped-discriminator].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[codec-wrapped-discriminator].txt",
+    "api_generation/client_generation/client_render[codec-wrapped-discriminator].typing_TypedDict/",
+]

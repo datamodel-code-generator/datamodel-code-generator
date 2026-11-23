@@ -3664,38 +3664,6 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
-        "legacy-wire-null-ignores-nullable-false",
-        (
-            "the JSON types that a helper selector of a generated client reads of a field with a decided `nullable` "
-            "hold null by that keyword or by the null of a `type` list alone, not by the null the field's own type "
-            "accepts, such as a `$ref` to a nullable model beside `nullable: false` "
-            "(`_target_binding.py:_Models.wire_null`), where `TypeTables.takes_null` reads that null"
-        ),
-        fix=7115,
-        witness=(
-            "--input",
-            "tests/data/openapi/responses_extensions.yaml",
-            "--input-file-type",
-            "openapi",
-            "--openapi-scopes",
-            "schemas",
-            "api",
-            "--target-python-version",
-            "3.11",
-            "--disable-timestamp",
-            "--generate-client",
-            "httpx2",
-            "--client-output",
-            "client",
-            "--client-package",
-            "client",
-            "--client-model-package",
-            "models",
-            "--formatters",
-            "builtin",
-        ),
-    ),
-    LegacyRow(
         "legacy-wire-null-unknown-type",
         (
             "the JSON types that a helper selector of a generated client reads of a property without a decided "
@@ -3714,37 +3682,6 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "api",
             "--target-python-version",
             "3.11",
-            "--disable-timestamp",
-            "--generate-client",
-            "httpx2",
-            "--client-output",
-            "client",
-            "--client-package",
-            "client",
-            "--client-model-package",
-            "models",
-            "--formatters",
-            "builtin",
-        ),
-    ),
-    LegacyRow(
-        "legacy-codec-enum-kinds",
-        (
-            "a stdlib codec reads the kinds of an enum from its str and int values alone, and those of a literal only "
-            "where all its values are str or all int (`_target_types.py:_Vocabulary.values`), where "
-            "`FinalModelSymbol.value_types` has the boolean, float and null values too"
-        ),
-        fix=7014,
-        witness=(
-            "--input",
-            "tests/data/openapi/single_value_enum_as_const/api.yaml",
-            "--input-file-type",
-            "openapi",
-            "--openapi-scopes",
-            "schemas",
-            "api",
-            "--output-model-type",
-            "dataclasses.dataclass",
             "--disable-timestamp",
             "--generate-client",
             "httpx2",
@@ -3803,7 +3740,6 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-class-override-keeps-container",
     "legacy-closest-registered-parent",
     "legacy-closing-ref-siblings-with-applicators",
-    "legacy-codec-enum-kinds",
     "legacy-collapse-any-discriminator",
     "legacy-collapse-enum-literal-aliases",
     "legacy-collapse-reuse",
@@ -3903,7 +3839,6 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-variant-takes-parent-name",
     "legacy-warning-reads-parsed-bases",
     "legacy-whole-name-singular",
-    "legacy-wire-null-ignores-nullable-false",
     "legacy-wire-null-unknown-type",
     "legacy-x-python-type-container-takes-slot-class",
     "legacy.L-NF",

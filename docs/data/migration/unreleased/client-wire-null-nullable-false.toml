@@ -1,0 +1,16 @@
+[[change]]
+id = "client-wire-null-nullable-false"
+category = "experimental"
+title = "Helper selectors read the null a field's own type accepts beside nullable: false"
+summary = "A helper selector of a generated client read no null for a field declared `nullable: false` whose own type accepts null (`allOf: [{$ref: MaybeText}]`, MaybeText nullable), except through a type alias, so the result depended on --use-type-alias. The models accept null in both forms, so the selector now reads it in both, and a root model's null counts like an alias's: a cursor over such a field needs a `{kind: null}` end condition with and without --use-type-alias."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7115"]
+affects = { experimental = ["cli-option.generate-client"] }
+covers = [
+    "api_generation/client_generation/client_protocols[protocols-pagination-nullable-false-alias].txt",
+    "api_generation/client_generation/client_protocols[protocols-pagination-nullable-false-ends-alias].txt",
+    "api_generation/client_generation/client_protocols[protocols-pagination-nullable-false-ends].txt",
+    "api_generation/client_generation/client_protocols[protocols-pagination-nullable-false].txt",
+]
