@@ -36,6 +36,22 @@ unknown key	change_records/parse_entry_cells[unknown key].txt
 [test_read_records]
 a table that holds no record	change_records/read_records[a table that holds no record].txt
 released and unreleased records	change_records/read_records[released and unreleased records].txt
+[test_resolved_record_and_its_rule]
+a chain of extends	change_records/resolved_record_and_its_rule[a chain of extends].txt
+a crash-fix target needs cells, added	change_records/resolved_record_and_its_rule[a crash-fix target needs cells, added].txt
+a crash-fix target needs cells, older	change_records/resolved_record_and_its_rule[a crash-fix target needs cells, older].txt
+a crash-fix target with the cells	change_records/resolved_record_and_its_rule[a crash-fix target with the cells].txt
+a decided-change target may name none	change_records/resolved_record_and_its_rule[a decided-change target may name none].txt
+a default-fix target may name none	change_records/resolved_record_and_its_rule[a default-fix target may name none].txt
+a derived target	change_records/resolved_record_and_its_rule[a derived target].txt
+a harness target names none	change_records/resolved_record_and_its_rule[a harness target names none].txt
+a notice target needs cells, added	change_records/resolved_record_and_its_rule[a notice target needs cells, added].txt
+a record that extends nothing	change_records/resolved_record_and_its_rule[a record that extends nothing].txt
+a selector missing its keys	change_records/resolved_record_and_its_rule[a selector missing its keys].txt
+a target that does not exist	change_records/resolved_record_and_its_rule[a target that does not exist].txt	= change_records/resolved_record_and_its_rule[a chain of extends].txt
+a target without a category	change_records/resolved_record_and_its_rule[a target without a category].txt	= change_records/resolved_record_and_its_rule[a chain of extends].txt
+an extending record with a title	change_records/resolved_record_and_its_rule[an extending record with a title].txt
+an output-text target needs cells, added	change_records/resolved_record_and_its_rule[an output-text target needs cells, added].txt
 [test_rule_problems_cells]
 api selector	change_records/rule_problems_cells[api selector].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 cells naming a released input file type	change_records/rule_problems_cells[cells naming a released input file type].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt

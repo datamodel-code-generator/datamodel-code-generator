@@ -167,6 +167,7 @@ from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-o
     owner_of,
     parse_entry,
     read_records,
+    resolved_record,
     rule_problems,
     split_options,
     version_key,
@@ -1332,20 +1333,6 @@ def _released_ids(candidate: Candidate, tag: str, commit: str | None) -> set[str
     return None
 
 
-def _resolved(record: Record, records: dict[str, Record], *, added: bool) -> tuple[Record | None, list[str]]:
-    """Return the record a judge reads for one record: an extending record as its target with its own id and cells.
-
-    The cells of an extending record follow its target's rule (`added` as `rule_problems` reads it).
-    """
-    if record.extends is None:
-        return record, []
-    target = records.get(record.extends)
-    if target is None or target.extends is not None or target.category is None:
-        return None, [f"entry {record.id}: extends {record.extends}, which is not an unreleased record of its own"]
-    resolved = replace(target, id=record.id, covers=record.covers, cells=record.cells)
-    return resolved, rule_problems(resolved, fragment=True, added=added)
-
-
 def plan_records(ns: argparse.Namespace, candidate: Candidate) -> Plan:
     """Resolve the base of a gate run's changes and the records it judges by (`Plan`).
 
@@ -1396,9 +1383,8 @@ def plan_records(ns: argparse.Namespace, candidate: Candidate) -> Plan:
         ]
         plan.landed = landed_records(repo, plan, added)
     for record in added:
-        problems += rule_problems(record, fragment=True, added=not plan.release)
-        resolved, found = _resolved(record, head, added=not plan.release)
-        problems += found
+        problems += rule_problems(record, fragment=True, added=not plan.release, records=head)
+        resolved, _ = resolved_record(record, head)
         plan.judged += [resolved] if resolved is not None else []
     if tag_commit:
         plan.presets = tag_presets(repo, tag_commit)
@@ -1855,7 +1841,7 @@ def stored_problems(gate: Gate) -> list[str]:
         for label in record.covers
     ]
     for record_id, record in plan.head.items():
-        target = record if record.extends is None else plan.head.get(record.extends)
+        target, _ = resolved_record(record, plan.head)
         if target is not None and target.category == Category.HARNESS:
             known = set(plan.before[record_id].covers) if record_id in plan.before else set()
             labels += [(label, Category.HARNESS) for label in record.covers if label not in known]

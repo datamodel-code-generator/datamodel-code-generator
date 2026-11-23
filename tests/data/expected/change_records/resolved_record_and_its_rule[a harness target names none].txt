@@ -1,0 +1,11 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "harness",
+  "cells": 1
+ },
+ "why": [],
+ "problems": [
+  "entry x: category harness names no cells"
+ ]
+}

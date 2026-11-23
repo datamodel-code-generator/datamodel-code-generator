@@ -14,6 +14,7 @@ from scripts._change_records import (
     owner_of,
     parse_entry,
     read_records,
+    resolved_record,
     rule_problems,
     selector_surface,
     stamp_pending,
@@ -231,6 +232,76 @@ def test_rule_problems_cells(case: str) -> None:
         rule_problems(record, fragment=mode != "released", facts=facts, added=mode == "added") if record else problems
     )
     assert_output(json.dumps(found, indent=1) + "\n")
+
+
+def _extending(entry_id: str, *cells: dict[str, object], extends: str = "y", **keys: object) -> dict[str, object]:
+    """Return a record that extends another by id, with `[[change.cells]]` tables."""
+    return {"id": entry_id, "extends": extends, "refs": ["#2"]} | ({"cells": list(cells)} if cells else {}) | keys
+
+
+RESOLVE_CASES: dict[str, tuple[list[dict[str, object]], str, bool]] = {
+    "a crash-fix target needs cells, added": ([_entry("crash-fix", id="y"), _extending("x")], "x", True),
+    "a crash-fix target needs cells, older": ([_entry("crash-fix", id="y"), _extending("x")], "x", False),
+    "a crash-fix target with the cells": ([_entry("crash-fix", id="y"), _extending("x", SELECTOR)], "x", True),
+    "a default-fix target may name none": (
+        [_entry("default-fix", id="y", decision=["#1"]), _extending("x")],
+        "x",
+        True,
+    ),
+    "an output-text target needs cells, added": ([_entry("output-text", id="y"), _extending("x")], "x", True),
+    "a notice target needs cells, added": (
+        [_entry("notice", id="y", kind="warning", action="warn", source="run"), _extending("x")],
+        "x",
+        True,
+    ),
+    "a decided-change target may name none": (
+        [_entry("decided-change", id="y", decision=["#1"], keep={"note": "n"}), _extending("x")],
+        "x",
+        True,
+    ),
+    "a harness target names none": ([_entry("harness", id="y"), _extending("x", SELECTOR)], "x", True),
+    "a selector missing its keys": (
+        [_entry("notice", id="y", kind="warning", action="warn", source="run"), _extending("x", SELECTOR)],
+        "x",
+        True,
+    ),
+    "a target that does not exist": ([_extending("x")], "x", True),
+    "a chain of extends": (
+        [_entry("crash-fix", id="z"), _extending("y", SELECTOR, extends="z"), _extending("x", SELECTOR, extends="y")],
+        "x",
+        True,
+    ),
+    "a derived target": (
+        [_entry(None, id="option:--new-flag", refs=[]), _extending("x", extends="option:--new-flag")],
+        "x",
+        True,
+    ),
+    "a target without a category": ([_entry(None, id="y"), _extending("x")], "x", True),
+    "an extending record with a title": (
+        [_entry("crash-fix", id="y"), _extending("x", SELECTOR, title="t")],
+        "x",
+        True,
+    ),
+    "a record that extends nothing": ([_entry("crash-fix", id="y")], "y", True),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RESOLVE_CASES))
+def test_resolved_record_and_its_rule(case: str) -> None:
+    """An extending record takes its target's category: its own covers and cells follow that category's rule.
+
+    The target must be an unreleased record of its own with a category: a chain, a derived entry, a missing or an
+    uncategorized one is refused with one message, wherever the record is read.
+    """
+    entries, name, added = RESOLVE_CASES[case]
+    records = {record.id: record for entry in entries if (record := parse_entry(entry, "x.toml")[0])}
+    record = records[name]
+    resolved, why = resolved_record(record, records)
+    found = rule_problems(record, fragment=True, added=added, records=records)
+    shown = (
+        None if resolved is None else {"id": resolved.id, "category": resolved.category, "cells": len(resolved.cells)}
+    )
+    assert_output(json.dumps({"resolved": shown, "why": why, "problems": found}, indent=1, default=str) + "\n")
 
 
 CELLS_TABLE = '\n[[change.cells]]\ninput = ["a.json"]\nbackends = "*"\noptions = "*"\n'
