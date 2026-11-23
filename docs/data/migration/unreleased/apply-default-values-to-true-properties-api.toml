@@ -3,8 +3,8 @@ id = "apply-default-values-to-true-properties-api"
 category = "api"
 title = "Public names for --apply-default-values-to-true-properties"
 summary = "The option adds its config field; nothing is removed or changed."
-refs = ["#7453"]
-decision = ["#7453"]
+refs = ["#7455"]
+decision = ["#7455"]
 kind = "python-api"
 action = "review"
 affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }

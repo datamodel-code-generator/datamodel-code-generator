@@ -3,7 +3,7 @@ id = "apply-default-values-to-true-properties"
 category = "new-surface"
 title = "Give --default-values to a property whose schema is true under an option"
 summary = "--apply-default-values-to-true-properties gives a property whose schema is true the default that its Class.field or field key of --default-values gives it, in the class that declares it and in a child that restates an inherited property as true (name: str | None = 'rex' for Dog.name, #7318); without it such a property takes no default, as in 0.100.0. A property whose schema is false keeps none."
-refs = ["#7453"]
+refs = ["#7455"]
 surface = ["--apply-default-values-to-true-properties"]
 covers = [
     "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[dataclass].py",
