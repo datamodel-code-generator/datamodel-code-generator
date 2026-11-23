@@ -1,0 +1,12 @@
+open x-a: str
+open zz: str
+mixed kg: Unit
+mixed y-1: str
+mixed x-2: TypeError: unhashable type: 'Ext'
+mixed zz: rejected
+ids 123e4567-e89b-12d3-a456-426614174000: str
+ids plain: str
+units kg: Unit
+units x-a: TypeError: unhashable type: 'Ext'
+anything x-a: str
+anything zz: str

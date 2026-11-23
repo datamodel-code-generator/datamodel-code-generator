@@ -1,5 +1,5 @@
 """#7025 Host private access: ``self``, ``cls`` and a parameter typed as a Host Protocol that declares the member.
-layers: host
+layers: parser
 """
 from __future__ import annotations
 

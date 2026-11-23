@@ -33,10 +33,13 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   also named as the member of every Protocol of the package that declares it, since heki judges a use through a value
   typed with a host Protocol by the Protocol's declaration.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder and by the scopes that only ask
-  it for ``typed_children`` (`scripts._decision_home_reads.typed_children_readers`); and the private members of
-  the classes outside the concern modules of the host rule of ``scripts/check_architecture_boundaries.py`` (and of the
-  Protocols inside them that are no ``*Host``), which the concern modules may neither read nor call (``MUT206``,
-  ``MUT207`` report what heki cannot tie to a class).
+  it for ``typed_children`` (`scripts._decision_home_reads.typed_children_readers`).
+- ``read-owners``, ``call-owners`` and ``write-owners`` of the host rule (``MUT201``, ``MUT203``, ``MUT204``): the
+  concern modules (`in_host_scope`: where pyproject.toml turns ruff's SLF001 off) reach a private member (one leading
+  underscore, no dunder) of a class outside them, or of a Protocol inside them that is no ``*Host``, only through the
+  receiver of the method that holds the access or a value typed with a ``*Host`` Protocol declaring the member
+  (``MUT205``, ``MUT206``, ``MUT207`` report what heki cannot tie to a class). heki names no member of a module
+  outside the package, so ruff's ``banned-api`` holds ``sys._getframe`` in these modules instead.
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
@@ -54,7 +57,7 @@ from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
-from scripts.check_architecture_boundaries import PackageIndex, _in_host_scope, _protocol_bases, bases
+from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
 from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
 from scripts.check_ratchets import ENVIRONMENT_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
@@ -68,6 +71,7 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
+SOURCE_ROOT = ROOT / PACKAGE_DIR
 STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
@@ -389,29 +393,57 @@ def builder_contracts(repo: Repo, records: Iterable[BuilderHome] = BUILDER_HOMES
     return contracts
 
 
+def in_host_scope(path: Path) -> bool:
+    """Return whether the host contracts (and not ruff's SLF001, see pyproject.toml) own private access in a file.
+
+    The scope is the files the SLF001 per-file ignores match, whose ``*`` also matches ``/``: every module below a
+    ``parser/_*`` module or package, and ``model/_field_imports.py``.
+    """
+    try:
+        relative = path.resolve().relative_to(SOURCE_ROOT).parts
+    except ValueError:
+        return False
+    match relative:
+        case ("parser", first, *_) if first.startswith("_"):
+            return True
+        case ("model", "_field_imports.py"):
+            return True
+    return False
+
+
 def host_contracts(repo: Repo) -> list[str]:
-    """Return the contracts of the host rule: the concern modules reach no private member of other classes."""
+    """Return the contracts of the host rule: the concern modules reach no private member of other classes.
+
+    A private member is one with a single leading underscore (dunders are Python's protocol). The concern modules read,
+    call or write such a member only through their own receiver (``self``, ``cls``, ``super()``) or a value typed with
+    a ``*Host`` Protocol, whose declaration the member must be in; a class deriving from a Host is not one, and an
+    access heki cannot tie to a class is reported.
+    """
     targets: list[str] = []
     concerns: list[str] = []
     for rel, module in sorted(_package_modules(repo).items()):
-        concern = _in_host_scope(ROOT / rel)
+        concern = in_host_scope(ROOT / rel)
         concerns += [f"{module}:*"] if concern else []
         model = repo.model(rel)
         targets += [
-            f"{module}.{scope.qualname}._*"
+            f"{module}.{scope.qualname}._[!_]*"
             for scope in model.scopes
             if scope.kind == "class"
             and "<locals>" not in scope.qualname
             and (not concern or (_protocol_bases(model, scope) and not scope.qualname.endswith("Host")))
         ]
     targets = sorted(set(targets))
+    keys = {
+        "own_receiver": "allow",
+        "allowed_protocols": ["*Host"],
+        "protocol_subclasses": False,
+        "unresolved": "report",
+        "attribution": "lexical",
+    }
     return [
-        _table(
-            "read-owners", name="host-private-read", targets=targets, forbidden_readers=concerns, unresolved="report"
-        ),
-        _table(
-            "call-owners", name="host-private-call", targets=targets, forbidden_callers=concerns, unresolved="report"
-        ),
+        _table("read-owners", name="host-private-read", targets=targets, forbidden_readers=concerns, **keys),
+        _table("call-owners", name="host-private-call", targets=targets, forbidden_callers=concerns, **keys),
+        _table("write-owners", name="host-private-write", targets=targets, forbidden_writers=concerns, **keys),
     ]
 
 
