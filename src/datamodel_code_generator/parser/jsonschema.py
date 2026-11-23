@@ -9182,8 +9182,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether reading the document at a URL as its load reads it finds one, once per parse.
 
         The read is the load's (``_get_ref_body``: refused, read from --http-local-ref-path or fetched, and kept for
-        the load); a read that fails finds nothing.
+        the load); a read that fails finds nothing. A document the parse has read, also one it is still preparing
+        (its record has ``path_parts``), is found without another read, so a reference of a document to its own URL
+        reads nothing again.
         """
+        if self._graph.known(url).path_parts is not None:
+            return True
         if (found := self._url_reads.get(url)) is None:
             try:
                 self._get_ref_body(url)

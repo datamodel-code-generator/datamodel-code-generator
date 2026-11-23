@@ -962,6 +962,9 @@ allowed-not-found	main/openapi/main_openapi/component_embedded_id_absolute_ref[a
 not-found	main/openapi/main_openapi/component_embedded_id_absolute_ref[not-found].py	= main/openapi/main_openapi/component_embedded_remote_ids.py
 option	main/openapi/main_openapi/component_embedded_id_absolute_ref[option].py	= main/openapi/main_openapi/component_embedded_remote_ids.py
 served	main/openapi/main_openapi/component_embedded_id_absolute_ref[served].py
+[test_main_openapi_component_embedded_id_own_url_ref]
+ref	main/openapi/main_openapi/component_embedded_id_own_url_ref[ref].py
+url	main/openapi/main_openapi/component_embedded_id_own_url_ref[url].py
 [test_main_openapi_component_embedded_ids]
 	main/openapi/main_openapi/component_embedded_ids.py	= main/openapi/component_embedded_ids.py
 [test_main_openapi_component_embedded_ids_inferred_input_type]

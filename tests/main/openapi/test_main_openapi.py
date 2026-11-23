@@ -15052,6 +15052,49 @@ def test_main_openapi_component_embedded_id_absolute_ref(
     assert_httpx_get_kwargs(httpx_get_mock, call_count=0 if status is None else 1)
 
 
+@pytest.mark.parametrize("route", ["url", "ref"])
+def test_main_openapi_component_embedded_id_own_url_ref(
+    route: str, mock_httpx_get: HttpxGetMockFactory, output_file: Path
+) -> None:
+    """Read a fetched document whose reference names its own URL once, as 0.100.0 does.
+
+    The document at `https://example.com/api.yaml` declares an `$id` on its component `Pet`, and `Owner.pet` refers
+    to `Pet` by the document's own URL. Whether loading that URL finds a document is answered by the document being
+    read, so the run neither fetches it again nor reads it again while it is prepared, whether the document is the
+    input (`url`) or one another document refers to (`ref`).
+    """
+    api = (
+        "openapi: 3.1.0\ninfo: {title: api, version: '1'}\npaths: {}\ncomponents:\n  schemas:\n    Owner:\n"
+        "      type: object\n      properties:\n        pet:\n"
+        "          $ref: 'https://example.com/api.yaml#/components/schemas/Pet'\n"
+        "    Pet:\n      $id: https://example.com/schemas/pet.json\n      type: object\n"
+        "      properties:\n        name: {type: string}\n"
+    )
+    home = (
+        "openapi: 3.1.0\ninfo: {title: home, version: '1'}\npaths: {}\ncomponents:\n  schemas:\n    Home:\n"
+        "      type: object\n      properties:\n        owner:\n"
+        "          $ref: 'https://example.com/api.yaml#/components/schemas/Owner'\n"
+    )
+    responses = [MockHttpxResponse("https://example.com/api.yaml", api)]
+    if route == "ref":
+        responses.insert(0, MockHttpxResponse("https://example.com/home.yaml", home))
+    httpx_get_mock = mock_httpx_get(*responses)
+    with pytest.warns(SchemaResourceRefWarning, match="loads the referenced document for compatibility"):
+        run_main_url_and_assert(
+            url=f"https://example.com/{'api' if route == 'url' else 'home'}.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--allow-remote-refs",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+            ],
+        )
+    assert_httpx_get_kwargs(httpx_get_mock, call_count=len(responses))
+
+
 def test_main_openapi_component_embedded_urn_id(output_file: Path) -> None:
     """Read the component schema a reference names by its `urn:` `$id`, which names no document to load."""
     run_main_and_assert(
