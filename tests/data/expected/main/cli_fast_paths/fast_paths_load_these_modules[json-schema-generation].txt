@@ -18,6 +18,7 @@
     "datamodel_code_generator._option_names",
     "datamodel_code_generator._option_rules",
     "datamodel_code_generator._option_table",
+    "datamodel_code_generator._paths",
     "datamodel_code_generator._process_state",
     "datamodel_code_generator._recommend_vocabulary",
     "datamodel_code_generator._records",

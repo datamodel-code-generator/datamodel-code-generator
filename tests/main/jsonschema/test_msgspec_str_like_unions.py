@@ -204,3 +204,30 @@ def test_msgspec_str_like_number_members_openapi(output_file: Path) -> None:
             input_file_type="openapi",
             extra_args=[*ARGS, "--target-python-version", "3.11", *OPTION_SETS["merge"]],
         )
+
+
+DATE_TIME_INPUT = JSON_SCHEMA_DATA_PATH / "msgspec_str_like_date_time_members.json"
+
+
+@pytest.mark.parametrize("option_set", ["released", "merge"])
+def test_msgspec_str_like_date_time_members(output_file: Path, option_set: str) -> None:
+    """Count ``date`` and ``time`` as the str-like members they are, which msgspec decodes from a JSON string.
+
+    ``when`` (``date`` beside ``datetime``) and ``at`` (``time`` beside ``UUID``) hold two str-like members each, so
+    msgspec refuses them and the generator warns, as the stored warnings show; under
+    --merge-msgspec-str-like-union-members both are written as one ``str``, while the lone ``date`` of ``lone_date``
+    keeps its type.
+    """
+    with pytest.warns(UserWarning, match="msgspec") as warned:
+        run_main_and_assert(
+            input_path=DATE_TIME_INPUT,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                *ARGS,
+                *("--target-python-version", "3.12", "--output-datetime-class", "datetime"),
+                *OPTION_SETS[option_set],
+            ],
+        )
+    messages = sorted(str(warning.message) for warning in warned if "union" in str(warning.message))
+    assert_output("".join(f"warning: {message}\n" for message in messages), name="warnings")

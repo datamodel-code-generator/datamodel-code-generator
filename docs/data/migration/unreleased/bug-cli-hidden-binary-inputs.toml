@@ -1,0 +1,10 @@
+[[change]]
+id = "bug-cli-hidden-binary-inputs"
+category = "api"
+title = "A directory input skips hidden files that are not text"
+summary = "A hidden file of a directory input (a name or a directory below the input that starts with a dot) whose first bytes hold a NUL byte, such as the .DS_Store file Finder writes, is no longer read as a schema, so generation no longer stops with Invalid file format; a hidden file that reads as text stays an input."
+refs = ["#7128"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"

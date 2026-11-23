@@ -23,7 +23,8 @@ local path is written as the URI ``Path.as_uri`` writes for it (``file_uri``).
 
 An output path names a directory, a package of modules, when it has no suffix. The files a generation stages or
 copies are the files below that directory, listed in path order. The files of a directory input are listed by file
-name, files of one name in the order the directory walk meets them.
+name, files of one name in the order the directory walk meets them, without the hidden files that are not text
+(``is_hidden_binary``: ``.DS_Store``).
 
 What a generation wrote at an output path is its layout: a file is one module, any other existing path a package of
 modules, a path that holds nothing has none. One module pairs with the destination itself, each file of a package with
@@ -34,6 +35,7 @@ before it copies, compares or publishes anything.
 
 from __future__ import annotations
 
+import contextlib
 import errno
 import os
 from operator import attrgetter
@@ -42,7 +44,7 @@ from typing import TYPE_CHECKING, Final, Literal
 from urllib.parse import quote_from_bytes, urlsplit
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable, Iterator
 
 AncestorTest = Literal["directory", "exists"]
 FileOrder = Literal["path", "name"]
@@ -50,6 +52,7 @@ OutputLayout = Literal["module", "package"]
 
 SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR: Final = "Single-module output requires a file path, not a directory"
 MODULAR_OUTPUT_FILE_ERROR: Final = "Modular references require an output directory, not a file"
+_BINARY_HEAD_SIZE: Final = 8192
 
 
 def lexical(path: Path, base: Path | None = None) -> Path:
@@ -166,8 +169,45 @@ def files_under(directory: Path, pattern: str = "*", *, order: FileOrder = "path
 
     The name order keeps files of one name in the order ``Path.rglob`` yields them.
     """
-    files = (path for path in directory.rglob(pattern) if path.is_file())
+    return _ordered((path for path in directory.rglob(pattern) if path.is_file()), order)
+
+
+def _ordered(files: Iterable[Path], order: FileOrder) -> list[Path]:
+    """Return ``files`` in path or file-name order (the name order is stable)."""
     return sorted(files, key=attrgetter("name")) if order == "name" else sorted(files)
+
+
+def is_hidden_binary(path: Path, directory: Path, encoding: str = "utf-8") -> bool:
+    """Return whether ``path`` below ``directory`` is a hidden file that is not text: it cannot be a schema.
+
+    A name that starts with a dot, or a directory of the path below ``directory`` that does, makes a file hidden. A
+    file is not text where its head, read in ``encoding``, holds a NUL character (the rule of ``git``), which no
+    input format reads: Finder's ``.DS_Store`` is one. A hidden file that reads as text stays an input, as it always
+    was: a UTF-16 schema holds NUL bytes and is text in ``utf-16``.
+    """
+    if not any(part.startswith(".") for part in path.relative_to(directory).parts):
+        return False
+    head = b""
+    with contextlib.suppress(OSError), path.open("rb") as file:
+        head = file.read(_BINARY_HEAD_SIZE)
+    return "\0" in head.decode(encoding, errors="replace")
+
+
+def iter_input_files(directory: Path, pattern: str = "*", encoding: str = "utf-8") -> Iterator[Path]:
+    """Yield the files of a directory input whose names match ``pattern``, in the order ``Path.rglob`` yields them.
+
+    A hidden file that is not text in ``encoding`` is not an input (``is_hidden_binary``).
+    """
+    for path in directory.rglob(pattern):
+        if path.is_file() and not is_hidden_binary(path, directory, encoding):
+            yield path
+
+
+def input_files_under(
+    directory: Path, pattern: str = "*", *, order: FileOrder = "path", encoding: str = "utf-8"
+) -> list[Path]:
+    """Return the files of a directory input in path or file-name order (``iter_input_files``, ``files_under``)."""
+    return _ordered(iter_input_files(directory, pattern, encoding), order)
 
 
 def output_layout(path: Path) -> OutputLayout | None:
