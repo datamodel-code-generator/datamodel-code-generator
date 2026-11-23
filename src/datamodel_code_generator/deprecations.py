@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from functools import lru_cache
+from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -429,8 +430,9 @@ def _stacklevel_at_caller() -> int:
     constructor), so a ``module=`` filter matches the caller's module. A CLI invocation does not use it (see
     ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own.
     """
-    current = inspect.currentframe()
-    frame: FrameType | None = current.f_back if current is not None else None
+    # The caller of this function, read without keeping this frame in a local: a frame held by its own locals is a
+    # reference cycle that lives until the garbage collector runs.
+    frame: FrameType | None = attrgetter("f_back")(inspect.currentframe())
     level = outermost = 1
     while frame is not None:
         if frame.f_code.co_filename.startswith(_PACKAGE_DIR):
