@@ -3,7 +3,7 @@ id = "bug-g10-msgspec-reuse-internal"
 category = "internal"
 title = "List the final layout flattening in the pipeline listings"
 summary = "The pipeline trace, the provisional reads and the where listing name the new L6 pass."
-refs = ["#7445"]
+refs = ["#7446"]
 covers = [
     "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
     "parser/pipeline/trace_matches_golden[jsonschema].txt",
