@@ -659,7 +659,8 @@ the table states each capability as clauses over the environment facts of
 `dead-capability` fails on a capability that no lane of
 `.github/workflows/test.yaml` has, that every lane has, or that only subset lanes (fixed lists of tests) lack (`scripts/_ci_lanes.py` reads the facts of
 each lane from the matrix, `tox.ini`, `pyproject.toml` and `uv.lock`), and
-`never-run` fails on a test whose capabilities together exclude every lane.
+`never-run` fails on a test whose capabilities together hold on no lane that
+runs it (a subset lane runs only the tests it lists).
 Three rules count what only another lane shows. `posix-only-call` reads `os.fork`, `os.mkfifo`, `signal.SIGKILL`
 and the `resource` and `fcntl` modules by origin: a use at module or class level breaks the import on Windows, and a
 collected test that reaches one (through helpers and scripts it calls, the methods it calls on `self`, and the

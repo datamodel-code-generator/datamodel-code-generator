@@ -476,6 +476,7 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/test_source_model.py::*", "*", Owner.INTERNAL),
     ("tests/test_*_script.py::*", "*", Owner.INTERNAL),
     ("tests/cli_doc/test_cli_options_sync.py::*", "*", Owner.INTERNAL),
+    ("tests/test_capabilities.py::*", "*", Owner.INTERNAL),
     ("tests/test_assert_helper_usage.py::*", "*", Owner.INTERNAL),
     ("tests/test_change_records.py::*", "*", Owner.INTERNAL),
     ("tests/test_ci_workflow.py::*", "*", Owner.INTERNAL),

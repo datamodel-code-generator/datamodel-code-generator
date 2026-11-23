@@ -37,7 +37,7 @@ LANES: dict[str, str] = {
             strategy:
               matrix:
                 include:
-                  - tox_env: pydantic20,py312-black22-parallel,py312-isort6-parallel
+                  - tox_env: pydantic20,py312-black22-parallel,py312-isort6-parallel,heki
                     name: pinned
             runs-on: ubuntu-24.04
           check:
@@ -72,13 +72,25 @@ LANES: dict[str, str] = {
             pydantic20: pydantic==2.0.3
         commands =
             pytest tests/main/test_payload_validation.py::test_numeric_payload_sampling
+
+        [testenv:heki]
+        base_python = python3.14
+        commands =
+            pytest tests/test_heki.py tests/test_combined.py::TestHeki::test_listed
+        dependency_groups =
+            test
+            heki
     """,
     "pyproject.toml": """
+        [project]
+        dependencies = ["black>=19.10b0; python_version<'3.15'", "isort>=4.3.21,<9", "pydantic>=2,<3"]
+
         [dependency-groups]
         test = ["pytest", { include-group = "coverage" }]
         coverage = ["coverage", { include-group = "test" }]
         black22 = ["black==22.1; python_version<'3.15'"]
         isort6 = ["isort>=6,<7"]
+        heki = ["heki==0.2.4"]
     """,
     "uv.lock": """
         version = 1
@@ -104,11 +116,18 @@ LANES: dict[str, str] = {
         version = "2.14.1"
 
         [[package]]
+        name = "heki"
+        version = "0.2.4"
+
+        [[package]]
         name = "datamodel-code-generator"
         source = { editable = "." }
     """,
 }
-"""A CI matrix of five lanes: Python 3.12, 3.11 (Windows, external formatter), Pydantic 2.0, black 22 and isort 6."""
+"""A CI matrix of six lanes: Python 3.12, 3.11 (Windows, external formatter), Pydantic 2.0, black 22, isort 6 and heki.
+
+The package requires black, isort and Pydantic, so every lane has them; only the heki lane's group installs heki.
+"""
 TREES: dict[str, dict[str, str]] = {
     "hash-split": {
         f"{PACKAGE}/_json_pointer.py": """
@@ -789,7 +808,21 @@ TREES: dict[str, dict[str, str]] = {
                 "posix": (("platform!=win32",), "the test forks"),
                 "windows": (("platform==win32",), "the test reads the registry"),
                 "python-3.12": (("python>=3.12",), "type statements"),
+                "heki": (("heki>=0",), "the test runs heki, which only the heki lane installs"),
             }
+        """,
+        "tests/test_heki.py": """
+            import pytest
+
+            from tests.capabilities import needs
+
+            @needs("heki")
+            def test_in_the_listed_module():
+                pass
+
+            @pytest.mark.parametrize("value", [pytest.param(1, marks=needs("heki")), 2])
+            def test_param_in_the_listed_module(value):
+                pass
         """,
         "tests/test_combined.py": """
             import pytest
@@ -834,6 +867,19 @@ TREES: dict[str, dict[str, str]] = {
 
             @needs("posix", "python-3.12")
             def test_posix_on_3_12():
+                pass
+
+            class TestHeki:
+                @needs("heki")
+                def test_listed(self):
+                    pass
+
+                @needs("heki")
+                def test_unlisted(self):
+                    pass
+
+            @pytest.mark.parametrize("value", [pytest.param(1, marks=needs("heki")), 2])
+            def test_heki_param_of_an_unlisted_test(value):
                 pass
 
             def needs_nothing(needs):
@@ -1631,11 +1677,26 @@ jobs:
 
 
 def test_joined_entries_keep_their_own_exclusions() -> None:
-    """A node one entry leaves out is not run because another entry selects a path that covers it."""
-    first = Lane("lane", {}, ("tests/a.py",), ("tests/a.py::test_x",))
-    second = Lane("lane", {}, ("tests/b.py", "tests/a.py::test_y[one]"), ())
+    """A node one entry leaves out is not run because another entry selects a path that covers it.
+
+    A node runs where some test at or below it runs: leaving out one parameter still runs the test's others, and
+    selecting one parameter runs its test and module, not the module's other tests.
+    """
+    first = Lane("lane", {}, ("tests/a.py",), ("tests/a.py::test_x", "tests/a.py::test_w[one]"))
+    second = Lane("lane", {}, ("tests/b.py", "tests/a.py::test_y[one]", "tests/d.py::test_v[one]"), ())
     lane = first.joined(second)
-    nodes = ["tests/a.py::test_x", "tests/a.py::test_z", "tests/b.py::test_x", "tests/a.py::test_y[one]", "tests/c.py"]
+    nodes = [
+        "tests/a.py::test_x",
+        "tests/a.py::test_z",
+        "tests/b.py::test_x",
+        "tests/a.py::test_y[one]",
+        "tests/c.py",
+        "tests/a.py::test_w",
+        "tests/a.py::test_w[one]",
+        "tests/d.py::test_v",
+        "tests/d.py",
+        "tests/d.py::test_u",
+    ]
 
     assert_output("".join(f"{node}: {lane.runs(node)}\n" for node in nodes))
 

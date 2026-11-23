@@ -4,8 +4,9 @@ A test that runs only where its environment has something says so by name, ``@ne
 ``pytestmark``, or ``pytest.param(..., marks=needs(...))``), and is skipped elsewhere with the capability's reason. A
 comparison whose output depends on the environment names the deciding facts the same way, ``assert_output(text,
 varies_with=("windows",))``: its stored lines key on the clauses of those entries that hold (`clauses_of`). The facts
-are those stored output keys on (`tests.units.FACTS`: ``python``, ``formatter``, ``black``, ``isort``, ``platform``,
-``pydantic``), read from the running environment (`expected_environment_facts`).
+are those of `tests.units.FACTS` (``python``, ``formatter``, ``black``, ``isort``, ``platform``, ``pydantic``,
+``heki``; a tool's is its installed version, empty where it is not installed), read from the running environment
+(`expected_environment_facts`).
 
 Each entry is ``name: (clauses, reason)``. The capability holds where every clause holds; a clause is one or more
 alternatives joined by ``|``, each ``<fact><op><value>`` (``platform!=win32``, ``black>=24``,
@@ -90,7 +91,7 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
 
 
 def expected_environment_facts() -> dict[str, str]:
-    """Return the facts of this environment that stored output keys on (``black<24``, ``platform==win32``)."""
+    """Return the facts of this environment (`tests.units.FACTS`) that clauses test (``black<24``)."""
     from importlib.metadata import distributions
 
     builtin = os.environ.get(TEST_DEFAULT_FORMATTER_ENV) == BUILTIN_FORMATTER_VALUE
@@ -100,6 +101,7 @@ def expected_environment_facts() -> dict[str, str]:
         **{tool: next((found.version for found in distributions(name=tool)), "") for tool in ("black", "isort")},
         "platform": next((name for name in _PLATFORMS if sys.platform.startswith(name)), sys.platform),
         "pydantic": next((found.version for found in distributions(name="pydantic")), ""),
+        "heki": next((found.version for found in distributions(name="heki")), ""),
     }
 
 

@@ -3,3 +3,8 @@ tests/a.py::test_z: True
 tests/b.py::test_x: True
 tests/a.py::test_y[one]: True
 tests/c.py: False
+tests/a.py::test_w: True
+tests/a.py::test_w[one]: False
+tests/d.py::test_v: True
+tests/d.py: True
+tests/d.py::test_u: False
