@@ -1019,6 +1019,7 @@ def test_preset_sets_opt_in_option(
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
+            "jsonschema",
             [],
             "--read-refs-in-their-resources",
             "--no-read-refs-in-their-resources",
