@@ -6,8 +6,8 @@ action = "review"
 source = "release-note"
 title = "Discriminated variants whose tag also admits null"
 summary = "A union that writes discriminator= over a variant whose tag field admits None is written without it, as Pydantic reads no such tag and the module failed to import (#7102); a null in the variant's enum is no tag, so it takes the enum's values instead of its schema name or, inline, the internal path marker (#7357), and an inline msgspec variant of several values takes them in its tag field and stays untagged. Variant classes keep their names, fields and the null their schema admits."
-refs = ["#7404"]
-decision = ["#7404"]
+refs = ["#7405"]
+decision = ["#7405"]
 covers = [
     "main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[default].py",
     "main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[tagged-unions].py",

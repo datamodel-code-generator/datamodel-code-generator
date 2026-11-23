@@ -3,7 +3,7 @@ id = "read-mapping-keys-by-schema-tag-type"
 category = "new-surface"
 title = "Read mapping keys by the tag type the schema declares under an option"
 summary = "--read-mapping-keys-by-schema-tag-type reads a discriminator mapping key as a value of the type the schema declares for the tag property, also where an earlier union already wrote the tag field of the variant or of its base, so the key '2' of an integer enum is Literal[2] whichever union comes first (#7113); without it the key is read against the Literal the earlier union wrote, or stays text."
-refs = ["#7404"]
+refs = ["#7405"]
 surface = ["--read-mapping-keys-by-schema-tag-type"]
 covers = [
     "input_model/config_class.txt",
