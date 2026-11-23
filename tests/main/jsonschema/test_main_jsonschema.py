@@ -15753,10 +15753,11 @@ option the later member's `type`, null and `multipleOf` win and a member's own a
 0.100.0: `count` is a `float` though one member admits integers only, `step` a multiple of 2 though the other member
 asks for a multiple of 3, and `status`, which a member's own allOf adds, is missing, so `{"status": "s"}` is rejected
 by the closed model. With it the property takes what every declaration admits (`int`, a multiple of 6, `int`) and the
-members' own allOf members are merged too. The option also keeps the `enum` of every member of a named allOf of a
-`$ref` and value members, keeps a `$ref` to a map beside property counts or `propertyNames` a map with them, and checks
-a length or `pattern` beside a `$ref` to base64 text on the text where the output checks base64 constraints on the
-text.""",
+members' own allOf members are merged too. A property a member declares `false` (`legacy`) is written as `Any`, as
+the same property written without allOf is, so the model does not reject its values. The option also keeps the `enum`
+of every member of a named allOf of a `$ref` and value members, keeps a `$ref` to a map beside property counts or
+`propertyNames` a map with them, and checks a length or `pattern` beside a `$ref` to base64 text on the text where the
+output checks base64 constraints on the text.""",
     input_schema="jsonschema/allof_merged_member_values.json",
     cli_args=["--intersect-merged-allof-members"],
     golden_output="main/jsonschema/main_jsonschema/intersect_merged_allof_members[pydantic_v2.BaseModel].py",
@@ -15923,6 +15924,34 @@ def test_main_jsonschema_allof_map_member_counts(
         expected_error_type="too_long",
         expected_attribute_path=("labels", "root"),
         expected_attribute_value={"a": "x"},
+    )
+
+
+def test_main_jsonschema_allof_map_member_counts_no_merge(output_file: Path) -> None:
+    """Test a map allOf under --allof-merge-mode none is merged as without --intersect-merged-allof-members.
+
+    That mode intersects no constraint, so the option neither narrows the site's ``maxProperties: 10`` to the 2 of a
+    map member (a map of three entries is accepted) nor merges a member that adds only counts into the map, whose
+    merge row would be the site's own keywords: ``labels`` stays the reference to ``Labels`` and its string values.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_map_member_counts_no_merge.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
+            *("--allof-merge-mode", "none", "--intersect-merged-allof-members"),
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_map_member_counts_no_merge",
+        model_name="Holder",
+        valid_json=json.dumps({"few": {"a": "x", "b": "y", "c": "z"}, "labels": {"a": "x"}}),
+        invalid_json=json.dumps({"few": {str(index): "x" for index in range(11)}}),
+        expected_error_type="too_long",
+        invalid_keyword_arguments=[({"labels": {"a": 1}}, "string_type")],
     )
 
 

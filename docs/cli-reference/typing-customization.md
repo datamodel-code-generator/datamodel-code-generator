@@ -2942,10 +2942,11 @@ option the later member's `type`, null and `multipleOf` win and a member's own a
 0.100.0: `count` is a `float` though one member admits integers only, `step` a multiple of 2 though the other member
 asks for a multiple of 3, and `status`, which a member's own allOf adds, is missing, so `{"status": "s"}` is rejected
 by the closed model. With it the property takes what every declaration admits (`int`, a multiple of 6, `int`) and the
-members' own allOf members are merged too. The option also keeps the `enum` of every member of a named allOf of a
-`$ref` and value members, keeps a `$ref` to a map beside property counts or `propertyNames` a map with them, and checks
-a length or `pattern` beside a `$ref` to base64 text on the text where the output checks base64 constraints on the
-text.
+members' own allOf members are merged too. A property a member declares `false` (`legacy`) is written as `Any`, as
+the same property written without allOf is, so the model does not reject its values. The option also keeps the `enum`
+of every member of a named allOf of a `$ref` and value members, keeps a `$ref` to a map beside property counts or
+`propertyNames` a map with them, and checks a length or `pattern` beside a `$ref` to base64 text on the text where the
+output checks base64 constraints on the text.
 
 !!! tip "Usage"
 

@@ -1369,15 +1369,26 @@ _MAP_KEYWORDS: Final = frozenset({"type", "minProperties", "maxProperties", "pro
 _COUNT_KEYWORDS: Final = ("minProperties", "maxProperties")
 
 
+def _merges_map_keywords(parser: AllOfValuesHost) -> bool:
+    """Return whether the map merge of an allOf takes the members that add counts or key names, and their counts.
+
+    Not under row ``legacy-all-of-map-counts-dropped``, nor under ``--allof-merge-mode none``, which intersects no
+    constraint: its merge row is the site's own keywords, so such a member would drop the map it adds to.
+    """
+    return not _keeps(parser, "legacy-all-of-map-counts-dropped") and intersects_all_of_constraints(
+        parser.allof_merge_mode.value
+    )
+
+
 def adds_map_keywords(parser: AllOfValuesHost, schema: JsonSchemaObject) -> bool:
     """Return whether an allOf member adds only property counts or ``propertyNames`` to the map members beside it.
 
     Its other keywords are metadata (``__metadata_only_fields__``, extras that affect no schema), and its ``type``, if
-    any, admits objects only. False under row
-    ``legacy-all-of-map-counts-dropped``, where such a member keeps the allOf a model without fields.
+    any, admits objects only. False where the map merge takes no such member (``_merges_map_keywords``), where the
+    allOf keeps its released form.
     """
     return (
-        not _keeps(parser, "legacy-all-of-map-counts-dropped")
+        _merges_map_keywords(parser)
         and not schema.ref
         and not (schema.model_fields_set - schema.__metadata_only_fields__ - _MAP_KEYWORDS - {"extras"})
         and not any(key in schema.__schema_affecting_extras__ for key in schema.extras)
@@ -1390,10 +1401,10 @@ def _is_map_member(parser: AllOfValuesHost, schema: JsonSchemaObject) -> bool:
     """Return whether an allOf member is a map that the map members beside it merge with (``is_all_of_mapping_item``).
 
     Beside members that add counts or key names (``adds_map_keywords``), also a map whose keys a ``propertyNames`` or
-    ``patternProperties`` constrains, unless row ``legacy-all-of-map-counts-dropped`` is kept.
+    ``patternProperties`` constrains, where the map merge takes them (``_merges_map_keywords``).
     """
     return is_all_of_mapping_item(parser, schema) or (
-        not _keeps(parser, "legacy-all-of-map-counts-dropped")
+        _merges_map_keywords(parser)
         and not schema.properties
         and _declares_key_keywords(schema)
         and _is_object_only_type(schema.type)
@@ -1498,7 +1509,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSc
     merged = parser._inherited_override_row(
         merged, obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True)
     )
-    if not _keeps(parser, "legacy-all-of-map-counts-dropped"):
+    if _merges_map_keywords(parser):
         merged.update(_map_counts(parser, [*mapping_schemas, obj]))
     typed = [
         null_sources(type_)

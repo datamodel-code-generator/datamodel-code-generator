@@ -1479,8 +1479,8 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "Read the allOf members the generator merges into one schema keyword by keyword, as JSON Schema "
             "validates them: a property several merged object members declare takes the type, null and multipleOf "
             "they all admit and the members' own allOf members, a named allOf of a $ref and value members keeps the "
-            "enum of every member, a map $ref beside property counts stays a map with the counts, and a length or "
-            "pattern beside a $ref to base64 text is checked on the text."
+            "enum of every member, a map $ref beside property counts stays a map with the counts, and in Pydantic v2 "
+            "output a length or pattern beside a $ref to base64 text is checked on the text."
         ),
     ),
     PresetOptionGroup(
