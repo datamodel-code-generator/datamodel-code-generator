@@ -5228,6 +5228,16 @@ legacy-option-custom-template	main/jsonschema/main_jsonschema/generate_jsonschem
 	main/jsonschema/main_jsonschema/generate_schema_validator_type_public_api.py	= main/jsonschema/schema_validators.py
 [test_generate_strict_dotted_custom_generator_nested]
 	main/jsonschema/main_jsonschema/generate_strict_dotted_custom_generator_nested/
+[test_held_root_anchor_named_by_url]
+default	main/jsonschema/main_jsonschema/held_root_anchor_named_by_url[default]/
+option	main/jsonschema/main_jsonschema/held_root_anchor_named_by_url[option]/	= main/jsonschema/main_jsonschema/held_root_anchor_named_by_url[default]/
+[test_held_root_id_served_by_local_store]
+default	main/jsonschema/main_jsonschema/held_root_id_served_by_local_store[default]/
+option	main/jsonschema/main_jsonschema/held_root_id_served_by_local_store[option]/
+[test_held_root_ids_named_by_url]
+after-option	main/jsonschema/main_jsonschema/held_root_ids_named_by_url[after-option]/
+before-default	main/jsonschema/main_jsonschema/held_root_ids_named_by_url[before-default]/
+before-option	main/jsonschema/main_jsonschema/held_root_ids_named_by_url[before-option]/	= main/jsonschema/main_jsonschema/held_root_ids_named_by_url[before-default]/
 [test_inline_allof_validators]
 anyof-api-builtin	main/jsonschema/main_jsonschema/inline_allof_validators[anyof-api-builtin].native.txt
 anyof-api-builtin	main/jsonschema/main_jsonschema/inline_allof_validators[anyof-api-builtin].py
@@ -5382,6 +5392,9 @@ extra_args1	main/jsonschema/main_jsonschema/jsonschema_use_tag_as_union_variant_
 	main/jsonschema/main_jsonschema/jsonschema_use_title_as_name_nested_titles_pydantic.py
 [test_jsonschema_without_titles_use_title_as_name]
 	main/jsonschema/main_jsonschema/jsonschema_without_titles_use_title_as_name.py
+[test_local_document_entered_from_remote]
+local_document_from_remote	main/jsonschema/main_jsonschema/local_document_entered_from_remote[local_document_from_remote].py
+local_document_from_remote_embedded	main/jsonschema/main_jsonschema/local_document_entered_from_remote[local_document_from_remote_embedded].py
 [test_long_description]
 	main/jsonschema/main_jsonschema/long_description.py
 [test_long_description_wrap_string_literal]
@@ -13222,6 +13235,13 @@ external-cli-True-unreachable_nested	main/jsonschema/main_jsonschema/pattern_pro
 external-cli-True-unreachable_nested	main/jsonschema/main_jsonschema/pattern_property_intersections[external-cli-True-unreachable_nested].runtime.txt	= main/jsonschema/main_jsonschema/pattern_property_intersections[builtin-api-True-unreachable_nested].runtime.txt
 external-cli-True-weaker_declared	main/jsonschema/main_jsonschema/pattern_property_intersections[external-cli-True-weaker_declared].py	= main/jsonschema/pattern_intersections/weaker_declared.py
 external-cli-True-weaker_declared	main/jsonschema/main_jsonschema/pattern_property_intersections[external-cli-True-weaker_declared].runtime.txt	= main/jsonschema/main_jsonschema/pattern_property_intersections[builtin-api-False-weaker_declared].runtime.txt
+[test_read_refs_in_their_resources]
+default	main/jsonschema/main_jsonschema/read_refs_in_their_resources[default].py
+option	main/jsonschema/main_jsonschema/read_refs_in_their_resources[option].py
+[test_read_refs_in_their_resources_first_input_dialect]
+	main/jsonschema/main_jsonschema/read_refs_in_their_resources_first_input_dialect/
+[test_read_refs_in_their_resources_numbered_definitions]
+	main/jsonschema/main_jsonschema/read_refs_in_their_resources_numbered_definitions.py
 [test_reduce_duplicate_field_types]
 	main/jsonschema/main_jsonschema/reduce_duplicate_field_types.py
 [test_ref_merge_additional_properties]

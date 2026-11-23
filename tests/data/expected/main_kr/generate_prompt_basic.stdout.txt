@@ -24,6 +24,7 @@
 - `--no-read-ids-with-empty-fragment`
 - `--no-read-input-model-dataclass-fields-by-alias`
 - `--no-read-ref-siblings-in-closed-allof-members`
+- `--no-read-refs-in-their-resources`
 - `--no-read-schema-version-per-document`
 - `--no-read-single-allof-refs-in-their-documents`
 - `--no-read-yaml-1-1-numbers-as-text`
@@ -35,6 +36,7 @@
 - `--read-ids-with-empty-fragment`: Read an `$id` that ends with an empty fragment as the document that declares...
 - `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
 - `--read-ref-siblings-in-closed-allof-members`: Read every keyword beside a `$ref` that a closed allOf member e...
+- `--read-refs-in-their-resources`: Read each `$ref` in the schema resource that encloses it, and every `$id`, `...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--read-single-allof-refs-in-their-documents`: Read the target of an allOf of one `$ref` in the document that ...
 - `--read-yaml-1-1-numbers-as-text`: Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...
@@ -183,6 +185,7 @@
 - `--no-use-field-description`
 - `--no-use-field-description-example`
 - `--no-use-one-model-per-ref-site`
+- `--no-use-root-types-for-mixed-union-map-keys`
 - `--no-use-schema-description`
 - `--no-use-single-line-docstring`
 - `--no-use-site-models-for-constrained-refs`
@@ -206,6 +209,7 @@
 - `--use-field-description-example`: Add field examples to docstrings.
 - `--use-inline-field-description`: Add field descriptions as inline comments.
 - `--use-one-model-per-ref-site`: Give an object `$ref` with sibling keywords one model per place it is written.
+- `--use-root-types-for-mixed-union-map-keys`: Type the RootModel members of a union map key with a non-RootMode...
 - `--use-schema-description`: Use schema description as class docstring.
 - `--use-serialization-alias`: Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).
 - `--use-single-line-docstring`: Emit short docstrings on a single line.
@@ -236,6 +240,7 @@
 - `--enable-faux-immutability`: Enable faux immutability in Pydantic models (frozen=True).
 - `--force-optional`: Force all fields to be Optional regardless of required status.
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
+- `--keep-bases-beside-generic-base-class`: Keep configured base classes beside the generated base class.
 - `--keep-constrained-root-models-in-every-container`: Keep constrained root models named in every container of ...
 - `--keep-defaults-of-inherited-required-fields`: Keep under `--use-default` the default of a property only an i...
 - `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
@@ -261,6 +266,7 @@
 - `--no-collapse-reuse-models`
 - `--no-collapse-root-models`
 - `--no-collapse-shared-parent-wrappers`
+- `--no-keep-bases-beside-generic-base-class`
 - `--no-keep-constrained-root-models-in-every-container`
 - `--no-keep-defaults-of-inherited-required-fields`
 - `--no-keep-enum-literal-aliases`
@@ -648,6 +654,21 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         holds an applicator, if, patternProperties,
                         additionalProperties or unevaluatedProperties, and the
                         model forbids those properties, as in 0.97.0.
+  --read-refs-in-their-resources, --no-read-refs-in-their-resources
+                        Read every $id, $anchor and $dynamicAnchor wherever a
+                        document holds schemas, and read each $ref in the
+                        schema resource that encloses it: a $defs member that
+                        declares a $id is the resource its own $defs pointers
+                        name, a schema an OpenAPI operation, webhook or
+                        component holds inline is a resource of its own, a
+                        plain-name anchor of another document names the schema
+                        that declares it, and a $ref to a resource the run
+                        holds is never fetched. Without it a $defs member
+                        without schema keywords is read for its entries alone,
+                        only components/schemas are OpenAPI resources, an
+                        anchor of another document is found by the released
+                        search, and a URL another document of the run declares
+                        is fetched where that succeeds, as in 0.100.0.
   --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a
@@ -1181,6 +1202,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic
                         v2 only)
+  --use-root-types-for-mixed-union-map-keys, --no-use-root-types-for-mixed-union-map-keys
+                        Type the RootModel members of a map key that is a
+                        union with a non-RootModel member (`propertyNames`
+                        `anyOf` of an enum, or of a `str` with a `maxLength`,
+                        and a RootModel) by their root types, as the key of a
+                        RootModel is typed (`dict[str | UUID, int]`); without
+                        it such a key keeps the RootModel class, which
+                        Pydantic cannot hash, so a key only the RootModel
+                        matches raises `TypeError`, and the other member reads
+                        the keys it matches, as in 0.100.0. A key whose
+                        members are all RootModels is typed by the root types
+                        with or without the option
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
@@ -1604,6 +1637,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Name inline oneOf/anyOf branch models after the value
                         of their tag field (Pet + type: "cat" -> PetCat)
                         instead of Pet1, Pet2
+  --keep-bases-beside-generic-base-class, --no-keep-bases-beside-generic-base-class
+                        Keep the base classes a model is configured to inherit
+                        beside the generated base class of --use-generic-base-
+                        class (`class Tag(TagBase, BaseModel)`): the class
+                        --base-class-map, customBasePath or --base-class
+                        names, and the class --external-ref-mapping or
+                        x-python-import imports for a schema the model
+                        extends, as the model keeps a generated base (the
+                        generated base class is named `BaseModelModel` where a
+                        kept class is named `BaseModel`); without it the model
+                        inherits only the generated base class and the import
+                        of the class stays unused, as in 0.100.0.
   --keep-constrained-root-models-in-every-container, --no-keep-constrained-root-models-in-every-container
                         Under --collapse-root-models with --field-constraints,
                         keep a root model whose root field has constraints

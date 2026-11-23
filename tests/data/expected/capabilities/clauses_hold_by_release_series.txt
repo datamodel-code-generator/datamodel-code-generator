@@ -16,5 +16,7 @@ python==3.1: False
 isort>=6: False
 isort==6: False
 isort!=6: True
+heki>=0: True
+heki>=0.3: False
 formatter==builtin|black>=24: True
 formatter==builtin|black<24: False

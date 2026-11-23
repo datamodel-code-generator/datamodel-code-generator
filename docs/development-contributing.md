@@ -569,32 +569,30 @@ The guard reads names through `scripts/_source_model.py`, which does not say whi
 binding of a name a read reaches, so a name holds every binding of its scope and the
 guard fails closed: a name bound both to a concrete backend (a module string,
 `importlib`, `sys.modules`) and to something else is read as the backend wherever it
-is read, and a name bound under `TYPE_CHECKING` and again at run time (an import and
-a fallback `Any`) has no single type, so a `*Host` annotation that uses it reaches
-no members. Rename the variable, or import the name once. A name another module of
+is read. Rename the variable, or import the name once. A name another module of
 the package re-exports (`DataModelType`, `import_module`) is read as what that module
 imports.
 
 In the parser concern modules (every module below a `parser/_*` module or
 package, and `model/_field_imports.py`: the files where the `pyproject.toml`
-per-file ignores turn off ruff's `SLF001`) the guard owns private access: a
-private member is reached only through a method's receiver or a parameter typed
-as a `*Host` Protocol (or `type[...]` of one) that declares it, which ty checks
-against the parser passed in. A method's receiver is the first parameter, `self`
-or `cls`, of a function defined directly in a class body that is not a
-`staticmethod`, also inside the closures and lambdas nested in it; elsewhere
-`self` and `cls` are ordinary parameters. Names follow Python's binding rules: a
-nested function, lambda, class body or comprehension that binds the parameter's
-name (by any binding form: assignment, `for`, `with`, `except`, `import`, `def`,
-`class`, a `match` capture, a walrus target, a type parameter or `global`) hides
-the parameter. Declare the member on the Host the function takes instead of
-adding a `noqa` comment. The other private access there is counted in
-`scripts/host_private_access_baseline.toml`, which only shrinks: route a new
-access through a Host instead of regenerating the file. The private names the
-Host Protocols declare are counted as `host-friend-names` by
-`scripts/check_ratchets.py`. Runtime modules (`_runtime/`), which generated
-packages copy, import only the standard library, the third-party packages
-generated code depends on, and each other relatively.
+per-file ignores turn off ruff's `SLF001`) heki's host contracts own private
+access (`host-private-read`, `host-private-call` and `host-private-write` of
+`scripts/heki.toml`): a private member (one leading underscore, not a dunder) of
+a class outside these modules, or of a Protocol inside them that is not a
+`*Host`, is read, called or written only through the receiver of the method that
+holds the access (`self`, `cls` or `super()`, not in a nested function, lambda
+or comprehension) or through a value typed as a `*Host` Protocol that declares
+it, which ty checks against the parser passed in. A subprotocol of a Host that is
+not itself a `*Host` does not count, and heki also reports an access by a
+`__dict__` key constant or a `getattr` name and one through a value it cannot
+tie to a class. Declare the member on the Host the function takes instead of
+adding a `noqa` comment; today's other accesses are in `scripts/heki_baseline.toml`.
+heki does not name a member of a module outside the package yet, so ruff's
+`banned-api` holds `sys._getframe` in these modules (the two frame reads of
+`parser/_pipeline.py` carry its `noqa`); elsewhere `SLF001` reports it. Runtime
+modules (`_runtime/`), which generated packages copy, import only the standard
+library, the third-party packages generated code depends on, and each other
+relatively.
 
 The guard also rejects an import cycle of the package whose imports all run
 when their modules are imported: at module or class level and outside
@@ -607,8 +605,9 @@ cycles of every import, function-local and `TYPE_CHECKING` ones included, and
 function or not, move what the modules share into a module that imports none
 of them.
 
-heki, a development dependency of the `test` group, checks the same records
-statically: `scripts/build_heki_contracts.py` writes `scripts/heki.toml` from
+heki, a development dependency of its own `heki` group (which `dev` includes;
+of CI, only the `heki` lane of `tox run -e heki` installs it, and the tests that
+run it need the `heki` capability), checks the same records statically: `scripts/build_heki_contracts.py` writes `scripts/heki.toml` from
 the fact rows of `scripts/fact_tables.py`, the homes and builders of
 `scripts/decision_homes.py` and the concern modules above, and
 `tests/test_build_heki_contracts_script.py` runs
@@ -627,12 +626,8 @@ new ones: delete `scripts/heki_baseline.toml` and run the command with
 `--update-baseline` again; the keys must not rise. The sites of the
 environment boundary count under a key of their own,
 `allowlist:heki-baseline:EFF201`, so a new read of the environment is never
-paid for by another finding. Each other site of the baseline, except the
-writes outside the store operations, the reads of a decision home outside its
-row's home modules and adapter sites and the bypasses of a builder home, which
-only heki checks, repeats a violation that another key already budgets
-(`allowlist:host-private-access`), so a new violation of such a rule raises
-both keys and needs both `[[approved]]` entries, and a fix lowers both.
+paid for by another finding; every other site counts under
+`allowlist:heki-baseline`.
 `# heki: ignore[...]` comments and `# noqa` comments that name a heki rule
 count as `heki-ignore:<rule>` keys.
 
@@ -665,7 +660,8 @@ the table states each capability as clauses over the environment facts of
 `dead-capability` fails on a capability that no lane of
 `.github/workflows/test.yaml` has, that every lane has, or that only subset lanes (fixed lists of tests) lack (`scripts/_ci_lanes.py` reads the facts of
 each lane from the matrix, `tox.ini`, `pyproject.toml` and `uv.lock`), and
-`never-run` fails on a test whose capabilities together exclude every lane.
+`never-run` fails on a test whose capabilities together hold on no lane that
+runs it (a subset lane runs only the tests it lists).
 Three rules count what only another lane shows. `posix-only-call` reads `os.fork`, `os.mkfifo`, `signal.SIGKILL`
 and the `resource` and `fcntl` modules by origin: a use at module or class level breaks the import on Windows, and a
 collected test that reaches one (through helpers and scripts it calls, the methods it calls on `self`, and the

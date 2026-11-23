@@ -1,0 +1,9 @@
+openapi: 3.1.0
+info: {title: Owners, version: "1"}
+paths: {}
+components:
+  schemas:
+    Owner:
+      type: object
+      properties:
+        pet: {$ref: "common.yaml#Pet"}

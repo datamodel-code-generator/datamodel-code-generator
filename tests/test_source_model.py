@@ -728,7 +728,7 @@ ARCHITECTURE_LAYERS: tuple[check_architecture_boundaries.Layer, ...] = (
 
 
 def _architecture_boundaries(form: Path) -> list[Finding]:
-    """Run the layer rules of the layers above and the host rule over a form's modules, as files of a temporary tree."""
+    """Run the layer rules of the layers above over a form's modules, as files of a temporary tree."""
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
         paths = []
@@ -738,16 +738,12 @@ def _architecture_boundaries(form: Path) -> list[Finding]:
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
             paths.append(target)
         asked = [item.strip() for item in _directives(form).get("layers", "").split(",") if item.strip()]
-        known = {*typing.get_args(check_architecture_boundaries.Layer), "host"}
-        if unknown := sorted(set(asked) - known):
+        if unknown := sorted(set(asked) - set(typing.get_args(check_architecture_boundaries.Layer))):
             msg = f"{form.name}: layers that are none of the guard's: {unknown}"
             raise ValueError(msg)
-        layers = [name for name in asked if name != "host"] or ([] if asked else list(ARCHITECTURE_LAYERS))
-        runs = [(layer, [(path, layer) for path in paths], []) for layer in layers]
-        runs += [("host", [], paths)] if "host" in asked or not asked else []
         found = []
-        for name, files, hosts in runs:
-            violations = check_architecture_boundaries.check_files(files, allowlist={}, host_files=hosts)
+        for name in asked or ARCHITECTURE_LAYERS:
+            violations = check_architecture_boundaries.check_files([(path, name) for path in paths], allowlist={})
             found += [
                 Finding(
                     f"{name}/{violation.rule}",

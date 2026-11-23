@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Owner", "type": "object", "properties": {"pet": {"$ref": "https://example.com/schemas/pet.json"}, "nick": {"$ref": "https://example.com/schemas/pet.json#name"}}}

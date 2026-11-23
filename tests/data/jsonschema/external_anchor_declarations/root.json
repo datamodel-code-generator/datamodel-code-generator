@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "meta": {"$ref": "dynamic.json#meta"},
+    "pet": {"$ref": "namespace.json#pet"},
+    "foo": {"$ref": "draft7.json#foo"}
+  }
+}

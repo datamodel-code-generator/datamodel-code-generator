@@ -1,0 +1,31 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Codes
+type: object
+properties:
+  first:
+    $ref: "#/$defs/1"
+  second:
+    $ref: "#second"
+  any:
+    $ref: "#/$defs/Anything"
+  entry:
+    $ref: "https://example.com/v1.json#entry"
+$defs:
+  1:
+    type: string
+  2:
+    $anchor: second
+    type: integer
+  Anything: true
+  v1:
+    $id: https://example.com/v1.json
+    Entry:
+      $anchor: entry
+      type: object
+      properties:
+        code:
+          $ref: "#/$defs/Code"
+    $defs:
+      Code:
+        type: string
+        enum: [c, d]

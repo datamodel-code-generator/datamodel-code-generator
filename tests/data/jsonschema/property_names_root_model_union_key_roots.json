@@ -1,0 +1,14 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "either": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Either"}]}, "additionalProperties": {"type": "integer"}},
+    "recursive": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Recursive"}]}, "additionalProperties": {"type": "integer"}}
+  },
+  "$defs": {
+    "Unit": {"type": "string", "pattern": "^(kg|lb)$"},
+    "Either": {"anyOf": [{"type": "string", "pattern": "^e-"}, {"$ref": "#/$defs/Long"}]},
+    "Long": {"type": "string", "minLength": 6},
+    "Recursive": {"anyOf": [{"type": "string", "pattern": "^r"}, {"type": "array", "items": {"$ref": "#/$defs/Recursive"}}]}
+  }
+}

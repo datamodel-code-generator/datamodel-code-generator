@@ -1473,6 +1473,17 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Root types for mixed union map keys",
+        config=PresetConfig(use_root_types_for_mixed_union_map_keys=True),
+        description=(
+            "Type the RootModel members of a map key that is a union with a non-RootModel member, such as a "
+            "propertyNames anyOf of an enum, or of a string with a maxLength, and a RootModel, by their root types, "
+            "so a key that only the RootModel matches is accepted, and a key that both match parses as its root "
+            "type, here a UUID for JSON input, as it does where the key names the RootModel alone. A Python dict "
+            "input keeps such a key as a str."
+        ),
+    ),
+    PresetOptionGroup(
         title="Null kept on nullable items",
         config=PresetConfig(keep_null_of_nullable_items=True),
         description=(
@@ -1532,6 +1543,25 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of its "
             "class bases, so a uniqueItems array of models whose class takes an inherited field that does not hash "
             "stays a list instead of a set those items cannot be added to."
+        ),
+    ),
+    PresetOptionGroup(
+        title="References in their schema resources",
+        config=PresetConfig(read_refs_in_their_resources=True),
+        description=(
+            "Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas ($defs members, inline "
+            "OpenAPI operation and component schemas) and each $ref in the schema resource that encloses it, so a "
+            "pointer inside a bundled $id resource names that resource's definitions, a plain-name anchor of another "
+            "document names its schema, and a resource the run holds is never fetched."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Configured bases beside the generic base class",
+        config=PresetConfig(keep_bases_beside_generic_base_class=True),
+        description=(
+            "Keep the classes a model is configured to inherit, from --base-class-map, customBasePath, --base-class "
+            "or the class an --external-ref-mapping or x-python-import schema stands for, beside the generated base "
+            "class of --use-generic-base-class, so the model keeps their members and their import is used."
         ),
     ),
 )

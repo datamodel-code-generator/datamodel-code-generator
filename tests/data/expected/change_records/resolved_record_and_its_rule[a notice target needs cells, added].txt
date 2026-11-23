@@ -1,0 +1,11 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "notice",
+  "cells": 0
+ },
+ "why": [],
+ "problems": [
+  "entry x: category notice names the cells it covers ([[change.cells]])"
+ ]
+}

@@ -1,0 +1,11 @@
+{
+ "resolved": {
+  "id": "y",
+  "category": "crash-fix",
+  "cells": 0
+ },
+ "why": [],
+ "problems": [
+  "entry y: category crash-fix names the cells it covers ([[change.cells]])"
+ ]
+}

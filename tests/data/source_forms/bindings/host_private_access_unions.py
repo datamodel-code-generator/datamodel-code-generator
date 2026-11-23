@@ -2,7 +2,7 @@
 
 A parameter reassigned in its own scope stays the declared Host (ty checks the assignment); a union, written as an
 expression or in a string, is not the Host.
-layers: host
+layers: parser
 """
 from __future__ import annotations
 

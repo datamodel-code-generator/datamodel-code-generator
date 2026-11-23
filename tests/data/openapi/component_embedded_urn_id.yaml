@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Urn ids
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Pet:
+      $id: urn:example:pet
+      type: object
+      properties:
+        name:
+          type: string
+    Owner:
+      type: object
+      properties:
+        pet:
+          $ref: urn:example:pet

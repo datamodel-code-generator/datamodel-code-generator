@@ -3,7 +3,7 @@ id = "bug-g33-allof-over-object-branches"
 category = "new-surface"
 title = "Give an allOf over a union a complete variant per object branch under an option"
 summary = "--distribute-allof-over-object-branches has each union variant of an allOf require every name a part of the allOf requires, typed as the field its branch declares (#6867), and gives a branch that is itself an anyOf or oneOf, an allOf or a $ref with siblings over one, or an alias, one variant per object branch it stands for (#6869). It joins the 20261123 presets. Without it the output is that of 0.100.0."
-refs = ["#1"]
+refs = ["#7445"]
 surface = ["--distribute-allof-over-object-branches"]
 covers = [
     "main/jsonschema/allof_union_object_branches/required_names_in_union_variant_outputs[dataclass].py",

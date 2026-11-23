@@ -81,6 +81,7 @@ reviewed-safe infer_union_variant_names
 reviewed-safe intersect_allof_keywords
 reviewed-safe intersect_combined_schema_keywords
 reviewed-safe intersect_merged_allof_members
+reviewed-safe keep_bases_beside_generic_base_class
 reviewed-safe keep_constrained_root_models_in_every_container
 reviewed-safe keep_defaults_of_inherited_required_fields
 reviewed-safe keep_enum_literal_aliases
@@ -129,6 +130,7 @@ reviewed-safe read_nullable_beside_type_list
 reviewed-safe read_object_keywords_by_type
 reviewed-safe read_only_write_only_model_type
 reviewed-safe read_ref_siblings_in_closed_allof_members
+reviewed-safe read_refs_in_their_resources
 reviewed-safe read_schema_version_per_document
 reviewed-safe read_set_item_fields_in_class_order
 reviewed-safe read_single_allof_refs_in_their_documents
@@ -198,6 +200,7 @@ reviewed-safe use_operation_id_as_name
 reviewed-safe use_pendulum
 reviewed-safe use_plain_alias_for_recursive_models
 reviewed-safe use_root_model_sequence_interface
+reviewed-safe use_root_types_for_mixed_union_map_keys
 reviewed-safe use_schema_description
 reviewed-safe use_serialization_alias
 reviewed-safe use_serialize_as_any

@@ -3,7 +3,8 @@
 A local hook runs its entry script, and the script runs every module of ``scripts`` and ``tests`` it imports, at
 module level or in a function, directly or through another such module (an import only type checkers run does not
 count). The hook's ``files`` pattern matches each of them, or a change to an imported module skips the hook. Imports
-are read through ``scripts/_source_model.py``.
+are read through ``scripts/_source_model.py``. A hook's pinned ``additional_dependencies`` (heki's) are versions
+``uv.lock`` locks, so the dependency group stays the one source of the version.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ import re
 from pathlib import Path
 
 import pytest
+import tomllib
 import yaml
 
 from scripts._source_model import SourceModule
@@ -196,3 +198,61 @@ def test_lint_workflow_skips_the_hooks_pre_commit_ci_skips() -> None:
     only_ci, only_lint = sorted(ci_skip - lint_skip), sorted(lint_skip - ci_skip)
     assert ci_skip == lint_skip, f"only in ci.skip: {only_ci}; only in {LINT_WORKFLOW}: {only_lint}"
     assert_output("".join(f"{hook}\n" for hook in sorted(ci_skip)))
+
+
+LOCK = "uv.lock"
+PIN = re.compile(r"(?P<name>[A-Za-z0-9_.-]+)==(?P<version>[\w.+-]+)")
+
+
+def pin_mismatches(config: dict, locked: dict[str, set[str]]) -> list[str]:
+    """Return each ``name==version`` of a hook's ``additional_dependencies`` that is no version ``uv.lock`` locks.
+
+    pre-commit builds such a hook's environment from that list, so its pin repeats the dependency group's (heki's);
+    the lock holds the group's version, and every pin of a hook must be one of them.
+    """
+    return [
+        f"{hook['id']}: {match['name']}=={match['version']} (uv.lock: {', '.join(sorted(versions)) or 'none'})"
+        for repo in config["repos"]
+        for hook in repo["hooks"]
+        for requirement in hook.get("additional_dependencies", [])
+        if (match := PIN.fullmatch(requirement))
+        and match["version"] not in (versions := locked.get(match["name"].lower(), set()))
+    ]
+
+
+def _locked() -> dict[str, set[str]]:
+    found: dict[str, set[str]] = {}
+    for package in tomllib.loads((ROOT / LOCK).read_text(encoding="utf-8"))["package"]:
+        if "version" in package:
+            found.setdefault(package["name"], set()).add(package["version"])
+    return found
+
+
+@pytest.mark.allow_direct_assert("a hook pin that is not the locked version fails on its own")
+def test_hook_dependency_pins_are_locked_versions() -> None:
+    """Every pinned ``additional_dependencies`` entry of a hook is a version that ``uv.lock`` locks."""
+    config = _config()
+    assert not (found := pin_mismatches(config, _locked())), found
+    assert_output(
+        "".join(
+            f"{hook['id']}: {requirement}\n"
+            for repo in config["repos"]
+            for hook in repo["hooks"]
+            for requirement in hook.get("additional_dependencies", [])
+            if PIN.fullmatch(requirement)
+        )
+    )
+
+
+@pytest.mark.allow_direct_assert("the seeded pin must be found, not only stored")
+def test_a_hook_pin_the_lock_does_not_hold_is_reported() -> None:
+    """A hook that pins another version, or a package the lock does not hold, is reported."""
+    config = {
+        "repos": [
+            {"repo": "local", "hooks": [{"id": "heki", "additional_dependencies": ["heki==0.2.3", "tomli"]}]},
+            {"repo": "x", "hooks": [{"id": "other", "additional_dependencies": ["absent==1.0"]}]},
+        ]
+    }
+    found = pin_mismatches(config, {"heki": {"0.2.4"}})
+    assert len(found) == 2, found
+    assert_output("".join(f"{line}\n" for line in found))

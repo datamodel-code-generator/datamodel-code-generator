@@ -15,11 +15,12 @@ import it.
 
 from __future__ import annotations
 
-import sys
+import inspect
 import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import partial
+from operator import attrgetter
 from threading import Lock
 from typing import TYPE_CHECKING, Final, TextIO, TypeVar, final
 from warnings import catch_warnings, simplefilter
@@ -194,12 +195,19 @@ def frame_at(stacklevel: int) -> FrameType:
     that called ``warn_x``. The frames of the wrappers that ``--debug`` puts around the functions it traces are not
     counted past the first.
     """
-    depth = 2
+    frame: FrameType = _CALLER(_CALLER(inspect.currentframe()))
     for _ in range(stacklevel - 1):
-        depth += 1
-        while is_tracer_frame(sys._getframe(depth)):  # noqa: SLF001
-            depth += 1
-    return sys._getframe(depth)  # noqa: SLF001
+        frame = _CALLER(frame)
+        while is_tracer_frame(frame):
+            frame = _CALLER(frame)
+    return frame
+
+
+_CALLER: Final = attrgetter("f_back")
+"""The frame that called a frame (``f_back``).
+
+The callers of `frame_at` stand in for ``warn()`` deep inside the package, so the stack holds the frames they ask for.
+"""
 
 
 def warn_at_frame(frame: FrameType, message: str, category: type[Warning], *, module: str | None = None) -> None:

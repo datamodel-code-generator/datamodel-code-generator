@@ -149,6 +149,9 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--intersect-merged-allof-members",
     "--read-allof-parents-as-their-models",
     "--read-set-item-fields-in-class-order",
+    "--use-root-types-for-mixed-union-map-keys",
+    "--read-refs-in-their-resources",
+    "--keep-bases-beside-generic-base-class",
     "--distribute-allof-over-object-branches",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
@@ -644,6 +647,27 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         id="read-set-item-fields-in-class-order",
     ),
     pytest.param(
+        JSON_SCHEMA_DATA_PATH / "property_names_root_model_mixed_union_keys.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-root-types-for-mixed-union-map-keys",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-refs-in-their-resources",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json",
+        "jsonschema",
+        [
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-generic-base-class", "--extra-fields", "forbid"),
+            *("--base-class-map", '{"Tag": "mypkg.base.TagBase"}'),
+        ],
+        id="keep-bases-beside-generic-base-class",
+    ),
+    pytest.param(
         JSON_SCHEMA_DATA_PATH / "allof_union_object_branches" / "required_names.json",
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
@@ -1061,6 +1085,36 @@ def test_preset_sets_opt_in_option(
             "--read-set-item-fields-in-class-order",
             "--no-read-set-item-fields-in-class-order",
             id="read-set-item-fields-in-class-order",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "property_names_root_model_mixed_union_keys.json",
+            "jsonschema",
+            [],
+            "--use-root-types-for-mixed-union-map-keys",
+            "--no-use-root-types-for-mixed-union-map-keys",
+            id="use-root-types-for-mixed-union-map-keys",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
+            "jsonschema",
+            [],
+            "--read-refs-in-their-resources",
+            "--no-read-refs-in-their-resources",
+            id="read-refs-in-their-resources",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json",
+            "jsonschema",
+            [
+                "--use-generic-base-class",
+                "--extra-fields",
+                "forbid",
+                "--base-class-map",
+                '{"Tag": "mypkg.base.TagBase"}',
+            ],
+            "--keep-bases-beside-generic-base-class",
+            "--no-keep-bases-beside-generic-base-class",
+            id="keep-bases-beside-generic-base-class",
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "allof_union_object_branches" / "required_names.json",

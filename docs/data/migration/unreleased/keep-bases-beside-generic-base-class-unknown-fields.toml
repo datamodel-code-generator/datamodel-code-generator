@@ -1,0 +1,33 @@
+[[change]]
+id = "keep-bases-beside-generic-base-class-unknown-fields"
+extends = "keep-bases-beside-generic-base-class"
+covers = [
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-list-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-list-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-map-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-msgspec-base-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-msgspec-base-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-pydantic-base-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-named-like-pydantic-base-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-base-class-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-external-ref-mapping-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-external-ref-mapping-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-type-overrides-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[msgspec-type-overrides-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-list-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-list-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-map-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-msgspec-base-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-msgspec-base-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-pydantic-base-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-named-like-pydantic-base-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-base-class-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-external-ref-mapping-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-external-ref-mapping-released].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-type-overrides-kept].unknown_fields.txt",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_bases[pydantic_v2-type-overrides-released].unknown_fields.txt",
+]

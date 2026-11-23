@@ -119,7 +119,8 @@ REFS_HEADER = (
     "(see AGENTS.md).\n"
 )
 """The first lines of every sidecar pytest writes; the parser skips the ``#`` lines a sidecar starts with."""
-FACTS = ("python", "formatter", "black", "isort", "platform", "pydantic")
+FACTS = ("python", "formatter", "black", "isort", "platform", "pydantic", "heki")
+"""The facts of an environment that stored output may key on and a capability may need; a tool's is its version."""
 _TOOL_VERSION = re.compile(r"(?:\d[0-9A-Za-z.+-]*)?")
 _FACT_SHAPES = {
     "python": re.compile(r"\d+\.\d+"),
@@ -128,6 +129,7 @@ _FACT_SHAPES = {
     "isort": _TOOL_VERSION,
     "platform": re.compile(r"linux|darwin|win32"),
     "pydantic": _TOOL_VERSION,
+    "heki": _TOOL_VERSION,
 }
 _NAME_BYTES = 255
 PAYLOAD_DECODED_LIMIT = 4 * 1024 * 1024
@@ -476,7 +478,7 @@ def declared_classes(clauses: Collection[str]) -> list[tuple[str, ...]]:
     return sorted(found, key=lambda held: (len(held), held))
 
 
-VERSION_FACTS = frozenset({"python", "black", "isort", "pydantic"})
+VERSION_FACTS = frozenset({"python", "black", "isort", "pydantic", "heki"})
 """The facts whose values are versions, which a condition may compare in order (``black>=24``)."""
 _CONDITION = re.compile(r"(?P<fact>[a-z]+)(?P<op>==|!=|>=|<=|<|>)(?P<value>[^\s|]+)")
 _RELEASE = re.compile(r"\d+(?:\.\d+)*")

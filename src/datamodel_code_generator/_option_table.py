@@ -862,6 +862,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "instead of repeating the configuration in each model. Keeps code DRY.",
     ),
     toggle(
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--keep-bases-beside-generic-base-class",
+        help="Keep the base classes a model is configured to inherit beside the generated base class of "
+        "--use-generic-base-class (`class Tag(TagBase, BaseModel)`): the class --base-class-map, customBasePath or "
+        "--base-class names, and the class --external-ref-mapping or x-python-import imports for a schema the model "
+        "extends, as the model keeps a generated base (the generated base class is named `BaseModelModel` where a "
+        "kept class is named `BaseModel`); without it the model inherits only the generated base class and the "
+        "import of the class stays unused, as in 0.100.0.",
+    ),
+    toggle(
         (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
     ),
     toggle((Section.MODEL, _C.FIELD), "--use-title-as-name", help="use titles as class names of models"),
@@ -1340,6 +1350,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "(an integer enum's key '2' is the integer 2), also where an earlier discriminated union already wrote the tag "
         "field of the variant or of the base it inherits it from, so a key reads alike whichever union comes first; "
         "without it such a key is read against the Literal the earlier union wrote, or stays text (as in 0.100.0).",
+    ),
+    toggle(
+        (Section.TYPING, _C.FIELD),
+        "--use-root-types-for-mixed-union-map-keys",
+        help="Type the RootModel members of a map key that is a union with a non-RootModel member (`propertyNames` "
+        "`anyOf` of an enum, or of a `str` with a `maxLength`, and a RootModel) by their root types, as the key of a "
+        "RootModel is typed (`dict[str | UUID, int]`); without it such a key keeps the RootModel class, which "
+        "Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and the other member reads "
+        "the keys it matches, as in 0.100.0. A key whose members are all RootModels is typed by the root types "
+        "with or without the option",
     ),
     toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),
@@ -2141,6 +2161,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "it, which names the same resource, so a $ref to https://example.com/item.json# or "
         "https://example.com/item.json#/definitions/Tag in the document that declares it resolves inside that "
         "document; without it such a $ref loads the document at that URL, from the network, as in 0.96.0.",
+    ),
+    toggle(
+        Section.BASE,
+        "--read-refs-in-their-resources",
+        help="Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas, and read each $ref in the "
+        "schema resource that encloses it: a $defs member that declares a $id is the resource its own $defs pointers "
+        "name, a schema an OpenAPI operation, webhook or component holds inline is a resource of its own, a plain-name "
+        "anchor of another document names the schema that declares it, and a $ref to a resource the run holds is never "
+        "fetched. Without it a $defs member without schema keywords is read for its entries alone, only "
+        "components/schemas are OpenAPI resources, an anchor of another document is found by the released search, and "
+        "a URL another document of the run declares is fetched where that succeeds, as in 0.100.0.",
     ),
     toggle(
         Section.BASE,

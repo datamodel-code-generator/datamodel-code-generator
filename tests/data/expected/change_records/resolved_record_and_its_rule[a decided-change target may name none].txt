@@ -1,0 +1,9 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "decided-change",
+  "cells": 0
+ },
+ "why": [],
+ "problems": []
+}

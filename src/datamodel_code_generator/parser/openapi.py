@@ -1555,6 +1555,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._string_discriminators.clear()
         self._parameter_models.clear()
         with self._parsing_session(self._resolve_specification_targets):
+            self._prepare_input_documents()
             for source, path_parts in _schema_documents.get_context_source_path_parts(self):
                 if self.validation:
                     if self.untrusted_input:

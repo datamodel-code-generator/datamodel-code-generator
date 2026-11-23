@@ -1,0 +1,4 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {"Meta": {"$dynamicAnchor": "meta", "type": "object", "properties": {"a": {"type": "string"}}}}
+}

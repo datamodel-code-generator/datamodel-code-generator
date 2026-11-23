@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import os
 import sys
 import warnings
@@ -9,6 +10,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from functools import lru_cache
+from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -426,9 +428,11 @@ def _stacklevel_at_caller() -> int:
     That caller is the frame that called the outermost frame of a file of the package: the code that called the
     library however deep in it, past the third-party code the package calls back through (a Pydantic validator, a YAML
     constructor), so a ``module=`` filter matches the caller's module. A CLI invocation does not use it (see
-    ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own.
+    ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own. The caller
+    is read without keeping this function's frame in a local, which would be a reference cycle until the next
+    collection.
     """
-    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
+    frame: FrameType | None = attrgetter("f_back")(inspect.currentframe())
     level = outermost = 1
     while frame is not None:
         if frame.f_code.co_filename.startswith(_PACKAGE_DIR):

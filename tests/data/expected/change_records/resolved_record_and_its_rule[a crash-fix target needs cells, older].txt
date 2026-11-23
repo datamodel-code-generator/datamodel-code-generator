@@ -1,0 +1,9 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "crash-fix",
+  "cells": 0
+ },
+ "why": [],
+ "problems": []
+}

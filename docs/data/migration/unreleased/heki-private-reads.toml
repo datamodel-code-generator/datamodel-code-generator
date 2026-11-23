@@ -1,0 +1,19 @@
+[[change]]
+id = "heki-private-reads"
+category = "internal"
+title = "Check the private access of the concern modules with heki instead of the host rule"
+covers = [
+    "architecture_boundaries/host_private_access_allows_only_declared_host_members.txt",
+    "architecture_boundaries/host_private_access_baseline_only_shrinks.txt",
+    "architecture_boundaries/host_private_access_cli_writes_the_baseline.txt",
+    "architecture_boundaries/host_private_access_exempts_only_method_receivers.txt",
+    "architecture_boundaries/host_private_access_follows_the_binding_rules.txt",
+    "architecture_boundaries/host_private_access_follows_type_parameter_scopes.txt",
+    "architecture_boundaries/host_private_access_scope_equals_the_slf001_ignores.txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-grows].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-shrinks].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-shape].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-value].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt",
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
+]

@@ -956,6 +956,10 @@
       "not_recommended": "preset",
       "reason": "With --dataclass-arguments only: set by the 20261106 presets; the recommendation starts from a preset."
     },
+    "keep_bases_beside_generic_base_class": {
+      "not_recommended": "preset",
+      "reason": "With --use-generic-base-class only: set by the 20261123 presets; the recommendation starts from a preset."
+    },
     "keep_content_parameter_refs": {
       "not_recommended": "preset",
       "reason": "OpenAPI parameters scope only: set by the 20261106 presets; the recommendation starts from a preset."
@@ -1145,6 +1149,10 @@
     "read_msgspec_union_bounds_exactly": {
       "not_recommended": "preset",
       "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "use_root_types_for_mixed_union_map_keys": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
     },
     "read_only_write_only_model_type": {
       "not_recommended": "style",

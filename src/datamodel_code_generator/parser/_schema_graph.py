@@ -240,9 +240,9 @@ class ResourceChildren(Protocol):
     """The schema-valued keywords of a schema, by their path from it; examples, defaults and extensions are not."""
 
     def __call__(
-        self, schema: dict[str, Any], /, *, passed: Callable[[SchemaPath, str], None]
+        self, schema: dict[str, Any], /, *, at: SchemaPath, passed: Callable[[SchemaPath, str], None]
     ) -> Iterable[tuple[SchemaPath, dict[str, Any]]]:
-        """Yield each schema-valued keyword below the schema with its path.
+        """Yield each schema-valued keyword below the schema with its path; ``at`` is the schema's path in its holder.
 
         Each `$anchor` on a schema it passes over (a namespace of definitions, read for its entries alone, and each
         subschema the namespace holds outside its definitions) goes to ``passed`` with its path, as written.
@@ -363,8 +363,11 @@ def walk_schema_resources(
             return list(locations)
         return sorted(locations, key=lambda location: _document_position(raw, locations[location]))
 
-    def visit(schema: dict[str, Any], pointer: str, base: str, id_field: str | None, resource: str) -> bool:
+    def visit(
+        held: tuple[SchemaPath, dict[str, Any]], pointer: str, base: str, id_field: str | None, resource: str
+    ) -> bool:
         nonlocal root_base
+        at, schema = held
         id_field, identifier_value = identifier(schema, id_field, is_root=not pointer)
         location = f"{document}#{pointer}"
         embeds = False
@@ -389,15 +392,15 @@ def walk_schema_resources(
         def passed(path: SchemaPath, written: str) -> None:
             passed_anchors.append((written, pointer + join_pointer(path)))
 
-        for path, child in children(schema, passed=passed):
-            embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
+        for child in children(schema, at=at, passed=passed):
+            embeds |= visit(child, pointer + join_pointer(child[0]), base, id_field, resource)
         return embeds
 
-    embeds_resources = visit(raw, "", base, id_field, "")
-    for path, schema in implicit:
-        resources.add(pointer := join_pointer(path))
+    embeds_resources = visit(((), raw), "", base, id_field, "")
+    for held in implicit:
+        resources.add(pointer := join_pointer(held[0]))
         bases[pointer] = base
-        embeds_resources |= visit(schema, pointer, base, id_field, pointer)
+        embeds_resources |= visit(held, pointer, base, id_field, pointer)
     return DocumentResources(
         document=document,
         root_base=root_base,

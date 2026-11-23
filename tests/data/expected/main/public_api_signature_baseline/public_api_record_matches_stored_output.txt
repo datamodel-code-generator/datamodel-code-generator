@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 313>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 316>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -443,6 +443,7 @@ class BaseGenerateConfig(BaseModel)
     allow_extra_fields: bool = False
     extra_fields: str | None = None
     use_generic_base_class: bool = False
+    keep_bases_beside_generic_base_class: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
     class_name_prefix: str | None = None
@@ -473,10 +474,12 @@ class BaseGenerateConfig(BaseModel)
     merge_shared_variant_tags: bool = False
     use_unmapped_variant_tag_values: bool = False
     read_mapping_keys_by_schema_tag_type: bool = False
+    use_root_types_for_mixed_union_map_keys: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
     read_ids_with_empty_fragment: bool = False
+    read_refs_in_their_resources: bool = False
     read_single_allof_refs_in_their_documents: bool = False
     read_ref_siblings_in_closed_allof_members: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
@@ -726,7 +729,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 313>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 316>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -869,6 +872,7 @@ class ParserConfig(BaseModel)
     allow_extra_fields: bool = False
     extra_fields: str | None = None
     use_generic_base_class: bool = False
+    keep_bases_beside_generic_base_class: bool = False
     force_optional_for_required_fields: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
@@ -991,10 +995,12 @@ class ParserConfig(BaseModel)
     merge_shared_variant_tags: bool = False
     use_unmapped_variant_tag_values: bool = False
     read_mapping_keys_by_schema_tag_type: bool = False
+    use_root_types_for_mixed_union_map_keys: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
     read_ids_with_empty_fragment: bool = False
+    read_refs_in_their_resources: bool = False
     read_single_allof_refs_in_their_documents: bool = False
     read_ref_siblings_in_closed_allof_members: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
@@ -1748,6 +1754,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     IS_ROOT_MODEL: ClassVar[bool] = False
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
+    FIRST_BASE_CONFIGURES: ClassVar[bool] = False
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(_get_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_field_participates_in_constructor)
@@ -2347,6 +2354,7 @@ class Struct(DataModel)
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True
+    FIRST_BASE_CONFIGURES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
         uses _ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel('_ANNOTATED_CONSTRAINTS_CONTEXT')
@@ -3382,6 +3390,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.generate_schema_validators
     self.check_pattern_maps_strictly
     self.use_generic_base_class
+    self.keep_bases_beside_generic_base_class
     self.generic_base_class_config
     self.model_resolver
     self.class_name
@@ -3428,6 +3437,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.merge_shared_variant_tags
     self.use_unmapped_variant_tag_values
     self.read_mapping_keys_by_schema_tag_type
+    self.use_root_types_for_mixed_union_map_keys
     self.use_msgspec_tagged_unions
     self.tag_msgspec_by_payload_name
     self.use_msgspec_nullable_enum_alias
@@ -5058,7 +5068,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 313>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 316>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5080,7 +5090,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 309>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 312>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5982,6 +5992,7 @@ class ParserConfigDict(TypedDict)
     allow_extra_fields: NotRequired[bool]
     extra_fields: NotRequired[str | None]
     use_generic_base_class: NotRequired[bool]
+    keep_bases_beside_generic_base_class: NotRequired[bool]
     force_optional_for_required_fields: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
@@ -6104,10 +6115,12 @@ class ParserConfigDict(TypedDict)
     merge_shared_variant_tags: NotRequired[bool]
     use_unmapped_variant_tag_values: NotRequired[bool]
     read_mapping_keys_by_schema_tag_type: NotRequired[bool]
+    use_root_types_for_mixed_union_map_keys: NotRequired[bool]
     read_schema_version_per_document: NotRequired[bool]
     read_escaped_ref_pointers: NotRequired[bool]
     read_dynamic_anchors_in_document_order: NotRequired[bool]
     read_ids_with_empty_fragment: NotRequired[bool]
+    read_refs_in_their_resources: NotRequired[bool]
     read_single_allof_refs_in_their_documents: NotRequired[bool]
     read_ref_siblings_in_closed_allof_members: NotRequired[bool]
     ignore_ref_siblings_by_schema_version: NotRequired[bool]
@@ -6366,6 +6379,7 @@ class BaseGenerateConfig(TypedDict)
     allow_extra_fields: NotRequired[bool]
     extra_fields: NotRequired[str | None]
     use_generic_base_class: NotRequired[bool]
+    keep_bases_beside_generic_base_class: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
     class_name_prefix: NotRequired[str | None]
@@ -6396,10 +6410,12 @@ class BaseGenerateConfig(TypedDict)
     merge_shared_variant_tags: NotRequired[bool]
     use_unmapped_variant_tag_values: NotRequired[bool]
     read_mapping_keys_by_schema_tag_type: NotRequired[bool]
+    use_root_types_for_mixed_union_map_keys: NotRequired[bool]
     read_schema_version_per_document: NotRequired[bool]
     read_escaped_ref_pointers: NotRequired[bool]
     read_dynamic_anchors_in_document_order: NotRequired[bool]
     read_ids_with_empty_fragment: NotRequired[bool]
+    read_refs_in_their_resources: NotRequired[bool]
     read_single_allof_refs_in_their_documents: NotRequired[bool]
     read_ref_siblings_in_closed_allof_members: NotRequired[bool]
     ignore_ref_siblings_by_schema_version: NotRequired[bool]

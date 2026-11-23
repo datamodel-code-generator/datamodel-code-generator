@@ -8,10 +8,10 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
+| 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 67 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 44 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 75 | Model generation behavior |
+| 🏷️ [Field Customization](field-customization.md) | 45 | Field naming and docstring behavior |
+| 🏗️ [Model Customization](model-customization.md) | 76 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -25,7 +25,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 36 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 43 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -255,6 +255,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### K {#k}
 
+- [`--keep-bases-beside-generic-base-class`](model-customization.md#keep-bases-beside-generic-base-class)
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container)
 - [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs)
 - [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields)
@@ -353,6 +354,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members)
+- [`--read-refs-in-their-resources`](base-options.md#read-refs-in-their-resources)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
 - [`--read-set-item-fields-in-class-order`](typing-customization.md#read-set-item-fields-in-class-order)
 - [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents)
@@ -454,6 +456,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-plain-alias-for-recursive-models`](typing-customization.md#use-plain-alias-for-recursive-models)
 - [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface)
 - [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias)
+- [`--use-root-types-for-mixed-union-map-keys`](field-customization.md#use-root-types-for-mixed-union-map-keys)
 - [`--use-schema-description`](field-customization.md#use-schema-description)
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias)
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)

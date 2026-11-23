@@ -1,0 +1,16 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "open": {"type": "object", "propertyNames": {"anyOf": [{"type": "string"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
+    "mixed": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"type": "string", "pattern": "^y-"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
+    "ids": {"type": "object", "propertyNames": {"anyOf": [{"type": "string", "maxLength": 64}, {"$ref": "#/$defs/Id"}]}, "additionalProperties": {"type": "integer"}},
+    "units": {"type": "object", "propertyNames": {"anyOf": [{"$ref": "#/$defs/Unit"}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}},
+    "anything": {"type": "object", "propertyNames": {"anyOf": [{}, {"$ref": "#/$defs/Ext"}]}, "additionalProperties": {"type": "integer"}}
+  },
+  "$defs": {
+    "Unit": {"type": "string", "enum": ["kg", "lb"]},
+    "Ext": {"type": "string", "pattern": "^x-"},
+    "Id": {"type": "string", "format": "uuid"}
+  }
+}

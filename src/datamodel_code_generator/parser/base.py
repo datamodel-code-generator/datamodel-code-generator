@@ -1308,6 +1308,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
         self.use_generic_base_class: bool = config.use_generic_base_class
+        self.keep_bases_beside_generic_base_class: bool = config.keep_bases_beside_generic_base_class
         self.generic_base_class_config = prepare_output_model_config(
             self.extra_template_data,
             validators=config.validators,
@@ -1431,6 +1432,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.merge_shared_variant_tags = config.merge_shared_variant_tags
         self.use_unmapped_variant_tag_values = config.use_unmapped_variant_tag_values
         self.read_mapping_keys_by_schema_tag_type = config.read_mapping_keys_by_schema_tag_type
+        self.use_root_types_for_mixed_union_map_keys = config.use_root_types_for_mixed_union_map_keys
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
         self.tag_msgspec_by_payload_name = config.tag_msgspec_by_payload_name
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias

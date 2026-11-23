@@ -20,7 +20,7 @@ from __future__ import annotations
 import fnmatch
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, TypeGuard
@@ -476,12 +476,14 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/test_source_model.py::*", "*", Owner.INTERNAL),
     ("tests/test_*_script.py::*", "*", Owner.INTERNAL),
     ("tests/cli_doc/test_cli_options_sync.py::*", "*", Owner.INTERNAL),
+    ("tests/test_capabilities.py::*", "*", Owner.INTERNAL),
     ("tests/test_assert_helper_usage.py::*", "*", Owner.INTERNAL),
     ("tests/test_change_records.py::*", "*", Owner.INTERNAL),
     ("tests/test_ci_workflow.py::*", "*", Owner.INTERNAL),
     ("tests/test_conftest_helpers.py::*", "*", Owner.INTERNAL),
     ("tests/test_docs_python_blocks.py::*", "*", Owner.INTERNAL),
     ("tests/test_legacy_rows.py::*", "*", Owner.INTERNAL),
+    ("tests/test_pre_commit_hooks.py::*", "*", Owner.INTERNAL),
     ("tests/test_release_draft_workflow.py::*", "*", Owner.INTERNAL),
     ("tests/test_repository_transfer.py::*", "*", Owner.INTERNAL),
     ("*", "payloads/*", Owner.MODELS),
@@ -742,7 +744,29 @@ def _decision_needed(record: Record, facts: Facts | None) -> bool:
     return True
 
 
-def rule_problems(record: Record, *, fragment: bool, facts: Facts | None = None, added: bool = False) -> list[str]:
+def resolved_record(record: Record, records: Mapping[str, Record]) -> tuple[Record | None, list[str]]:
+    """Return the record a rule or a judge reads for one record, and why there is none.
+
+    A record takes the category of the record it extends: that record with the extending record's own id, covers and
+    cells. That record must be an unreleased record of its own with a category, so a chain of extends and an extended
+    derived entry are refused. Any other record is its own.
+    """
+    if record.extends is None:
+        return record, []
+    target = records.get(record.extends)
+    if target is None or target.extends is not None or target.derived or target.category is None:
+        return None, [f"entry {record.id}: extends {record.extends}, which is not an unreleased record of its own"]
+    return replace(target, id=record.id, covers=record.covers, cells=record.cells), []
+
+
+def rule_problems(
+    record: Record,
+    *,
+    fragment: bool,
+    facts: Facts | None = None,
+    added: bool = False,
+    records: Mapping[str, Record] | None = None,
+) -> list[str]:
     """Return how a record breaks the rule of its category; `fragment` for an unreleased fragment.
 
     Every fragment has a category except one that extends a derived entry (it only adds text to the registry's entry)
@@ -750,12 +774,20 @@ def rule_problems(record: Record, *, fragment: bool, facts: Facts | None = None,
     guide entries that need `refs`; no released entry names cells, as the stamp drops them. The facts, when given,
     check the features, surface items and scheduled removals the record names, and that its cells name no surface the
     latest release lacks. `added` for a record the change adds: a category whose cells are required needs them.
+    `records`, the fragments by id, resolve an extending record (`resolved_record`): the rule of the category it takes
+    then applies to its own covers and cells.
     """
     where = f"entry {record.id}"
     if record.cells and not fragment:
         return [f"{where}: a released entry names no cells; the stamp drops them"]
     if record.extends is not None or record.derived or record.category is None:
-        return _uncategorized_problems(record, fragment=fragment, facts=facts)
+        problems = _uncategorized_problems(record, fragment=fragment, facts=facts)
+        if record.extends is None or records is None:
+            return problems
+        resolved, found = resolved_record(record, records)
+        if resolved is not None:
+            found = rule_problems(resolved, fragment=fragment, added=added)  # its facts are its target's own
+        return [*problems, *found]
     rule = RULES[record.category]
     problems = [f"{where} has no {name}" for name in sorted(rule.requires - {"decision"}) if not _filled(record, name)]
     problems += _cells_problems(record, rule.cells, added=added)
@@ -1029,6 +1061,7 @@ __all__ = [
     "owner_of",
     "parse_entry",
     "read_records",
+    "resolved_record",
     "rule_problems",
     "selector_surface",
     "split_options",
