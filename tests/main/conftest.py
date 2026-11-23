@@ -1332,8 +1332,8 @@ def _export_older_target_output(
 
     With ``DATAMODEL_CODE_GENERATOR_EXPORT_OLDER_TARGET_OUTPUTS`` naming a directory, each output whose target (the
     generator's default when unset) is older than the runtime goes to a folder named by its contents, with the
-    modules beside it that it can import and a ``case.json``: the test, the target, the target Pydantic version, and
-    whether a run on the target's Python imports the output or only compiles it.
+    modules beside it that it can import and a ``case.json``: the test, the target, the target Pydantic version, the
+    encoding of the output, and whether a run on the target's Python imports the output or only compiles it.
     """
     if (export_root := os.environ.get(_EXPORT_OLDER_TARGET_OUTPUTS)) is None:
         return
@@ -1341,19 +1341,28 @@ def _export_older_target_output(
     if target >= sys.version_info[:2]:
         return
     item = _CURRENT_ITEMS[-1]
-    imports = item.get_closest_marker("imports_from_newer_python") is None and not _should_skip_exec(
-        extra_arguments, force_exec=force_exec, runtime=target
+    encoding = _get_argument_value(extra_arguments, "--encoding") or "utf-8"
+    imports = (
+        item.get_closest_marker("imports_from_newer_python") is None
+        and encoding == "utf-8"
+        and not _should_skip_exec(extra_arguments, force_exec=force_exec, runtime=target)
     )
     pydantic = _get_argument_value(extra_arguments, "--target-pydantic-version") or UNSET_TARGET_PYDANTIC_VERSION
     files = [*python_files, *(path for path in output_path.parent.glob("*.py") if path != output_path)]
-    digest = hashlib.sha256(repr((target, imports, pydantic)).encode())
+    digest = hashlib.sha256(repr((target, imports, pydantic, encoding)).encode())
     for python_file in files:
         digest.update(python_file.relative_to(output_path.parent).as_posix().encode() + python_file.read_bytes())
     case = Path(export_root) / digest.hexdigest()[:20]
     for python_file in files:
         (copy := case / python_file.relative_to(output_path.parent)).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(python_file, copy)
-    case_data = {"node": item.nodeid, "target": target, "imports": imports, "pydantic": pydantic}
+    case_data = {
+        "node": item.nodeid,
+        "target": target,
+        "imports": imports,
+        "pydantic": pydantic,
+        "encoding": encoding,
+    }
     (case / "case.json").write_text(json.dumps({**case_data, "output": output_path.name}), encoding="utf-8")
     (Path(export_root) / "import_code.py").write_text(_GENERATED_OUTPUT_IMPORT_CODE, encoding="utf-8")
 

@@ -1946,6 +1946,23 @@ def test_custom_formatter_resolves_relative_resources_from_the_output_in_every_m
     assert_output(output_path.read_text(encoding="utf-8"), suffix=".py")
 
 
+def test_custom_formatter_resolves_relative_resources_from_the_output_directory_with_ruff(tmp_path: Path) -> None:
+    """Read a relative path of the formatter kwargs where a directory output lies, also in the deferred Ruff step."""
+    output_dir = tmp_path / "generated" / "models"
+    output_dir.mkdir(parents=True)
+    shutil.copyfile(DATA_PATH / "python" / "custom_formatters" / "license_example.txt", output_dir / "license.txt")
+    with chdir(tmp_path):
+        run_main_with_args([
+            *("--input", str(OPEN_API_DATA_PATH / "modular.yaml"), "--input-file-type", "openapi"),
+            *("--output", "generated/models"),
+            *("--disable-timestamp", "--formatters", "ruff-format"),
+            *("--custom-formatters", "tests.data.python.custom_formatters.add_license"),
+            *("--custom-formatters-kwargs", '{"license_file": "license.txt"}'),
+        ])
+
+    assert_directory_content(output_dir)
+
+
 @pytest.mark.parametrize(
     ("mode", "expected_exit"),
     [

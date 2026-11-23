@@ -1247,7 +1247,10 @@ def _format_deferred_output(
     settings_path: Path,
     files: Iterable[Path],
 ) -> None:
-    """Apply deferred Ruff formatting only when a Ruff formatter is configured, to the files written in the encoding."""
+    """Apply deferred Ruff formatting only when a Ruff formatter is configured, to the files written in the encoding.
+
+    The paths are absolute where the working directory changes around the call (``_emit_results``).
+    """
     if not config.formatters:
         return
 
@@ -1301,8 +1304,6 @@ def _read_custom_file_header(
 def _emit_results(
     results: _ParserResults,
     input_: _GenerationInput,
-    input_filename: str | None,
-    custom_file_header: str | None,
     config: GenerateConfig,
     *,
     defer_formatting: bool,
@@ -1310,16 +1311,18 @@ def _emit_results(
     settings_path: Path,
     allow_empty_api: bool = False,
     models_not_found_hint: str = "",
+    formatter_cwd: Path | None = None,
 ) -> str | GeneratedModules | None:
-    if not input_filename:
-        input_filename = _default_input_filename(input_)
+    input_filename = config.input_filename or _default_input_filename(input_)
     if not results:
         if allow_empty_api:
             return None
         msg = f"Models not found in the input data{models_not_found_hint}"
         raise Error(msg)
 
-    custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
+    custom_file_header = _read_custom_file_header(
+        config.custom_file_header, config.custom_file_header_path, config.encoding
+    )
     has_custom_file_header = bool(custom_file_header)
     header_prefix, header_suffix = _build_file_header_parts(custom_file_header, config)
 
@@ -1345,7 +1348,9 @@ def _emit_results(
             raise
         raise Error(refusal) from e
     if defer_formatting:
-        _format_deferred_output(output, config, data_model_types, settings_path, written)
+        absolute_output, absolute_files = output.absolute(), [file.absolute() for file in written]
+        with chdir(formatter_cwd):
+            _format_deferred_output(absolute_output, config, data_model_types, settings_path, absolute_files)
 
     return None
 
@@ -2260,13 +2265,12 @@ def _emit_generation(run: _GenerationRun, parsed: _ParsedGeneration) -> str | Ge
     generated = emit_results(
         results,
         run.input_,
-        config.input_filename,
-        config.custom_file_header,
         config,
         defer_formatting=run.defer_formatting,
         data_model_types=run.data_model_types,
         settings_path=run.emit_settings_path,
         models_not_found_hint=models_not_found_hint,
+        formatter_cwd=run.output_context_path if run.use_output_cwd else None,
     )
     if metadata is not None:
         _write_model_metadata(*metadata, config.encoding)
