@@ -6086,6 +6086,20 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_object_maps.py"
+qualname = "get_additional_properties_root_field"
+rule_code = "MUT204"
+target = "datamodel_code_generator.types.DataType(is_dict=True)"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_object_maps.py"
+qualname = "get_typed_additional_properties_field"
+rule_code = "MUT204"
+target = "datamodel_code_generator.types.DataType(is_dict=True)"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_object_maps.py"
 qualname = "is_direct_key_schema"
 rule_code = "MUT207"
 target = "_property_names_forbids_all_keys"
@@ -9264,6 +9278,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_value_keywords.py"
+qualname = "get_data_type_from_json_value"
+rule_code = "MUT204"
+target = "datamodel_code_generator.types.DataType(is_dict=True)"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_value_keywords.py"
 qualname = "get_effective_array_length"
 rule_code = "MUT207"
 target = "_get_array_items_constraints"
@@ -9642,10 +9663,24 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
+qualname = "JsonSchemaParser._build_allof_type"
+rule_code = "MUT204"
+target = "datamodel_code_generator.types.DataType(is_dict=True)"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser._build_field_ref_site"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser.jsonschema.JsonSchemaParser._parse_object_item"
 count = 3
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/jsonschema.py"
+qualname = "JsonSchemaParser._build_lightweight_type"
+rule_code = "MUT204"
+target = "datamodel_code_generator.types.DataType(is_dict=True)"
+count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
