@@ -1041,6 +1041,7 @@ def test_preset_sets_opt_in_option(
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "allof_parents_as_models" / "ref_sibling_parents.json",
+            "jsonschema",
             [],
             "--read-allof-parents-as-their-models",
             "--no-read-allof-parents-as-their-models",
@@ -1048,6 +1049,7 @@ def test_preset_sets_opt_in_option(
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
+            "jsonschema",
             ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"],
             "--read-set-item-fields-in-class-order",
             "--no-read-set-item-fields-in-class-order",
