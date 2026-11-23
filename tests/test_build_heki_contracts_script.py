@@ -1,7 +1,8 @@
 """Tests for heki's contracts of the package: written from the records, and held against today's findings.
 
-heki is a development dependency (the ``test`` dependency group). ``scripts/build_heki_contracts.py`` writes
-``scripts/heki.toml``; ``scripts/heki_baseline.toml`` records today's findings, which only shrink
+heki is a development dependency: the ``heki`` dependency group, which ``dev`` includes and of CI only the ``heki`` tox
+environment installs, so the tests that run it need the ``heki`` capability. ``scripts/build_heki_contracts.py``
+writes ``scripts/heki.toml``; ``scripts/heki_baseline.toml`` records today's findings, which only shrink
 (``scripts/check_ratchets.py`` counts their sites).
 """
 
@@ -22,6 +23,7 @@ import tomllib
 from scripts import build_heki_contracts, check_ratchets
 from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
 from scripts.fact_tables import MemberUse, StoreMember
+from tests.capabilities import needs
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
@@ -136,7 +138,7 @@ the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them a
 
 
 def _heki(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    """Run heki of the environment (the test dependency group installs it) with the contracts of the repository."""
+    """Run heki of the environment (the heki dependency group installs it) with the contracts of the repository."""
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
     command = [heki, "check", "--config", str(CONTRACTS), *args, "src"]
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
@@ -152,6 +154,7 @@ def test_heki_contracts_are_written_from_the_records() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert("the guard of the contracts must fail the test, not be stored as an expected output")
 def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> None:
     """No heki finding in src/ is missing from the baseline, and every entry still counts what heki finds.
@@ -180,6 +183,7 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
     )
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
 def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_reads(tmp_path: Path) -> None:
     """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none.
@@ -274,6 +278,7 @@ class DataModelFieldBase:
 """A field class for the seeded ``model/base.py``, whose ``extras`` a write form aliases."""
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
 def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Path) -> None:
     """Each list mutator, a write through an alias and a store-only call in a callback are findings, once per call.
@@ -408,6 +413,7 @@ SEEDED_HOME_RECORD = DecisionHome(
 )
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
 def test_heki_reports_reads_of_a_home_outside_its_modules_and_sites(tmp_path: Path) -> None:
     """A run-time read of a def or class home outside its row's home modules and sites is a finding; theirs is none.
@@ -574,6 +580,7 @@ SEEDED_BUILDER_RECORDS = (
 )
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
 def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
     """A parse method called outside its tables, a table read outside its builder, a marked output built elsewhere.
@@ -693,6 +700,7 @@ SEEDED_HOST_PACKAGE = {
 }
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
 def test_heki_reports_private_access_of_the_concern_modules(tmp_path: Path) -> None:
     """A concern module reads, calls or writes another class's private member only through its receiver or a Host.
@@ -791,6 +799,7 @@ def test_host_contracts_cover_the_files_where_slf001_is_off() -> None:
     )
 
 
+@needs("heki")
 @pytest.mark.allow_direct_assert(
     "the rule names of the ratchet must fail the test, not be stored as an expected output"
 )
