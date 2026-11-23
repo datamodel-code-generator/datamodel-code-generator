@@ -3,10 +3,41 @@
 
 from __future__ import annotations
 
-from typing import Any
+from enum import StrEnum
+from typing import Annotated
 
-from pydantic import RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints
 
 
-class Model(RootModel[Any]):
-    root: Any
+class Owner(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    name: str | None = None
+
+
+class CountedRow(RootModel[list[float] | None]):
+    root: Annotated[list[float] | None, Field(min_length=1)] = None
+
+
+class Kind(StrEnum):
+    a = 'a'
+    b = 'b'
+
+
+class Matrix(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    rows: list[list[float]] | None = None
+    by_name: dict[str, list[float]] | None = None
+    counted_rows: list[CountedRow] | None = None
+    grid_maps: list[dict[str, str] | None] | None = None
+    nested_maps: dict[str, dict[str, str] | None] | None = None
+    by_pattern: (
+        dict[Annotated[str, StringConstraints(pattern=r'^a')], list[float]] | None
+    ) = None
+    pair: tuple[list[float], str] | None = None
+    owners: list[Owner] | None = None
+    owner_map: dict[str, Owner] | None = None
+    kinds: list[Kind] | None = None

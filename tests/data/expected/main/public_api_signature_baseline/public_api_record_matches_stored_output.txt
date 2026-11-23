@@ -3163,7 +3163,7 @@ class AsyncAPISchema
     location: SchemaLocation | None = None
 BINDING_SCHEMA_FIELD_NAMES: frozenset[str] = frozenset({'headers', 'query', 'key', 'groupId', 'clientId'})
 INTERNAL_SCHEMA_CONTAINER = 'x-datamodel-code-generator-asyncapi-schemas'
-JSON_SCHEMA_FORMATS: frozenset[str] = frozenset({'application/schema+json', 'application/schema+yaml'})
+JSON_SCHEMA_FORMATS: frozenset[str] = frozenset({'application/schema', 'application/schema+json', 'application/schema+yaml'})
 class MultiFormatSchemaObject(BaseModel)
     schema_: Any = Field(alias='schema')
     schema_format: StrictStr | None = Field(default=None, alias='schemaFormat')

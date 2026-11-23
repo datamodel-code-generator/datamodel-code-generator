@@ -1,0 +1,31 @@
+asyncapi: 3.0.0
+info:
+  title: Component aliases of a Multi Format Schema Object
+  version: 1.0.0
+channels:
+  labels:
+    address: /labels
+    messages:
+      label:
+        payload:
+          $ref: '#/components/schemas/LabelAlias'
+operations:
+  receiveLabels:
+    action: receive
+    channel:
+      $ref: '#/channels/labels'
+components:
+  schemas:
+    Label:
+      schemaFormat: application/schema+json;version=draft-07
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+        required:
+          - name
+    LabelAlias:
+      $ref: '#/components/schemas/Label'
+    LegacyLabel:
+      $ref: '#/components/schemas/LabelAlias'

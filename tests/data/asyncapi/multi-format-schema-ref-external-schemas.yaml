@@ -1,0 +1,13 @@
+asyncapi: 3.0.0
+info:
+  title: Multi Format Schema Objects of another document
+  version: 1.0.0
+components:
+  schemas:
+    Note:
+      schemaFormat: application/schema+json;version=draft-07
+      schema:
+        type: object
+        properties:
+          text: {type: string}
+        required: [text]

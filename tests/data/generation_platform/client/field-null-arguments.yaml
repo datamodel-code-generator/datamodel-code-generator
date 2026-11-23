@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info: {title: Rows, version: "1"}
+servers: [{url: "https://rows.example.com"}]
+paths:
+  /rows:
+    post:
+      operationId: sendRows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Row"}
+      responses:
+        "204": {description: Sent.}
+  /parts:
+    post:
+      operationId: sendParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Parts"}
+      responses:
+        "200":
+          description: The parts as stored.
+          content:
+            multipart/form-data:
+              schema: {$ref: "#/components/schemas/Parts"}
+components:
+  schemas:
+    Row:
+      type: object
+      required: [labels]
+      properties:
+        labels:
+          type: [object, "null"]
+          patternProperties: {"^a": {type: string}}
+          additionalProperties: false
+        names:
+          type: [object, "null"]
+          propertyNames: {pattern: "^a"}
+          additionalProperties: {type: string}
+        plain:
+          type: [object, "null"]
+          additionalProperties: {type: string}
+    Parts:
+      type: object
+      properties:
+        file: {type: string, format: binary}
+        note: {type: [string, "null"]}
+        count: {type: [integer, "null"]}

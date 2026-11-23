@@ -1478,7 +1478,8 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         description=(
             "Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, a "
             "map value of any form, a nested array, a map or an allOf of one $ref included, as it "
-            "is written for a scalar or an object. An enum or a const still rejects null."
+            "is written for a scalar or an object. The option adds no null to an enum or a const; an enum that "
+            "lists null admits it with or without the option."
         ),
     ),
     PresetOptionGroup(

@@ -1,0 +1,26 @@
+asyncapi: 3.0.0
+info:
+  title: A plain-name anchor inside a Multi Format Schema Object
+  version: 1.0.0
+channels:
+  notes:
+    address: /notes
+    messages:
+      note:
+        payload:
+          $ref: '#/components/schemas/Box'
+components:
+  schemas:
+    Note:
+      schemaFormat: application/schema+json;version=draft-07
+      schema:
+        $anchor: note
+        type: object
+        properties:
+          text:
+            type: string
+    Box:
+      type: object
+      properties:
+        note:
+          $ref: '#note'

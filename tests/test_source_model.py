@@ -899,19 +899,34 @@ def _check_runs(form: Path) -> list[Finding]:
         ]
 
 
+def _unquoted(target: str) -> str:
+    """Return a target without whitespace and double quotes, which a verdict's site list cannot hold."""
+    return re.sub(r"[\s\"]", "", target)
+
+
 def _generation_store_usage(form: Path) -> list[Finding]:
-    """Run the generation store check over a form's modules, as parser code and as model code."""
+    """Read the ``__dict__`` keys a form's modules write, as parser and as model code, as the fact table check does.
+
+    A module the model cannot read is a finding of its own.
+    """
     paths = sorted(form.rglob("*.py")) if form.is_dir() else [form]
     found = []
     for scope in typing.get_args(check_generation_store_usage.Scope):
-        for violation in check_generation_store_usage.scan_files([(path, scope) for path in paths]).violations:
-            place = violation.path.relative_to(form.parent).as_posix().removesuffix(".txt")
-            target = re.sub(r"[\s\"]", "", violation.target)
+        writes, problems = check_generation_store_usage.dict_key_writes([(path, scope) for path in paths])
+        readings = [
+            *(
+                (write.path, write.line, f"__dict__[{write.key}]", f"writes the key (in {write.function})")
+                for write in writes
+            ),
+            *((problem.path, problem.line, problem.target, problem.message) for problem in problems),
+        ]
+        for path, line, target, text in readings:
+            place = path.relative_to(form.parent).as_posix().removesuffix(".txt")
             found.append(
                 Finding(
-                    f"{scope}/{target}",
-                    _site(form, place, violation.line),
-                    f"{scope}: {place}:{violation.line}: {violation.message} (in {violation.function})",
+                    f"{scope}/{_unquoted(target)}",
+                    _site(form, place, line),
+                    f"{scope}: {place}:{line}: {target} {text}",
                 )
             )
     return found
@@ -1220,9 +1235,7 @@ RULES: dict[str, RuleRun] = {
         _legacy_row_reads,
     ),
     "generation-store-usage": RuleRun(
-        "scripts.check_generation_store_usage",
-        frozenset({"bindings", "references", "imports"}),
-        _generation_store_usage,
+        "scripts.check_generation_store_usage", frozenset({"bindings", "references"}), _generation_store_usage
     ),
     "generated-import-closure": RuleRun(
         "tests.test_generated_import_closure", frozenset({"bindings", "references", "extents"}), _unbound_names

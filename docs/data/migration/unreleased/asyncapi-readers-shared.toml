@@ -1,0 +1,37 @@
+[[change]]
+id = "asyncapi-readers-shared"
+category = "experimental"
+title = "AsyncAPI input reads schemas through the shared document readers"
+summary = "An AsyncAPI document registers its component schemas, and the schema a component Multi Format Schema Object holds, as schema resources, so plain-name anchors resolve; application/schema is a JSON Schema schemaFormat. Both inputs failed before."
+refs = ["#6841", "#6937"]
+decision = ["#6841"]
+kind = "experimental"
+action = "none"
+source = "release-note"
+affects = { experimental = ["input-format.asyncapi"] }
+covers = [
+    "main/asyncapi/main_asyncapi/component_schema_plain_name_anchors.py",
+    "main/asyncapi/main_asyncapi/message_payload_plain_name_anchor.py",
+    "main/asyncapi/main_asyncapi/plain_name_anchor_in_multi_format_schema_object.py",
+    "main/asyncapi/main_asyncapi/schema_format_bare_json_schema_media_type.py",
+]
+
+[[change.cells]]
+input = ["tests/data/asyncapi/plain-name-anchor-payload.yaml"]
+backends = "*"
+options = "*"
+
+[[change.cells]]
+input = ["tests/data/asyncapi/plain-name-anchor-wrapped-schema.yaml"]
+backends = "*"
+options = "*"
+
+[[change.cells]]
+input = ["tests/data/asyncapi/plain-name-anchors.yaml"]
+backends = "*"
+options = "*"
+
+[[change.cells]]
+input = ["tests/data/asyncapi/schema-format-bare-json-schema.yaml"]
+backends = "*"
+options = "*"

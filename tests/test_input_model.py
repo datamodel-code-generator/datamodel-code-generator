@@ -1332,6 +1332,147 @@ def test_input_model_reuse_every_reached_input_model_type(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_models", "strategy"),
+    [
+        pytest.param(["shop:Order"], "reuse-all", id="model-reuse-all"),
+        pytest.param(["shop:Order"], "reuse-foreign", id="model-reuse-foreign"),
+        pytest.param(["shop:Record"], "reuse-all", id="dataclass-reuse-all"),
+        pytest.param(["shop:Record"], "reuse-foreign", id="dataclass-reuse-foreign"),
+        pytest.param(["shop:Basket"], "reuse-all", id="nested-class-reuse-all"),
+        pytest.param(["shop:Order", "shop:Basket"], "reuse-all", id="two-models-reuse-all"),
+        pytest.param(["shop:Child"], "reuse-all", id="inherited-reuse-all"),
+        pytest.param(["shop:Override"], "reuse-all", id="overridden-reuse-all"),
+        pytest.param(["shop:Override"], "reuse-foreign", id="overridden-reuse-foreign"),
+        pytest.param(["shop:Painting"], "reuse-all", id="merged-reuse-all"),
+    ],
+)
+def test_input_model_reuse_same_named_classes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, input_models: list[str], strategy: str
+) -> None:
+    """Reuse imports the class a definition comes from, not another class of its name the model mentions (#6883).
+
+    ``Order`` holds ``shop.Item`` and ``shop.Status`` and names ``legacy.Item`` and ``legacy.Status`` in ``type[...]``
+    fields; ``Basket`` names the nested ``Basket.Legacy.Item``, and the parent ``Base`` of ``Child`` holds
+    ``shop.Item`` where ``Child`` names ``legacy.Item``. ``Override`` redeclares the ``legacy.Item`` field of its parent
+    ``LegacyBase`` as ``shop.Item``: the two classes get distinct definition names across the schemas of the model and
+    its parent, so each field imports its own class. Up to 0.100.0 the field of a Pydantic model or a dataclass input
+    was typed by the class of that name the fields reach last, which rejects every valid value; the definitions of two
+    input models were already read by identity. The ``Color`` of ``Painting`` and the ``legacy.Color`` of its
+    ``Frame`` have one schema, which Pydantic merges into one definition, so the definition keeps the class of its
+    name. The input modules are written for the test, as tests/data/python holds no new modules.
+    """
+    monkeypatch.chdir(tmp_path)
+    for module in ("shop", "legacy"):
+        monkeypatch.delitem(sys.modules, module, raising=False)
+    (tmp_path / "legacy.py").write_text(
+        "from enum import Enum\n\n"
+        "from pydantic import BaseModel\n\n\n"
+        "class Item(BaseModel):\n"
+        "    name: str\n\n\n"
+        "class Status(Enum):\n"
+        "    OLD = 'old'\n\n\n"
+        "class Color(Enum):\n"
+        "    RED = 'red'\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "shop.py").write_text(
+        "from dataclasses import dataclass\n"
+        "from enum import Enum\n\n"
+        "from pydantic import BaseModel\n\n"
+        "import legacy\n\n\n"
+        "class Item(BaseModel):\n"
+        "    count: int\n\n\n"
+        "class Status(Enum):\n"
+        "    NEW = 'new'\n\n\n"
+        "class Order(BaseModel):\n"
+        "    item: Item\n"
+        "    status: Status\n"
+        "    legacy_item_type: type[legacy.Item] | None = None\n"
+        "    legacy_status_type: type[legacy.Status] | None = None\n\n\n"
+        "@dataclass\n"
+        "class Record:\n"
+        "    item: Item\n"
+        "    status: Status\n"
+        "    legacy_item_type: type[legacy.Item] | None = None\n\n\n"
+        "class Basket(BaseModel):\n"
+        "    class Legacy:\n"
+        "        class Item(BaseModel):\n"
+        "            name: str\n\n"
+        "    item: Item\n"
+        "    legacy_item_type: type[Legacy.Item] | None = None\n\n\n"
+        "class Base(BaseModel):\n"
+        "    item: Item\n\n\n"
+        "class Child(Base):\n"
+        "    legacy_item: legacy.Item\n\n\n"
+        "class LegacyBase(BaseModel):\n"
+        "    item: legacy.Item\n\n\n"
+        "class Override(LegacyBase):\n"
+        "    item: Item\n\n\n"
+        "class Color(Enum):\n"
+        "    RED = 'red'\n\n\n"
+        "@dataclass\n"
+        "class Frame:\n"
+        "    color: legacy.Color\n\n\n"
+        "@dataclass\n"
+        "class Painting:\n"
+        "    color: Color\n"
+        "    frame: Frame\n",
+        encoding="utf-8",
+    )
+    first, *others = input_models
+    run_input_model_and_assert(
+        input_model=first,
+        output_path=tmp_path / "output.py",
+        extra_args=[
+            *(arg for other in others for arg in ("--input-model", other)),
+            "--input-model-ref-strategy",
+            strategy,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_input_model_reuse_same_named_discriminator_mapping(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A discriminator mapping names the definition its union branch names after a same-named class is renamed.
+
+    ``Kennel.pet`` is a discriminated union of ``legacy_pets.Cat`` and ``Dog``, and ``Pound`` redeclares it with
+    ``pets.Cat``, so reuse names the parent's ``Cat`` definition ``Cat_2``. The mapping of the parent's union names
+    ``Cat_2`` as its ``oneOf`` branch does; it named the child's ``Cat`` before. The generated module is the same
+    either way, as each variant carries its tag, so the loaded schema is compared.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for module in ("pets", "legacy_pets"):
+        monkeypatch.delitem(sys.modules, module, raising=False)
+    (tmp_path / "legacy_pets.py").write_text(
+        "from typing import Literal\n\n"
+        "from pydantic import BaseModel\n\n\n"
+        "class Cat(BaseModel):\n"
+        "    kind: Literal['cat']\n"
+        "    name: str\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "pets.py").write_text(
+        "from typing import Annotated, Literal\n\n"
+        "from pydantic import BaseModel, Field\n\n"
+        "import legacy_pets\n\n\n"
+        "class Cat(BaseModel):\n"
+        "    kind: Literal['kitten']\n\n\n"
+        "class Dog(BaseModel):\n"
+        "    kind: Literal['dog']\n\n\n"
+        "class Kennel(BaseModel):\n"
+        "    pet: Annotated[legacy_pets.Cat | Dog, Field(discriminator='kind')]\n\n\n"
+        "class Pound(Kennel):\n"
+        "    pet: Annotated[Cat | Dog, Field(discriminator='kind')]\n",
+        encoding="utf-8",
+    )
+    schema = load_model_schema(["pets:Pound"], InputFileType.JsonSchema, InputModelRefStrategy.ReuseAll)
+    assert_output(json.dumps(schema, indent=2))
+
+
 # ============================================================================
 # --input-model-ref-strategy tests
 # ============================================================================
