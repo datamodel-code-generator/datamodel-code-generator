@@ -1826,6 +1826,25 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "'rename-type': rename type class with suffix to preserve field name.",
         choices=_values(FieldTypeCollisionStrategy),
     ),
+    toggle(
+        Section.FIELD,
+        "--rename-redeclared-fields-hiding-types",
+        help="Give a field that a subclass redeclares the name its base's field was given where that field is "
+        "renamed because it is named like its type (`Pet_1` with `alias='Pet'`), so the subclass holds one field for "
+        "the wire key; without it the redeclared field keeps its name beside the inherited renamed one, so two "
+        "fields read the key, as in 0.100.0",
+    ),
+    toggle(
+        Section.FIELD,
+        "--rename-fields-hiding-types-from-type-checkers",
+        help="Tell a field that the class body assigns (a default or `field(...)`) and that is named like the type "
+        "it is annotated with from that type for type checkers, which read the annotation as the field: msgspec.Struct "
+        "renames the field and keeps the wire name in `name=`, dataclasses.dataclass, which has no alias, renames "
+        "the type, as --field-type-collision-strategy rename-type does for Pydantic; it also gives a field "
+        "that a subclass redeclares the name of the renamed field, as --rename-redeclared-fields-hiding-types "
+        "does. Without it these outputs keep the field and the type names, as in 0.100.0, and type checkers "
+        "report the annotation",
+    ),
     # Options for templating output
     value(
         (Section.TEMPLATE, _C.FIELD),

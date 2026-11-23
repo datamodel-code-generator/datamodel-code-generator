@@ -1154,6 +1154,14 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
     },
+    "rename_redeclared_fields_hiding_types": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+    },
+    "rename_fields_hiding_types_from_type_checkers": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+    },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
       "reason": "Whether request and response models are split; the project decides which models it needs."

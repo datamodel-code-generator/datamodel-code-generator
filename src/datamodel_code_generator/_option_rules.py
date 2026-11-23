@@ -62,6 +62,7 @@ IMPLIED_OPTIONS: Final[dict[str, str]] = {
     "use_annotated": "field_constraints",
     "use_type_alias_type": "use_type_alias",
     "intersect_combined_schema_keywords": "intersect_allof_keywords",
+    "rename_fields_hiding_types_from_type_checkers": "rename_redeclared_fields_hiding_types",
 }
 """The option each option turns on when it is enabled, over any value given for that option."""
 

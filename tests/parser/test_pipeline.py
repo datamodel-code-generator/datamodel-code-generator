@@ -64,6 +64,10 @@ COVERAGE_RUNS = (
         "--use-typed-nullable-map-values"
     ),
     (
+        "--input tests/data/jsonschema/field_named_like_type_redeclared.json --input-file-type jsonschema "
+        "--rename-redeclared-fields-hiding-types"
+    ),
+    (
         "--input tests/data/jsonschema/serialized_decimal_default_collision.json --input-file-type jsonschema "
         "--deserialize-default-values decimal"
     ),

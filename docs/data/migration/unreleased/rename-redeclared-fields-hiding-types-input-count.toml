@@ -1,0 +1,6 @@
+[[change]]
+id = "rename-redeclared-fields-hiding-types-input-count"
+extends = "rename-redeclared-fields-hiding-types"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]
