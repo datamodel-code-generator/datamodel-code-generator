@@ -154,6 +154,7 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--keep-bases-beside-generic-base-class",
     "--rename-redeclared-fields-hiding-types",
     "--rename-fields-hiding-types-from-type-checkers",
+    "--apply-default-values-to-true-properties",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
@@ -680,6 +681,15 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "dataclasses.dataclass"],
         id="rename-fields-hiding-types-from-type-checkers",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "default_values_true_properties" / "restated.json",
+        "jsonschema",
+        [
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *("--default-values", '{"Dog.name": "rex", "Dog.tag": "dt", "Puppy.name": "pup"}'),
+        ],
+        id="apply-default-values-to-true-properties",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -1130,6 +1140,14 @@ def test_preset_sets_opt_in_option(
             "--rename-fields-hiding-types-from-type-checkers",
             "--no-rename-fields-hiding-types-from-type-checkers",
             id="rename-fields-hiding-types-from-type-checkers",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "default_values_true_properties" / "restated.json",
+            "jsonschema",
+            ["--default-values", '{"Dog.name": "rex", "Dog.tag": "dt", "Puppy.name": "pup"}'],
+            "--apply-default-values-to-true-properties",
+            "--no-apply-default-values-to-true-properties",
+            id="apply-default-values-to-true-properties",
         ),
     ],
 )

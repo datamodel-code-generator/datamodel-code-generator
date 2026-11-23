@@ -136,6 +136,7 @@ The 20261123 presets keep the 20261120 options and add:
 - Configured bases beside the generic base class (`--keep-bases-beside-generic-base-class`): Keep the classes a model is configured to inherit, from --base-class-map, customBasePath, --base-class or the class an --external-ref-mapping or x-python-import schema stands for, beside the generated base class of --use-generic-base-class, so the model keeps their members and their import is used.
 - Redeclared fields renamed with their base (`--rename-redeclared-fields-hiding-types`): Give a field that a subclass redeclares the name its base's field was given where that field is renamed because it is named like its type, so the subclass holds one field for the key instead of its own beside the inherited renamed one.
 - Fields named like their types told apart for type checkers (`--rename-fields-hiding-types-from-type-checkers`): Rename a msgspec field, or a dataclass type, that a field the class body assigns hides from type checkers because it is named like it, the way Pydantic output renames the field: the msgspec field keeps the wire name in name=, and a dataclass, which has no alias, renames the type.
+- Default values of true properties (`--apply-default-values-to-true-properties`): Under --default-values, give a property whose schema is true the default its Class.field or field key gives it, also where a child restates an inherited property as true, as a property whose schema is {} takes it.
 
 ## Older presets
 

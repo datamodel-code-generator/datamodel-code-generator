@@ -172,6 +172,7 @@ datamodel-codegen [OPTIONS]
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Allow extra fields in generated Pydantic models (extra='allow'). |
 | [`--allow-leading-underscore-class-name`](model-customization.md#allow-leading-underscore-class-name) | Allow an explicitly specified root class name to start with an underscore. |
 | [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) | Allow Pydantic model population by field name (not just alias). |
+| [`--apply-default-values-to-true-properties`](model-customization.md#apply-default-values-to-true-properties) | Give the default of `--default-values` to a property whose schema is `true`. |
 | [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) | Give the fields that leave out some field options the ones others take. |
 | [`--base-class`](model-customization.md#base-class) | Specify a custom base class for generated models. |
 | [`--base-class-map`](model-customization.md#base-class-map) | Specify different base classes for specific models via JSON mapping. |
@@ -409,6 +410,7 @@ All options sorted alphabetically:
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) - Allow Pydantic model population by field name (not just alia...
 - [`--allow-private-network`](general-options.md#allow-private-network) - Allow HTTP requests to private network schema endpoints.
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs) - Enable fetching of `$ref` targets over HTTP/HTTPS.
+- [`--apply-default-values-to-true-properties`](model-customization.md#apply-default-values-to-true-properties) - Give the default of `--default-values` to a property whose s...
 - [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) - Give the fields that leave out some field options the ones o...
 - [`--base-class`](model-customization.md#base-class) - Specify a custom base class for generated models.
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...

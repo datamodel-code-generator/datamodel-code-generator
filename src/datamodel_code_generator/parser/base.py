@@ -1186,6 +1186,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_single_line_docstring: bool = config.use_single_line_docstring
         self.use_default_kwarg: bool = config.use_default_kwarg
         self.apply_field_options_to_every_field: bool = config.apply_field_options_to_every_field
+        self.apply_default_values_to_true_properties: bool = config.apply_default_values_to_true_properties
         self.use_missing_sentinel: bool = config.use_missing_sentinel
         self.deserialize_default_value_types: frozenset[DefaultValueType] = frozenset(config.deserialize_default_values)
         self._decimal_default_warning_count = 0

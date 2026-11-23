@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 317>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 318>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -458,6 +458,7 @@ class BaseGenerateConfig(BaseModel)
     use_single_line_docstring: bool = False
     use_default_kwarg: bool = False
     apply_field_options_to_every_field: bool = False
+    apply_default_values_to_true_properties: bool = False
     deserialize_default_values: Sequence[DefaultValueType] = ()
     use_missing_sentinel: bool = False
     reuse_model: bool = False
@@ -730,7 +731,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 317>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 318>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -890,6 +891,7 @@ class ParserConfig(BaseModel)
     use_single_line_docstring: bool = False
     use_default_kwarg: bool = False
     apply_field_options_to_every_field: bool = False
+    apply_default_values_to_true_properties: bool = False
     deserialize_default_values: Sequence[DefaultValueType] = ()
     use_missing_sentinel: bool = False
     reuse_model: bool = False
@@ -3329,6 +3331,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.use_single_line_docstring
     self.use_default_kwarg
     self.apply_field_options_to_every_field
+    self.apply_default_values_to_true_properties
     self.use_missing_sentinel
     self.deserialize_default_value_types
     self.checks_literal_values
@@ -3756,6 +3759,8 @@ class GenerationStore
     @deprecated('Use GenerationStore.builder().record_nullable_without_default() instead.', category=None)
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None
     @staticmethod
+    def record_raw_schema_default(field_: DataModelFieldBase) -> None
+    @staticmethod
     @deprecated('Use GenerationStore.builder().omit_field_default() instead.', category=None)
     def omit_field_default(field_: DataModelFieldBase) -> None
     @staticmethod
@@ -3895,6 +3900,7 @@ class GraphBuilder
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None
     def set_field_runtime_default(self, field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]) -> None
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None
+    def record_raw_schema_default(self, field_: DataModelFieldBase) -> None
     def omit_field_default(self, field_: DataModelFieldBase) -> None
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None
     def set_field_extras(self, field_: DataModelFieldBase, extras: dict[str, Any]) -> None
@@ -3931,7 +3937,7 @@ class ModelRename
     new_class_name: str
     scheme: RenameScheme | None
     reference_name: str
-NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 47>)
+NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 48>)
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
     uses _OrderedSetItem = TypeVar('_OrderedSetItem')
 OwnerModels = typing.Any
@@ -5075,7 +5081,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 317>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 318>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5097,7 +5103,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 313>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 314>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -6016,6 +6022,7 @@ class ParserConfigDict(TypedDict)
     use_single_line_docstring: NotRequired[bool]
     use_default_kwarg: NotRequired[bool]
     apply_field_options_to_every_field: NotRequired[bool]
+    apply_default_values_to_true_properties: NotRequired[bool]
     deserialize_default_values: NotRequired[Sequence[DefaultValueType]]
     use_missing_sentinel: NotRequired[bool]
     reuse_model: NotRequired[bool]
@@ -6402,6 +6409,7 @@ class BaseGenerateConfig(TypedDict)
     use_single_line_docstring: NotRequired[bool]
     use_default_kwarg: NotRequired[bool]
     apply_field_options_to_every_field: NotRequired[bool]
+    apply_default_values_to_true_properties: NotRequired[bool]
     deserialize_default_values: NotRequired[Sequence[DefaultValueType]]
     use_missing_sentinel: NotRequired[bool]
     reuse_model: NotRequired[bool]

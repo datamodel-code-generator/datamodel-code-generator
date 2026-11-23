@@ -225,6 +225,7 @@
 - `--allow-extra-fields`: Allow extra fields in generated Pydantic models (extra='allow').
 - `--allow-leading-underscore-class-name`: Allow an explicitly specified root class name to start with an unders...
 - `--allow-population-by-field-name`: Allow Pydantic model population by field name (not just alias).
+- `--apply-default-values-to-true-properties`: Give the default of `--default-values` to a property whose schema...
 - `--apply-field-options-to-every-field`: Give the fields that leave out some field options the ones others take.
 - `--base-class`: Specify a custom base class for generated models.
 - `--base-class-map`: Specify different base classes for specific models via JSON mapping.
@@ -263,6 +264,7 @@
 - `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
+- `--no-apply-default-values-to-true-properties`
 - `--no-apply-field-options-to-every-field`
 - `--no-collapse-constrained-root-models-as-annotated`
 - `--no-collapse-reuse-models`

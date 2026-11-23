@@ -1572,6 +1572,15 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "the wire name in name=, and a dataclass, which has no alias, renames the type."
         ),
     ),
+    PresetOptionGroup(
+        title="Default values of true properties",
+        config=PresetConfig(apply_default_values_to_true_properties=True),
+        description=(
+            "Under --default-values, give a property whose schema is true the default its Class.field or field key "
+            "gives it, also where a child restates an inherited property as true, as a property whose schema is {} "
+            "takes it."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 
