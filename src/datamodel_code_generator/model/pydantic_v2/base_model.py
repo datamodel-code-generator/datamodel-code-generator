@@ -75,7 +75,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
-    InputNames,
+    FieldInputNames,
     _base_walk,
     _builtin_renderer,
     _default_state,
@@ -2000,7 +2000,7 @@ class _PydanticV2Model(DataModel):
         return self._applied_config()[0]
 
     @override
-    def validates_by(self) -> InputNames:
+    def validates_by(self) -> FieldInputNames:
         """Return the names Pydantic reads the fields under, from the config the model applies (``applied_config``).
 
         By field name as Pydantic settles it: by ``validate_by_name``, else by ``populate_by_name``, else where
@@ -2010,7 +2010,7 @@ class _PydanticV2Model(DataModel):
         items, known = self.applied_config()
         by_alias = items.get("validate_by_alias") != "False"
         by_name = items.get("validate_by_name", items.get("populate_by_name"))
-        return InputNames(
+        return FieldInputNames(
             by_alias=by_alias,
             by_name=not by_alias if by_name is None else by_name == "True",
             generated=items.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY, _RENDERED_NONE) != _RENDERED_NONE,

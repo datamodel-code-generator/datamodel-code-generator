@@ -1839,6 +1839,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     def __init__(self, *, reference: Reference, fields: list[DataModelFieldBase], decorators: list[str] | None=None, base_classes: list[Reference] | None=None, custom_base_class: str | list[str] | None=None, custom_template_dir: Path | None=None, extra_template_data: defaultdict[str, dict[str, Any]] | None=None, methods: list[str] | None=None, path: Path | None=None, description: str | None=None, default: Any=UNDEFINED, nullable: bool=False, keyword_only: bool=False, frozen: bool=False, treat_dot_as_module: bool | None=None, dataclass_arguments: DataclassArguments | None=None) -> None
     def iter_all_fields(self, visited: set[ModelKey] | None=None) -> Iterator[DataModelFieldBase]
     def get_dedup_key(self, class_name: str | None=None, *, use_default: bool=True) -> tuple[Any, ...]
+    def validates_by(self) -> FieldInputNames
     def create_reuse_model(self, base_ref: Reference) -> Self
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None
     def set_base_class(self) -> None
@@ -2062,6 +2063,11 @@ class DataModelFieldBase(_BaseModel)
     def invalidate_semantic_caches(self, *, invalidate_parent: bool=True) -> None
     def replace_data_type(self, new_data_type: DataType, *, clear_old_parent: bool=True) -> None
 DataModelFieldBaseT = TypeVar('DataModelFieldBaseT', bound='DataModelFieldBase')
+class FieldInputNames(NamedTuple)
+    by_alias: bool
+    by_name: bool
+    generated: bool
+    settled: bool
 GENERIC_BASE_CLASS_NAME: str = '__generic_base_class__'
 GENERIC_BASE_CLASS_PATH: str = '#/__datamodel_code_generator__/generic_base_class__'
 IMPORT_ANNOTATED = datamodel_code_generator.imports.IMPORT_ANNOTATED
@@ -5884,6 +5890,8 @@ class _PydanticV2Model(DataModel)
     @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None
     def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]
+    @override
+    def validates_by(self) -> FieldInputNames
 # a base of datamodel_code_generator.model.pydantic_v2.types.AnnotatedConstraintDataType
 class _RuntimeAnnotatedDataType(PydanticV2DataType)
     @property

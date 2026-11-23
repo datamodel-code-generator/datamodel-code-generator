@@ -120,7 +120,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
-    from datamodel_code_generator.model.base import DataModelFieldBase, InputNames
+    from datamodel_code_generator.model.base import DataModelFieldBase, FieldInputNames
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
@@ -261,7 +261,7 @@ def _is_none_type(data_type: DataType) -> bool:
     return data_type.type == NONE and not data_type.data_types and data_type.reference is None
 
 
-def _read_key(field: DataModelFieldBase, value: dict[Any, Any], names: InputNames) -> str | None:
+def _read_key(field: DataModelFieldBase, value: dict[object, object], names: FieldInputNames) -> str | None:
     """Return the key of ``value`` Pydantic reads a field from, by the config of its model (``validates_by``).
 
     Pydantic reads the aliases first, where the model validates by alias: the validation aliases, else the alias unless
@@ -340,7 +340,7 @@ def _default_refused(
             return members_refuse(members, value)
         return isinstance(value, str) and _refuses_text(node, json=json)
 
-    def field_refuses(field: DataModelFieldBase, value: dict[Any, Any], names: InputNames) -> bool:
+    def field_refuses(field: DataModelFieldBase, value: dict[object, object], names: FieldInputNames) -> bool:
         if (key := _read_key(field, value, names)) is None:
             return json and requires_value(field)
         return refused(field.data_type, value[key])

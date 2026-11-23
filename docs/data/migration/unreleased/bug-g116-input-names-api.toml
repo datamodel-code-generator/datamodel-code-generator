@@ -1,0 +1,13 @@
+[[change]]
+id = "bug-g116-input-names-api"
+category = "api"
+kind = "python-api"
+action = "review"
+source = "release-note"
+title = "Public name for the names a model reads its fields under"
+summary = "DataModel.validates_by() returns the new FieldInputNames (by alias, by name, alias generator, settled), from the config a Pydantic model applies; nothing is removed or changed."
+refs = ["#7420"]
+decision = ["#7420"]
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
