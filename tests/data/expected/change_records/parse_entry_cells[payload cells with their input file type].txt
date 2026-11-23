@@ -1,0 +1,15 @@
+{
+ "cells": [
+  {
+   "input": [
+    "payload:jsonschema/*.json"
+   ],
+   "backends": null,
+   "options": null,
+   "input_file_type": "jsonschema",
+   "aspects": null,
+   "match": null
+  }
+ ],
+ "problems": []
+}
