@@ -16230,7 +16230,11 @@ def test_main_jsonschema_allof_enum_member_of_constrained_ref(
     [
         pytest.param("pydantic_v2.BaseModel", ["--collapse-root-models"], id="pydantic_v2.BaseModel-collapse"),
         pytest.param("msgspec.Struct", ["--collapse-root-models"], id="msgspec.Struct-collapse"),
-        pytest.param("pydantic_v2.BaseModel", ["--preset", "standard-py312-20261120"], id="preset-20261120"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--target-python-version", "3.12", "--preset", "standard-py312-20261120"],
+            id="preset-20261120",
+        ),
     ],
 )
 def test_main_jsonschema_allof_enum_member_of_untyped_ref_forms(
