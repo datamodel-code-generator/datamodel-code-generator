@@ -627,24 +627,23 @@ def _is_under(nodeid: str, base: str) -> bool:
 
 
 class StoreWritesCheck:
-    """Fail a test whose generations write model facts outside store operations where the allowlist does not say so.
+    """Fail a test whose generations write model facts outside store operations where heki's baseline records none.
 
     During each test, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES` reports into a file of this test process (so pytest
     workers and the generator runs that tests start share nothing); after the test,
-    `scripts/check_generation_store_usage.py` names each write of the package as its scan names findings, and the test
-    fails for a write that `scripts/generation_store_allowlist.toml` does not list.
+    `scripts/check_generation_store_usage.py` names each write of the package as heki names its findings, and the test
+    fails for a write that `scripts/heki_baseline.toml` does not record.
     """
 
     def __init__(self) -> None:
-        """Create the report file and read the allowlist once."""
+        """Create the report file and read the baseline once."""
         from scripts import check_generation_store_usage
 
         handle, name = tempfile.mkstemp(prefix="dcg-store-writes-", suffix=".jsonl")
         os.close(handle)
         self.report = Path(name)
         self.checker = check_generation_store_usage
-        self.allowlist = check_generation_store_usage.load_allowlist()
-        self.witnesses = check_generation_store_usage.load_witnesses()
+        self.known = check_generation_store_usage.load_known_writes()
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_setup(self) -> None:
@@ -653,14 +652,14 @@ class StoreWritesCheck:
 
     @pytest.hookimpl(wrapper=True)
     def pytest_runtest_teardown(self) -> Generator[None, None, None]:
-        """Fail the test for the writes of the package that the allowlist does not list."""
+        """Fail the test for the writes of the package that the baseline does not record."""
         try:
             yield
         finally:
             os.environ.pop(CHECK_STORE_WRITES_ENV, None)
             lines = self.report.read_text(encoding="utf-8").splitlines()
             self.report.write_text("", encoding="utf-8")
-        self.checker.check_runtime_writes(lines, allowlist=self.allowlist, witnesses=self.witnesses)
+        self.checker.check_runtime_writes(lines, known=self.known)
 
 
 class SlowTestOrdering:
