@@ -3,7 +3,7 @@ id = "heki-dependency-group"
 category = "harness"
 title = "Install heki only where its tests run"
 summary = "heki moves from the test dependency group to its own group, which dev and one CI lane install; a heki capability keeps its tests to that lane, and a hook's pinned dependencies must be locked versions; the outputs of the pre-commit hook tests count as internal; the package writes the same output"
-refs = ["#1"]
+refs = ["#7440"]
 covers = [
     "ci_coverage_script/coverage_artifact_cli[entrypoint-complete].txt",
     "ci_coverage_script/coverage_artifact_cli[entrypoint-pull-request-complete].txt",
