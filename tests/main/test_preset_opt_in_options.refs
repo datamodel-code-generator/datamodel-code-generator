@@ -10,6 +10,8 @@ infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 keep-null-of-nullable-items-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-null-of-nullable-items-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
+keep-string-keywords-beside-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
+keep-string-keywords-beside-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
 read-inherited-property-schemas-in-mro-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].model.py
@@ -93,6 +95,8 @@ keep-self-referencing-array-items-practical	main/preset_opt_in_options/preset_se
 keep-self-referencing-array-items-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-self-referencing-array-items-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-self-referencing-array-items-practical].model.py
 keep-shared-members-on-collapsed-root-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-practical].model.py
 keep-shared-members-on-collapsed-root-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-practical].model.py
+keep-string-keywords-beside-formats-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-practical].model.py
+keep-string-keywords-beside-formats-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-practical].model.py
 merge-message-trait-headers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].model.py
 merge-message-trait-headers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].model.py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].model.py

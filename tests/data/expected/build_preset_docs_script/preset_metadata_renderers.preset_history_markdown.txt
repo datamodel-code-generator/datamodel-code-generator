@@ -127,6 +127,7 @@ The 20261123 presets keep the 20261120 options and add:
 
 - Mapping keys by the schema's tag type (`--read-mapping-keys-by-schema-tag-type`): Read the keys of a discriminator mapping as values of the type the schema declares for the tag property, such as the integer 2 for the key '2' of an integer enum, also where an earlier discriminated union wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first.
 - Null kept on nullable items (`--keep-null-of-nullable-items`): Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, a map value of any form, a nested array, a map or an allOf of one $ref included, as it is written for a scalar or an object. The option adds no null to an enum or a const; an enum that lists null admits it with or without the option.
+- String keywords kept beside formats (`--keep-string-keywords-beside-formats`): Keep the minLength, maxLength and pattern beside a string format that Pydantic output writes as a class no constr call constrains: an email takes them in Annotated[EmailStr, Field(...)], a byte writes them in front of the base64 decoding and a uri is the plain string they check; an output that writes a date or UUID format as str, as msgspec does, keeps the keywords an allOf member adds beside a $ref to it.
 
 ## Older presets
 

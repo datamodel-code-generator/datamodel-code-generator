@@ -145,6 +145,7 @@ OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--read-mapping-keys-by-schema-tag-type",
     "--keep-null-of-nullable-items",
+    "--keep-string-keywords-beside-formats",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
 
@@ -155,6 +156,7 @@ WARNINGS_WITH_OPTION: dict[str, str] = {
 
 WARNINGS_WITHOUT_OPTION: dict[str, str] = {
     "uuid_version_formats.json": "format of 'uuid[678]' not understood",
+    "format_string_keywords.json": "fields holding AnyUrl are written without max_length",
 }
 """The warning each input gives in a generation without the option that a turned-off test names, by file name."""
 
@@ -613,6 +615,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel", "--strict-nullable"],
         id="keep-null-of-nullable-items",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="keep-string-keywords-beside-formats",
+    ),
 )
 """The inputs each opt-in option of the 20261123 presets changes."""
 
@@ -993,6 +1001,14 @@ def test_preset_sets_opt_in_option(
             "--keep-null-of-nullable-items",
             "--no-keep-null-of-nullable-items",
             id="keep-null-of-nullable-items",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
+            "jsonschema",
+            [],
+            "--keep-string-keywords-beside-formats",
+            "--no-keep-string-keywords-beside-formats",
+            id="keep-string-keywords-beside-formats",
         ),
     ],
 )

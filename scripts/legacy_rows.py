@@ -1151,19 +1151,24 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     ),
     LegacyRow(
         "legacy-all-of-root-format-kinds",
-        "an allOf root keeps, silently, the keywords of the kinds its format names",
+        (
+            "without `--keep-string-keywords-beside-formats`, an allOf root keeps, silently, the keywords of the kinds "
+            "its format names, so a date or UUID format drops the string keywords of the root also where the output "
+            "writes it as `str`"
+        ),
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/jsonschema/allof_outer_constraints/date_time.json",
+            "tests/data/jsonschema/format_string_keywords_all_of.json",
             "--input-file-type",
             "jsonschema",
+            "--output-model-type",
+            "msgspec.Struct",
             "--disable-timestamp",
-            "--allof-merge-mode",
-            "none",
             "--formatters",
             "builtin",
         ),
+        option="--keep-string-keywords-beside-formats",
     ),
     LegacyRow(
         "legacy-undeclared-keywords-off-literal",
@@ -1329,8 +1334,11 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     ),
     LegacyRow(
         "legacy-anyurl-keeps-string-keywords",
-        "`AnyUrl` takes every string keyword and Pydantic then drops them all at render",
-        fix=7198,
+        (
+            "without `--keep-string-keywords-beside-formats`, `AnyUrl` takes every string keyword and Pydantic then "
+            "drops them all at render"
+        ),
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/legacy_rows/jsonschema_witnesses/anyurl_keywords.json",
@@ -1343,6 +1351,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--disable-timestamp",
             "--field-constraints",
         ),
+        option="--keep-string-keywords-beside-formats",
+    ),
+    LegacyRow(
+        "legacy-format-types-drop-string-keywords",
+        (
+            "without `--keep-string-keywords-beside-formats`, a Pydantic string whose format is written as `EmailStr`, "
+            "`Base64Str` or `AnyUrl` is written without its `minLength`, `maxLength` and `pattern`, "
+            "silently, unless `--field-constraints` writes them"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/format_string_keywords.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--keep-string-keywords-beside-formats",
     ),
     LegacyRow(
         "legacy-length-keywords-across-kinds",

@@ -127,6 +127,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--keep-reference-null-on-merged-models": "Keep the null a reference's schema admits when its model is merged.",
     "--keep-self-referencing-array-items": "Keep the items of an array whose items name the array itself.",
     "--keep-shared-members-on-collapsed-root-models": "Keep each member of a root type that collapse inlined at sev...",
+    "--keep-string-keywords-beside-formats": "Keep the string keywords beside a format Pydantic writes as a class `...",
     "--keyword-only": "Generate dataclasses with keyword-only fields (Python 3.10+).",
     "--locked": "Require an existing remote lock and validate each fetched resource against it (experimental).",
     "--lockfile": "Select the remote reference integrity lock file (experimental).",

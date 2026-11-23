@@ -1935,6 +1935,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_inherited_property_schemas_in_mro_order",
         "omit_redundant_constraints",
         "read_length_keywords_by_type",
+        "keep_string_keywords_beside_formats",
         "read_object_keywords_by_type",
         "read_msgspec_union_bounds_exactly",
         "use_site_models_for_constrained_refs",

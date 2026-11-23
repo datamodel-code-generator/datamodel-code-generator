@@ -32,10 +32,11 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
         "#7198",
         constraints.TABLE,
         "accepts-invalid",
-        BOTH,
+        DEFAULT,
         ({"type": ("uri",), "backend": (PYDANTIC_V2,)},),
         "a URL is written AnyUrl and every string keyword beside it is left out without a warning (row "
-        "legacy-anyurl-keeps-string-keywords)",
+        "legacy-anyurl-keeps-string-keywords, written as the plain string they check under "
+        "--keep-string-keywords-beside-formats)",
     ),
     Kept(
         LIBRARY_LIMIT,
@@ -104,16 +105,8 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
         DEFAULT,
         ({"type": _FORMAT_TYPES, "position": ("all-of-member",), "site": ("root",), "backend": (MSGSPEC,)},),
         "an allOf definition over a date, a time, a UUID or an IP address keeps no string keyword of its member, "
-        "though msgspec keeps the value a str (row legacy-all-of-root-format-kinds)",
-    ),
-    Kept(
-        ISSUE,
-        "#7181",
-        constraints.TABLE,
-        "accepts-invalid",
-        PRESET,
-        ({"type": ("date", "date-time"), "position": ("all-of-member",), "site": ("root",), "backend": (MSGSPEC,)},),
-        "the same under the preset, where a UUID and an IP address are decoded by their own types",
+        "though msgspec keeps the value a str (row legacy-all-of-root-format-kinds, kept under "
+        "--keep-string-keywords-beside-formats where msgspec writes the format as str)",
     ),
     Kept(
         LIBRARY_LIMIT,

@@ -385,6 +385,20 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         change a member value, such as 2.5 in an IntEnum;
                         without it the base follows the schema type, as in
                         0.86.0
+  --keep-string-keywords-beside-formats, --no-keep-string-keywords-beside-formats
+                        Keep the minLength, maxLength and pattern beside a
+                        string format that Pydantic output writes as a class
+                        no constr call constrains: a `format: email` takes
+                        them in `Annotated[EmailStr, Field(...)]`, a `format:
+                        byte` writes them in front of the base64 decoding, so
+                        Pydantic 2.10 or later checks them on the text, also
+                        in the field forms (--field-constraints, --use-
+                        annotated), and a `format: uri` is the plain string
+                        they check, as AnyUrl takes no pattern; an output that
+                        writes a date or UUID format as `str`, as msgspec
+                        does, also keeps the keywords an `allOf` member adds
+                        beside a `$ref` to it. Without it these keywords are
+                        left out, silently or with a warning, as in 0.100.0
   --merge-shared-variant-tags, --no-merge-shared-variant-tags
                         Give a variant that several discriminated unions tag
                         differently (for example one by a mapping key, one by
