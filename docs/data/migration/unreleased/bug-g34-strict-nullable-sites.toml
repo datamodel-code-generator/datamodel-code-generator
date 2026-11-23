@@ -1,0 +1,10 @@
+[[change]]
+id = "bug-g34-strict-nullable-sites"
+extends = "read-mapping-keys-by-schema-tag-type"
+covers = [
+    "input_model/config_class.txt",
+    "main/main_general/show_help[False].txt",
+    "main/main_general/show_help[True].txt",
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+]

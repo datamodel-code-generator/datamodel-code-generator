@@ -100,7 +100,8 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "without `--read-mapping-keys-by-schema-tag-type`, a variant's tags are read against the tag field it "
             "declares, which an earlier union may have written as its `Literal`, else the nearest one it inherits "
             "from an ancestor whose tag field no union wrote, so a mapping key reads as text or as an integer by the "
-            "order of the unions (`parser/_tag_plan.py:_declared_type`)"
+            "order of the unions, and as text where the field names a root model or a type alias of an integer "
+            "(`parser/_tag_plan.py:_declared_type`, `declared_tag_type`)"
         ),
         fix=KEEP,
         witness=(
@@ -906,6 +907,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--strict-nullable",
             "--use-single-dict-for-object-maps",
         ),
+    ),
+    LegacyRow(
+        "legacy-item-null-by-form",
+        (
+            "without `--keep-null-of-nullable-items`, under `--strict-nullable` an array item, a tuple item or a map "
+            "value that is a scalar or an object keeps the null its `nullable` declares, and one "
+            "that is an array, a map or an `allOf` of one `$ref` rejects null"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/nullable_item_forms.yaml",
+            "--input-file-type",
+            "openapi",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--strict-nullable",
+            "--disable-timestamp",
+        ),
+        option="--keep-null-of-nullable-items",
     ),
     LegacyRow(
         "legacy-root-type-nullable-ungated",

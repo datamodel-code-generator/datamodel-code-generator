@@ -534,6 +534,16 @@ EXCLUDED_CASES: dict[str, str] = {
         "written for an anyOf of a $ref and null drops the null, so that union keeps discriminator= and refuses the "
         "null only Cat admits, as in 0.100.0; test_tags_that_admit_null pins the verdicts",
     ),
+    **dict.fromkeys(
+        (
+            "openapi/variant_tag_values/mapping_key_of_referenced_type.yaml::components.schemas.Payment",
+            "openapi/variant_tag_values/mapping_key_of_referenced_type.yaml::components.schemas.Refund",
+        ),
+        "legacy-tag-type-from-earlier-union: a mapping key of a tag property that names an integer schema stays "
+        "text, so the union refuses the integer tag the schema requires, as since 0.65.0; "
+        "--read-mapping-keys-by-schema-tag-type reads it as an integer and test_mapping_key_of_a_referenced_tag_type "
+        "pins both",
+    ),
     "openapi/variant_tag_values/object_values.yaml::components.schemas.Pet": (
         "Cat's tag property admits only objects, which tag no variant, as in 0.97.0; "
         "test_object_values_of_a_tag_property pins it"

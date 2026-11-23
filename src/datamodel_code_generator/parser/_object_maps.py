@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._naming import Claim, NamingScope
+    from datamodel_code_generator.parser._null_facts import NullSite
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
@@ -52,6 +53,7 @@ __all__ = [
     "parse_string_property_name_union",
     "pattern_map_type",
     "typed_nullable_map_value_schema",
+    "with_item_null",
 ]
 
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
@@ -461,7 +463,8 @@ def parse_pattern_values(
             values.append(_PatternValue(pattern, None, path, parser.data_type_manager.get_data_type(Types.any)))
             continue
         value_path = get_special_path(f"patternProperties/{i}", path)
-        values.append(_PatternValue(pattern, schema, value_path, parser.parse_item(name, schema, value_path)))
+        value_type = with_item_null(parser, schema, parser.parse_item(name, schema, value_path))
+        values.append(_PatternValue(pattern, schema, value_path, value_type))
     return values
 
 
@@ -628,7 +631,24 @@ def object_map_admits_null(parser: ObjectMapsHost, obj: JsonSchemaObject) -> boo
     ``nullable: true`` counts under ``--strict-nullable``, the rule ``_get_data_type`` applies to other types,
     unless a combined schema copied it into its branch: the union of the branches admits that null.
     """
-    return bool(parser._null_facts(obj, "object-map").admits_null)
+    return _admits_null(parser, obj, "object-map")
+
+
+def _admits_null(parser: AllOfValuesHost, obj: JsonSchemaObject, site: NullSite) -> bool:
+    """Return whether ``obj`` admits null at the ``site`` of ``parser/_null_facts.py``."""
+    return bool(parser._null_facts(obj, site).admits_null)
+
+
+def with_item_null(parser: AllOfValuesHost, item: JsonSchemaObject, data_type: DataType) -> DataType:
+    """Return ``data_type`` of the schema ``item`` admitting the null its ``nullable`` declares (site ``item``).
+
+    A scalar type and an object model write their own null (``is_optional``), and ``Any`` admits it; an array, a map, an
+    ``allOf`` of one ``$ref`` or a union write none, as a field holds it, so the sites that type an array item, a tuple
+    item or a map value, where no field does, call this, unless row ``legacy-item-null-by-form`` is kept.
+    """
+    if data_type.is_optional or data_type.type == ANY or not _admits_null(parser, item, "item"):
+        return data_type
+    return build_union(parser.data_type, [data_type], nullable=True)
 
 
 def parse_property_name_key_schema(  # noqa: PLR0911

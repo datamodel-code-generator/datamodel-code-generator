@@ -94,6 +94,15 @@ pydantic_v2.dataclass-mapping_key_before_union-option	main/openapi/variant_tag_v
 pydantic_v2.dataclass-mapping_key_before_union-option	main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-option].py
 pydantic_v2.dataclass-mapping_key_before_union-released	main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-released].payloads.txt	= main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[dataclasses.dataclass-mapping_key_after_union-option].payloads.txt
 pydantic_v2.dataclass-mapping_key_before_union-released	main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-released].py	= main/openapi/variant_tag_values/mapping_key_after_an_earlier_union[pydantic_v2.dataclass-mapping_key_before_union-option].py
+[test_mapping_key_of_a_referenced_tag_type]
+msgspec.Struct-option	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[msgspec.Struct-option].payloads.txt
+msgspec.Struct-option	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[msgspec.Struct-option].py
+msgspec.Struct-released	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[msgspec.Struct-released].payloads.txt	= main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[msgspec.Struct-option].payloads.txt
+msgspec.Struct-released	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[msgspec.Struct-released].py
+pydantic_v2.BaseModel-option	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[pydantic_v2.BaseModel-option].payloads.txt
+pydantic_v2.BaseModel-option	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[pydantic_v2.BaseModel-option].py
+pydantic_v2.BaseModel-released	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[pydantic_v2.BaseModel-released].payloads.txt
+pydantic_v2.BaseModel-released	main/openapi/variant_tag_values/mapping_key_of_a_referenced_tag_type[pydantic_v2.BaseModel-released].py
 [test_msgspec_inline_variant_of_several_values]
 default	main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[default].py
 tagged-unions	main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[tagged-unions].py	= main/openapi/variant_tag_values/msgspec_inline_variant_of_several_values[default].py

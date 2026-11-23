@@ -144,6 +144,7 @@ OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 
 OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
     "--read-mapping-keys-by-schema-tag-type",
+    "--keep-null-of-nullable-items",
     "--keep-string-keywords-beside-formats",
 )
 """The options the 20261123 presets set beyond the 20261120 presets."""
@@ -609,6 +610,12 @@ CASES_20261123: tuple[pytest.ParameterSet, ...] = (
         id="read-mapping-keys-by-schema-tag-type",
     ),
     pytest.param(
+        OPEN_API_DATA_PATH / "nullable_item_forms.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--strict-nullable"],
+        id="keep-null-of-nullable-items",
+    ),
+    pytest.param(
         JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
@@ -969,6 +976,13 @@ def test_preset_sets_opt_in_option(
             "--read-mapping-keys-by-schema-tag-type",
             "--no-read-mapping-keys-by-schema-tag-type",
             id="read-mapping-keys-by-schema-tag-type",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "nullable_item_forms.yaml",
+            ["--strict-nullable"],
+            "--keep-null-of-nullable-items",
+            "--no-keep-null-of-nullable-items",
+            id="keep-null-of-nullable-items",
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",

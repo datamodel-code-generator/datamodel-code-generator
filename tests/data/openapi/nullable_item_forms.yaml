@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: Nullable items
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Owner:
+      type: object
+      properties:
+        name:
+          type: string
+    Matrix:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+            nullable: true
+        by_name:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: number
+            nullable: true
+        counted_rows:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+            minItems: 1
+            nullable: true
+        grid_maps:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+            nullable: true
+        nested_maps:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+            nullable: true
+        by_pattern:
+          type: object
+          patternProperties:
+            "^a":
+              type: array
+              items:
+                type: number
+              nullable: true
+          additionalProperties: false
+        pair:
+          type: array
+          prefixItems:
+            - type: array
+              items:
+                type: number
+              nullable: true
+            - type: string
+          minItems: 2
+          maxItems: 2
+        owners:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Owner'
+            nullable: true
+        owner_map:
+          type: object
+          additionalProperties:
+            allOf:
+              - $ref: '#/components/schemas/Owner'
+            nullable: true
+        kinds:
+          type: array
+          items:
+            type: string
+            enum:
+              - a
+              - b
+            nullable: true

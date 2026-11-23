@@ -1473,6 +1473,15 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Null kept on nullable items",
+        config=PresetConfig(keep_null_of_nullable_items=True),
+        description=(
+            "Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, a "
+            "map value of any form, a nested array, a map or an allOf of one $ref included, as it "
+            "is written for a scalar or an object. An enum or a const still rejects null."
+        ),
+    ),
+    PresetOptionGroup(
         title="String keywords kept beside formats",
         config=PresetConfig(keep_string_keywords_beside_formats=True),
         description=(

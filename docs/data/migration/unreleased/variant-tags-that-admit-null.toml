@@ -42,7 +42,14 @@ covers = [
 ]
 
 [[change.cells]]
-input = ["tests/data/openapi/variant_tag_values"]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
-options = [[]]
+input = [
+    "tests/data/openapi/variant_tag_values",
+    "tests/data/openapi/variant_tag_values/inline_several_values.yaml",
+    "tests/data/openapi/variant_tag_values/nullable_tags.yaml",
+    "tests/data/openapi/variant_tag_values/nullable_tags_strict.yaml",
+    "tests/data/openapi/variant_tag_values/nullable_values.yaml",
+]
+backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"
 aspects = ["config", "type"]
+match = "^\\[(type|config)\\] (nullable_tags:|nullable_tags_strict:|nullable_values:|inline_several_values:)?\\w+(:kind: |: \\{'tag'|: (Union\\[)?Annotated\\[Union\\[[\\w, ]+\\], discriminator='kind'\\](, \\w+\\])? -> Union\\[)"

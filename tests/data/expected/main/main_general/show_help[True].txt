@@ -862,6 +862,14 @@ Field customization:
                         extracted from the branches of its `anyOf` or `oneOf`,
                         which then require their value; without it each such
                         root takes the property's default
+  --keep-null-of-nullable-items, --no-keep-null-of-nullable-items
+                        Write the null that `nullable: true` declares under
+                        --strict-nullable on an array item, a tuple item or a
+                        map value of any form (a nested array, a map, an
+                        `allOf` of one `$ref`), as it is written for a scalar
+                        or an object (`list[list[float] | None]`); without it
+                        those items reject null, as in 0.100.0. An enum or a
+                        `const` still rejects null
   --keep-reference-null-on-merged-models, --no-keep-reference-null-on-merged-models
                         Keep the null that the schema of a field, item or
                         member admits where the model it references is merged

@@ -1,0 +1,51 @@
+openapi: '3.1.0'
+info: {title: Mapping keys of a tag property that names an integer schema, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Kind:
+      type: integer
+    Base:
+      type: object
+      required: [kind]
+      properties:
+        kind: {$ref: '#/components/schemas/Kind'}
+    Card:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          required: [number]
+          properties:
+            number: {type: string}
+    Cash:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          required: [amount]
+          properties:
+            amount: {type: number}
+    Voucher:
+      type: object
+      required: [code]
+      properties:
+        code: {type: string}
+    Payment:
+      oneOf:
+        - $ref: '#/components/schemas/Card'
+        - $ref: '#/components/schemas/Cash'
+        - $ref: '#/components/schemas/Voucher'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '1': '#/components/schemas/Card'
+          '2': '#/components/schemas/Cash'
+          '3': '#/components/schemas/Voucher'
+    Refund:
+      oneOf:
+        - $ref: '#/components/schemas/Card'
+        - $ref: '#/components/schemas/Cash'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '1': '#/components/schemas/Card'
+          '2': '#/components/schemas/Cash'

@@ -234,6 +234,7 @@
 - `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
+- `--keep-null-of-nullable-items`: Write the null that `nullable: true` declares on an array item, a tuple item ...
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
@@ -257,6 +258,7 @@
 - `--no-keep-enum-literal-aliases`
 - `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
+- `--no-keep-null-of-nullable-items`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-keep-self-referencing-array-items`
@@ -1308,6 +1310,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         extracted from the branches of its `anyOf` or `oneOf`,
                         which then require their value; without it each such
                         root takes the property's default
+  --keep-null-of-nullable-items, --no-keep-null-of-nullable-items
+                        Write the null that `nullable: true` declares under
+                        --strict-nullable on an array item, a tuple item or a
+                        map value of any form (a nested array, a map, an
+                        `allOf` of one `$ref`), as it is written for a scalar
+                        or an object (`list[list[float] | None]`); without it
+                        those items reject null, as in 0.100.0. An enum or a
+                        `const` still rejects null
   --keep-reference-null-on-merged-models, --no-keep-reference-null-on-merged-models
                         Keep the null that the schema of a field, item or
                         member admits where the model it references is merged

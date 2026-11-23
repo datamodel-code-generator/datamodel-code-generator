@@ -1,0 +1,7 @@
+[[change]]
+id = "keep-null-of-nullable-items-fixture"
+extends = "keep-null-of-nullable-items"
+refs = ["#7343"]
+covers = [
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_nullable_item_forms.yaml].txt",
+]
