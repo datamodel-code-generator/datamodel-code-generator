@@ -422,3 +422,33 @@ def test_enum_mapping_key_after_an_earlier_union(
         *option,
         unions=("Second",),
     )
+
+
+@pytest.mark.parametrize(
+    "option",
+    [pytest.param([], id="released"), pytest.param(["--read-mapping-keys-by-schema-tag-type"], id="option")],
+)
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_mapping_key_of_a_referenced_tag_type(output_model_type: str, option: list[str], output_file: Path) -> None:
+    """Read a mapping key as an integer where the tag property names an integer schema (#7113).
+
+    ``Base.kind`` names ``Kind``, an integer, which the output writes as a root model or a type alias; ``Card`` and
+    ``Cash`` inherit it. Without the option the keys ``'1'`` and ``'2'`` stay text, which rejects ``{"kind": 1}``;
+    with ``--read-mapping-keys-by-schema-tag-type`` they name the integers in both unions, also in ``Refund``, which
+    reads ``Card`` and ``Cash`` after ``Payment`` wrote their tags. ``Voucher`` declares no ``kind``, so its key stays
+    text either way.
+    """
+    _generate_and_decode(
+        "mapping_key_of_referenced_type",
+        output_model_type,
+        output_file,
+        (
+            {"kind": 1, "number": "4"},
+            {"kind": "1", "number": "4"},
+            {"kind": 2, "amount": 5},
+            {"kind": "3", "code": "x"},
+        ),
+        *option,
+        *(("--disable-warnings",) if output_model_type == "msgspec.Struct" else ()),
+        unions=("Payment", "Refund"),
+    )
