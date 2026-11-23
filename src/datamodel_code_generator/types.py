@@ -2146,12 +2146,17 @@ class DataTypeManager(ABC):
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
+    keep_string_keywords_beside_formats: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
     use_strict_str_for_base64: bool = False
     WRITES_ENCODED_STR: ClassVar[bool] = False
     """Whether the output writes a string decoded from base64 text with its constraints in front of the decoding."""
+    FORMAT_KEYWORD_FORMS: ClassVar[Mapping[str, _applicability.FormatKeywordForm]] = (
+        _applicability.BASE_OUTPUT.format_keyword_forms
+    )
+    """How the output keeps the string keywords beside a format it writes as a class no ``con*`` call constrains."""
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.BASE_OUTPUT.zero_bound_classes
     )
@@ -2354,6 +2359,24 @@ class DataTypeManager(ABC):
     def constraint_options(self) -> _applicability.ConstraintOptions:
         """The options of the constraint table, as the parser sets them on the type manager."""
         return _applicability.ConstraintOptions(**{name: getattr(self, name) for name in _CONSTRAINT_OPTION_NAMES})
+
+    def format_keyword_form(self, types: Types) -> _applicability.FormatKeywordForm | None:
+        """Return how a string keyword beside the format mapped to ``types`` is kept (``format_keyword_form``)."""
+        return _applicability.format_keyword_form(self.constraint_options, self.FORMAT_KEYWORD_FORMS, types.name)
+
+    def writes_format_as_text(self, types: Types) -> bool:
+        """Return whether ``--keep-string-keywords-beside-formats`` finds the format mapped to ``types`` a ``str``.
+
+        Then a string keyword beside it checks the value the output writes (``all_of_root_keyword_kinds``): the type
+        the format is written as takes the string keywords (``constraint_keywords``).
+        """
+        mapped = self.type_map.get(types)
+        return (
+            self.constraint_options.keep_string_keywords_beside_formats
+            and mapped is not None
+            and mapped.import_ is None
+            and self.constraint_keywords(mapped, self.python_version.version_key) >= _applicability.STRING_KEYWORDS
+        )
 
     @property
     def encodes_constrained_base64(self) -> bool:

@@ -29,7 +29,10 @@ id = "fact-tables"
 prs = [6197]
 incident = "a new row in the fact tables failed the test that pins the row counts"
 paths = ["scripts/fact_tables.py", "scripts/heki_baseline.toml"]
-tests = ["tests/parser/test_generation_store_usage.py"]
+tests = [
+  "tests/parser/test_generation_store_usage.py",
+  "tests/test_build_heki_contracts_script.py::test_the_package_has_no_heki_finding_beyond_the_baseline",
+]
 
 [[rule]]
 id = "stored-python-output"

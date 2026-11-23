@@ -1,0 +1,3 @@
+guards after the nested parse: {"DataType": true, "DataModelFieldBase": true, "DataModel": true}
+{"pass_name": "<MODULES>", "rule": "unattributed", "row": "DataModel.description", "model": "Person", "phase": "MODULES"}
+{"pass_name": "<MODULES>", "rule": "unattributed", "row": "DataModel.description", "model": "Person", "phase": "MODULES"}

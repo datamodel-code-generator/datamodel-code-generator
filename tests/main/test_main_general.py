@@ -73,7 +73,6 @@ from tests.conftest import (
     CHECK_RENDER_MEMOS_ENV,
     CHECK_RENDER_PLANS_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
-    CHECK_STORE_WRITES_ENV,
     CHECK_TEMPLATE_ASSIGNMENTS_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
@@ -1937,6 +1936,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_inherited_property_schemas_in_mro_order",
         "omit_redundant_constraints",
         "read_length_keywords_by_type",
+        "keep_string_keywords_beside_formats",
         "read_object_keywords_by_type",
         "read_msgspec_union_bounds_exactly",
         "use_site_models_for_constrained_refs",
@@ -1985,6 +1985,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_default_kwarg",
         "apply_field_options_to_every_field",
         "read_nullable_beside_type_list",
+        "keep_null_of_nullable_items",
         "keep_field_defaults_off_branch_roots",
         "use_field_description",
         "use_field_description_example",
@@ -8387,7 +8388,6 @@ def test_formatter_policy_pyproject(mode: str, override: bool, output_file: Path
     assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
 
 
-@pytest.mark.parametrize("checks_off", [(CHECK_FACT_FINALITY_ENV,), (CHECK_FACT_FINALITY_ENV, CHECK_STORE_WRITES_ENV)])
 @pytest.mark.parametrize(
     ("input_name", "args"),
     [
@@ -8403,11 +8403,10 @@ def test_formatter_policy_pyproject(mode: str, override: bool, output_file: Path
 )
 @freeze_time(TIMESTAMP)
 def test_generation_without_parse_checks(
-    monkeypatch: pytest.MonkeyPatch, output_file: Path, checks_off: tuple[str, ...], input_name: str, args: list[str]
+    monkeypatch: pytest.MonkeyPatch, output_file: Path, input_name: str, args: list[str]
 ) -> None:
-    """Generation with the finality and store-write checks off, as users run it, writes what the checked run writes."""
-    for name in checks_off:
-        monkeypatch.setenv(name, "0")
+    """Generation with the finality check off, as users run it, writes what the checked run writes."""
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / input_name,
         output_path=output_file,
