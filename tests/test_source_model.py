@@ -23,7 +23,7 @@ from coverage.config import DEFAULT_EXCLUDE
 from coverage.python import PythonParser
 
 from scripts import _behaviour_classify as behaviour_classify
-from scripts import _decision_home_reads as home_callers
+from scripts import _decision_home_reads as home_reads
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import (
@@ -1163,12 +1163,13 @@ def _public_api_record(form: Path) -> list[Finding]:
         ]
 
 
-def _decision_home_callers(form: Path) -> list[Finding]:
-    """Return the callers the decision-home guard finds when each module-level def or class of a form is a home.
+def _decision_home_contracts(form: Path) -> list[Finding]:
+    """Return the homes that get no heki contract when each module-level def or class of a form is a home.
 
     The form keeps its layout under ``scripts/`` (as `_where_disagreements` places it), which stands as the package:
-    each module is a row of its own definitions with no adapter site, so a read of a definition from another module of
-    the form is a caller and one from its own module is none.
+    each module is a row of its own definitions with no adapter site. `checked_homes` returns the homes that
+    ``scripts/build_heki_contracts.py`` writes a contract for; a class that derives from ``BaseException`` through
+    builtins or other classes of the form gets none.
     """
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
@@ -1182,25 +1183,24 @@ def _decision_home_callers(form: Path) -> list[Finding]:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         repo = where.Repo(root, where.Page([], [], [], []))
-        records = [
-            DecisionHome(
-                place,
-                homes=tuple(
-                    Home(place, scope.qualname)
-                    for scope in repo.model(path).scopes
-                    if scope.kind in where.DEFS and scope.parent is not None and scope.parent.kind == "module"
-                ),
-                core="",
-                adapters="",
-                sites=(),
-            )
+        homes = {
+            Home(place, scope.qualname): scope.line
             for path in sorted(repo.names)
             for place in [path.removeprefix("scripts/")]
+            for scope in repo.model(path).scopes
+            if scope.kind in where.DEFS and scope.parent is not None and scope.parent.kind == "module"
+        }
+        records = [
+            DecisionHome(
+                place, homes=tuple(home for home in homes if home.path == place), core="", adapters="", sites=()
+            )
+            for place in sorted({home.path for home in homes})
         ]
+        checked = {home for home, *_ in home_reads.checked_homes(repo, records, "scripts/")}
         return [
-            Finding("caller", _site(form, module, caller.line), f"{caller.caller}:{caller.line}: calls {caller.home}")
-            for caller in home_callers.unlisted_callers(repo, records, "scripts/")
-            for module in [caller.caller.partition(":")[0]]
+            Finding("unchecked", _site(form, home.path, line), f"{home.path}:{home.name}:{line}: no contract")
+            for home, line in homes.items()
+            if home not in checked
         ]
 
 
@@ -1260,9 +1260,7 @@ RULES: dict[str, RuleRun] = {
         "scripts._behaviour_classify", frozenset({"bindings", "imports", "references"}), _rule_b_of_unparsed_text
     ),
     "decision-home-callers": RuleRun(
-        "scripts._decision_home_reads",
-        frozenset({"bindings", "references", "imports", "extents"}),
-        _decision_home_callers,
+        "scripts._decision_home_reads", frozenset({"bindings", "references", "extents"}), _decision_home_contracts
     ),
     "changed-test-units": RuleRun("scripts.related_tests", frozenset({"references", "extents"}), _test_units),
     "shape-family-client-reads": RuleRun(

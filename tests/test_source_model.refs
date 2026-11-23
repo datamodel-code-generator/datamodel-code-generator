@@ -22,7 +22,7 @@ changed-test-units	source_model/every_rule_states_its_verdicts[changed-test-unit
 check-run-on-the-tree	source_model/every_rule_states_its_verdicts[check-run-on-the-tree].txt
 ci-test-targets	source_model/every_rule_states_its_verdicts[ci-test-targets].txt
 coverage-exclusions	source_model/every_rule_states_its_verdicts[coverage-exclusions].txt
-decision-home-callers	source_model/every_rule_states_its_verdicts[decision-home-callers].txt
+decision-home-callers	source_model/every_rule_states_its_verdicts[decision-home-callers].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 expected-access	source_model/every_rule_states_its_verdicts[expected-access].txt
 generated-import-closure	source_model/every_rule_states_its_verdicts[generated-import-closure].txt
 generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt

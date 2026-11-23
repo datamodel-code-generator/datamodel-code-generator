@@ -8,10 +8,3 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
-
-[[approved]]
-key = "allowlist:heki-baseline"
-head = 2425
-pr = 7414
-decision = ["#7414"]
-reason = "the decision-home caller guard moves to heki call-owners contracts with references = reads: 24 sites UNLISTED_CALLERS counted join the heki baseline, so the baseline rises once while UNLISTED_CALLERS (1027 entries) goes away"
