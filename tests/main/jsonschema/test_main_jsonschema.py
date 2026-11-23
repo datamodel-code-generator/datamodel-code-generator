@@ -15858,6 +15858,32 @@ def test_main_jsonschema_allof_map_member_counts(
     )
 
 
+def test_main_jsonschema_allof_map_member_counts_no_merge(output_file: Path) -> None:
+    """Test a map allOf under --allof-merge-mode none keeps its own property counts with the option on.
+
+    That mode intersects no constraint, so ``--intersect-merged-allof-members`` does not narrow the site's
+    ``maxProperties: 10`` to the 2 of a member: a map of three entries is accepted.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_map_member_counts_no_merge.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
+            *("--allof-merge-mode", "none", "--intersect-merged-allof-members"),
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_map_member_counts_no_merge",
+        model_name="Holder",
+        valid_json=json.dumps({"few": {"a": "x", "b": "y", "c": "z"}}),
+        invalid_json=json.dumps({"few": {str(index): "x" for index in range(11)}}),
+        expected_error_type="too_long",
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

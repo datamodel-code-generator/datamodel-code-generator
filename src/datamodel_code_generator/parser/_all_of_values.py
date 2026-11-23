@@ -1398,7 +1398,8 @@ def _is_map_member(parser: AllOfValuesHost, schema: JsonSchemaObject) -> bool:
 def _map_counts(parser: AllOfValuesHost, schemas: Sequence[JsonSchemaObject]) -> dict[str, object]:
     """Return the property counts that the map members of an allOf and its own keywords admit together.
 
-    Each count is the tightest of theirs, as the allOf merges intersect a constraint (``_intersect_constraint``).
+    Each count is the tightest of theirs, as the allOf merges intersect a constraint (``_intersect_constraint``). Not
+    read under ``--allof-merge-mode none``, which intersects no constraint: the site's own row keeps its counts.
     """
     counts: dict[str, object] = {}
     for schema in schemas:
@@ -1493,7 +1494,9 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSc
     merged = parser._inherited_override_row(
         merged, obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True)
     )
-    if not _keeps(parser, "legacy-all-of-map-counts-dropped"):
+    if not _keeps(parser, "legacy-all-of-map-counts-dropped") and intersects_all_of_constraints(
+        parser.allof_merge_mode.value
+    ):
         merged.update(_map_counts(parser, [*mapping_schemas, obj]))
     typed = [
         null_sources(type_)

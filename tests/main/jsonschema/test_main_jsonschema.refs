@@ -6140,6 +6140,8 @@ released-dataclasses.dataclass	main/jsonschema/main_jsonschema/allof_map_member_
 released-msgspec.Struct	main/jsonschema/main_jsonschema/allof_map_member_counts[released-msgspec.Struct].py
 released-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/allof_map_member_counts[released-pydantic_v2.BaseModel].py
 released-typing.TypedDict	main/jsonschema/main_jsonschema/allof_map_member_counts[released-typing.TypedDict].py
+[test_main_jsonschema_allof_map_member_counts_no_merge]
+	main/jsonschema/main_jsonschema/allof_map_member_counts_no_merge.py
 [test_main_jsonschema_allof_mapping_every_part_null]
 	main/jsonschema/main_jsonschema/allof_mapping_every_part_null.py
 [test_main_jsonschema_allof_mapping_object_type_list]
