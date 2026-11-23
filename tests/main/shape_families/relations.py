@@ -134,10 +134,8 @@ def _difference(left: Cell, right: Cell, *, keep: Callable[[object], bool] = lam
     """Return the smallest payload on which two cells decide differently, with both verdicts, or None.
 
     A payload counts where both pools hold it, ``keep`` accepts it, and the validator decides alike on both schemas.
-    A cell without a model differs from one with a model.
+    Both cells are judged (``judge``), so each holds its verdicts.
     """
-    if left.verdicts is None or right.verdicts is None:
-        return None if left.verdicts is right.verdicts else f"{_side(left)} / {_side(right)}"
     mine, theirs = truth(left.shape), truth(right.shape)
     other = {
         key: (valid, verdict) for key, valid, verdict in zip(theirs.keys, theirs.valid, right.verdicts, strict=True)
@@ -151,10 +149,6 @@ def _difference(left: Cell, right: Cell, *, keep: Callable[[object], bool] = lam
         return None
     witness = smallest(texts)
     return f"{witness} {texts[witness]}"
-
-
-def _side(cell: Cell) -> str:
-    return "no model" if cell.verdicts is None else "a model"
 
 
 def _with(cell: Cell, kind: str, witness: str | None) -> Cell:
