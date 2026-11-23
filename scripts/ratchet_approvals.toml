@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline"
+head = 2432
+pr = 7422
+decision = ["#7422"]
+reason = "the builder guard moves to heki contracts: BUILDER_BYPASSES (9 entries) goes away and the 5 object-map bypasses only it recorded join the heki baseline, so the baseline rises once by 7"
