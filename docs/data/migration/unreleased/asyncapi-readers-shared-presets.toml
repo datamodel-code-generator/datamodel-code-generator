@@ -1,6 +1,7 @@
 [[change]]
 id = "asyncapi-readers-shared-presets"
 extends = "asyncapi-readers-shared"
+refs = ["#7389"]
 
 [[change.cells]]
 input = ["tests/data/asyncapi/dynamic_ref"]

@@ -1,6 +1,7 @@
 [[change]]
 id = "variant-tags-that-admit-null-payload-cells"
 extends = "variant-tags-that-admit-null"
+refs = ["#7405"]
 
 [[change.cells]]
 input = [

@@ -1,6 +1,7 @@
 [[change]]
 id = "lone-variant-root-model-tag-nightly-cells"
 extends = "lone-variant-root-model-tag"
+refs = ["#7405"]
 
 [[change.cells]]
 input = ["tests/data/openapi/discriminator_lone_variant_tags.yaml"]
