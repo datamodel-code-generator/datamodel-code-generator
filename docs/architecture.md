@@ -1618,13 +1618,18 @@ where it is read by name but not through `self`, `cls` or its class; a class sit
 the class; and a method, constant, exception class or module home is not checked); today's readers that no row lists are
 in `scripts/heki_baseline.toml`, which may only shrink. The builder homes that L1 states (the parse method each position
 chooses from its dispatch table, the one builder of object maps, the resolver that names models) are records of the same
-file (`BUILDER_HOMES`), each with its passage of this page: the test fails where a parse method a table row holds is
-called outside the tables, where a table's `choose` is called or the table is read (other than by `typed_children`)
-outside its position, and where a call with an output's mark (`is_dict=True` or the `"dict"` slot flags under `parser/`,
-a `Reference` built by its constructor, `model_construct` or `model_validate`) is made outside its builder and the parts
-it hands the output to; the marks are syntactic, so a `Reference` built by `model_copy` or a flag computed from a
-variable slot is not seen; today's bypasses are in `BUILDER_BYPASSES` of `tests/decision_home_allowlist.py`, which may
-only shrink.
+file (`BUILDER_HOMES`), each with its passage of this page, which the test checks. heki's contracts report a parse
+method a table row holds that is called anywhere but where the tables are built, a table read outside its position's
+builder (its `choose` included) other than by a scope that only asks it for `typed_children`, and a call with an
+output's mark made outside its builder and the parts it hands the output to, each also through a host Protocol that
+declares the member: under `parser/`, a `DataType` (or a subclass) built with `is_dict=True` or `_container_flags` asked
+for the `"dict"` slot, and anywhere, a `Reference` (or a subclass) built by its constructor, `model_construct` or
+`model_validate`. A mark is a call that heki ties to the class or function it names and that binds the parameter to the
+constant (by keyword, by position or through a `**` dict display), so a `Reference` built by `model_copy`, a `DataType`
+built by `model_copy`, `model_construct` or `model_validate` with the flag in its values, a flag computed from a
+variable slot, a flag dict handed on, merged or chosen by a condition before it reaches the call, a call through
+`functools.partial` and a call on a receiver heki cannot type (an unannotated parameter) are not seen; today's bypasses
+are in `scripts/heki_baseline.toml`.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
 names has one record in `scripts/legacy_rows.py`: what it keeps, what deletes it (`fix`: the issue whose fix does, or

@@ -18,7 +18,7 @@ import pytest
 import tomllib
 
 from scripts import build_heki_contracts, check_ratchets
-from scripts.decision_homes import DecisionHome, Home
+from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
 from scripts.fact_tables import MemberUse, StoreMember
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +26,7 @@ SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
 CONTRACTS = ROOT / "scripts" / "heki.toml"
 BASELINE = ROOT / "scripts" / "heki_baseline.toml"
 PACKAGE = "src/datamodel_code_generator"
+PACKAGE_NAME = "datamodel_code_generator"
 
 SEEDED_ENVIRONMENT = """\
 import os
@@ -315,8 +316,8 @@ def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Pat
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
     """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.
 
-    The guards of the records (`scripts/_decision_home_reads.py`) report the scope that holds each read, so a call
-    handed to a private helper is the helper's, not its caller's, and a write is the function's that makes it.
+    A call handed to a private helper is the helper's, not its caller's, as the baseline records it by the scope that
+    holds it; a write is the function's that makes it, as heki names it with lexical attribution.
     """
     contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
     judged = [
@@ -444,6 +445,180 @@ def test_heki_reports_reads_of_a_home_outside_its_modules_and_sites(tmp_path: Pa
             ("adapter.py", "bypass", "MUT204", "decide"),
             ("through.py", "<module>", "MUT204", "decide"),
             ("through.py", "by_module", "MUT204", "decide"),
+        ],
+    ), result.stderr
+
+
+SEEDED_BUILDERS = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/types.py": (
+        "class DataType:\n    def __init__(self, *, is_dict: bool = False, is_list: bool = False) -> None:\n"
+        "        self.is_dict = is_dict\n        self.is_list = is_list\n"
+    ),
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_schema_dispatch.py": (
+        "class Row:\n    def __init__(self, name: str, applies: object, build: object) -> None:\n"
+        "        self.build = build\n\n\n"
+        "class Default:\n    def __init__(self, name: str, build: object) -> None:\n        self.build = build\n\n\n"
+        "class DispatchTable:\n    def __init__(self, entries: tuple[Row, ...], default: Default) -> None:\n"
+        "        self.entries = entries\n\n"
+        "    def choose(self, parser: object, site: object) -> object:\n        return self.entries[0].build\n\n"
+        "    def typed_children(self, parser: object, site: object) -> tuple[Row, ...]:\n"
+        "        return self.entries\n"
+    ),
+    f"{PACKAGE}/parser/kinds.py": (
+        "from functools import partial\nfrom typing import Protocol\n\n"
+        "from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row\n\n\n"
+        "def _shared(parser: 'Parser', site: object) -> object:\n    return parser.parse_object(site)\n\n\n"
+        "def _then(build: object) -> object:\n    return build\n\n\n"
+        "class Parser:\n"
+        "    def _build_array(self, site: object) -> object:\n"
+        "        return self._build_enum(site) or self._build_default(site)\n\n"
+        "    def _build_enum(self, site: object) -> object:\n        return site\n\n"
+        "    def _build_default(self, site: object) -> object:\n        return self._build_array(site)\n\n"
+        "    def parse_object(self, site: object) -> object:\n        return _shared(self, site)\n\n"
+        "    _ROWS = (Row('enum', None, _then(_build_enum)),)\n"
+        "    _TABLE = DispatchTable(\n"
+        "        (Row('array', None, build=partial(_build_array)), *_ROWS, Row('shared', None, _shared)),\n"
+        "        Default('default', _build_default),\n    )\n\n"
+        "    def parse_site(self, site: object) -> object:\n        return self._TABLE.choose(self, site)\n\n"
+        "    def shortcut(self, site: object) -> object:\n        return self._TABLE.choose(self, site)\n\n"
+        "    def parameter(self, _build_enum: object) -> object:\n        return _build_enum\n\n"
+        "    def alias(self, site: object) -> object:\n"
+        "        table = self._TABLE\n        return table.choose(self, site)\n\n\n"
+        "class KindsHost(Protocol):\n    _TABLE: DispatchTable\n\n"
+        '    def _build_enum(self, site: object) -> object:\n        """The parse method of the enum row."""\n\n\n'
+        "def via_host(parser: KindsHost, site: object) -> object:\n"
+        "    return parser._build_enum(parser._TABLE.choose(parser, site))\n\n\n"
+        "def typed(parser: KindsHost, site: object) -> object:\n"
+        "    return parser._TABLE.typed_children(parser, site)\n"
+    ),
+    f"{PACKAGE}/parser/maps.py": (
+        "from typing import Protocol\n\nfrom datamodel_code_generator.types import DataType\n\n\n"
+        "class MapsHost(Protocol):\n"
+        '    @property\n    def data_type(self) -> type[DataType]:\n        """The data type class."""\n\n'
+        "    def _container_flags(self, obj: object, slot: str) -> dict[str, bool]:\n"
+        '        """The flags of a container slot."""\n\n\n'
+        "class MapParser:\n"
+        "    @property\n    def data_type(self) -> type[DataType]:\n        return DataType\n\n"
+        "    def _container_flags(self, obj: object, slot: str) -> dict[str, bool]:\n"
+        "        return {'is_dict': slot == 'dict'}\n\n\n"
+        "def build_map(parser: MapsHost) -> DataType:\n    return part(parser)\n\n\n"
+        "def part(parser: MapsHost) -> DataType:\n    return parser.data_type(is_dict=True)\n\n\n"
+        "def flags(parser: MapsHost) -> DataType:\n    return parser.data_type(**{'is_dict': True})\n\n\n"
+        "def handed_on() -> dict[str, bool]:\n    return {'is_dict': True, 'is_list': False}\n\n\n"
+        "def not_a_map(parser: MapsHost) -> DataType:\n    return parser.data_type(is_dict=False)\n\n\n"
+        "class MapType(DataType):\n    pass\n\n\n"
+        "def subclass_map() -> DataType:\n    return MapType(is_dict=True)\n\n\n"
+        "def seeded_slot(parser: MapsHost, obj: object) -> DataType:\n"
+        "    return parser.data_type(**parser._container_flags(obj, 'dict'))\n\n\n"
+        "def other_slot(parser: MapsHost, obj: object) -> dict[str, bool]:\n"
+        "    return parser._container_flags(obj, 'list')\n"
+    ),
+    f"{PACKAGE}/model.py": (
+        "from datamodel_code_generator.types import DataType\n\n\n"
+        "class Ref:\n    @classmethod\n    def model_construct(cls) -> 'Ref':\n        return cls()\n\n\n"
+        "def name_model() -> Ref:\n    return Ref()\n\n\n"
+        "def outside() -> DataType:\n    return DataType(is_dict=True)\n"
+    ),
+    f"{PACKAGE}/naming.py": (
+        "from datamodel_code_generator.model import Ref as Named\n\n\n"
+        "def rename() -> Named:\n    return Named()\n\n\n"
+        "def construct() -> Named:\n    return Named.model_construct()\n"
+    ),
+    f"{PACKAGE}/other.py": "class Ref:\n    pass\n\n\ndef local() -> Ref:\n    return Ref()\n",
+}
+"""A package with a dispatch table in ``parser/kinds.py``, an object-map builder in ``parser/maps.py`` and a builder of
+``Ref`` in ``model.py``.
+
+``Parser._build_array`` calls the parse methods of the ``enum`` row (held through the shared rows and a wrapper) and of
+the default outside the table, ``_build_default`` calls the one of the ``array`` row (held through ``partial``),
+``parse_object`` calls ``_shared``, the parse method of another row, and ``shortcut`` and ``alias`` read the table
+outside ``parse_site``; ``parameter`` reads a parameter spelled as a parse method. ``via_host`` calls the parse method
+and the table's ``choose`` through the host protocol ``KindsHost``, and ``typed`` only asks the table for
+``typed_children``. ``build_map`` hands the map to its part ``part``; ``flags`` builds the dict flag through a ``**``
+dict display and ``seeded_slot`` asks ``_container_flags`` for the ``dict`` slot outside them, both through the host
+protocol ``MapsHost``, which ``MapParser`` implements (heki ties a call through a protocol to a class only where one
+implements it), and ``subclass_map`` builds one as a subclass of ``DataType``. ``not_a_map``, ``other_slot`` (another
+slot) and ``outside`` (outside ``parser/``) build no map, and ``handed_on`` returns a flag dict that no call takes
+there. ``naming.py`` builds a ``Ref`` of ``model.py`` through an alias and by ``model_construct`` outside
+``name_model``; ``other.py`` builds a class of its own of that name.
+"""
+SEEDED_BUILDER_RECORDS = (
+    BuilderHome(
+        output="seeded: a parse of the table",
+        prose="",
+        builder=Home("parser/kinds.py", "Parser.parse_site"),
+        table=Home("parser/kinds.py", "Parser._TABLE"),
+    ),
+    BuilderHome(
+        output="seeded: a map",
+        prose="",
+        builder=Home("parser/maps.py", "build_map"),
+        marks=(
+            Mark("datamodel_code_generator.types.DataType", "is_dict", value=True),
+            Mark("datamodel_code_generator.parser.maps.MapParser._container_flags", "slot", "dict"),
+        ),
+        parts=(Home("parser/maps.py", "part"),),
+        within="parser/",
+    ),
+    BuilderHome(
+        output="seeded: a named model",
+        prose="",
+        builder=Home("model.py", "name_model"),
+        marks=(Mark("datamodel_code_generator.model.Ref"), Mark("datamodel_code_generator.model.Ref.model_construct")),
+    ),
+)
+
+
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
+    """A parse method called outside its tables, a table read outside its builder, a marked output built elsewhere.
+
+    Those are findings; the builders and their parts are none. A mark with an argument list is a call that binds the
+    parameter to the constant, by keyword, by position or through a ``**`` dict display, under the record's ``within``
+    only.
+    """
+    for name, text in SEEDED_BUILDERS.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    contracts.write_text(
+        "\n".join(build_heki_contracts.builder_contracts(repo, SEEDED_BUILDER_RECORDS)), encoding="utf-8"
+    )
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].removeprefix(f"{PACKAGE_NAME}."))
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("kinds.py", "Parser._build_array", "MUT204", "parser.kinds.Parser._build_default"),
+            ("kinds.py", "Parser._build_array", "MUT204", "parser.kinds.Parser._build_enum"),
+            ("kinds.py", "Parser._build_default", "MUT204", "parser.kinds.Parser._build_array"),
+            ("kinds.py", "Parser.alias", "MUT203", "parser.kinds.Parser._TABLE"),
+            ("kinds.py", "Parser.parse_object", "MUT204", "parser.kinds._shared"),
+            ("kinds.py", "Parser.shortcut", "MUT203", "parser.kinds.Parser._TABLE"),
+            ("kinds.py", "via_host", "MUT203", "parser.kinds.KindsHost._TABLE"),
+            ("kinds.py", "via_host", "MUT204", "parser.kinds.KindsHost._build_enum"),
+            ("maps.py", "flags", "MUT204", "types.DataType(is_dict=True)"),
+            ("maps.py", "seeded_slot", "MUT204", 'parser.maps.MapsHost._container_flags(slot="dict")'),
+            ("maps.py", "subclass_map", "MUT204", "types.DataType(is_dict=True)"),
+            ("naming.py", "construct", "MUT204", "model.Ref.model_construct"),
+            ("naming.py", "rename", "MUT204", "model.Ref"),
         ],
     ), result.stderr
 

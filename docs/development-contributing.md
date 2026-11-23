@@ -616,11 +616,11 @@ new ones: delete `scripts/heki_baseline.toml` and run the command with
 environment boundary count under a key of their own,
 `allowlist:heki-baseline:EFF201`, so a new read of the environment is never
 paid for by another finding. Each other site of the baseline, except the
-writes outside the store operations and the reads of a decision home outside
-its row's home modules and adapter sites, which only heki checks, repeats a
-violation that another key already budgets (`allowlist:host-private-access`,
-`allowlist:BUILDER_BYPASSES`), so a new violation of such a rule raises both
-keys and needs both `[[approved]]` entries, and a fix lowers both.
+writes outside the store operations, the reads of a decision home outside its
+row's home modules and adapter sites and the bypasses of a builder home, which
+only heki checks, repeats a violation that another key already budgets
+(`allowlist:host-private-access`), so a new violation of such a rule raises
+both keys and needs both `[[approved]]` entries, and a fix lowers both.
 `# heki: ignore[...]` comments and `# noqa` comments that name a heki rule
 count as `heki-ignore:<rule>` keys.
 
