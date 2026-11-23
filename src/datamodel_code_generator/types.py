@@ -128,6 +128,10 @@ class DefaultValueRecipe(Enum):
     """Describe how a serialized schema value becomes a runtime expression."""
 
     Decimal = auto()
+    Bytes = auto()
+    Date = auto()
+    Time = auto()
+    DateTime = auto()
 
 
 @record
@@ -631,8 +635,22 @@ class _UnionNode(Protocol):
     def _writes_nothing_of_its_own(self) -> bool:
         """Whether the type writes no text, names no model and is no container, so only its members write."""
 
+    @property
+    def _renders_none(self) -> bool:
+        """Whether the type writes ``None``."""
+
 
 _UnionNodeT = TypeVar("_UnionNodeT", bound=_UnionNode)
+
+
+def _sole_member(members: Sequence[_UnionNodeT]) -> _UnionNodeT | None:
+    """Return the one member of a union that does not write ``None``, or None where it has another number of them.
+
+    A default is read by that member (``required_fields_a_default_lacks``, the defaults deserialized where Pydantic
+    validates them); which member of a union of several takes a value is Pydantic's choice.
+    """
+    rest = [member for member in members if not member._renders_none]  # noqa: SLF001
+    return rest[0] if len(rest) == 1 else None
 
 
 def _union_members(data_type: _UnionNodeT) -> Sequence[_UnionNodeT]:
@@ -2163,6 +2181,9 @@ class DataTypeManager(ABC):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DEFAULT_VALUE_DESCRIPTORS: ClassVar[Mapping[tuple[str | None, str], DefaultValueDescriptor]] = MappingProxyType({})
+    STRICT_DEFAULT_VALUE_RECIPES: ClassVar[Mapping[tuple[str | None, str], DefaultValueRecipe]] = MappingProxyType({})
+    """The recipes of the strict types, by import, whose JSON value strict mode refuses as the Python input of a
+    validated default (bytes, date, time and datetime); ``Decimal`` has its recipe in ``DEFAULT_VALUE_DESCRIPTORS``."""
     CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = _applicability.BASE_OUTPUT.type_keywords
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
     NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _applicability.BASE_OUTPUT.number_value_types
@@ -2321,6 +2342,14 @@ class DataTypeManager(ABC):
         if (import_ := data_type.import_) is None:
             return None
         return self.DEFAULT_VALUE_DESCRIPTORS.get(_import_key(import_))
+
+    def get_strict_default_value_recipe(self, data_type: DataType) -> DefaultValueRecipe | None:
+        """Return the recipe ``STRICT_DEFAULT_VALUE_RECIPES`` gives an emitted strict scalar import."""
+        return (
+            None
+            if (import_ := data_type.import_) is None
+            else self.STRICT_DEFAULT_VALUE_RECIPES.get(_import_key(import_))
+        )
 
     @staticmethod
     def copy_data_type(data_type: DataType) -> DataType:

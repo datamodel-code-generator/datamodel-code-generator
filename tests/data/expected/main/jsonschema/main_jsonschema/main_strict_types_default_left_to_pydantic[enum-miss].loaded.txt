@@ -1,0 +1,2 @@
+refused: f.color enum
+given: Top(f=None)

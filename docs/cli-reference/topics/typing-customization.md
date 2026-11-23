@@ -9,7 +9,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | Group | Options | Description |
 |-------|---------|-------------|
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
-| [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
+| [Collection Types](#collection-types) | 9 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 5 | TypeAlias and root-model alias output. |
 | [Type Mapping](#type-mapping) | 24 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
@@ -30,6 +30,7 @@ Collection and tuple/set generation.
 | Option | Description |
 |--------|-------------|
 | [`--no-use-standard-collections`](../typing-customization.md#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for container types. |
+| [`--read-set-item-fields-in-class-order`](../typing-customization.md#read-set-item-fields-in-class-order) | Read the fields a set item inherits in its class's order, so an unhashable one k... |
 | [`--use-generic-container-types`](../typing-customization.md#use-generic-container-types) | Use generic container types (Sequence, Mapping) for type hinting. |
 | [`--use-standard-collections`](../typing-customization.md#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-tuple-for-closed-arrays`](../typing-customization.md#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other item can follow. |

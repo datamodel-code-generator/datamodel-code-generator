@@ -57,17 +57,21 @@
 - `--import-overrides`: Override modules for generated imports by symbol name.
 - `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--intersect-combined-schema-keywords`: Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...
+- `--intersect-merged-allof-members`: Read the allOf members that are merged into one schema keyword by keyword.
 - `--keep-enum-member-values`: Give an enum class a value base only when it keeps every member value.
 - `--no-distribute-allof-over-unions`
 - `--no-filter-literal-values`
 - `--no-intersect-allof-keywords`
 - `--no-intersect-combined-schema-keywords`
+- `--no-intersect-merged-allof-members`
 - `--no-keep-enum-member-values`
+- `--no-read-allof-parents-as-their-models`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
 - `--no-read-format-as-annotation`
 - `--no-read-inherited-property-schemas-in-mro-order`
 - `--no-read-kubernetes-extensions`
+- `--no-read-set-item-fields-in-class-order`
 - `--no-read-unevaluated-properties`
 - `--no-read-uuid6-uuid7-uuid8-formats`
 - `--no-type-overrides-replace-whole-type`
@@ -97,11 +101,13 @@
 - `--open-enums`: Accept the values an enum does not list.
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
+- `--read-allof-parents-as-their-models`: Read each allOf parent as its model holds it.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
 - `--read-inherited-property-schemas-in-mro-order`: Give a required inherited property the schema its allOf pare...
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
+- `--read-set-item-fields-in-class-order`: Read the fields a set item inherits in its class's order, so an unhas...
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--read-uuid6-uuid7-uuid8-formats`: Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...
 - `--strict-types`: Enable strict type validation for str, bytes, int, float, bool, datetime, date and time.
@@ -844,6 +850,23 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         adds to the one model it names at a field, an item or
                         a branch, and no `enum` value that the merged `type`
                         rejects. Without it these keep the output of 0.88.0
+  --intersect-merged-allof-members, --no-intersect-merged-allof-members
+                        Read the `allOf` members that are merged into one
+                        schema keyword by keyword, as JSON Schema validates
+                        them: a property that several merged object members
+                        declare takes the `type`, null and `multipleOf` every
+                        declaration admits (a `true` declaration adds nothing)
+                        and the members' own `allOf` members are merged too; a
+                        named `allOf` of a `$ref` and value members keeps the
+                        `enum` and `type` every member admits; a `$ref` to a
+                        map beside members that add only property counts or
+                        `propertyNames` stays that map with them; and a length
+                        or `pattern` beside a `$ref` to base64 text is checked
+                        on the text where the output checks base64 constraints
+                        on the text. Without it the later member's keyword
+                        wins, another member's `enum` is dropped, the map
+                        becomes a model without fields and the keyword is
+                        checked on the decoded value, as in 0.100.0
   --keep-enum-member-values, --no-keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would
@@ -905,6 +928,20 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         class, else as Literal[...] joined with its type
                         (Literal['red', 'green'] | str), whatever the options
                         say about Literals
+  --read-allof-parents-as-their-models, --no-read-allof-parents-as-their-models
+                        Read each allOf parent as its model holds it: a parent
+                        written as a $ref beside sibling keywords with the
+                        schema its $ref names, so a model written before that
+                        parent types and requires an inherited property as it
+                        does when written after it; every property some parent
+                        requires stays required where a parent the model also
+                        inherits it from declares it optional (allOf:
+                        [PetBase, Named] with only Named requiring name); and
+                        an allOf of a $ref alias and a member that adds only a
+                        type or required names reads the alias as --intersect-
+                        combined-schema-keywords reads alias members; without
+                        it such properties can be Any or optional and such a
+                        model a dict, as in 0.100.0
   --read-allof-parents-in-mro-order, --no-read-allof-parents-in-mro-order
                         Read the allOf parents of every inherited schema in
                         the order of the class bases (the MRO), so a property
@@ -998,6 +1035,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         and under --generate-schema-validators a site with
                         such a branch is a union rather than one object model;
                         without it every branch takes them, as in 0.93.0
+  --read-set-item-fields-in-class-order, --no-read-set-item-fields-in-class-order
+                        Under --use-unique-items-as-set-by-value, also read
+                        the fields a set item model takes in the order of its
+                        class bases (C3) when deciding whether its instances
+                        hash: where a base two levels up and a later direct
+                        base both declare a field and the class takes the one
+                        that does not hash, the uniqueItems array stays a
+                        list; without it only the field the nearest base
+                        declares is read and such an array is a set whose
+                        items fail to hash, as in 0.100.0
   --read-unevaluated-properties, --no-read-unevaluated-properties
                         Read a schema-valued unevaluatedProperties as
                         additionalProperties where no applicator evaluates the

@@ -42,10 +42,11 @@ A parse keeps the rows of ``LEGACY_ROWS`` whose option is off (``kept_legacy_row
 ``--intersect-allof-keywords`` the output of 0.86.0 where parts meet, and without
 ``--intersect-combined-schema-keywords`` (which turns ``--intersect-allof-keywords`` on) the output of 0.88.0 where an
 ``enum`` meets a ``type`` that rejects some of its values, and in each branch of an ``anyOf`` or ``oneOf`` beside
-keywords, and without ``--distribute-allof-over-unions`` the output of 0.89.0 where an ``allOf`` meets an ``anyOf`` or
-``oneOf``. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value that the
-merged ``type`` rejects is removed (``{"$ref": I, "enum": [1, 2.5, "x"]}`` with an ``integer`` target keeps ``1``),
-and an ``enum`` none of whose values it admits is a keyword without a common value; without it they are kept.
+keywords, without ``--distribute-allof-over-unions`` the output of 0.89.0 where an ``allOf`` meets an ``anyOf`` or
+``oneOf``, and without ``--read-allof-parents-as-their-models`` the output of 0.100.0 where a model reads the allOf
+parents it inherits from. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value
+that the merged ``type`` rejects is removed (``{"$ref": I, "enum": [1, 2.5, "x"]}`` with an ``integer`` target keeps
+``1``), and an ``enum`` none of whose values it admits is a keyword without a common value; without it they are kept.
 """
 
 from __future__ import annotations
@@ -204,6 +205,20 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "member or beside the allOf, is that model, which does not require them"
         ),
     },
+    "read_allof_parents_as_their_models": {
+        "legacy-ref-sibling-parent-read-alone": (
+            "an inherited schema that is a `$ref` with sibling keywords is read by its siblings alone, not as the "
+            "merge its model is built from"
+        ),
+        "legacy-inherited-required-names-unwritten": (
+            "a name only the inherited schemas require is not written in the model, which takes the field its bases "
+            "give it, optional where the base it takes it from declares it optional"
+        ),
+        "legacy-root-site-members-as-written": (
+            "the allOf root model row reads the members as written, so an alias of an object model beside a member "
+            "that adds only a type or required names is a root model of the type"
+        ),
+    },
     "distribute_allof_over_unions": {
         "legacy-ref-branch-without-site-parts": (
             "a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf "
@@ -226,6 +241,30 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "the value branches of an allOf's anyOf and oneOf are read only where every combination admits no object "
             "and the site writes a model: a field writes Any, a field of one $ref member that type, and an allOf of "
             "object branches leaves them out"
+        ),
+    },
+    "intersect_merged_allof_members": {
+        "legacy-all-of-object-merge-row": (
+            "allOf members merged into one object are their merge row: of a property several of them declare, the "
+            "later `type`, `nullable` and `multipleOf` win, two type lists join and a later `true` replaces the "
+            "schema, and the allOf members of a member are dropped"
+        ),
+        "legacy-all-of-root-first-typed-member": (
+            "a named allOf of one `$ref` to a value schema and value members is the first typed of them with the "
+            "constraints of all, the `enum` of another member dropped"
+        ),
+        "legacy-all-of-enum-root-self-alias": (
+            "a named allOf whose merged root is an enum written as a class names itself where no output reads the "
+            "annotations (standard dataclasses), which later passes type `Any`"
+        ),
+        "legacy-all-of-map-counts-dropped": (
+            "an allOf of a `$ref` to a map and members that add only property counts or `propertyNames` is a model "
+            "without fields at a definition, and the reference elsewhere, which only a field whose whole type it is "
+            "writes the counts beside"
+        ),
+        "legacy-all-of-base64-reference-layered": (
+            "a length or `pattern` an allOf site adds to a `$ref` to base64 text is written beside the reference, "
+            "checked on the decoded value"
         ),
     },
 }

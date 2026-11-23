@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "$defs": {
+    "Num": {
+      "type": "number"
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "$ref": "#/$defs/Num"
+        },
+        "step": {
+          "type": "integer",
+          "multipleOf": 2
+        },
+        "code": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "legacy": {
+          "type": "string"
+        }
+      }
+    },
+    "Counted": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer"
+        },
+        "step": {
+          "type": "integer",
+          "multipleOf": 3
+        },
+        "code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 5
+        }
+      }
+    },
+    "Shipment": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Counted"
+            },
+            {
+              "$ref": "#/$defs/Item"
+            }
+          ]
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Counted"
+              },
+              {
+                "$ref": "#/$defs/Item"
+              },
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Base"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "Sealed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Counted"
+        },
+        {
+          "$ref": "#/$defs/Item"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "count": true,
+            "step": true,
+            "code": true,
+            "kind": true,
+            "note": true
+          },
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Counted"
+    },
+    {
+      "$ref": "#/$defs/Item"
+    },
+    {
+      "unevaluatedProperties": false,
+      "properties": {
+        "count": true,
+        "step": true,
+        "code": true,
+        "kind": true,
+        "note": true,
+        "legacy": false
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        true,
+        {
+          "$ref": "#/$defs/Counted"
+        },
+        {
+          "anyOf": [
+            {
+              "required": [
+                "count"
+              ]
+            },
+            {
+              "required": [
+                "step"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

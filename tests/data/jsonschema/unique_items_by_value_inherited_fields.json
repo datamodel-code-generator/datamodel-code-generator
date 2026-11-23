@@ -4,7 +4,8 @@
   "type": "object",
   "properties": {
     "levels": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Levels"}},
-    "diamond": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Diamond"}}
+    "diamond": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Diamond"}},
+    "reverse": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Reverse"}}
   },
   "definitions": {
     "Z": {"type": "object", "properties": {"x": {"type": "array", "items": {"type": "string"}}}},
@@ -14,6 +15,10 @@
     "Y": {"type": "object", "properties": {"y": {"type": "string"}}},
     "P": {"allOf": [{"$ref": "#/definitions/Y"}], "properties": {"p": {"type": "string"}}},
     "Q": {"allOf": [{"$ref": "#/definitions/Y"}], "properties": {"q": {"type": "string"}}},
-    "Diamond": {"allOf": [{"$ref": "#/definitions/P"}, {"$ref": "#/definitions/Q"}]}
+    "Diamond": {"allOf": [{"$ref": "#/definitions/P"}, {"$ref": "#/definitions/Q"}]},
+    "W": {"type": "object", "properties": {"w": {"type": "string"}}},
+    "V": {"allOf": [{"$ref": "#/definitions/W"}], "properties": {"v": {"type": "string"}}},
+    "U": {"type": "object", "properties": {"w": {"type": "array", "items": {"type": "string"}}}},
+    "Reverse": {"allOf": [{"$ref": "#/definitions/V"}, {"$ref": "#/definitions/U"}]}
   }
 }
