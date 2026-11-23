@@ -1369,16 +1369,19 @@ def pin_recursive_refs(parser: SchemaRefsHost, schema: dict[str, Any], defining_
     It becomes a $ref to that target in the defining document. The other references keep their edges, which
     resolve them in their own document wherever the schema is read.
     """
-    stack: list[tuple[dict[str, Any], tuple[str | int, ...]]] = [(schema, ())]
+    stack: list[tuple[dict[str, Any], tuple[str | int, ...], tuple[str | int, ...]]] = [(schema, (), ())]
     while stack:
-        node, path = stack.pop()
+        node, path, at = stack.pop()
         match node:
             case {"$recursiveRef": "#"} if "$ref" not in node and (
                 target := recursive_ref_target(parser, defining_ref, path)
             ):
                 del node["$recursiveRef"]
                 node["$ref"] = target
-        stack.extend((child, (*path, *child_path)) for child_path, child in iter_schema_resource_children(parser, node))
+        stack.extend(
+            (child, (*path, *child_path), child_path)
+            for child_path, child in iter_schema_resource_children(parser, node, at=at)
+        )
 
 
 def declares_recursive_anchor(parser: SchemaRefsHost) -> bool:

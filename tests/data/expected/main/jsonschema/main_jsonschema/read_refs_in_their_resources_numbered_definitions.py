@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, RootModel
@@ -20,7 +21,17 @@ class Anything(RootModel[Any]):
     root: Any
 
 
+class Code(Enum):
+    c = 'c'
+    d = 'd'
+
+
+class Entry(BaseModel):
+    code: Code | None = None
+
+
 class Codes(BaseModel):
     first: Field1 | None = None
     second: Field2 | None = None
     any: Anything | None = None
+    entry: Entry | None = None

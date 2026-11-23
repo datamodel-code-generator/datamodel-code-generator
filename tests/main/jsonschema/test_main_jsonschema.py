@@ -41261,10 +41261,12 @@ def test_held_root_anchor_named_by_url(option: str, output_dir: Path) -> None:
 
 
 def test_read_refs_in_their_resources_numbered_definitions(output_file: Path) -> None:
-    """Read definitions a YAML document names by numbers, and a boolean definition, under the option.
+    """Read numbered definitions of a YAML document, a boolean definition and a version namespace, under the option.
 
     `$defs` holds `1` and `2`, YAML integers, one with an `$anchor`, and `Anything: true`. Under
-    --read-refs-in-their-resources each is read as the schema it is, as without the option.
+    --read-refs-in-their-resources each is read as the schema it is, as without the option. The version namespace
+    `v1` declares `$id`, so its member `Entry` is read in that resource: its `$anchor` names
+    `https://example.com/v1.json#entry` and its `#/$defs/Code` names the namespace's `Code`.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "numbered_definitions.yaml",

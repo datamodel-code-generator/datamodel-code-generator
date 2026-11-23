@@ -29,14 +29,19 @@ from functools import partial
 from itertools import chain
 from operator import is_not
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
 from urllib.parse import ParseResult, unquote, urljoin, urlparse
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator._document_reader import held_schema, member_key, refuse_oversized_document
 from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, pointer_tokens
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
+from datamodel_code_generator._json_schema import (
+    DEFINITION_KEYS,
+    NAMESPACE_DEFINITION_KEYS,
+    SCHEMA_SHAPES,
+    subschema_entries,
+)
 from datamodel_code_generator._openapi_objects import held_schemas
 from datamodel_code_generator._paths import file_uri, file_uri_path, input_files_under
 from datamodel_code_generator._shared_types import Error, InvalidClassNameError, InvalidFileFormatError
@@ -792,20 +797,26 @@ def located_document(parser: DocumentNamesHost, location: SchemaLocation) -> Doc
 
 
 def iter_schema_resource_children(
-    parser: SchemaResourcesHost, schema: dict[str, Any], *, passed: _PassedAnchor | None = None
+    parser: SchemaResourcesHost,
+    schema: dict[str, Any],
+    *,
+    at: tuple[str | int, ...] = (),
+    passed: _PassedAnchor | None = None,
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
     """Visit schema-valued keywords without inspecting examples, defaults or extensions.
 
-    Under --read-refs-in-their-resources each member of a definitions container is a schema the walk visits, as JSON
-    Schema reads it, and a version namespace of definitions (``v1``) also holds its other members as schemas
-    (``_definition_members``). Without it, row ``legacy-namespace-declarations-passed``: a member without
-    schema keywords that holds definitions is passed over for its entries (``iter_schema_definition_entry``), and
-    each `$anchor` on a schema it passes over goes to ``passed`` with its path.
+    ``at`` is the path of the schema from the schema that holds it. Under --read-refs-in-their-resources each member
+    of a definitions container is a schema the walk visits, as JSON Schema reads it, and a version namespace of
+    definitions (``v1``, ``_version_namespace_members``) also holds as schemas, below it, its members that are no
+    subschema keyword, so they are read in its resource. Without it, row ``legacy-namespace-declarations-passed``: a
+    member without schema keywords that holds definitions is passed over for its entries
+    (``iter_schema_definition_entry``), and each `$anchor` on a schema it passes over goes to ``passed`` with its path.
     """
     if resource_row(parser, "legacy-namespace-declarations-passed") is None:
+        members = _version_namespace_members(parser, at, schema)
         for keyword, value in schema.items():
-            if keyword in DEFINITION_KEYS and isinstance(value, dict):
-                yield from _definition_members(parser, (keyword,), value)
+            if str(keyword) in members:
+                yield (str(keyword),), value
             else:
                 yield from subschema_entries(keyword, value)
         return
@@ -1074,11 +1085,12 @@ def rewrite_schema_resource_refs(  # noqa: PLR0917
     id_field: str | None,
     *,
     is_root: bool = False,
+    at: tuple[str | int, ...] = (),
 ) -> dict[str, Any]:
     """Copy only schema containers whose resource-relative references change.
 
     A reference is resolved with its pointer opened by ``/`` (``pointer_ref_spelling``), which the walk of the
-    schema graph writes in place of an opening ``%2F`` either way.
+    schema graph writes in place of an opening ``%2F`` either way. ``at`` is the path of the schema from its holder.
     """
     id_field, identifier = schema_resource_identifier(parser, schema, id_field, is_root=is_root, document=document)
     if isinstance(identifier, str):
@@ -1089,9 +1101,9 @@ def rewrite_schema_resource_refs(  # noqa: PLR0917
         resolved = resolve_schema_resource_ref(parser, reference, base, document, nested_scope=base != root_base)
         if resolved != reference:
             result = {**schema, "$ref": resolved}
-    children = iter_schema_resource_children(parser, schema)
+    children = iter_schema_resource_children(parser, schema, at=at)
     for path, child in chain(children, implicit_schema_resources(parser, schema, document)) if is_root else children:
-        rewritten = rewrite_schema_resource_refs(parser, child, document, base, root_base, id_field)
+        rewritten = rewrite_schema_resource_refs(parser, child, document, base, root_base, id_field, at=path)
         if rewritten is child:
             continue
         if result is schema:
@@ -1498,18 +1510,32 @@ def _namespace_members(parser: SchemaResourcesHost, raw: dict[str, YamlValue]) -
             yield key_str, value
 
 
-def _definition_members(
-    parser: SchemaResourcesHost, path: tuple[str, ...], members: dict[str, YamlValue]
-) -> Iterator[tuple[tuple[str | int, ...], dict[str, YamlValue]]]:
-    """Yield each member of a definitions container as a schema, with its path, and those a version namespace holds.
+_VERSION_NAMESPACE_HOLDERS: Final = frozenset({(), *((keyword,) for keyword in DEFINITION_KEYS)})
+"""Where a version namespace sits in its holder: in another version namespace, or in a definitions container."""
 
-    A version namespace of definitions (``v1``, no schema keywords) is a schema whose members are entries too.
+
+def _version_namespace_members(
+    parser: SchemaResourcesHost, at: tuple[str | int, ...], schema: dict[str, YamlValue]
+) -> frozenset[str]:
+    """Return the keys of the members a schema at the path ``at`` from its holder holds as a version namespace.
+
+    A version namespace of definitions is a member of a definitions container or of another version namespace (the
+    one path of a single token that names no keyword), named like ``v1``, without schema keywords. Its members are
+    the object values of its keys that name no keyword (``_namespace_members``) and no subschema keyword; any other
+    schema holds none.
     """
-    for key, member in members.items():
-        if isinstance(member, dict):
-            yield (*path, name := str(key)), member
-            if _is_version_namespace(parser, name) and not has_schema_affecting_keywords(parser, member):
-                yield from _definition_members(parser, (*path, name), dict(_namespace_members(parser, member)))
+    if not (
+        at
+        and at[:-1] in _VERSION_NAMESPACE_HOLDERS
+        and _is_version_namespace(parser, str(at[-1]))
+        and not has_schema_affecting_keywords(parser, schema)
+    ):
+        return frozenset()
+    return frozenset(
+        key
+        for key, member in _namespace_members(parser, schema)
+        if isinstance(member, dict) and key not in SCHEMA_SHAPES
+    )
 
 
 def _is_version_namespace(parser: SchemaResourcesHost, name: str) -> bool:
