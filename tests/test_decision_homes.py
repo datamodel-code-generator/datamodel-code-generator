@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from scripts._decision_home_reads import Bypass, builder_bypasses, builder_problems, default_repo, missing
+from scripts._decision_home_reads import builder_problems, default_repo, missing
 from scripts.build_architecture_docs import (
     DECISION_BEGIN_MARKER,
     DECISION_END_MARKER,
@@ -35,7 +35,6 @@ from scripts.decision_homes import (
 from scripts.fact_tables import Fact, RenderFact
 from scripts.pass_decls import DECISION_DECLS, PASS_DECLS
 from scripts.where import SPAN, Page, Repo
-from tests.decision_home_allowlist import BUILDER_BYPASSES
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -170,30 +169,6 @@ def test_builder_homes_are_stated_and_defined() -> None:
     assert not problems, "\n".join(problems)
 
 
-@pytest.mark.allow_direct_assert(
-    "the guard of the builder homes must fail the test, not be stored as an expected output"
-)
-def test_only_the_builders_build_their_outputs() -> None:
-    """A table row's parse method runs only through the tables, and a marked output is built only by its builder.
-
-    The baseline (`BUILDER_BYPASSES` of `tests/decision_home_allowlist.py`) holds the bypasses of today's code; it
-    only shrinks (`scripts/check_ratchets.py` counts it), so an entry the code no longer has must go.
-    """
-    found = {(bypass.home, bypass.scope) for bypass in builder_bypasses(default_repo(), BUILDER_HOMES)}
-    listed = {(home, scope) for home, scopes in BUILDER_BYPASSES.items() for scope in scopes}
-    new = [f"{scope} bypasses {home}" for home, scope in sorted(found - listed)]
-    stale = [f"{scope} bypasses {home}" for home, scope in sorted(listed - found)]
-
-    assert not new, (
-        "a parse method of a dispatch-table row called outside the tables, or an output built outside its builder: "
-        "choose the row through its table's position, or build the output in the builder or one of its parts "
-        "(scripts/decision_homes.py BUILDER_HOMES):\n" + "\n".join(new)
-    )
-    assert not stale, (
-        "bypasses tests/decision_home_allowlist.py lists that no longer happen: remove them\n" + "\n".join(stale)
-    )
-
-
 SEEDED = (
     DecisionHome(
         "seeded: homes src/ lacks",
@@ -253,55 +228,25 @@ SEEDED_BUILDER_PACKAGE = {
         "class Row:\n    pass\n\n\nclass Default:\n    pass\n\n\nclass DispatchTable:\n    pass\n"
     ),
     "parser/kinds.py": (
-        "from functools import partial\n\n"
         "from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row\n\n\n"
-        "def _shared(parser, site):\n    return parser.parse_object(site)\n\n\n"
-        "def _then(build):\n    return build\n\n\n"
         "class Parser:\n"
-        "    def _build_array(self, site):\n        return self._build_enum(site)\n\n"
         "    def _build_enum(self, site):\n        return site\n\n"
-        "    def _build_default(self, site):\n        return site\n\n"
-        "    def parse_object(self, site):\n        return _shared(self, site)\n\n"
-        "    _ROWS = (Row('enum', None, _then(_build_enum)),)\n"
-        "    _TABLE = DispatchTable(\n"
-        "        (Row('array', None, build=partial(_build_array)), *_ROWS, Row('shared', None, _shared)),\n"
-        "        Default('default', _build_default),\n    )\n"
+        "    _ROWS = (Row('enum', None, _build_enum),)\n"
+        "    _TABLE = DispatchTable(_ROWS, Default('default', None))\n"
         "    _OTHER = DispatchTable((), Default('other', None))\n\n"
-        "    def parse_site(self, site):\n        return self._TABLE.choose(self, site)\n\n"
-        "    def shortcut(self, site):\n        return self._TABLE.choose(self, site)\n\n"
-        "    def parameter(self, _build_enum):\n        return _build_enum\n\n"
-        "    def alias(self, site):\n        table = self._TABLE\n        return table.choose(self, site)\n"
+        "    def parse_site(self, site):\n        return self._TABLE.choose(self, site)\n"
     ),
     "parser/maps.py": (
         "def build_map(parser):\n    return part(parser)\n\n\n"
         "def part(parser):\n    return parser.data_type(is_dict=True)\n\n\n"
-        "def flags(parser):\n    return parser.data_type(**{'is_dict': True})\n\n\n"
-        "def handed_on():\n    return {'is_dict': True, 'is_list': False}\n\n\n"
-        "def not_a_map(parser):\n    return parser.data_type(is_dict=False)\n\n\n"
-        "def unreached(parser):\n    return parser\n\n\n"
-        "def seeded_slot(parser, obj):\n    return parser.data_type(**parser._container_flags(obj, 'dict'))\n\n\n"
-        "def other_slot(parser, obj):\n    return parser._container_flags(obj, 'list')\n"
+        "def unreached(parser):\n    return parser\n"
     ),
-    "model.py": (
-        "class Ref:\n    pass\n\n\ndef name_model():\n    return Ref()\n\n\n"
-        "def outside(parser):\n    return parser.data_type(is_dict=True)\n"
-    ),
-    "naming.py": (
-        "from datamodel_code_generator.model import Ref as Named\n\n\ndef rename():\n    return Named()\n\n\n"
-        "def construct():\n    return Named.model_construct()\n"
-    ),
-    "other.py": "class Ref:\n    pass\n\n\ndef local():\n    return Ref()\n",
+    "model.py": "class Ref:\n    pass\n\n\ndef name_model():\n    return Ref()\n",
 }
 """A package with a dispatch table in ``parser/kinds.py`` and an object-map builder in ``parser/maps.py``.
 
-``Parser._build_array`` calls the parse method of the ``enum`` row (held through the shared rows and a wrapper),
-``_shared`` calls a public hook that is no row's parse method and the hook calls ``_shared`` back, ``shortcut`` calls
-the table's ``choose`` outside its position, and ``_OTHER`` is a table no record holds. ``flags`` and ``handed_on``
-build the dict flag outside the builder; ``model.py`` lies outside the record's ``within``. ``naming.py`` builds a
-``Ref`` of ``model.py`` through an alias outside ``name_model``; ``other.py`` builds a class of its own of that name.
-``Parser.parameter`` reads a parameter spelled as a parse method, ``Parser.alias`` reads the table into a name,
-``seeded_slot`` asks ``_container_flags`` for the ``dict`` slot (``other_slot`` for another) and ``naming.construct``
-builds a ``Ref`` by ``model_construct``.
+``_OTHER`` is a table no record holds, ``_ROWS`` holds rows but is no table, and ``build_map`` does not reach
+``unreached``.
 """
 
 SEEDED_BUILDERS = (
@@ -315,7 +260,7 @@ SEEDED_BUILDERS = (
         output="seeded: a map",
         prose="one builder (`build_map`)",
         builder=Home("parser/maps.py", "build_map"),
-        marks=(Mark(keyword="is_dict", value=True), Mark(callee="_container_flags", argument=(1, "dict"))),
+        marks=(Mark(f"{PACKAGE}.types.DataType", "is_dict", value=True),),
         parts=(Home("parser/maps.py", "part"),),
         within="parser/",
     ),
@@ -323,7 +268,7 @@ SEEDED_BUILDERS = (
         output="seeded: a named model",
         prose="Names come from `name_model`.",
         builder=Home("model.py", "name_model"),
-        marks=(Mark(callee=f"{PACKAGE}.model.Ref"), Mark(callee=f"{PACKAGE}.model.Ref.model_construct")),
+        marks=(Mark(f"{PACKAGE}.model.Ref"),),
     ),
 )
 """Records of the seeded package that its page states."""
@@ -344,24 +289,6 @@ def _seeded_builder_repo(root: Path) -> Repo:
     return Repo(root, Page([], [], [], []))
 
 
-@pytest.mark.allow_direct_assert(
-    "the bypasses the guard finds in a seeded package are its verdict, not a stored output"
-)
-def test_builder_bypasses_on_a_seeded_package(tmp_path: Path) -> None:
-    """Calls of row parse methods outside the tables, of ``choose`` outside the position and marks are bypasses."""
-    assert builder_bypasses(_seeded_builder_repo(tmp_path), SEEDED_BUILDERS) == [
-        Bypass("model.py:name_model", "naming.py:construct", 9),
-        Bypass("model.py:name_model", "naming.py:rename", 5),
-        Bypass("parser/kinds.py:Parser._build_enum", "parser/kinds.py:Parser._build_array", 16),
-        Bypass("parser/kinds.py:Parser.parse_site", "parser/kinds.py:Parser.alias", 44),
-        Bypass("parser/kinds.py:Parser.parse_site", "parser/kinds.py:Parser.shortcut", 38),
-        Bypass("parser/kinds.py:_shared", "parser/kinds.py:Parser.parse_object", 25),
-        Bypass("parser/maps.py:build_map", "parser/maps.py:flags", 10),
-        Bypass("parser/maps.py:build_map", "parser/maps.py:handed_on", 14),
-        Bypass("parser/maps.py:build_map", "parser/maps.py:seeded_slot", 26),
-    ]
-
-
 @pytest.mark.allow_direct_assert("the problems of seeded records are the check's verdict, not a stored output")
 def test_builder_problems_on_seeded_records(tmp_path: Path) -> None:
     """A passage the page lacks or that names another builder, a missing def, no table, no reach are problems."""
@@ -371,14 +298,14 @@ def test_builder_problems_on_seeded_records(tmp_path: Path) -> None:
             output="seeded: a passage the page lacks",
             prose="the builder (`build_map`) of nothing",
             builder=Home("parser/maps.py", "build_map"),
-            marks=(Mark(callee="build"),),
+            marks=(Mark("build"),),
         ),
         BuilderHome(
             output="seeded: a passage that names another builder",
             prose="one builder (`build_map`)",
             builder=Home("parser/maps.py", "part"),
             table=Home("parser/kinds.py", "Parser._ROWS"),
-            marks=(Mark(callee="build"),),
+            marks=(Mark("build"),),
             parts=(Home("parser/maps.py", "unreached"), Home("parser/maps.py", "no_such_part")),
         ),
         BuilderHome(

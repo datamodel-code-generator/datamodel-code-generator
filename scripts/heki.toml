@@ -5805,10 +5805,16 @@ allowed-readers = ["datamodel_code_generator.parser.jsonschema:JsonSchemaParser.
 attribution = "lexical"
 
 [[call-owners]]
+name = "builder:parser/jsonschema.py:JsonSchemaParser._parse_object_map"
+targets = ['datamodel_code_generator.parser._object_maps.ObjectMapsHost._container_flags(slot="dict")', 'datamodel_code_generator.parser.jsonschema.JsonSchemaParser._container_flags(slot="dict")', "datamodel_code_generator.types.DataType(is_dict=True)"]
+allowed-callers = ["datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_object_map", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_object_map.*", "datamodel_code_generator.parser._object_maps:parse_additional_properties_map", "datamodel_code_generator.parser._object_maps:parse_additional_properties_map.*", "datamodel_code_generator.parser._object_maps:parse_pattern_map", "datamodel_code_generator.parser._object_maps:parse_pattern_map.*", "datamodel_code_generator.parser._object_maps:pattern_map_type", "datamodel_code_generator.parser._object_maps:pattern_map_type.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_property_names", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_property_names.*", "datamodel_code_generator.parser._object_maps:parse_property_names", "datamodel_code_generator.parser._object_maps:parse_property_names.*"]
+forbidden-callers = ["datamodel_code_generator.parser.*"]
+attribution = "lexical"
+
+[[call-owners]]
 name = "builder:reference.py:ModelResolver.add"
 targets = ["datamodel_code_generator.reference.Reference", "datamodel_code_generator.reference.Reference.model_construct", "datamodel_code_generator.reference.Reference.model_validate"]
 allowed-callers = ["datamodel_code_generator.reference:ModelResolver.add", "datamodel_code_generator.reference:ModelResolver.add.*", "datamodel_code_generator.reference:ModelResolver._register_reference", "datamodel_code_generator.reference:ModelResolver._register_reference.*"]
-subclasses = false
 attribution = "lexical"
 
 [[call-owners]]

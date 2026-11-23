@@ -10,8 +10,8 @@ a reader of a home outside them that ``scripts/heki_baseline.toml`` does not rec
 
 One ``BuilderHome`` per builder home that the L1 prose of the page states (the parse method a dispatch table
 chooses at each position, the one builder of object maps, the resolver that names models): the builder, the passage of
-the page that states it, and the syntactic mark of what it builds. The prose stays as written; the guards of
-``tests/test_decision_homes.py`` read these records.
+the page that states it, and the mark of what it builds. The prose stays as written; ``tests/test_decision_homes.py``
+checks the records and heki's contracts (``scripts/build_heki_contracts.py``) report the code that bypasses them.
 
 One ``Placement`` per row of the table of the Placement Guide that says where a decision reading some facts goes, in
 its order; ``scripts/build_architecture_docs.py`` writes that table from ``PLACEMENTS``. The two cells stay the Markdown
@@ -55,31 +55,28 @@ class DecisionHome(NamedTuple):
 
 
 class Mark(NamedTuple):
-    """The syntactic mark of a built output: a call of ``callee``, or a call that sets ``keyword`` to ``value``."""
+    """The mark of a built output: a call of ``callee``, with ``keyword`` bound to ``value`` where one is asked."""
 
-    callee: str = ""
-    """The callee as the dotted path its name leads to through imports, or the attribute chain it ends with; ``""``:
-    any call."""
+    callee: str
+    """The function, method or class called, as the dotted path of its definition (a heki target)."""
     keyword: str = ""
-    """A keyword the call passes, as ``keyword=value``, in a ``**`` dict display or in a dict display of flags handed
-    on; ``""``: none is asked."""
+    """A parameter the call binds, by keyword or by position as Python binds it (``_container_flags(obj, "dict")``
+    binds ``slot``), also through a ``**`` dict display; ``""``: none is asked."""
     value: bool | int | str | None = None
-    """The constant the keyword takes."""
-    argument: tuple[int, str] | None = None
-    """A positional argument the call passes as ``(index, constant)``: the slot a flags helper is asked for
-    (``_container_flags(obj, "dict")``); ``None``: none is asked."""
+    """The constant the parameter takes."""
 
 
 class BuilderHome(NamedTuple):
     """One builder home: what it builds, the passage of the page that states it, the builder, and how to find a bypass.
 
     A record with a ``table`` stands for a position of L1: its builder chooses the parse method from that dispatch table
-    (``parser/_schema_dispatch.py``), the only call of the table's ``choose``, and the parse methods the table's rows
-    hold run only through the tables; the table is read outside the builder only by ``typed_children``. A record with
-    ``marks`` stands for an output: a call with one of those marks is built only in the builder and its ``parts``.
-    The marks are syntactic: a call of the class (or its ``model_construct``/``model_validate``), a keyword, a flag
-    dict or a constant slot argument. An output built by ``model_copy`` or by a flag computed from a variable slot
-    (``{CONTAINER_FLAGS[slot]: True}``) carries no mark and is not seen.
+    (``parser/_schema_dispatch.py``) and is the only reader of the table, and the parse methods the table's rows hold
+    run only through the tables. A record with ``marks`` stands for an output: a call with one of those marks is made
+    only in the builder and its ``parts``. A mark is a call of a class or a subclass (or its
+    ``model_construct``/``model_validate``) or of a function, and where it asks for one, a parameter that the call binds
+    to a constant (heki's argument-list targets). An output built by ``model_copy``, by a flag computed from a variable
+    slot (``{CONTAINER_FLAGS[slot]: True}``) or by a flag dict that is handed on before it reaches the call carries no
+    mark and is not seen.
     """
 
     output: str
@@ -96,7 +93,8 @@ class BuilderHome(NamedTuple):
     parts: tuple[Home, ...] = ()
     """The defs the builder hands parts of the output to, which the builder reaches by calls through one another."""
     within: str = ""
-    """The package path prefix of the modules where a call with the mark is the output (``""``: the whole package)."""
+    """The package directory whose modules may not make a call with the mark outside the builder and its parts, as
+    ``parser/`` (``""``: the whole package)."""
 
 
 class Placement(NamedTuple):
@@ -8237,7 +8235,19 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
         output="the dict of an object map",
         prose="is built by one builder at every position (`_parse_object_map`)",
         builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_map"),
-        marks=(Mark(keyword="is_dict", value=True), Mark(callee="_container_flags", argument=(1, "dict"))),
+        marks=(
+            Mark(callee="datamodel_code_generator.types.DataType", keyword="is_dict", value=True),
+            Mark(
+                callee="datamodel_code_generator.parser.jsonschema.JsonSchemaParser._container_flags",
+                keyword="slot",
+                value="dict",
+            ),
+            Mark(
+                callee="datamodel_code_generator.parser._object_maps.ObjectMapsHost._container_flags",
+                keyword="slot",
+                value="dict",
+            ),
+        ),
         parts=(
             Home("parser/_object_maps.py", "parse_additional_properties_map"),
             Home("parser/_object_maps.py", "parse_pattern_map"),
@@ -8259,7 +8269,7 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
         parts=(Home("reference.py", "ModelResolver._register_reference"),),
     ),
 )
-"""The builder homes of the L1 prose, guarded by ``tests/test_decision_homes.py``."""
+"""The builder homes of the L1 prose, checked by ``tests/test_decision_homes.py`` and heki's contracts."""
 
 PLACEMENTS: Final[tuple[Placement, ...]] = (
     Placement(
