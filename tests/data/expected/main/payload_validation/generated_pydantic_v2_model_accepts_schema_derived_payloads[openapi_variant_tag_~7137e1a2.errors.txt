@@ -1,0 +1,24 @@
+{
+  "expected": [],
+  "actual": [
+    {
+      "type": "union_tag_invalid",
+      "loc": [],
+      "msg": "Input tag '4.978346047366564e+16' found using 'kind' does not match any of the expected tags: 1, 2",
+      "input": {
+        "kind": 4.978346047366564e+16,
+        "b": {},
+        "\u00d8": [
+          {}
+        ],
+        "a": "",
+        "\ud83c\uddfa\ud83c\uddf8": []
+      },
+      "ctx": {
+        "discriminator": "'kind'",
+        "tag": "4.978346047366564e+16",
+        "expected_tags": "1, 2"
+      }
+    }
+  ]
+}
