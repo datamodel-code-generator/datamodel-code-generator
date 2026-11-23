@@ -1,0 +1,26 @@
+exit 0
+## Breaking Changes
+
+### Custom Template Update Required
+* Custom templates receive `fields` instead of `model_fields` - Templates of `--custom-template-dir` read the fields as `fields`. No option keeps `model_fields`. Rename `model_fields` to `fields` in your templates. (#5101, #5001)
+
+### API/CLI Changes
+* `--old-flag` is removed - The option did nothing since 0.3.0. Drop `--old-flag`. (#5002)
+
+## Scheduled Breaking Changes
+
+* `argcomplete installation` is registered without a runtime warning. Planned removal: TBD. argcomplete will become optional.
+
+## New Options
+
+* New option `--new-flag` (`--no-new-flag`): Turn on new things. (#5103, #5201)
+* New value `c` of `--output-model-type` (#5103, #5201)
+* New option `--quiet-flag`
+
+## New Dated Presets
+
+* `standard-py3XX-20260301` and `practical-py3XX-20260301`: they keep the 20260201 options and add Snake case (`--snake-case-field`): Snake case field names. (#5103)
+
+## Experimental Features
+
+* `--input-file-type toml` is experimental. TOML input is experimental.

@@ -530,7 +530,8 @@ class Facts:
     `features`: the experimental features a release shipped; `unreleased_features`: those not released yet;
     `scheduled`: the targets whose removal the deprecation registry schedules; `new_surface`: the surface items
     (`--name`, `--name value`, public names, `preset:<date>`) this tree has and the latest release lacks; `surface`:
-    every surface item this tree has.
+    every surface item this tree has; `preset_options`: each option a preset date adds (`--name` or `--name value`, as
+    its group lists it) with the id of that date's entry.
     """
 
     features: frozenset[str] = frozenset()
@@ -538,6 +539,7 @@ class Facts:
     scheduled: frozenset[str] = frozenset()
     new_surface: frozenset[str] = frozenset()
     surface: frozenset[str] = frozenset()
+    preset_options: frozenset[tuple[str, str]] = frozenset()
 
 
 def _strings(value: object) -> TypeGuard[list[str]]:
