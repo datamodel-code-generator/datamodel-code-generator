@@ -428,10 +428,10 @@ def _stacklevel_at_caller() -> int:
     That caller is the frame that called the outermost frame of a file of the package: the code that called the
     library however deep in it, past the third-party code the package calls back through (a Pydantic validator, a YAML
     constructor), so a ``module=`` filter matches the caller's module. A CLI invocation does not use it (see
-    ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own.
+    ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own. The caller
+    is read without keeping this function's frame in a local, which would be a reference cycle until the next
+    collection.
     """
-    # The caller of this function, read without keeping this frame in a local: a frame held by its own locals is a
-    # reference cycle that lives until the garbage collector runs.
     frame: FrameType | None = attrgetter("f_back")(inspect.currentframe())
     level = outermost = 1
     while frame is not None:
