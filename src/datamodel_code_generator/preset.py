@@ -1516,6 +1516,16 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="allOf distributed over object branches",
+        config=PresetConfig(distribute_allof_over_object_branches=True),
+        description=(
+            "Give an allOf over an anyOf or oneOf one union variant per object branch, also where a branch is itself "
+            "an anyOf or oneOf, named by a $ref or written there, and have each variant require every name a part of "
+            "the allOf requires, typed as the field its branch declares, so a variant no longer accepts a payload "
+            "without such a name or with a value its branch rejects."
+        ),
+    ),
+    PresetOptionGroup(
         title="Set item fields read in class order",
         config=PresetConfig(read_set_item_fields_in_class_order=True),
         description=(

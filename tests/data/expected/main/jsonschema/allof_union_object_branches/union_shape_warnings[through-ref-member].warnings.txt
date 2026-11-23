@@ -1,0 +1,1 @@
+leaf.json#/allOf/0 names an allOf over a union, which is no class a model can extend, so the model checks none of its branches; --distribute-allof-over-unions reads the member in place.

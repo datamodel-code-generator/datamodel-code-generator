@@ -6,6 +6,8 @@ toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].model.p
 [test_preset_option_turned_off]
 capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
+distribute-allof-over-object-branches-command-line	main/preset_opt_in_options/preset_option_turned_off[distribute-allof-over-object-branches-command-line].model.py
+distribute-allof-over-object-branches-pyproject	main/preset_opt_in_options/preset_option_turned_off[distribute-allof-over-object-branches-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[distribute-allof-over-object-branches-command-line].model.py
 infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 intersect-merged-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
@@ -63,6 +65,8 @@ dedupe-numbered-request-response-variants-practical	main/preset_opt_in_options/p
 dedupe-numbered-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-numbered-request-response-variants-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-numbered-request-response-variants-practical].model.py
 dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].model.py
 dedupe-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].model.py
+distribute-allof-over-object-branches-practical	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-object-branches-practical].model.py
+distribute-allof-over-object-branches-standard	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-object-branches-standard].model.py
 distribute-allof-over-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-practical].model.py
 distribute-allof-over-unions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-standard].model.py
 filter-literal-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].model.py

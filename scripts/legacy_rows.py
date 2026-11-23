@@ -798,6 +798,43 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--distribute-allof-over-unions",
     ),
     LegacyRow(
+        "legacy-union-branch-of-union-as-one",
+        (
+            "without `--distribute-allof-over-object-branches`, a branch of an allOf's `anyOf` or `oneOf` that is "
+            "itself a union, by a `$ref` or written there, or an alias of another schema, is one model "
+            "(`JsonSchemaParser._branch_models`): a root model that later passes drop from the variant's bases, so the "
+            "variant checks none of its fields, or no variant at all for an inline union (#6869); it warns"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_union_object_branches/other_document/model.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ),
+        option="--distribute-allof-over-object-branches",
+    ),
+    LegacyRow(
+        "legacy-union-variant-required-names-inherited",
+        (
+            "without `--distribute-allof-over-object-branches`, a union variant of an allOf takes a name that another "
+            "part requires as its bases hold it (`JsonSchemaParser._union_model_restated_names`): optional where its "
+            "branch declares it optional, and `Any` where the class of the other members holds it first (#6867)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_union_object_branches/required_names.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ),
+        option="--distribute-allof-over-object-branches",
+    ),
+    LegacyRow(
         "legacy-all-of-object-merge-row",
         (
             "without `--intersect-merged-allof-members`, allOf members merged into one object are their merge row: of "

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "owned": {"$ref": "#/$defs/OwnedPet"},
+    "inline": {"$ref": "#/$defs/InlinePet"},
+    "keywords": {"$ref": "#/$defs/KeywordPet"},
+    "aliased": {"$ref": "#/$defs/AliasedPet"},
+    "tamed": {"$ref": "#/$defs/TamedPet"},
+    "layered": {"$ref": "#/$defs/LayeredPet"},
+    "cycle": {"$ref": "#/$defs/CyclePet"},
+    "labelled": {"$ref": "#/$defs/LabelledPet"}
+  },
+  "$defs": {
+    "OwnedPet": {"allOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Owned"}]},
+    "Owned": {"type": "object", "properties": {"owner": {"type": "string"}}, "required": ["owner"]},
+    "Pet": {"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]},
+    "Dog": {"anyOf": [{"$ref": "#/$defs/BigDog"}, {"$ref": "#/$defs/Puppy"}]},
+    "Puppy": {"oneOf": [{"$ref": "#/$defs/SmallDog"}, {"$ref": "#/$defs/TinyDog"}]},
+    "Cat": {"type": "object", "properties": {"meow": {"type": "boolean"}}, "required": ["meow"]},
+    "BigDog": {"type": "object", "properties": {"big": {"type": "boolean"}}, "required": ["big"]},
+    "SmallDog": {"type": "object", "properties": {"small": {"type": "boolean"}}, "required": ["small"]},
+    "TinyDog": {"type": "object", "properties": {"tiny": {"type": "boolean"}}, "required": ["tiny"]},
+    "InlinePet": {
+      "allOf": [
+        {"oneOf": [{"$ref": "#/$defs/Cat"}, {"oneOf": [{"$ref": "#/$defs/BigDog"}, {"$ref": "#/$defs/SmallDog"}]}]},
+        {"$ref": "#/$defs/Owned"}
+      ]
+    },
+    "KeywordPet": {
+      "allOf": [
+        {
+          "oneOf": [
+            {"$ref": "#/$defs/Cat"},
+            {
+              "type": "object",
+              "properties": {"name": {"type": "string"}},
+              "required": ["name"],
+              "anyOf": [{"$ref": "#/$defs/BigDog"}, {"type": "object", "properties": {"wild": {"type": "boolean"}}, "required": ["wild"]}]
+            }
+          ]
+        },
+        {"$ref": "#/$defs/Owned"}
+      ]
+    },
+    "AliasedPet": {"allOf": [{"oneOf": [{"$ref": "#/$defs/CatAlias"}, {"$ref": "#/$defs/BigDog"}]}, {"$ref": "#/$defs/Owned"}]},
+    "CatAlias": {"$ref": "#/$defs/Cat"},
+    "TamedPet": {"allOf": [{"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/TamedDog"}]}, {"$ref": "#/$defs/Owned"}]},
+    "TamedDog": {"$ref": "#/$defs/Puppy", "properties": {"tamer": {"type": "string"}}, "required": ["tamer"]},
+    "LayeredPet": {"allOf": [{"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/TrainedDog"}]}, {"$ref": "#/$defs/Owned"}]},
+    "TrainedDog": {"allOf": [{"$ref": "#/$defs/Puppy"}, {"type": "object", "properties": {"trainer": {"type": "string"}}}]},
+    "LabelledPet": {"allOf": [{"$ref": "#/$defs/Labelled"}, {"$ref": "#/$defs/Owned"}]},
+    "Labelled": {
+      "type": "object",
+      "properties": {"label": {"type": "string"}},
+      "required": ["label"],
+      "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Puppy"}]
+    },
+    "CyclePet": {"allOf": [{"$ref": "#/$defs/Looping"}, {"$ref": "#/$defs/Owned"}]},
+    "Looping": {"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Looping"}]}
+  }
+}

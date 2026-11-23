@@ -1121,6 +1121,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         Section.TYPING,
+        "--distribute-allof-over-object-branches",
+        help="Give an `allOf` over an `anyOf` or `oneOf` one union variant per object branch, also where a branch is "
+        "itself an `anyOf` or `oneOf` (named by a `$ref` or written there), an `allOf` or a `$ref` with sibling "
+        "keywords over one, or an alias of an object schema, and have each variant require every name a part of the "
+        "`allOf` requires, typed as the field it takes from its branch (allOf: [Pet, {required: [name]}] with Pet a "
+        "oneOf of Cat and Dog that declare name optional). Without it such a branch gives a variant of the other "
+        "members alone, or none, and warns, and a variant takes the name as its bases hold it, optional or Any, as in "
+        "0.100.0",
+    ),
+    toggle(
+        Section.TYPING,
         "--intersect-merged-allof-members",
         help="Read the `allOf` members that are merged into one schema keyword by keyword, as JSON Schema validates "
         "them: a property that several merged object members declare takes the `type`, null and `multipleOf` every "

@@ -1719,21 +1719,32 @@ def unsatisfiable_value_keywords(parser: AllOfValuesHost, parts: Sequence[JsonSc
     return _intersect_parts(parser, dumps, row).unsatisfiable
 
 
-def holds_union_member(parser: SchemaRefsHost, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
+def holds_union_member(parser: SchemaRefsHost, schema: JsonSchemaObject) -> bool:
     """Return whether an allOf member of ``schema`` holds an ``anyOf`` or ``oneOf``, also through its allOf members.
 
     A ``$ref`` member holds what the schema it names holds; a reference the walk has passed holds nothing.
     """
+    return next(held_unions(parser, schema), None) is not None
+
+
+def held_unions(
+    parser: SchemaRefsHost, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()
+) -> Iterator[JsonSchemaObject]:
+    """Yield the schemas holding an ``anyOf`` or ``oneOf`` that the allOf members of ``schema`` hold, in walk order.
+
+    The walk is that of ``holds_union_member``: a member, the schema each ``$ref`` of it names, and their own allOf
+    members, a reference passed once.
+    """
     for member in schema.allOf:
         target = member
         while isinstance(target, JsonSchemaObject):
-            if target.anyOf or target.oneOf or holds_union_member(parser, target, seen):
-                return True
+            if target.anyOf or target.oneOf:
+                yield target
+            yield from held_unions(parser, target, seen)
             if not target.ref or (path := _schema_refs.ref_path(parser, target.ref)) in seen:
                 break
             seen |= {path}
             target = parser._load_ref_schema_object(target.ref)
-    return False
 
 
 def _member_conjunctions(

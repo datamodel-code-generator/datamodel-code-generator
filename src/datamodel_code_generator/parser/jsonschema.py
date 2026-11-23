@@ -575,6 +575,8 @@ _DEFAULT_LEFT_OFF_KEY = "_default_left_off"
 _BRANCH_REFERENCE_KEY = "_branch_reference"
 """Marks the ``$ref`` branch ``_parse_ref_branch_model`` reads as an allOf member with the class its site types it as,
 the specialization of its dynamic scope included, which ``_parse_all_of_item`` takes as the base class."""
+_UNION_VARIANTS_KEY = "_all_of_union_variants"
+"""Marks an allOf site that ``parse_all_of`` reads as the union of its variants alone (``_union_variant_models``)."""
 _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
     "object-model",
     "root-model",
@@ -948,6 +950,30 @@ def _excluded_null_members(
         and not (member.anyOf or member.oneOf)
     ]
     return null_members if len(null_members) < len(members) else []
+
+
+class _UnionWalk(NamedTuple):
+    """The walk over the union parts of one allOf site (``_parse_all_of_union_parts``)."""
+
+    branch_schemas: dict[str, JsonSchemaObject]
+    """The branch each model of a union part is parsed from, by the model's path."""
+    within: frozenset[SchemaLocation]
+    """The schemas the walk has read the unions of so far, the site's first (``_union_chain``)."""
+
+
+class _UnionBranch(NamedTuple):
+    """One branch of an allOf's ``anyOf`` or ``oneOf`` as the walk meets it (``_branch_models``)."""
+
+    parsed: JsonSchemaObject
+    """The branch as ``parse_combined_schema`` reads it, merged with the keywords beside its union."""
+    written: JsonSchemaObject
+    """The branch as the document writes it, which alone says whether an inline branch holds a union of its own."""
+    data_type: DataType
+    """The type the parse of the union gave the branch."""
+    with_site: JsonSchemaObject | None
+    """The schema ``_parse_ref_branch_model`` built a ``$ref`` branch's class from: the branch with the site's parts."""
+    path: list[str]
+    """Where models the branch stands for are parsed again, below the part's path."""
 
 
 def _expanded_variants(data_type: DataType) -> list[tuple[str, Reference]] | None:
@@ -2558,6 +2584,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             "intersect_allof_keywords": self.intersects_allof_keywords,
             "intersect_combined_schema_keywords": self.intersects_combined_schema_keywords,
             "distribute_allof_over_unions": self.config.distribute_allof_over_unions,
+            "distribute_allof_over_object_branches": self.config.distribute_allof_over_object_branches,
             "intersect_merged_allof_members": self.config.intersect_merged_allof_members,
             "read_allof_parents_as_their_models": self.config.read_allof_parents_as_their_models,
         }
@@ -4388,7 +4415,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         base_classes: list[Reference],
         required: list[str],
         nullable: bool = False,
+        deferred_required: frozenset[str] = frozenset(),
     ) -> DataType:
+        """Parse an object schema into a model with ``fields``, ``base_classes`` and the ``required`` names.
+
+        A required name of ``deferred_required`` that no field declares takes a placeholder the class's field from its
+        bases replaces once every base is built (``build_missing_required_field`` with ``deferred``), not a copy of
+        the field of the first base built so far.
+        """
         with self._model_frame() as frame:  # noqa: PLR1702
             if self.generate_schema_validators:
                 obj = self._merge_conditional_properties(obj)
@@ -4514,6 +4548,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         base_classes=base_classes,
                         scope=scope,
                         inherited_fields=inherited_fields,
+                        deferred=required_name in deferred_required,
                     )
                     fields.append(field)
                     field_name_to_field[required_name] = field
@@ -4622,7 +4657,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
                 if ref_schema.oneOf or ref_schema.anyOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
-                    self._parse_all_of_union_parts(name, ref_schema, path, union_parts, branch_schemas)
+                    self._parse_all_of_union_parts(
+                        name, ref_schema, path, union_parts, _UnionWalk(branch_schemas, self._union_chain(obj))
+                    )
                 else:
                     ref = all_of_item.__dict__.get(_BRANCH_REFERENCE_KEY) or self._add_ref(all_of_item.ref)
                     if _schema_refs.dynamic_target_bindings(self, ref.path):
@@ -4631,6 +4668,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             "$dynamicAnchor bindings of its dynamic scope; its $dynamicRef resolve within its own "
                             "schema resources.",
                             stacklevel=2,
+                        )
+                    if "legacy-ref-member-union-dropped" in self._legacy_intersection and (
+                        _inherited_schemas.names_all_of_over_union(self, ref_schema)
+                    ):
+                        self._warn_dropped_union(
+                            all_of_item.schema_location,
+                            "allOf member",
+                            "names an allOf over a union, which is no class a model can extend, so the model checks "
+                            "none of its branches; --distribute-allof-over-unions reads the member in place.",
                         )
                     if ref.path not in {b.path for b in base_classes}:
                         base_classes.append(ref)
@@ -4672,7 +4718,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 if all_of_item.anyOf or all_of_item.oneOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
-                    self._parse_all_of_union_parts(name, all_of_item, path, union_parts, branch_schemas)
+                    self._parse_all_of_union_parts(
+                        name, all_of_item, path, union_parts, _UnionWalk(branch_schemas, self._union_chain(obj))
+                    )
 
     def _parse_all_of_union_parts(
         self,
@@ -4680,7 +4728,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         schema: JsonSchemaObject,
         path: list[str],
         union_parts: list[list[Reference]],
-        branch_schemas: dict[str, JsonSchemaObject],
+        walk: _UnionWalk,
     ) -> None:
         """Parse the ``anyOf`` and the ``oneOf`` of an allOf member, each one more union part of the allOf.
 
@@ -4691,6 +4739,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         object, ``_combined_schema_members`` read again without warnings. Unless ``legacy-union-parts-joined`` is
         kept, a ``$ref`` branch a discriminator expanded holds the models of its subtypes (``_expanded_variants``).
         """
+        walk = walk._replace(within=walk.within.union(filter(None, (schema.schema_location,))))
         for keyword, parse in (("anyOf", self.parse_any_of), ("oneOf", self.parse_one_of)):
             if getattr(schema, keyword):
                 part_path = (
@@ -4703,20 +4752,166 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if parsed_site is not schema or parsed_keyword != keyword:
                     with quiet():
                         branches, _ = self._combined_schema_members(schema, keyword)
-                branch_schemas.update(
-                    (data_type.reference.path, branch)
-                    for data_type, branch in zip(parsed, branches, strict=True)
-                    if data_type.reference
-                )
+                written = {
+                    item.schema_location: item
+                    for item in getattr(schema, keyword)
+                    if isinstance(item, JsonSchemaObject)
+                }
                 part: list[Reference] = []
-                for data_type in parsed:
-                    if data_type.reference:
-                        part.append(data_type.reference)
-                    elif "legacy-union-parts-joined" not in self._legacy_intersection and (
+                for index, (data_type, branch) in enumerate(zip(parsed, branches, strict=True)):
+                    with_site = (
+                        schema.model_copy(update={"allOf": [branch, *schema.allOf], "anyOf": [], "oneOf": []})
+                        if data_type.reference is not None and REF_BRANCH_SCHEMA_KEY in data_type.reference.__dict__
+                        else None
+                    )
+                    if "legacy-union-parts-joined" not in self._legacy_intersection and (
                         variants := _expanded_variants(data_type)
                     ):
                         part.extend(reference for _, reference in variants)
+                    elif (
+                        models := self._branch_models(
+                            name,
+                            _UnionBranch(
+                                branch,
+                                written.get(branch.schema_location, branch),
+                                data_type,
+                                with_site,
+                                get_special_path(f"union_branch-{index}", part_path),
+                            ),
+                            walk,
+                        )
+                    ) is not None:
+                        part.extend(models)
+                    elif data_type.reference:
+                        walk.branch_schemas[data_type.reference.path] = (
+                            with_site
+                            if with_site is not None
+                            and "legacy-union-variant-required-names-inherited" not in self._legacy_intersection
+                            else branch
+                        )
+                        part.append(data_type.reference)
                 union_parts.append(part)
+
+    def _parsed_branch_models(self, data_type: DataType, written: JsonSchemaObject) -> list[Reference]:
+        """Return the models the parse of a ``$ref`` branch built for it where that parse gave a union of models.
+
+        That is a ``$ref`` branch the site's parts distribute over the branches of the union it names; it stands for
+        those models. None for any other branch, an inline union included, whose branches the walk reads again
+        (``_branch_models``), and under ``legacy-union-branch-of-union-as-one``.
+        """
+        if "legacy-union-branch-of-union-as-one" in self._legacy_intersection or not written.ref:
+            return []
+        if data_type.reference is not None or any((
+            data_type.is_list,
+            data_type.is_dict,
+            data_type.is_set,
+            data_type.is_tuple,
+        )):
+            return []
+        models = [member.reference for member in data_type.data_types if member.reference is not None]
+        return models if len(models) == len(data_type.data_types) else []
+
+    @staticmethod
+    def _warn_dropped_union(location: SchemaLocation | None, what: str, text: str) -> None:
+        """Warn that a kept legacy row leaves out what a union of an allOf checks, naming the option that keeps it.
+
+        The rows are ``legacy-ref-member-union-dropped`` (``_parse_all_of_item``) and
+        ``legacy-union-branch-of-union-as-one`` (``_branch_models``).
+        """
+        warn(f"{named_location(location, what)} {text}", stacklevel=2)
+
+    @staticmethod
+    def _union_chain(site: JsonSchemaObject) -> frozenset[SchemaLocation]:
+        """Return the locations an allOf site's union branches are read within: those it was read within, and itself.
+
+        A branch whose union is one of them, such as a child the union of its own parent lists, stays its own model
+        (``_branch_models``).
+        """
+        chain = _inherited_schemas.read_chain(site)
+        return chain if (location := site.schema_location) is None else chain | {location}
+
+    def _branch_models(self, name: str, branch: _UnionBranch, walk: _UnionWalk) -> list[Reference] | None:
+        """Return the models a branch of an allOf's anyOf or oneOf stands for where its own model is a root model.
+
+        A branch whose parse already gave a union of models stands for those (``_parsed_branch_models``). Else the
+        branch is read by ``_branch_reading``: an alias stands for the class of the schema it names; a schema that holds
+        an ``anyOf`` or a ``oneOf`` of its own (no ``allOf`` beside it) for the models of its branches, parsed again at
+        the site below the branch's path as an allOf member's union is (``_parse_all_of_union_parts``, so the branches
+        of a branch flatten into one part); and any other schema holding a union, or a ``$ref`` branch built with the
+        parts of its site (``with_site``, its ``$ref`` read through aliases), for the variants that schema gives as an
+        allOf (``_union_variant_models``). None where the branch is its own model.
+        """
+        if models := self._parsed_branch_models(branch.data_type, branch.written):
+            return models
+        if (read := self._branch_reading(branch, walk.within)) is None:
+            return None
+        if branch.with_site is not None and branch.parsed.ref:
+            member = branch.parsed.model_copy(update={"ref": _inherited_schemas.alias_target(self, branch.parsed.ref)})
+            location = None if isinstance(read, str) else read.schema_location
+            return self._union_variant_models(
+                name,
+                branch.with_site.model_copy(update={"allOf": [member, *branch.with_site.allOf[1:]]}),
+                branch.path,
+                walk.within.union(filter(None, (location,))),
+            )
+        if isinstance(read, str):
+            return [self._add_ref(read)]
+        if bool(read.anyOf) != bool(read.oneOf) and not read.allOf:
+            nested: list[list[Reference]] = []
+            self._parse_all_of_union_parts(name, read, branch.path, nested, walk)
+            return nested[0]
+        site = read if read.allOf else read.model_construct(allOf=[read]).with_schema_location(read.schema_location)
+        return self._union_variant_models(name, site, branch.path, walk.within)
+
+    def _branch_reading(self, branch: _UnionBranch, within: frozenset[SchemaLocation]) -> JsonSchemaObject | str | None:
+        """Return what a branch of an allOf's union is read as where it stands for other models than its own.
+
+        The branch is the schema it is (an inline branch without the union keywords its site merged into it), or the one
+        its ``$ref`` names through aliases (``alias_target``), with the keywords beside that schema's own ``$ref``
+        (``_merges_ref_siblings``). Such a schema that holds an ``anyOf`` or a ``oneOf`` (its own, or one its allOf
+        members hold, ``held_unions``) is returned; the ``$ref`` an alias names is returned as text. None for any other
+        branch, for a ``$ref`` an ``--external-ref-mapping`` maps, for a union ``within`` the walk, and under
+        ``legacy-union-branch-of-union-as-one``, which warns where the branch stands for other models.
+        """
+        written = branch.written
+        if written.ref and self._resolve_external_ref_mapping(written.ref) is not None:
+            return None
+        target = _inherited_schemas.alias_target(self, written.ref) if written.ref else None
+        read = written if target is None else self._load_ref_schema_object(target)
+        if read.ref and _merges_ref_siblings(read):
+            read = self._merge_ref_with_schema(read)
+        unions = [*([read] if read.anyOf or read.oneOf else []), *_all_of_values.held_unions(self, read)]
+        if any(union.schema_location in within for union in unions) or not (
+            unions or (target not in {None, written.ref} and not read.ref)
+        ):
+            return None
+        if "legacy-union-branch-of-union-as-one" in self._legacy_intersection:
+            self._warn_dropped_union(
+                written.schema_location,
+                "branch",
+                f"is {'a union' if unions else 'an alias'} whose models the allOf over its union does not combine "
+                "with the other members, so that variant checks none of their properties; "
+                "--distribute-allof-over-object-branches gives it one variant per model.",
+            )
+            return None
+        if not unions:
+            return target
+        if target is not None:
+            return read
+        return branch.parsed.model_copy(update={key: [] for key in ("anyOf", "oneOf") if not getattr(written, key)})
+
+    def _union_variant_models(
+        self, name: str, site: JsonSchemaObject, path: list[str], within: frozenset[SchemaLocation]
+    ) -> list[Reference]:
+        """Return the models of the union variants an allOf ``site`` gives for a branch (``parse_all_of``) at ``path``.
+
+        The site is read within the unions ``within`` and the site itself; an allOf without a union gives its one model.
+        """
+        within = within.union(filter(None, (site.schema_location,)))
+        marked = site.model_copy()
+        marked.__dict__[_UNION_VARIANTS_KEY] = True
+        variants = self.parse_all_of(name, _inherited_schemas.read_within(marked, within), path)
+        return [member.reference for member in (variants.data_types or [variants]) if member.reference]
 
     def _build_all_of_ref_root_model(
         self,
@@ -5066,7 +5261,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         ignore_duplicate_model: bool = False,  # noqa: FBT001, FBT002
     ) -> DataType:
-        """Parse allOf schema into a single data type with combined properties."""
+        """Parse allOf schema into a single data type with combined properties.
+
+        A site that ``_union_variant_models`` marks (``_UNION_VARIANTS_KEY``) over a union gives the union of its
+        variants, without the root model that holds them.
+        """
+        union_variants = bool(obj.__dict__.pop(_UNION_VARIANTS_KEY, False))
         with self._model_frame() as frame:
             if _lightweight_types.contains_false_schema(self, obj.allOf):
                 _all_of_values.raise_unsatisfiable_schema(self, obj, path, "allOf")
@@ -5169,9 +5369,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if not fields and len(base_classes) == 1 and data_type.reference is base_classes[0]:
                     self._record_site_constraints(site, data_type)
                 return frame.built(data_type)
-            reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
-            self._record_schema_object(reference, obj)
-            values = _all_of_values.all_of_value_variants(self, obj) if reads_values else []
+            reference = None if union_variants else self._all_of_union_root(name, obj, path)
+            values = _all_of_values.all_of_value_variants(self, obj) if reads_values and reference is not None else []
             with self._claiming(AllOfPart(0)) as claimed:
                 all_of_data_type = claimed.built(
                     self._parse_object_common_part(
@@ -5200,39 +5399,52 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 declarations=self._union_model_declarations(
                                     branches, branch_schemas, part_declarations
                                 ),
+                                part_declarations=part_declarations,
                             )
                         )
                     )
-            data_type = build_union(
-                self.data_type,
-                [
-                    *union_members,
-                    *(
-                        self.parse_any_of(
-                            name, self._schema_object({"anyOf": values}), get_special_path("union_values", path)
-                        )
-                        if values
-                        else ()
-                    ),
-                    *self._all_of_union_null(obj),
-                ],
+            union_members.extend(
+                self.parse_any_of(name, self._schema_object({"anyOf": values}), get_special_path("union_values", path))
+                if values
+                else ()
             )
-            field = self.get_object_field(
-                field_name=None,
-                field=obj,
-                required=True,
-                field_type=data_type,
-                alias=None,
-                original_field_name=None,
-            )
-            self._register_root_model(
-                reference=reference,
-                fields=[field],
-                obj=obj,
-                custom_base_class_name=class_key("predicted", name),
-                description=obj.description if self.use_schema_description else None,
-            )
-            return frame.built(self.data_type(reference=reference))
+            return frame.built(self._all_of_union_type(class_key("predicted", name), obj, reference, union_members))
+
+    def _all_of_union_type(
+        self, base_class_name: str, obj: JsonSchemaObject, reference: Reference | None, members: list[DataType]
+    ) -> DataType:
+        """Return the type of an allOf over a union: its root model (``reference``) of the union of ``members``.
+
+        The root model takes ``base_class_name``, the class key of the allOf's name.
+
+        The members are its variants, then the types of its value branches; the union admits None where every part of
+        the allOf does (``_all_of_union_null``). Without a ``reference`` (a site ``_UNION_VARIANTS_KEY`` marks)
+        the union of the members alone.
+        """
+        if reference is None:
+            return build_union(self.data_type, members)
+        field = self.get_object_field(
+            field_name=None,
+            field=obj,
+            required=True,
+            field_type=build_union(self.data_type, [*members, *self._all_of_union_null(obj)]),
+            alias=None,
+            original_field_name=None,
+        )
+        self._register_root_model(
+            reference=reference,
+            fields=[field],
+            obj=obj,
+            custom_base_class_name=base_class_name,
+            description=obj.description if self.use_schema_description else None,
+        )
+        return self.data_type(reference=reference)
+
+    def _all_of_union_root(self, name: str, obj: JsonSchemaObject, path: list[str]) -> Reference:
+        """Return the reference of the root model of an allOf over a union, which holds the union of its variants."""
+        reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
+        self._record_schema_object(reference, obj)
+        return reference
 
     def _all_of_union_combinations(
         self, obj: JsonSchemaObject, union_parts: list[list[Reference]]
@@ -5355,6 +5567,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         ignore_duplicate_model: bool,
         declarations: Sequence[ModelDeclarations] | None,
+        part_declarations: ModelDeclarations,
     ) -> DataType:
         """Parse the class of one union member of an allOf, located at the member's (first) branch.
 
@@ -5389,6 +5602,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     path,
                     self._predicted_scope(name, path),
                 )
+        restated = self._union_model_restated_names(declarations, part_declarations)
         data_type = self._parse_object_common_part(
             name,
             site,
@@ -5396,11 +5610,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ignore_duplicate_model=ignore_duplicate_model,
             fields=fields,
             base_classes=list(bases),
-            required=required,
+            required=[*required, *(restated_name for restated_name in restated if restated_name not in required)],
+            deferred_required=frozenset(restated),
         )
         if union_model.__dict__.get(SCHEMA_LOCATION_CONFLICT_KEY) and (reference := data_type.reference) is not None:
             _mark_location_conflict(reference)
         return data_type
+
+    def _union_model_restated_names(
+        self, declarations: Sequence[ModelDeclarations] | None, part_declarations: ModelDeclarations
+    ) -> tuple[str, ...]:
+        """Return the names a union model of an allOf requires itself, whichever base it takes them from.
+
+        Those ``_inherited_schemas.union_model_restated_names`` reads from the declarations of its bases; none under
+        ``legacy-union-variant-required-names-inherited``.
+        """
+        if "legacy-union-variant-required-names-inherited" in self._legacy_intersection:
+            return ()
+        return _inherited_schemas.union_model_restated_names(declarations, part_declarations)
 
     def _union_model_declarations(
         self,

@@ -1,0 +1,43 @@
+[[change]]
+id = "bug-g33-allof-over-object-branches"
+category = "new-surface"
+title = "Give an allOf over a union a complete variant per object branch under an option"
+summary = "--distribute-allof-over-object-branches has each union variant of an allOf require every name a part of the allOf requires, typed as the field its branch declares (#6867), and gives a branch that is itself an anyOf or oneOf, an allOf or a $ref with siblings over one, or an alias, one variant per object branch it stands for (#6869). It joins the 20261123 presets. Without it the output is that of 0.100.0."
+refs = ["#1"]
+surface = ["--distribute-allof-over-object-branches"]
+covers = [
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variant_outputs[dataclass].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variant_outputs[msgspec].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variant_outputs[pydantic-dataclass].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variant_outputs[typed-dict].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[off].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on-beside].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on-branch-bound].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on-branch-requires].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on-force-optional].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on-parent-declares].py",
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[off].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-alias].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-distribute].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-inline].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-named-after-branches].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-ref-siblings].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union_sources[off-openapi-discriminated].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union_sources[off-other-document].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union_sources[on-openapi-discriminated].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union_sources[on-other-document].py",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[nested-branch].py",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[polymorphism].py",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[through-ref-member].py",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[with-options].py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_allof_uni~31cb9cf7.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_allof_union_o~ab5a30a9.errors.txt",
+    "main/preset_opt_in_options/preset_option_turned_off[distribute-allof-over-object-branches-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[distribute-allof-over-object-branches-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-object-branches-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-object-branches-standard].model.py",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_allof_union_object_branches_discriminated.yaml].txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_allof_union_object_branches_polymorphism.yaml].txt",
+]

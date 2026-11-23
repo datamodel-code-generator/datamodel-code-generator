@@ -1,0 +1,8 @@
+[[change]]
+id = "bug-g33-allof-over-object-branches-more"
+extends = "bug-g33-allof-over-object-branches"
+covers = [
+    "main/jsonschema/allof_union_object_branches/required_names_in_union_variants[on-site-parts].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts-distribute].py",
+    "main/jsonschema/allof_union_object_branches/union_branch_of_union[on-site-parts].py",
+]

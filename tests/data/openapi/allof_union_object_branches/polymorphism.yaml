@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info: {title: pets, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties: {petType: {type: string}, name: {type: string}}
+      required: [petType]
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties: {meow: {type: boolean}}
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties: {bark: {type: boolean}}
