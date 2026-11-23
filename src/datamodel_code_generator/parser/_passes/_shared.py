@@ -64,6 +64,7 @@ from datamodel_code_generator.model.base import (
     _ModelKeys,
     _written_name,
     direct_base_models,
+    get_effective_fields,
     get_inherited_fields,
     linearize_data_models,
     python_base_classes,
@@ -236,6 +237,92 @@ def required_fields_a_default_lacks(
         if requires_value(model_field) and (name := _field_source_name(model_field)) is not None and name not in default
     ]
     return (model, lacked) if lacked else None
+
+
+_STRICT_TEXT_REFUSING_IMPORTS: Final[frozenset[tuple[str, str]]] = frozenset({
+    *(("pydantic", name) for name in ("StrictBytes", "StrictInt", "StrictFloat", "StrictBool")),
+    *(("pydantic", name) for name in ("AwareDatetime", "NaiveDatetime", "PastDatetime", "FutureDatetime")),
+    *(("pydantic", name) for name in ("PastDate", "FutureDate")),
+    *(("datetime", name) for name in ("date", "datetime", "time")),
+})
+"""The types a strict type is written as, by import (``--strict-types``): ``strict`` on the data type marks it."""
+_STRICT_TEXT_REFUSING_CONSTRAINED_IMPORTS: Final[frozenset[tuple[str, str]]] = frozenset(
+    ("pydantic", name) for name in ("conbytes", "conint", "confloat", "condecimal")
+)
+"""The constrained types a strict type is written as, by import: ``strict`` is one of their keyword arguments."""
+
+
+def _is_none_type(data_type: DataType) -> bool:
+    """Return whether the type is ``None`` itself."""
+    return data_type.type == NONE and not data_type.data_types and data_type.reference is None
+
+
+def _read_input_names(field: DataModelFieldBase) -> Sequence[str | None]:
+    """Return the names Pydantic reads the value of a field under in every configuration (``field_input_names``).
+
+    Names that depend on options the field does not hold (an alias generator, populating by field name) are left out,
+    so a default is never read under a name Pydantic ignores.
+    """
+    if field.validation_aliases:
+        return field.validation_aliases
+    return (field.name,) if field.use_serialization_alias or field.alias is None else (field.alias,)
+
+
+def _refuses_python_text(data_type: DataType) -> bool:
+    """Return whether strict mode refuses text as Python input for the type: a strict bytes, date, time or number."""
+    if (import_ := data_type.import_) is None:
+        return False
+    key = (import_.from_ or "", import_.import_)
+    if key in _STRICT_TEXT_REFUSING_IMPORTS:
+        return data_type.strict
+    return key in _STRICT_TEXT_REFUSING_CONSTRAINED_IMPORTS and (
+        data_type.strict or (data_type.kwargs or {}).get("strict") is True
+    )
+
+
+def default_refused_as_python_input(
+    data_type: DataType, default: object, model_of: Callable[[Reference], DataModel | None]
+) -> bool:
+    """Return whether the default of a field, read as Python input, reaches a type that takes JSON text only.
+
+    Pydantic validates a default as Python input, where a strict bytes, date or time type refuses the text of a JSON
+    document, so every instance of a model with such a default fails (#7380). The default is followed through
+    mappings, lists and the models ``model_of`` gives for a reference, one model at a time for a value (a root model
+    that names itself reads the same value again); a union refuses it when every member does.
+    """
+    visiting: set[tuple[int, int]] = set()
+
+    def members_refuse(members: Sequence[DataType], value: object) -> bool:
+        return bool(members) and all(refused(member, value) for member in members)
+
+    def refused(node: DataType, value: object) -> bool:
+        if (reference := node.reference) is not None:
+            return model_refuses(model_of(reference), value)
+        members = [member for member in node.data_types if not _is_none_type(member)]
+        if node in CONTAINERS:
+            items = value.values() if isinstance(value, dict) else value if isinstance(value, list) else ()
+            return any(members_refuse(members, item) for item in items)
+        if members:
+            return members_refuse(members, value)
+        return isinstance(value, str) and _refuses_python_text(node)
+
+    def model_refuses(model: DataModel | None, value: object) -> bool:
+        key = (id(model), id(value))
+        if model is None or model.form == "enum" or key in visiting:
+            return False
+        visiting.add(key)
+        try:
+            if model.form != "object":
+                return bool(model.fields) and refused(model.fields[0].data_type, value)
+            return isinstance(value, dict) and any(
+                (name := next((names for names in _read_input_names(field) if names in value), None)) is not None
+                and refused(field.data_type, value[name])
+                for field in get_effective_fields(model)
+            )
+        finally:
+            visiting.discard(key)
+
+    return refused(data_type, default)
 
 
 def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:

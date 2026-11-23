@@ -1,0 +1,24 @@
+[[change]]
+id = "bug-g116-strict-string-defaults"
+category = "default-fix"
+title = "A default that a strict bytes, date or time type refuses is written without validate_default"
+summary = "With `--strict-types bytes`, `datetime`, `date` or `time`, a field whose `$ref` names a root model, or a model with a field of such a type, and whose default holds the text of a JSON document (`\"\"` for a `format: binary` string, an ISO date) was written `Field(<default>, validate_default=True)`. Pydantic validates that default as Python input, where strict mode refuses text, so every instance that used the default failed. The field is now written without `validate_default`, as the same field written inline is, and holds the default as written. Fields whose default no strict type refuses keep `validate_default=True`. Class names, field names, structure and the values of every payload that validated stay; payloads that left the field out, which were refused, now validate."
+refs = ["#7416"]
+decision = ["#7416"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[alias].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[alias].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[no-alias].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[serialization-alias].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[serialization-alias].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[validation-aliases].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_read_under_the_input_names[validation-aliases].py",
+]

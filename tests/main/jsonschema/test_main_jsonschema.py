@@ -7623,6 +7623,126 @@ def test_main_strict_types_date_time_kept(output_file: Path, extra_args: list[st
     )
 
 
+_STRICT_TEXT = "2020-01-01T00:00:00Z"
+_STRICT_DEFAULTS_SCHEMA: dict[str, object] = {
+    "title": "Upload",
+    "type": "object",
+    "$defs": {
+        "Checksum": {"type": "string", "format": "binary", "default": ""},
+        "Stamp": {"type": "string", "format": "date-time"},
+        "Day": {"type": "string", "format": "date"},
+        "Clock": {"type": "string", "format": "time"},
+        "Name": {"type": "string"},
+        "Flag": {"type": "boolean"},
+        "Digest": {"type": "string", "format": "binary", "maxLength": 8},
+        "Color": {"enum": ["red", "blue"]},
+        "Outer": {"$ref": "#/$defs/Stamp"},
+        "Base": {"type": "object", "properties": {"createdAt": {"type": "string", "format": "date-time"}}},
+        "Child": {
+            "allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "properties": {"n": {"type": "string"}}}],
+        },
+        "Holder": {"type": "object", "properties": {"inner": {"$ref": "#/$defs/Outer"}}},
+        "Pet": {
+            "type": "object",
+            "properties": {"born": {"type": "string", "format": "date-time"}, "name": {"type": "string"}},
+        },
+    },
+    "properties": {
+        "checksum": {"$ref": "#/$defs/Checksum"},
+        "day": {"$ref": "#/$defs/Day", "default": "2020-01-01"},
+        "clock": {"$ref": "#/$defs/Clock", "default": "10:00:00"},
+        "stamp": {"$ref": "#/$defs/Stamp", "default": _STRICT_TEXT},
+        "nested": {"$ref": "#/$defs/Outer", "default": _STRICT_TEXT},
+        "child": {"$ref": "#/$defs/Child", "default": {"createdAt": _STRICT_TEXT}},
+        "holder": {"$ref": "#/$defs/Holder", "default": {"inner": _STRICT_TEXT}},
+        "pet": {"$ref": "#/$defs/Pet", "default": {"born": _STRICT_TEXT, "name": "a"}},
+        "by_key": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Stamp"}, "default": {"a": _STRICT_TEXT}},
+        "grid": {
+            "type": "array",
+            "items": {"type": "array", "items": {"$ref": "#/$defs/Stamp"}},
+            "default": [[_STRICT_TEXT]],
+        },
+        "or_null": {"anyOf": [{"$ref": "#/$defs/Stamp"}, {"type": "null"}], "default": _STRICT_TEXT},
+        "or_number": {"anyOf": [{"$ref": "#/$defs/Stamp"}, {"type": "integer"}], "default": _STRICT_TEXT},
+        "or_text": {"anyOf": [{"$ref": "#/$defs/Stamp"}, {"type": "string"}], "default": _STRICT_TEXT},
+        "name": {"$ref": "#/$defs/Name", "default": "x"},
+        "flag": {"$ref": "#/$defs/Flag", "default": True},
+        "digest": {"$ref": "#/$defs/Digest", "default": ""},
+        "pet_or_color": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Color"}], "default": "red"},
+        "incomplete_pet": {"$ref": "#/$defs/Pet", "default": {"name": "a"}},
+    },
+}
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-annotated"], id="annotated"),
+    ],
+)
+def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra_args: list[str]) -> None:
+    """Test a default that reaches a strict bytes, date or time type is no longer validated as Python input.
+
+    Pydantic validates ``validate_default`` as Python input, where strict mode refuses the text of a JSON document, so
+    every instance failed (#7380). The fields whose default no strict type refuses (``incomplete_pet``, ``name``, a
+    union with a ``str`` member) keep ``validate_default``.
+    """
+    _run_jsonschema_dict(
+        _STRICT_DEFAULTS_SCHEMA,
+        output_file,
+        extra_args=[
+            *extra_args,
+            *("--strict-types", "str", "bytes", "int", "datetime", "date", "time"),
+            *("--formatters", "builtin", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_default_of_a_referenced_type", "Upload") as model:
+        upload = _model_json_validator(model)("{}")
+    assert_output("\n".join(f"{name}: {value!r}" for name, value in upload) + "\n", name="loaded")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--snake-case-field"], id="alias"),
+        pytest.param(["--snake-case-field", "--no-alias"], id="no-alias"),
+        pytest.param(["--snake-case-field", "--use-serialization-alias"], id="serialization-alias"),
+        pytest.param(["--snake-case-field", "--aliases"], id="validation-aliases"),
+    ],
+)
+def test_main_strict_types_default_read_under_the_input_names(output_file: Path, extra_args: list[str]) -> None:
+    """Test a default is followed by the names Pydantic reads a field under, so a key it ignores keeps validation.
+
+    The default of ``blob`` names ``rawData``: Pydantic reads it only where the field keeps that alias, so only there
+    does it reach the strict bytes type, and the other outputs keep ``validate_default`` and a ``Blob`` instance.
+    """
+    args = list(extra_args)
+    if args[-1] == "--aliases":
+        aliases = output_file.with_name("aliases.json")
+        aliases.write_text(json.dumps({"rawData": ["raw_data", "rawData"]}), encoding="utf-8")
+        args.append(str(aliases))
+    _run_jsonschema_dict(
+        {
+            "title": "Top",
+            "type": "object",
+            "$defs": {"Blob": {"type": "object", "properties": {"rawData": {"type": "string", "format": "binary"}}}},
+            "properties": {"blob": {"$ref": "#/$defs/Blob", "default": {"rawData": ""}}},
+        },
+        output_file,
+        extra_args=[
+            *args,
+            *("--strict-types", "bytes"),
+            *("--formatters", "builtin", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_default_read_under_the_input_names", "Top") as model:
+        top = _model_json_validator(model)("{}")
+    assert_output(f"blob: {top.blob!r}\n", name="loaded")
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("extra_args"),

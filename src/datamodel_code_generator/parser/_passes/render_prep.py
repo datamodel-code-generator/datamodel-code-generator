@@ -62,6 +62,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _unwrap_type_alias,
     assignment_facts_of,
     constructor_base_models,
+    default_refused_as_python_input,
     definition_reads,
     get_constructor_field_adjustment,
     get_constructor_ordering_conflicts,
@@ -266,9 +267,15 @@ def _contains_model_reference(data_type: DataType, *, root_model_aliases: bool =
     return False
 
 
-def _needs_validate_default(data_type: DataType, *, root_model_aliases: bool = False) -> bool:
-    """Check if a field needs validate_default=True to coerce defaults into model instances."""
-    return _contains_model_reference(data_type, root_model_aliases=root_model_aliases)
+def _needs_validate_default(data_type: DataType, default: object, *, root_model_aliases: bool = False) -> bool:
+    """Check if a field needs validate_default=True to coerce defaults into model instances.
+
+    Not when Pydantic would refuse the default as Python input (``default_refused_as_python_input``): the field is then
+    written without it, as a field of such a type without a model is.
+    """
+    return _contains_model_reference(
+        data_type, root_model_aliases=root_model_aliases
+    ) and not default_refused_as_python_input(data_type, default, _model_named)
 
 
 def _applies_default(field: DataModelFieldBase) -> bool:
@@ -284,7 +291,7 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
     under ``--use-root-model-type-alias`` the only type aliases are the GraphQL scalars and unions, so
     ``--use-validate-default-for-root-model-type-aliases`` changes no answer it gives.
     """
-    return _applies_default(field) and _needs_validate_default(field.data_type)
+    return _applies_default(field) and _needs_validate_default(field.data_type, field.default)
 
 
 def _is_generic_class_container(data_type: DataType) -> bool:
@@ -481,7 +488,9 @@ def set_validate_default_on_fields(
                 or deserialized_default
             )
             if (
-                _needs_validate_default(model_field.data_type, root_model_aliases=root_model_aliases)
+                _needs_validate_default(
+                    model_field.data_type, model_field.default, root_model_aliases=root_model_aliases
+                )
                 and model_field.enable_structured_default_validation()
             ):
                 parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)
