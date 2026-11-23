@@ -8,8 +8,10 @@ the count of the discovered schema files is a listing	change_records/owner_of[th
 the other payload outputs stay model output	change_records/owner_of[the other payload outputs stay model output].txt	= change_records/owner_of[a payload classification stays model output].txt
 [test_parse_entry_cells]
 a cell is no table	change_records/parse_entry_cells[a cell is no table].txt
+a glob outside every label space is a path	change_records/parse_entry_cells[a glob outside every label space is a path].txt
 backends as another string	change_records/parse_entry_cells[backends as another string].txt
 cells are no tables	change_records/parse_entry_cells[cells are no tables].txt	= change_records/parse_entry_cells[a cell is no table].txt
+cells of two label spaces	change_records/parse_entry_cells[cells of two label spaces].txt
 empty aspects	change_records/parse_entry_cells[empty aspects].txt
 empty backends	change_records/parse_entry_cells[empty backends].txt	= change_records/parse_entry_cells[backends as another string].txt
 empty input	change_records/parse_entry_cells[empty input].txt
@@ -24,6 +26,9 @@ match that does not compile	change_records/parse_entry_cells[match that does not
 missing keys	change_records/parse_entry_cells[missing keys].txt
 options as another string	change_records/parse_entry_cells[options as another string].txt	= change_records/parse_entry_cells[empty options].txt
 options of strings	change_records/parse_entry_cells[options of strings].txt	= change_records/parse_entry_cells[empty options].txt
+payload cells with their input file type	change_records/parse_entry_cells[payload cells with their input file type].txt
+payload cells without an input file type	change_records/parse_entry_cells[payload cells without an input file type].txt
+project and family cells	change_records/parse_entry_cells[project and family cells].txt
 two selectors	change_records/parse_entry_cells[two selectors].txt
 unknown aspect	change_records/parse_entry_cells[unknown aspect].txt
 unknown backend	change_records/parse_entry_cells[unknown backend].txt

@@ -396,7 +396,10 @@ options = "*"
 ```
 
 - `input` (required): a non-empty list of path globs over the head tree (`*` within a path part, `**` across parts);
-  they name files and directories, and a directory names its own cell only, so list the files below it too.
+  they name files and directories, and a directory names its own cell only, so list the files below it too. A glob
+  that starts with `payload:`, `project:`, `family:` or `composition:` names the cells of that label space instead (a
+  payload case is `payload:<case id>`); one selector names one label space, and a selector of another space than the
+  paths needs `input_file_type`.
 - `backends` (required): `"*"` or a list of output model types (`pydantic_v2.BaseModel`, `msgspec.Struct`, ...).
 - `options` (required): `"*"` or a list of option sets, each a list of strings (`[["--use-annotated"], []]`; `[]` is
   the default options). `"*"` is every option set the run has for the matched inputs: the default options, the
@@ -414,7 +417,9 @@ The gate prints a starting block for the uncovered cells: one selector per input
 several option sets, and the first change line as a commented `match`. Write the selector narrow: one selector may name
 at most 1500 cells (about a whole PR-tier run), and every selector must match a differing cell of the run, so a
 selector that matches no cell, or only equal ones, fails (a stale one, in a run of the whole nightly or release tier; `--select` judges no
-selector).
+selector). A run judges only the selectors of the label spaces it builds: every run builds the cells of path
+selectors, the nightly and release tiers also the `payload:` and `project:` cells, so a PR run leaves a payload
+selector to the nightly.
 A selector may not name unreleased surface: an option, option value, `--preset` date or input type the latest release
 lacks is judged by the stored outputs, so its cells never run. The schema is checked before anything generates:
 unknown keys, an empty `input`, an unknown backend, malformed `options`, an unknown aspect or a `match` that does not
@@ -423,8 +428,12 @@ compile stop the gate. `--stamp` drops `cells` when it moves a record to a relea
 A PR judges the records whose `id` the merge base lacks (the merge base of the PR's base and its head, so a lagging
 branch is judged only by what it changes). A record that exists at the merge base and gains selectors fails: add a
 record with `extends = "<id>"`, which has the category of its target and its own selectors. A PR that changes nothing
-under `src/` passes without generating, and fails if one of its records names cells, because no cell can differ. A PR
-that changes a file the gate runs also runs the base's gate. A release run judges the records the latest tag lacks,
+under `src/` passes without generating, and fails if one of its records names cells, because no cell can differ,
+except a record of a change already on main: its own `refs` name only pull requests merged after the latest release
+tag (the `(#n)` that ends their squash commits' subjects on the merge base's first-parent history), and, if it extends a
+record, that record is the merge base's. Such a record names the cells the release runs judge, which the PR run cannot
+(the change is on both sides); add it in a PR of its own, as in a PR that changes `src/` its selectors are judged as
+every other record's. A PR that changes a file the gate runs also runs the base's gate. A release run judges the records the latest tag lacks,
 adds their selectors' cells to the tier, and judges stale selectors. Release-time records need no backfill: only the
 records a PR adds must name cells.
 
@@ -490,7 +499,10 @@ the records, and exits 1 under `--check`.
 | `entry <id>: cells <n> names <N> cells, more than the 1500 a run may take` | narrow its `input`, `backends` or `options` |
 | `entry <id>: cells <n> name <item>, which <tag> lacks` | unreleased surface is judged by the stored outputs, not by cells: drop the selector |
 | `entry <id>: a record of the base gains [[change.cells]]; add a record with extends instead` | move the new selectors to an `extends` record |
-| `entry <id>: src/ is unchanged since <base>, so its cells cannot differ` | drop `cells` from the record, or cover the change with a category without cells |
+| `entry <id>: src/ is unchanged since <base>, so its cells cannot differ` | drop `cells` from the record, or cover the change with a category without cells; for a change already on main, name its pull request in the record's `refs` |
+| `entry <id>: cells <n> matches ... (it records #<n>, merged before <base>: ...)` | the record names the cells of a change already on main: move it to a PR that changes nothing under `src/` |
+| `entry <id>: cells <n>: input names cells of <space> and <space>; a selector names one label space` | split the selector, one per label space |
+| `entry <id>: cells <n>: input names <space> cells, which need input_file_type` | add the input type the cells run with (`jsonschema`, `openapi`, ...) |
 | `nondeterministic: the head's second run gives other facts` | the output depends on something other than the input: fix that first |
 | `<label>: a harness record covers a changed ... output in a src PR` | see the `harness` rule above |
 

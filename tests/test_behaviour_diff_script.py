@@ -2921,7 +2921,8 @@ class CellsCase:
     (`orphan`). `records` also runs `declared_changes.py check` on the PR with the gate's verdicts (`--verdicts`),
     which must give the gate's verdict: it fails the harness labels the gate refuses. `shards` runs the gate as that
     many shards, one after another, with the same `--verdicts` file. `shape` names, in words, the rule the case pins or
-    the passing shape it keeps.
+    the passing shape it keeps. `merged` ends the subject of main's next commit with that pull request, `(#n)`, and
+    `released` the release's, as a squash merge writes it.
     """
 
     verdict: str
@@ -2935,11 +2936,29 @@ class CellsCase:
     tier: str = "pr"
     records: bool = False
     shards: int = 1
+    merged: str = ""
+    released: str = ""
 
 
 COMMENT_PLAIN = _cells_src(("plain", None, "comment"))
 COMMENT_OTHER = _cells_src(("other", None, "comment"))
 FLOAT_OTHER = _cells_src(("other", None, "type:float"))
+OTHER_NOTE_UNNAMED = _record("other-note", "output-text")
+"""A record of main's change of `other` that names none of its cells."""
+PAYLOAD_PLAIN = {
+    "input": ["payload:jsonschema/plain.json"],
+    "input_file_type": "jsonschema",
+    "backends": "*",
+    "options": "*",
+}
+"""A selector of the payload cells of `plain`, which the nightly and release tiers build and the PR tier does not."""
+
+
+def _landed(*cells: dict[str, object], refs: tuple[str, ...] = ("#2",), extends: str = "other-note") -> dict[str, str]:
+    """Return a record that names the cells of a change merged as `refs`: it extends main's record of it."""
+    return _record("other-note-cells", None, *cells, extends=extends, refs=list(refs), title=None, summary=None)
+
+
 OUTPUT_TEXT_OTHER = _record("other-note", "output-text", _cells("other.json"))
 CHECKED = _cells_input("checked", type="int", validator=True)
 MEMORY = _cells_input("memory", type="int", memory=True)
@@ -3457,6 +3476,88 @@ CELLS_CASES: dict[str, CellsCase] = {
         "match does not compile",
         FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match="(float")),
     ),
+    "pass: a PR without a src change names the cells of a change merged before it": CellsCase(
+        "pass",
+        "records-only PR, cells of a merged change",
+        _landed(_cells("other.json")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+    ),
+    "fail: a PR without a src change names cells of a pull request not merged": CellsCase(
+        "fail",
+        "records-only PR, cells of an unmerged pull request",
+        _landed(_cells("other.json"), refs=("#2", "#3")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+    ),
+    "fail: a PR without a src change names cells of a pull request the release has": CellsCase(
+        "fail",
+        "records-only PR, cells of a released pull request",
+        _landed(_cells("other.json")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        released="#2",
+    ),
+    "fail: a PR without a src change extends its own record with cells of a merged change": CellsCase(
+        "fail",
+        "records-only PR, a merged change's cells on a record it adds",
+        _landed(_cells("other.json", match="float"), extends="other-float") | _record("other-float", "decided-change"),
+        base=COMMENT_OTHER,
+        merged="#2",
+    ),
+    "fail: a src PR judges the selectors of a record of a merged change": CellsCase(
+        "fail",
+        "src PR, a merged change's record judged as its own",
+        _cells_src(("other", None, "comment"), ("plain", None, "comment"))
+        | _record("plain-note", "output-text", _cells("plain.json"))
+        | _landed(_cells("other.json")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+    ),
+    "pass: the release run covers by a record of a merged change": CellsCase(
+        "pass",
+        "release run, a merged change's cells",
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED | _landed(_cells("other.json")),
+        merged="#2",
+        against="tag",
+        tier="nightly",
+    ),
+    "fail: the release run judges the selectors of a record of a merged change": CellsCase(
+        "fail",
+        "release run, a merged change's stale cells",
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED | _landed(_cells("other.json"), _cells("plain.json")),
+        merged="#2",
+        against="tag",
+        tier="nightly",
+    ),
+    "pass: a PR run judges no selector of the payload cells it does not build": CellsCase(
+        "pass",
+        "PR run, payload selector",
+        COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json"), PAYLOAD_PLAIN),
+    ),
+    "fail: the nightly judges a payload selector that matches equal cells only": CellsCase(
+        "fail",
+        "nightly, payload selector, equal cells",
+        base=COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json"), PAYLOAD_PLAIN),
+        against="tag",
+        tier="nightly",
+    ),
+    "pass: the nightly covers payload cells by a payload selector": CellsCase(
+        "pass",
+        "nightly, payload selector, covered cells",
+        base=COMMENT_PLAIN | _record("plain-note", "output-text", _cells("plain.json"), PAYLOAD_PLAIN),
+        against="tag",
+        tier="nightly",
+    ),
+    "fail: a selector of two label spaces": CellsCase(
+        "fail",
+        "selector of two label spaces",
+        COMMENT_OTHER
+        | _record(
+            "other-note",
+            "output-text",
+            PAYLOAD_PLAIN | {"input": [f"{CELLS_INPUTS}/other.json", "payload:jsonschema/plain.json"]},
+        ),
+    ),
     "fail: two records whose evidence fails on one cell": CellsCase(
         "fail",
         "two records, evidence fails on one cell",
@@ -3487,9 +3588,11 @@ def _cells_project(case: CellsCase, repo: Path) -> dict[str, str]:
     """Commit the case's history and return the revisions `against` may name; the working tree is the PR's head."""
     repo.mkdir()
     _git("init", "-q", "-b", "main", cwd=repo)
-    release = _cells_commit(repo, CELLS_RELEASE | case.release, "release")
+    release = _cells_commit(
+        repo, CELLS_RELEASE | case.release, f"release ({case.released})" if case.released else "release"
+    )
     _git("tag", CELLS_TAG, cwd=repo)
-    _cells_commit(repo, case.base, "base")
+    _cells_commit(repo, case.base, f"base ({case.merged})" if case.merged else "base")
     _git("switch", "-q", "-c", "layer", cwd=repo)
     base = _cells_commit(repo, case.layer, "layer")
     _git("switch", "-q", "main", cwd=repo)
