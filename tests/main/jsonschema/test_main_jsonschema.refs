@@ -9208,6 +9208,47 @@ pendulum	main/jsonschema/main_jsonschema/main_strict_types_date_time_kept[pendul
 	main/jsonschema/main_jsonschema/main_strict_types_date_time_numbers.py
 [test_main_strict_types_date_time_root_model_regex_engine]
 	main/jsonschema/main_jsonschema/main_strict_types_date_time_root_model_regex_engine.py
+[test_main_strict_types_default_left_to_pydantic]
+basic-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].loaded.txt
+basic-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].py
+bool-for-int	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-int].loaded.txt
+bool-for-int	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-int].py
+enum-miss	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[enum-miss].loaded.txt
+enum-miss	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[enum-miss].py
+extra-forbid	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[extra-forbid].loaded.txt
+extra-forbid	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[extra-forbid].py
+hour-24	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[hour-24].loaded.txt
+hour-24	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[hour-24].py
+no-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[no-date].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].loaded.txt
+no-date	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[no-date].py
+number-for-str	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[number-for-str].loaded.txt
+number-for-str	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[number-for-str].py
+opaque-base	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[opaque-base].loaded.txt
+opaque-base	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[opaque-base].py
+over-maximum	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[over-maximum].loaded.txt
+over-maximum	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[over-maximum].py
+too-long	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[too-long].loaded.txt
+too-long	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[too-long].py
+two-members	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[two-members].loaded.txt
+two-members	main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[two-members].py
+[test_main_strict_types_default_of_a_model_in_another_module]
+	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_model_in_another_module.loaded.txt
+	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_model_in_another_module/
+[test_main_strict_types_default_of_a_referenced_type]
+alias	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[alias].loaded.txt
+alias	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[alias].py
+annotated	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].loaded.txt
+annotated	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].py
+base64-bytes	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[base64-bytes].loaded.txt
+base64-bytes	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[base64-bytes].py
+dataclass	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[dataclass].loaded.txt
+dataclass	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[dataclass].py
+decimal	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[decimal].loaded.txt
+decimal	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[decimal].py
+default	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].loaded.txt	= main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].loaded.txt
+default	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].py
+set	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[set].loaded.txt
+set	main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[set].py
 [test_main_strict_types_keep_constraints]
 extra_args0	main/jsonschema/main_jsonschema/main_strict_types_keep_constraints[extra_args0].py
 extra_args0	main/jsonschema/main_jsonschema/main_strict_types_keep_constraints[extra_args0].rejected.txt	= main/jsonschema/strict_types_constraints/rejected.txt

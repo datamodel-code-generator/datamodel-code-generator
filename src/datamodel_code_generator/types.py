@@ -88,6 +88,7 @@ from datamodel_code_generator.imports import (
     IMPORT_ABC_SEQUENCE,
     IMPORT_ANNOTATED,
     IMPORT_ANY,
+    IMPORT_DATETIME_MODULE,
     IMPORT_DECIMAL,
     IMPORT_DICT,
     IMPORT_FROZEN_SET,
@@ -128,20 +129,26 @@ class DefaultValueRecipe(Enum):
     """Describe how a serialized schema value becomes a runtime expression."""
 
     Decimal = auto()
+    Bytes = auto()
+    Date = auto()
+    Time = auto()
+    DateTime = auto()
 
 
 @record
 class DefaultValueDescriptor:
     """Backend-declared semantics for one generated scalar type.
 
-    ``option_kind`` selects the opt-in configuration, while ``recipe`` remains
-    deliberately separate so future temporal and identifier values can have
-    their own parsing policies without inferring them from an import name.
+    ``option_kind`` selects the opt-in configuration (``--deserialize-default-values``); a type without one is
+    deserialized only where Pydantic validates the default as Python input and the type is strict, as strict mode
+    refuses there the JSON value the recipe reads (``render_prep.validated_default_value``). ``recipe`` remains
+    deliberately separate so temporal and identifier values have their own parsing policies without inferring them
+    from an import name; ``constructor_import`` is the import its expression names, None for a literal.
     """
 
-    option_kind: DefaultValueType
+    option_kind: DefaultValueType | None
     recipe: DefaultValueRecipe
-    constructor_import: Import
+    constructor_import: Import | None
     normalize_constraints: bool = False
 
 
@@ -155,6 +162,18 @@ CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
     recipe=DefaultValueRecipe.Decimal,
     constructor_import=IMPORT_DECIMAL,
     normalize_constraints=True,
+)
+BYTES_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
+    option_kind=None, recipe=DefaultValueRecipe.Bytes, constructor_import=None
+)
+DATE_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
+    option_kind=None, recipe=DefaultValueRecipe.Date, constructor_import=IMPORT_DATETIME_MODULE
+)
+TIME_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
+    option_kind=None, recipe=DefaultValueRecipe.Time, constructor_import=IMPORT_DATETIME_MODULE
+)
+DATETIME_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(
+    option_kind=None, recipe=DefaultValueRecipe.DateTime, constructor_import=IMPORT_DATETIME_MODULE
 )
 
 UNION = "Union"
@@ -631,8 +650,22 @@ class _UnionNode(Protocol):
     def _writes_nothing_of_its_own(self) -> bool:
         """Whether the type writes no text, names no model and is no container, so only its members write."""
 
+    @property
+    def _renders_none(self) -> bool:
+        """Whether the type writes ``None``."""
+
 
 _UnionNodeT = TypeVar("_UnionNodeT", bound=_UnionNode)
+
+
+def _sole_member(members: Sequence[_UnionNodeT]) -> _UnionNodeT | None:
+    """Return the one member of a union that does not write ``None``, or None where it has another number of them.
+
+    A default is read by that member (``required_fields_a_default_lacks``, the defaults deserialized where Pydantic
+    validates them); which member of a union of several takes a value is Pydantic's choice.
+    """
+    rest = [member for member in members if not member._renders_none]  # noqa: SLF001
+    return rest[0] if len(rest) == 1 else None
 
 
 def _union_members(data_type: _UnionNodeT) -> Sequence[_UnionNodeT]:

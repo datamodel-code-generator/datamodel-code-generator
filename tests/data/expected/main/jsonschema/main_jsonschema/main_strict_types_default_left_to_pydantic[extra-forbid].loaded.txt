@@ -1,0 +1,2 @@
+refused: f.other extra_forbidden
+given: Top(f=None)

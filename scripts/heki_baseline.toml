@@ -6418,14 +6418,14 @@ path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "required_fields_a_default_lacks"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model._views.DataTypeView._*"
-count = 2
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "required_fields_a_default_lacks"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._views.DataTypeView._*"
-count = 2
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
@@ -8012,27 +8012,6 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "deserialize_decimal_default"
-rule_code = "MUT203"
-target = "datamodel_code_generator.parser._passes._shared.RuntimeExpressionFlags._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "deserialize_decimal_default"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "deserialize_decimal_default"
-rule_code = "MUT204"
-target = "datamodel_code_generator.parser._passes._shared.RuntimeExpressionFlags._*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "deserialize_decimal_default"
 rule_code = "MUT206"
 target = "__module__"
 count = 1
@@ -8042,13 +8021,6 @@ path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "deserialize_decimal_default"
 rule_code = "MUT206"
 target = "__name__"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
-qualname = "deserialize_default_value"
-rule_code = "MUT203"
-target = "datamodel_code_generator.parser._passes._shared.RuntimeExpressionFlags._*"
 count = 1
 
 [[entries]]

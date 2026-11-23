@@ -1119,7 +1119,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:_copy_on_change.py:unchanged"
 targets = ["datamodel_code_generator._copy_on_change.unchanged"]
-allowed-callers = ["datamodel_code_generator._copy_on_change:*", "datamodel_code_generator._python_type_annotation:_with_children", "datamodel_code_generator._python_type_annotation:_with_children.*", "datamodel_code_generator.parser._imports_plan:ModuleImportLedger.rendered", "datamodel_code_generator.parser._imports_plan:ModuleImportLedger.rendered.*", "datamodel_code_generator.parser._inherited_schemas:normalize_inherited_nested_schema_value", "datamodel_code_generator.parser._inherited_schemas:normalize_inherited_nested_schema_value.*", "datamodel_code_generator.python_literal:_rewrite_runtime_mapping", "datamodel_code_generator.python_literal:_rewrite_runtime_mapping.*", "datamodel_code_generator.python_literal:_safe_non_finite_value", "datamodel_code_generator.python_literal:_safe_non_finite_value.*", "datamodel_code_generator.python_literal:rewrite_runtime_expressions", "datamodel_code_generator.python_literal:rewrite_runtime_expressions.*"]
+allowed-callers = ["datamodel_code_generator._copy_on_change:*", "datamodel_code_generator._python_type_annotation:_with_children", "datamodel_code_generator._python_type_annotation:_with_children.*", "datamodel_code_generator.parser._imports_plan:ModuleImportLedger.rendered", "datamodel_code_generator.parser._imports_plan:ModuleImportLedger.rendered.*", "datamodel_code_generator.parser._inherited_schemas:normalize_inherited_nested_schema_value", "datamodel_code_generator.parser._inherited_schemas:normalize_inherited_nested_schema_value.*", "datamodel_code_generator.parser._passes.render_prep:_copied_items", "datamodel_code_generator.parser._passes.render_prep:_copied_items.*", "datamodel_code_generator.parser._passes.render_prep:_copied_mapping", "datamodel_code_generator.parser._passes.render_prep:_copied_mapping.*", "datamodel_code_generator.python_literal:_rewrite_runtime_mapping", "datamodel_code_generator.python_literal:_rewrite_runtime_mapping.*", "datamodel_code_generator.python_literal:_safe_non_finite_value", "datamodel_code_generator.python_literal:_safe_non_finite_value.*", "datamodel_code_generator.python_literal:rewrite_runtime_expressions", "datamodel_code_generator.python_literal:rewrite_runtime_expressions.*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"
@@ -5567,7 +5567,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:python_literal.py:_datetime_expression"
 targets = ["datamodel_code_generator.python_literal._datetime_expression"]
-allowed-callers = ["datamodel_code_generator.imports:*", "datamodel_code_generator.parser._xmlschema_literals:*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
+allowed-callers = ["datamodel_code_generator.imports:*", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value.*", "datamodel_code_generator.parser._xmlschema_literals:*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"
@@ -5575,7 +5575,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:python_literal.py:_isoformat_expression"
 targets = ["datamodel_code_generator.python_literal._isoformat_expression"]
-allowed-callers = ["datamodel_code_generator.imports:*", "datamodel_code_generator.parser._xmlschema_literals:*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
+allowed-callers = ["datamodel_code_generator.imports:*", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value.*", "datamodel_code_generator.parser._xmlschema_literals:*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"
@@ -5584,6 +5584,14 @@ attribution = "lexical"
 name = "home:python_literal.py:_represent_container"
 targets = ["datamodel_code_generator.python_literal._represent_container"]
 allowed-callers = ["datamodel_code_generator._builtin_line_split:_string_split", "datamodel_code_generator._builtin_line_split:_string_split.*", "datamodel_code_generator._recommend._signals:*", "datamodel_code_generator._requirements:*", "datamodel_code_generator._target_unicode:*", "datamodel_code_generator.imports:*", "datamodel_code_generator.model._compiled_template_runtime:filter_pprint", "datamodel_code_generator.model._compiled_template_runtime:filter_pprint.*", "datamodel_code_generator.model._compiled_template_runtime:filter_repr", "datamodel_code_generator.model._compiled_template_runtime:filter_repr.*", "datamodel_code_generator.model.base:*", "datamodel_code_generator.parser._all_of_values:schema_signature", "datamodel_code_generator.parser._all_of_values:schema_signature.*", "datamodel_code_generator.parser._type_overrides:*", "datamodel_code_generator.parser.avro:*", "datamodel_code_generator.python_literal:*", "datamodel_code_generator.python_literal:message_repr", "datamodel_code_generator.python_literal:message_repr.*", "datamodel_code_generator.python_literal:represent_python_value", "datamodel_code_generator.python_literal:represent_python_value.*", "datamodel_code_generator.python_literal:represent_untrusted_python_value", "datamodel_code_generator.python_literal:represent_untrusted_python_value.*", "datamodel_code_generator.validators:*"]
+references = "calls"
+subclasses = false
+attribution = "lexical"
+
+[[call-owners]]
+name = "home:python_literal.py:_rfc3339_expression"
+targets = ["datamodel_code_generator.python_literal._rfc3339_expression"]
+allowed-callers = ["datamodel_code_generator.imports:*", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value.*", "datamodel_code_generator.parser._xmlschema_literals:*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"
@@ -5599,7 +5607,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:python_literal.py:_text_constructor_expression"
 targets = ["datamodel_code_generator.python_literal._text_constructor_expression"]
-allowed-callers = ["datamodel_code_generator.model.pydantic_v2.base_model:_compiled_python_pattern", "datamodel_code_generator.model.pydantic_v2.base_model:_compiled_python_pattern.*", "datamodel_code_generator.parser._passes._shared:normalize_default_value_constraints", "datamodel_code_generator.parser._passes._shared:normalize_default_value_constraints.*", "datamodel_code_generator.parser._passes.render_prep:deserialize_decimal_default", "datamodel_code_generator.parser._passes.render_prep:deserialize_decimal_default.*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
+allowed-callers = ["datamodel_code_generator.model.pydantic_v2.base_model:_compiled_python_pattern", "datamodel_code_generator.model.pydantic_v2.base_model:_compiled_python_pattern.*", "datamodel_code_generator.parser._passes._shared:normalize_default_value_constraints", "datamodel_code_generator.parser._passes._shared:normalize_default_value_constraints.*", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value", "datamodel_code_generator.parser._passes.render_prep:_deserialized_value.*", "datamodel_code_generator.parser._passes.render_prep:deserialize_decimal_default", "datamodel_code_generator.parser._passes.render_prep:deserialize_decimal_default.*", "datamodel_code_generator.parser.avro:_logical_default_expression", "datamodel_code_generator.parser.avro:_logical_default_expression.*", "datamodel_code_generator.python_literal:*"]
 references = "calls"
 subclasses = false
 attribution = "lexical"

@@ -16,7 +16,7 @@ from decimal import Decimal
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar, cast
 
-from typing_extensions import Protocol, assert_type, final, override
+from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._container_kinds import (
@@ -100,6 +100,7 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     DefaultValueRecipe,
+    _sole_member,
     _union_members,
     _UnionNodeT,
     union_members,
@@ -224,10 +225,9 @@ def required_fields_a_default_lacks(
 
     data_type: DataTypeView = follow_type_aliases(field.data_type, alias_of)
     if data_type._writes_nothing_of_its_own:
-        members = [member for member in data_type.data_types if not member._renders_none]
-        if len(members) != 1:
+        if (member := _sole_member(data_type.data_types)) is None:
             return None
-        data_type = follow_type_aliases(members[0], alias_of)
+        data_type = follow_type_aliases(member, alias_of)
     if (reference := data_type.reference) is None or (model := model_of(reference)) is None or model.form != "object":
         return None
     lacked = [
@@ -650,24 +650,26 @@ def normalize_default_value_constraints(
         ):
             continue
         annotation_import, descriptor = resolved
-        if not descriptor.normalize_constraints or has_import_override(
-            import_overrides, annotation_import, descriptor.constructor_import
+        if (
+            not descriptor.normalize_constraints
+            or descriptor.recipe is not DefaultValueRecipe.Decimal
+            or (constructor_import := descriptor.constructor_import) is None
+            or has_import_override(import_overrides, annotation_import, constructor_import)
         ):
             continue
-        assert_type(descriptor.recipe, Literal[DefaultValueRecipe.Decimal])
         kwargs = data_type.kwargs
         for key, value in kwargs.items():
             if not isinstance(value, Decimal):
                 continue
             if kwargs is data_type.kwargs:
                 kwargs = kwargs.copy()
-            kwargs[key] = _text_constructor_expression(descriptor.constructor_import, str(value))
+            kwargs[key] = _text_constructor_expression(constructor_import, str(value))
         if kwargs is data_type.kwargs:
             continue
         host._graph_builder.set_type_expressions(
             data_type,
             kwargs=kwargs,
-            runtime_expression_imports=(*data_type.runtime_expression_imports, descriptor.constructor_import),
+            runtime_expression_imports=(*data_type.runtime_expression_imports, constructor_import),
         )
         register_runtime_expression(host)
         normalized = True
@@ -687,13 +689,14 @@ def resolve_default_value_descriptor(
     return annotation_import, descriptor
 
 
-def has_import_override(import_overrides: dict[str, str] | None, *imports: Import) -> bool:
-    """Avoid changing generated defaults when an import policy redirects their bindings."""
+def has_import_override(import_overrides: dict[str, str] | None, *imports: Import | None) -> bool:
+    """Avoid changing generated defaults when an import policy redirects their bindings; None stands for no import."""
     if not import_overrides:
         return False
     return any(
         _override_module(import_overrides, import_.from_, import_.import_) not in {None, import_.from_}
         for import_ in imports
+        if import_ is not None
     )
 
 

@@ -3309,24 +3309,29 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         decision=(
             "how generated code builds a date, time or datetime, and an XML Schema timedelta, at run time: an "
             "expression on the `datetime` module imported as `datetime_module`, and for the ISO text of a date, time "
-            "or datetime its `fromisoformat` call"
+            "or datetime its `fromisoformat` call; an RFC 3339 text is read into the canonical ISO text of its value"
         ),
         homes=(
             Home("imports.py", "IMPORT_DATETIME_MODULE"),
             Home("python_literal.py", "_datetime_expression"),
             Home("python_literal.py", "_isoformat_expression"),
+            Home("python_literal.py", "_rfc3339_expression"),
         ),
         core=(
-            "`imports.py:IMPORT_DATETIME_MODULE`; `python_literal.py`: `_datetime_expression`, `_isoformat_expression`"
+            "`imports.py:IMPORT_DATETIME_MODULE`; `python_literal.py`: `_datetime_expression`, "
+            "`_isoformat_expression`, `_rfc3339_expression`"
         ),
         adapters=(
             "Avro's date, time and datetime logical defaults (`parser/avro.py:_logical_default_expression`; its "
             "timedelta defaults import `timedelta` directly), XML Schema's temporal defaults "
-            "(`parser/_xmlschema_literals.py`)"
+            "(`parser/_xmlschema_literals.py`, which reads XML Schema lexical forms with Python's reader), and the "
+            "JSON text of a strict date, time or datetime in a default Pydantic validates "
+            "(`parser/_passes/render_prep.py:_deserialized_value`)"
         ),
         sites=(
             Home("parser/avro.py", "_logical_default_expression"),
             Home("parser/_xmlschema_literals.py"),
+            Home("parser/_passes/render_prep.py", "_deserialized_value"),
         ),
     ),
     DecisionHome(
@@ -3337,13 +3342,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("python_literal.py", "_text_constructor_expression"),),
         core="`python_literal.py:_text_constructor_expression`",
         adapters=(
-            "Decimal defaults (`parser/_passes/render_prep.py:deserialize_decimal_default`) and constraints "
+            "Decimal defaults (`parser/_passes/render_prep.py`: `deserialize_decimal_default`, `_deserialized_value`) "
+            "and constraints "
             "(`parser/_passes/_shared.py:normalize_default_value_constraints`), compiled patterns "
             "(`model/pydantic_v2/base_model.py:_compiled_python_pattern`); Avro's `Decimal` defaults keep the call as "
             "their value (`parser/avro.py:_logical_default_expression`)"
         ),
         sites=(
             Home("parser/_passes/render_prep.py", "deserialize_decimal_default"),
+            Home("parser/_passes/render_prep.py", "_deserialized_value"),
             Home("parser/_passes/_shared.py", "normalize_default_value_constraints"),
             Home("model/pydantic_v2/base_model.py", "_compiled_python_pattern"),
             Home("parser/avro.py", "_logical_default_expression"),
@@ -3550,7 +3557,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`python_literal.py:_safe_non_finite_value`), the imports a module writes "
             "(`parser/_imports_plan.py:ModuleImportLedger.rendered`, which returns the live imports when no entry "
             "changed) and the nested values of an inherited schema "
-            "(`parser/_inherited_schemas.py:normalize_inherited_nested_schema_value`)"
+            "(`parser/_inherited_schemas.py:normalize_inherited_nested_schema_value`), and the containers of a default "
+            "whose strict values are deserialized (`parser/_passes/render_prep.py`: `_copied_items`, `_copied_mapping`)"
         ),
         sites=(
             Home("_python_type_annotation.py", "_with_children"),
@@ -3559,6 +3567,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("python_literal.py", "_safe_non_finite_value"),
             Home("parser/_imports_plan.py", "ModuleImportLedger.rendered"),
             Home("parser/_inherited_schemas.py", "normalize_inherited_nested_schema_value"),
+            Home("parser/_passes/render_prep.py", "_copied_items"),
+            Home("parser/_passes/render_prep.py", "_copied_mapping"),
         ),
     ),
     DecisionHome(

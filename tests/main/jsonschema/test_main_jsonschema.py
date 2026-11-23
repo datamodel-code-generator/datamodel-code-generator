@@ -7623,6 +7623,316 @@ def test_main_strict_types_date_time_kept(output_file: Path, extra_args: list[st
     )
 
 
+_BINARY: dict[str, object] = {"type": "string", "format": "binary"}
+_STRICT_DEFAULTS: dict[str, object] = {
+    "checksum": "",
+    "day": "2020-01-01",
+    "clock": "10:20:30",
+    "stamp": "2020-01-01T00:00:00Z",
+    "stamp_offset": "2020-01-01 10:00:00.5+01:00",
+    "nested": "abc",
+    "wrapped": "w",
+    "rec": {"data": "xy", "on": "2020-01-02", "nm": "n"},
+    "child": {"data": "c", "created-at": "2020-01-01T00:00:00+01:00"},
+    "days": ["2020-01-01", "2020-01-03"],
+    "by_key": {"a": "2020-01-01T00:00:00Z"},
+    "pair": ["2020-01-04", 3],
+    "digest": "abc",
+    "amount": 1.5,
+    "name": "x",
+    "encoded": "aGk=",
+    "unique_days": ["2020-01-05"],
+}
+_STRICT_DEFAULTS_SCHEMA: dict[str, object] = {
+    "title": "Top",
+    "type": "object",
+    "$defs": {
+        "Checksum": {"type": "string", "format": "binary", "default": ""},
+        "Day": {"type": "string", "format": "date"},
+        "Clock": {"type": "string", "format": "time"},
+        "Stamp": {"type": "string", "format": "date-time"},
+        "Nested": {"$ref": "#/$defs/Checksum"},
+        "Wrapped": {"$ref": "#/$defs/Checksum", "default": "w"},
+        "Rec": {
+            "type": "object",
+            "properties": {
+                "data": {"type": "string", "format": "binary"},
+                "on": {"type": "string", "format": "date"},
+                "nm": {"type": "string"},
+            },
+        },
+        "Child": {
+            "allOf": [
+                {"$ref": "#/$defs/Rec"},
+                {"type": "object", "properties": {"created-at": {"type": "string", "format": "date-time"}}},
+            ]
+        },
+        "Digest": {"type": "string", "format": "binary", "maxLength": 8},
+        "Amount": {"type": "number", "multipleOf": 0.01},
+        "Name": {"type": "string"},
+        "Encoded": {"type": "string", "format": "byte"},
+    },
+    "properties": {
+        "checksum": {"$ref": "#/$defs/Checksum"},
+        "day": {"$ref": "#/$defs/Day", "default": _STRICT_DEFAULTS["day"]},
+        "clock": {"$ref": "#/$defs/Clock", "default": _STRICT_DEFAULTS["clock"]},
+        "stamp": {"$ref": "#/$defs/Stamp", "default": _STRICT_DEFAULTS["stamp"]},
+        "stamp_offset": {"$ref": "#/$defs/Stamp", "default": _STRICT_DEFAULTS["stamp_offset"]},
+        "nested": {"$ref": "#/$defs/Nested", "default": _STRICT_DEFAULTS["nested"]},
+        "wrapped": {"$ref": "#/$defs/Wrapped"},
+        "rec": {"$ref": "#/$defs/Rec", "default": _STRICT_DEFAULTS["rec"]},
+        "child": {"$ref": "#/$defs/Child", "default": _STRICT_DEFAULTS["child"]},
+        "days": {"type": "array", "items": {"$ref": "#/$defs/Day"}, "default": _STRICT_DEFAULTS["days"]},
+        "by_key": {
+            "type": "object",
+            "additionalProperties": {"$ref": "#/$defs/Stamp"},
+            "default": _STRICT_DEFAULTS["by_key"],
+        },
+        "pair": {
+            "type": "array",
+            "prefixItems": [{"$ref": "#/$defs/Day"}, {"type": "integer"}],
+            "minItems": 2,
+            "maxItems": 2,
+            "default": _STRICT_DEFAULTS["pair"],
+        },
+        "digest": {"$ref": "#/$defs/Digest", "default": _STRICT_DEFAULTS["digest"]},
+        "amount": {"$ref": "#/$defs/Amount", "default": _STRICT_DEFAULTS["amount"]},
+        "name": {"$ref": "#/$defs/Name", "default": _STRICT_DEFAULTS["name"]},
+        "encoded": {"$ref": "#/$defs/Encoded", "default": _STRICT_DEFAULTS["encoded"]},
+        "unique_days": {
+            "type": "array",
+            "uniqueItems": True,
+            "items": {"$ref": "#/$defs/Day"},
+            "default": _STRICT_DEFAULTS["unique_days"],
+        },
+    },
+}
+_STRICT_DEFAULT_TYPES = ("--strict-types", "bytes", "date", "time", "datetime", "float")
+_DECIMAL_FORMS = ("--use-decimal-for-multiple-of", "--use-decimal-in-field-forms")
+
+
+def _loaded_defaults(built: object, given: object) -> str:
+    """Return each field of ``built`` and, where it differs, the value ``given`` holds for it.
+
+    Root models in a set hash by identity, so equal sets of them compare by their text.
+    """
+    return "".join(
+        f"{name}: {value!r}"
+        + ("" if value == (read := getattr(given, name)) or repr(value) == repr(read) else f" (JSON input: {read!r})")
+        + "\n"
+        for name, value in vars(built).items()
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-annotated"], id="annotated"),
+        pytest.param(["--use-root-model-type-alias", "--use-validate-default-for-root-model-type-aliases"], id="alias"),
+        pytest.param(list(_DECIMAL_FORMS), id="decimal"),
+        pytest.param(["--use-unique-items-as-set"], id="set"),
+        pytest.param(["--type-mappings", "string+byte=binary"], id="base64-bytes"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="dataclass"),
+    ],
+)
+def test_main_strict_types_default_of_a_referenced_type(output_file: Path, extra_args: list[str]) -> None:
+    """Test a default Pydantic validates holds the Python values a strict type reads from its JSON text (#7380).
+
+    Pydantic validates the default as Python input, where a strict bytes, date, time, datetime or Decimal type
+    refuses the JSON value, so every instance that left such a field out failed. The default is written as the value
+    Pydantic reads from the JSON default: each field of ``Top()`` equals the field read from the JSON defaults as
+    input, through root models, a root of a root, a root model's own default, objects with inherited and aliased
+    fields, lists, sets, mappings and a tuple read by position. A lax type (``name``, ``encoded`` as ``Base64Str``
+    or, under the type mapping, ``Base64Bytes``, which reads text in Python input too, and ``amount`` where no
+    Decimal is strict) keeps its default as written, and so do the outputs that do not validate it (the dataclass
+    type aliases).
+    """
+    _run_jsonschema_dict(
+        _STRICT_DEFAULTS_SCHEMA,
+        output_file,
+        extra_args=[
+            *extra_args,
+            *_STRICT_DEFAULT_TYPES,
+            *("--formatters", "builtin", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_default_of_a_referenced_type", "Top") as model:
+        built = model()
+        given = _model_json_validator(model)(json.dumps(_STRICT_DEFAULTS))
+    assert_output(_loaded_defaults(built, given), name="loaded")
+
+
+def test_main_strict_types_default_of_a_model_in_another_module(output_dir: Path, tmp_path: Path) -> None:
+    """Test a default read through a recursive model of another module takes the values of its strict types.
+
+    The module that holds the field imports the ``datetime`` module its default builds dates with; the nested object
+    defaults follow the recursive model by reference, item by item.
+    """
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    (inputs / "common.json").write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Common",
+            "type": "object",
+            "$defs": {
+                "Day": {"type": "string", "format": "date"},
+                "Node": {
+                    "type": "object",
+                    "properties": {
+                        "on": {"$ref": "#/$defs/Day"},
+                        "data": _BINARY,
+                        "next": {"$ref": "#/$defs/Node"},
+                        "kids": {"type": "array", "items": {"$ref": "#/$defs/Node"}},
+                    },
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    node = {"on": "2020-01-02", "data": "x", "next": {"on": "2020-01-03"}, "kids": [{"data": "k"}]}
+    (inputs / "top.json").write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Top",
+            "type": "object",
+            "properties": {
+                "day": {"$ref": "common.json#/$defs/Day", "default": "2020-01-01"},
+                "node": {"$ref": "common.json#/$defs/Node", "default": node},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=inputs,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--strict-types", "bytes", "date"),
+            *("--disable-timestamp", "--formatters", "builtin", "--target-python-version", "3.11"),
+        ],
+    )
+    sys.path.insert(0, str(output_dir.parent))
+    try:
+        top = importlib.import_module(f"{output_dir.name}.top").Top
+        loaded = _loaded_defaults(top(), top.model_validate_json(json.dumps({"day": "2020-01-01", "node": node})))
+    finally:
+        sys.path.remove(str(output_dir.parent))
+        for loaded_module in tuple(sys.modules):
+            if loaded_module == output_dir.name or loaded_module.startswith(f"{output_dir.name}."):
+                del sys.modules[loaded_module]
+    assert_output(loaded, name="loaded")
+
+
+@pytest.mark.parametrize(
+    ("defs", "default", "extra_args"),
+    [
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY, "count": {"type": "integer"}}}},
+            {"data": "", "count": True},
+            ["--strict-types", "bytes", "int"],
+            id="bool-for-int",
+        ),
+        pytest.param(
+            {"Day": {"type": "string", "format": "date"}},
+            "not-a-date",
+            ["--strict-types", "date"],
+            id="no-date",
+        ),
+        pytest.param(
+            {"Day": {"type": "string", "format": "date"}},
+            "20200101",
+            ["--strict-types", "date"],
+            id="basic-date",
+        ),
+        pytest.param(
+            {"Stamp": {"type": "string", "format": "date-time"}},
+            "2020-01-01T24:00:00Z",
+            ["--strict-types", "datetime"],
+            id="hour-24",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY, "count": {"type": "integer", "maximum": 10}}}},
+            {"data": "", "count": 500},
+            ["--strict-types", "bytes"],
+            id="over-maximum",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY, "name": {"type": "string"}}}},
+            {"data": "", "name": 5},
+            ["--strict-types", "bytes"],
+            id="number-for-str",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY, "color": {"enum": ["red", "blue"]}}}},
+            {"data": "", "color": "green"},
+            ["--strict-types", "bytes"],
+            id="enum-miss",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY}, "additionalProperties": False}},
+            {"data": "", "other": 1},
+            ["--strict-types", "bytes", "--extra-fields", "forbid"],
+            id="extra-forbid",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": {**_BINARY, "maxLength": 2}}}},
+            {"data": "abcdef"},
+            ["--strict-types", "bytes"],
+            id="too-long",
+        ),
+        pytest.param(
+            {"Either": {"anyOf": [{"type": "string", "format": "date"}, {"type": "integer"}]}},
+            "2020-01-01",
+            ["--strict-types", "date"],
+            id="two-members",
+        ),
+        pytest.param(
+            {"Rec": {"type": "object", "properties": {"data": _BINARY}}},
+            {"data": ""},
+            ["--strict-types", "bytes", "--base-class", "explicit_alias_base.NamespaceBase"],
+            id="opaque-base",
+        ),
+    ],
+)
+def test_main_strict_types_default_left_to_pydantic(
+    output_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    defs: dict[str, object],
+    default: object,
+    extra_args: list[str],
+) -> None:
+    """Test a default that is no valid input, or whose reading is Pydantic's choice, is refused at construction.
+
+    Only a value a strict type reads from JSON text is written as its Python value, and Pydantic still validates the
+    default, so a schema default its own model refuses fails as before: a bool for a strict int, text that is no
+    RFC 3339 date or time (Python reads ``20200101`` and ``24:00``, Pydantic refuses them), a constraint, a plain
+    ``str`` field, an enum, an extra key or a length. A union of two members (which member takes the text is
+    Pydantic's choice) and bytes under a configured base class the generator does not read (its config may read JSON
+    bytes as base64) keep the text. A payload that gives the field still validates.
+    """
+    monkeypatch.syspath_prepend(str(DATA_PATH / "python"))
+    _run_jsonschema_dict(
+        {
+            "title": "Top",
+            "type": "object",
+            "$defs": defs,
+            "properties": {"f": {"$ref": f"#/$defs/{next(iter(defs))}", "default": default}},
+        },
+        output_file,
+        extra_args=[*extra_args, *("--formatters", "builtin", "--target-python-version", "3.11")],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "strict_types_default_left_to_pydantic", "Top") as model:
+        with pytest.raises(ValidationError) as refused:
+            model()
+        given = _model_json_validator(model)(json.dumps({"f": None}))
+    errors = ", ".join(f"{'.'.join(map(str, item['loc']))} {item['type']}" for item in refused.value.errors())
+    assert_output(f"refused: {errors}\ngiven: {given!r}\n", name="loaded")
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("extra_args"),

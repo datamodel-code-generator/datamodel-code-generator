@@ -3460,6 +3460,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """
         return (self.IS_ROOT_MODEL or self.IS_ALIAS) and len(fields := self.fields) == 1 and fields[0]._admits_none()  # noqa: SLF001
 
+    def reads_json_bytes_as_text(self) -> bool:  # noqa: PLR6301
+        """Return whether validating the model reads bytes from JSON text as the text's UTF-8 bytes.
+
+        Only an output that validates JSON reads them so, by a config the generator knows (Pydantic v2).
+        """
+        return False
+
     @property
     def form(self) -> ModelForm:
         """How the model holds its value: as a root model, a type alias or the fields of an object.

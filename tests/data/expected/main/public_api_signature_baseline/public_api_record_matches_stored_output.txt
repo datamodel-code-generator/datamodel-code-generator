@@ -1890,6 +1890,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     def effective_fields(self) -> tuple[DataModelFieldBase, ...]
     @property
     def holds_null(self) -> bool
+    def reads_json_bytes_as_text(self) -> bool
     @property
     def form(self) -> ModelForm
     @property
@@ -2813,7 +2814,9 @@ class DataTypeManager(_DataTypeManagerBase)
     NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _applicability.PYDANTIC_OUTPUT.number_value_types
     TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = _applicability.PYDANTIC_OUTPUT.target_number_keywords
     REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.PYDANTIC_OUTPUT.regex_engines
-    DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({_import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR, _import_key(IMPORT_CONDECIMAL): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR})
+    DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({_import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR, _import_key(IMPORT_CONDECIMAL): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR, **dict.fromkeys(map(_import_key, (IMPORT_STRICT_BYTES, IMPORT_CONBYTES)), BYTES_DEFAULT_VALUE_DESCRIPTOR), **{key: _TEMPORAL_DEFAULT_VALUE_DESCRIPTORS[kind] for key, kind in _STRICT_DATE_TIME_KINDS.items()}})
+        uses _TEMPORAL_DEFAULT_VALUE_DESCRIPTORS: Final = MappingProxyType({StrictTypes.date: DATE_DEFAULT_VALUE_DESCRIPTOR, StrictTypes.time: TIME_DEFAULT_VALUE_DESCRIPTOR, StrictTypes.datetime: DATETIME_DEFAULT_VALUE_DESCRIPTOR})
+        uses _STRICT_DATE_TIME_KINDS: Final[Mapping[_ImportKey, StrictTypes]] = MappingProxyType({**dict.fromkeys(map(_import_key, (IMPORT_DATETIME, IMPORT_AWARE_DATETIME, IMPORT_NAIVE_DATETIME, IMPORT_PAST_DATETIME, IMPORT_FUTURE_DATETIME)), StrictTypes.datetime), **dict.fromkeys(map(_import_key, (IMPORT_DATE, IMPORT_PAST_DATE, IMPORT_FUTURE_DATE)), StrictTypes.date), _import_key(IMPORT_TIME): StrictTypes.time})
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
         uses ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel('ANNOTATED_CONSTRAINTS_CONTEXT')
@@ -3712,7 +3715,7 @@ class GenerationStore
     def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None=None) -> None
     @staticmethod
     @deprecated('Use GenerationStore.builder().set_field_default() instead.', category=None)
-    def set_field_default(field_: DataModelFieldBase, default: Any) -> None
+    def set_field_default(field_: DataModelFieldBase, default: Any, *, runtime_expression_imports: tuple[Import, ...] | None=None) -> None
     @staticmethod
     @deprecated('Use GenerationStore.builder().record_nullable_without_default() instead.', category=None)
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None
@@ -3853,7 +3856,7 @@ class GraphBuilder
     def retire_model(self, model: DataModel) -> None
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None
     def set_field_constraints(self, field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None=None, union_siblings: Mapping[str, Any] | None=None) -> None
-    def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None
+    def set_field_default(self, field_: DataModelFieldBase, default: Any, *, runtime_expression_imports: tuple[Import, ...] | None=None) -> None
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None
     def omit_field_default(self, field_: DataModelFieldBase) -> None
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None
@@ -5359,7 +5362,10 @@ class RemoteReferenceLock
 ANY = 'Any'
 ARRAY_KEYWORDS: Final[frozenset[str]] = ITEM_COUNT_KEYWORDS | {'uniqueItems'}
     uses ITEM_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({'minItems', 'maxItems'})
+BYTES_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(option_kind=None, recipe=DefaultValueRecipe.Bytes, constructor_import=None)
 CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(option_kind=DefaultValueType.Decimal, recipe=DefaultValueRecipe.Decimal, constructor_import=IMPORT_DECIMAL, normalize_constraints=True)
+DATETIME_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(option_kind=None, recipe=DefaultValueRecipe.DateTime, constructor_import=IMPORT_DATETIME_MODULE)
+DATE_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(option_kind=None, recipe=DefaultValueRecipe.Date, constructor_import=IMPORT_DATETIME_MODULE)
 DECIMAL_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(option_kind=DefaultValueType.Decimal, recipe=DefaultValueRecipe.Decimal, constructor_import=IMPORT_DECIMAL)
 DICT = 'Dict'
 DataModelFieldBase = typing.Any
@@ -5512,12 +5518,16 @@ class DataTypeManager(ABC)
 DataTypeT = TypeVar('DataTypeT', bound=DataType)
 @record
 class DefaultValueDescriptor
-    option_kind: DefaultValueType
+    option_kind: DefaultValueType | None
     recipe: DefaultValueRecipe
-    constructor_import: Import
+    constructor_import: Import | None
     normalize_constraints: bool = False
 class DefaultValueRecipe(Enum)
     Decimal = auto()
+    Bytes = auto()
+    Date = auto()
+    Time = auto()
+    DateTime = auto()
 class EmptyDataType(DataType)
 FROZEN_SET = 'FrozenSet'
 FloatConstraint = Annotated[float, WrapValidator(_preserve_float_constraint_precision), PlainSerializer(_serialize_float_constraint)]
@@ -5563,6 +5573,7 @@ STRING_KEYWORDS: Final[frozenset[str]] = frozenset(STRING_KEYWORD_ORDER)
 SourceT = TypeVar('SourceT')
 StrictTypes = datamodel_code_generator.enums.StrictTypes  [lazy]
 T = TypeVar('T')
+TIME_DEFAULT_VALUE_DESCRIPTOR = DefaultValueDescriptor(option_kind=None, recipe=DefaultValueRecipe.Time, constructor_import=IMPORT_DATETIME_MODULE)
 TUPLE = 'Tuple'
 TYPE_DEPENDENT_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 @final
@@ -5883,6 +5894,8 @@ class _PydanticV2Model(DataModel)
     @classmethod
     @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None
+    @override
+    def reads_json_bytes_as_text(self) -> bool
     def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]
 # a base of datamodel_code_generator.model.pydantic_v2.types.AnnotatedConstraintDataType
 class _RuntimeAnnotatedDataType(PydanticV2DataType)

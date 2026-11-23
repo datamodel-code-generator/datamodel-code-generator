@@ -1,0 +1,50 @@
+[[change]]
+id = "bug-g116-strict-string-defaults"
+category = "default-fix"
+title = "A default Pydantic validates holds the values strict types read from its JSON text"
+summary = "With --strict-types bytes, datetime, date, time or a strict Decimal, a field whose type names a model and whose default holds the text or number of a JSON document was written Field(<default>, validate_default=True). Pydantic validates that default as Python input, where strict mode refuses the JSON value, so every instance that left the field out failed. The default is now written as the values Pydantic reads from the JSON default: bytes for a strict bytes, datetime_module.date.fromisoformat(...) and the like for an RFC 3339 date, time or datetime, Decimal(...) for a strict Decimal, through root models, objects, lists, sets, tuples and mappings. validate_default stays, so Pydantic still validates the value; text that is no RFC 3339 date or time, a value under a union of several types and bytes under a configured base class the generator cannot read are left as written and still refused. Only outputs that failed at every construction without the field change; model_json_schema() shows the default as Pydantic serializes the converted value."
+refs = ["#7420"]
+decision = ["#7420"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[basic-date].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-int].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[bool-for-int].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[enum-miss].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[enum-miss].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[extra-forbid].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[hour-24].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[hour-24].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[no-date].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[no-date].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[number-for-str].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[number-for-str].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[opaque-base].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[opaque-base].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[over-maximum].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[over-maximum].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[too-long].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[too-long].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[two-members].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_left_to_pydantic[two-members].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_model_in_another_module.loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_model_in_another_module/",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[alias].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[alias].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[annotated].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[base64-bytes].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[base64-bytes].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[dataclass].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[dataclass].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[decimal].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[decimal].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[default].py",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[set].loaded.txt",
+    "main/jsonschema/main_jsonschema/main_strict_types_default_of_a_referenced_type[set].py",
+]

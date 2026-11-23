@@ -1979,6 +1979,12 @@ class _PydanticV2Model(DataModel):
         """Return whether the config the model applies selects ``python-re``."""
         return self._applied_config_items().get("regex_engine") == '"python-re"'
 
+    @override
+    def reads_json_bytes_as_text(self) -> bool:
+        """Return whether the config the model applies is known and leaves ``val_json_bytes`` at its default, UTF-8."""
+        items, known = self.applied_config()
+        return known is None and "val_json_bytes" not in items
+
     def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies to the model, the bases included, and which of them are known.
 

@@ -90,8 +90,12 @@ from datamodel_code_generator.model.types import standard_primitive_type_map_fac
 from datamodel_code_generator.model.types import type_map_factory as _type_map_factory
 from datamodel_code_generator.python_literal import PythonCode, represent_python_value, stable_repr
 from datamodel_code_generator.types import (
+    BYTES_DEFAULT_VALUE_DESCRIPTOR,
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    DATE_DEFAULT_VALUE_DESCRIPTOR,
+    DATETIME_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    TIME_DEFAULT_VALUE_DESCRIPTOR,
     DataType,
     StrictTypes,
     Types,
@@ -213,6 +217,12 @@ _STRICT_DATE_TIME_KINDS: Final[Mapping[_ImportKey, StrictTypes]] = MappingProxyT
 
 Pydantic has no strict class for them; the pendulum types are absent, as Pydantic accepts only their instances.
 """
+_TEMPORAL_DEFAULT_VALUE_DESCRIPTORS: Final = MappingProxyType({
+    StrictTypes.date: DATE_DEFAULT_VALUE_DESCRIPTOR,
+    StrictTypes.time: TIME_DEFAULT_VALUE_DESCRIPTOR,
+    StrictTypes.datetime: DATETIME_DEFAULT_VALUE_DESCRIPTOR,
+})
+"""The default recipe of each date and time kind of ``_STRICT_DATE_TIME_KINDS``."""
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 _ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
 _STRICT_ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_STRICT_STR, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
@@ -267,7 +277,11 @@ class DataTypeManager(_DataTypeManagerBase):
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
         _import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
         _import_key(IMPORT_CONDECIMAL): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+        **dict.fromkeys(map(_import_key, (IMPORT_STRICT_BYTES, IMPORT_CONBYTES)), BYTES_DEFAULT_VALUE_DESCRIPTOR),
+        **{key: _TEMPORAL_DEFAULT_VALUE_DESCRIPTORS[kind] for key, kind in _STRICT_DATE_TIME_KINDS.items()},
     })
+    """The recipes of the types a default is deserialized for, by import: ``Decimal`` under its option, and the bytes,
+    date, time and datetime types where strict mode refuses the JSON value of a default Pydantic validates."""
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
 
