@@ -1,0 +1,7 @@
+[[change]]
+id = "held-resources-own-url-pins"
+extends = "held-resources-read-where-their-url-loads-nothing"
+covers = [
+    "main/openapi/main_openapi/component_embedded_id_own_url_ref[ref].py",
+    "main/openapi/main_openapi/component_embedded_id_own_url_ref[url].py",
+]
