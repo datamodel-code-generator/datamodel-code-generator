@@ -1,0 +1,22 @@
+[[change]]
+id = "lone-variant-root-model-tag-nightly-cells"
+extends = "lone-variant-root-model-tag"
+
+[[change.cells]]
+input = ["tests/data/openapi/discriminator_lone_variant_tags.yaml"]
+backends = ["pydantic_v2.BaseModel"]
+options = [
+    [],
+    ["--strip-default-none"],
+    ["--strip-default-none", "--keyword-only"],
+    ["--strip-default-none", "--use-default-factory-for-optional-nested-models"],
+]
+
+[[change.cells]]
+input = [
+    "payload:openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneRootTag",
+    "payload:openapi/variant_tag_values/lone_root_model_tag.yaml::components.schemas.PaymentMethod",
+]
+backends = ["pydantic_v2.BaseModel"]
+options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp", "--openapi-scopes", "schemas", "--strict-nullable"]]
+input_file_type = "openapi"

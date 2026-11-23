@@ -1,0 +1,34 @@
+[[change]]
+id = "variant-tags-that-admit-null-payload-cells"
+extends = "variant-tags-that-admit-null"
+
+[[change.cells]]
+input = [
+    "payload:openapi/variant_tag_values/nullable_tags.yaml::components.schemas.EnumNull",
+    "payload:openapi/variant_tag_values/nullable_tags.yaml::components.schemas.Inline",
+    "payload:openapi/variant_tag_values/nullable_tags.yaml::components.schemas.SeveralNull",
+]
+backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp", "--openapi-scopes", "schemas", "--strict-nullable"]]
+input_file_type = "openapi"
+aspects = ["payload-verdict", "type"]
+match = "^\\[(type|payload-verdict)\\] (\\w+:kind: Literal\\['[^']*'\\] -> Literal\\['\\w+'(, '\\w+')*\\]|payload v\\d+: reject -> accept)$"
+
+[[change.cells]]
+input = [
+    "payload:openapi/variant_tag_values/nullable_tags.yaml::components.schemas.Optional",
+    "payload:openapi/variant_tag_values/nullable_tags_strict.yaml::components.schemas.Pet",
+]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp", "--openapi-scopes", "schemas", "--strict-nullable"]]
+input_file_type = "openapi"
+aspects = ["payload-verdict", "type"]
+match = "^\\[(type|payload-verdict)\\] (Payload: Annotated\\[Union\\[[\\w, ]+\\], discriminator='kind'\\] -> Union\\[[\\w, ]+\\]|payload v\\d+: error:lookup -> accept|payload i\\d+: error:lookup -> reject)$"
+
+[[change.cells]]
+input = ["payload:openapi/variant_tag_values/inline_several_values.yaml::components.schemas.Pet"]
+backends = ["msgspec.Struct"]
+options = [["--target-python-version", "3.14", "--class-name", "Payload", "--disable-timestamp", "--openapi-scopes", "schemas", "--strict-nullable"]]
+input_file_type = "openapi"
+aspects = ["type"]
+match = "^\\[type\\] \\w+:kind: Literal\\['[^']*'\\] -> Literal\\['\\w+'(, '\\w+')*\\]$"
