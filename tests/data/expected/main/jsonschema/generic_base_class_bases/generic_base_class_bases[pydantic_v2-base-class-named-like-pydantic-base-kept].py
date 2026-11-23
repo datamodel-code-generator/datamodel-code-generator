@@ -9,25 +9,25 @@ from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict
 
 
-class BaseModelModel(_BaseModel):
+class BaseModelModelModel(_BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
 
 
-class Money(BaseModel, BaseModelModel):
+class Money(BaseModel, BaseModelModelModel):
     amount: float | None = None
 
 
-class Tag(BaseModel, BaseModelModel):
+class Tag(BaseModel, BaseModelModelModel):
     name: str | None = None
 
 
-class Note(NoteBase, BaseModelModel):
+class Note(NoteBase, BaseModelModelModel):
     text: str | None = None
 
 
-class Plain(BaseModel, BaseModelModel):
+class Plain(BaseModel, BaseModelModelModel):
     id: int | None = None
 
 
@@ -35,15 +35,23 @@ class Special(Plain):
     kind: str | None = None
 
 
+class BaseModelModel(BaseModel, BaseModelModelModel):
+    label: str | None = None
+
+
+class StructModel(BaseModel, BaseModelModelModel):
+    code: str | None = None
+
+
 class Price(Money):
     currency: str | None = None
 
 
-class Child(Ext, BaseModelModel):
+class Child(Ext, BaseModelModelModel):
     b: str | None = None
 
 
-class Model(BaseModel, BaseModelModel):
+class Model(BaseModel, BaseModelModelModel):
     price: Price | None = None
     tag: Tag | None = None
     note: Note | None = None

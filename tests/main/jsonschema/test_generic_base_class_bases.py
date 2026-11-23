@@ -3,18 +3,39 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+import sys
+from typing import TYPE_CHECKING, Any
 
+import msgspec
+import pydantic
 import pytest
 
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
+    _forget_generated_package,
+    _generated_model,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 INPUT = JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json"
 """``Price`` extends a schema of another document, ``Note`` names ``customBasePath``, ``Child`` extends a schema with
-``x-python-import`` and ``Tag`` and ``Plain`` name no class."""
+``x-python-import`` and ``Tag`` and ``Plain`` name no class; ``BaseModelModel`` and ``StructModel`` are named like the
+generated base class renamed beside a kept class of its name."""
+CONFIGURED_CLASSES = {
+    "mypkg/base.py": ("TagBase", "Audit", "NoteBase", "Mine", "BaseModel", "Struct"),
+    "mypkg/common.py": ("Money",),
+    "mypkg/ext.py": ("Ext",),
+    "mypkg/plain.py": ("Plain",),
+}
+"""The classes the outputs import, each of which accepts unknown fields: the generated base class forbids them."""
+ACCEPTING_CLASS = {
+    "pydantic_v2.BaseModel": "class {}(pydantic.BaseModel):\n    model_config = pydantic.ConfigDict(extra='allow')\n",
+    "msgspec.Struct": "class {}(msgspec.Struct, forbid_unknown_fields=False):\n    pass\n",
+}
 OPTION = "--keep-bases-beside-generic-base-class"
 OPTION_SETS = pytest.mark.parametrize(
     "option_set", [pytest.param((), id="released"), pytest.param((OPTION,), id="kept")]
@@ -43,9 +64,11 @@ keeps the class, as it keeps a generated base: `class Tag(TagBase, BaseModel)`. 
 `--base-class-map`, `customBasePath` or `--base-class` names, and the class `--external-ref-mapping` or
 `x-python-import` imports for a schema the model extends, so `Price` keeps the fields of `Money`.
 
-The generated base class is listed last, so the options written to it win over the configuration of the kept class,
-as the configuration of a model's own class body does without it. Where a kept class is named like the generated base
-class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModelModel` (`StructModel`).""",
+The options written to the generated base class win over the configuration of the kept class, as the configuration
+of a model's own class body does without it: the generated base class is listed last for Pydantic, which takes the
+configuration of the last base, and first for msgspec, which takes the options of the first base. Where a kept class is
+named like the generated base class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModelModel`
+(`StructModel`), with `Model` added again while a class or an import of the output takes the name.""",
     input_schema="jsonschema/generic_base_class_bases/api.json",
     cli_args=[
         "--use-generic-base-class",
@@ -67,15 +90,23 @@ class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModel
     "output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"], ids=["pydantic_v2", "msgspec"]
 )
 def test_generic_base_class_bases(
-    output_file: Path, output_model_type: str, shape: tuple[str, ...], option_set: tuple[str, ...]
+    output_file: Path,
+    output_model_type: str,
+    shape: tuple[str, ...],
+    option_set: tuple[str, ...],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Keep the configured bases of a model beside the generic base class under the option.
 
     Without it ``Tag``, ``Note``, ``Child`` and ``Price`` inherit only the generated base class, as in 0.100.0, and
-    ``Price`` has no field of ``Money``; with it each keeps its class, listed before the generated one. ``Plain`` and
-    the models that extend a generated model are the same either way. A kept class named like the generated base class
-    (``mypkg.base.BaseModel``, ``mypkg.base.Struct``) gives the generated one the name ``BaseModelModel``
-    (``StructModel``), as a class that an import binds does any generated class.
+    ``Price`` has no field of ``Money``; with it each keeps its class, listed after the generated one for msgspec,
+    whose first base gives an option the bases set differently, and before it for Pydantic, whose last base does.
+    ``Plain`` and the models that extend a generated model are the same either way. A kept class named like the
+    generated base class (``mypkg.base.BaseModel``, ``mypkg.base.Struct``) gives the generated one the first name of
+    ``BaseModelModel``, ``BaseModelModelModel`` (``StructModel``, ...) that no class or import of the output binds, as a
+    class that an import binds does any generated class. Every model that inherits the generated base class rejects an
+    unknown field although each class it keeps accepts them.
     """
     run_main_and_assert(
         input_path=INPUT,
@@ -89,6 +120,38 @@ def test_generic_base_class_bases(
             *option_set,
         ],
     )
+    for module, names in CONFIGURED_CLASSES.items():
+        (path := tmp_path / "configured" / module).parent.mkdir(parents=True, exist_ok=True)
+        library = output_model_type.split(".", maxsplit=1)[0].removesuffix("_v2")
+        path.write_text(f"import {library}\n\n" + "\n".join(map(ACCEPTING_CLASS[output_model_type].format, names)))
+    monkeypatch.syspath_prepend(str(tmp_path / "configured"))
+    _forget_generated_package("mypkg")
+    try:
+        with _generated_model(output_file, "generic_base_class_bases_output", "Model") as model:
+            classes = [
+                value
+                for value in vars(sys.modules[model.__module__]).values()
+                if isinstance(value, type) and value.__module__ == model.__module__
+            ]
+            generic = next(value for value in classes if value.__bases__ in {(pydantic.BaseModel,), (msgspec.Struct,)})
+            accepting = [
+                value.__name__ for value in classes if issubclass(value, generic) and _accepts_unknown_field(value)
+            ]
+    finally:
+        _forget_generated_package("mypkg")
+    assert accepting == []
+
+
+def _accepts_unknown_field(model: Any) -> bool:
+    """Return whether a generated Pydantic model or msgspec Struct reads an object with a field it does not declare."""
+    try:
+        if issubclass(model, msgspec.Struct):
+            msgspec.json.decode(b'{"unexpected": 1}', type=model)
+        else:
+            model.model_validate({"unexpected": 1})
+    except (pydantic.ValidationError, msgspec.ValidationError):
+        return False
+    return True
 
 
 @OPTION_SETS
@@ -96,7 +159,8 @@ def test_generic_base_class_bases_in_modules(output_dir: Path, option_set: tuple
     """Keep a configured base beside the generic base class of a model of a module that does not hold it (#7316).
 
     The generic base class is written in the first module and imported by the other, and each module imports the class
-    its model is configured to inherit.
+    its model is configured to inherit. Beside ``mypkg.base.BaseModel``, the global base class, the generic one is
+    named ``BaseModelModelModel``, as ``models.BaseModelModel`` binds ``BaseModelModel`` in the module that imports it.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "generic_base_class_bases_modules.yaml",
@@ -104,6 +168,7 @@ def test_generic_base_class_bases_in_modules(output_dir: Path, option_set: tuple
         input_file_type="openapi",
         extra_args=[
             *("--use-generic-base-class", "--extra-fields", "forbid", "--formatters", "builtin", "--disable-timestamp"),
+            *("--base-class", "mypkg.base.BaseModel"),
             *(
                 "--base-class-map",
                 json.dumps({"models.Pet": "mypkg.base.PetBase", "things.Thing": ["mypkg.base.ThingBase"]}),

@@ -14,19 +14,19 @@ class Struct(_Struct, forbid_unknown_fields=True):
     pass
 
 
-class Money(Mine, Struct):
+class Money(Struct, Mine):
     amount: float | UnsetType = UNSET
 
 
-class Tag(Mine, Struct):
+class Tag(Struct, Mine):
     name: str | UnsetType = UNSET
 
 
-class Note(NoteBase, Struct):
+class Note(Struct, NoteBase):
     text: str | UnsetType = UNSET
 
 
-class Plain(Mine, Struct):
+class Plain(Struct, Mine):
     id: int | UnsetType = UNSET
 
 
@@ -34,15 +34,23 @@ class Special(Plain):
     kind: str | UnsetType = UNSET
 
 
+class BaseModelModel(Struct, Mine):
+    label: str | UnsetType = UNSET
+
+
+class StructModel(Struct, Mine):
+    code: str | UnsetType = UNSET
+
+
 class Price(Money):
     currency: str | UnsetType = UNSET
 
 
-class Child(Ext, Struct):
+class Child(Struct, Ext):
     b: str | UnsetType = UNSET
 
 
-class Model(Mine, Struct):
+class Model(Struct, Mine):
     price: Price | UnsetType = UNSET
     tag: Tag | UnsetType = UNSET
     note: Note | UnsetType = UNSET

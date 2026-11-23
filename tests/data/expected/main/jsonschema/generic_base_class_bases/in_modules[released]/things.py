@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from mypkg.base import ThingBase
+from mypkg.base import BaseModel, ThingBase
 from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict
 

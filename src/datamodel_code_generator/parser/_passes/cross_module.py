@@ -12,7 +12,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._model_keys import keyed_or_path
 from datamodel_code_generator._module_paths import dotted_name
-from datamodel_code_generator.imports import Import
+from datamodel_code_generator.imports import Import, _import_bindings
 from datamodel_code_generator.model._decisions.tag_value import enum_tag_as_values
 from datamodel_code_generator.model.base import (
     GENERIC_BASE_CLASS_NAME,
@@ -421,22 +421,45 @@ def _bases_beside_generic(
     return [base for base in bases if base.reference or base.import_ != default_import]
 
 
-def _bases_with_generic(generic: BaseClassDataType, kept: list[BaseClassDataType]) -> list[BaseClassDataType]:
-    """Return the bases of a model that keeps ``kept`` beside the generic base class, in the order it lists them.
+def _bases_with_generic(
+    model: DataModel, generic: BaseClassDataType, kept: list[BaseClassDataType]
+) -> list[BaseClassDataType]:
+    """Return the bases of ``model`` that keeps ``kept`` beside the generic base class, in the order it lists them.
 
-    The generic base class comes last after classes that are no generated model: the configuration of a class body
-    wins over its bases, as it does without a generic base class, where the model writes its own configuration
-    (Pydantic merges the ``model_config`` of the bases in order, the last winning). A generated base keeps the released
-    order, the generic base class first; no test reaches it, as a model whose base is a target model is skipped before
-    this point.
+    The generic base class stands where its options win over those of classes that are no generated model, as a class
+    body's configuration wins over its bases without a generic base class: last where the last base wins (Pydantic
+    merges the ``model_config`` of the bases in order), first where the first base gives an option the bases set
+    differently (``FIRST_BASE_CONFIGURES``, msgspec). A generated base keeps the released order, the generic base
+    class first; no test reaches it, as a model whose base is a target model is skipped before this point.
     """
     if any(base.reference for base in kept):  # pragma: no cover - not proven unreachable
         return [generic, *kept]
-    return [*kept, generic]
+    return [generic, *kept] if model.FIRST_BASE_CONFIGURES else [*kept, generic]
+
+
+def _bound_names(
+    run: CrossModuleRun,
+    generic: DataModel,
+    kept: list[BaseClassDataType],
+    default_import: Import | None,
+) -> set[str]:
+    """Return the names the generic base class ``generic`` may not take: those that other classes and imports bind.
+
+    They are the classes of the run, the imports of its modules (the default import of the output model type aside,
+    which the generic base class replaces) and the bases ``kept`` beside it. The imports every module shares
+    (``--additional-imports``) are not: the generic base class takes the name over them, as a generated class does
+    over one no type of its module writes (``change_imported_model_name``).
+    """
+    default = (default_import.from_, default_import.import_) if default_import is not None else None
+    return (
+        {model.class_name for ctx in run.contexts for model in ctx.models if model is not generic}
+        | {binding for ctx in run.contexts for key, binding in _import_bindings(ctx.imports) if key != default}
+        | {import_.binding_name for base in kept if (import_ := base.import_) is not None and not base.reference}
+    )
 
 
 def _unbound_generic_name(name: str, bound_names: set[str]) -> str:
-    """Return ``name``, with ``_CLASH_SUFFIX`` added while a base kept beside the generic base class binds it."""
+    """Return ``name``, with ``_CLASH_SUFFIX`` added while another class or import of the output binds it."""
     while name in bound_names:
         name += _CLASH_SUFFIX
     return name
@@ -490,13 +513,9 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     parser._graph_builder.set_module_models(first_root_models, [base_class_model, *first_root_models])
     parser._graph_builder.register_model(base_class_model)
     if parser.keep_bases_beside_generic_base_class:
-        kept_names = {
-            import_.binding_name
-            for model in all_target_models
-            for base in _bases_beside_generic(parser, model, original_import)
-            if (import_ := base.import_) is not None and not base.reference
-        }
-        if (name := _unbound_generic_name(base_class_ref.name, kept_names)) != base_class_ref.name:
+        kept = [base for model in all_target_models for base in _bases_beside_generic(parser, model, original_import)]
+        bound_names = _bound_names(run, base_class_model, kept, original_import)
+        if (name := _unbound_generic_name(base_class_ref.name, bound_names)) != base_class_ref.name:
             parser._graph_builder.rename_model(base_class_model, reference_name=name, scheme="imported-name")
 
     base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)
@@ -509,7 +528,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
             if inherits_one_of(model, all_target_models):
                 continue
             parser._graph_builder.set_base_classes(
-                model, _bases_with_generic(base_class_dt, _bases_beside_generic(parser, model, original_import))
+                model, _bases_with_generic(model, base_class_dt, _bases_beside_generic(parser, model, original_import))
             )
         if module != first_root_module and original_import:
             parser._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)

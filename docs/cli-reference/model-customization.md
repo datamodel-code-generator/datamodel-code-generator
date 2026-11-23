@@ -3529,9 +3529,11 @@ keeps the class, as it keeps a generated base: `class Tag(TagBase, BaseModel)`. 
 `--base-class-map`, `customBasePath` or `--base-class` names, and the class `--external-ref-mapping` or
 `x-python-import` imports for a schema the model extends, so `Price` keeps the fields of `Money`.
 
-The generated base class is listed last, so the options written to it win over the configuration of the kept class,
-as the configuration of a model's own class body does without it. Where a kept class is named like the generated base
-class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModelModel` (`StructModel`).
+The options written to the generated base class win over the configuration of the kept class, as the configuration
+of a model's own class body does without it: the generated base class is listed last for Pydantic, which takes the
+configuration of the last base, and first for msgspec, which takes the options of the first base. Where a kept class is
+named like the generated base class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModelModel`
+(`StructModel`), with `Model` added again while a class or an import of the output takes the name.
 
 **Related:** [`--base-class`](#base-class), [`--base-class-map`](#base-class-map), [`--use-generic-base-class`](#use-generic-base-class)
 
@@ -3626,6 +3628,22 @@ class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModel
               "type": "string"
             }
           }
+        },
+        "BaseModelModel": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            }
+          }
+        },
+        "StructModel": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            }
+          }
         }
       },
       "type": "object",
@@ -3696,6 +3714,14 @@ class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModel
             kind: str | None = None
 
 
+        class BaseModelModel(BaseModel):
+            label: str | None = None
+
+
+        class StructModel(BaseModel):
+            code: str | None = None
+
+
         class Price(Money):
             currency: str | None = None
 
@@ -3755,6 +3781,14 @@ class (`BaseModel`, `Struct` for msgspec), the generated one is named `BaseModel
 
         class Special(Plain):
             kind: str | None = None
+
+
+        class BaseModelModel(BaseModel):
+            label: str | None = None
+
+
+        class StructModel(BaseModel):
+            code: str | None = None
 
 
         class Price(Money):

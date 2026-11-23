@@ -10,23 +10,23 @@ from mypkg.base import NoteBase, Struct
 from mypkg.ext import Ext
 
 
-class StructModel(_Struct, forbid_unknown_fields=True):
+class StructModelModel(_Struct, forbid_unknown_fields=True):
     pass
 
 
-class Money(Struct, StructModel):
+class Money(StructModelModel, Struct):
     amount: float | UnsetType = UNSET
 
 
-class Tag(Struct, StructModel):
+class Tag(StructModelModel, Struct):
     name: str | UnsetType = UNSET
 
 
-class Note(NoteBase, StructModel):
+class Note(StructModelModel, NoteBase):
     text: str | UnsetType = UNSET
 
 
-class Plain(Struct, StructModel):
+class Plain(StructModelModel, Struct):
     id: int | UnsetType = UNSET
 
 
@@ -34,15 +34,23 @@ class Special(Plain):
     kind: str | UnsetType = UNSET
 
 
+class BaseModelModel(StructModelModel, Struct):
+    label: str | UnsetType = UNSET
+
+
+class StructModel(StructModelModel, Struct):
+    code: str | UnsetType = UNSET
+
+
 class Price(Money):
     currency: str | UnsetType = UNSET
 
 
-class Child(Ext, StructModel):
+class Child(StructModelModel, Ext):
     b: str | UnsetType = UNSET
 
 
-class Model(Struct, StructModel):
+class Model(StructModelModel, Struct):
     price: Price | UnsetType = UNSET
     tag: Tag | UnsetType = UNSET
     note: Note | UnsetType = UNSET

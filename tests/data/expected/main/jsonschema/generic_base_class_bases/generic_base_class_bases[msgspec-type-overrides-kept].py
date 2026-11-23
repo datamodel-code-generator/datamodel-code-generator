@@ -23,19 +23,27 @@ class Tag(Struct):
     name: str | UnsetType = UNSET
 
 
-class Note(NoteBase, Struct):
+class Note(Struct, NoteBase):
     text: str | UnsetType = UNSET
 
 
-class Special(Plain, Struct):
+class Special(Struct, Plain):
     kind: str | UnsetType = UNSET
+
+
+class BaseModelModel(Struct):
+    label: str | UnsetType = UNSET
+
+
+class StructModel(Struct):
+    code: str | UnsetType = UNSET
 
 
 class Price(Money):
     currency: str | UnsetType = UNSET
 
 
-class Child(Ext, Struct):
+class Child(Struct, Ext):
     b: str | UnsetType = UNSET
 
 

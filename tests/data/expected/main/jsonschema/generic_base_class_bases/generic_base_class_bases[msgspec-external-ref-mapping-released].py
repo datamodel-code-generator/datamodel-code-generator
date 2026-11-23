@@ -31,6 +31,14 @@ class Special(Plain):
     kind: str | UnsetType = UNSET
 
 
+class BaseModelModel(Struct):
+    label: str | UnsetType = UNSET
+
+
+class StructModel(Struct):
+    code: str | UnsetType = UNSET
+
+
 class Price(Struct):
     currency: str | UnsetType = UNSET
 

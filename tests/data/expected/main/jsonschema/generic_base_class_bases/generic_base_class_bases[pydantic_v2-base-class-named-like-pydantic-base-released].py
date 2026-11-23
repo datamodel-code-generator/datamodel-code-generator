@@ -35,6 +35,14 @@ class Special(Plain):
     kind: str | None = None
 
 
+class BaseModelModel(BaseModel):
+    label: str | None = None
+
+
+class StructModel(BaseModel):
+    code: str | None = None
+
+
 class Price(Money):
     currency: str | None = None
 

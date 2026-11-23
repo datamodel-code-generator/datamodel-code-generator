@@ -2378,6 +2378,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     IS_ROOT_MODEL: ClassVar[bool] = False
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
+    FIRST_BASE_CONFIGURES: ClassVar[bool] = False
+    """Whether the first base of a class gives an option its bases set differently, not the last (msgspec)."""
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(
         _get_field_default_info

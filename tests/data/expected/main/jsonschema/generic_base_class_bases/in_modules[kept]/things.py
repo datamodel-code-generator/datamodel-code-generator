@@ -3,20 +3,20 @@
 
 from __future__ import annotations
 
-from mypkg.base import ThingBase
+from mypkg.base import BaseModel, ThingBase
 from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict
 
 
-class BaseModel(_BaseModel):
+class BaseModelModelModel(_BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
 
 
-class Thing(ThingBase, BaseModel):
+class Thing(ThingBase, BaseModelModelModel):
     label: str | None = None
 
 
-class Gadget(BaseModel):
+class Gadget(BaseModel, BaseModelModelModel):
     thing: Thing | None = None

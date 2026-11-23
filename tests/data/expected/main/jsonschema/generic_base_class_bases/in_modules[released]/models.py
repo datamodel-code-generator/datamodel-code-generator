@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from mypkg.base import PetBase
+from mypkg.base import BaseModel, PetBase
 
 from .things import BaseModel
 
@@ -14,3 +14,7 @@ class Pet(BaseModel):
 
 class Owner(BaseModel):
     pet: Pet | None = None
+
+
+class BaseModelModel(BaseModel):
+    note: str | None = None

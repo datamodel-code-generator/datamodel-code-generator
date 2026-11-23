@@ -76,6 +76,22 @@
           "type": "string"
         }
       }
+    },
+    "BaseModelModel": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "StructModel": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        }
+      }
     }
   },
   "type": "object",
