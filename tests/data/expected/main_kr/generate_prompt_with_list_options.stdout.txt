@@ -57,11 +57,13 @@
 - `--import-overrides`: Override modules for generated imports by symbol name.
 - `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--intersect-combined-schema-keywords`: Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...
+- `--intersect-merged-allof-members`: Read the allOf members that are merged into one schema keyword by keyword.
 - `--keep-enum-member-values`: Give an enum class a value base only when it keeps every member value.
 - `--no-distribute-allof-over-unions`
 - `--no-filter-literal-values`
 - `--no-intersect-allof-keywords`
 - `--no-intersect-combined-schema-keywords`
+- `--no-intersect-merged-allof-members`
 - `--no-keep-enum-member-values`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
@@ -829,6 +831,23 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         adds to the one model it names at a field, an item or
                         a branch, and no `enum` value that the merged `type`
                         rejects. Without it these keep the output of 0.88.0
+  --intersect-merged-allof-members, --no-intersect-merged-allof-members
+                        Read the `allOf` members that are merged into one
+                        schema keyword by keyword, as JSON Schema validates
+                        them: a property that several merged object members
+                        declare takes the `type`, null and `multipleOf` every
+                        declaration admits (a `true` declaration adds nothing)
+                        and the members' own `allOf` members are merged too; a
+                        named `allOf` of a `$ref` and value members keeps the
+                        `enum` and `type` every member admits; a `$ref` to a
+                        map beside members that add only property counts or
+                        `propertyNames` stays that map with them; and a length
+                        or `pattern` beside a `$ref` to base64 text is checked
+                        on the text where the output checks base64 constraints
+                        on the text. Without it the later member's keyword
+                        wins, another member's `enum` is dropped, the map
+                        becomes a model without fields and the keyword is
+                        checked on the decoded value, as in 0.100.0
   --keep-enum-member-values, --no-keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would

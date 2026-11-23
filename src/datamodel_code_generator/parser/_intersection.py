@@ -228,6 +228,30 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "object branches leaves them out"
         ),
     },
+    "intersect_merged_allof_members": {
+        "legacy-all-of-object-merge-row": (
+            "allOf members merged into one object are their merge row: of a property several of them declare, the "
+            "later `type`, `nullable` and `multipleOf` win, two type lists join and a later `true` replaces the "
+            "schema, and the allOf members of a member are dropped"
+        ),
+        "legacy-all-of-root-first-typed-member": (
+            "a named allOf of one `$ref` to a value schema and value members is the first typed of them with the "
+            "constraints of all, the `enum` of another member dropped"
+        ),
+        "legacy-all-of-enum-root-self-alias": (
+            "a named allOf whose merged root is an enum written as a class names itself where no output reads the "
+            "annotations (standard dataclasses), which later passes type `Any`"
+        ),
+        "legacy-all-of-map-counts-dropped": (
+            "an allOf of a `$ref` to a map and members that add only property counts or `propertyNames` is a model "
+            "without fields at a definition, and the reference elsewhere, which only a field whose whole type it is "
+            "writes the counts beside"
+        ),
+        "legacy-all-of-base64-reference-layered": (
+            "a length or `pattern` an allOf site adds to a `$ref` to base64 text is written beside the reference, "
+            "checked on the decoded value"
+        ),
+    },
 }
 """The rows of the output of an earlier release where parts meet, by the option whose off state they are."""
 

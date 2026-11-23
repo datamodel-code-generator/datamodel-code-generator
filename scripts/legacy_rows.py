@@ -738,6 +738,103 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--distribute-allof-over-unions",
     ),
     LegacyRow(
+        "legacy-all-of-object-merge-row",
+        (
+            "without `--intersect-merged-allof-members`, allOf members merged into one object are their merge row: of "
+            "a property several of them declare, the later `type`, `nullable` and `multipleOf` win, two type lists "
+            "join and a later `true` replaces the schema, and the allOf members of a member are dropped"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_merged_member_values.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-root-first-typed-member",
+        (
+            "without `--intersect-merged-allof-members`, a named allOf of one `$ref` to a value schema and value "
+            "members is the first typed of them with the constraints of all, the `enum` of another member dropped"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_enum_member_of_constrained_ref.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-enum-root-self-alias",
+        (
+            "without `--intersect-merged-allof-members`, a named allOf whose merged root is an enum written as a class "
+            "names itself where no output reads the annotations (standard dataclasses), which later passes type `Any`"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_enum_member_of_constrained_ref.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-map-counts-dropped",
+        (
+            "without `--intersect-merged-allof-members`, an allOf of a `$ref` to a map and members that add only "
+            "property counts or `propertyNames` is a model without fields at a definition, and the reference elsewhere"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_map_member_counts.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
+        "legacy-all-of-base64-reference-layered",
+        (
+            "without `--intersect-merged-allof-members`, a length or `pattern` an allOf site adds to a `$ref` to "
+            "base64 text is written beside the reference, checked on the decoded value"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/allof_base64_member_constraints.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-constraints",
+            "--use-encoded-str-for-constrained-base64",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+        option="--intersect-merged-allof-members",
+    ),
+    LegacyRow(
         "legacy-map-union-of-dicts",
         (
             "without `--use-single-dict-for-object-maps`, patternProperties give a union of dicts, one per rendered "

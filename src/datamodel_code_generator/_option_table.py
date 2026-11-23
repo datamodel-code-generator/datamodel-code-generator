@@ -1121,6 +1121,18 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         Section.TYPING,
+        "--intersect-merged-allof-members",
+        help="Read the `allOf` members that are merged into one schema keyword by keyword, as JSON Schema validates "
+        "them: a property that several merged object members declare takes the `type`, null and `multipleOf` every "
+        "declaration admits (a `true` declaration adds nothing) and the members' own `allOf` members are merged too; a "
+        "named `allOf` of a `$ref` and value members keeps the `enum` and `type` every member admits; a `$ref` to a "
+        "map beside members that add only property counts or `propertyNames` stays that map with them; and a length or "
+        "`pattern` beside a `$ref` to base64 text is checked on the text where the output checks base64 constraints "
+        "on the text. Without it the later member's keyword wins, another member's `enum` is dropped, the map becomes "
+        "a model without fields and the keyword is checked on the decoded value, as in 0.100.0",
+    ),
+    toggle(
+        Section.TYPING,
         "--read-allof-parents-in-mro-order",
         help="Read the allOf parents of every inherited schema in the order of the class bases (the MRO), so a "
         "property that several bases declare takes the nearer base's constraints and description, as the class does, "

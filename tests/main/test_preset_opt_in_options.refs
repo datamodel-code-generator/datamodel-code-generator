@@ -8,6 +8,8 @@ capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/p
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
+intersect-merged-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
+intersect-merged-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
 keep-null-of-nullable-items-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-null-of-nullable-items-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-string-keywords-beside-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
@@ -69,6 +71,8 @@ intersect-allof-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in
 intersect-allof-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].model.py
 intersect-combined-schema-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].model.py
 intersect-combined-schema-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].model.py
+intersect-merged-allof-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-merged-allof-members-practical].model.py
+intersect-merged-allof-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-merged-allof-members-standard].model.py
 keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-content-parameter-refs-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-content-parameter-refs-practical].model.py

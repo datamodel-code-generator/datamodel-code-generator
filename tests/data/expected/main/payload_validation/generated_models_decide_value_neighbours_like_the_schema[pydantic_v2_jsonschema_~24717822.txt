@@ -1,0 +1,4 @@
+[
+  "/currency enum null: invalid, model accepts",
+  "/settlement enum null: invalid, model accepts"
+]

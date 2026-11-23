@@ -229,6 +229,7 @@ class ParserConfigDict(TypedDict):
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]
     distribute_allof_over_unions: NotRequired[bool]
+    intersect_merged_allof_members: NotRequired[bool]
     read_allof_parents_in_mro_order: NotRequired[bool]
     read_inherited_property_schemas_in_mro_order: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]

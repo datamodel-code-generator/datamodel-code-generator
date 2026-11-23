@@ -2558,6 +2558,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             "intersect_allof_keywords": self.intersects_allof_keywords,
             "intersect_combined_schema_keywords": self.intersects_combined_schema_keywords,
             "distribute_allof_over_unions": self.config.distribute_allof_over_unions,
+            "intersect_merged_allof_members": self.config.intersect_merged_allof_members,
         }
         return kept_legacy_rows({**options, **implied_options(options)})
 
@@ -5077,7 +5078,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
                 )
 
-            root_model_result = _all_of_values.handle_allof_root_model_with_constraints(self, name, obj, path)
+            root_model_result = _all_of_values.handle_allof_root_model_with_constraints(self, name, site, path)
             if root_model_result is not None:
                 return frame.built(root_model_result)
             reads_values = "legacy-value-union-members-unread" not in self._legacy_intersection
