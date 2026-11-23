@@ -308,8 +308,9 @@ NULLS: Final[tuple[Kept, ...]] = (
         nulls.TABLE,
         "accepts-invalid",
         PRESET,
-        ({"source": ("nullable",), "kind": ("ref",), "position": ("property", "root")},),
-        "the same wherever --strict-nullable reads the nullable",
+        ({"source": ("nullable",), "kind": ("ref",), "position": ("property", "root", "item", "value")},),
+        "the same wherever --strict-nullable reads the nullable, an array item and a map value included under "
+        "--keep-null-of-nullable-items",
     ),
     Kept(
         ISSUE,
@@ -343,16 +344,6 @@ NULLS: Final[tuple[Kept, ...]] = (
         ),
         "OpenAPI's nullable admits null only under --strict-nullable (decided in #1496), so without it a property the "
         "output writes without the default None, an array item and a map value reject null",
-    ),
-    Kept(
-        ISSUE,
-        "#7343",
-        nulls.TABLE,
-        "rejects-valid",
-        PRESET,
-        ({"source": ("nullable",), "kind": ("array",), "position": ("item", "value")},),
-        "a nullable array that is an array item or a map value loses its null also under --strict-nullable, where a "
-        "nullable string there keeps it",
     ),
     Kept(
         ISSUE,

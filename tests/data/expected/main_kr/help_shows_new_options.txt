@@ -853,8 +853,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         map value of any form (a nested array, a map, an
                         `allOf` of one `$ref`), as it is written for a scalar
                         or an object (`list[list[float] | None]`); without it
-                        those items reject null, as in 0.100.0. An enum or a
-                        `const` still rejects null
+                        those items reject null, as in 0.100.0. The option
+                        adds no null to an enum or a `const`; an enum that
+                        lists null admits it with or without the option
   --keep-reference-null-on-merged-models, --no-keep-reference-null-on-merged-models
                         Keep the null that the schema of a field, item or
                         member admits where the model it references is merged

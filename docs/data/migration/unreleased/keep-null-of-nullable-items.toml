@@ -2,7 +2,7 @@
 id = "keep-null-of-nullable-items"
 category = "new-surface"
 title = "Keep the null of nullable array, map and reference items under --strict-nullable"
-summary = "--keep-null-of-nullable-items writes the null that nullable: true declares on an array item, a tuple item, a map value that is an array, a map or an allOf of one $ref, as it is written for a scalar or an object; an enum or a const still rejects null. The 20261123 presets set it."
+summary = "--keep-null-of-nullable-items writes the null that nullable: true declares on an array item, a tuple item, a map value that is an array, a map or an allOf of one $ref, as it is written for a scalar or an object; it adds no null to an enum or a const, and an enum that lists null admits it with or without the option. The 20261123 presets set it."
 refs = ["#7343"]
 surface = ["--keep-null-of-nullable-items"]
 covers = [

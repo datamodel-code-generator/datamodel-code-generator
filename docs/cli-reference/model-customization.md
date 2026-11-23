@@ -4387,8 +4387,9 @@ Write the null that `nullable: true` declares on an array item, a tuple item or 
 Under `--strict-nullable` a nullable string or object keeps its `| None` as an array item, a map value or a union
 member, but a nullable array, a nullable map or an `allOf` of one `$ref` does not, so `[[1.0], null]` is rejected by
 `list[list[float]]` though the schema allows it (as in 0.100.0). With this option every such item keeps the null:
-`list[list[float] | None]`, `dict[str, Owner | None]`. An item with an `enum` or a `const`
-still rejects null, as `nullable: true` beside an `enum` that lists no null does in OpenAPI 3.0.3.
+`list[list[float] | None]`, `dict[str, Owner | None]`. The option adds no null to an item with an `enum` or a
+`const`, as `nullable: true` beside an `enum` that lists no null adds none in OpenAPI 3.0.3; an `enum` that lists null
+admits it with or without the option.
 
 !!! tip "Usage"
 
