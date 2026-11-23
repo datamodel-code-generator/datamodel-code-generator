@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {"child": {"$ref": "#/$defs/Child"}, "short": {"$ref": "#/$defs/Short"}},
+  "$defs": {
+    "Base": {"type": "object", "properties": {"p": {"type": "string"}, "q": {"type": "boolean"}}},
+    "Parent": {"$ref": "#/$defs/Base"},
+    "Child": {"allOf": [{"$ref": "#/$defs/Parent"}, {"type": "object", "required": ["p"]}]},
+    "Text": {"type": "string"},
+    "TextAlias": {"$ref": "#/$defs/Text"},
+    "Short": {"allOf": [{"$ref": "#/$defs/TextAlias"}, {"maxLength": 3}]}
+  }
+}

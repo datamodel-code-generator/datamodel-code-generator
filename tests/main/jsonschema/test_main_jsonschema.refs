@@ -6094,11 +6094,33 @@ msgspec.Struct	main/jsonschema/main_jsonschema/allof_any_of_enum_branch_object_k
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/allof_any_of_enum_branch_object_keywords[pydantic_v2.BaseModel].py
 [test_main_jsonschema_allof_array_enum_items_in_sets]
 	main/jsonschema/main_jsonschema/allof_array_enum_items_in_sets.py
+[test_main_jsonschema_allof_base64_member_constraints]
+intersected-collapse-root-models	main/jsonschema/main_jsonschema/allof_base64_member_constraints[intersected-collapse-root-models].py
+intersected-field-constraints	main/jsonschema/main_jsonschema/allof_base64_member_constraints[intersected-field-constraints].py
+intersected-site-models	main/jsonschema/main_jsonschema/allof_base64_member_constraints[intersected-site-models].py	= main/jsonschema/main_jsonschema/allof_base64_member_constraints[intersected-field-constraints].py
+released-collapse-root-models	main/jsonschema/main_jsonschema/allof_base64_member_constraints[released-collapse-root-models].py
+released-field-constraints	main/jsonschema/main_jsonschema/allof_base64_member_constraints[released-field-constraints].py
+released-site-models	main/jsonschema/main_jsonschema/allof_base64_member_constraints[released-site-models].py	= main/jsonschema/main_jsonschema/allof_base64_member_constraints[released-field-constraints].py
 [test_main_jsonschema_allof_closed_member]
 pydantic_v2.BaseModel-pydantic_v2-extra_forbidden	main/jsonschema/main_jsonschema/allof_closed_member[pydantic_v2.BaseModel-pydantic_v2-extra_forbidden].py
 pydantic_v2.dataclass-dataclass-unexpected_keyword_argument	main/jsonschema/main_jsonschema/allof_closed_member[pydantic_v2.dataclass-dataclass-unexpected_keyword_argument].py
 [test_main_jsonschema_allof_closed_member_pattern]
 	main/jsonschema/main_jsonschema/allof_closed_member_pattern.py
+[test_main_jsonschema_allof_enum_member_of_constrained_ref]
+intersected-dataclasses.dataclass	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[intersected-dataclasses.dataclass].py
+intersected-msgspec.Struct	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[intersected-msgspec.Struct].py
+intersected-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[intersected-pydantic_v2.BaseModel].py
+intersected-pydantic_v2.dataclass	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[intersected-pydantic_v2.dataclass].py
+intersected-typing.TypedDict	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[intersected-typing.TypedDict].py
+released-dataclasses.dataclass	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[released-dataclasses.dataclass].py
+released-msgspec.Struct	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[released-msgspec.Struct].py
+released-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[released-pydantic_v2.BaseModel].py
+released-pydantic_v2.dataclass	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[released-pydantic_v2.dataclass].py
+released-typing.TypedDict	main/jsonschema/main_jsonschema/allof_enum_member_of_constrained_ref[released-typing.TypedDict].py
+[test_main_jsonschema_allof_enum_member_of_untyped_ref_forms]
+msgspec.Struct-collapse	main/jsonschema/main_jsonschema/allof_enum_member_of_untyped_ref_forms[msgspec.Struct-collapse].py
+preset-20261120	main/jsonschema/main_jsonschema/allof_enum_member_of_untyped_ref_forms[preset-20261120].py
+pydantic_v2.BaseModel-collapse	main/jsonschema/main_jsonschema/allof_enum_member_of_untyped_ref_forms[pydantic_v2.BaseModel-collapse].py
 [test_main_jsonschema_allof_enum_no_external_ref]
 	main/jsonschema/main_jsonschema/allof_enum_no_external_ref.py
 [test_main_jsonschema_allof_enum_ref]
@@ -6109,6 +6131,17 @@ no-mro	main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base[no-m
 released	main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base[released].py	= main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base[no-mro].py
 [test_main_jsonschema_allof_inherited_ref_other_directory]
 	main/jsonschema/main_jsonschema/allof_inherited_ref_other_directory/
+[test_main_jsonschema_allof_map_member_counts]
+intersected-dataclasses.dataclass	main/jsonschema/main_jsonschema/allof_map_member_counts[intersected-dataclasses.dataclass].py
+intersected-msgspec.Struct	main/jsonschema/main_jsonschema/allof_map_member_counts[intersected-msgspec.Struct].py
+intersected-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/allof_map_member_counts[intersected-pydantic_v2.BaseModel].py
+intersected-typing.TypedDict	main/jsonschema/main_jsonschema/allof_map_member_counts[intersected-typing.TypedDict].py
+released-dataclasses.dataclass	main/jsonschema/main_jsonschema/allof_map_member_counts[released-dataclasses.dataclass].py
+released-msgspec.Struct	main/jsonschema/main_jsonschema/allof_map_member_counts[released-msgspec.Struct].py
+released-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/allof_map_member_counts[released-pydantic_v2.BaseModel].py
+released-typing.TypedDict	main/jsonschema/main_jsonschema/allof_map_member_counts[released-typing.TypedDict].py
+[test_main_jsonschema_allof_map_member_counts_no_merge]
+	main/jsonschema/main_jsonschema/allof_map_member_counts_no_merge.py
 [test_main_jsonschema_allof_mapping_every_part_null]
 	main/jsonschema/main_jsonschema/allof_mapping_every_part_null.py
 [test_main_jsonschema_allof_mapping_object_type_list]
@@ -6118,6 +6151,8 @@ released	main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base[re
 [test_main_jsonschema_allof_mapping_without_option]
 allof_mapping_every_part_null	main/jsonschema/main_jsonschema/allof_mapping_without_option[allof_mapping_every_part_null].py
 allof_mapping_ref_sibling_type	main/jsonschema/main_jsonschema/allof_mapping_without_option[allof_mapping_ref_sibling_type].py
+[test_main_jsonschema_allof_merged_member_values]
+	main/jsonschema/main_jsonschema/allof_merged_member_values.py
 [test_main_jsonschema_allof_ref_true_schema]
 	main/jsonschema/main_jsonschema/allof_ref_true_schema.py
 [test_main_jsonschema_allof_scalar_roots]
@@ -7128,6 +7163,13 @@ without-option	main/jsonschema/main_jsonschema/intersect_allof_keywords[without-
 [test_main_jsonschema_intersect_combined_schema_keywords]
 with-option	main/jsonschema/main_jsonschema/intersect_combined_schema_keywords[with-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output_with_combined_option[combined_branch_keywords-pydantic_v2.BaseModel-default].py
 without-option	main/jsonschema/main_jsonschema/intersect_combined_schema_keywords[without-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output[combined_branch_keywords-pydantic_v2.BaseModel-default].py
+[test_main_jsonschema_intersect_merged_allof_members]
+allof-merge-mode-none	main/jsonschema/main_jsonschema/intersect_merged_allof_members[allof-merge-mode-none].py	= main/jsonschema/main_jsonschema/allof_merged_member_values.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/intersect_merged_allof_members[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/intersect_merged_allof_members[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/intersect_merged_allof_members[pydantic_v2.BaseModel].py
+read-only-write-only-model-type	main/jsonschema/main_jsonschema/intersect_merged_allof_members[read-only-write-only-model-type].py	= main/jsonschema/main_jsonschema/intersect_merged_allof_members[pydantic_v2.BaseModel].py
+typing.TypedDict	main/jsonschema/main_jsonschema/intersect_merged_allof_members[typing.TypedDict].py
 [test_main_jsonschema_items_array_additional_items_false]
 msgspec.Struct	main/jsonschema/main_jsonschema/items_array_additional_items_false[msgspec.Struct].py
 msgspec.Struct-default	main/jsonschema/main_jsonschema/items_array_additional_items_false[msgspec.Struct-default].py
@@ -9529,7 +9571,10 @@ msgspec	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaul
 pydantic	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[pydantic].py
 pydantic	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[pydantic].txt	= main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[msgspec].txt
 [test_main_unique_items_as_set_by_value_inherited_fields]
-	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields.py
+class-order	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields[class-order].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-set-item-fields-in-class-order-practical].model.py
+without-option	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields[without-option].py	= main/preset_opt_in_options/preset_option_turned_off[read-set-item-fields-in-class-order-command-line].model.py
+[test_main_unique_items_as_set_by_value_inherited_fields_pydantic_dataclass]
+	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields_pydantic_dataclass.py
 [test_main_unique_items_as_set_by_value_long_alias_chain]
 	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_long_alias_chain.py
 [test_main_unique_items_as_set_by_value_python_types]

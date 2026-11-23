@@ -1121,6 +1121,29 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         Section.TYPING,
+        "--intersect-merged-allof-members",
+        help="Read the `allOf` members that are merged into one schema keyword by keyword, as JSON Schema validates "
+        "them: a property that several merged object members declare takes the `type`, null and `multipleOf` every "
+        "declaration admits (a `true` declaration adds nothing) and the members' own `allOf` members are merged too; a "
+        "named `allOf` of a `$ref` and value members keeps the `enum` and `type` every member admits; a `$ref` to a "
+        "map beside members that add only property counts or `propertyNames` stays that map with them; and a length or "
+        "`pattern` beside a `$ref` to base64 text is checked on the text where the output checks base64 constraints "
+        "on the text. Without it the later member's keyword wins, another member's `enum` is dropped, the map becomes "
+        "a model without fields and the keyword is checked on the decoded value, as in 0.100.0",
+    ),
+    toggle(
+        Section.TYPING,
+        "--read-allof-parents-as-their-models",
+        help="Read each allOf parent as its model holds it: a parent written as a $ref beside sibling keywords with "
+        "the schema its $ref names, so a model written before that parent types and requires an inherited property as "
+        "it does when written after it; every property some parent requires stays required where a parent the model "
+        "also inherits it from declares it optional (allOf: [PetBase, Named] with only Named requiring name); and an "
+        "allOf of a $ref alias and a member that adds only a type or required names reads the alias as "
+        "--intersect-combined-schema-keywords reads alias members; without it such properties can be Any or optional "
+        "and such a model a dict, as in 0.100.0",
+    ),
+    toggle(
+        Section.TYPING,
         "--read-allof-parents-in-mro-order",
         help="Read the allOf parents of every inherited schema in the order of the class bases (the MRO), so a "
         "property that several bases declare takes the nearer base's constraints and description, as the class does, "
@@ -1410,6 +1433,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "that hash only by identity, of Any or of containers stays a list. Deduplication and --reuse-model also keep "
         "apart models whose arrays differ in uniqueItems; without it the sets are decided before root models collapse, "
         "set item models hash by identity and such models merge, as in 0.89.0",
+    ),
+    toggle(
+        (Section.TYPING, _G.COLLECTION_TYPES),
+        "--read-set-item-fields-in-class-order",
+        help="Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of "
+        "its class bases (C3) when deciding whether its instances hash: where a base two levels up and a later direct "
+        "base both declare a field and the class takes the one that does not hash, the uniqueItems array stays a "
+        "list; without it only the field the nearest base declares is read and such an array is a set whose items "
+        "fail to hash, as in 0.100.0",
     ),
     toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),

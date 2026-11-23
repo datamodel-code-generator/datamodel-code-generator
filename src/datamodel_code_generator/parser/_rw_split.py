@@ -232,10 +232,6 @@ class RwSplitHost(AllOfValuesHost, Protocol):
         """The directory of custom templates, if configured."""
 
     @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
-
-    @property
     def dataclass_arguments(self) -> DataclassArguments | None:
         """The arguments of the dataclass decorator, if configured."""
 

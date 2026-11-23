@@ -131,10 +131,10 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
         "#7340",
         constraints.TABLE,
         "accepts-invalid",
-        BOTH,
+        DEFAULT,
         ({"type": ("map",), "position": ("all-of-member",), "site": ("root", "item")},),
         "the property counts an allOf member adds to a referenced map are left out at a definition and in array "
-        "items, also with --use-site-models-for-constrained-refs",
+        "items, also with --use-site-models-for-constrained-refs (row legacy-all-of-map-counts-dropped)",
     ),
     Kept(
         ISSUE,
@@ -153,42 +153,6 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
         PRESET,
         ({"type": ("ipv4",), "position": ("union-member",), "backend": (MSGSPEC,)},),
         "the same in a union, where msgspec refuses the type outright",
-    ),
-    Kept(
-        ISSUE,
-        "#7341",
-        constraints.TABLE,
-        "accepts-invalid",
-        PRESET,
-        (
-            {"type": ("byte",), "position": ("all-of-member",), "site": ("item",), "backend": (PYDANTIC_V2,)},
-            {
-                "type": ("byte",),
-                "position": ("all-of-member",),
-                "site": ("property",),
-                "keyword": ("maxLength",),
-                "backend": (PYDANTIC_V2,),
-            },
-        ),
-        "an allOf member's string keywords beside a base64 reference are checked on the decoded value at a property "
-        "and left out in array items, where --use-encoded-str-for-constrained-base64 checks them on the text",
-    ),
-    Kept(
-        ISSUE,
-        "#7341",
-        constraints.TABLE,
-        "rejects-valid",
-        PRESET,
-        (
-            {
-                "type": ("byte",),
-                "position": ("all-of-member",),
-                "site": ("property",),
-                "keyword": ("minLength", "pattern"),
-                "backend": (PYDANTIC_V2,),
-            },
-        ),
-        "the same: a lower length or a pattern of the text is checked on the decoded value and rejects valid text",
     ),
 )
 """The known differences of the constraint applicability table."""

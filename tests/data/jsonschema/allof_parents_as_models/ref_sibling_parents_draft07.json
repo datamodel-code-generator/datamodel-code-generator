@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {"required_name": {"$ref": "#/definitions/RequiredName"}},
+  "definitions": {
+    "RequiredName": {"allOf": [{"$ref": "#/definitions/Parent"}], "required": ["name"]},
+    "Parent": {"$ref": "#/definitions/Base", "properties": {"extra": {"type": "string"}}},
+    "Base": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Item",
+  "type": "object",
+  "$defs": {
+    "Labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "FewLabels": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Labels"
+        },
+        {
+          "maxProperties": 2
+        }
+      ]
+    },
+    "LanguageLabels": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Labels"
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z]{2}$"
+          }
+        }
+      ]
+    },
+    "KeyedLabels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "pattern": "^[a-z]+$"
+      }
+    },
+    "FewKeyedLabels": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/KeyedLabels"
+        },
+        {
+          "maxProperties": 2,
+          "$comment": "two at most",
+          "examples": [
+            {
+              "a": "x"
+            }
+          ]
+        }
+      ]
+    },
+    "Bounded": {
+      "allOf": [
+        {
+          "minProperties": 1
+        },
+        {
+          "maxProperties": 3
+        }
+      ]
+    }
+  },
+  "properties": {
+    "labels": {
+      "$ref": "#/$defs/FewLabels"
+    },
+    "names": {
+      "$ref": "#/$defs/LanguageLabels"
+    },
+    "inline": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Labels"
+        },
+        {
+          "maxProperties": 2
+        }
+      ]
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Labels"
+          },
+          {
+            "maxProperties": 2
+          }
+        ]
+      }
+    },
+    "byLocale": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Labels"
+          },
+          {
+            "maxProperties": 2
+          }
+        ]
+      }
+    },
+    "keyed": {
+      "$ref": "#/$defs/FewKeyedLabels"
+    }
+  }
+}

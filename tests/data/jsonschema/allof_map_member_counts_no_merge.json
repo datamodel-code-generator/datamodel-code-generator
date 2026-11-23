@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "$defs": {
+    "Labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "maxProperties": 4
+    },
+    "Few": {
+      "type": "object",
+      "maxProperties": 10,
+      "allOf": [
+        {
+          "$ref": "#/$defs/Labels"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 2
+        }
+      ]
+    }
+  },
+  "properties": {
+    "few": {
+      "$ref": "#/$defs/Few"
+    },
+    "labels": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Labels"
+        },
+        {
+          "type": "object",
+          "maxProperties": 2
+        }
+      ]
+    }
+  }
+}

@@ -5568,6 +5568,20 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_all_of_values.py"
+qualname = "conjoined_declarations"
+rule_code = "MUT204"
+target = "datamodel_code_generator._url_redaction.named_location"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_all_of_values.py"
+qualname = "conjoined_declarations"
+rule_code = "MUT204"
+target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_all_of_values.py"
 qualname = "is_all_of_value_part"
 rule_code = "MUT204"
 target = "datamodel_code_generator._regex_syntax.is_portable_pattern"
@@ -5851,20 +5865,6 @@ path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
 qualname = "<module>"
 rule_code = "MUT204"
 target = "datamodel_code_generator._json_schema.schema_positions"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "_conjoined_declarations"
-rule_code = "MUT204"
-target = "datamodel_code_generator._url_redaction.named_location"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_inherited_schemas.py"
-qualname = "_conjoined_declarations"
-rule_code = "MUT204"
-target = "datamodel_code_generator.python_literal.stable_repr"
 count = 1
 
 [[entries]]

@@ -113,19 +113,10 @@ KEPT: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "#7309",
-        "extend",
-        "accepts-invalid",
-        PRESET,
-        ({"via": ("alias",), "how": ("require",), "form": ("member",)},),
-        "a child that only adds required, as an allOf member, to an alias parent is written without fields",
-    ),
-    Kept(
-        ISSUE,
         "#6868",
         "extend",
         "accepts-invalid",
-        BOTH,
+        DEFAULT,
         (
             {
                 "via": ("ref-siblings",),
@@ -190,15 +181,26 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7171",
         "mixin",
         "accepts-invalid",
-        BOTH,
+        DEFAULT,
         (
             {"first": ("int", "int_min"), "second": ("num",), "swapped": (False,)},
             {"first": ("num",), "second": ("int", "int_min"), "swapped": (True,)},
+        ),
+        "an allOf merge of two refs takes the shared property from the later member: number after integer accepts "
+        "1.5 (row legacy-all-of-object-merge-row)",
+    ),
+    Kept(
+        ISSUE,
+        "#7171",
+        "mixin",
+        "accepts-invalid",
+        BOTH,
+        (
             {"first": _STRING_LEAVES, "second": ("str_or_arr",)},
             {"first": ("str_or_arr",), "second": _STRING_LEAVES},
         ),
-        "an allOf merge of two refs takes the shared property from one member: number after integer accepts 1.5, and "
-        "a string beside a string-or-array union is the union in both member orders, so it accepts an array",
+        "a string beside a string-or-array union is the union in both member orders, so it accepts an array: the "
+        "merge is the string type beside the union, which a type beside an anyOf writes as the whole union",
     ),
     Kept(
         ISSUE,
@@ -347,15 +349,6 @@ KEPT: Final[tuple[Kept, ...]] = (
         "naming the base through an alias drops the base's fields, where naming it directly keeps them",
     ),
     Kept(
-        ISSUE,
-        "#7309",
-        "extend",
-        "alias",
-        PRESET,
-        ({"via": ("alias",), "how": ("require",), "form": ("member",)},),
-        "a required-only allOf member over an alias parent loses every field, over the base itself it does not",
-    ),
-    Kept(
         LEGACY_ROW,
         "legacy-all-of-alias-member-base",
         "extend",
@@ -366,19 +359,10 @@ KEPT: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "#7309",
-        "extend",
-        "beside",
-        PRESET,
-        ({"how": ("require",), "via": ("alias",), "form": ("beside",)},),
-        "over an alias parent, required beside the allOf keeps the fields where the same as a member loses them",
-    ),
-    Kept(
-        ISSUE,
         "#6868",
         "extend",
         "order",
-        BOTH,
+        DEFAULT,
         ({"how": ("require",), "via": ("ref-siblings",), "child_first": (True,)},),
         "a child of a $ref-with-siblings parent defined before it leaves the required property optional",
     ),
@@ -387,7 +371,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#6868",
         "extend",
         "ref-siblings",
-        BOTH,
+        DEFAULT,
         (
             {"how": ("require",), "via": ("ref-siblings",), "child_first": (True,)},
             {
@@ -404,7 +388,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#6868",
         "extend",
         "reversed-definitions",
-        BOTH,
+        DEFAULT,
         ({"how": ("require",), "via": ("ref-siblings",)},),
         "whether a child of a $ref-with-siblings parent keeps the property required follows the order of the "
         "definitions",
@@ -477,7 +461,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7171",
         "mixin",
         "member-order",
-        BOTH,
+        DEFAULT,
         (
             {"first": ("int", "int_min"), "second": ("num",), "swapped": (True,)},
             {"first": ("num",), "second": ("int", "int_min"), "swapped": (True,)},
