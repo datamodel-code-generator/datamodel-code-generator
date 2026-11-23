@@ -1212,14 +1212,14 @@ def test_format_refs_writes_each_line_once() -> None:
             "[test_a]\n\tm/a.txt\t@os==nt\n",
             (
                 "line 2: unknown predicate 'os==nt': 'os==nt' is not <fact><op><value> with a fact of python, "
-                "formatter, black, isort, platform, pydantic"
+                "formatter, black, isort, platform, pydantic, heki"
             ),
             units.BROKEN,
         ),
         pytest.param(
             "[test_a]\n\tm/a.txt\t@black=22\n",
             "line 2: unknown predicate 'black=22': 'black=22' is not <fact><op><value> with a fact of python, "
-            "formatter, black, isort, platform, pydantic",
+            "formatter, black, isort, platform, pydantic, heki",
             units.BROKEN,
             id="fact-value-override",
         ),
@@ -1593,6 +1593,7 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
         "isort": "5.13.2",
         "platform": "linux",
         "pydantic": "2.14.1",
+        "heki": "",
     }
     item = "suite/test_m.py::test_a"
     payloads = [
@@ -1663,7 +1664,14 @@ def test_ledger_applies_payloads_in_any_order(ledger: LedgerProject, tmp_path: P
         """,
     )
     ledger.run("suite").assert_outcomes(passed=1)
-    lane = {"python": "3.10", "black": "22.1.0", "isort": "5.13.2", "platform": "linux", "pydantic": "2.14.1"}
+    lane = {
+        "python": "3.10",
+        "black": "22.1.0",
+        "isort": "5.13.2",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+        "heki": "",
+    }
     item = "suite/test_m.py::test_a"
     payloads = [
         {"facts": lane | {"formatter": "external"}, "item": item, "label": "m/a.txt", "missing": True},
@@ -1718,7 +1726,14 @@ def test_ledger_applies_a_payload_that_breaks_a_tie(
         units.RefLine("test_a", "", "m/a.txt", predicate=(everywhere,), storage=anywhere),
     ]
     (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
-    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+    facts = {
+        "python": "3.10",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "5.13.2",
+        "platform": "linux",
+        "heki": "",
+    }
     payload = {
         "facts": facts | {"pydantic": "2.14.1"},
         "item": "suite/test_m.py::test_a",
@@ -1750,7 +1765,14 @@ def test_ledger_refuses_a_batch_a_class_never_recorded(ledger: LedgerProject, tm
     line = units.RefLine("test_a", "", "m/a.txt", predicate=("formatter==builtin",), storage=builtin)
     (ledger.suite / "test_m.refs").write_text(units.format_refs([line]), encoding="utf-8")
     recorded = (ledger.refs(), ledger.files())
-    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "darwin"}
+    facts = {
+        "python": "3.10",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "5.13.2",
+        "platform": "darwin",
+        "heki": "",
+    }
     payload = {
         "facts": facts | {"pydantic": "2.14.1"},
         "item": "suite/test_m.py::test_a",
@@ -1790,7 +1812,14 @@ def test_ledger_from_ci_refusal_skips_the_whole_item(ledger: LedgerProject, tmp_
     gone = units.RefLine("test_gone", "", "m/g.txt")
     ledger.store("m/g.txt", "g\n")
     (ledger.suite / "test_m.refs").write_text(units.format_refs([line, gone]), encoding="utf-8")
-    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "darwin"}
+    facts = {
+        "python": "3.10",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "5.13.2",
+        "platform": "darwin",
+        "heki": "",
+    }
     value = {
         "facts": facts | {"pydantic": "2.14.1"},
         "item": "suite/test_m.py::test_a",
@@ -2279,6 +2308,7 @@ PY311 = {
     "isort": "7.0.0",
     "platform": "linux",
     "pydantic": "2.14.1",
+    "heki": "",
 }
 PY314 = {**PY311, "python": "3.14"}
 WINDOWS = {**PY311, "platform": "win32"}
@@ -3359,6 +3389,7 @@ LANE = {
     "isort": "5.13.2",
     "platform": "linux",
     "pydantic": "2.14.1",
+    "heki": "",
 }
 
 

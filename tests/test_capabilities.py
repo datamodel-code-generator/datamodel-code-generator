@@ -15,8 +15,9 @@ FACTS = {
     "isort": "",
     "platform": "linux",
     "pydantic": "2.0.3",
+    "heki": "0.2.4",
 }
-"""A lane with black 24.1 and Pydantic 2.0.3 on Linux, without isort; set explicitly, never read from here."""
+"""A lane with black 24.1, Pydantic 2.0.3 and heki 0.2.4 on Linux, without isort; set explicitly, never read here."""
 CLAUSES = (
     "platform!=win32",
     "platform==win32",
@@ -36,6 +37,8 @@ CLAUSES = (
     "isort>=6",
     "isort==6",
     "isort!=6",
+    "heki>=0",
+    "heki>=0.3",
     "formatter==builtin|black>=24",
     "formatter==builtin|black<24",
 )

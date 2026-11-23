@@ -9,9 +9,11 @@ too. A job that names its tox environment in a step, outside a matrix, runs no l
 - ``python``: the environment's ``py3NN`` factor, else its ``base_python``;
 - ``platform``: the runner (``ubuntu-*`` is ``linux``, ``macos-*`` ``darwin``, ``windows-*`` ``win32``);
 - ``formatter``: ``builtin`` where its ``set_env`` sets `FORMATTER_ENV` to ``builtin``, else ``external``;
-- ``black``, ``isort``, ``pydantic``: a ``deps`` pin (``pydantic==2.0.3``), else the requirement of a dependency group
-  the environment installs (``black==22.1``, ``isort>=6,<7``), resolved to the newest version of ``uv.lock`` that
-  satisfies it; with neither, the newest locked version.
+- ``black``, ``isort``, ``pydantic``, ``heki``: a ``deps`` pin (``pydantic==2.0.3``), else the requirement of a
+  dependency group the environment installs (``black==22.1``, ``isort>=6,<7``, ``heki==0.2.4``), resolved to the
+  newest version of ``uv.lock`` that satisfies it; with neither, the newest locked version where the package requires
+  the tool (``[project].dependencies``, unless the environment skips installing the package), else empty: a tool only
+  a group installs (heki) is not installed in an environment without that group.
 
 tox settings are read as tox reads them for one environment: the section whose name expands (``{a,b}``) to it, else
 ``[testenv]``; ``{[section]key}`` substitutions; and factor-conditional lines (``py312-!nocov: value``). Environment
@@ -84,10 +86,17 @@ class Lane:
         return self.tests is not None
 
     def runs(self, node: str) -> bool:
-        """Return whether some entry of the lane runs a test (``tests/x.py::test_y``): selects it, leaves it not out."""
+        """Return whether some entry of the lane runs a test at or below a node (``tests/x.py::test_y``, a module).
+
+        An entry runs it where it selects the node, something that holds it or something below it (one parameter of
+        the test), and leaves out nothing that holds the deeper of the two: leaving out one parameter still runs the
+        others, and leaving out the one parameter it selects runs nothing.
+        """
         return any(
-            not any(_covers(path, node) for path in excluded)
-            and (tests is None or any(_covers(path, node) for path in tests))
+            any(
+                not any(_within(deeper, path) for path in excluded)
+                for deeper in ((node,) if tests is None else _deeper(node, tests))
+            )
             for tests, excluded in self._entries
         )
 
@@ -106,9 +115,14 @@ class Lane:
         )
 
 
-def _covers(path: str, node: str) -> bool:
-    """Return whether a test path holds a node: the node itself, its directory or module, or one of its parameters."""
-    return node == path or node.startswith((f"{path}/", f"{path}::", f"{path}[")) or path.startswith(f"{node}[")
+def _deeper(node: str, tests: tuple[str, ...]) -> tuple[str, ...]:
+    """Return, for each selected path that holds a node or lies below it, the deeper of the two."""
+    return tuple(node if _within(node, path) else path for path in tests if _within(node, path) or _within(path, node))
+
+
+def _within(node: str, path: str) -> bool:
+    """Return whether a test path holds a node: the node itself, its directory, module, class or test of a parameter."""
+    return node == path or node.startswith((f"{path}/", f"{path}::", f"{path}["))
 
 
 def _value(text: str) -> str:
@@ -240,11 +254,14 @@ class Environments:
         tox = root / TOX
         self.tox = ToxConfig(tox.read_text(encoding="utf-8") if tox.is_file() else "")
         pyproject = root / PYPROJECT
-        self.groups = (
-            tomllib.loads(pyproject.read_text(encoding="utf-8")).get("dependency-groups", {})
-            if pyproject.is_file()
-            else {}
-        )
+        project = tomllib.loads(pyproject.read_text(encoding="utf-8")) if pyproject.is_file() else {}
+        self.groups = project.get("dependency-groups", {})
+        self.package_requires = {
+            match["name"].lower()
+            for requirement in project.get("project", {}).get("dependencies", [])
+            if (match := _REQUIREMENT.match(requirement))
+        }
+        """The names of the tools the package requires, which every environment that installs it has."""
         lock = root / LOCK
         packages = tomllib.loads(lock.read_text(encoding="utf-8")).get("package", []) if lock.is_file() else []
         self.locked: dict[str, list[str]] = {}
@@ -273,6 +290,8 @@ class Environments:
             for requirement in requirements
             if (match := _REQUIREMENT.match(requirement)) and match["name"].lower() == tool
         ]
+        if not specs and (tool not in self.package_requires or self.tox.lines(env, "skip_install") == ["true"]):
+            return ""
         spec = specs[-1] if specs else ""
         if (pin := re.fullmatch(r"==\s*([\w.+-]+)", spec)) is not None:
             return pin[1]
@@ -311,6 +330,7 @@ class Environments:
             "isort": self._tool(env, "isort"),
             "platform": next((platform for prefix, platform in RUNNERS if runner.startswith(prefix)), ""),
             "pydantic": self._tool(env, "pydantic"),
+            "heki": self._tool(env, "heki"),
         }
 
 
