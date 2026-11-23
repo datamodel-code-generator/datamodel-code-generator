@@ -1,0 +1,11 @@
+{
+ "resolved": {
+  "id": "x",
+  "category": "crash-fix",
+  "cells": 1
+ },
+ "why": [],
+ "problems": [
+  "entry x: an extending record holds only extends, covers, refs and cells, not title"
+ ]
+}

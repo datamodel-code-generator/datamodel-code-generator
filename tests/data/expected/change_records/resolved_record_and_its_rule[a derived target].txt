@@ -1,0 +1,9 @@
+{
+ "resolved": null,
+ "why": [
+  "entry x: extends option:--new-flag, which is not an unreleased record of its own"
+ ],
+ "problems": [
+  "entry x: extends option:--new-flag, which is not an unreleased record of its own"
+ ]
+}

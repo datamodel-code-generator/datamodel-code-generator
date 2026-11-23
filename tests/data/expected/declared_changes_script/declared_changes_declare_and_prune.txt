@@ -42,6 +42,7 @@ scripts/declared_changes.py: 'Not A Slug' is not a lower-case slug
 $ declare help --extends b-two --tests tests/test_help.py::* --base base
 exit 0
 docs/data/migration/unreleased/help.toml covers 1 more stored outputs
+  still needed: entry help: category output-text names the cells it covers ([[change.cells]])
 
 $ declare rest --category notice --title t --summary s --decision #7 --surface=--x --rest --base base
 exit 0
@@ -56,6 +57,7 @@ scripts/declared_changes.py: nothing to declare: no undeclared stored output mat
 $ check --base base --report-only
 exit 0
 declared changes: the working tree against base, release since 0.1.0
+record problem: entry help: category output-text names the cells it covers ([[change.cells]])
 record problem: entry rest has no refs
 record problem: entry rest: only category new-surface names surface items
 record problem: unreleased/rest.toml: covers models/c.py, models output, which category notice does not cover: give it a record of its own
@@ -115,6 +117,7 @@ unreleased/rest.toml: dropped models/c.py
 $ check --base base
 exit 1
 declared changes: the working tree against base, release since 0.1.0
+record problem: entry help: category output-text names the cells it covers ([[change.cells]])
 record problem: entry rest has no refs
 record problem: entry rest: only category new-surface names surface items
 1 stored outputs returned to 0.1.0 and need no record:

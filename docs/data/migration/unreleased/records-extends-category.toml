@@ -1,0 +1,9 @@
+[[change]]
+id = "records-extends-category"
+category = "internal"
+title = "A record that extends another follows its category's cells rule"
+summary = "Stored test output of the change-record checks, which now apply the cells rule of the category an extending record takes; the package writes the same output for the same call."
+covers = [
+    "declared_changes_script/declared_changes_check[over-claimed and badly formed records].txt",
+    "declared_changes_script/declared_changes_declare_and_prune.txt",
+]

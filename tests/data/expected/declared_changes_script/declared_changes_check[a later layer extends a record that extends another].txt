@@ -1,0 +1,4 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+record problem: entry more: extends middle, which is not an unreleased record of its own
+failed

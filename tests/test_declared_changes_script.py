@@ -284,6 +284,23 @@ CASES: dict[str, dict[str, Any]] = {
             f"{FRAGMENTS}/more.toml": '[[change]]\nid = "more"\nextends = "lower"\ncovers = [\n    "models/b.py",\n]\n',
         },
     },
+    "a later layer extends a crash-fix record without cells": {
+        "base": {f"{EXPECTED}/models/b.py": "B = 2\n"}
+        | _record("lower", ["models/b.py"], category="crash-fix", refs=["#1"]),
+        "head": {
+            f"{EXPECTED}/models/b.py": "B = 3\n",
+            f"{FRAGMENTS}/more.toml": '[[change]]\nid = "more"\nextends = "lower"\n' + COVERS_B,
+        },
+    },
+    "a later layer extends a record that extends another": {
+        "base": {f"{EXPECTED}/models/b.py": "B = 2\n"}
+        | _record("lower", ["models/b.py"])
+        | {f"{FRAGMENTS}/middle.toml": '[[change]]\nid = "middle"\nextends = "lower"\n'},
+        "head": {
+            f"{EXPECTED}/models/b.py": "B = 3\n",
+            f"{FRAGMENTS}/more.toml": '[[change]]\nid = "more"\nextends = "middle"\n' + COVERS_B,
+        },
+    },
     "over-claimed and badly formed records": {
         "head": {f"{EXPECTED}/models/b.py": "B = 2\n"}
         | _record("claims", ["help/help.txt", "models/b.py"])
