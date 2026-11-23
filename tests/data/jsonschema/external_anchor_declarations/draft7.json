@@ -1,0 +1,4 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {"Foo": {"$id": "#foo", "type": "object", "properties": {"c": {"type": "boolean"}}}}
+}

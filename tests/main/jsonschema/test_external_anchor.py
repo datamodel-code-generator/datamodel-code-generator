@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -102,6 +103,69 @@ def test_main_jsonschema_external_anchor_in_passed_namespace(output_file: Path) 
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize("option", ["default", "option"])
+def test_main_jsonschema_external_anchor_declarations(option: str, output_file: Path) -> None:
+    """Name the schema another file declares a plain name on by `$dynamicAnchor`, in a version namespace or by `$id`.
+
+    `dynamic.json#meta` (a `$dynamicAnchor`), `namespace.json#pet` (an `$anchor` in `$defs/v1`) and `draft7.json#foo`
+    (a draft-07 `$id: "#foo"`) name nothing to the released search, which writes an `Any` model for each; under
+    --read-refs-in-their-resources each names the schema that declares it, as the same reference within one file does
+    (#7158).
+    """
+    with pytest.warns(DanglingRefWarning) if option == "default" else nullcontext():
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_declarations" / "root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                *(["--read-refs-in-their-resources"] if option == "option" else []),
+            ],
+            force_exec_validation=True,
+        )
+
+
+def test_main_jsonschema_external_anchor_released_search_read_in_resources(output_file: Path) -> None:
+    """Name an `$anchor` of another file as a reference within that file names it, under the option (#7158).
+
+    The name two sibling schemas declare and the one an ancestor and a schema inside it declare name the declaration
+    the registry keeps for a local reference (with the warning that JSON Schema leaves it undefined), and the anchor in
+    the version namespace (`$defs/v1/Pet`) names its schema.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_released_search" / "root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp", "--formatters", "builtin", "--read-refs-in-their-resources"],
+            force_exec_validation=True,
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'twice' is declared by more than one schema in anchors.json",
+        "The anchor 'nested' is declared by more than one schema in anchors.json",
+    )
+
+
+def test_main_jsonschema_external_anchor_in_passed_namespace_read_in_resources(output_file: Path) -> None:
+    """Name an `$anchor` on a namespace of definitions and on the subschemas it holds, under the option (#7158).
+
+    Every member of `$defs` is a schema the resource walk visits, so the anchors on `Group`, under the `contentSchema`
+    of `Box`, the `not` of `Outer/Inner` and the `dependentSchemas` of the version namespace `v1` name their schemas.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_passed_namespace" / "root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp", "--formatters", "builtin", "--read-refs-in-their-resources"],
+            force_exec_validation=True,
+        )
+    assert_warnings_contain(warning_records, "The anchor 'twice' is declared by more than one schema in anchors.json")
 
 
 def test_main_jsonschema_external_id_resolved_to_local_ref(output_file: Path) -> None:

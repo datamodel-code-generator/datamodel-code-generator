@@ -1,0 +1,6 @@
+{
+  "$id": "https://example.com/schemas/b.json",
+  "title": "B",
+  "type": "object",
+  "properties": {"base": {"$ref": "a.json#base"}, "team": {"$ref": "a.json#/$defs/Team"}}
+}

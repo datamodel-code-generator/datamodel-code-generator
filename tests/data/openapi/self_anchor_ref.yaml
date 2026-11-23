@@ -1,0 +1,11 @@
+openapi: 3.2.0
+$self: https://example.com/api/openapi.yaml
+info: {title: Owner by self, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        owner: {$ref: "https://example.com/api/openapi.yaml#owner"}
+    Owner: {$anchor: owner, type: object, properties: {name: {type: string}}}

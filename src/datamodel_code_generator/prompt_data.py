@@ -187,6 +187,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-object-keywords-by-type": "Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
     "--read-ref-siblings-in-closed-allof-members": "Read every keyword beside a `$ref` that a closed allOf member e...",
+    "--read-refs-in-their-resources": "Read each `$ref` in the schema resource that encloses it, and every `$id`, `...",
     "--read-schema-version-per-document": "Read each document by the schema version it declares.",
     "--read-set-item-fields-in-class-order": "Read the fields a set item inherits in its class's order, so an unhas...",
     "--read-single-allof-refs-in-their-documents": "Read the target of an allOf of one `$ref` in the document that ...",

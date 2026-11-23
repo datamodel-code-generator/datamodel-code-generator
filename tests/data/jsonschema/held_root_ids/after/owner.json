@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Owner",
+  "type": "object",
+  "properties": {"animal": {"$ref": "https://example.com/schemas/animal.json"}, "name": {"$ref": "https://example.com/schemas/animal.json#/properties/name"}}
+}

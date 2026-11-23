@@ -3660,16 +3660,109 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "ancestor before what it holds, else the member written later); a `$dynamicAnchor` or an identifier that "
             "is a fragment names nothing, where the registry names them"
         ),
-        fix=7158,
+        fix=KEEP,
         witness=(
             "--input",
-            "tests/data/jsonschema/external_anchor_subdirectory/root.json",
+            "tests/data/jsonschema/external_anchor_declarations/root.json",
             "--input-file-type",
             "jsonschema",
             "--disable-timestamp",
             "--formatters",
             "builtin",
         ),
+        option="--read-refs-in-their-resources",
+    ),
+    LegacyRow(
+        "legacy-namespace-declarations-passed",
+        (
+            "without `--read-refs-in-their-resources`, the walk of a document's schema resources "
+            "(`iter_schema_resource_children`, L0) reads a member of a definitions container that has no schema "
+            "keywords and holds definitions as a namespace, for its entries alone: its `$id`, `$anchor` and "
+            "`$dynamicAnchor` and those of its other subschemas declare nothing (only `passed_anchors` lists its "
+            "`$anchor`s for row `legacy-external-anchor-search`), so a pointer inside a bundled `$defs` member with "
+            "its own `$id` is read against the enclosing resource (#6946); with the option every member is a schema "
+            "the walk visits"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/embedded_resource_definitions.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-refs-in-their-resources",
+    ),
+    LegacyRow(
+        "legacy-component-schema-resources",
+        (
+            "without `--read-refs-in-their-resources`, the implicit schema resources of an OpenAPI document "
+            "(`implicit_schema_resources`, L0) are the schemas under `components/schemas` and those of a document a "
+            "reference names as an object, so a schema an operation, a webhook or another component kind holds inline "
+            "is no resource: its `$id` and anchors declare nothing and a pointer below its `$id` is read against the "
+            "document (#7179); with the option every Schema Object the document holds (`held_schemas` of its root)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/operation_schema_resources.yaml",
+            "--input-file-type",
+            "openapi",
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-refs-in-their-resources",
+    ),
+    LegacyRow(
+        "legacy-held-resource-fetched",
+        (
+            "without `--read-refs-in-their-resources`, a reference whose key is a URL that another document of the run "
+            "declares (`held_resource_location`) loads the document at that URL wherever that load finds one "
+            "(`loads_document`), and a lenient (OpenAPI) document keeps such a reference for the load with a warning "
+            "(`resolve_lenient_resource_ref`), as in 0.100.0; where the load finds nothing the held schema is read "
+            "(#7159); with the option the held schema is read without a request"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/component_embedded_ids/api.yaml",
+            "--input-file-type",
+            "openapi",
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-refs-in-their-resources",
+    ),
+    LegacyRow(
+        "legacy-inputs-prepared-as-parsed",
+        (
+            "without `--read-refs-in-their-resources`, each document of a directory or list input is prepared (L0) "
+            "when it is parsed (`JsonSchemaParser._prepare_input_documents`), so a reference of one input to a URL "
+            "another input declares finds it only where that input was parsed before; with the option every input is "
+            "prepared before the first is parsed"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/held_root_ids/after",
+            "--input-file-type",
+            "jsonschema",
+            "--no-allow-remote-refs",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--read-refs-in-their-resources",
     ),
     LegacyRow(
         "legacy-first-read-dialect",
@@ -4040,7 +4133,6 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-dynamic-anchor-parse-index",
     "legacy-exact-ints-as-floats",
     "legacy-exact-type-key",
-    "legacy-external-anchor-search",
     "legacy-external-only-primary-first",
     "legacy-first-character-of-path-key",
     "legacy-first-come",

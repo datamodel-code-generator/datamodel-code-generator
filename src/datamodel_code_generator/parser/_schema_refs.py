@@ -51,6 +51,7 @@ from datamodel_code_generator.parser._schema_documents import (
     definition_entries,
     document_key,
     first_definitions,
+    held_resource_location,
     iter_schema_resource_children,
     lenient_ref,
     located_document,
@@ -621,19 +622,20 @@ def compute_ref_key(parser: SchemaRefsHost, ref: str, *, embedded: bool, pointer
     """
     if (mapping := parser._resolve_external_ref_mapping(ref)) is not None:
         return RefKey(parser.model_resolver.resolve_ref(ref), ref, mapping)
-    if embedded and parser._schema_resource_registry.embeds:
+    if embedded and (registry := parser._schema_resource_registry).embeds:
         document = current_document(parser)
         ref = resolve_schema_resource_ref(
-            parser,
-            ref,
-            parser._schema_resource_registry.root_bases.get(document, document),
-            document,
-            nested_scope=False,
+            parser, ref, registry.root_bases.get(document, document), document, nested_scope=False
         )
+        if not ref.startswith("#") and parser._graph.known(document_part(ref)).path_parts is not None:
+            return RefKey(location_ref(parser, ref), ref)
     ref = parser._normalize_external_ref(ref)
     if _is_plain_name_fragment(ref):
         ref = plain_name_ref(parser, ref, pointer)
-    return RefKey(parser.model_resolver.resolve_ref(ref), ref)
+    key = parser.model_resolver.resolve_ref(ref)
+    if (location := held_resource_location(parser, key)) is not None:
+        return RefKey(location_ref(parser, location), location)
+    return RefKey(key, ref)
 
 
 def ref_key(parser: SchemaRefsHost, ref: str, *, embedded: bool = True) -> RefKey:
@@ -980,19 +982,17 @@ def schema_document_directory(parser: SchemaRefsHost, document: str) -> Path | N
 
 @contextmanager
 def schema_document_context(
-    parser: SchemaRefsHost, path_parts: list[str], *, root: Sequence[str] | None = None, local_base_url: bool = False
+    parser: SchemaRefsHost, path_parts: list[str], *, root: Sequence[str] | None = None
 ) -> Generator[None, None, None]:
     """Resolve references relative to the document identified by model resolver root parts.
 
-    ``root`` keeps another current root. With ``local_base_url``, a local document entered where a base URL is set
-    takes its own name as the base URL instead of none.
+    ``root`` keeps another current root. A local document resolves from its own location, also where a remote
+    document's reference enters it, as when it is an input (``ModelResolver.document_context``).
     """
     resolver = parser.model_resolver
     document = document_key(parser, path_parts)
     directory = schema_document_directory(parser, document)
-    sets_base_url = local_base_url and directory is not None and bool(resolver.base_url)
-    local_name = context_variable(resolver.set_base_url, None, document) if sets_base_url else nullcontext()
-    with resolver.document_context(document, path_parts if root is None else root, directory), local_name:
+    with resolver.document_context(document, path_parts if root is None else root, directory):
         yield
 
 
@@ -1369,16 +1369,19 @@ def pin_recursive_refs(parser: SchemaRefsHost, schema: dict[str, Any], defining_
     It becomes a $ref to that target in the defining document. The other references keep their edges, which
     resolve them in their own document wherever the schema is read.
     """
-    stack: list[tuple[dict[str, Any], tuple[str | int, ...]]] = [(schema, ())]
+    stack: list[tuple[dict[str, Any], tuple[str | int, ...], tuple[str | int, ...]]] = [(schema, (), ())]
     while stack:
-        node, path = stack.pop()
+        node, path, at = stack.pop()
         match node:
             case {"$recursiveRef": "#"} if "$ref" not in node and (
                 target := recursive_ref_target(parser, defining_ref, path)
             ):
                 del node["$recursiveRef"]
                 node["$ref"] = target
-        stack.extend((child, (*path, *child_path)) for child_path, child in iter_schema_resource_children(parser, node))
+        stack.extend(
+            (child, (*path, *child_path), child_path)
+            for child_path, child in iter_schema_resource_children(parser, node, at=at)
+        )
 
 
 def declares_recursive_anchor(parser: SchemaRefsHost) -> bool:

@@ -2004,6 +2004,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_escaped_ref_pointers",
         "read_dynamic_anchors_in_document_order",
         "read_ids_with_empty_fragment",
+        "read_refs_in_their_resources",
         "read_single_allof_refs_in_their_documents",
         "read_ref_siblings_in_closed_allof_members",
         "ignore_ref_siblings_by_schema_version",

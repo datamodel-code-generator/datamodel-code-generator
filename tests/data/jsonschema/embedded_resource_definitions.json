@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Main",
+  "type": "object",
+  "properties": {
+    "status": {"$ref": "https://example.com/wrap.json#/$defs/Status"},
+    "nested": {"$ref": "#/$defs/Wrap/$defs/Status"},
+    "alias": {"$ref": "https://example.com/wrap.json#/$defs/Alias"}
+  },
+  "$defs": {
+    "Code": {"type": "string", "enum": ["x", "y"]},
+    "Wrap": {
+      "$id": "https://example.com/wrap.json",
+      "$defs": {
+        "Status": {"type": "object", "properties": {"code": {"$ref": "#/$defs/Code"}}},
+        "Alias": {"allOf": [{"$ref": "#/$defs/Code"}]},
+        "Code": {"type": "string", "enum": ["a", "b"]}
+      }
+    }
+  }
+}
