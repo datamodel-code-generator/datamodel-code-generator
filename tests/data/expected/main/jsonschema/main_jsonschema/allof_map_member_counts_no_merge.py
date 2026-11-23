@@ -18,3 +18,4 @@ class Few(RootModel[dict[str, Any]]):
 
 class Holder(BaseModel):
     few: Few | None = None
+    labels: Labels | None = None

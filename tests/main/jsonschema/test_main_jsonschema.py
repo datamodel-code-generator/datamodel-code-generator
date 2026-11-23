@@ -15860,10 +15860,11 @@ def test_main_jsonschema_allof_map_member_counts(
 
 
 def test_main_jsonschema_allof_map_member_counts_no_merge(output_file: Path) -> None:
-    """Test a map allOf under --allof-merge-mode none keeps its own property counts with the option on.
+    """Test a map allOf under --allof-merge-mode none is merged as without --intersect-merged-allof-members.
 
-    That mode intersects no constraint, so ``--intersect-merged-allof-members`` does not narrow the site's
-    ``maxProperties: 10`` to the 2 of a member: a map of three entries is accepted.
+    That mode intersects no constraint, so the option neither narrows the site's ``maxProperties: 10`` to the 2 of a
+    map member (a map of three entries is accepted) nor merges a member that adds only counts into the map, whose
+    merge row would be the site's own keywords: ``labels`` stays the reference to ``Labels`` and its string values.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "allof_map_member_counts_no_merge.json",
@@ -15879,9 +15880,10 @@ def test_main_jsonschema_allof_map_member_counts_no_merge(output_file: Path) -> 
         output_file,
         module_name="allof_map_member_counts_no_merge",
         model_name="Holder",
-        valid_json=json.dumps({"few": {"a": "x", "b": "y", "c": "z"}}),
+        valid_json=json.dumps({"few": {"a": "x", "b": "y", "c": "z"}, "labels": {"a": "x"}}),
         invalid_json=json.dumps({"few": {str(index): "x" for index in range(11)}}),
         expected_error_type="too_long",
+        invalid_keyword_arguments=[({"labels": {"a": 1}}, "string_type")],
     )
 
 

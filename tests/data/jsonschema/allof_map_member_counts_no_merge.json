@@ -30,6 +30,17 @@
   "properties": {
     "few": {
       "$ref": "#/$defs/Few"
+    },
+    "labels": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Labels"
+        },
+        {
+          "type": "object",
+          "maxProperties": 2
+        }
+      ]
     }
   }
 }
