@@ -48,7 +48,7 @@ covers = [
 
 
 [[change.cells]]
-input = ["tests/data/jsonschema/allof_union_object_branches", "tests/data/jsonschema/allof_union_object_branches/other_document/model.json", "tests/data/jsonschema/allof_union_object_branches/union_branches.json", "tests/data/jsonschema/allof_union_through_ref_files", "tests/data/openapi/allof_union_object_branches", "tests/data/openapi/allof_union_object_branches/discriminated.yaml"]
+input = ["tests/data/jsonschema/allof_union_object_branches", "tests/data/jsonschema/allof_union_object_branches/other_document/model.json", "tests/data/jsonschema/allof_union_object_branches/union_branches.json", "tests/data/jsonschema/allof_union_through_ref_files", "tests/data/jsonschema/schema_intersection", "tests/data/jsonschema/schema_validators_property_count_cross_module", "tests/data/openapi/allof_union_object_branches", "tests/data/openapi/allof_union_object_branches/discriminated.yaml"]
 backends = "*"
 options = "*"
 match = "--distribute-allof-over-(unions reads the member in place|object-branches gives it one variant per model)|^\\[message\\] removed first attempt: .*Modular references require an output directory"
