@@ -1116,6 +1116,10 @@
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml profile; the recommendation keeps it."
     },
+    "read_allof_parents_as_their_models": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+    },
     "read_const_beside_enum": {
       "rules": [
         "enums.read-as-their-const"
@@ -1150,6 +1154,10 @@
     "read_mapping_keys_by_schema_tag_type": {
       "not_recommended": "preset",
       "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+    },
+    "read_set_item_fields_in_class_order": {
+      "not_recommended": "preset",
+      "reason": "Under --use-unique-items-as-set-by-value only: set by the 20261123 presets; the recommendation starts from a preset."
     },
     "read_uuid6_uuid7_uuid8_formats": {
       "not_recommended": "preset",

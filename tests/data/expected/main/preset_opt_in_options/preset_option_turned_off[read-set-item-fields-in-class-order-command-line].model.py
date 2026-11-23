@@ -47,6 +47,27 @@ class Diamond(P, Q):
 
 
 @dataclass(frozen=True)
+class W:
+    w: str | None = None
+
+
+@dataclass(frozen=True)
+class V(W):
+    v: str | None = None
+
+
+@dataclass(frozen=True)
+class U:
+    w: list[str] | None = None
+
+
+@dataclass(frozen=True)
+class Reverse(V, U):
+    pass
+
+
+@dataclass(frozen=True)
 class Holder:
     levels: set[Levels] | None = None
     diamond: set[Diamond] | None = None
+    reverse: list[Reverse] | None = None

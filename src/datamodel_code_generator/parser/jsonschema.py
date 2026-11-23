@@ -2559,6 +2559,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             "intersect_combined_schema_keywords": self.intersects_combined_schema_keywords,
             "distribute_allof_over_unions": self.config.distribute_allof_over_unions,
             "intersect_merged_allof_members": self.config.intersect_merged_allof_members,
+            "read_allof_parents_as_their_models": self.config.read_allof_parents_as_their_models,
         }
         return kept_legacy_rows({**options, **implied_options(options)})
 
@@ -4492,7 +4493,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
                     and self._object_nullable(self._load_inherited_schema_object(base_classes[0].path))
                 )
-            if required_names := list(dict.fromkeys([*required, *obj.required])):
+            if required_names := list(
+                dict.fromkeys([
+                    *required,
+                    *obj.required,
+                    *self._optional_inherited_required_names(base_classes, inherited_required_names),
+                ])
+            ):
                 field_name_to_field = {_field_source_name(field): field for field in fields}
                 for required_name in required_names:
                     if self.force_optional_for_required_fields:
@@ -4529,6 +4536,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self, reference, obj, fields, base_classes, model_type=self.data_model_type, nullable=nullable
             )
             return frame.built(self.data_type(reference=reference))
+
+    def _optional_inherited_required_names(
+        self, base_classes: list[Reference], inherited_required_names: frozenset[str]
+    ) -> tuple[str, ...]:
+        """Return the inherited required names a model restates, as if it required them itself.
+
+        Under --read-allof-parents-as-their-models, the names some parent requires that a base holds optional
+        (``_inherited_schemas.optional_inherited_required_names``), so the class requires them whichever base it takes
+        the field from. Row ``legacy-inherited-required-names-unwritten`` without it: none, and the class takes such a
+        field as its bases give it, optional where the base it takes it from holds it optional.
+        """
+        if (
+            "legacy-inherited-required-names-unwritten" in self._legacy_intersection
+            or not base_classes
+            or not inherited_required_names
+        ):
+            return ()
+        return _inherited_schemas.optional_inherited_required_names(self, base_classes, inherited_required_names)
 
     def _append_missing_required_fields(
         self,
@@ -5078,7 +5103,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
                 )
 
-            root_model_result = _all_of_values.handle_allof_root_model_with_constraints(self, name, site, path)
+            root_model_result = _all_of_values.handle_allof_root_model_with_constraints(
+                self,
+                name,
+                site,
+                path,
+                obj.allOf
+                if "legacy-root-site-members-as-written" in self._legacy_intersection
+                else _inherited_schemas.all_of_members(self, obj),
+            )
             if root_model_result is not None:
                 return frame.built(root_model_result)
             reads_values = "legacy-value-union-members-unread" not in self._legacy_intersection

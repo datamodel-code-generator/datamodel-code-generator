@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 64 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 66 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 44 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 75 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 42 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 43 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -334,6 +334,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### R {#r}
 
+- [`--read-allof-parents-as-their-models`](typing-customization.md#read-allof-parents-as-their-models)
 - [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order)
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
@@ -352,6 +353,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
+- [`--read-set-item-fields-in-class-order`](typing-customization.md#read-set-item-fields-in-class-order)
 - [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
 - [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats)

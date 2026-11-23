@@ -113,19 +113,10 @@ KEPT: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "#7309",
-        "extend",
-        "accepts-invalid",
-        PRESET,
-        ({"via": ("alias",), "how": ("require",), "form": ("member",)},),
-        "a child that only adds required, as an allOf member, to an alias parent is written without fields",
-    ),
-    Kept(
-        ISSUE,
         "#6868",
         "extend",
         "accepts-invalid",
-        BOTH,
+        DEFAULT,
         (
             {
                 "via": ("ref-siblings",),
@@ -358,15 +349,6 @@ KEPT: Final[tuple[Kept, ...]] = (
         "naming the base through an alias drops the base's fields, where naming it directly keeps them",
     ),
     Kept(
-        ISSUE,
-        "#7309",
-        "extend",
-        "alias",
-        PRESET,
-        ({"via": ("alias",), "how": ("require",), "form": ("member",)},),
-        "a required-only allOf member over an alias parent loses every field, over the base itself it does not",
-    ),
-    Kept(
         LEGACY_ROW,
         "legacy-all-of-alias-member-base",
         "extend",
@@ -377,19 +359,10 @@ KEPT: Final[tuple[Kept, ...]] = (
     ),
     Kept(
         ISSUE,
-        "#7309",
-        "extend",
-        "beside",
-        PRESET,
-        ({"how": ("require",), "via": ("alias",), "form": ("beside",)},),
-        "over an alias parent, required beside the allOf keeps the fields where the same as a member loses them",
-    ),
-    Kept(
-        ISSUE,
         "#6868",
         "extend",
         "order",
-        BOTH,
+        DEFAULT,
         ({"how": ("require",), "via": ("ref-siblings",), "child_first": (True,)},),
         "a child of a $ref-with-siblings parent defined before it leaves the required property optional",
     ),
@@ -398,7 +371,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#6868",
         "extend",
         "ref-siblings",
-        BOTH,
+        DEFAULT,
         (
             {"how": ("require",), "via": ("ref-siblings",), "child_first": (True,)},
             {
@@ -415,7 +388,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#6868",
         "extend",
         "reversed-definitions",
-        BOTH,
+        DEFAULT,
         ({"how": ("require",), "via": ("ref-siblings",)},),
         "whether a child of a $ref-with-siblings parent keeps the property required follows the order of the "
         "definitions",

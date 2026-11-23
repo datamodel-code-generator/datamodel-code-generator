@@ -64,11 +64,13 @@ datamodel-codegen [OPTIONS]
 | [`--open-enums`](typing-customization.md#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-allof-parents-as-their-models`](typing-customization.md#read-allof-parents-as-their-models) | Read each allOf parent as its model holds it. |
 | [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
 | [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
 | [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema does. |
 | [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order) | Give a required inherited property the schema its allOf parents declare. |
 | [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
+| [`--read-set-item-fields-in-class-order`](typing-customization.md#read-set-item-fields-in-class-order) | Read the fields a set item inherits in its class's order, so an unhashable one k... |
 | [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they name. |
 | [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for str, bytes, int, float, bool, datetime, date a... |
@@ -564,6 +566,7 @@ All options sorted alphabetically:
 - [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator) - Decide a field's alias by the alias generator its model appl...
 - [`--preset`](base-options.md#preset) - Apply an immutable built-in option preset.
 - [`--profile`](utility-options.md#profile) - Use a named profile from pyproject.toml
+- [`--read-allof-parents-as-their-models`](typing-customization.md#read-allof-parents-as-their-models) - Read each allOf parent as its model holds it.
 - [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) - Read the allOf parents of every inherited schema in the orde...
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) - Read a `const` beside an `enum` as JSON Schema does.
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order) - Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its...
@@ -582,6 +585,7 @@ All options sorted alphabetically:
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) - Generate separate request and response models for readOnly/w...
 - [`--read-ref-siblings-in-closed-allof-members`](base-options.md#read-ref-siblings-in-closed-allof-members) - Read every keyword beside a `$ref` that a closed allOf membe...
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document) - Read each document by the schema version it declares.
+- [`--read-set-item-fields-in-class-order`](typing-customization.md#read-set-item-fields-in-class-order) - Read the fields a set item inherits in its class's order, so...
 - [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents) - Read the target of an allOf of one `$ref` in the document th...
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) - Read a schema-valued `unevaluatedProperties` as `additionalP...
 - [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats) - Read the string formats uuid6, uuid7 and uuid8 as the UUID v...

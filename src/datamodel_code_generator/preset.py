@@ -1504,6 +1504,26 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "output a length or pattern beside a $ref to base64 text is checked on the text."
         ),
     ),
+    PresetOptionGroup(
+        title="allOf parents read as their models",
+        config=PresetConfig(read_allof_parents_as_their_models=True),
+        description=(
+            "Read each allOf parent as its model holds it: a parent written as a $ref beside sibling keywords with the "
+            "schema its $ref names, so a model written before that parent types and requires an inherited property "
+            "as it does after it; keep every property some parent requires required where another parent declares "
+            "it optional; and read an alias member beside a member that adds only a type or required names as alias "
+            "members are read elsewhere, so such a model keeps the fields of the schema the alias names."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Set item fields read in class order",
+        config=PresetConfig(read_set_item_fields_in_class_order=True),
+        description=(
+            "Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of its "
+            "class bases, so a uniqueItems array of models whose class takes an inherited field that does not hash "
+            "stays a list instead of a set those items cannot be added to."
+        ),
+    ),
 )
 """The 20261120 groups and the opt-in options added after them."""
 
