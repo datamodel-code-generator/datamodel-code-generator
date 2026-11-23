@@ -6,8 +6,8 @@ action = "review"
 source = "release-note"
 title = "A package class beside a same-named submodule no longer binds the class name through the import of the submodule's models"
 summary = "In dataclass, msgspec and TypedDict output the modules that use a model of the submodule now import it from the submodule, so they no longer bind the class name of the package (from .pkg import Warn) through that import. They read the class through it, and resolving their annotations (type hints, msgspec decoding) failed."
-refs = ["#1"]
-decision = ["#1"]
+refs = ["#7444"]
+decision = ["#7444"]
 
 [[change.cells]]
 input = ["tests/data/jsonschema/submodule_named_like_package_class_loaded_by_module"]
