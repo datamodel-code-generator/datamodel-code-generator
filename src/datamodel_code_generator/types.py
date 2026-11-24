@@ -229,12 +229,31 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
-    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model._model_form import ModelForm
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
 
         data_type: DataType
+
+    class _ReferencedModel(Protocol):
+        """Type-checking contract for the model a reference names, as the keywords read it (``DataModel``)."""
+
+        @property
+        def form(self) -> ModelForm:
+            """How the model holds its value."""
+
+        @property
+        def fields(self) -> Sequence[DataModelFieldBase]:
+            """The fields of the model."""
+
+        @property
+        def value_base(self) -> str | None:
+            """The builtin type an enum subclasses for the values of its members."""
+
+        @property
+        def has_length(self) -> bool:
+            """Whether the instance of the model has a length."""
 
     _BoundPythonTypeField = BoundPythonType
 
@@ -2445,7 +2464,7 @@ class DataTypeManager(ABC):
         cls,
         data_type: DataType,
         target_version: tuple[int, int],
-        model_of: Callable[[Reference], DataModel | None],
+        model_of: Callable[[Reference], _ReferencedModel | None],
         seen: frozenset[int] = frozenset(),
     ) -> frozenset[str] | None:
         """Return the type-dependent keywords the value a union member validates to takes, or None for None.
@@ -2460,7 +2479,7 @@ class DataTypeManager(ABC):
         cls,
         data_type: DataType,
         target_version: tuple[int, int],
-        model_of: Callable[[Reference], DataModel | None],
+        model_of: Callable[[Reference], _ReferencedModel | None],
         seen: frozenset[int] = frozenset(),
     ) -> frozenset[str] | None:
         """Return the type-dependent keywords one value of a type takes where every value is the instance of a model.
@@ -2502,7 +2521,7 @@ class DataTypeManager(ABC):
         cls,
         data_type: DataType,
         target_version: tuple[int, int],
-        model_of: Callable[[Reference], DataModel | None] | None,
+        model_of: Callable[[Reference], _ReferencedModel | None] | None,
         seen: frozenset[int],
         *,
         number_values: bool = False,

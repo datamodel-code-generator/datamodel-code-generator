@@ -5494,9 +5494,9 @@ class DataTypeManager(ABC)
     @classmethod
     def constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], *, number_values: bool=False, target_model_version: TargetPydanticVersion | str | None=None, counts_keys: bool=False) -> frozenset[str]
     @classmethod
-    def member_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[Reference], DataModel | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
+    def member_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[Reference], _ReferencedModel | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
     @classmethod
-    def model_value_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[Reference], DataModel | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
+    def model_value_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[Reference], _ReferencedModel | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
     @classmethod
     def type_constraint_keywords(cls, path: str, target_version: tuple[int, int], *, number_values: bool=False, target_model_version: TargetPydanticVersion | str | None=None, counts_keys: bool=False) -> frozenset[str]
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType
