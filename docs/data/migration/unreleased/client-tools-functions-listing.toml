@@ -3,4 +3,6 @@ id = "client-tools-functions-listing"
 extends = "recommend-options-requires-python"
 covers = [
     "api_generation/fastapi_cli/information.stdout.txt",
+    "change_records/owner_of[the list of the builtin templates is a listing].txt",
+    "model/compiled_templates/template_inventory_is_derived_from_all_builtin_sources[client].txt",
 ]
