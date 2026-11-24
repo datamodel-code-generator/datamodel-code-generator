@@ -9,7 +9,8 @@
     "tagged": {"$ref": "#/$defs/Tagged"},
     "wide": {"$ref": "#/$defs/Wide"},
     "other": {"$ref": "#/$defs/Other"},
-    "stamped": {"$ref": "#/$defs/Stamped"}
+    "stamped": {"$ref": "#/$defs/Stamped"},
+    "sealed": {"$ref": "#/$defs/Sealed"}
   },
   "$defs": {
     "Base": {
@@ -83,6 +84,19 @@
     "Stamped": {
       "allOf": [
         {"$ref": "#/$defs/Marked"},
+        {"$ref": "#/$defs/Base"}
+      ]
+    },
+    "Closed": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "Sealed": {
+      "allOf": [
+        {"$ref": "#/$defs/Closed"},
         {"$ref": "#/$defs/Base"}
       ]
     }

@@ -441,9 +441,10 @@ def test_inherited_lookaround_selects_the_engine_of_the_subclass_config(
     base's. ``Child``, ``Middle`` and ``Grandchild`` with a config of their own, ``Mixed``, which takes the empty
     config of ``Labelled``, and the dataclasses built on it once failed at import. ``Mixed`` and ``Wide`` redeclare the
     inherited ``\p{L}`` and ``\p{Lu}`` fields without the pattern, ``Tagged`` inherits ``Mixed``'s, and ``Labelled``
-    and ``Titled`` keep theirs; ``Stamped`` builds ``Marked``, which ``Other`` already builds with ``python-re``. A
-    dataclass that takes the config of ``Base`` and every BaseModel, which merges the config of its bases, keep their
-    output. The lookahead rejects what it rejects in each.
+    and ``Titled`` keep theirs; ``Stamped`` builds ``Marked``, which ``Other`` already builds with ``python-re``.
+    ``Sealed`` took the ``extra='forbid'`` of ``Closed`` and keeps it in the config it gets. A dataclass that takes the
+    config of ``Base`` and every BaseModel, which merges the config of its bases, keep their output. The lookahead
+    rejects what it rejects in each.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "inherited_lookaround_dataclass_config.json",
@@ -461,6 +462,7 @@ def test_inherited_lookaround_selects_the_engine_of_the_subclass_config(
         "Wide": {"valid": {"title": "T", "code": "abc"}, "lookahead": {"code": "tmpx"}, "lower title": {"title": "t"}},
         "Titled": {"valid": {"title": "T"}, "lower title": {"title": "t"}},
         "Stamped": {"valid": {"mark": "m", "code": "abc"}, "lookahead": {"code": "tmpx"}},
+        "Sealed": {"valid": {"name": "n", "code": "abc"}, "lookahead": {"code": "tmpx"}, "extra": {"other": "o"}},
     }
     outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
     for model_name, cases in payloads.items():

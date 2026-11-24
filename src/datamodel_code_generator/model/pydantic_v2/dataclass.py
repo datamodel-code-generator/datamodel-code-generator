@@ -288,14 +288,17 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         )
 
     def _decide_engine_for_bases(self, decided: dict[int, bool]) -> None:
-        """Select ``python-re`` where a base's pattern needs it, once the dataclasses whose config it takes decided."""
+        """Select ``python-re`` where a base's pattern needs it, once the dataclasses whose config it takes decided.
+
+        The config the dataclass gets keeps every item of the config it applied (#7452).
+        """
         if id(self) in decided:
             return
         decided[id(self)] = False
         for base in self._config_chain()[1:]:
             DataClass._decide_engine_for_bases(base, decided)
         if self._inherited_patterns_select_python():
-            self._select_python_regex_engine()
+            self._select_python_regex_engine(self._config_chain()[-1].extra_template_data.get("config"))
             decided[id(self)] = True
 
     def _inherited_patterns_select_python(self) -> bool:

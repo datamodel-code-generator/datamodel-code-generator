@@ -2057,15 +2057,19 @@ class _PydanticV2Model(DataModel):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
-    def _select_python_regex_engine(self) -> None:
+    def _select_python_regex_engine(self, applied_config: Any = None) -> None:
         """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
 
         Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
         config names (#5637). The model gets a config of its own: the one in the template data may be shared with
         every model of the same name (``--extra-template-data``). It reads the items of that config, so a config that
-        is no mapping adds none.
+        is no mapping adds none. A config the model took from a base (``applied_config``) gives its items first, as
+        Pydantic stops applying it once the model has a config of its own.
         """
-        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
+        config_parameters = {
+            **dict(_config_dict_items(applied_config)),
+            **dict(_config_dict_items(self.extra_template_data.get("config"))),
+        }
         if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
             return
         config_parameters["regex_engine"] = '"python-re"'

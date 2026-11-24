@@ -69,6 +69,16 @@ class Stamped(Marked, Base):
     pass
 
 
+@dataclass(config=ConfigDict(extra='forbid', populate_by_name=True))
+class Closed:
+    name: str | None = None
+
+
+@dataclass(config=ConfigDict(populate_by_name=True, regex_engine="python-re"))
+class Sealed(Closed, Base):
+    pass
+
+
 @dataclass(config=ConfigDict(populate_by_name=True, regex_engine="python-re"))
 class Registry:
     child: Child | None = None
@@ -78,3 +88,4 @@ class Registry:
     wide: Wide | None = None
     other: Other | None = None
     stamped: Stamped | None = None
+    sealed: Sealed | None = None

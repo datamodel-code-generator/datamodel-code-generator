@@ -29,3 +29,7 @@ lower title: string_pattern_mismatch
 Stamped
 valid: valid
 lookahead: string_pattern_mismatch
+Sealed
+valid: valid
+lookahead: string_pattern_mismatch
+extra: unexpected_keyword_argument

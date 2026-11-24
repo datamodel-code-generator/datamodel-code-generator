@@ -91,6 +91,19 @@ class Stamped(Marked, Base):
     )
 
 
+class Closed(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    name: str | None = None
+
+
+class Sealed(Closed, Base):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+
 class Registry(BaseModel):
     model_config = ConfigDict(
         extra='allow',
@@ -102,3 +115,4 @@ class Registry(BaseModel):
     wide: Wide | None = None
     other: Other | None = None
     stamped: Stamped | None = None
+    sealed: Sealed | None = None

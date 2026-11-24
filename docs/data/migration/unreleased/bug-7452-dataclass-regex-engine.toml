@@ -2,7 +2,7 @@
 id = "bug-7452-dataclass-regex-engine"
 category = "crash-fix"
 title = "Select python-re in a pydantic dataclass that builds a base's lookaround"
-summary = "A pydantic_v2.dataclass whose config does not select python-re, such as one with its own config under --extra-fields, or one that takes the config of another first base, now selects it when a base it inherits has a pattern only Python's re reads. Such a module failed at import with a SchemaError. Where a base of its module also has a pattern Python's re rejects, such as \\p{L}, the dataclass redeclares the inherited field without it and warns, and the base keeps its output."
+summary = "A pydantic_v2.dataclass whose config does not select python-re, such as one with its own config under --extra-fields, or one that takes the config of another first base, now selects it when a base it inherits has a pattern only Python's re reads, keeping every item of a config it took from a base, such as extra='forbid'. Such a module failed at import with a SchemaError. Where a base of its module also has a pattern Python's re rejects, such as \\p{L}, the dataclass redeclares the inherited field without it and warns, and the base keeps its output."
 refs = ["#7489", "#7452"]
 kind = "default-output"
 action = "none"
