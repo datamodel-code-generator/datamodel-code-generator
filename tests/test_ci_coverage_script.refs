@@ -59,6 +59,12 @@ subprocess-unexpected	ci_coverage_script/coverage_artifact_cli[subprocess-unexpe
 subprocess-wrong-name	ci_coverage_script/coverage_artifact_cli[subprocess-wrong-name].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-wrong-name].txt
 subprocess-wrong-run	ci_coverage_script/coverage_artifact_cli[subprocess-wrong-run].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-wrong-name].txt
 subprocess-wrong-sha	ci_coverage_script/coverage_artifact_cli[subprocess-wrong-sha].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-wrong-name].txt
+[test_download_unpacks_the_artifacts_prepare_reads]
+complete	ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[complete].txt
+digest-mismatch	ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[digest-mismatch].txt
+flaky	ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[flaky].txt	= ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[complete].txt
+no-token	ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[no-token].txt
+unavailable	ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[unavailable].txt
 [test_executed_exclusions]
 absolute-path	ci_coverage_script/executed_exclusions[absolute-path].txt
 clause-kinds	ci_coverage_script/executed_exclusions[clause-kinds].txt

@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 import subprocess
 import sys
+import threading
+import zipfile
 from contextlib import redirect_stderr, redirect_stdout
-from io import StringIO
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO, StringIO
 from pathlib import Path
 
 import pytest
@@ -348,5 +353,115 @@ def test_collect_combines_the_files_written_after_the_tests(
         "stderr": err.getvalue(),
         "files": sorted(path.name for path in tmp_path.glob(".coverage*")),
         "lines": lines,
+    }
+    assert_output(json.dumps(payload, sort_keys=True, indent=2) + "\n")
+
+
+class _ArtifactServer(ThreadingHTTPServer):
+    """GitHub's artifact API for one run: paged listing, a zip URL that redirects, blob storage refusing a token."""
+
+    def __init__(self, artifacts: list[dict[str, object]], blobs: dict[int, bytes], failures: dict[int, int]) -> None:
+        super().__init__(("127.0.0.1", 0), _ArtifactHandler)
+        self.artifacts, self.blobs, self.failures = artifacts, blobs, failures
+
+
+class _ArtifactHandler(BaseHTTPRequestHandler):
+    server: _ArtifactServer
+
+    def log_message(self, *_: object) -> None:
+        """Keep the test output free of the request log."""
+
+    def _send(self, status: int, body: bytes = b"", location: str = "") -> None:
+        self.send_response(status)
+        if location:
+            self.send_header("Location", location)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self) -> None:
+        path, _, query = self.path.partition("?")
+        authorized = self.headers.get("Authorization") == "Bearer token"
+        if path == "/repos/owner/repo/actions/runs/7/artifacts" and authorized:
+            page = int(query.rpartition("page=")[2])
+            self._send(200, json.dumps({"artifacts": self.server.artifacts[(page - 1) * 100 : page * 100]}).encode())
+        elif (match := re.fullmatch(r"/repos/owner/repo/actions/artifacts/(\d+)/zip", path)) and authorized:
+            self._send(302, location=f"/blob/{match[1]}")
+        elif (match := re.fullmatch(r"/blob/(\d+)", path)) and "Authorization" not in self.headers:
+            artifact = int(match[1])
+            if self.server.failures.get(artifact, 0):
+                self.server.failures[artifact] -= 1
+                self._send(500)
+            else:
+                self._send(200, self.server.blobs[artifact])
+        else:
+            self._send(401 if path.startswith("/repos/") else 403)
+
+
+DOWNLOAD_CASES = ("complete", "flaky", "unavailable", "digest-mismatch", "no-token")
+"""`flaky` fails an artifact's first blob request, `unavailable` all three attempts."""
+
+
+def _artifact_server(case: str, staged: Path) -> _ArtifactServer:
+    """Serve every coverage artifact a push run uploads, with the case's fault, beside other listed artifacts.
+
+    The listing spans pages and also holds an artifact of another kind, an expired one and an older attempt of a name.
+    """
+    artifacts: list[dict[str, object]] = []
+    blobs: dict[int, bytes] = {}
+    for number, name in enumerate(sorted(ci_coverage.EXPECTED_NAMES), 10):
+        path = staged / name
+        path.write_bytes((DATA / "coverage.txt").read_bytes())
+        ci_coverage.main(["record", str(path), "--run-id", "7", "--sha", "abc"])
+        archive = BytesIO()
+        with zipfile.ZipFile(archive, "w") as zipped:
+            zipped.write(path, name)
+            zipped.write(staged / f"{name}.json", f"{name}.json")
+        blobs[number] = archive.getvalue()
+        digest = hashlib.sha256(blobs[number]).hexdigest()
+        artifacts.append({"id": number, "name": name, "expired": False, "digest": f"sha256:{digest}"})
+    stale = {**artifacts[0], "id": 1, "digest": "sha256:older"}
+    expired = {"id": 500, "name": ".coverage.expired", "expired": True, "digest": "sha256:none"}
+    other = {"id": 501, "name": "junit.py314-parallel-shard1-ubuntu-24.04", "expired": False, "digest": "sha256:none"}
+    if case == "digest-mismatch":
+        artifacts[5]["digest"] = "sha256:foreign"
+    failures = {13: {"flaky": 1, "unavailable": 3}.get(case, 0)}
+    return _ArtifactServer([*artifacts[:60], stale, expired, other, *artifacts[60:]], blobs, failures)
+
+
+@pytest.mark.parametrize("case", DOWNLOAD_CASES)
+def test_download_unpacks_the_artifacts_prepare_reads(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Download the newest unexpired coverage artifact of each name of a run, checked by its digest, then prepare them.
+
+    The zip URL redirects to blob storage, which refuses the token.
+    """
+    (staged := tmp_path / "staged").mkdir()
+    server = _artifact_server(case, staged)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    if case != "no-token":
+        monkeypatch.setenv(ci_coverage.TOKEN_ENV, "token")
+    monkeypatch.setenv("no_proxy", "*")
+    monkeypatch.chdir(tmp_path)
+    out, err = StringIO(), StringIO()
+    code = 0
+    with redirect_stdout(out), redirect_stderr(err):
+        try:
+            api = f"http://127.0.0.1:{server.server_port}"
+            ci_coverage.main(["download", "inputs", "--repository", "owner/repo", "--run-id", "7", "--api-url", api])
+            ci_coverage.main(["prepare", "inputs", "--run-id", "7", "--sha", "abc"])
+        except SystemExit as error:
+            code = error.code
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2.0)
+    payload = {
+        "code": code,
+        "stdout": out.getvalue(),
+        "stderr": err.getvalue(),
+        "prepared": len(list(tmp_path.glob(".coverage.*"))),
     }
     assert_output(json.dumps(payload, sort_keys=True, indent=2) + "\n")
