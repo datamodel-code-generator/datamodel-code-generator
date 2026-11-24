@@ -9700,13 +9700,6 @@ count = 2
 path = "src/datamodel_code_generator/types.py"
 qualname = "DataType._materialize_render_state"
 rule_code = "MUT201"
-target = "DataType.import_"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "DataType._materialize_render_state"
-rule_code = "MUT201"
 target = "DataType.is_optional"
 count = 2
 

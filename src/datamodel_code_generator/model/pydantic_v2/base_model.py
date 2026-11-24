@@ -70,6 +70,7 @@ from datamodel_code_generator.model._render_plan import (
     frozen_render_plan,
 )
 from datamodel_code_generator.model.base import (
+    _COMPILED_PATTERN_KEY,
     ALL_MODEL,
     UNDEFINED,
     BaseClassDataType,
@@ -316,7 +317,6 @@ _PIN_ALIASES_INTERNAL_KEY = "_pin_aliases_with_alias_generator"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
 _RENDERED_NONE = "None"
-_COMPILED_PATTERN_KEY = "_compiled_python_pattern"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
 _MIN_QUOTED_STRING_LENGTH = 2

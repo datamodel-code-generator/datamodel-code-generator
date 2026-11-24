@@ -13,6 +13,7 @@ from functools import cache
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator.imports import _aliased_as, _aliased_name, _import_key
+from datamodel_code_generator.model.base import _COMPILED_PATTERN_KEY
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import iter_models_field_data_types, register_runtime_expression
 from datamodel_code_generator.python_literal import rewrite_runtime_expressions, rewrite_runtime_imports
@@ -88,7 +89,9 @@ def _alias_field_runtime_expressions(
     if not imports or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports:
         return
     builder.set_field_default(field, rewrite_runtime_expressions(field.default, aliased_imports))
-    builder.set_field_extras(field, cast("dict[str, Any]", rewrite_runtime_expressions(field.extras, aliased_imports)))
+    if _COMPILED_PATTERN_KEY in field.extras:
+        pattern = rewrite_runtime_expressions(field.extras[_COMPILED_PATTERN_KEY], aliased_imports)
+        builder.set_field_extra(field, _COMPILED_PATTERN_KEY, pattern)
     field._set_runtime_expression_imports(rewritten_imports)
 
 

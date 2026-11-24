@@ -3741,6 +3741,8 @@ class GenerationStore
     @staticmethod
     def set_field_extra(field_: DataModelFieldBase, key: str, value: Any) -> None
     @staticmethod
+    def drop_field_extra(field_: DataModelFieldBase, key: str) -> None
+    @staticmethod
     def drop_field_discriminator(field_: DataModelFieldBase) -> None
     @staticmethod
     def set_type_discriminator(data_type: DataType, discriminator: str | None) -> None
@@ -3802,6 +3804,7 @@ class GraphBuilder
     def detach_model_data_type_refs(self, model: DataModel) -> None
     def discard_derived_facts(self) -> None
     def drop_field_discriminator(self, field_: DataModelFieldBase) -> None
+    def drop_field_extra(self, field_: DataModelFieldBase, key: str) -> None
     def drop_held_null(self, data_type: DataType) -> None
     def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh='now', options: ConstraintOptions | None=None) -> None
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType
@@ -3880,7 +3883,7 @@ class ModelRename
     new_class_name: str
     scheme: RenameScheme | None
     reference_name: str
-NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 49>)
+NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 50>)
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
     uses _OrderedSetItem = TypeVar('_OrderedSetItem')
 OwnerModels = typing.Any

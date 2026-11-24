@@ -195,6 +195,7 @@ _MAX_MISSING_CUSTOM_TEMPLATE_SUBDIRS = 128
 _MAX_CUSTOM_TEMPLATE_SIGNATURES = 128
 _MAX_CUSTOM_TEMPLATE_DEPENDENCIES = 128
 _ORIGINAL_TEMPLATE_LOADER_MARKER = "__datamodel_code_generator_original_template_loader__"
+_COMPILED_PATTERN_KEY = "_compiled_python_pattern"
 _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
 _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY = "_nested_model_default_factory_recursive_keys"
 _PATH_PARTNER_KEY = "_path_partner_model_key"

@@ -332,7 +332,6 @@ _MOVED_NULL: Final = "the step that keeps the null each moved reference named in
 _FIELD_PLAN_C: Final = "the step that renders msgspec, dataclass, TypedDict and enum fields from one plan"
 _FIELD_PLAN_A: Final = "the step that renders pydantic fields from one frozen plan"
 _ORDER_PLAN: Final = "the step that makes ordering read the render plans"
-_IMPORT_PLAN: Final = "the step that writes imports from module import plans"
 
 _IMPORTS_CORRECT_WITNESS: Final = (
     "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
@@ -428,14 +427,6 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "--output-model-type msgspec.Struct --formatters builtin",
         _ORDER_PLAN,
     ),
-    KnownWrite(
-        "finalize_rendered_nullability",
-        Rule.FROZEN,
-        "DataType.import_",
-        "--input tests/data/generation_platform/fastapi/unbound-body.yaml --input-file-type openapi --openapi-scopes "
-        "schemas api --collapse-root-models --formatters builtin",
-        _IMPORT_PLAN,
-    ),
 )
 """The violations of today's pipeline; ``scripts/check_fact_finality.py --witnesses`` runs their witnesses.
 
@@ -444,9 +435,8 @@ plans them first), reuse redirects the users of removed duplicates (the step tha
 groups), and L3 deduplication redirects users and bases module by module (one step replaces it). Constructor ordering,
 after the decision phase, gives a required field back the place in the constructor it left out while its base excluded
 it (the dataclass field plan of the field plan step holds it), and it reads the nullability of base fields before render
-preparation writes rendered nullability once (the ordering step reads the plans written after it). Rendering writes the
-import of the ``Any`` an empty union renders as after B1, at render preparation (the import plan step), and alias
-preparation records compiled patterns in field extras after B1 (the field render plan holds them).
+preparation writes rendered nullability once (the ordering step reads the plans written after it). Alias preparation
+records compiled patterns in field extras after B1 (the field render plan holds them).
 """
 
 _KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in KNOWN_WRITES)
