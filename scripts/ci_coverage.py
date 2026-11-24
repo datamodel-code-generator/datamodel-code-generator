@@ -19,7 +19,7 @@ import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import NotRequired, TypedDict
 
 SHARD_COUNTS = {
     "py315-parallel": 16,
@@ -145,19 +145,28 @@ def _fetch(url: str) -> bytes:
     return _read(request)
 
 
-def _artifacts(api: str, repository: str, run_id: str) -> list[dict[str, Any]]:
+class _Artifact(TypedDict):
+    """The fields of a REST artifact record this script reads."""
+
+    id: int
+    name: str
+    expired: bool
+    digest: NotRequired[str | None]
+
+
+def _artifacts(api: str, repository: str, run_id: str) -> list[_Artifact]:
     """Return the newest unexpired artifact of each coverage name of a run; a rerun lists the older attempts too."""
-    newest: dict[str, dict[str, Any]] = {}
+    newest: dict[str, _Artifact] = {}
     page = 1
     while True:
         url = f"{api}/repos/{repository}/actions/runs/{run_id}/artifacts?per_page={PAGE_SIZE}&page={page}"
-        listed = json.loads(_fetch(url))["artifacts"]
+        listed: list[_Artifact] = json.loads(_fetch(url))["artifacts"]
         for artifact in listed:
             name = artifact["name"]
             if (
                 name.startswith(ARTIFACT_PREFIX)
                 and not artifact["expired"]
-                and artifact["id"] > newest.get(name, {}).get("id", 0)
+                and ((current := newest.get(name)) is None or artifact["id"] > current["id"])
             ):
                 newest[name] = artifact
         if len(listed) < PAGE_SIZE:
@@ -165,7 +174,7 @@ def _artifacts(api: str, repository: str, run_id: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _download_artifact(api: str, repository: str, artifact: dict[str, Any], root: Path) -> None:
+def _download_artifact(api: str, repository: str, artifact: _Artifact, root: Path) -> None:
     data = _fetch(f"{api}/repos/{repository}/actions/artifacts/{artifact['id']}/zip")
     if artifact.get("digest") != f"sha256:{hashlib.sha256(data).hexdigest()}":
         msg = f"Coverage artifact digest mismatch: {artifact['name']}"
