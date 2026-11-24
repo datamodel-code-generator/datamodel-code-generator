@@ -2,8 +2,9 @@
 id = "rebalance-ci-shards-1124"
 category = "harness"
 title = "Re-record the CI shard weights from the main runs of 2026-11-24"
-summary = "The CI shard weights are re-measured, so the stored shard lists of the new-test discovery tests carry the new fallback weights; the package writes the same output."
+summary = "The CI shard weights are re-measured and the macOS jobs of Python 3.12 to 3.14 run on six shards, so the stored shard lists of the new-test discovery tests carry the new fallback weights; the package writes the same output."
 covers = [
+    "ci_workflow/workflow_matrix_and_coverage_contract.txt",
     "select_ci_test_shard_script/discovery_includes_new_files_and_methods[3.11].txt",
     "select_ci_test_shard_script/discovery_includes_new_files_and_methods[3.12].txt",
     "select_ci_test_shard_script/discovery_includes_new_files_and_methods[3.13].txt",
