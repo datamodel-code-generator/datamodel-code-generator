@@ -1,0 +1,5 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "$defs": {
+ "a.api.Order": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/a.b.Warn.Detail"}, "warn": {"$ref": "#/$defs/a.b.Warn"}}},
+ "a.common.Common": {"type": "object", "properties": {"code": {"type": "string"}}},
+ "a.b.Warn": {"type": "object", "properties": {"count": {"type": "integer"}, "common": {"$ref": "#/$defs/a.common.Common"}}},
+ "a.b.Warn.Detail": {"type": "object", "properties": {"message": {"type": "string"}}}}}

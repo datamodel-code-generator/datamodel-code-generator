@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections import defaultdict
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._model_keys import model_key_of
@@ -37,6 +37,7 @@ from datamodel_code_generator._module_paths import (
     dotted_name,
     is_below,
     is_package_init,
+    is_within_name,
     module_parts,
     package_path,
     relative_level,
@@ -68,11 +69,13 @@ __all__ = [
     "ImportCycleSeeds",
     "ImportLine",
     "ImportPlan",
+    "InitLoadsRow",
     "failing_import_reads",
     "generic_base_class_module",
     "import_cycle_seeds",
     "import_plan",
     "inherits_one_of",
+    "init_loads",
     "module_dependency_graph",
     "module_import_edges",
     "relative_import_targets",
@@ -84,6 +87,8 @@ ImportLine: TypeAlias = tuple[str, str]
 """A name that a relative import block imports, and the name the module binds it to."""
 ImportBlock: TypeAlias = tuple[str, tuple[ImportLine, ...]]
 """The dotted name of the module that a relative import block names, and its import lines in written order."""
+InitLoadsRow: TypeAlias = Literal["init", "legacy-running-packages-load"]
+"""How ``init_loads`` reads the imports of the packages above: as loading nothing, or as 0.90.0 to 0.100.0 did."""
 
 
 @record(eq=False)
@@ -205,6 +210,40 @@ def module_import_edges(
         for package, nodes in exported_modules(exporters, all_exports_scope).items():
             edges.setdefault(".".join(package), set()).update(".".join(node[0]) for node in nodes)
     return edges
+
+
+def init_loads(
+    edges: Mapping[str, set[str]],
+    package: ModulePath,
+    modules: Iterable[tuple[str, ...]],
+    *,
+    row: InitLoadsRow = "init",
+) -> frozenset[str]:
+    """Return the modules the ``__init__.py`` of ``package`` loads, by dotted name, or none if it loads no ``modules``.
+
+    Its imports run before its classes are defined, so a module it loads, or one that a module it imports loads
+    (``edges``, from ``module_import_edges``), binds its name in the package first and the class then takes the name.
+    A module that the ``__init__.py`` loads runs before the class exists, so it reads the module under the name; any
+    other module runs after it and reads the class. An ancestor package of ``package`` has started running before the
+    ``__init__.py`` does, so an import of it loads nothing: the walk neither takes it nor follows its edges (its
+    imports and ``--all-exports-scope`` re-exports). The refusal of a class beside a module
+    (``reject_class_named_like_submodule``) and the import of the models of that module from the module itself
+    (``submodules_hidden_by_packages``) both read this. ``row="legacy-running-packages-load"`` keeps the reading of
+    0.90.0 to 0.100.0, which followed the imports of an ancestor package too, for the output of those releases that
+    the refusal keeps (``_class_named_like_submodule``).
+    """
+    running = (
+        set() if row == "legacy-running-packages-load" else {".".join(package[:depth]) for depth in range(len(package))}
+    )
+    loaded = frozenset(
+        reach(
+            [".".join(package)],
+            lambda importer: (target for target in edges.get(importer, ()) if target not in running),
+        )
+    )
+    return (
+        loaded if any(is_within_name(name, ".".join(module)) for module in modules for name in loaded) else frozenset()
+    )
 
 
 def module_dependency_graph(
