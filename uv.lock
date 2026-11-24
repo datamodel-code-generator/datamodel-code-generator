@@ -28,6 +28,7 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P3D"
 
 [options.exclude-newer-package]
+datamodel-code-generator = false
 heki = false
 
 [[package]]
@@ -3329,11 +3330,11 @@ wheels = [
 
 [[package]]
 name = "types-pyyaml"
-version = "6.0.12.20250915"
+version = "6.0.12.20261113"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7e/69/3c51b36d04da19b92f9e815be12753125bd8bc247ba0470a982e6979e71c/types_pyyaml-6.0.12.20250915.tar.gz", hash = "sha256:0f8b54a528c303f0e6f7165687dd33fafa81c807fcac23f632b63aa624ced1d3", size = 17522, upload-time = "2025-09-15T03:01:00.728Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/8b/ba599d956693dbc98e170f32097128bdea0a17f9d42b0b490fa749c12b1a/types_pyyaml-6.0.12.20261113.tar.gz", hash = "sha256:0828be2580fd94151182364f4d0158e4de62fdbeeb8d4296f7f7d2b6c22bb640", size = 19017, upload-time = "2026-11-13T08:51:21.488Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/e0/1eed384f02555dde685fff1a1ac805c1c7dcb6dd019c916fe659b1c1f9ec/types_pyyaml-6.0.12.20250915-py3-none-any.whl", hash = "sha256:e7d4d9e064e89a3b3cae120b4990cd370874d2bf12fa5f46c97018dd5d3c9ab6", size = 20338, upload-time = "2025-09-15T03:00:59.218Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/2e/36fc0941a40ef066dbc8abac41bbbefb41389f547c779aef832aea6b873d/types_pyyaml-6.0.12.20261113-py3-none-any.whl", hash = "sha256:3600749e613748afdc4327f0b17c3296cf880cdbc7335f320007abd9dd815f67", size = 21321, upload-time = "2026-11-13T08:51:20.417Z" },
 ]
 
 [[package]]
