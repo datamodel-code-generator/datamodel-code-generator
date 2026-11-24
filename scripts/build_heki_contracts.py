@@ -35,6 +35,10 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   record's ``within`` directory by no other function. A table, parse method or mark that is a member of a class is
   also named as the member of every Protocol of the package that declares it, since heki judges a use through a value
   typed with a host Protocol by the Protocol's declaration.
+- ``readonly-returns`` (``MUT202``): the schema objects and loaded documents that the schema graph validates once and
+  gives to every reader (``SchemaGraphBuilder.schema``, ``SchemaGraphBuilder.pointer_value``,
+  ``prepare_schema_resources``) and the schema sites the OpenAPI parser keeps (``ApiOpenAPIParser._site_facts``), deep:
+  no function writes an object they return, or a part of it, directly or through the functions that return it.
 - ``effect-boundaries`` (``EFF201``) and ``read-owners`` (``MUT203``, ``MUT206``) of the decisions: the modules of the
   decisions (``module`` of ``DECISION_DECLS`` in ``scripts/pass_decls.py``) read no render fact (an attribute or
   ``__dict__`` key of the graph whose ``ATTRIBUTE_FACTS`` row holds no ``Fact`` final at B1, or a dict attribute one of
@@ -131,7 +135,14 @@ IMPORTS = f"{PACKAGE}.imports.Imports"
 IMPORT_LEDGER = "parser/_imports_plan.py"
 """The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
-RULES = ("EFF201", "IMP101", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
+RULES = ("EFF201", "IMP101", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
+SHARED_PRODUCERS = (
+    ("parser/_schema_graph.py", "SchemaGraphBuilder.schema"),
+    ("parser/_schema_graph.py", "SchemaGraphBuilder.pointer_value"),
+    ("parser/_schema_documents.py", "prepare_schema_resources"),
+    ("parser/openapi_scope.py", "ApiOpenAPIParser._site_facts"),
+)
+"""The functions that give the readers of a parse an object they share: the path of their module and their name."""
 IMPORT_EDGES = ("body",)
 """The imports that close an ``IMP101`` cycle: those that run while their module loads."""
 HEADER = """\
@@ -758,6 +769,19 @@ def environment_contracts() -> list[str]:
     ]
 
 
+def shared_object_contracts(repo: Repo, producers: Iterable[tuple[str, str]] = SHARED_PRODUCERS) -> list[str]:
+    """Return the ``readonly-returns`` contract of the objects the schema graph shares with the readers of a parse."""
+    functions = _package_functions(repo)
+    names = []
+    for path, name in producers:
+        module = _module(path)
+        if f"{module}.{name}" not in functions:
+            message = f"SHARED_PRODUCERS: {path} defines no function {name}"
+            raise SystemExit(message)
+        names.append(name if "." in name else f"{module}.{name}")
+    return [_table("readonly-returns", name="schema-graph-shared-objects", producers=names, deep=True)]
+
+
 def required_version() -> str:
     """Return the ``required-version`` of the contracts: at least the heki that the ``heki`` dependency group pins."""
     group = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["dependency-groups"]["heki"]
@@ -778,6 +802,7 @@ def generate() -> str:
         *builder_contracts(repo),
         *host_contracts(repo),
         *pipeline_contracts(repo),
+        *shared_object_contracts(repo),
         *environment_contracts(),
     ]
     head = "\n".join([

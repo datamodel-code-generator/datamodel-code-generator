@@ -274,6 +274,56 @@ def test_heki_reports_the_import_cycles_that_run_while_their_modules_load(tmp_pa
     ), result.stderr
 
 
+SEEDED_SHARED = {
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_schema_graph.py": (
+        'class Schema:\n    def __init__(self) -> None:\n        self.title = ""\n\n\n'
+        "class SchemaGraphBuilder:\n    def __init__(self) -> None:\n        self.shared = Schema()\n\n"
+        "    def schema(self) -> Schema:\n        return self.shared\n"
+    ),
+    f"{PACKAGE}/parser/reader.py": (
+        "from datamodel_code_generator.parser._schema_graph import Schema, SchemaGraphBuilder\n\n\n"
+        "def read(graph: SchemaGraphBuilder) -> str:\n    return graph.schema().title\n\n\n"
+        'def write(graph: SchemaGraphBuilder) -> None:\n    graph.schema().title = "written"\n\n\n'
+        "def write_through_a_helper(graph: SchemaGraphBuilder) -> None:\n    _rename(graph.schema())\n\n\n"
+        'def _rename(schema: Schema) -> None:\n    schema.title = "written"\n\n\n'
+        'def write_a_parameter(schema: Schema) -> None:\n    schema.title = "written"\n'
+    ),
+}
+"""A package whose ``reader.py`` reads, and writes, the object that ``SchemaGraphBuilder.schema`` shares.
+
+``write_through_a_helper`` hands the shared object to a function that writes it; ``write_a_parameter`` writes a
+parameter that no call of the package gives the shared object, which heki does not follow.
+"""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_a_write_of_an_object_the_schema_graph_shares(tmp_path: Path) -> None:
+    """A function that writes the object ``SchemaGraphBuilder.schema`` returns fails the check; a reader does not.
+
+    The write through a helper that is given the object fails too, as the helper is a function that mutates it.
+    """
+    for name, text in SEEDED_SHARED.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+
+    result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+
+    found = sorted(
+        (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            (f"{PACKAGE}/parser/reader.py", "write", "MUT202"),
+            (f"{PACKAGE}/parser/reader.py", "write_through_a_helper", "MUT202"),
+        ],
+    ), result.stderr
+
+
 SEEDED_WRITE_FORMS = """\
 from copy import deepcopy
 
@@ -895,6 +945,17 @@ def test_store_members_name_a_method_or_a_bookkeeping_row(
         build_heki_contracts.store_member_contracts(repo)
 
     assert str(stopped.value) == message
+
+
+@pytest.mark.allow_direct_assert("a stale producer must stop the build, not be stored as an expected output")
+def test_shared_producers_name_a_function_the_package_defines() -> None:
+    """A ``SHARED_PRODUCERS`` row names a function its module defines."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.shared_object_contracts(repo, [("parser/_schema_graph.py", "SchemaGraphBuilder.gone")])
+
+    assert str(stopped.value) == "SHARED_PRODUCERS: parser/_schema_graph.py defines no function SchemaGraphBuilder.gone"
 
 
 SEEDED_DECISION_WRITES = {

@@ -4,7 +4,7 @@
 required-version = ">=0.2.7"
 
 [lint]
-select = ["EFF201", "IMP101", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207"]
+select = ["EFF201", "IMP101", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207"]
 fail-on = "warning"
 
 [imports]
@@ -6680,6 +6680,11 @@ targets = ["datamodel_code_generator.parser.base.Parser._Parser__*"]
 allowed-readers = ["datamodel_code_generator.parser.base:Parser", "datamodel_code_generator.parser.base:Parser.*"]
 unresolved = "report"
 attribution = "lexical"
+
+[[readonly-returns]]
+name = "schema-graph-shared-objects"
+producers = ["SchemaGraphBuilder.schema", "SchemaGraphBuilder.pointer_value", "datamodel_code_generator.parser._schema_documents.prepare_schema_resources", "ApiOpenAPIParser._site_facts"]
+deep = true
 
 [[effect-boundaries]]
 name = "no-environment-reads"

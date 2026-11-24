@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
-    from datamodel_code_generator.parser.openapi_scope import SchemaRole
     from datamodel_code_generator.reference import SchemaLocation
 
 DATA = Path(__file__).parents[1] / "data"
@@ -547,18 +546,6 @@ def test_api_case_sensitive_declarations(case: str) -> None:
     )
 
 
-class _SiteWriterParser(ApiOpenAPIParser):
-    """Reads the site of each schema it acquires, writes a keyword into the document there, and reads the site again."""
-
-    def _acquire_schema(
-        self, name: str, raw: Any, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
-    ) -> None:
-        super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
-        self._site_facts(declaration)
-        raw["format"] = "written"
-        self._site_facts(declaration)
-
-
 class _EarlySiteReader(ApiOpenAPIParser):
     """Reads the site of each schema it acquires before the parser has loaded the documents it references.
 
@@ -567,24 +554,6 @@ class _EarlySiteReader(ApiOpenAPIParser):
 
     def _acquire_schema(self, *_: Any, declaration: SchemaLocation, **__: Any) -> None:
         self._site_facts(declaration)
-
-
-def test_api_schema_site_check_of_a_reader_that_writes_the_document(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A schema site read again after a reader wrote the document there differs from the documents, and is reported.
-
-    The check (`1`, as the test suite sets it) reads each kept site anew at every read of it and raises.
-    """
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "1")
-    parser = _SiteWriterParser(SOURCE / "declarations.json", openapi_scopes=[OpenAPIScope.Api], formatters=[])
-    try:
-        with pytest.raises(
-            CheckFailure,
-            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the schema site kept for "
-            "declarations.json#/components/parameters/Page/schema differs from the documents$",
-        ):
-            parser.parse()
-    finally:
-        parser.dispose()
 
 
 def test_api_schema_site_check_of_a_site_read_before_its_reference_loads(
