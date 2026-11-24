@@ -8,17 +8,3 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
-
-[[approved]]
-key = "stored-list:test_generated_models_decide_value_neighbours_like_the_schema:items"
-head = 3793
-pr = 7459
-decision = ["#7459"]
-reason = "Pydantic before 2.10 rejects 5.0 for the generated Literal[5] of a mapping-keyed variant tag (#7405 inputs); the verdict is stored for the oldest-pydantic lane like the older inputs, the generated code is right"
-
-[[approved]]
-key = "stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines"
-head = 4161
-pr = 7459
-decision = ["#7459"]
-reason = "Pydantic before 2.10 rejects 5.0 for the generated Literal[5] of a mapping-keyed variant tag (#7405 inputs); the verdict is stored for the oldest-pydantic lane like the older inputs, the generated code is right"

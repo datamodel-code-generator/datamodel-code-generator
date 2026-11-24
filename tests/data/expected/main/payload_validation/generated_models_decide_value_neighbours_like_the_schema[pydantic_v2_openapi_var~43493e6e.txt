@@ -1,0 +1,3 @@
+[
+  "/kind const 5.0: valid, model rejects"
+]
