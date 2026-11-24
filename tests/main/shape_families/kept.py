@@ -528,10 +528,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "container",
         "client",
         DEFAULT,
-        (
-            {"container": _ALL_MAPS, "nullable": (True,), "backend": (DATACLASSES,)},
-            {"container": _ALL_MAPS, "nullable": (True,), "required": (False,), "backend": (MSGSPEC,)},
-        ),
+        ({"container": _ALL_MAPS, "nullable": (True,), "required": (False,), "backend": (MSGSPEC,)},),
         "the client's field argument of a nullable map with key constraints drops the None its model field keeps",
     ),
     Kept(
@@ -572,15 +569,6 @@ KEPT: Final[tuple[Kept, ...]] = (
         PRESET,
         ({"tag": ("enum1-str",), "nullable": (True,), "backend": (MSGSPEC,)},),
         "msgspec cannot decode an enum tag with a null member, the Pydantic model imports under the preset",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        "tagged",
-        "backends",
-        PRESET,
-        ({"nullable": (True,), "mapping": (False,), "backend": (TYPED_DICT,)},),
-        "the Pydantic model of a tag that admits null rejects every tag under the preset, TypedDict accepts them",
     ),
     Kept(
         LIBRARY_LIMIT,
