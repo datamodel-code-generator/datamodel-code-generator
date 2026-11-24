@@ -424,6 +424,39 @@ EXCLUDED_CASES: dict[str, str] = {
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_type_overrides_constructor_order imports the models that reference it"
     ),
+    **dict.fromkeys(
+        (
+            "openapi/nullable_reuse_tree.yaml::components.schemas.b.Place",
+            "openapi/type_overrides_constructor_order_modules.yaml::components.schemas.common.S",
+        ),
+        "top-level nullable object components need a wrapper policy; the models that reference them take null",
+    ),
+    "openapi/alias.yaml::components.schemas.team-members": (
+        "items without a type: the model reads an array, while JSON Schema admits any value that is no array, such "
+        "as null, at the root"
+    ),
+    "openapi/invalid_dotted_schema_name_late_warnings.yaml::components.schemas.Request": (
+        SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/kubernetes_group_version.yaml::components.schemas.io.k8s.api.apps.v1.RollingUpdateDeployment",
+            "openapi/kubernetes_group_version.yaml::components.schemas.io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+        ),
+        "the unknown format int-or-string intentionally emits a generator warning",
+    ),
+    "openapi/allof_inheritance_modular_mro_conflict.yaml::components.schemas.top.E": (
+        "generation refuses the inconsistent method resolution order of its bases; "
+        "test_main_modular_allof_inheritance_mro_conflict pins the error"
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/python_engine_beside_rejected_in_modules.yaml::components.schemas.b.Child",
+            "openapi/python_engine_beside_rejected_in_modules.yaml::components.schemas.b.User",
+        ),
+        "a component it references has the pattern ^\\p{L}+$, which Python's re before 3.15 refuses, so the source "
+        "validator cannot be built on most supported Pythons",
+    ),
     "jsonschema/collapse_root_models_lookaround_discriminator.json": (
         "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
         "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
@@ -609,6 +642,7 @@ EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
         (
             "openapi/discriminator_lone_variant_tags.yaml::components.schemas.MemberBoth",
+            "openapi/discriminator_enum_modules.yaml::components.schemas.pets.Pet",
             "openapi/open_enums.yaml::components.schemas.Pet",
             "openapi/shared_enum_discriminator/repeated.yaml::components.schemas.Pet",
         ),
@@ -620,6 +654,14 @@ EXCLUDED_CASES: dict[str, str] = {
             "openapi/discriminator_field_aliases/wire_collision_missing.json::components.schemas.Pet",
             "openapi/field_options_every_field.yaml::components.schemas.Pet",
             "openapi/discriminator_inlined_list_items/tag_named_like_enum.yaml::components.schemas.Pet",
+            (
+                "openapi/discriminator_inlined_list_items/tag_named_like_enum_across_modules.yaml::components.schemas."
+                "pets.Pet"
+            ),
+            (
+                "openapi/discriminator_shared_written_tag/nested_variant_inherits_tag_list_items.yaml::components."
+                "schemas.pets.Guest"
+            ),
             "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Pet",
         ),
         _UNCONSTRAINED_TAG_REASON
@@ -862,6 +904,17 @@ REJECTION_EXCLUDED_CASES: dict[str, str] = {
             "openapi/discriminator_shared_written_tag/tag_named_like_enum.yaml::components.schemas.Holder",
             "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Holder",
             "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.Holder",
+            *(
+                f"openapi/{document}.yaml::components.schemas.{name}"
+                for document, name in (
+                    ("discriminator_inlined_list_items/tag_named_like_enum_across_modules", "api.Shelter"),
+                    ("discriminator_inlined_list_items/tag_named_like_enum_across_modules", "pets.Pets"),
+                    ("discriminator_msgspec_tagged_unions_modules", "pets.Owner"),
+                    ("discriminator_msgspec_tagged_unions_modules_variants_first", "pets.Owner"),
+                    ("discriminator_shared_written_tag/nested_variant_inherits_tag_list_items", "api.Shelter"),
+                    ("discriminator_shared_written_tag/nested_variant_inherits_tag_list_items", "pets.Registry"),
+                )
+            ),
         ),
         _UNCONSTRAINED_TAG_REASON + "here the variants take their tag through allOf, from an enum $ref or as no "
         "string, so a valid value of the optional union property is seldom drawn and the payloads drawn leave it out, "
@@ -1026,6 +1079,15 @@ PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[s
         "Pydantic MISSING sentinel runtime support requires Pydantic 2.12+",
     )
 }
+_CROSS_MODULE_PYDANTIC_V2_CASE_IDS = (
+    "openapi/circular_imports_acyclic.yaml::components.schemas.sub.AnotherChild",
+    "openapi/exact_imports_ancestor_package.yaml::components.schemas.v0.mammal.canine.Puppy",
+)
+_CROSS_MODULE_PYDANTIC_V2_0_REASON = (
+    "Pydantic 2.0.x cannot build a model whose fields name models of another module of the generated package "
+    "(AttributeError __pydantic_core_schema__, a dataclass 'not fully defined'); 2.12, the next pinned runtime, "
+    "validates it"
+)
 PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadBackend, dict[str, str]]], ...] = (
     (
         "2.1.0",
@@ -1105,7 +1167,28 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
     (
         "2.12.0",
         {
+            PayloadBackend.PYDANTIC_V2: dict.fromkeys(
+                _CROSS_MODULE_PYDANTIC_V2_CASE_IDS, _CROSS_MODULE_PYDANTIC_V2_0_REASON
+            ),
             PayloadBackend.PYDANTIC_V2_DATACLASS: {
+                **dict.fromkeys(
+                    (
+                        *_CROSS_MODULE_PYDANTIC_V2_CASE_IDS,
+                        "openapi/alias.yaml::components.schemas.fo-o.ba-r.Clon-e",
+                        (
+                            "openapi/discriminator_nested_variant_restated_tag/restated_optional_tag_across_modules"
+                            ".yaml::components.schemas.pets.Kitten"
+                        ),
+                        *(
+                            f"openapi/discriminator_reuse_variant_module_base_fields.yaml::components.schemas.pets.{name}"
+                            for name in ("Animal", "Kitten", "Kitty")
+                        ),
+                        "openapi/dot_notation_inheritance.yaml::components.schemas.v0.animal.dog",
+                        "openapi/modular.yaml::components.schemas.foo.bar.Clone",
+                        "openapi/type_overrides_constructor_order_modules.yaml::components.schemas.zz.Child",
+                    ),
+                    _CROSS_MODULE_PYDANTIC_V2_0_REASON,
+                ),
                 **dict.fromkeys(
                     (
                         "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneRootTag",
@@ -1176,6 +1259,18 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: tuple[
                 "jsonschema/allof_base64_member_constraints.json": (
                     "Pydantic before 2.10.0 dumps a base64 value with a trailing newline, which the schema's "
                     "maxLength counts"
+                ),
+            },
+        },
+    ),
+    (
+        "2.12.0",
+        {
+            PayloadBackend.PYDANTIC_V2: {
+                "openapi/collapse_root_models_package_init.yaml::components.schemas.pkg.Holder": (
+                    "Pydantic 2.0.x warns while it dumps an enum of another module of the generated package through a "
+                    "str field ('Expected json-or-python[json=str, python=any] but got Kind'); 2.12, the next pinned "
+                    "runtime, dumps it without a warning"
                 ),
             },
         },

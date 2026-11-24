@@ -495,6 +495,8 @@ def test_payload_validation_cases_cover_discovered_schema_files() -> None:
 
     The count of the OpenAPI cases that hold the components they reference shows a change that skips them again, and
     the count of the OpenAPI candidates skipped for a reference their case cannot resolve shows those skips.
+    The count of the cases that hold a dotted component name, whose models form a package, shows a change that skips
+    them again.
     """
     unaccounted = discover_unaccounted_files(SCHEMA_CASES)
     if unaccounted:  # pragma: no cover
@@ -507,6 +509,7 @@ def test_payload_validation_cases_cover_discovered_schema_files() -> None:
         bool(case.source_schema["components"]["schemas"]) for case in SCHEMA_CASES if case.input_file_type == "openapi"
     )
     counts["openapi skipped for an unresolved internal $ref"] = len(discover_unresolved_openapi_candidates())
+    counts["openapi generated as a package"] = sum(case.modular for case in SCHEMA_CASES)
     assert_output(json.dumps(dict(sorted(counts.items())), indent=2) + "\n")
 
 

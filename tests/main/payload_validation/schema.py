@@ -400,10 +400,6 @@ def _openapi_components(document: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def _has_dotted_openapi_component_name(document: dict[str, Any]) -> bool:
-    return any("." in name for name in _openapi_components(document))
-
-
 def _referenced_component_names(value: object) -> list[str]:
     """Return the components the references of a schema name: the first pointer segment after the components path."""
     return [
