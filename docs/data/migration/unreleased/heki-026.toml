@@ -1,0 +1,6 @@
+[[change]]
+id = "heki-026"
+extends = "heki-dependency-group"
+covers = [
+    "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
+]
