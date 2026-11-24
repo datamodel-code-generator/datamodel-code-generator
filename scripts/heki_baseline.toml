@@ -7025,6 +7025,13 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "name_final_classes_of_additional_properties"
+rule_code = "EFF201"
+target = "pass:name_final_classes_of_additional_properties:DataModel._internal_template_data"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/imports.py"
+qualname = "name_final_classes_of_additional_properties"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModel._[!_]*"
 count = 1
@@ -7056,6 +7063,13 @@ qualname = "record_pydantic_floor"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
 count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/imports.py"
+qualname = "refresh_sequence_interface_after_renames"
+rule_code = "EFF201"
+target = "pass:refresh_sequence_interface_after_renames:DataModel._internal_template_data"
+count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
@@ -7258,6 +7272,13 @@ path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "derived_override_import"
 rule_code = "MUT203"
 target = "datamodel_code_generator.reference.Reference._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/modules.py"
+qualname = "process_each_module"
+rule_code = "EFF201"
+target = "pass-glue:Parser._recursion_facts"
 count = 1
 
 [[entries]]
@@ -7563,6 +7584,13 @@ count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
+qualname = "fix_constructor_field_ordering_bases_first"
+rule_code = "EFF201"
+target = 'pass:fix_constructor_field_ordering:DataModelFieldBase.extras["init"]'
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "freeze_field_render_plans"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModel._[!_]*"
@@ -7601,6 +7629,13 @@ path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "mark_set_item_models_hashable"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModel._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
+qualname = "order_constructor_fields_by_decided_nested_factories"
+rule_code = "EFF201"
+target = 'pass:order_constructor_fields_by_decided_nested_factories:DataModelFieldBase.extras["init"]'
 count = 1
 
 [[entries]]
@@ -8651,6 +8686,20 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._refuse_untrusted_code"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "Parser._set_nested_model_default_factory_metadata"
+rule_code = "EFF201"
+target = "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_order"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "Parser._set_nested_model_default_factory_metadata"
+rule_code = "EFF201"
+target = "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_recursive_keys"
 count = 1
 
 [[entries]]

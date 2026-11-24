@@ -465,7 +465,17 @@ OVERRIDE_REQUIRED_FIELD = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.REQUIRED, Fact.DEFAULTS),
-    writes=_facts(Fact.FIELD_SET, Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.REQUIRED, Fact.DEFAULTS),
+    writes=_facts(
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_ALIASES,
+        Fact.FIELD_TYPES,
+        Fact.CONTAINERS,
+        Fact.NULLABLE,
+        Fact.CONSTRAINTS,
+        Fact.REQUIRED,
+        Fact.DEFAULTS,
+    ),
     summary="Replaces inherited placeholders by copies of the inherited fields.",
     after=(
         After(
