@@ -323,6 +323,10 @@ def pytest_configure(config: pytest.Config) -> None:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
     config.addinivalue_line(
         "markers",
+        "value_checks: run the test with the value-comparing check areas on, even under --skip-value-checks",
+    )
+    config.addinivalue_line(
+        "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "
         "version_outputs=None, model_outputs=None, expected_stdout=None, config_content=None, "
         "aliases=None, **kwargs): "
@@ -2869,6 +2873,20 @@ def _isolate_builtin_formatter_config(
         encoding="utf-8",
     )
     monkeypatch.chdir(settings_path)
+
+
+@pytest.fixture(autouse=True)
+def _value_check_areas(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Turn the value-comparing check areas on, where unset, for tests marked ``value_checks``.
+
+    A test of an area, or one whose stored output records which areas run, must not depend on the shard's
+    `--skip-value-checks`.
+    """
+    if request.node.get_closest_marker("value_checks") is None:
+        return
+    for name in VALUE_CHECK_AREA_ENVS:
+        if name not in os.environ:
+            monkeypatch.setenv(name, "1")
 
 
 @pytest.fixture

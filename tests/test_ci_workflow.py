@@ -36,11 +36,7 @@ def _job_count(matrix: dict[str, list[str]]) -> int:
 def _skip_value_checks_condition(steps: list[dict[str, str]]) -> str:
     """Return the expression of the sharded run step that passes ``--skip-value-checks`` when it is true."""
     run_step = next(step for step in steps if step.get("name") == "Run sharded test suite")
-    found = re.search(r'if \[ "\$\{\{ (.+?) \}\}" = "true" \]; then\n\s+value_check_args=', run_step["run"])
-    if found is None:
-        msg = "the sharded run step has no condition that passes --skip-value-checks"
-        raise ValueError(msg)
-    return found[1]
+    return re.findall(r'if \[ "\$\{\{ (.+?) \}\}" = "true" \]; then\n\s+value_check_args=', run_step["run"])[0]
 
 
 def _value_check_shards(groups: dict[str, list[dict[str, str]]]) -> dict[str, int]:

@@ -859,6 +859,7 @@ def test_model_graph_check_reports_a_written_model_that_the_store_retired(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+@pytest.mark.value_checks
 def test_model_graph_check_reports_an_emitted_model_that_is_not_written() -> None:
     """A custom parser that drops a model from its module without retiring it leaves it among the emitted models."""
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
@@ -1099,6 +1100,7 @@ def test_process_single_module_override_passes_a_module_name_map_of_its_own() ->
     assert_output("".join(f"# {'/'.join(module)}\n{modules[module].body}\n" for module in sorted(modules)))
 
 
+@pytest.mark.value_checks
 def test_model_graph_check_reports_a_model_without_an_owner(monkeypatch: pytest.MonkeyPatch) -> None:
     """A custom parser that registers a model no model builder built leaves it without an owner and not a root.
 
@@ -3382,6 +3384,7 @@ _EVERY_FIELD_LINE_SCHEMA = (
 
 
 @pytest.mark.allow_direct_assert("a scope gate fails on its own, never through a stored output a fix run accepts")
+@pytest.mark.value_checks
 @pytest.mark.parametrize("output_model_type", list(DataModelType), ids=lambda model_type: model_type.value)
 def test_template_assignment_check_compares_every_field_line(
     monkeypatch: pytest.MonkeyPatch, output_model_type: DataModelType
@@ -3629,6 +3632,7 @@ components:
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+@pytest.mark.value_checks
 @pytest.mark.parametrize(
     ("input_name", "options"),
     [
