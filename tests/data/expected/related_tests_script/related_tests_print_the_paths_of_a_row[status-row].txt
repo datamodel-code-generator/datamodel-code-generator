@@ -1,0 +1,3 @@
+exit status 0
+tests/data/b/new.json
+tests/data/new.json

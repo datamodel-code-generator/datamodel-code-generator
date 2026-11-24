@@ -24,6 +24,20 @@ DEPRECATION = 'warnings.warn(spec["deprecated"], DeprecationWarning'
 OUTPUT_CHANGE = FAKE_FIRST.replace(DEPRECATION, DEPRECATION.replace('"]', '"] + "!"'))
 PASSING_TEST = "def test_passes() -> None:\n    pass\n"
 FAILING_TEST = "def test_fails() -> None:\n    raise AssertionError\n"
+PAYLOAD_ROW = """[[rule]]
+id = "payload-inputs"
+incident = "an added input failed the payload suite"
+paths = ["tests/data/jsonschema/*"]
+status = "AM"
+"""
+PAYLOAD_SUITE = (
+    "import os\n\n\ndef test_inputs() -> None:\n"
+    "    inputs = os.environ.get('DCG_PAYLOAD_INPUTS', {0!r})\n"
+    "    assert (inputs, os.environ.get('DCG_PAYLOAD_MAX_EXAMPLES', '100')) == ({0!r}, '100')\n"
+)
+"""Passes alone (the run of the changed tests); fails where its payload run names inputs other than the given ones."""
+PAYLOAD_FILES = {"scripts/related_tests.toml": PAYLOAD_ROW, "tests/data/jsonschema/new.json": "{}\n"}
+"""A row naming the payload inputs, an added input, and a payload suite that checks the inputs it is given."""
 CANDIDATES = {
     "src unchanged": (None, "given", {}),
     "a change of no output": (FAKE_DEPRECATION, "given", {}),
@@ -39,6 +53,16 @@ CANDIDATES = {
     "a changed test module that passes": (None, "given", {"tests/test_sample.py": PASSING_TEST}),
     "a changed test module that fails": (None, "given", {"tests/test_sample.py": FAILING_TEST}),
     "a changed test helper alone": (None, "given", {"tests/helpers.py": "VALUE = 1\n"}),
+    "an added payload input": (
+        None,
+        "given",
+        {**PAYLOAD_FILES, verify.PAYLOAD_SUITE: PAYLOAD_SUITE.format("tests/data/jsonschema/new.json")},
+    ),
+    "an added payload input the suite fails": (
+        None,
+        "given",
+        {**PAYLOAD_FILES, verify.PAYLOAD_SUITE: PAYLOAD_SUITE.format("tests/data/jsonschema/other.json")},
+    ),
 }
 """Each candidate's `__main__.py` (None: the base's), where its catalog is (given, in the cache or none) and the
 files of the test suite it adds."""
@@ -67,6 +91,7 @@ def test_verify_compares_the_picked_cells_twice(
     if text is not None:
         (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(text, encoding="utf-8")
     for name, content in suite.items():
+        (repo / name).parent.mkdir(parents=True, exist_ok=True)
         (repo / name).write_text(content, encoding="utf-8")
     monkeypatch.chdir(repo)
     argv = [
@@ -106,7 +131,7 @@ def test_verify_compares_the_picked_cells_twice(
     )
 
 
-FAILING = {"a changed test module that fails"}
+FAILING = {"a changed test module that fails", "an added payload input the suite fails"}
 """The cases that must exit 1 with a failed run of the tests, whatever the stored output holds."""
 
 

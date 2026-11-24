@@ -1,0 +1,2 @@
+exit status 0
+src/datamodel_code_generator/parser/other.py
