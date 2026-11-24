@@ -1,0 +1,9 @@
+[[change]]
+id = "bug-7454-boolean-parameter-schema-input-count"
+category = "docs-text"
+title = "The payload test lists the input of the boolean parameter schema test"
+summary = "One OpenAPI input was added for the boolean parameter schema test, so the count of discovered schema files moves."
+refs = ["#7483"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

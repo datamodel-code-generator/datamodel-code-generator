@@ -1,0 +1,8 @@
+{
+ "cls": "violation",
+ "notes": [
+  "notice (notice): a signature could not be taken, so the change lines are unknown",
+  "other-notice (notice): a signature could not be taken, so the change lines are unknown"
+ ],
+ "accepted_by": []
+}
