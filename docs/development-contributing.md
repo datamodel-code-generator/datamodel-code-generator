@@ -1096,6 +1096,34 @@ config models. A row marked `config=False` is the option of a command that no co
 field and for a config field without a row; a field that no option sets is listed in `CONFIG_ONLY_FIELDS` there, with
 the reason.
 
+An opt-in option, one that changes the output of the inputs it reaches, joins the unreleased dated presets on its own
+row: the `preset` cell names the date, the value the presets give the option's config field, and the option group the
+preset pages list for it. `preset.py` derives the groups of that date from these cells, in the order of the option
+table, so neither it nor any other list of the date is edited by hand:
+
+```python
+toggle(
+    Section.TYPING,
+    "--my-new-option",
+    help="Description of what this option does",
+    preset=PresetJoin(
+        "YYYYMMDD",  # the unreleased date
+        {"my_new_option": True},
+        title="Title of its preset group",
+        description="What the presets get from it.",
+    ),
+)
+```
+
+The config is written as `PresetConfig` takes it, so the type checker reads the field and its value. `PresetJoin` also
+takes the `output_model_types`, `input_file_types` and `requires_python_strenum` the group applies to. The date is the
+one unreleased date of `preset_names.py`; when every date is released, the first opt-in pull request of the cycle opens
+the next one, named by its own date, in `preset_names.py` and with a tuple in `preset.py` that reads its groups with
+`_joined_groups`. A released date keeps the order of its groups (20261123 keeps that of 0.101.0, which shipped before
+the cells). `test_static_tables_keep_their_invariants` fails for a join whose date does
+not add its group, for a config that sets another field than the row's own, and for a field that two groups of one
+preset set, both for every output model type or both for the same one.
+
 ### Step 2: Add a test with documentation marker (Required)
 
 Create a test that demonstrates the option and add the `@pytest.mark.cli_doc()` marker:
