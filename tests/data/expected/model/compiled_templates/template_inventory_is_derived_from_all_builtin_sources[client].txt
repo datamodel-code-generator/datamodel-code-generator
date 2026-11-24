@@ -1,4 +1,4 @@
-template count: 13
+template count: 14
 arguments.jinja2
 client.jinja2
 facade.jinja2
@@ -10,6 +10,7 @@ readme.jinja2
 resource.jinja2
 runtime.jinja2
 security.jinja2
+tools.jinja2
 types.jinja2
 webhook.jinja2
 

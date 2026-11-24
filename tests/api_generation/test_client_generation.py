@@ -298,6 +298,11 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-missing-messages",
         "asyncapi-missing-messages-v2",
         "asyncapi-missing-messages-external",
+        "tools",
+        "tools-left-out",
+        "tools-descriptions",
+        "tools-untrusted",
+        "tools-extras",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

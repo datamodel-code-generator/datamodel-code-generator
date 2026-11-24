@@ -1,0 +1,6 @@
+[[change]]
+id = "client-tools-functions-listing"
+extends = "recommend-options-requires-python"
+covers = [
+    "api_generation/fastapi_cli/information.stdout.txt",
+]

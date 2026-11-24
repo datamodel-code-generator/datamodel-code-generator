@@ -44,6 +44,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--client-resource-names": "Name the resources of tags (experimental).",
     "--client-server-base-url": "Resolve relative server URLs against this base URL (experimental).",
     "--client-signature-style": "Declare the arguments of the operation methods (experimental).",
+    "--client-tools": "Add a tool table over the client's operations for agents (experimental).",
     "--collapse-constrained-root-models-as-annotated": "Inline a constrained string root model into a union or a co...",
     "--collapse-reuse-models": "Collapse duplicate models by replacing references instead of inheritance.",
     "--collapse-root-models": "Inline root model definitions instead of creating separate wrapper classes.",

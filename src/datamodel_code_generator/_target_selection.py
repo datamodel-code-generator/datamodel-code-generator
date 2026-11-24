@@ -44,6 +44,7 @@ _CLIENT_CHOICES: Final = (
     "server_base_url",
     "deep_object_brackets",
     "asyncapi_perspective",
+    "tools",
 )
 _INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
 

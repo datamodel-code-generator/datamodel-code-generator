@@ -1,0 +1,35 @@
+# tools-untrusted
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Tool descriptions name each operation's route only, since --untrusted-input keeps the document's text out of what agents read
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated/tools.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/owners/__init__.py
+  client/resources/owners/_async.py
+  client/resources/owners/_sync.py
+  client/resources/pets/__init__.py
+  client/resources/pets/_async.py
+  client/resources/pets/_sync.py
+  client/responses.py
+  client/tools.py
+  client/types/__init__.py
+  client/types/owners/__init__.py
+  client/types/owners/_operations.py
+  client/types/pets/__init__.py
+  client/types/pets/_operations.py
+  models.py

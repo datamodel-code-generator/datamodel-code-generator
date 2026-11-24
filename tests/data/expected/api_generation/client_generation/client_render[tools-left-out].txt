@@ -1,0 +1,46 @@
+# tools-left-out
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving GET /files (client.files.list_files) out of the tools, since its query parameter 'filter' has no model type
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving POST /files (client.files.add_file) out of the tools, since its request body (multipart/form-data) takes no JSON value of a model type
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving PUT /files (client.files.replace_files) out of the tools, since its request body (text/plain, application/xml) takes no JSON value of a model type
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving GET /files/{name} (client.files.read_file) out of the tools, since its 200 image/png response is no JSON value
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving GET /archive (client.files_remove.file) out of the tools, since its tool name 'files_remove_file' is that of DELETE /files/{name} (client.files.remove_file); the name key of --client-operations names its method
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Leaving POST /archive (client.archive.archivé) out of the tools, since its tool name 'archive_archivé' is not 1 to 128 ASCII letters, digits, '_', '.', or '-'; the name key of --client-operations names its method
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/tools.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/archive/__init__.py
+  client/resources/archive/_async.py
+  client/resources/archive/_sync.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/resources/files/__init__.py
+  client/resources/files/_async.py
+  client/resources/files/_sync.py
+  client/resources/files_remove/__init__.py
+  client/resources/files_remove/_async.py
+  client/resources/files_remove/_sync.py
+  client/responses.py
+  client/tools.py
+  client/types/__init__.py
+  client/types/archive/__init__.py
+  client/types/archive/_operations.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  client/types/files/__init__.py
+  client/types/files/_operations.py
+  client/types/files_remove/__init__.py
+  client/types/files_remove/_operations.py
+  models.py

@@ -208,6 +208,29 @@ These operations declare request compression. Their bodies are gzipped by defaul
 {{ compression }}
 ```
 {%- endif %}
+{%- if tools %}
+
+## Tools
+
+`{{ package }}.tools` holds a tool for each operation below, which an agent calls by name with JSON arguments.
+`Toolset(client)` and `AsyncToolset(client)` search the tools, give each one's JSON schemas from the models, and call
+it, returning its JSON result or an error value; `read_only=True` leaves out the tools of unsafe methods.
+
+```python
+from {{ package }} import Client
+from {{ package }}.tools import Toolset
+
+with Client(base_url=...) as client:
+    tools = Toolset(client)
+    found = tools.search("...")
+    schema = tools.schema({{ tool_example | repr }})
+    result = tools.call({{ tool_example | repr }}, {...})
+```
+
+```json
+{{ tool_listing }}
+```
+{%- endif %}
 
 ## Dependencies
 

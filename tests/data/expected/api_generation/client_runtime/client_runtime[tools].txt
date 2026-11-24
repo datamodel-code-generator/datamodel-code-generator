@@ -1,0 +1,150 @@
+# tools pydantic_v2.BaseModel
+  warning UserWarning: <root>/tools_pydantic_v2_basemodel: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/tools_pydantic_v2_basemodel: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/tools_pydantic_v2_basemodel: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  search '' {} = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet', 'owners_get_owner']
+  search 'pet' {'limit': 3} = ['pets_create_pet', 'pets_get_pet', 'pets_replace_pet']
+  search 'owner' {} = ['owners_get_owner']
+  search 'listPets' {} = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet']
+  search 'delete' {} = ['pets_delete_pet']
+  search 'store' {} = []
+  search '' {'tag': 'owners'} = ['owners_get_owner']
+  search with no limit ! ValueError: limit must be a positive integer []
+  search entry = {"description": "Call GET /owners/{ownerId}.", "name": "owners_get_owner", "route": "GET /owners/{ownerId}", "signature": "def owners_get_owner(\n    *,\n    ownerId: UUID,\n) -> GetOwnerResponse: ...", "tags": ["owners"]}
+  schema pets_list_pets = {"description": "Call GET /pets.", "input_schema": {"$defs": {"PetsGetHeaderXTraceParameter": {"type": "string"}, "PetsGetQueryLimitParameter": {"maximum": 100, "minimum": 1, "type": "integer"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"X_Trace": {"$ref": "#/$defs/PetsGetHeaderXTraceParameter"}, "limit": {"$ref": "#/$defs/PetsGetQueryLimitParameter"}, "species": {"$ref": "#/$defs/Species"}}, "type": "object"}, "name": "pets_list_pets", "output_schema": {"$defs": {"Error": {"properties": {"code": {"title": "Code", "type": "integer"}, "message": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Message"}}, "required": ["code"], "title": "Error", "type": "object"}, "Pet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "title": "Born"}, "id": {"title": "Id", "type": "integer"}, "name": {"title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "PetsGetResponse": {"items": {"$ref": "#/$defs/Pet"}, "title": "PetsGetResponse", "type": "array"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "anyOf": [{"$ref": "#/$defs/PetsGetResponse"}, {"$ref": "#/$defs/Error"}]}}
+  schema pets_create_pet = {"description": "Call POST /pets.", "input_schema": {"$defs": {"NewPet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "title": "Born"}, "name": {"minLength": 1, "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["name", "species"], "title": "NewPet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"body": {"$ref": "#/$defs/NewPet"}}, "required": ["body"], "type": "object"}, "name": "pets_create_pet", "output_schema": {"$defs": {"Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "title": "Born"}, "id": {"title": "Id", "type": "integer"}, "name": {"title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}}
+  schema pets_delete_pet = {"description": "Call DELETE /pets/{petId}.", "input_schema": {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}, "name": "pets_delete_pet", "output_schema": {"type": "null"}}
+  schema owners_get_owner = {"description": "Call GET /owners/{ownerId}.", "input_schema": {"$defs": {"OwnersOwnerIdGetPathOwnerIdParameter": {"format": "uuid", "type": "string"}}, "additionalProperties": false, "properties": {"ownerId": {"$ref": "#/$defs/OwnersOwnerIdGetPathOwnerIdParameter"}}, "required": ["ownerId"], "type": "object"}, "name": "owners_get_owner", "output_schema": {"$defs": {"Pet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "title": "Born"}, "id": {"title": "Id", "type": "integer"}, "name": {"title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"id": {"format": "uuid", "title": "Id", "type": "string"}, "pets": {"items": {"$ref": "#/$defs/Pet"}, "title": "Pets", "type": "array"}}, "required": ["id", "pets"], "title": "Owner", "type": "object"}}
+  > GET https://api.example.com/v1/pets?limit=20&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with defaults = [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]
+  > GET https://api.example.com/v1/pets?limit=5&species=cat&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t-1] b''
+  list = []
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"name":"Rex","species":"dog"}'
+  create = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"name":"Rex","species":"dog"}'
+  create refused = {"error": {"body": {"code": 1}, "operation_id": "createPet", "reason": null, "request_id": null, "status_code": 422, "type": "UnprocessableEntityError"}}
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get text = "Rex"
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get missing = {"error": {"body": "gone", "operation_id": "getPet", "reason": null, "request_id": null, "status_code": 404, "type": "NotFoundError"}}
+  > PUT https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
+  replace without a body = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
+  > DELETE https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete = null
+  > DELETE https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete missing = {"error": {"body": null, "operation_id": "deletePet", "reason": null, "request_id": null, "status_code": 404, "type": "NotFoundError"}}
+  > GET https://api.example.com/v1/owners/<call>?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  owner = {"id": "<call>", "pets": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]}
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  connection failure = {"error": {"body": null, "operation_id": "getPet", "reason": null, "request_id": null, "status_code": null, "type": "APIConnectionError"}}
+  > GET https://api.example.com/v1/pets?limit=20&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  long error body = {"operation_id": "listPets", "reason": null, "request_id": null, "status_code": 500, "type": "InternalServerError"}, body str of 65536 characters
+  limit out of range = {"error": {"problems": [{"argument": "limit", "kind": "less_than_equal", "location": [], "message": "Input should be less than or equal to 100"}], "type": "invalid_arguments"}}
+  unknown species = {"error": {"problems": [{"argument": "species", "kind": "enum", "location": [], "message": "Input should be 'cat' or 'dog'"}], "type": "invalid_arguments"}}
+  api key = {"error": {"problems": [{"argument": "key", "kind": "extra_forbidden", "location": [], "message": "Unknown argument"}], "type": "invalid_arguments"}}
+  request options = {"error": {"problems": [{"argument": "options", "kind": "extra_forbidden", "location": [], "message": "Unknown argument"}], "type": "invalid_arguments"}}
+  missing path parameter = {"error": {"problems": [{"argument": "petId", "kind": "missing", "location": [], "message": "Field required"}], "type": "invalid_arguments"}}
+  invalid body = {"error": {"problems": [{"argument": "body", "kind": "string_too_short", "location": ["name"], "message": "String should have at least 1 character"}, {"argument": "body", "kind": "date_from_datetime_parsing", "location": ["born"], "message": "Input should be a valid date or datetime, input is too short"}], "type": "invalid_arguments"}}
+  no arguments object = {"error": {"problems": [{"argument": null, "kind": "dict_type", "location": [], "message": "Arguments must be a JSON object"}], "type": "invalid_arguments"}}
+  unknown tool ! UnknownToolError: No tool is named 'pets_check_pet' []
+  unknown schema ! UnknownToolError: No tool is named 'nope' []
+  read-only search = ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  read-only create ! UnknownToolError: No tool is named 'pets_create_pet' []
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async get = {'id': 3, 'name': 'Rex', 'species': 'dog', 'born': '2020-02-29'}
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async get missing = {'error': {'type': 'NotFoundError', 'reason': None, 'status_code': 404, 'operation_id': 'getPet', 'request_id': None, 'body': {'code': 4}}}
+  async refused = {'error': {'type': 'invalid_arguments', 'problems': [{'argument': 'petId', 'location': [], 'message': 'Input should be a valid integer, unable to parse string as an integer', 'kind': 'int_parsing'}]}}
+  async unknown tool ! UnknownToolError: No tool is named 'nope' []
+# tools pydantic_v2.dataclass
+  warning UserWarning: <root>/tools_pydantic_v2_dataclass: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/tools_pydantic_v2_dataclass: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/tools_pydantic_v2_dataclass: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  search '' {} = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet', 'owners_get_owner']
+  search 'pet' {'limit': 3} = ['pets_create_pet', 'pets_get_pet', 'pets_replace_pet']
+  search 'owner' {} = ['owners_get_owner']
+  search 'listPets' {} = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet']
+  search 'delete' {} = ['pets_delete_pet']
+  search 'store' {} = []
+  search '' {'tag': 'owners'} = ['owners_get_owner']
+  search with no limit ! ValueError: limit must be a positive integer []
+  search entry = {"description": "Call GET /owners/{ownerId}.", "name": "owners_get_owner", "route": "GET /owners/{ownerId}", "signature": "def owners_get_owner(\n    *,\n    ownerId: UUID,\n) -> GetOwnerResponse: ...", "tags": ["owners"]}
+  schema pets_list_pets = {"description": "Call GET /pets.", "input_schema": {"$defs": {"PetsGetHeaderXTraceParameter": {"type": "string"}, "PetsGetQueryLimitParameter": {"maximum": 100, "minimum": 1, "type": "integer"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"X_Trace": {"$ref": "#/$defs/PetsGetHeaderXTraceParameter"}, "limit": {"$ref": "#/$defs/PetsGetQueryLimitParameter"}, "species": {"$ref": "#/$defs/Species"}}, "type": "object"}, "name": "pets_list_pets", "output_schema": {"$defs": {"Error": {"properties": {"code": {"title": "Code", "type": "integer"}, "message": {"title": "Message", "type": "string"}}, "required": ["code"], "title": "Error", "type": "object"}, "Pet": {"properties": {"born": {"format": "date", "title": "Born", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "PetsGetResponse": {"items": {"$ref": "#/$defs/Pet"}, "type": "array"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "anyOf": [{"$ref": "#/$defs/PetsGetResponse"}, {"$ref": "#/$defs/Error"}]}}
+  schema pets_create_pet = {"description": "Call POST /pets.", "input_schema": {"$defs": {"NewPet": {"properties": {"born": {"format": "date", "title": "Born", "type": "string"}, "name": {"minLength": 1, "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["name", "species"], "title": "NewPet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"body": {"$ref": "#/$defs/NewPet"}}, "required": ["body"], "type": "object"}, "name": "pets_create_pet", "output_schema": {"$defs": {"Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"born": {"format": "date", "title": "Born", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}}
+  schema pets_delete_pet = {"description": "Call DELETE /pets/{petId}.", "input_schema": {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}, "name": "pets_delete_pet", "output_schema": {"type": "null"}}
+  schema owners_get_owner = {"description": "Call GET /owners/{ownerId}.", "input_schema": {"$defs": {"OwnersOwnerIdGetPathOwnerIdParameter": {"format": "uuid", "type": "string"}}, "additionalProperties": false, "properties": {"ownerId": {"$ref": "#/$defs/OwnersOwnerIdGetPathOwnerIdParameter"}}, "required": ["ownerId"], "type": "object"}, "name": "owners_get_owner", "output_schema": {"$defs": {"Pet": {"properties": {"born": {"format": "date", "title": "Born", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"id": {"format": "uuid", "title": "Id", "type": "string"}, "pets": {"items": {"$ref": "#/$defs/Pet"}, "title": "Pets", "type": "array"}}, "required": ["id", "pets"], "title": "Owner", "type": "object"}}
+  > GET https://api.example.com/v1/pets?limit=20&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with defaults = [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]
+  > GET https://api.example.com/v1/pets?limit=5&species=cat&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t-1] b''
+  list = []
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"name":"Rex","species":"dog"}'
+  create = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"name":"Rex","species":"dog"}'
+  create refused = {"error": {"body": {"code": 1}, "operation_id": "createPet", "reason": null, "request_id": null, "status_code": 422, "type": "UnprocessableEntityError"}}
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get text = "Rex"
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get missing = {"error": {"body": "gone", "operation_id": "getPet", "reason": null, "request_id": null, "status_code": 404, "type": "NotFoundError"}}
+  > PUT https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
+  replace without a body = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
+  > DELETE https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete = null
+  > DELETE https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete missing = {"error": {"body": null, "operation_id": "deletePet", "reason": null, "request_id": null, "status_code": 404, "type": "NotFoundError"}}
+  > GET https://api.example.com/v1/owners/<call>?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  owner = {"id": "<call>", "pets": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]}
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  connection failure = {"error": {"body": null, "operation_id": "getPet", "reason": null, "request_id": null, "status_code": null, "type": "APIConnectionError"}}
+  > GET https://api.example.com/v1/pets?limit=20&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  long error body = {"operation_id": "listPets", "reason": null, "request_id": null, "status_code": 500, "type": "InternalServerError"}, body str of 65536 characters
+  limit out of range = {"error": {"problems": [{"argument": "limit", "kind": "less_than_equal", "location": [], "message": "Input should be less than or equal to 100"}], "type": "invalid_arguments"}}
+  unknown species = {"error": {"problems": [{"argument": "species", "kind": "enum", "location": [], "message": "Input should be 'cat' or 'dog'"}], "type": "invalid_arguments"}}
+  api key = {"error": {"problems": [{"argument": "key", "kind": "extra_forbidden", "location": [], "message": "Unknown argument"}], "type": "invalid_arguments"}}
+  request options = {"error": {"problems": [{"argument": "options", "kind": "extra_forbidden", "location": [], "message": "Unknown argument"}], "type": "invalid_arguments"}}
+  missing path parameter = {"error": {"problems": [{"argument": "petId", "kind": "missing", "location": [], "message": "Field required"}], "type": "invalid_arguments"}}
+  invalid body = {"error": {"problems": [{"argument": "body", "kind": "string_too_short", "location": ["name"], "message": "String should have at least 1 character"}, {"argument": "body", "kind": "date_from_datetime_parsing", "location": ["born"], "message": "Input should be a valid date or datetime, input is too short"}], "type": "invalid_arguments"}}
+  no arguments object = {"error": {"problems": [{"argument": null, "kind": "dict_type", "location": [], "message": "Arguments must be a JSON object"}], "type": "invalid_arguments"}}
+  unknown tool ! UnknownToolError: No tool is named 'pets_check_pet' []
+  unknown schema ! UnknownToolError: No tool is named 'nope' []
+  read-only search = ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  read-only create ! UnknownToolError: No tool is named 'pets_create_pet' []
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async get = {'id': 3, 'name': 'Rex', 'species': 'dog', 'born': '2020-02-29'}
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async get missing = {'error': {'type': 'NotFoundError', 'reason': None, 'status_code': 404, 'operation_id': 'getPet', 'request_id': None, 'body': {'code': 4}}}
+  async refused = {'error': {'type': 'invalid_arguments', 'problems': [{'argument': 'petId', 'location': [], 'message': 'Input should be a valid integer, unable to parse string as an integer', 'kind': 'int_parsing'}]}}
+  async unknown tool ! UnknownToolError: No tool is named 'nope' []

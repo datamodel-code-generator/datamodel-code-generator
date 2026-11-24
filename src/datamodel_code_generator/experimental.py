@@ -24,6 +24,7 @@ ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
     "behavior.naming-hint",
     "behavior.remote-reference-lock",
+    "cli-option.client-tools",
     "cli-option.generate-client",
     "cli-option.generate-schema-validators",
     "cli-option.generate-server",
@@ -141,6 +142,28 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or "
             "`HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency "
             "errors do not fall back."
+        ),
+    ),
+    "cli-option.client-tools": ExperimentalFeature(
+        id="cli-option.client-tools",
+        kind="cli-option",
+        target="--client-tools functions (client-tools in [tool.datamodel-codegen], client_tools in generate())",
+        message=(
+            "The tool table of a generated client is experimental; its tools, their names, schemas, search, and "
+            "error values may change."
+        ),
+        since_version="0.102.0",
+        note=(
+            "`--client-tools functions` adds `tools.py` to a client package of Pydantic v2 models: `Toolset(client)` "
+            "and `AsyncToolset(client)` hold a tool for each operation whose arguments and success results are JSON "
+            "values, named by its client method, such as `pets_get_pet`. `search(query)` ranks the tools by their "
+            "names, tags, routes, descriptions, and signatures, `schema(name)` gives the JSON schemas of a tool's "
+            "arguments and result from the models, and `call(name, arguments)` validates the arguments through the "
+            "models, calls the client's method, and returns the JSON result, or an error value that holds no "
+            "header, URL, or credential. The arguments are the operation's parameters and body, never a parameter "
+            "at a credential's position or the request options; `read_only=True` leaves out the tools of unsafe "
+            "methods. An operation left out of the tools keeps its method, and generation warns why. Under "
+            "`--untrusted-input` a tool's description names its route only."
         ),
     ),
     "cli-option.generate-client": ExperimentalFeature(

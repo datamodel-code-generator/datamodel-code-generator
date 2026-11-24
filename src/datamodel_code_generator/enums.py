@@ -525,6 +525,12 @@ class ClientAsyncAPIPerspective(Enum):
     Client = "client"
 
 
+class ClientTools(Enum):
+    """Which tool table a generated client adds over its operations, for agents that call them by name."""
+
+    Functions = "functions"
+
+
 __all__ = [
     "DEFAULT_SHARED_MODULE_NAME",
     "MAX_VERSION",
@@ -539,6 +545,7 @@ __all__ = [
     "ClientAsyncAPIPerspective",
     "ClientBodyArguments",
     "ClientSignatureStyle",
+    "ClientTools",
     "ClientType",
     "CollapseRootModelsNameStrategy",
     "ConstructorFieldOrder",

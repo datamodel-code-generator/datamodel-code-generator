@@ -3007,7 +3007,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "error (`_requirements.py`, a leaf that names its ASCII rows), the `AttributeError` of a module "
             "`__getattr__`, which writes the interpreter's own message and runs while modules import, the `repr()` of "
             "bytes, which is ASCII, and the keys that compare values only "
-            "(`parser/_all_of_values.py:schema_signature`, `parser/avro.py`, `_recommend/_signals.py`)"
+            "(`parser/_all_of_values.py:schema_signature`, `parser/avro.py`, `_recommend/_signals.py`); the tool table "
+            "of a client package and the warnings of the operations it leaves out (`_client/render.py:_Tools`, "
+            "`_client/tools.py`)"
         ),
         sites=(
             Home("python_literal.py", "represent_python_value"),
@@ -3024,6 +3026,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_requirements.py"),
             Home("parser/avro.py"),
             Home("_recommend/_signals.py"),
+            Home("_client/render.py", "_Tools"),
+            Home("_client/tools.py"),
         ),
     ),
     DecisionHome(
@@ -4013,8 +4017,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`escape_docstring`, `format_docstring`, `comment_safe`, `inline_comment_safe` (`model/base.py` keeps "
             "their names, and the Jinja filters `escape_docstring` and `format_docstring`)"
         ),
-        adapters="the docstring of a client codec (`_client/codec_render.py:_description`)",
-        sites=(Home("_client/codec_render.py", "_description"),),
+        adapters=(
+            "the docstring of a client codec (`_client/codec_render.py:_description`), the tool table of a client "
+            "package (`_client/render.py`: `_Tools`, `_Facades.tools`)"
+        ),
+        sites=(
+            Home("_client/codec_render.py", "_description"),
+            Home("_client/render.py", "_Tools"),
+            Home("_client/render.py", "_Facades.tools"),
+        ),
     ),
     DecisionHome(
         decision="the line endings of a text read as Python's universal newlines read a file: CRLF and a lone CR as LF",
@@ -4404,7 +4415,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/server/responses.py:_content`; `_runtime/protocols/pagination.py`: `_integer`, `_restored`, "
             "`_runtime/protocols/resume.py:state_count`, `_runtime/protocols/sources.py:_count`, "
             "`_runtime/protocols/uploads.py:_Upload._offered`, `_runtime/protocols/caches.py`, "
-            "`_runtime/client/timing.py:usable_seconds`"
+            "`_runtime/client/timing.py:usable_seconds`, `_runtime/client/tools.py`: `_body`, `_dumped`"
         ),
         sites=(
             Home("_runtime/protocols/records.py", "plain_copy"),
@@ -4421,6 +4432,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_runtime/protocols/uploads.py", "_Upload._offered"),
             Home("_runtime/client/timing.py", "usable_seconds"),
             Home("_runtime/protocols/caches.py"),
+            Home("_runtime/client/tools.py", "_body"),
+            Home("_runtime/client/tools.py", "_dumped"),
         ),
     ),
     DecisionHome(
@@ -6559,11 +6572,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         adapters=(
             "`_client/plan.py:Planner.resolved`, `_fastapi/plan.py:Planner.selected` (each target keeps only its own "
-            "forms and its own rules where they differ)"
+            "forms and its own rules where they differ), `_client/tools.py:plan_tools` (a tool's description, the "
+            "docstring of its method)"
         ),
         sites=(
             Home("_client/plan.py", "Planner.resolved"),
             Home("_fastapi/plan.py", "Planner.selected"),
+            Home("_client/tools.py", "plan_tools"),
         ),
     ),
     DecisionHome(
@@ -6584,7 +6599,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_client/codec_plan.py:CodecRuntime.modules`, `_client/codec_render.py` (the model bindings' import and "
             "codec arguments), `_client/runtime.py:Capabilities.modules`, `_fastapi/render.py` "
-            "(`ServerRenderer.runtime`, `_declared`)"
+            "(`ServerRenderer.runtime`, `_declared`), `_client/render.py:_Tools.result` (the codec of a tool's result)"
         ),
         sites=(
             Home("_client/codec_plan.py", "CodecRuntime.modules"),
@@ -6592,6 +6607,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_fastapi/render.py", "ServerRenderer.runtime"),
             Home("_fastapi/render.py", "_declared"),
             Home("_client/codec_render.py"),
+            Home("_client/render.py", "_Tools.result"),
         ),
     ),
     DecisionHome(

@@ -25,6 +25,8 @@ client/responses.py: __future__, collections.abc, dataclasses, typing, typing_ex
 client/retry.py: ..model_codecs.media, ..model_codecs.unset, .errors, .options, .responses, __future__, collections.abc, dataclasses, datetime, email.utils, enum, math, re, typing
 client/security.py: .positions, .urls, __future__, collections.abc, dataclasses, httpx2, typing
 client/timing.py: ..model_codecs.media, ..model_codecs.unset, .errors, __future__, anyio, collections.abc, dataclasses, datetime, math, secrets, sys, time, typing
+client/tool_search.py: __future__, collections.abc, re, typing
+client/tools.py: ..model_codecs.media, ..model_codecs.pydantic_adapters, .errors, .tool_search, __future__, collections.abc, dataclasses, operator, pydantic, pydantic.json_schema, typing, typing_extensions
 client/urls.py: .options, __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
 model_codecs/__init__.py: -
 model_codecs/errors.py: __future__

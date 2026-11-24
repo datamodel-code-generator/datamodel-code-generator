@@ -1,0 +1,6 @@
+[[change]]
+id = "client-tools-functions-prompt"
+extends = "preset-20261124"
+covers = [
+    "main_kr/help_shows_new_options.txt",
+]

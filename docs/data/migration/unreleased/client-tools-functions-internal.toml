@@ -1,0 +1,13 @@
+[[change]]
+id = "client-tools-functions-internal"
+category = "internal"
+title = "Inventories of the tool table's template and runtime"
+summary = "The template inventory, the Jinja oracle and the runtime import listing gain the tools.jinja2 role and the copied tool runtime modules."
+refs = ["#1"]
+covers = [
+    "change_records/owner_of[a Jinja oracle of the builtin templates is internal].txt",
+    "change_records/owner_of[the rendering of real models through the compiled templates stays model output].txt",
+    "model/compiled_templates/target_templates_match_jinja_oracle[client].rendered.txt",
+    "model/compiled_templates/template_inventory_is_derived_from_all_builtin_sources[client].txt",
+    "model_codecs/wire_values/runtime_imports_stay_embeddable.txt",
+]

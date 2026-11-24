@@ -1,0 +1,10 @@
+[[change]]
+id = "client-tools-functions-docs"
+category = "docs-text"
+title = "Docs listings of --client-tools"
+summary = "The docs example registry gains the agent tools how-to, and the playground lists --client-tools among the target options it does not run."
+refs = ["#1"]
+covers = [
+    "build_docs_examples_script/docs_examples_registry.txt",
+    "build_playground_assets_script/playground_target_options_unsupported.txt",
+]
