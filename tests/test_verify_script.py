@@ -75,14 +75,17 @@ def _without_pytest_failure_text(lines: list[str]) -> list[str]:
     `FAILED` summary lines stay.
     """
     kept: list[str] = []
-    in_tracebacks = False
+    in_tracebacks = in_failure_message = False
     for line in lines:
         if line.startswith("=") and " FAILURES " in line:
             in_tracebacks = True
         elif line.startswith("=") and " short test summary info " in line:
             in_tracebacks = False
+        elif in_failure_message and line[:1].isspace():
+            continue  # a summary message some pytest versions continue on indented lines
         elif not in_tracebacks:
-            kept.append(line.split(" - ")[0] if line.startswith("FAILED tests/") else line)
+            in_failure_message = line.startswith("FAILED tests/")
+            kept.append(line.split(" - ")[0] if in_failure_message else line)
     return kept
 
 
