@@ -67,7 +67,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
 - ``IMP101``: no new import cycle of the package, and no module joins a cycle or merges two (``[imports] cycle-edges``
   names every kind: module and class level, in a function, lazy and under ``TYPE_CHECKING``). heki reports each group of
   modules that import each other once, its modules as the target, so the baseline holds today's groups and a changed
-  group is a new report. heki reports it as a warning, so ``fail-on = "warning"`` makes it fail the check.
+  group is a new report. heki reports it as a warning, so ``fail-on = "warning"`` makes it fail the check. A cycle of
+  the imports that run while their modules load inside a group adds no report: the ``heki`` lane refuses every such
+  cycle with ``IMP101`` over those imports alone (``tests/test_build_heki_contracts_script.py``).
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these

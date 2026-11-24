@@ -610,7 +610,12 @@ other, by any import: at module or class level, in a function and under
 `if TYPE_CHECKING:` (the contracts name every kind in `[imports] cycle-edges`).
 Its report names the modules of the group, so `scripts/heki_baseline.toml`
 holds today's four groups, and a new cycle, a module that joins a group and two
-groups that merge are new reports. `scripts/check_ratchets.py`
+groups that merge are new reports. A cycle of the imports that run while their
+modules load (module or class level, under a version, platform or
+`ImportError` guard too) is refused whatever the baseline holds: the `heki`
+lane runs `IMP101` over those imports alone
+(`tests/test_build_heki_contracts_script.py`), as a group reports once and such
+a cycle inside a group of lazy ones adds no report. `scripts/check_ratchets.py`
 counts the modules on the import cycles of `scripts/` as
 `import-cycle:<measure>@scripts` keys (`scripts/_import_cycles.py`):
 `module-level` for the cycles of the imports that run when their module is

@@ -140,10 +140,10 @@ the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them a
 """
 
 
-def _heki(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    """Run heki of the environment (the heki dependency group installs it) with the contracts of the repository."""
+def _heki(*args: str, cwd: Path, config: Path = CONTRACTS) -> subprocess.CompletedProcess[str]:
+    """Run heki of the environment (the heki dependency group installs it), with the contracts of the repository."""
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
-    command = [heki, "check", "--config", str(CONTRACTS), *args, "src"]
+    command = [heki, "check", "--config", str(config), *args, "src"]
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
 
 
@@ -245,6 +245,39 @@ SEEDED_CYCLES = {
 }
 """Three pairs of modules that import each other, by an import at module level, in a function and under
 ``TYPE_CHECKING``, and a pair that imports one way."""
+MODULE_LEVEL_CYCLES = """\
+[lint]
+select = ["IMP101"]
+fail-on = "warning"
+
+[imports]
+cycle-edges = ["body"]
+"""
+"""heki's ``IMP101`` over the imports that run while their modules load, which the package holds to no cycle whatever
+the baseline of the contracts keeps: such a cycle inside a group of modules that already import each other adds no
+report of the contracts, which report a group once."""
+
+
+def _cycle_reports(result: subprocess.CompletedProcess[str]) -> list[tuple[str, str, str]]:
+    """Return the path, rule and target of each report of a heki run with JSON output."""
+    return sorted(
+        (Path(item["path"]).as_posix(), item["rule_code"], item["target"]) for item in json.loads(result.stdout)
+    )
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the guard of the package must fail the test, not be stored as an expected output")
+def test_the_package_has_no_import_cycle_that_runs_while_its_modules_load(tmp_path: Path) -> None:
+    """No import cycle of the package runs while its modules load: at module or class level, under a guard too."""
+    config = tmp_path / "module_level_cycles.toml"
+    config.write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
+
+    result = _heki("--output-format", "full", cwd=ROOT, config=config)
+
+    assert result.returncode == 0, (
+        "an import here runs while its module loads and closes an import cycle; move what its modules share into a "
+        "module that imports none of them\n" + result.stdout + result.stderr
+    )
 
 
 @needs("heki")
@@ -252,27 +285,28 @@ SEEDED_CYCLES = {
 def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
     """A cycle fails the check whether the import that closes it runs while its module loads, in a function or never.
 
-    Each report names the modules of its cycle, which a baseline entry keeps.
+    Each report names the modules of its cycle, which a baseline entry keeps. The guard of the imports that run while
+    their modules load reports only the first.
     """
     for name, text in SEEDED_CYCLES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
-
     (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+    (config := tmp_path / "module_level_cycles.toml").write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
 
     result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+    module_level = _heki("--output-format", "json", cwd=tmp_path, config=config)
 
-    found = sorted(
-        (Path(item["path"]).as_posix(), item["rule_code"], item["target"]) for item in json.loads(result.stdout)
-    )
-    assert (result.returncode, found) == (
+    body = (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b")
+    assert (result.returncode, _cycle_reports(result)) == (
         1,
         [
-            (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b"),
+            body,
             (f"{PACKAGE}/function_b.py", "IMP101", f"{PACKAGE_NAME}.function_a, {PACKAGE_NAME}.function_b"),
             (f"{PACKAGE}/typing_b.py", "IMP101", f"{PACKAGE_NAME}.typing_a, {PACKAGE_NAME}.typing_b"),
         ],
     ), result.stderr
+    assert (module_level.returncode, _cycle_reports(module_level)) == (1, [body]), module_level.stderr
 
 
 SEEDED_SHARED = {
