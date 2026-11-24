@@ -6,6 +6,7 @@
 a Jinja oracle of the builtin templates is internal	change_records/owner_of[a Jinja oracle of the builtin templates is internal].txt
 a payload classification stays model output	change_records/owner_of[a payload classification stays model output].txt
 the count of the discovered schema files is a listing	change_records/owner_of[the count of the discovered schema files is a listing].txt
+the list of the builtin templates is a listing	change_records/owner_of[the list of the builtin templates is a listing].txt	= change_records/owner_of[the count of the discovered schema files is a listing].txt
 the other payload outputs stay model output	change_records/owner_of[the other payload outputs stay model output].txt	= change_records/owner_of[a payload classification stays model output].txt
 the rendering of real models through the compiled templates stays model output	change_records/owner_of[the rendering of real models through the compiled templates stays model output].txt	= change_records/owner_of[a payload classification stays model output].txt
 [test_parse_entry_cells]
