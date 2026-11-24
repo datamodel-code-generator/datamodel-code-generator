@@ -1,0 +1,5 @@
+option = "--read-allof-parents-as-their-models"
+input = "jsonschema/allof_parents_as_models/ref_sibling_parents.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]
+off_args = []

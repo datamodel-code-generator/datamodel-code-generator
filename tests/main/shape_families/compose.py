@@ -26,7 +26,7 @@ the slot extend it), and keeps only the definitions the outer checked definition
 the level at depth ``d`` carry the prefix ``PREFIXES[d]``, so no two levels share a name. The checked definition of a
 composition is that of its first level; its backends are those every level's family is generated for
 (``FAMILY_BACKENDS``). A composition is left out where a property that a level declares beside the inner (``p`` of
-the mix, the tag ``kind``) has no value in common with each of the inner's declarations of it (``fits``): the realism
+the mix, the tag ``kind``) has no value in common with what the inner declares of it (``fits``): the realism
 filter of the ``mixin`` family, across levels.
 
 The bound: 138 placed levels and 750 plain shapes, chains of at most ``MAX_LEVELS`` levels, so at most 103,500
@@ -335,41 +335,33 @@ def facts(definitions: Mapping[str, Schema], schema: Schema, seen: frozenset[str
     )
 
 
-def _instance(definitions: Mapping[str, Schema], name: str) -> list[Schema]:
-    """Return the schemas that describe one instance of ``name``: itself and what it extends or is a branch of.
+def _declared(definitions: Mapping[str, Schema], schema: Schema, prop: str, seen: frozenset[str]) -> Schema | None:
+    """Return the schema that one instance of ``schema`` gives the property ``prop``, or None where nothing declares it.
 
-    That follows ``$ref``, ``allOf``, ``oneOf`` and ``anyOf`` only; a definition held by a property, container item or
+    It reads ``schema`` as ``facts`` does: its own declaration, its ``allOf`` members and its ``$ref`` hold at once,
+    and the branches of its ``oneOf`` or ``anyOf`` are alternatives, which bound ``prop`` only where every branch
+    declares it (a branch that does not leaves it free). A definition held by a property, container item or
     container value describes another object.
     """
-    found: list[Schema] = []
-    seen: set[str] = set()
-    pending: list[Schema] = [definitions[name]]
-    seen.add(name)
-    while pending:
-        schema = pending.pop()
-        found.append(schema)
-        members = [_schema(member) for key in ("allOf", "oneOf", "anyOf") for member in _items(schema.get(key))]
-        if isinstance(target := schema.get("$ref"), str) and (ref := target.removeprefix(REF)) not in seen:
-            seen.add(ref)
-            members.append(definitions[ref])
-        pending.extend(members)
-    return found
-
-
-def _declarations(definitions: Mapping[str, Schema], name: str, prop: str) -> list[Schema]:
-    """Return every schema the same instance of ``name`` gives the property ``prop``."""
-    return [
-        _schema(_schema(schema.get("properties")).get(prop))
-        for schema in _instance(definitions, name)
-        if prop in _schema(schema.get("properties"))
-    ]
+    members = _items(schema.get("allOf"))
+    if isinstance(target := schema.get("$ref"), str) and (name := target.removeprefix(REF)) not in seen:
+        seen |= {name}
+        members = [*members, definitions[name]]
+    parts = [_schema(declaration)] if (declaration := _schema(schema.get("properties")).get(prop)) is not None else []
+    parts.extend(found for member in members if (found := _declared(definitions, _schema(member), prop, seen)))
+    for key in ("oneOf", "anyOf"):
+        branches = [_declared(definitions, _schema(branch), prop, seen) for branch in _items(schema.get(key))]
+        parts.extend([{"anyOf": branches}] if branches and None not in branches else [])
+    return {"allOf": parts} if parts else None
 
 
 def fits(chain: tuple[Level, ...]) -> bool:
     """Return whether a composition is one an author writes, as far as the properties declared on two levels go.
 
     A property a level declares beside the inner, which the inner declares too, needs a value that the level's
-    declaration and one of the inner's admit.
+    declaration and the inner's admit: every declaration the inner's instance holds at once (its own, its ``allOf``
+    members and what it references) and one branch of each ``oneOf`` or ``anyOf`` whose branches all declare it
+    (``_declared``).
 
     This is the filter of the ``mixin`` family, applied across levels: a pair without a common value has no valid value
     of that property at all.
@@ -380,8 +372,9 @@ def fits(chain: tuple[Level, ...]) -> bool:
         if (watch := PLACEMENTS[level.family].watch) is None:
             continue
         own = _schema(_schema(level.definitions[watch[0]].get("properties")).get(watch[1]))
-        found = _declarations(definitions, PREFIXES[depth + 1] + chain[depth + 1].name, watch[1])
-        if found and not any(has_common_value(own, declaration) for declaration in found):
+        inner = PREFIXES[depth + 1] + chain[depth + 1].name
+        declared = _declared(definitions, definitions[inner], watch[1], frozenset({inner}))
+        if declared is not None and not has_common_value(own, declared):
             return False
     return True
 

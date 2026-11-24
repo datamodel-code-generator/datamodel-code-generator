@@ -361,6 +361,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "mark_forward_references",
             "mark_serialized_as_any",
             "mark_target_null",
+            "name_additional_properties_classes",
             "name_enum_member",
             "name_enum_member_literal_class",
             "name_reference",

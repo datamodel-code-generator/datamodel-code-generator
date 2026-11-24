@@ -4267,8 +4267,15 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/model/_field_imports.py"
 qualname = "can_skip_data_type_imports"
-rule_code = "MUT206"
-target = "_is_container"
+rule_code = "MUT203"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/_field_imports.py"
+qualname = "can_skip_data_type_imports"
+rule_code = "MUT204"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
 count = 1
 
 [[entries]]
@@ -4295,15 +4302,29 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/model/_field_imports.py"
 qualname = "has_renderable_data_type_without_type_hint"
-rule_code = "MUT206"
-target = "_writes_nothing_of_its_own"
+rule_code = "MUT203"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/_field_imports.py"
+qualname = "has_renderable_data_type_without_type_hint"
+rule_code = "MUT204"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/_field_imports.py"
 qualname = "mapping_writes_value"
-rule_code = "MUT206"
-target = "_own_text"
+rule_code = "MUT203"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/_field_imports.py"
+qualname = "mapping_writes_value"
+rule_code = "MUT204"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
 count = 1
 
 [[entries]]
@@ -4316,6 +4337,13 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/model/_field_imports.py"
 qualname = "write_pre_render_nullability"
+rule_code = "MUT203"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/_field_imports.py"
+qualname = "write_pre_render_nullability"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model._decisions.nullability.takes_member_null"
 count = 1
@@ -4323,16 +4351,9 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/model/_field_imports.py"
 qualname = "write_pre_render_nullability"
-rule_code = "MUT206"
-target = "_is_container"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/_field_imports.py"
-qualname = "write_pre_render_nullability"
-rule_code = "MUT207"
-target = "_materialize_render_state"
-count = 2
+rule_code = "MUT204"
+target = "datamodel_code_generator.model._field_imports._DataTypeView._[!_]*"
+count = 3
 
 [[entries]]
 path = "src/datamodel_code_generator/model/_render_plan.py"
@@ -4638,8 +4659,8 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/model/dataclass.py"
 qualname = "DataClass.unbind_fields"
-rule_code = "MUT201"
-target = "DataModelFieldBase._unbound_field"
+rule_code = "MUT205"
+target = "_unbound_field"
 count = 1
 
 [[entries]]
@@ -6549,9 +6570,16 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "override_required_field"
-rule_code = "MUT203"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
-count = 2
+rule_code = "MUT206"
+target = "_deferred_inherited_class"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "MUT206"
+target = "_deferred_inherited_field"
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
@@ -6837,14 +6865,14 @@ count = 1
 path = "src/datamodel_code_generator/parser/_passes/cross_module.py"
 qualname = "flatten_narrowed_inherited_fields"
 rule_code = "MUT204"
-target = "datamodel_code_generator.model.base._walk_bases_first"
+target = "datamodel_code_generator.model.base.DataModel._[!_]*"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/cross_module.py"
 qualname = "flatten_narrowed_inherited_fields"
-rule_code = "MUT207"
-target = "_declares_inherited_fields"
+rule_code = "MUT204"
+target = "datamodel_code_generator.model.base._walk_bases_first"
 count = 1
 
 [[entries]]
@@ -6885,6 +6913,13 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "_alias_imports_hidden_by_loaded_submodules"
+rule_code = "MUT203"
+target = "datamodel_code_generator.model.base.DataModel._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/imports.py"
+qualname = "_alias_imports_hidden_by_loaded_submodules"
 rule_code = "MUT204"
 target = "datamodel_code_generator._module_paths.is_within_name"
 count = 1
@@ -6894,13 +6929,6 @@ path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "_alias_imports_hidden_by_loaded_submodules"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._passes._import_edges._written_package"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_alias_imports_hidden_by_loaded_submodules"
-rule_code = "MUT206"
-target = "_builtin_name_bindings"
 count = 1
 
 [[entries]]
@@ -7060,8 +7088,8 @@ count = 2
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "alias_reused_variant_literal"
-rule_code = "MUT204"
-target = "datamodel_code_generator.reference._BaseModel._[!_]*"
+rule_code = "MUT207"
+target = "_set_literal_import"
 count = 1
 
 [[entries]]
@@ -7123,8 +7151,8 @@ count = 2
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "record_pydantic_floor"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
+rule_code = "MUT207"
+target = "_writes_bytes_pattern_rust_rejects"
 count = 1
 
 [[entries]]
@@ -7147,13 +7175,6 @@ qualname = "reject_unimportable_imports"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 3
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "render_modules"
-rule_code = "MUT207"
-target = "_replace"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
@@ -7298,23 +7319,23 @@ count = 2
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "collapse_root_models_in_scope"
-rule_code = "MUT203"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "collapse_root_models_in_scope"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "collapse_root_models_in_scope"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser.generation.GenerationStore._[!_]*"
 count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/modules.py"
+qualname = "collapse_root_models_in_scope"
+rule_code = "MUT206"
+target = "_type_dependent_constraints"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/modules.py"
+qualname = "collapse_root_models_in_scope"
+rule_code = "MUT207"
+target = "_set_runtime_expression_imports"
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
@@ -7403,15 +7424,8 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "type_dict_keys_by_root_types"
-rule_code = "MUT203"
-target = "datamodel_code_generator.model.base.DataModel._[!_]*"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "type_dict_keys_by_root_types"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModel._[!_]*"
+rule_code = "MUT206"
+target = "_keys_take_root_type"
 count = 1
 
 [[entries]]
@@ -7663,14 +7677,14 @@ count = 3
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "freeze_field_render_plans"
 rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
+target = "datamodel_code_generator.types.type_expr_of"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "freeze_field_render_plans"
-rule_code = "MUT204"
-target = "datamodel_code_generator.types.type_expr_of"
+rule_code = "MUT207"
+target = "_build_frozen_render_plan"
 count = 1
 
 [[entries]]
@@ -7769,13 +7783,6 @@ path = "src/datamodel_code_generator/parser/_passes/structure.py"
 qualname = "configure_code_formatter"
 rule_code = "MUT206"
 target = "_build_code_formatter"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/structure.py"
-qualname = "configure_code_formatter"
-rule_code = "MUT207"
-target = "_replace"
 count = 1
 
 [[entries]]
@@ -8017,13 +8024,6 @@ target = "*"
 count = 1
 
 [[entries]]
-path = "src/datamodel_code_generator/parser/_schema_object.py"
-qualname = "_locate"
-rule_code = "MUT205"
-target = "*"
-count = 1
-
-[[entries]]
 path = "src/datamodel_code_generator/parser/_schema_reading.py"
 qualname = "<module>"
 rule_code = "MUT204"
@@ -8250,8 +8250,8 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_tag_plan.py"
 qualname = "_root_writes_default"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
+rule_code = "MUT207"
+target = "_render_plan"
 count = 1
 
 [[entries]]
@@ -8642,8 +8642,8 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/avro.py"
 qualname = "AvroParser._finalize_structured_imports"
-rule_code = "MUT201"
-target = "DataModelFieldBase.default"
+rule_code = "MUT205"
+target = "default"
 count = 1
 
 [[entries]]
@@ -10035,8 +10035,8 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
 qualname = "untyped_value_data_type"
-rule_code = "MUT205"
-target = "import_"
+rule_code = "MUT201"
+target = "DataType.import_"
 count = 1
 
 [[entries]]

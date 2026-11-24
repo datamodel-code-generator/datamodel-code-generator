@@ -68,6 +68,8 @@ from datamodel_code_generator.preset_names import PRESET_NAMES
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from datamodel_code_generator._types.generate_config_dict import BaseGenerateConfig as BaseGenerateConfigDict
+
 
 class OptionCategory(str, Enum):
     """Categories for organizing CLI options in documentation."""
@@ -155,12 +157,31 @@ class Exclusive(Enum):
 
 
 @record
+class PresetJoin:
+    """The dated presets an opt-in option joins, and the option group that documents it there.
+
+    The presets of ``date`` set the config field of the option to its value in ``config``, written as ``PresetConfig``
+    takes it, so the type checker reads the field and its value; the group takes the ``title`` and ``description`` the
+    preset pages list, and applies only to the output model types, input file types and Python targets its cells name.
+    """
+
+    date: str
+    config: BaseGenerateConfigDict
+    title: str
+    description: str
+    output_model_types: frozenset[DataModelType] = frozenset()
+    input_file_types: frozenset[InputFileType] = frozenset()
+    requires_python_strenum: bool = False
+
+
+@record
 class Option:
     """A command-line option: its flags, where the parser adds it, the arguments argparse takes for it, and its cells.
 
     The cells are those of its documentation: its category, unset where it is that of its help section, its group
-    and topic, the relations that start from its positive flag, and whether only its --no- form is documented; and
-    whether a config carries its value (``config``), false for the options of a command, such as ``--help``.
+    and topic, the relations that start from its positive flag, and whether only its --no- form is documented;
+    whether a config carries its value (``config``), false for the options of a command, such as ``--help``; and the
+    dated presets it joins (``preset``).
     """
 
     flags: tuple[str, ...]
@@ -174,6 +195,7 @@ class Option:
     conflicts: tuple[CLIOptionRelation, ...] = ()
     meta_on_negative_only: bool = False
     config: bool = True
+    preset: PresetJoin | None = None
 
     @property
     def section(self) -> Section:
@@ -186,7 +208,7 @@ class Option:
         return self.arguments.get("dest") or field_name(next(f for f in self.flags if f.startswith("--"))[2:])
 
 
-_CELLS: Final = frozenset({"implies", "requires", "conflicts", "meta_on_negative_only", "config"})
+_CELLS: Final = frozenset({"implies", "requires", "conflicts", "meta_on_negative_only", "config", "preset"})
 
 
 _DOC_CELLS: Final = {OptionCategory: "category", OptionGroup: "group", OptionTopic: "topic"}
@@ -870,6 +892,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "extends, as the model keeps a generated base (the generated base class is named `BaseModelModel` where a "
         "kept class is named `BaseModel`); without it the model inherits only the generated base class and the "
         "import of the class stays unused, as in 0.100.0.",
+        preset=PresetJoin(
+            "20261123",
+            {"keep_bases_beside_generic_base_class": True},
+            title="Configured bases beside the generic base class",
+            description=(
+                "Keep the classes a model is configured to inherit, from --base-class-map, customBasePath, "
+                "--base-class or the class an --external-ref-mapping or x-python-import schema stands for, beside the "
+                "generated base class of --use-generic-base-class, so the model keeps their members and their import "
+                "is used."
+            ),
+        ),
     ),
     toggle(
         (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
@@ -927,6 +960,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "document that holds them; without it the Struct holds IPv4Address, IPv6Address, IPv4Network, IPv6Network "
         "and Path, as in 0.100.0, which msgspec decodes only with a dec_hook. Other output model types keep the "
         "classes.",
+        preset=PresetJoin(
+            "20261123",
+            {"use_str_for_formats_msgspec_cannot_decode": True},
+            title="str for the formats msgspec cannot decode",
+            description=(
+                "Under --use-standard-primitive-types, write str for ipv4, ipv6, ipv4-network, ipv6-network and path "
+                "in msgspec.Struct output, whose msgspec has no decoder for IPv4Address, IPv6Address, IPv4Network, "
+                "IPv6Network and Path, so a document that holds them decodes."
+            ),
+        ),
     ),
     flag(
         (Section.MODEL, _C.TEMPLATE, _G.IMPORTS),
@@ -1149,6 +1192,18 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "`pattern` beside a `$ref` to base64 text is checked on the text where the output checks base64 constraints "
         "on the text. Without it the later member's keyword wins, another member's `enum` is dropped, the map becomes "
         "a model without fields and the keyword is checked on the decoded value, as in 0.100.0",
+        preset=PresetJoin(
+            "20261123",
+            {"intersect_merged_allof_members": True},
+            title="Merged allOf members intersected",
+            description=(
+                "Read the allOf members the generator merges into one schema keyword by keyword, as JSON Schema "
+                "validates them: a property several merged object members declare takes the type, null and multipleOf "
+                "they all admit and the members' own allOf members, a named allOf of a $ref and value members keeps "
+                "the enum of every member, a map $ref beside property counts stays a map with the counts, and in "
+                "Pydantic v2 output a length or pattern beside a $ref to base64 text is checked on the text."
+            ),
+        ),
     ),
     toggle(
         Section.TYPING,
@@ -1160,6 +1215,19 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "allOf of a $ref alias and a member that adds only a type or required names reads the alias as "
         "--intersect-combined-schema-keywords reads alias members; without it such properties can be Any or optional "
         "and such a model a dict, as in 0.100.0",
+        preset=PresetJoin(
+            "20261123",
+            {"read_allof_parents_as_their_models": True},
+            title="allOf parents read as their models",
+            description=(
+                "Read each allOf parent as its model holds it: a parent written as a $ref beside sibling keywords with "
+                "the schema its $ref names, so a model written before that parent types and requires an inherited "
+                "property as it does after it; keep every property some parent requires required where another parent "
+                "declares it optional; and read an alias member beside a member that adds only a type or required "
+                "names as alias members are read elsewhere, so such a model keeps the fields of the schema the alias "
+                "names."
+            ),
+        ),
     ),
     toggle(
         Section.TYPING,
@@ -1205,6 +1273,18 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "string they check, as AnyUrl takes no pattern; an output that writes a date or UUID format as `str`, as "
         "msgspec does, also keeps the keywords an `allOf` member adds beside a `$ref` to it. Without it these "
         "keywords are left out, silently or with a warning, as in 0.100.0",
+        preset=PresetJoin(
+            "20261123",
+            {"keep_string_keywords_beside_formats": True},
+            title="String keywords kept beside formats",
+            description=(
+                "Keep the minLength, maxLength and pattern beside a string format that Pydantic output writes as a "
+                "class no constr call constrains: an email takes them in Annotated[EmailStr, Field(...)], a byte "
+                "writes them in front of the base64 decoding and a uri is the plain string they check; an output that "
+                "writes a date or UUID format as str, as msgspec does, keeps the keywords an allOf member adds beside "
+                "a $ref to it."
+            ),
+        ),
     ),
     toggle(
         (Section.TYPING, _C.FIELD),
@@ -1348,6 +1428,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "(an integer enum's key '2' is the integer 2), also where an earlier discriminated union already wrote the tag "
         "field of the variant or of the base it inherits it from, so a key reads alike whichever union comes first; "
         "without it such a key is read against the Literal the earlier union wrote, or stays text (as in 0.100.0).",
+        preset=PresetJoin(
+            "20261123",
+            {"read_mapping_keys_by_schema_tag_type": True},
+            title="Mapping keys by the schema's tag type",
+            description=(
+                "Read the keys of a discriminator mapping as values of the type the schema declares for the tag "
+                "property, such as the integer 2 for the key '2' of an integer enum, also where an earlier "
+                "discriminated union wrote the tag field of the variant or of its base, so the key reads alike "
+                "whichever union comes first."
+            ),
+        ),
     ),
     toggle(
         (Section.TYPING, _C.FIELD),
@@ -1358,6 +1449,18 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "Pydantic cannot hash, so a key only the RootModel matches raises `TypeError`, and the other member reads "
         "the keys it matches, as in 0.100.0. A key whose members are all RootModels is typed by the root types "
         "with or without the option",
+        preset=PresetJoin(
+            "20261123",
+            {"use_root_types_for_mixed_union_map_keys": True},
+            title="Root types for mixed union map keys",
+            description=(
+                "Type the RootModel members of a map key that is a union with a non-RootModel member, such as a "
+                "propertyNames anyOf of an enum, or of a string with a maxLength, and a RootModel, by their root "
+                "types, so a key that only the RootModel matches is accepted, and a key that both match parses as its "
+                "root type, here a UUID for JSON input, as it does where the key names the RootModel alone. A Python "
+                "dict input keeps such a key as a str."
+            ),
+        ),
     ),
     toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),
@@ -1471,6 +1574,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "base both declare a field and the class takes the one that does not hash, the uniqueItems array stays a "
         "list; without it only the field the nearest base declares is read and such an array is a set whose items "
         "fail to hash, as in 0.100.0",
+        preset=PresetJoin(
+            "20261123",
+            {"read_set_item_fields_in_class_order": True},
+            title="Set item fields read in class order",
+            description=(
+                "Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of "
+                "its class bases, so a uniqueItems array of models whose class takes an inherited field that does not "
+                "hash stays a list instead of a set those items cannot be added to."
+            ),
+        ),
     ),
     toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),
@@ -1762,6 +1875,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "a map value of any form (a nested array, a map, an `allOf` of one `$ref`), as it is written for a scalar or "
         "an object (`list[list[float] | None]`); without it those items reject null, as in 0.100.0. The option adds no "
         "null to an enum or a `const`; an enum that lists null admits it with or without the option",
+        preset=PresetJoin(
+            "20261123",
+            {"keep_null_of_nullable_items": True},
+            title="Null kept on nullable items",
+            description=(
+                "Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, "
+                "a map value of any form, a nested array, a map or an allOf of one $ref included, as it is written for "
+                "a scalar or an object. The option adds no null to an enum or a const; an enum that lists null admits "
+                "it with or without the option."
+            ),
+        ),
     ),
     toggle(
         (Section.FIELD, _C.MODEL),
@@ -1838,6 +1962,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "renamed because it is named like its type (`Pet_1` with `alias='Pet'`), so the subclass holds one field for "
         "the wire key; without it the redeclared field keeps its name beside the inherited renamed one, so two "
         "fields read the key, as in 0.100.0",
+        preset=PresetJoin(
+            "20261123",
+            {"rename_redeclared_fields_hiding_types": True},
+            title="Redeclared fields renamed with their base",
+            description=(
+                "Give a field that a subclass redeclares the name its base's field was given where that field is "
+                "renamed because it is named like its type, so the subclass holds one field for the key instead of its "
+                "own beside the inherited renamed one."
+            ),
+        ),
     ),
     toggle(
         Section.FIELD,
@@ -1849,6 +1983,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "that a subclass redeclares the name of the renamed field, as --rename-redeclared-fields-hiding-types "
         "does. Without it these outputs keep the field and the type names, as in 0.100.0, and type checkers "
         "report the annotation",
+        preset=PresetJoin(
+            "20261123",
+            {"rename_fields_hiding_types_from_type_checkers": True},
+            title="Fields named like their types told apart for type checkers",
+            description=(
+                "Rename a msgspec field, or a dataclass type, that a field the class body assigns hides from type "
+                "checkers because it is named like it, the way Pydantic output renames the field: the msgspec field "
+                "keeps the wire name in name=, and a dataclass, which has no alias, renames the type."
+            ),
+        ),
     ),
     # Options for templating output
     value(
@@ -2196,6 +2340,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "fetched. Without it a $defs member without schema keywords is read for its entries alone, only "
         "components/schemas are OpenAPI resources, an anchor of another document is found by the released search, and "
         "a URL another document of the run declares is fetched where that succeeds, as in 0.100.0.",
+        preset=PresetJoin(
+            "20261123",
+            {"read_refs_in_their_resources": True},
+            title="References in their schema resources",
+            description=(
+                "Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas ($defs members, inline "
+                "OpenAPI operation and component schemas) and each $ref in the schema resource that encloses it, so a "
+                "pointer inside a bundled $id resource names that resource's definitions, a plain-name anchor of "
+                "another document names its schema, and a resource the run holds is never fetched."
+            ),
+        ),
     ),
     toggle(
         Section.BASE,

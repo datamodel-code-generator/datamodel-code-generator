@@ -87,7 +87,7 @@ class Error(Exception):
 
 
 _ModuleRestoreState = tuple[str, object]
-_ParentSchema = tuple[dict[str, object], dict[str, object], frozenset[str]]
+_ParentSchema = tuple[dict[str, object], dict[str, object], frozenset[str], dict[str, object]]
 
 
 def _path_is_within(path: str | Path, directory: Path) -> bool:
@@ -1497,11 +1497,21 @@ def _partition_inherited_fields(
     schema: dict[str, object],
     model_class: type[BaseModel],
     parent_fields: dict[str, Any],
-    parent_properties: dict[str, object],
-    parent_required: frozenset[str],
+    parent: _ParentSchema,
+    released_schema: dict[str, object],
 ) -> tuple[dict[str, object], list[str], dict[str, str]]:
-    """Keep effective replacements separate from unchanged inherited properties."""
-    original_props = cast("dict[str, object]", schema.get("properties", {}))
+    """Keep effective replacements separate from unchanged inherited properties.
+
+    ``released_schema`` and the last item of ``parent`` are the schemas of the model and of the parent as 0.100.0
+    named their definitions, before reuse named them by class (``_allocate_reused_definitions``). A field they name by
+    different definitions, which Pydantic does where the model reaches another class of the name, stays redeclared as
+    in 0.100.0, so the module reaches the classes in the same order and binds each plain import name to the same class.
+    """
+    _, parent_properties, parent_required, released_parent_schema = parent
+    original_props, released_props, released_parent_props = (
+        cast("dict[str, object]", properties.get("properties", {}))
+        for properties in (schema, released_schema, released_parent_schema)
+    )
     original_required = cast("list[str]", schema.get("required", []))
     required_names = frozenset(original_required)
     inherited_names: set[str] = set()
@@ -1513,6 +1523,7 @@ def _partition_inherited_fields(
         if child_wire in original_props and (
             parent_wire != child_wire
             or original_props[child_wire] != parent_properties.get(parent_wire)
+            or released_props.get(child_wire) != released_parent_props.get(parent_wire)
             or (child_wire in required_names) != (parent_wire in parent_required)
         ):
             overrides[child_wire] = parent_wire
@@ -1537,10 +1548,12 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
     *,
     schema_types: dict[str, type | str],
     identify_definitions: Callable[[dict[str, object]], dict[str, object]] | None = None,
+    released_schema: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Transform a single model's schema to use allOf inheritance structure.
 
-    ``identify_definitions`` names the definitions of each parent's schema as the root's are named.
+    ``identify_definitions`` names the definitions of each parent's schema as the root's are named;
+    ``released_schema`` is ``schema`` before that (``_partition_inherited_fields``), ``schema`` when it is not given.
     """
     if getattr(model_class, "__pydantic_root_model__", False):
         return schema
@@ -1562,10 +1575,11 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
         parent_schema = _model_schema_with_python_types(
             parent, schema_generator, expression_collector, generic_definitions, schema_types
         )
+        released_parent_schema = parent_schema
         if identify_definitions is not None:
             parent_schema = identify_definitions(parent_schema)
         if definitions is not None:
-            parent_schema = definitions.normalize(parent_schema, parent)
+            parent_schema = released_parent_schema = definitions.normalize(parent_schema, parent)
         parent_properties = cast("dict[str, object]", parent_schema.get("properties", {}))
         parent_required = frozenset(cast("list[str]", parent_schema.get("required", [])))
         parent_schema = _transform_single_model_to_inheritance(
@@ -1578,9 +1592,10 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
             generic_definitions,
             schema_types=schema_types,
             identify_definitions=identify_definitions,
+            released_schema=released_parent_schema,
         )
-        processed_parents[parent] = parent_schema, parent_properties, parent_required
-    parent_schema, parent_properties, parent_required = processed_parents[parent]
+        processed_parents[parent] = parent_schema, parent_properties, parent_required, released_parent_schema
+    parent_schema = processed_parents[parent][0]
 
     if "$defs" in parent_schema:
         parent_defs = cast("dict[str, object]", parent_schema["$defs"])
@@ -1591,7 +1606,11 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
     defs[parent_name] = parent_def
 
     child_props, child_required, overrides = _partition_inherited_fields(
-        schema, model_class, parent.model_fields, parent_properties, parent_required
+        schema,
+        model_class,
+        parent.model_fields,
+        processed_parents[parent],
+        schema if released_schema is None else released_schema,
     )
 
     new_schema: dict[str, object] = {"$defs": defs, "allOf": [{"$ref": definition_ref("$defs", parent_name)}]}
@@ -1891,6 +1910,7 @@ def _load_single_model_schema(
                 obj, schema_generator, expression_collector, definition_types, schema_types
             )
             _add_reused_definitions(nested_models, definition_types, identify=True)
+            released_schema = schema
             identify_definitions = (
                 None
                 if nested_models is None
@@ -1912,6 +1932,7 @@ def _load_single_model_schema(
                 generic_definitions=definition_types,
                 schema_types=schema_types,
                 identify_definitions=identify_definitions,
+                released_schema=released_schema,
             )
         elif _typed_fields_family(obj) not in {None, _OutputModelFamily.MSGSPEC}:
             _require_json_schema_input(input_file_type, "a dataclass or TypedDict")

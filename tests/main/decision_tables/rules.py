@@ -316,16 +316,7 @@ TAGS: Final[tuple[Kept, ...]] = (
         tags.TABLE,
         "rejects-valid",
         PRESET,
-        (
-            {
-                "form": ("enum1-str", *_ENUM2),
-                "count": (3,),
-                "nullable": (True,),
-                "mapping": (False,),
-                "backend": (PYDANTIC_V2,),
-            },
-            {"nullable": (True,), "kind": ("anyOf",), "backend": (PYDANTIC_V2,)},
-        ),
+        ({"nullable": (True,), "kind": ("anyOf",), "backend": (PYDANTIC_V2,)},),
         "a discriminator whose tag also admits null: the model imports and rejects a tag or the null tag",
     ),
     Kept(
@@ -358,14 +349,6 @@ TAGS: Final[tuple[Kept, ...]] = (
         BOTH,
         (
             {"form": ("enum2-str",), **_SHARED_PAIR, "nullable": (True,), "mapping": (False,), "backend": (MSGSPEC,)},
-            {
-                "form": ("enum2-int",),
-                **_SHARED_PAIR,
-                "nullable": (True,),
-                "mapping": (False,),
-                "kind": ("anyOf",),
-                "backend": (MSGSPEC,),
-            },
             {
                 "form": ("enum1-str", "schema-name"),
                 **_SHARED_PAIR,

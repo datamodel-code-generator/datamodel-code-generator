@@ -8911,10 +8911,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     msg = f"its $ref chain loops back without reaching a schema to type it by: {cycle}"
                     raise SchemaParseError(msg, path=[key])
                 for model in self.results:
-                    if key in (classes := model.additional_properties_reference_classes):
-                        other_classes = {path for path in classes if path != key}
-                        self._output_model_context.store_additional_properties_reference_classes(
-                            model.extra_template_data, {*other_classes, target.path}
+                    if key in (classes := model.additional_properties_reference_classes) and isinstance(
+                        source := self._output_model_context.additional_properties_type_source(
+                            model.extra_template_data
+                        ),
+                        DataType,
+                    ):
+                        self._graph_builder.name_additional_properties_classes(
+                            model, source, {*(path for path in classes if path != key), target.path}
                         )
             if (target_model := modelled.get(target.path)) is not None and any(
                 data_type.reference is reference for data_type in target_model.all_data_types

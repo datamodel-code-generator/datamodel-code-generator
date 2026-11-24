@@ -1,0 +1,5 @@
+option = "--use-str-for-formats-msgspec-cannot-decode"
+input = "jsonschema/use_standard_primitive_types.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "msgspec.Struct"]
+off_args = ["--output-model-type", "msgspec.Struct"]

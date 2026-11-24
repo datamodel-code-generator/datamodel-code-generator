@@ -22,8 +22,9 @@ symbol types.py:DataType.type_hint
     src/datamodel_code_generator/model/typed_dict.py x3
     src/datamodel_code_generator/parser/_object_maps.py x3
     ... 11 more (--all)
-  rows that list it as a site (2):
+  rows that list it as a site (3):
     site: how a data type writes its type hint, and the base hint of RootModel generics: one expr... [Placement Guide] (home `types.py`: `type_expr_of`, `ren...
+    site: which members a union holds, in which order, whether it writes None itself, and how it ... [Placement Guide] (home `model/_decisions/union_assembly...
     site: which data types and models name a `Reference` (its back links, `Reference.children`, i... [Placement Guide] (home `_graph_links.py`: `add_child`, ...
   tests (2):
     mirror: tests/test_types.py
