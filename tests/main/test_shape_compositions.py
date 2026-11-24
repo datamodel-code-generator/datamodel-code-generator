@@ -157,6 +157,30 @@ def _view_domain(family: str) -> dict[str, tuple[object, ...]]:
     }
 
 
+def _params_domain() -> dict[str, tuple[object, ...]]:
+    """Return the values each composition parameter takes (``compose.params``), the backend among them.
+
+    The first level is placed, the last plain, and a level between them either.
+    """
+    found: dict[str, set[object]] = {
+        "backend": {backend for family in FAMILIES.values() for backend in family.backends}
+    }
+    for depth in range(MAX_LEVELS):
+        held = (
+            *(placed_levels() if depth < MAX_LEVELS - 1 else ()),
+            *(plain_levels() if depth > 0 else ()),
+        )
+        for level in held:
+            for name, value in (("family", level.family), *level.params):
+                found.setdefault(f"{depth}.{name}", set()).add(value)
+    return {name: tuple(values) for name, values in found.items()}
+
+
+def _domain(family: str) -> dict[str, tuple[object, ...]]:
+    """Return the values a box of a composition rule of ``family`` may name: a placement's view or the parameters."""
+    return _params_domain() if family == COMPOSITION else _view_domain(family)
+
+
 def _reference_holds(rule: Kept) -> bool:
     """Return whether a composition rule's reference is an issue (``#n``) or a legacy row of its basis."""
     if rule.basis == LEGACY_ROW:
@@ -166,11 +190,14 @@ def _reference_holds(rule: Kept) -> bool:
 
 @pytest.mark.allow_direct_assert("The composition rules are a static table; each check lists the rules that break it.")
 def test_composition_rules_are_well_formed() -> None:
-    """Every composition rule names a placement, kind, contracts, issue or legacy row and view values that exist."""
+    """Every composition rule names a placement, kind, contracts, issue or legacy row and view values that exist.
+
+    A rule of ``COMPOSITION`` names composition parameters and values that exist instead (``_params_domain``).
+    """
     assert [
         rule.reference
         for rule in COMPOSED
-        if rule.family not in PLACEMENTS
+        if (rule.family not in PLACEMENTS and rule.family != COMPOSITION)
         or rule.kind not in KINDS
         or not _reference_holds(rule)
         or not rule.contracts <= CONTRACTS.keys()
@@ -180,7 +207,7 @@ def test_composition_rules_are_well_formed() -> None:
         for rule in COMPOSED
         for box in rule.boxes
         for name, values in box.items()
-        if not set(values) <= set(_view_domain(rule.family).get(name, ()))
+        if not set(values) <= set(_domain(rule.family).get(name, ()))
     ] == []
 
 
