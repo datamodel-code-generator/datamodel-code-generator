@@ -66,6 +66,8 @@ from tests.main.shape_families.moves import moved, verdicts
 from tests.main.shape_families.verdict import CONTRACTS, KINDS, judge
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from tests.main.shape_families.compose import Level
     from tests.main.shape_families.kept import Kept
 
@@ -157,28 +159,53 @@ def _view_domain(family: str) -> dict[str, tuple[object, ...]]:
     }
 
 
-def _params_domain() -> dict[str, tuple[object, ...]]:
-    """Return the values each composition parameter takes (``compose.params``), the backend among them.
+def _params_domain() -> dict[tuple[int, str], dict[str, set[object]]]:
+    """Return the parameters and values of the levels of each family at each depth of a composition (``params``).
 
     The first level is placed, the last plain, and a level between them either.
     """
-    found: dict[str, set[object]] = {
-        "backend": {backend for family in FAMILIES.values() for backend in family.backends}
-    }
+    found: dict[tuple[int, str], dict[str, set[object]]] = {}
     for depth in range(MAX_LEVELS):
         held = (
             *(placed_levels() if depth < MAX_LEVELS - 1 else ()),
             *(plain_levels() if depth > 0 else ()),
         )
         for level in held:
-            for name, value in (("family", level.family), *level.params):
-                found.setdefault(f"{depth}.{name}", set()).add(value)
-    return {name: tuple(values) for name, values in found.items()}
+            params = found.setdefault((depth, level.family), {})
+            for name, value in level.params:
+                params.setdefault(name, set()).add(value)
+    return found
 
 
-def _domain(family: str) -> dict[str, tuple[object, ...]]:
-    """Return the values a box of a composition rule of ``family`` may name: a placement's view or the parameters."""
-    return _params_domain() if family == COMPOSITION else _view_domain(family)
+def _parameter_values(box: Mapping[str, tuple[object, ...]], name: str) -> set[object]:
+    """Return the values a composition parameter of a box may take: those of the levels the box names at its depth.
+
+    ``<depth>.family`` takes the families of that depth, ``<depth>.<parameter>`` the values of that parameter on the
+    levels at that depth of the families the box names there (every family where it names none); ``backend`` every
+    backend.
+    """
+    if name == "backend":
+        return {backend for family in FAMILIES.values() for backend in family.backends}
+    depth, _, parameter = name.partition(".")
+    at = {family: params for (where, family), params in _params_domain().items() if str(where) == depth}
+    if parameter == "family":
+        return set(at)
+    named = box.get(f"{depth}.family", tuple(at))
+    return set().union(*(at.get(str(family), {}).get(parameter, set()) for family in named))
+
+
+def _box_misses(family: str, box: Mapping[str, tuple[object, ...]]) -> list[tuple[str, tuple[object, ...]]]:
+    """Return the entries of a composition rule's box that name a parameter or value no covered cell has.
+
+    A box of ``COMPOSITION`` names composition parameters (``_parameter_values``), any other a placement's view
+    (``_view_domain``). An empty box names nothing and covers every cell: it is one miss.
+    """
+    if not box:
+        return [("", ())]
+    if family == COMPOSITION:
+        return [(name, values) for name, values in box.items() if not set(values) <= _parameter_values(box, name)]
+    domain = _view_domain(family)
+    return [(name, values) for name, values in box.items() if not set(values) <= set(domain.get(name, ()))]
 
 
 def _reference_holds(rule: Kept) -> bool:
@@ -192,7 +219,8 @@ def _reference_holds(rule: Kept) -> bool:
 def test_composition_rules_are_well_formed() -> None:
     """Every composition rule names a placement, kind, contracts, issue or legacy row and view values that exist.
 
-    A rule of ``COMPOSITION`` names composition parameters and values that exist instead (``_params_domain``).
+    A rule of ``COMPOSITION`` names composition parameters and values that the levels its boxes name have instead
+    (``_parameter_values``); no box is empty.
     """
     assert [
         rule.reference
@@ -206,8 +234,7 @@ def test_composition_rules_are_well_formed() -> None:
         (rule.reference, name, values)
         for rule in COMPOSED
         for box in rule.boxes
-        for name, values in box.items()
-        if not set(values) <= set(_domain(rule.family).get(name, ()))
+        for name, values in _box_misses(rule.family, box)
     ] == []
 
 
