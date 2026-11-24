@@ -1,0 +1,12 @@
+[[change]]
+id = "bug-g33-union-shape-warnings-compositions"
+extends = "bug-g33-union-shape-warnings"
+refs = ["#1"]
+
+[[change.cells]]
+input = ["composition:*/**/union/**", "composition:*/**/tagged/**"]
+input_file_type = "jsonschema"
+backends = "*"
+options = "*"
+aspects = ["warning"]
+match = "^\\[warning\\] added .*--distribute-allof-over-(unions reads the member in place|object-branches gives it one variant per model)"
