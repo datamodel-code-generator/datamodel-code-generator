@@ -1,0 +1,1 @@
+{"pass_name": "report_parse_diagnostics", "rule": "undeclared", "row": "DataType.strict", "facts": ["BASES"], "model": "Child", "phase": "SETTLE", "known": false}

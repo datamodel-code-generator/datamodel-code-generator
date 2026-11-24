@@ -1,0 +1,1 @@
+{"pass_name": "apply_generic_base_class", "rule": "after-final", "row": "DataModel.custom_base_class", "facts": ["BASES"], "model": "Person", "phase": "CROSS_MODULE", "known": false}

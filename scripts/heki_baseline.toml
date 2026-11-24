@@ -6556,6 +6556,90 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataModelFieldBase._nullable_without_default"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.data_types"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_dict"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_frozen_set"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_list"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_mapping"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_optional"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_sequence"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_set"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_tuple"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.kwargs"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.tuple_item_count"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
 rule_code = "MUT201"
 target = "DataModel.fields"
 count = 2

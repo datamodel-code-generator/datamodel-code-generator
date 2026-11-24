@@ -761,8 +761,8 @@ of `parser/_pipeline.py`: a `PassSpec` runs one pass, named as its declaration, 
 steps. The labels that only the checks read live in `scripts/pass_decls.py`: the boundary each segment enters
 (`BOUNDARY_BEFORE`: `PARSED`, B1, `DECIDED`, B2) and the sub-table of each hook (`HOOK_BODIES`). The `Runner` is the
 only caller of a pass; the finality check of the test suite (`tests/checks/parse.py`) runs each one inside the scope
-of its declaration, a module pass with the models of its module (`CHECKED_MODELS`); steps call passes through the
-parser instance, so overrides and `--debug` tracing apply as to any method. The diagnostics warnings that name the code calling
+of its declaration with the models it compares (`CHECKED_MODELS`); steps call passes through the parser instance, so overrides and `--debug` tracing apply as to any
+method. The diagnostics warnings that name the code calling
 `parse()` (the dangling and schema-resource references, and each `enum` that lists no value, which the schema objects of
 a document collect as they are validated) find that frame however deep the pipeline is (`warn_at_parse_caller`).
 
@@ -775,9 +775,8 @@ which the pass declares as reads, so that the order rule covers them. A trigger 
 parser subclass or a model class that makes such a fact elsewhere keeps the pass running only where the trigger names
 it (constructor ordering also runs for a model class that overrides `restore_required_inherited_field_state`). With
 `DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS` on (the nightly run of the test suite on the newest Python, or `pytest --check-pass-triggers`), a pass whose trigger is false
-runs anyway and fails on any fact of any model, memo revision, import, parser attribute, run-state field or warning it
-changes (`tests/checks/finality.py:ParseChecks.idle_pass`, which needs `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`
-to compare the facts); other runs skip it as users do, and every run compares the same
+runs anyway and fails on any fact, memo revision, import, parser attribute, run-state field or warning it changes
+(`tests/checks/finality.py:ParseChecks.idle_pass`); other runs skip it as users do, and every run compares the same
 stored output. Only the passes that `TRIGGERS` of `scripts/check_pass_pipeline.py` lists have a trigger, each with the
 reason its exact form costs more (`Trigger.kept_because`); any other pass returns early from the first statement of
 its body when its source is empty, and a `when` names only options (`CONFIGURATION` of the same script).
@@ -792,9 +791,11 @@ the segments enter the boundaries in order and satisfy the order rule, that the 
 decision registry follows the rules of the [Decision Phase](#decision-phase), and lists the warnings whose
 `stacklevel` reaches past their caller. heki's contracts hold the construction of `FinalFacts` to
 `GenerationStore.seal_facts` and the name-mangled members of `Parser` to its body. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
-runs; the test suite keeps the traces of a few inputs and checks that some input runs every declared pass. heki holds
-the writes of each pass to its declaration ([Fact Finality](#fact-finality)); reads are declared from the code. A new
-pass gets a declaration and a table entry.
+runs; the test suite keeps the traces of a few inputs and checks that some input runs every declared pass. The finality
+check ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator
+runs; reads and the writes of presentation rows are declared from the code. heki's pass boundaries check the same
+declarations statically for the calls heki resolves ([Fact Finality](#fact-finality)). A new pass gets a declaration
+and a table entry.
 
 <!-- BEGIN AUTO-GENERATED PASS DECLARATIONS -->
 !!! note "Generated pass table"
@@ -832,7 +833,7 @@ pass gets a declaration and a table entry.
 | PLAN | `record_emitting_modules` | global | bookkeeping | - | MODULE_MEMBERSHIP | Records the module that writes each model, for the names --collapse-root-models-name-strategy gives. |
 | MODULES | `record_decimal_alias_models` | module | bookkeeping | - | FIELD_NAMES | Runs when: a field of the module is named Decimal. |
 | MODULES | `alias_shadowed_imports` | module | transform | DEFAULT_EXPRESSION, IMPORT_ALIASES | FIELD_NAMES, MODULE_IMPORTS | Aliases imports that field names shadow, in types and in runtime expressions of defaults. |
-| MODULES | `override_required_field` | module | transform | CONSTRAINTS, CONTAINERS, DEFAULTS, FIELD_ALIASES, FIELD_NAMES, FIELD_SET, FIELD_TYPES, NULLABLE, REQUIRED | BASES, DEFAULTS, FIELD_SET, REQUIRED | Replaces inherited placeholders by copies of the inherited fields. After `record_decimal_alias_models`: restoring inherited names swaps names within a model, so the names the Decimal check read stay. After `alias_shadowed_imports`: restoring inherited names swaps names within a model, so the names the import aliases read stay. |
+| MODULES | `override_required_field` | module | transform | DEFAULTS, FIELD_ALIASES, FIELD_NAMES, FIELD_SET, REQUIRED | BASES, DEFAULTS, FIELD_SET, REQUIRED | Replaces inherited placeholders by copies of the inherited fields. After `record_decimal_alias_models`: restoring inherited names swaps names within a model, so the names the Decimal check read stay. After `alias_shadowed_imports`: restoring inherited names swaps names within a model, so the names the import aliases read stay. |
 | MODULES | `replace_unique_list_to_set` | module | transform | CONTAINERS, DEFAULTS, FIELD_TYPES | CONSTRAINTS, DEFAULTS, FIELD_TYPES, NULLABLE, REQUIRED | Runs when: use_unique_items_as_set, not by value. After `override_required_field`: converts the defaults that inherited required fields bring. |
 | MODULES | `change_from_import` | module | transform | IMPORT_ALIASES, MODULE_IMPORTS, NULLABLE, QUOTING | CLASS_NAMES, FIELD_TYPES, MODULE_MEMBERSHIP | After `alias_shadowed_imports`: imports referenced models after shadowed imports took their aliases. After `replace_unique_list_to_set`: writes the nullability of imported types after the sets read it. |
 | MODULES | `extract_inherited_enum` | module | transform | MODELS_EXIST, MODEL_KIND | BASES, FIELD_SET, MODEL_KIND, MODULE_IMPORTS |  |
@@ -1068,8 +1069,8 @@ first.
 The decisions run in registry order, which must be the order the order rule computes from their declarations
 (`decision_order`): a decision that reads what another writes runs after it, every other conflicting pair needs an
 `After` edge in the `after` of its declaration (the only explicit edges a decision has), and the registration order
-breaks ties. heki holds each decision to the facts it declares, which it may write until `DECIDE` ends
-([Fact Finality](#fact-finality)).
+breaks ties. The finality check runs each inside the
+scope of its declaration, so it holds its writes to the facts it declares ([Fact Finality](#fact-finality)).
 `scripts/check_pass_pipeline.py` checks every registry: unique names that no table pass has, global transforms of
 `DECIDE` that read and write facts only, an issue each, and the order rule, whose order the registry lists.
 
@@ -1155,41 +1156,65 @@ reach a merged `_internal` module, except for a root model that the `parent` str
 which is removed from the module that holds it: unused roots of other collapses stay in merged modules. Later passes
 change presentation or derive from those facts.
 
-heki checks this table and the pass declarations on the code (`scripts/heki.toml`, built by
-`scripts/build_heki_contracts.py` from `scripts/pass_decls.py` and `scripts/fact_tables.py`). Each pass after L1 and
-each decision is an effect boundary (`pass:<name>`) over the functions its step or its `DecisionPass` runs and those
-they call: it may write a fact or presentation row only when it declares one of the row's facts (`BASES` for a fact
-row of a base), not every fact it declares of the row is final at a freeze point its phase has passed (B1, entering
-`RENDER_PREPARATION` for facts, which a decision may still write during `DECIDE`; B2, entering `IMPORTS`, for the
-rendered nullability rows and the render facts that `RENDER_FACT_FREEZE_POINTS` freezes there), and its phase is not
-later than the row's `final_after` (a decision: the end of `DECIDE` at the earliest). No pass writes
-`GenerationStore.phase`; the pipeline enters the phases. A dict entry row (`extras["init"]`) is the entry a store
-operation's key names. The `pass-glue` boundary holds the code between the passes (the hooks of the tables and the
-parser methods they call, the runner, the decision phase) to no fact write. `scripts/check_pass_pipeline.py` checks
-that each pass runs in the phase it declares. The baseline `scripts/heki_baseline.toml` keeps the findings of today's
-pipeline that `KNOWN_FINDINGS` of the builder lists, each with what removes it.
+The finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`) checks
+this table and the pass declarations while the generator runs. It is a value check of the test suite: the pull request
+shards pass `--skip-value-checks` except the Python 3.14 coverage shards, and runs of `main`, the schedule, manual runs
+and the nightly trigger run keep it on. It keeps a fingerprint per model: the values of the
+`fact` rows of `scripts/fact_tables.py` on the model, its fields and the data types of their types and of its bases,
+holding the objects it keys. When a pass ends, it compares the models the pass touched (the models of its module and the
+models they reference, for a module pass; the models that guarded writes and store operations reached; the models the
+pass reported changed with `GenerationStore.note_changed_models` or a field's `invalidate_semantic_caches`) and reports
+a changed row as
 
-The finality check of the test suite (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`, a
-value check: the pull request shards that skip value checks leave it off) checks what depends on the values a parse
-holds, which no static check can tell. It keeps a fingerprint per model: the values of the `fact` rows of
-`scripts/fact_tables.py` on the model, its fields and the data types of their types and of its bases, holding the
-objects it keys. When a module pass ends, it compares the models it touched (the models of its module and the models
-they reference; the models that guarded writes and store operations reached; the models the pass reported changed with
-`GenerationStore.note_changed_models` or a field's `invalidate_semantic_caches`) and reports a changed model of
-another module as `other-module` (whether that module is done is in the report): which model a write reaches is a
-value. A model of another module that the pass is about to write is compared before the write, and changes outside
-module passes are taken as they are, at the start and the end of each module, when the next module pass starts and
-when the pipeline leaves a phase. At B2 the ordering-input check compares the fields of bases that constructor ordering
-read after the decision phase (`get_inherited_constructor_info` of `parser/_passes/_shared.py`), with the facts
-`fix_constructor_field_ordering` declares as reads, with those fields at B2 (`ordering-input`): render preparation of
-a later module must not change what an earlier module's ordering read. A pass the trigger check runs where its trigger
-is false compares every model the same way, and any change of a fact fails it (`PASS_TRIGGERS`). `KNOWN_WRITES` in
+- `undeclared` when the pass declares none of the row's facts,
+- `other-module` when a module pass changed a model of another module (whether that module is done is in the report),
+- `frozen` when every declared fact of the row is final at a freeze point the pipeline has passed: B1 (entering
+  `DECIDE`, right after `apply_generic_base_class`) for facts, B2 (entering `IMPORTS`) for the rendered nullability
+  rows and the render facts that `RENDER_FACT_FREEZE_POINTS` freezes there,
+- `after-final` when the phase is later than the row's `final_after`; a decision writes the facts it declares until
+  `DECIDE` ends, whatever the row's `final_after`.
+
+A change that no pass covers is `unattributed`, found at the next comparison of its model: when a pass touches it, when
+the next pass starts (for a guarded write outside every pass), at the start and the end of each module and when the
+pipeline leaves a phase: entering a phase (`GenerationStore.enter_phase`, which includes B1 and B2) compares every
+model. With `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP` on as well (the test suite on the newest Python), a
+global pass that transforms or repairs compares every model too. A pass that runs in another phase than it declares is `wrong-phase`. At B2 the ordering-input
+check compares the fields of bases that constructor ordering read after the decision phase
+(`get_inherited_constructor_info` of `parser/_passes/_shared.py`), with the facts `fix_constructor_field_ordering` declares as reads, with those
+fields at B2 (`ordering-input`): render preparation of a later module must not change what an earlier module's
+ordering read. `KNOWN_WRITES` in
 `tests/checks/finality.py` lists the violations of today's pipeline, each with the roadmap item that removes it and a
 witness, the `datamodel-codegen` arguments of one run that makes it; they are reported with `report:<path>` and never
 raise. `python scripts/check_fact_finality.py --witnesses` (and the test suite) run the witnesses and report the entries
 whose witness no longer makes them, so the list only shrinks. Presentation rows, parser state, module imports and
-computed rows (a property of the model class) are not fingerprinted. That a decision of the decision phase reads no
-render fact is heki's check too ([Decision Phase](#decision-phase)).
+computed rows (a property of the model class) are not fingerprinted, and only type aliases hold `TYPE_ALIAS_BODY` in
+their rows. A row is judged by the freeze points of the facts the pass declares, so a pass that declares only
+`IMPORT_ALIASES` (final at render) can change `DataType.type`, `python_type`, `kwargs`, `extras` or
+`enum_member_literals` after B1 without a report, and one that declares only `TYPE_ALIAS_BODY` (final at B2) can
+change a type alias's `data_type` or `data_types` after B1, although `FIELD_TYPES` of those rows is final at B1. That
+a decision of the decision phase reads no render fact is heki's check ([Decision Phase](#decision-phase)), not this
+one's.
+
+The check also seals the graph at the freeze points: once the pipeline has passed B1, each guarded write to an object
+that a fingerprint holds (an attribute assignment of a fact or presentation row, or a mutation of a guarded list such as
+`fields`, `base_classes` or `data_types`) is judged when it is made, inside store operations as well, with the same
+`frozen` rule: the facts the running pass declares among the row's facts, or all of the row's facts outside every pass.
+A write that changes no value is not judged, and it covers presentation rows, which no fingerprint holds.
+
+heki checks the declared writes statically as well, for the calls it resolves. `scripts/build_heki_contracts.py`
+builds an effect boundary `pass:<name>` for each pass after L1 and each decision from `scripts/pass_decls.py` and
+`scripts/fact_tables.py`: its scopes are the functions the table step runs (read from `parser/_passes/_tables.py`), or
+the `DecisionPass` of the decision, and it may write the rows of the facts the pass declares that are not frozen at a
+freeze point the pipeline has passed and whose `final_after` is not earlier than its phase; the `pass-glue` boundary (the hooks, the parser
+methods they call, `parser/_pipeline.py`) may write no fact row. A finding means the pass, through the calls heki
+follows, writes another row (`pass:<name>:<row>`), and `scripts/heki_baseline.toml` keeps today's findings that
+`KNOWN_FINDINGS` of the builder lists with what removes each. The boundaries leave `unresolved` at its default: most
+passes reach calls heki resolves to no function (a `getattr` call, a method of a protocol or of an object of unknown
+class, a callable kept in a table or passed as an argument) or writes on an object of unknown class, and a boundary
+says nothing there. A boundary cannot tell a type alias from another model either, so it lets a pass that declares
+`TYPE_ALIAS_BODY` write those rows on every model, and the `when` and `trigger` callables of a `PassSpec`, which the
+runner calls through an attribute, are in no scope. No heki finding therefore does not mean a pass keeps to its declaration, and the finality check keeps
+every rule above.
 
 ### Generation Store
 
@@ -1270,7 +1295,7 @@ attribute, `__dict__` key, dict entry (`extras["kw_only"]`) or cached property, 
 `cache` or `bookkeeping`), the `Fact` and `RenderFact` members a write changes, the store operations allowed to write
 it, the `Phase` whose passes write it last today and its freeze point: the latest freeze point among its facts (every
 `Fact` at B1, every `RenderFact` at its `RENDER_FACT_FREEZE_POINTS` entry), after which nothing may write it once the
-pass pipeline is in place. heki's pass boundaries check each `Fact` at B1 unless a pass declares an exception.
+pass pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
 Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
 kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
 library and `typing_extensions` (`scripts/check_architecture_boundaries.py` registers it as the `facts` leaf layer), so
@@ -1303,7 +1328,8 @@ them) write no model-graph key. A module the source model cannot read is a probl
 heki's contracts are the one check of this rule: they judge every write site of `src/`, whether a test reaches it or
 not, and report a write through a receiver heki cannot resolve (`MUT205`) instead of passing it. The write guards of
 the finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`) watch the same
-attributes at run time, but only to learn which models a pass touched: at the end of L1 `DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the
+attributes at run time, but only to learn which models a pass touched and, from a freeze point on, to judge a write
+where it is made: at the end of L1 `DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the
 fact and presentation attributes of `ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared
 where the originals were shared; they are not `list` exactly and outlive the parse, acting as plain lists afterwards),
 and each store operation named in a row's `store_ops` runs in an operation scope, so that the lists it sets are

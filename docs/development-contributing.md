@@ -829,10 +829,14 @@ measure performance outside pytest with the variables unset as well.
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
 list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
 tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
-script checks the declarations, and `scripts/check_pass_pipeline.py` checks the tables, their order and the phase each
-pass runs in. That a pass writes only the facts it declares, before they are final, is heki's check: the `pass:<name>`
-boundaries of `scripts/heki.toml`, built from the declarations and the fact tables, and the `pass-glue` boundary of
-the code between the passes ([Fact Finality](architecture.md#fact-finality)).
+script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+made a write its pass does not declare. heki checks the same declarations statically, only for the calls it resolves:
+the `pass:<name>` boundaries of `scripts/heki.toml`, which `scripts/build_heki_contracts.py` builds from the
+declarations and the fact tables, report a write of a row whose facts the pass does not declare, or after they are
+frozen, and the `pass-glue` boundary a fact write between the passes. Most passes also reach calls and writes heki
+cannot resolve (a `getattr` call, a method of a protocol or of an object of unknown class, a callable kept in a table),
+where a boundary reports nothing; the boundaries leave `unresolved` at its default, so a write there passes heki, and
+`FACT_FINALITY` keeps every rule, on the shards and runs that keep the value checks on.
 
 | Area | Checks |
 | --- | --- |
@@ -842,17 +846,18 @@ the code between the passes ([Fact Finality](architecture.md#fact-finality)).
 | `SCHEMA_GRAPH` | no reader writes a loaded document, a value a document record keeps for a pointer or a schema site the target bindings read, and no string `$ref` of a schema site leads to no loaded schema when the site is read; heki's `MUT202` holds the schema objects the schema graph validated once and shares (`tests/checks/schema_graph.py`, [Layers](architecture.md#layers), L0) |
 | `TEMPLATE_ASSIGNMENTS` | every class-scope field line that a model's built-in template renders after B2, annotated or assigned, binds the field's name (`= value`) exactly where the model's row of `classify_assignment` decides that the class body binds the field, as the compiled renderer or Jinja writes it; not checked: renders before B2, models under a custom root template, models whose class brings its own assignment hooks (rule `hook`), fields the text writes no line for, and text the running Python cannot parse; the shapes of `LEGACY_ROWS` (`legacy-annotated-factory-binds`, `legacy-typed-dict-binds`, `legacy-enum-member-unbound`) differ today and are only recorded with a report file (`tests/checks/template_assignments.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
-| `FACT_FINALITY` | a module pass changes only the models of its module, and the base fields that constructor ordering read stay as they were until B2: values no static check can tell; what each pass may write is heki's check (`tests/checks/finality.py`, [Fact Finality](architecture.md#fact-finality)) |
+| `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
+| `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
 | `PASS_TRIGGERS` | a pass whose trigger is false, which its `PassSpec` skips, runs anyway and changes no fact, memo revision, import, parser attribute, run-state field and warns nothing (`tests/checks/finality.py:ParseChecks.idle_pass`, [Pass Declarations](architecture.md#pass-declarations)) |
 
 A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable
 to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps tests that run it on and off.
 `test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
 not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
-installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `PASS_TRIGGERS` is the
-exception: `tests/conftest.py` leaves it off unless the environment sets it or `pytest --check-pass-triggers` is given,
-so the pull request and push runs skip the passes whose trigger is false as users do. It needs `FACT_FINALITY`, which
-compares the facts of every model around such a pass. The nightly workflow runs the suite
+installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` and `PASS_TRIGGERS` are the exceptions: `tests/conftest.py`
+sets `FACT_FINALITY_SWEEP` to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full
+comparison where `FACT_FINALITY` is on (`main`, the schedule and manual runs), and leaves `PASS_TRIGGERS` off unless the environment sets it or `pytest --check-pass-triggers` is given, so
+the pull request and push runs skip the passes whose trigger is false as users do. The nightly workflow runs the suite
 on the newest Python with it on (`tox run -e pass-triggers`); run `pytest --check-pass-triggers` on a test of your own,
 for example after changing a trigger.
 

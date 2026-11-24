@@ -77,7 +77,10 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   row's ``final_after``), and never the phase of the store; an ``Access.ITEM`` row is its entry
   (``extras["init"]``), which heki follows through the key a store operation is given. The glue between the passes
   (the hooks of the tables and the parser methods they call, the runner, the decision phase) writes no fact row. The
-  baseline keeps the findings ``KNOWN_FINDINGS`` lists, each with what removes it.
+  baseline keeps the findings ``KNOWN_FINDINGS`` lists, each with what removes it. The boundaries leave ``unresolved``
+  at its default: most passes reach calls and writes heki cannot resolve, where a boundary reports nothing, so they
+  check the declarations only through the calls heki follows, beside the finality check of the test suite
+  (``tests/checks/finality.py``), which holds every rule.
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
@@ -852,6 +855,26 @@ _B2_FREEZE: Final = (
     "renaming classes: either they freeze later or the writes move before B2"
 )
 _FIELD_PLAN_C: Final = "the step that renders msgspec, dataclass, TypedDict and enum fields from one plan"
+_FRESH_COPY: Final = (
+    "a heki that reads the copy Parser._copy_inherited_field makes (copy_owning, model_copy) as a fresh object: "
+    "the pass writes these rows on that copy, never on a field of the input"
+)
+_COPIED_ROWS: Final = (
+    "DataModelFieldBase._nullable_without_default",
+    "DataType.data_types",
+    "DataType.is_dict",
+    "DataType.is_frozen_set",
+    "DataType.is_list",
+    "DataType.is_mapping",
+    "DataType.is_optional",
+    "DataType.is_sequence",
+    "DataType.is_set",
+    "DataType.is_tuple",
+    "DataType.kwargs",
+    "DataType.tuple_item_count",
+)
+"""The rows ``override_required_field`` writes on the copy of an inherited field before the copy replaces the
+placeholder; heki counts each as a write of the pass's input."""
 KNOWN_FINDINGS: Final = (
     KnownFinding("pass:name_final_classes_of_additional_properties:DataModel._internal_template_data", _B2_FREEZE),
     KnownFinding("pass:refresh_sequence_interface_after_renames:DataModel._internal_template_data", _B2_FREEZE),
@@ -870,12 +893,14 @@ KNOWN_FINDINGS: Final = (
         "pass-glue:Parser._recursion_facts",
         "#7417: the module loop settles the update actions of each module, outside every pass",
     ),
+    *(KnownFinding(f"pass:override_required_field:{row}", _FRESH_COPY) for row in _COPIED_ROWS),
 )
 """The findings of the pass boundaries that the baseline keeps; the baseline holds exactly these.
 
 Constructor ordering, after B1, gives a required field back the ``init`` entry (``REQUIRED``) its base left out; the
 dataclass field plan will hold it. The import passes write the backend config of the template data and the order of
-the nested default factories after B2, where those facts are final.
+the nested default factories after B2, where those facts are final. ``override_required_field`` writes the copy of an
+inherited field, which heki cannot tell from the field it copies.
 """
 
 

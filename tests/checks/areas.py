@@ -107,13 +107,19 @@ class Area(Enum):
     is named by a reference of the resolver (``naming.py``)."""
 
     FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
-    """A module pass changes only the models of its module, and the base fields constructor ordering read stay as they
-    were until B2 (``finality.py``). What each pass may write is heki's check (``scripts/heki.toml``)."""
+    """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a
+    freeze point, a write to the graph of facts frozen there fails where it is made (``finality.py``)."""
 
     PASS_TRIGGERS = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
     """A pass whose trigger is false runs anyway and changes nothing: no fact, memo revision, import, parser attribute,
     run-state field or warning (``finality.ParseChecks.idle_pass``). It needs ``FACT_FINALITY``, which opens the
     checks of a parse and compares the facts."""
+
+    FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
+    """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.
+
+    It widens what ``FACT_FINALITY`` compares and reports nothing itself: ``1`` and ``report:<path>`` both turn it on.
+    """
 
 
 class CheckFailure(BaseException):

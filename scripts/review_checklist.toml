@@ -62,7 +62,7 @@ rule = "AGENTS.md"
 words = "Never predict what a later pass will do."
 question = """List the facts the new condition reads and the pass after which each is final \
 (docs/architecture.md, Model processing passes): does it run after the last of them, and decide scope on the schema \
-object rather than from the parse path? heki's pass boundaries report late writes, not early reads. A fix that spans \
+object rather than from the parse path? The finality check reports late writes, not early reads. A fix that spans \
 passes needs a reviewed design first."""
 pulls = [6296, 6517]
 

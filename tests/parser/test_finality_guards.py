@@ -1,8 +1,8 @@
 """The write guards that ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` installs, seen through custom parsers.
 
 After L1, the graph classes carry a ``__setattr__`` guard and the list attributes of the parsed graph are guarded lists,
-so that the finality check knows which pass writes a model when the write is made. That writes happen only inside store
-operations is heki's check (``tests/test_build_heki_contracts_script.py``).
+so that the finality check sees a write where it is made. That writes happen only inside store operations is heki's
+check (``tests/test_build_heki_contracts_script.py``).
 """
 
 from __future__ import annotations
@@ -127,7 +127,7 @@ def test_finality_guards_are_installed_only_while_a_parse_is_armed(monkeypatch: 
 
 
 def test_finality_guards_of_a_nested_parse(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """A parse run inside a pass keeps the guards of the parse around it, and neither blames a pass for its writes."""
+    """A parse run inside a pass keeps the guards of the parse around it: both parses report their writes."""
     report = tmp_path / "violations.jsonl"
     monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, f"report:{report}")
     parser = NestingParser(SCHEMA, formatters=[Formatter.BUILTIN])

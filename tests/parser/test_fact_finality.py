@@ -1,9 +1,8 @@
 """The finality check that ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` turns on, seen through custom parsers.
 
-A module pass changes only the models of its module, and the base fields that constructor ordering read stay as they
-were until B2; a change outside module passes is taken as it is. The violations of today's pipeline are listed with a
-witness, reported and never raised. What each pass may write is heki's check
-(``tests/test_build_heki_contracts_script.py``).
+Each pass changes only the facts its declaration lists, on the models its scope allows, before they are final. A write
+outside every pass is reported where the next comparison finds it; the violations of today's pipeline are listed with a
+witness, reported and never raised.
 """
 
 from __future__ import annotations
@@ -15,14 +14,19 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from datamodel_code_generator import DataModelType, InputFileType, PythonVersion, generate
+from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.parser.openapi import OpenAPIParser
+from datamodel_code_generator.types import DataType
 from scripts import check_fact_finality, check_pass_pipeline
 from tests.checks.areas import CheckFailure
-from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_RENDER_PLANS_ENV, assert_output
+from tests.conftest import (
+    CHECK_FACT_FINALITY_ENV,
+    CHECK_FACT_FINALITY_SWEEP_ENV,
+    CHECK_RENDER_PLANS_ENV,
+    assert_output,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -31,41 +35,105 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.base import ModuleContext
 
 SCHEMA = Path(__file__).parents[1] / "data" / "jsonschema" / "person.json"
-MODULAR = Path(__file__).parents[1] / "data" / "openapi" / "modular.yaml"
-"""An API whose models generate into several modules."""
 REPORTED = ("pass_name", "rule", "row", "facts", "model", "phase", "known")
 DECISIONS: dict[str, check_pass_pipeline.PassDecl] = {}
 """The declaration of each decision the parsers below run, by name: ``_finality_only`` adds them to the registry."""
 
 
-class OtherModuleParser(OpenAPIParser):
-    """Describes every model of the parse while a module pass of one module asks whether a model is a root model."""
+class DiagnosingParser(JsonSchemaParser):
+    """Describes every model while it reports its parse diagnostics, a pass that writes no fact."""
+
+    def _report_parse_diagnostics(self) -> None:
+        super()._report_parse_diagnostics()
+        for model in self.results:
+            model.description = "described"
+
+
+class LooseParser(JsonSchemaParser):
+    """Describes every model of a module directly, outside every pass, before the module is processed."""
+
+    def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
+        for model in models:
+            model.description = "described"
+        return super()._process_single_module(module_, models, *args)
+
+
+class InvalidatingParser(JsonSchemaParser):
+    """Titles every field of a module in place, outside every pass, and invalidates it: no guarded write sees it."""
+
+    def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
+        for model in models:
+            for field in model.fields:
+                field.extras["title"] = "titled"
+                field.invalidate_semantic_caches()
+        return super()._process_single_module(module_, models, *args)
+
+
+class RefinalizingParser(JsonSchemaParser):
+    """Finalizes the modules twice, so that the passes of the second time run in a later phase than they declare."""
+
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
+        super()._finalize_modules(*args, **kwargs)
+
+
+class RebasingParser(JsonSchemaParser):
+    """Names a custom base class for each model while the generic base class is applied, after that fact is final."""
 
     def _is_root_model(self, model: DataModel) -> bool:
-        if self.generation_store.phase.name == "MODULES":
-            for each in self.results:
-                each.description = "described"
+        if self.generation_store.phase.name == "CROSS_MODULE":
+            model.custom_base_class = "custom.Base"
         return super()._is_root_model(model)
 
 
-class LooseParser(OpenAPIParser):
-    """Describes every model of the parse directly, outside every pass, before a module is processed."""
+class SealedWriteParser(JsonSchemaParser):
+    """Changes every model through the store's builder once its modules are finalized: after B2, outside every pass.
 
-    def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
+    Moving a model to its own path and forgetting a target null write nothing frozen; removing a field does.
+    """
+
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
+        builder = self.generation_store.builder()
         for model in self.results:
-            model.description = f"described before {module_}"
-        return super()._process_single_module(module_, models, *args)
+            builder.update_model_reference(model, new_path=model.path)
+            builder.clear_target_null(model.fields[0].data_type)
+            builder.set_fields(model, model.fields[:-1])
 
 
-class InvalidatingParser(OpenAPIParser):
-    """Titles every field of the parse in place, outside every pass, and invalidates it: no guarded write sees it."""
+class RewritingParser(JsonSchemaParser):
+    """Writes the lists of every model back through the store's builder once its modules are finalized."""
 
-    def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
+        builder = self.generation_store.builder()
         for model in self.results:
-            for field in model.fields:
-                field.extras["title"] = f"titled before {module_}"
-                field.invalidate_semantic_caches()
-        return super()._process_single_module(module_, models, *args)
+            builder.set_fields(model, list(model.fields))
+            builder.set_base_classes(model, list(model.base_classes))
+
+
+class GrowingParser(JsonSchemaParser):
+    """Gives a field a new type with a new member list once the modules are finalized, then appends to that list."""
+
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
+        model = self.results[0]
+        new = DataType(data_types=[DataType(type="int")])
+        self.generation_store.builder().replace_field_type(model.fields[0], new)
+        store = self.generation_store
+        store.enter_phase(store.phase)
+        new.data_types.append(DataType(type="str"))
+
+
+class NoOpMutatingParser(JsonSchemaParser):
+    """Calls list mutators that leave the lists of every model as they were once its modules are finalized."""
+
+    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
+        super()._finalize_modules(*args, **kwargs)
+        for model in self.results:
+            model.fields.extend([])
+            model.fields.sort(key=lambda _field: 0)
+            model.base_classes.sort(key=lambda _base: 0)
 
 
 def _reported(report: Path) -> str:
@@ -74,43 +142,127 @@ def _reported(report: Path) -> str:
     return "".join(json.dumps({key: violation[key] for key in REPORTED}) + "\n" for violation in map(json.loads, lines))
 
 
-def _finality_only(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+def _finality_only(monkeypatch: pytest.MonkeyPatch, value: str, *, sweep: bool = False) -> None:
     monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, value)
+    monkeypatch.setenv(CHECK_FACT_FINALITY_SWEEP_ENV, "1" if sweep else "0")
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, "0")
     for name, decl in DECISIONS.items():
         monkeypatch.setitem(check_pass_pipeline.DECISION_DECLS, name, decl)
 
 
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
-def test_fact_finality_reports_a_module_pass_that_writes_another_module(
+def test_fact_finality_reports_a_write_the_pass_does_not_declare(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
 ) -> None:
-    """A module pass that changes a model of another module raises (``1``), is reported or passes (``0``)."""
+    """A pass that writes a fact its declaration does not list raises (``1``), is reported or passes (``0``)."""
     report = tmp_path / "violations.jsonl"
     _finality_only(monkeypatch, {"check": "1", "report": f"report:{report}", "off": "0"}[flag])
-    parser = OtherModuleParser(MODULAR, formatters=[Formatter.BUILTIN])
+    parser = DiagnosingParser(SCHEMA, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
             CheckFailure,
-            match=rf"^{CHECK_FACT_FINALITY_ENV}: override_required_field other-module: DataModel\.description "
-            r"\(METADATA\) of \w+ during MODULES$",
+            match=rf"^{CHECK_FACT_FINALITY_ENV}: report_parse_diagnostics undeclared: DataModel\.description "
+            r"\(METADATA\) of Person during SETTLE$",
         ):
             parser.parse()
         return
-    modules = parser.parse()
-    assert_output("".join(f"# {'/'.join(name)}\n{result.body}\n" for name, result in modules.items()), name="output")
+    assert_output(parser.parse(), name="output")
     assert_output(_reported(report), name="violations")
 
 
-@pytest.mark.parametrize("parser_type", [LooseParser, InvalidatingParser])
-def test_fact_finality_blames_no_pass_for_a_change_outside_every_pass(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, parser_type: type[OpenAPIParser]
+@pytest.mark.parametrize("sweep", [False, True], ids=["touched", "sweep"])
+def test_fact_finality_reports_a_write_outside_every_pass(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sweep: bool
 ) -> None:
-    """A change outside every pass, seen by a guard or noted by its invalidation, is no module pass's change."""
+    """A write that no pass makes is reported when the next pass starts, whether global passes compare every model."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}", sweep=sweep)
+
+    LooseParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
+
+    assert_output(_reported(report))
+
+
+def test_fact_finality_reports_an_invalidated_change_outside_every_pass(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A change outside every pass that only its invalidation notes is reported when the next pass starts."""
     report = tmp_path / "violations.jsonl"
     _finality_only(monkeypatch, f"report:{report}")
 
-    parser_type(MODULAR, formatters=[Formatter.BUILTIN]).parse()
+    InvalidatingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
+
+    assert_output(_reported(report))
+
+
+def test_fact_finality_reports_passes_in_a_later_phase(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Passes that a parser subclass runs again after their phase are reported as running in the wrong phase."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+
+    RefinalizingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
+
+    assert_output(_reported(report))
+
+
+def test_fact_finality_reports_a_write_after_the_phase_the_table_names(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A declared write in a later phase than ``final_after`` of its row is reported, before the row is frozen."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+
+    RebasingParser(
+        SCHEMA, formatters=[Formatter.BUILTIN], use_generic_base_class=True, allow_population_by_field_name=True
+    ).parse()
+
+    assert_output(_reported(report))
+
+
+@pytest.mark.parametrize("flag", ["check", "report"])
+def test_fact_finality_reports_a_frozen_write_where_it_is_made(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """After a freeze point, a store operation that changes a frozen fact raises at the write (``1``) or is reported."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, {"check": "1", "report": f"report:{report}"}[flag])
+    parser = SealedWriteParser(SCHEMA, formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(
+            CheckFailure,
+            match=rf"^{CHECK_FACT_FINALITY_ENV}: <IMPORTS> frozen: DataModel\.fields \(FIELD_ORDER, FIELD_SET\) "
+            r"of Person during IMPORTS$",
+        ):
+            parser.parse()
+        return
+    assert_output(parser.parse(), name="output")
+    assert_output(_reported(report), name="violations")
+
+
+def test_fact_finality_does_not_judge_a_list_write_that_changes_no_item(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Writing back a list of the same items after a freeze point changes no value, so the check stays silent."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(RewritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
+
+
+def test_fact_finality_does_not_judge_a_list_mutator_that_changes_no_item(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An empty extend and a stable sort after a freeze point change no value."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(NoOpMutatingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
+
+
+def test_fact_finality_judges_a_write_to_a_list_created_after_arming_where_it_is_made(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A list of an object created after the parse was armed is guarded once a fingerprint holds the object."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+
+    GrowingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
 
     assert_output(_reported(report))
 
@@ -120,17 +272,18 @@ def test_fact_finality_reports_known_violations_without_raising(
 ) -> None:
     """A violation that ``KNOWN_WRITES`` lists is reported as known and does not stop the generation when raising."""
     report = tmp_path / "violations.jsonl"
-    schema = Path(__file__).parents[1] / "data/openapi/schema_intersection/inherited_override_null_oas31.yaml"
-    options: dict[str, Any] = {
-        "input_file_type": InputFileType.OpenAPI,
-        "output_model_type": DataModelType.MsgspecStruct,
+    schema = SCHEMA.with_name("type_alias_lookaround") / "model.json"
+    options = {
         "formatters": [Formatter.BUILTIN],
+        "use_type_alias": True,
+        "use_annotated": True,
+        "field_constraints": True,
     }
     _finality_only(monkeypatch, "1")
-    raised = generate(schema, **options)
+    raised = JsonSchemaParser(schema, **options).parse()
     _finality_only(monkeypatch, f"report:{report}")
 
-    reported = generate(schema, **options)
+    reported = JsonSchemaParser(schema, **options).parse()
 
     assert_output(raised, name="raised")
     assert_output(reported, name="reported")
@@ -193,6 +346,33 @@ class CapturingParser(JsonSchemaParser):
         return super()._process_single_module(module_, models, *args)
 
 
+def _write_default(_facts: Any, _writer: Any) -> None:
+    """Write the default of a field, a fact the decision declares."""
+    MODELS[0].fields[0].default = "written"
+
+
+def _write_description(_facts: Any, _writer: Any) -> None:
+    """Write the description of a model, a fact the decision does not declare."""
+    MODELS[0].description = "written"
+
+
+class DeclaredWritingParser(CapturingParser):
+    """Runs a decision that writes a fact it declares during DECIDE."""
+
+    _DECISION_PASSES = _decide_writing("write_default", _write_default, check_pass_pipeline.Fact.DEFAULTS)
+
+
+def _write_required(_facts: Any, _writer: Any) -> None:
+    """Make a field required: the cross-module passes write requiredness last, and the decision declares it."""
+    MODELS[0].fields[1].required = True
+
+
+class RequiredWritingParser(CapturingParser):
+    """Runs a decision that writes requiredness, which it declares, during DECIDE."""
+
+    _DECISION_PASSES = _decide_writing("write_required", _write_required, check_pass_pipeline.Fact.REQUIRED)
+
+
 def _default_base_field(_facts: Any, _writer: Any) -> None:
     """Give the field of the base a default, which a field of the subclass without one then follows."""
     base = next(model for model in MODELS if model.class_name == "Base")
@@ -206,6 +386,26 @@ class BaseDefaultingParser(CapturingParser):
     _DECISION_PASSES = _decide_writing(
         "default_base_field", _default_base_field, check_pass_pipeline.Fact.DEFAULTS, check_pass_pipeline.Fact.REQUIRED
     )
+
+
+class UndeclaredWritingParser(CapturingParser):
+    """Runs a decision that declares one fact and writes another during DECIDE."""
+
+    _DECISION_PASSES = _decide_writing("write_description", _write_description, check_pass_pipeline.Fact.DEFAULTS)
+
+
+def test_fact_finality_lets_a_decision_write_the_facts_it_declares(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A fact is final at B1 for every pass but the decisions, which write what they declare during DECIDE."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(DeclaredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse(), name="output")
+
+
+def test_fact_finality_lets_a_decision_write_requiredness(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A decision writes requiredness it declares, although the module passes are the last passes to write it."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(RequiredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
 
 
 def test_constructor_order_follows_a_decided_base_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -299,3 +499,39 @@ def test_fact_finality_reports_a_base_field_that_changes_after_constructor_order
     ).parse()
 
     assert_output(_reported(report))
+
+
+class BaseClassStrictingParser(JsonSchemaParser):
+    """Makes the base classes of every model strict while it reports parse diagnostics, a pass that writes no fact."""
+
+    def _report_parse_diagnostics(self) -> None:
+        super()._report_parse_diagnostics()
+        for model in self.results:
+            for base_class in model.base_classes:
+                base_class.strict = True
+
+
+def test_fact_finality_reports_a_type_fact_of_a_base_class_as_the_bases(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A type fact of a model's base class is ``BASES`` for the model: a pass that does not declare it is reported."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+    schema = tmp_path / "inheritance.json"
+    schema.write_text(json.dumps(INHERITANCE_SCHEMA), encoding="utf-8")
+
+    BaseClassStrictingParser(schema, formatters=[Formatter.BUILTIN]).parse()
+
+    assert_output(_reported(report))
+
+
+def test_fact_finality_reports_a_decision_write_it_does_not_declare(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A decision that writes a fact other than the ones it declares is reported as any pass is."""
+    _finality_only(monkeypatch, "1")
+
+    with pytest.raises(
+        CheckFailure,
+        match=rf"^{CHECK_FACT_FINALITY_ENV}: write_description undeclared: DataModel\.description \(METADATA\) "
+        r"of Person during DECIDE$",
+    ):
+        UndeclaredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
