@@ -2921,10 +2921,13 @@ WATCH_STEPS_TIMEOUT_SECONDS = 60.0
 
 @dataclass(frozen=True)
 class _OnceHandled:
-    """A watch step that runs ``action`` in the background once the watcher has handled an event for ``path``.
+    """A watch step that runs ``action`` in the background once the watcher has handled the change to ``path``.
 
-    Only events after the previous step count, so a change that must reach the watcher in a later batch than that
-    step's changes waits for the watcher to finish that batch.
+    The previous step changes ``path``. watchfiles can lose the event of a change, so the harness drops every event
+    watchfiles reports for ``path`` and announces the change itself in one batch at the next poll, late or not like
+    any other batch. The step waits until the watcher has finished that batch and its last generation found ``path``
+    as it is, so its own change reaches the watcher in a later batch, and a generation the batch starts for a change
+    the watcher already saw finds ``path`` as the previous step left it.
     """
 
     path: Path
@@ -2933,7 +2936,8 @@ class _OnceHandled:
 
 @pytest.mark.abnormal_path(
     "the macOS polling backend is selected by the platform, so other hosts patch it; the batches of real watchfiles "
-    "are observed to know which ones the watcher handled, and delayed to replay the late batches of a slow runner"
+    "are observed to know which ones the watcher handled, delayed to replay the late batches of a slow runner, and "
+    "replaced by the harness's own batch for a path whose change a step waits for, since watchfiles can lose an event"
 )
 @pytest.mark.allow_direct_assert("a watch run that never finishes its steps fails instead of hanging the suite")
 def _watch_in_steps(
@@ -2951,7 +2955,8 @@ def _watch_in_steps(
     Each generation runs the next step after it ends (an ``_OnceHandled`` step starts in the background), and the
     generation after the last step stops watch mode. With ``late_events``, each batch of events arrives after two polls
     without events, as on a slow runner: when a dependency changed, those polls start a fingerprint fallback, and the
-    batch arrives once the generation it started has ended.
+    batch arrives once the generation it started has ended. The changes before ``_OnceHandled`` steps arrive as the
+    batches those steps describe.
     """
     import watchfiles
 
@@ -2965,6 +2970,11 @@ def _watch_in_steps(
     watch_ended = threading.Event()
     background_steps: list[threading.Thread] = []
     handled_before_steps: list[tuple[Path, bool]] = []
+    announced_paths = [
+        (index - 1, step.path.resolve()) for index, step in enumerate(steps) if isinstance(step, _OnceHandled)
+    ]
+    dropped_paths = {path for _index, path in announced_paths}
+    pending_announcements: set[Path] = set()
 
     def wait_for_a_generation_after(ended_generations: int) -> None:
         with handled:
@@ -2972,31 +2982,48 @@ def _watch_in_steps(
                 lambda: len(generations) > ended_generations or watch_ended.is_set(), WATCH_STEPS_TIMEOUT_SECONDS
             )
 
-    def observed_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
-        for changes in prompt_watch(*paths, **options):
-            if late_events and changes:
-                with handled:
-                    ended_generations = len(generations)
-                falls_back = dependencies._polling_dependencies_changed()
-                yield set()
-                yield set()
-                if falls_back:
-                    wait_for_a_generation_after(ended_generations)
-            yield changes
+    def deliver(changes: set[tuple[watchfiles.Change, str]]) -> Iterator[set[tuple[watchfiles.Change, str]]]:
+        if late_events and changes:
             with handled:
-                handled_paths.update(Path(path).resolve() for _change, path in changes)
-                handled.notify_all()
+                ended_generations = len(generations)
+            falls_back = dependencies._polling_dependencies_changed()
+            yield set()
+            yield set()
+            if falls_back:
+                wait_for_a_generation_after(ended_generations)
+        yield changes
+        with handled:
+            handled_paths.update(Path(path).resolve() for _change, path in changes)
+            handled.notify_all()
+
+    def observed_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
+        for reported in prompt_watch(*paths, **options):
+            with handled:
+                announcement = {
+                    (watchfiles.Change.added if path.exists() else watchfiles.Change.deleted, str(path))
+                    for path in pending_announcements
+                }
+                pending_announcements.clear()
+            if announcement:
+                yield from deliver(announcement)
+            yield from deliver({
+                (change, path) for change, path in reported if Path(path).resolve() not in dropped_paths
+            })
 
     def run_once_handled(step: _OnceHandled) -> None:
         event_path = step.path.resolve()
+
+        def handled_change() -> bool:
+            return event_path in handled_paths and dependencies._saw_changes({str(event_path)})
+
         with handled:
-            handled.wait_for(lambda: event_path in handled_paths or watch_ended.is_set(), WATCH_STEPS_TIMEOUT_SECONDS)
-            handled_before_steps.append((step.path, event_path in handled_paths))
+            handled.wait_for(lambda: handled_change() or watch_ended.is_set(), WATCH_STEPS_TIMEOUT_SECONDS)
+            handled_before_steps.append((step.path, handled_change()))
         step.action()
 
     monkeypatch.setattr(watchfiles, "watch", observed_watch)
     generations: list[bool] = []
-    pending_steps = iter(steps)
+    pending_steps = enumerate(steps)
 
     def regenerate() -> Exit:
         with dependencies.generation():
@@ -3004,8 +3031,9 @@ def _watch_in_steps(
         with handled:
             generations.append(observed)
             handled.notify_all()
-        if (step := next(pending_steps, None)) is None:
+        if (pending := next(pending_steps, None)) is None:
             raise KeyboardInterrupt
+        index, step = pending
         if isinstance(step, _OnceHandled):
             background_step = threading.Thread(target=run_once_handled, args=(step,), daemon=True)
             background_steps.append(background_step)
@@ -3014,6 +3042,8 @@ def _watch_in_steps(
             with handled:
                 handled_paths.clear()
             step()
+            with handled:
+                pending_announcements.update(path for after, path in announced_paths if after == index)
         return Exit.OK if observed else Exit.ERROR
 
     watcher = threading.Thread(
@@ -3032,7 +3062,8 @@ def _watch_in_steps(
         background_step.join(WATCH_STEPS_TIMEOUT_SECONDS)
     unhandled_paths = [path for path, was_handled in handled_before_steps if not was_handled]
     assert not unhandled_paths, (
-        f"the watcher handled no event for {unhandled_paths} before their steps; generations so far: {generations}"
+        f"the watcher did not handle the change to {unhandled_paths} before their steps; generations so far: "
+        f"{generations}"
     )
     assert not watcher.is_alive(), f"watch mode did not finish its steps; generations so far: {generations}"
     return generations

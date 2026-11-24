@@ -42,6 +42,8 @@ jobs:
         run: uv sync
       - name: Build the upgrade guide
         run: uv run python scripts/build_migration_docs.py
+      - name: Build the preset pages
+        run: uv run python scripts/build_preset_docs.py --pages
       - name: Build llms.txt files
         run: uv run python scripts/build_llms_txt.py
       - name: Copy CHANGELOG to docs

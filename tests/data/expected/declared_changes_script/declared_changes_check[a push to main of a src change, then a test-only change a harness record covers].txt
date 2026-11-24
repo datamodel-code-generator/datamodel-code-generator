@@ -1,0 +1,5 @@
+exit 0
+declared changes: HEAD~1 against base, release since 0.1.0
+ok
+declared changes: HEAD against HEAD~1, release since 0.1.0
+ok

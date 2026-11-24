@@ -49,6 +49,27 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-default-values-skip-true-properties",
+        (
+            "without `--apply-default-values-to-true-properties`, a property whose schema is `true` takes no default "
+            "from `--default-values`, in the class that declares it and in a child that restates an inherited "
+            "property as `true` (`parser/jsonschema.py:JsonSchemaParser._true_property_default_state`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/default_values_true_properties/settings.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--default-values",
+            '{"Settings.retry-count": 3}',
+            "--formatters",
+            "builtin",
+        ),
+        option="--apply-default-values-to-true-properties",
+    ),
+    LegacyRow(
         "legacy-generic-base-drops-configured-bases",
         (
             "without `--keep-bases-beside-generic-base-class`, the generated base class of `--use-generic-base-class` "
@@ -73,6 +94,29 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "builtin",
         ),
         option="--keep-bases-beside-generic-base-class",
+    ),
+    LegacyRow(
+        "legacy-standard-primitive-types-without-decoder",
+        (
+            "without `--use-str-for-formats-msgspec-cannot-decode`, `--use-standard-primitive-types` writes "
+            "`IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network` and `Path` for the formats `ipv4`, `ipv6`, "
+            "`ipv4-network`, `ipv6-network` and `path` of msgspec output, which msgspec decodes only with a `dec_hook` "
+            "(`types.py:DataTypeManager.use_str_for_formats_msgspec_cannot_decode`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/use_standard_primitive_types.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-standard-primitive-types",
+            "--formatters",
+            "builtin",
+        ),
+        option="--use-str-for-formats-msgspec-cannot-decode",
     ),
     LegacyRow(
         "legacy-msgspec-float-bounds",
@@ -1134,6 +1178,49 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "builtin",
         ),
         option="--use-root-types-for-mixed-union-map-keys",
+    ),
+    LegacyRow(
+        "legacy-redeclared-hiding-field-keeps-name",
+        (
+            "without `--rename-redeclared-fields-hiding-types`, a field that a subclass redeclares keeps its name "
+            "where the field of its base is renamed because it is named like its type (`Pet_1` with `alias='Pet'`), "
+            "so the subclass holds two fields that read the key "
+            "(`parser/_passes/modules.py:follow_hiding_field_renames`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/field_named_like_type_redeclared.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--rename-redeclared-fields-hiding-types",
+    ),
+    LegacyRow(
+        "legacy-field-hides-type-from-checkers",
+        (
+            "without `--rename-fields-hiding-types-from-type-checkers`, a msgspec or dataclass field that the class "
+            "body assigns keeps its name and its type's name where they are equal, which a type checker reads as the "
+            "field (`parser/_passes/modules.py:renames_hiding_fields`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/field_named_like_type_assigned.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--rename-fields-hiding-types-from-type-checkers",
     ),
     LegacyRow(
         "legacy-root-type-nullable-ungated",

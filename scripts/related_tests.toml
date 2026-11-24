@@ -333,6 +333,20 @@ envs = [
 ]
 
 [[rule]]
+id = "payload-inputs"
+prs = [7399, 7405, 7419, 7458]
+incident = "inputs added by #7399, #7405 and #7419 passed the pull request suite and failed only in py311-payload-runtime-min on the nightly run (#7458 fixed them); the payload suite reads the inputs this row names (`--paths-of payload-inputs`, DCG_PAYLOAD_INPUTS)"
+paths = ["tests/data/jsonschema/*", "tests/data/openapi/*"]
+status = "AM"
+tests = ["tests/main/test_payload_validation.py::test_payload_validation_cases_cover_discovered_schema_files"]
+envs = [
+  "py311-payload-runtime-min",
+  "py311-payload-runtime-latest",
+  "py314-payload-runtime-min",
+  "py314-payload-runtime-latest",
+]
+
+[[rule]]
 id = "stored-model-output-nightly"
 prs = [7117]
 incident = "stored model output changed, the pull request tier passed and the nightly tier turned main red"

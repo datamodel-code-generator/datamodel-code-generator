@@ -1,0 +1,4 @@
+option = "--rename-redeclared-fields-hiding-types"
+input = "jsonschema/field_named_like_type_redeclared.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel", "--no-snake-case-field"]

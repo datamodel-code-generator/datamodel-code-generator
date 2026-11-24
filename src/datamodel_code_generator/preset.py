@@ -21,6 +21,7 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._option_names import option_arguments as _option_arguments
 from datamodel_code_generator._option_names import option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
+from datamodel_code_generator._option_table import OPTIONS as _OPTIONS
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import LiteralType
@@ -293,6 +294,19 @@ class PresetName(str, Enum):
     PracticalPy31320261123 = "practical-py313-20261123"
     PracticalPy31420261123 = "practical-py314-20261123"
     PracticalPy31520261123 = "practical-py315-20261123"
+
+    StandardPy31020261124 = "standard-py310-20261124"
+    StandardPy31120261124 = "standard-py311-20261124"
+    StandardPy31220261124 = "standard-py312-20261124"
+    StandardPy31320261124 = "standard-py313-20261124"
+    StandardPy31420261124 = "standard-py314-20261124"
+    StandardPy31520261124 = "standard-py315-20261124"
+    PracticalPy31020261124 = "practical-py310-20261124"
+    PracticalPy31120261124 = "practical-py311-20261124"
+    PracticalPy31220261124 = "practical-py312-20261124"
+    PracticalPy31320261124 = "practical-py313-20261124"
+    PracticalPy31420261124 = "practical-py314-20261124"
+    PracticalPy31520261124 = "practical-py315-20261124"
 
 
 @dataclass(frozen=True, slots=True)
@@ -679,6 +693,7 @@ _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]]
     "20261118": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261120": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261123": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261124": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1461,101 +1476,54 @@ _STANDARD_20261120_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261118 groups and the opt-in options added after them."""
 
+
+def _joined_groups(date: str, released_order: tuple[str, ...] = ()) -> tuple[PresetOptionGroup, ...]:
+    """Return the groups of the options whose rows join the presets of ``date``, in the order of the option table.
+
+    A date a release shipped before its groups came from the rows keeps the order that release lists them in:
+    ``released_order`` names the flags of its options in that order.
+    """
+    joins = {option.flags[0]: join for option in _OPTIONS if (join := option.preset) is not None and join.date == date}
+    return tuple(
+        PresetOptionGroup(
+            title=join.title,
+            config=PresetConfig(**join.config),
+            description=join.description,
+            input_file_types=join.input_file_types,
+            output_model_types=join.output_model_types,
+            requires_python_strenum=join.requires_python_strenum,
+        )
+        for join in (joins[flag] for flag in released_order or joins)
+    )
+
+
 _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_STANDARD_20261120_OPTION_GROUPS,
-    PresetOptionGroup(
-        title="Mapping keys by the schema's tag type",
-        config=PresetConfig(read_mapping_keys_by_schema_tag_type=True),
-        description=(
-            "Read the keys of a discriminator mapping as values of the type the schema declares for the tag property, "
-            "such as the integer 2 for the key '2' of an integer enum, also where an earlier discriminated union "
-            "wrote the tag field of the variant or of its base, so the key reads alike whichever union comes first."
-        ),
-    ),
-    PresetOptionGroup(
-        title="Root types for mixed union map keys",
-        config=PresetConfig(use_root_types_for_mixed_union_map_keys=True),
-        description=(
-            "Type the RootModel members of a map key that is a union with a non-RootModel member, such as a "
-            "propertyNames anyOf of an enum, or of a string with a maxLength, and a RootModel, by their root types, "
-            "so a key that only the RootModel matches is accepted, and a key that both match parses as its root "
-            "type, here a UUID for JSON input, as it does where the key names the RootModel alone. A Python dict "
-            "input keeps such a key as a str."
-        ),
-    ),
-    PresetOptionGroup(
-        title="Null kept on nullable items",
-        config=PresetConfig(keep_null_of_nullable_items=True),
-        description=(
-            "Under --strict-nullable, write the null that nullable: true declares on an array item, a tuple item, a "
-            "map value of any form, a nested array, a map or an allOf of one $ref included, as it "
-            "is written for a scalar or an object. The option adds no null to an enum or a const; an enum that "
-            "lists null admits it with or without the option."
-        ),
-    ),
-    PresetOptionGroup(
-        title="String keywords kept beside formats",
-        config=PresetConfig(keep_string_keywords_beside_formats=True),
-        description=(
-            "Keep the minLength, maxLength and pattern beside a string format that Pydantic output writes as a "
-            "class no constr call constrains: an email takes them in Annotated[EmailStr, Field(...)], "
-            "a byte writes them in front of the base64 decoding and a uri is the plain string they check; an output "
-            "that writes a date or UUID format as str, as msgspec does, keeps the keywords an allOf member adds "
-            "beside a $ref to it."
-        ),
-    ),
-    PresetOptionGroup(
-        title="Merged allOf members intersected",
-        config=PresetConfig(intersect_merged_allof_members=True),
-        description=(
-            "Read the allOf members the generator merges into one schema keyword by keyword, as JSON Schema "
-            "validates them: a property several merged object members declare takes the type, null and multipleOf "
-            "they all admit and the members' own allOf members, a named allOf of a $ref and value members keeps the "
-            "enum of every member, a map $ref beside property counts stays a map with the counts, and in Pydantic v2 "
-            "output a length or pattern beside a $ref to base64 text is checked on the text."
-        ),
-    ),
-    PresetOptionGroup(
-        title="allOf parents read as their models",
-        config=PresetConfig(read_allof_parents_as_their_models=True),
-        description=(
-            "Read each allOf parent as its model holds it: a parent written as a $ref beside sibling keywords with the "
-            "schema its $ref names, so a model written before that parent types and requires an inherited property "
-            "as it does after it; keep every property some parent requires required where another parent declares "
-            "it optional; and read an alias member beside a member that adds only a type or required names as alias "
-            "members are read elsewhere, so such a model keeps the fields of the schema the alias names."
-        ),
-    ),
-    PresetOptionGroup(
-        title="Set item fields read in class order",
-        config=PresetConfig(read_set_item_fields_in_class_order=True),
-        description=(
-            "Under --use-unique-items-as-set-by-value, also read the fields a set item model takes in the order of its "
-            "class bases, so a uniqueItems array of models whose class takes an inherited field that does not hash "
-            "stays a list instead of a set those items cannot be added to."
-        ),
-    ),
-    PresetOptionGroup(
-        title="References in their schema resources",
-        config=PresetConfig(read_refs_in_their_resources=True),
-        description=(
-            "Read every $id, $anchor and $dynamicAnchor wherever a document holds schemas ($defs members, inline "
-            "OpenAPI operation and component schemas) and each $ref in the schema resource that encloses it, so a "
-            "pointer inside a bundled $id resource names that resource's definitions, a plain-name anchor of another "
-            "document names its schema, and a resource the run holds is never fetched."
-        ),
-    ),
-    PresetOptionGroup(
-        title="Configured bases beside the generic base class",
-        config=PresetConfig(keep_bases_beside_generic_base_class=True),
-        description=(
-            "Keep the classes a model is configured to inherit, from --base-class-map, customBasePath, --base-class "
-            "or the class an --external-ref-mapping or x-python-import schema stands for, beside the generated base "
-            "class of --use-generic-base-class, so the model keeps their members and their import is used."
+    *_joined_groups(
+        "20261123",
+        (
+            "--read-mapping-keys-by-schema-tag-type",
+            "--use-root-types-for-mixed-union-map-keys",
+            "--keep-null-of-nullable-items",
+            "--keep-string-keywords-beside-formats",
+            "--intersect-merged-allof-members",
+            "--read-allof-parents-as-their-models",
+            "--read-set-item-fields-in-class-order",
+            "--read-refs-in-their-resources",
+            "--keep-bases-beside-generic-base-class",
+            "--rename-redeclared-fields-hiding-types",
+            "--rename-fields-hiding-types-from-type-checkers",
+            "--use-str-for-formats-msgspec-cannot-decode",
         ),
     ),
 )
-"""The 20261120 groups and the opt-in options added after them."""
+"""The 20261120 groups and the groups of the options whose rows join the 20261123 presets, in the order of 0.101.0."""
+
+_STANDARD_20261124_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261123_OPTION_GROUPS,
+    *_joined_groups("20261124"),
+)
+"""The 20261123 groups and the groups of the options whose rows join the 20261124 presets."""
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
@@ -1572,6 +1540,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261118": _STANDARD_20261118_OPTION_GROUPS,
     "20261120": _STANDARD_20261120_OPTION_GROUPS,
     "20261123": _STANDARD_20261123_OPTION_GROUPS,
+    "20261124": _STANDARD_20261124_OPTION_GROUPS,
 }
 
 
@@ -1709,27 +1678,29 @@ def _date_additions_markdown(since: str) -> list[str]:
     dates = dates[dates.index(since) :]
     lines: list[str] = []
     for previous, date in _pairwise(dates):
-        added = _date_additions(previous, date)
+        added = [item for item, _ in _date_additions(previous, date)]
         heading = f"The {date} presets keep the {previous} options{' and add:' if added else '.'}"
         lines.extend((heading, "", *added, *([""] if added else [])))
     return lines
 
 
-def _date_additions(previous: str, date: str) -> list[str]:
-    """Return the list items of what the presets of ``date`` add to those of ``previous``.
+def _date_additions(previous: str, date: str) -> list[tuple[str, tuple[str, ...]]]:
+    """Return the list items of what the presets of ``date`` add to those of ``previous``, each with its options.
 
-    A date adds its new Python targets and the option groups its standard or practical presets list that the date before
-    does not, each written as the reference tables write it: its title, its options and its description.
+    A date adds its new Python targets, which have no options, and the option groups its standard or practical presets
+    list that the date before does not, each written as the reference tables write it: its title, its options and its
+    description.
     """
     targets = [
         target.value
         for target in _PRESET_NAMES_BY_TARGET["standard", date]
         if target not in _PRESET_NAMES_BY_TARGET["standard", previous]
     ]
+    no_options: tuple[str, ...] = ()
     return [
-        *(f"- Python {target} targets" for target in targets),
+        *((f"- Python {target} targets", no_options) for target in targets),
         *(
-            _group_item(group, family)
+            (_group_item(group, family), group.options)
             for family, groups_by_date in (
                 ("", _STANDARD_OPTION_GROUPS_BY_DATE),
                 (" (practical presets)", _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE),

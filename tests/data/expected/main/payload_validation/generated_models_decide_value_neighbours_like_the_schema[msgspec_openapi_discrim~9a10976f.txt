@@ -1,0 +1,14 @@
+[
+  "/type const 1: invalid, model accepts",
+  "/type const 1.0: invalid, model accepts",
+  "/type const [\"root\"]: invalid, model accepts",
+  "/type const null: invalid, model accepts",
+  "/type const true: invalid, model accepts",
+  "/type const {\"a\": \"root\"}: invalid, model accepts",
+  "discriminator {\"type\": 1.0}: invalid, model accepts",
+  "discriminator {\"type\": 1}: invalid, model accepts",
+  "discriminator {\"type\": [\"root\"]}: invalid, model accepts",
+  "discriminator {\"type\": null}: invalid, model accepts",
+  "discriminator {\"type\": true}: invalid, model accepts",
+  "discriminator {\"type\": {\"a\": \"root\"}}: invalid, model accepts"
+]

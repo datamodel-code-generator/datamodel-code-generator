@@ -9,9 +9,9 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 66 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 45 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 76 | Model generation behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 67 | Type annotation and import behavior |
+| 🏷️ [Field Customization](field-customization.md) | 47 | Field naming and docstring behavior |
+| 🏗️ [Model Customization](model-customization.md) | 77 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 36 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 43 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 44 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -42,6 +42,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
 | [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) | Requires | Always | [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled | `--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`. |
 | [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Requires | Always | [`--snake-case-field`](field-customization.md#snake-case-field) enabled | `--original-field-name-delimiter` can not be used without `--snake-case-field`. |
+| [`--rename-fields-hiding-types-from-type-checkers`](field-customization.md#rename-fields-hiding-types-from-type-checkers) | Implies | Always | [`--rename-redeclared-fields-hiding-types`](field-customization.md#rename-redeclared-fields-hiding-types) enabled | - |
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
 | [`--keyword-only`](model-customization.md#keyword-only) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.10+` | `--keyword-only` requires `--target-python-version` 3.10 or higher for dataclasses. |
@@ -124,6 +125,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name)
 - [`--allow-private-network`](general-options.md#allow-private-network)
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs)
+- [`--apply-default-values-to-true-properties`](model-customization.md#apply-default-values-to-true-properties)
 - [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field)
 
 ### B {#b}
@@ -363,6 +365,8 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides)
+- [`--rename-fields-hiding-types-from-type-checkers`](field-customization.md#rename-fields-hiding-types-from-type-checkers)
+- [`--rename-redeclared-fields-hiding-types`](field-customization.md#rename-redeclared-fields-hiding-types)
 - [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes)
 - [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type)
 - [`--reuse-model`](model-customization.md#reuse-model)
@@ -468,6 +472,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections)
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name)
+- [`--use-str-for-formats-msgspec-cannot-decode`](typing-customization.md#use-str-for-formats-msgspec-cannot-decode)
 - [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64)
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)

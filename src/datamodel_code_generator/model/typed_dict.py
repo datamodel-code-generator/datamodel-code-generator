@@ -293,10 +293,12 @@ class TypedDict(DataModel):
         return self._extra_items_source
 
     @override
-    def _write_additional_properties_type(self, data_type: DataType) -> None:
+    def _write_additional_properties_type(
+        self, data_type: DataType, *, reference_classes: set[str] | None = None
+    ) -> None:
         """Write ``data_type`` as the type of ``extra_items``, whose imports replace those of the type it replaces."""
         self.extra_template_data.pop("additionalPropertiesImports", None)
-        super()._write_additional_properties_type(data_type)
+        super()._write_additional_properties_type(data_type, reference_classes=reference_classes)
 
     @property
     def _extra_items_source(self) -> DataType | None:

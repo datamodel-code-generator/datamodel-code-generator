@@ -424,6 +424,39 @@ EXCLUDED_CASES: dict[str, str] = {
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_type_overrides_constructor_order imports the models that reference it"
     ),
+    **dict.fromkeys(
+        (
+            "openapi/nullable_reuse_tree.yaml::components.schemas.b.Place",
+            "openapi/type_overrides_constructor_order_modules.yaml::components.schemas.common.S",
+        ),
+        "top-level nullable object components need a wrapper policy; the models that reference them take null",
+    ),
+    "openapi/alias.yaml::components.schemas.team-members": (
+        "items without a type: the model reads an array, while JSON Schema admits any value that is no array, such "
+        "as null, at the root"
+    ),
+    "openapi/invalid_dotted_schema_name_late_warnings.yaml::components.schemas.Request": (
+        SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/kubernetes_group_version.yaml::components.schemas.io.k8s.api.apps.v1.RollingUpdateDeployment",
+            "openapi/kubernetes_group_version.yaml::components.schemas.io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+        ),
+        "the unknown format int-or-string intentionally emits a generator warning",
+    ),
+    "openapi/allof_inheritance_modular_mro_conflict.yaml::components.schemas.top.E": (
+        "generation refuses the inconsistent method resolution order of its bases; "
+        "test_main_modular_allof_inheritance_mro_conflict pins the error"
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/python_engine_beside_rejected_in_modules.yaml::components.schemas.b.Child",
+            "openapi/python_engine_beside_rejected_in_modules.yaml::components.schemas.b.User",
+        ),
+        "a component it references has the pattern ^\\p{L}+$, which Python's re before 3.15 refuses, so the source "
+        "validator cannot be built on most supported Pythons",
+    ),
     "jsonschema/collapse_root_models_lookaround_discriminator.json": (
         "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
         "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
@@ -609,6 +642,7 @@ EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
         (
             "openapi/discriminator_lone_variant_tags.yaml::components.schemas.MemberBoth",
+            "openapi/discriminator_enum_modules.yaml::components.schemas.pets.Pet",
             "openapi/open_enums.yaml::components.schemas.Pet",
             "openapi/shared_enum_discriminator/repeated.yaml::components.schemas.Pet",
         ),
@@ -620,6 +654,14 @@ EXCLUDED_CASES: dict[str, str] = {
             "openapi/discriminator_field_aliases/wire_collision_missing.json::components.schemas.Pet",
             "openapi/field_options_every_field.yaml::components.schemas.Pet",
             "openapi/discriminator_inlined_list_items/tag_named_like_enum.yaml::components.schemas.Pet",
+            (
+                "openapi/discriminator_inlined_list_items/tag_named_like_enum_across_modules.yaml::components.schemas."
+                "pets.Pet"
+            ),
+            (
+                "openapi/discriminator_shared_written_tag/nested_variant_inherits_tag_list_items.yaml::components."
+                "schemas.pets.Guest"
+            ),
             "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Pet",
         ),
         _UNCONSTRAINED_TAG_REASON
@@ -862,6 +904,17 @@ REJECTION_EXCLUDED_CASES: dict[str, str] = {
             "openapi/discriminator_shared_written_tag/tag_named_like_enum.yaml::components.schemas.Holder",
             "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Holder",
             "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.Holder",
+            *(
+                f"openapi/{document}.yaml::components.schemas.{name}"
+                for document, name in (
+                    ("discriminator_inlined_list_items/tag_named_like_enum_across_modules", "api.Shelter"),
+                    ("discriminator_inlined_list_items/tag_named_like_enum_across_modules", "pets.Pets"),
+                    ("discriminator_msgspec_tagged_unions_modules", "pets.Owner"),
+                    ("discriminator_msgspec_tagged_unions_modules_variants_first", "pets.Owner"),
+                    ("discriminator_shared_written_tag/nested_variant_inherits_tag_list_items", "api.Shelter"),
+                    ("discriminator_shared_written_tag/nested_variant_inherits_tag_list_items", "pets.Registry"),
+                )
+            ),
         ),
         _UNCONSTRAINED_TAG_REASON + "here the variants take their tag through allOf, from an enum $ref or as no "
         "string, so a valid value of the optional union property is seldom drawn and the payloads drawn leave it out, "
@@ -917,6 +970,8 @@ PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS = (
     "jsonschema/native_decimal_default_constrained.json",
     "jsonschema/serialized_decimal_default_multiple_of.json",
     "jsonschema/msgspec_union_member_constraints.json",
+    "openapi/variant_tag_values/scalar_kind_mapped.yaml::components.schemas.MultipleNumberA",
+    "openapi/variant_tag_values/scalar_kind_mapped.yaml::components.schemas.MultipleNumberB",
 )
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON = (
     "Pydantic before 2.5.2 rejects schema-valid negative float multipleOf values"
@@ -956,12 +1011,33 @@ PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
     "jsonschema/root_alias_constraints/lookaround.json",
 )
 """Lookaround aliases validated on their own: only a compiled pattern carries the engine without a config."""
+PYDANTIC_V2_DATACLASS_BARE_PYTHON_RE_ALIAS_CASE_IDS = (
+    "openapi/pattern_backreference.yaml::components.schemas.Doubled",
+    "openapi/pattern_size_alternation.yaml::components.schemas.Principal",
+    "openapi/pattern_size_any_character.yaml::components.schemas.Comment",
+    "openapi/pattern_size_counted_group.yaml::components.schemas.Address",
+    "openapi/pattern_size_negated_characters.yaml::components.schemas.Text",
+    "openapi/pattern_size_negated_newline.yaml::components.schemas.Line",
+    "openapi/pattern_size_repetitions.yaml::components.schemas.UserArn",
+    "openapi/pattern_size_word_and_digit_class.yaml::components.schemas.ResourceName",
+    "openapi/pattern_size_word_and_space_class.yaml::components.schemas.Title",
+    "openapi/read_only_write_only_extra_items_patterns.yaml::components.schemas.Passwords",
+)
+"""Aliases of patterns the Rust engine refuses (a backreference, a pattern above its size limit), on their own."""
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
-    PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
-        PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
-        "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
-        "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
-    ),
+    PayloadBackend.PYDANTIC_V2_DATACLASS: {
+        **dict.fromkeys(
+            PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
+            "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
+            "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
+        ),
+        **dict.fromkeys(
+            PYDANTIC_V2_DATACLASS_BARE_PYTHON_RE_ALIAS_CASE_IDS,
+            "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string patterns "
+            "the Rust engine refuses (a backreference, a size above its limit) that a bare type alias has no model "
+            "config to select regex_engine='python-re' for",
+        ),
+    },
 }
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
@@ -1003,6 +1079,15 @@ PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[s
         "Pydantic MISSING sentinel runtime support requires Pydantic 2.12+",
     )
 }
+_CROSS_MODULE_PYDANTIC_V2_CASE_IDS = (
+    "openapi/circular_imports_acyclic.yaml::components.schemas.sub.AnotherChild",
+    "openapi/exact_imports_ancestor_package.yaml::components.schemas.v0.mammal.canine.Puppy",
+)
+_CROSS_MODULE_PYDANTIC_V2_0_REASON = (
+    "Pydantic 2.0.x cannot build a model whose fields name models of another module of the generated package "
+    "(AttributeError __pydantic_core_schema__, a dataclass 'not fully defined'); 2.12, the next pinned runtime, "
+    "validates it"
+)
 PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadBackend, dict[str, str]]], ...] = (
     (
         "2.1.0",
@@ -1016,12 +1101,16 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                 "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
                 "('at most N items after validation, not N')",
             ),
-            PayloadBackend.PYDANTIC_V2_DATACLASS: {
-                "jsonschema/type_overrides_replace_whole_type.json": (
-                    "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
-                    "('at most N items after validation, not N')"
+            PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
+                (
+                    "jsonschema/allof_map_member_counts_no_merge.json",
+                    "jsonschema/type_overrides_replace_whole_type.json",
+                    "openapi/false_all_of_values.yaml::components.schemas.Holder",
+                    "openapi/false_values.yaml::components.schemas.Holder",
                 ),
-            },
+                "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
+                "('at most N items after validation, not N')",
+            ),
         },
     ),
     (
@@ -1062,9 +1151,63 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                     (
                         "jsonschema/discriminator_msgspec_wire_name.json",
                         "jsonschema/msgspec_tag_below_instance_field.json",
+                        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Mammal",
+                        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Pet",
+                        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Quoted",
+                        "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Garage",
+                        "openapi/discriminator_with_properties.yaml::components.schemas.CustomContextVariable",
+                        "openapi/field_options_every_field.yaml::components.schemas.Owner",
                     ),
-                    "Pydantic before 2.11.0 does not support the alias of a hyphenated discriminator property in a "
-                    "discriminated union of dataclasses",
+                    "Pydantic before 2.11.0 does not support the alias of a discriminator property whose name is no "
+                    "identifier (pet-type, @type) in a discriminated union of dataclasses",
+                ),
+            },
+        },
+    ),
+    (
+        "2.12.0",
+        {
+            PayloadBackend.PYDANTIC_V2: dict.fromkeys(
+                _CROSS_MODULE_PYDANTIC_V2_CASE_IDS, _CROSS_MODULE_PYDANTIC_V2_0_REASON
+            ),
+            PayloadBackend.PYDANTIC_V2_DATACLASS: {
+                **dict.fromkeys(
+                    (
+                        *_CROSS_MODULE_PYDANTIC_V2_CASE_IDS,
+                        "openapi/alias.yaml::components.schemas.fo-o.ba-r.Clon-e",
+                        (
+                            "openapi/discriminator_nested_variant_restated_tag/restated_optional_tag_across_modules"
+                            ".yaml::components.schemas.pets.Kitten"
+                        ),
+                        *(
+                            f"openapi/discriminator_reuse_variant_module_base_fields.yaml::components.schemas.pets.{name}"
+                            for name in ("Animal", "Kitten", "Kitty")
+                        ),
+                        "openapi/dot_notation_inheritance.yaml::components.schemas.v0.animal.dog",
+                        "openapi/modular.yaml::components.schemas.foo.bar.Clone",
+                        "openapi/type_overrides_constructor_order_modules.yaml::components.schemas.zz.Child",
+                    ),
+                    _CROSS_MODULE_PYDANTIC_V2_0_REASON,
+                ),
+                **dict.fromkeys(
+                    (
+                        "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneRootTag",
+                        "openapi/variant_tag_values/lone_root_model_tag.yaml::components.schemas.PaymentMethod",
+                    ),
+                    "Pydantic 2.0.x refuses a dataclass variant whose tag is a root model of a Literal ('needs field "
+                    "type to be of type Literal'); 2.12, the next pinned runtime, validates it",
+                ),
+                "openapi/discriminator_duplicate_value.yaml::components.schemas.GroupedItem": (
+                    "Pydantic 2.0.x refuses a discriminator value that maps to two dataclass variants ('mapped to "
+                    "multiple choices'); 2.12, the next pinned runtime, validates it"
+                ),
+                **dict.fromkeys(
+                    (
+                        f"openapi/allof_with_required_inherited_coverage.yaml::components.schemas.{name}"
+                        for name in ("NestedCombinatorObjectAllOf", "NestedOneOfObjectAllOf")
+                    ),
+                    "Pydantic 2.0.x cannot build the schema of a nested dataclass union that refers to itself "
+                    "('Definitions error'); 2.12, the next pinned runtime, validates it",
                 ),
             },
         },
@@ -1105,6 +1248,29 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: tuple[
                         "jsonschema/prefix_items_positions_unchecked.json",
                     ),
                     "Pydantic before 2.6.0 dumps a boolean item of a prefixItems tuple as 0",
+                ),
+            },
+        },
+    ),
+    (
+        "2.10.0",
+        {
+            PayloadBackend.PYDANTIC_V2: {
+                "jsonschema/allof_base64_member_constraints.json": (
+                    "Pydantic before 2.10.0 dumps a base64 value with a trailing newline, which the schema's "
+                    "maxLength counts"
+                ),
+            },
+        },
+    ),
+    (
+        "2.12.0",
+        {
+            PayloadBackend.PYDANTIC_V2: {
+                "openapi/collapse_root_models_package_init.yaml::components.schemas.pkg.Holder": (
+                    "Pydantic 2.0.x warns while it dumps an enum of another module of the generated package through a "
+                    "str field ('Expected json-or-python[json=str, python=any] but got Kind'); 2.12, the next pinned "
+                    "runtime, dumps it without a warning"
                 ),
             },
         },

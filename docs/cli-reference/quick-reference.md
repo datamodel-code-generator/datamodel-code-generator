@@ -96,6 +96,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Generate StrEnum/IntEnum for string/integer enums (Python 3.11+). |
 | [`--use-standard-collections`](typing-customization.md#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
+| [`--use-str-for-formats-msgspec-cannot-decode`](typing-customization.md#use-str-for-formats-msgspec-cannot-decode) | Write str for the formats msgspec cannot decode under `--use-standard-primitive-... |
 | [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64) | Make a `format: byte` string strict under `--strict-types str`. |
 | [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict) | Generate TypedDict declarations with `total=False`. |
 | [`--use-tuple-for-closed-arrays`](typing-customization.md#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other item can follow. |
@@ -142,6 +143,8 @@ datamodel-codegen [OPTIONS]
 | [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly) | Decide the bounds of the int member of a msgspec union on the bounds the schema ... |
 | [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type) | Read the keywords that constrain objects only beside an `anyOf` or `oneOf` for i... |
 | [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) | Remove the special prefix from field names. |
+| [`--rename-fields-hiding-types-from-type-checkers`](field-customization.md#rename-fields-hiding-types-from-type-checkers) | Tell a field named like its type from that type for type checkers. |
+| [`--rename-redeclared-fields-hiding-types`](field-customization.md#rename-redeclared-fields-hiding-types) | Give a field that a subclass redeclares the name its base's field was given. |
 | [`--serialization-aliases`](field-customization.md#serialization-aliases) | Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file pa... |
 | [`--set-default-enum-member`](field-customization.md#set-default-enum-member) | Use the legacy flag for deserializing enum defaults. |
 | [`--snake-case-field`](field-customization.md#snake-case-field) | Convert field names to snake_case format. |
@@ -170,6 +173,7 @@ datamodel-codegen [OPTIONS]
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Allow extra fields in generated Pydantic models (extra='allow'). |
 | [`--allow-leading-underscore-class-name`](model-customization.md#allow-leading-underscore-class-name) | Allow an explicitly specified root class name to start with an underscore. |
 | [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) | Allow Pydantic model population by field name (not just alias). |
+| [`--apply-default-values-to-true-properties`](model-customization.md#apply-default-values-to-true-properties) | Give the default of `--default-values` to a property whose schema is `true`. |
 | [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) | Give the fields that leave out some field options the ones others take. |
 | [`--base-class`](model-customization.md#base-class) | Specify a custom base class for generated models. |
 | [`--base-class-map`](model-customization.md#base-class-map) | Specify different base classes for specific models via JSON mapping. |
@@ -407,6 +411,7 @@ All options sorted alphabetically:
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) - Allow Pydantic model population by field name (not just alia...
 - [`--allow-private-network`](general-options.md#allow-private-network) - Allow HTTP requests to private network schema endpoints.
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs) - Enable fetching of `$ref` targets over HTTP/HTTPS.
+- [`--apply-default-values-to-true-properties`](model-customization.md#apply-default-values-to-true-properties) - Give the default of `--default-values` to a property whose s...
 - [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) - Give the fields that leave out some field options the ones o...
 - [`--base-class`](model-customization.md#base-class) - Specify a custom base class for generated models.
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...
@@ -598,6 +603,8 @@ All options sorted alphabetically:
 - [`--recommend-options`](general-options.md#recommend-options) - Recommend options for the input schema on top of the latest ...
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) - Remove the special prefix from field names.
 - [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides) - Remove the unused models from a module that a model-level `-...
+- [`--rename-fields-hiding-types-from-type-checkers`](field-customization.md#rename-fields-hiding-types-from-type-checkers) - Tell a field named like its type from that type for type che...
+- [`--rename-redeclared-fields-hiding-types`](field-customization.md#rename-redeclared-fields-hiding-types) - Give a field that a subclass redeclares the name its base's ...
 - [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes) - Rename a submodule named like a class of its package.
 - [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type) - Reach the types to reuse through every model kind and write ...
 - [`--reuse-model`](model-customization.md#reuse-model) - Reuse identical model definitions instead of generating dupl...
@@ -694,6 +701,7 @@ All options sorted alphabetically:
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections) - Use built-in dict/list instead of typing.Dict/List.
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) - Use Python standard library types for string formats instead...
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name) - Include HTTP status code in response model names.
+- [`--use-str-for-formats-msgspec-cannot-decode`](typing-customization.md#use-str-for-formats-msgspec-cannot-decode) - Write str for the formats msgspec cannot decode under `--use...
 - [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64) - Make a `format: byte` string strict under `--strict-types st...
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum) - Generate typed Enum subclasses for enums with specific field...
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name) - Name inline oneOf/anyOf branch models after their tag: what ...

@@ -1,0 +1,8 @@
+[
+  "const 1: invalid, model accepts",
+  "const 1.0: invalid, model accepts",
+  "const [\"root\"]: invalid, model accepts",
+  "const null: invalid, model accepts",
+  "const true: invalid, model accepts",
+  "const {\"a\": \"root\"}: invalid, model accepts"
+]

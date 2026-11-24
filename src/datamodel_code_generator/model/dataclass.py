@@ -6,7 +6,7 @@ Generates Python dataclasses using the @dataclass decorator.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, cast
 
 from typing_extensions import final, override
 
@@ -281,6 +281,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = True
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
+    HIDING_FIELD_RESOLUTION: ClassVar[Literal["field", "type"] | None] = "type"
 
     @override
     def field_name_hides_types(self, field: DataModelFieldBase) -> bool:

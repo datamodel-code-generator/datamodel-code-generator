@@ -40,10 +40,18 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   receiver of the method that holds the access or a value typed with a ``*Host`` Protocol declaring the member
   (``MUT205``, ``MUT206``, ``MUT207`` report what heki cannot tie to a class). heki names no member of a module
   outside the package, so ruff's ``banned-api`` holds ``sys._getframe`` in these modules instead.
+- ``call-owners`` and ``read-owners`` of the pass pipeline (``MUT203``, ``MUT204``): ``FinalFacts`` is built only by
+  ``GenerationStore.seal_facts`` (a class attribute, a decorator or a default argument counts as a read), and a
+  name-mangled member of ``Parser`` (``Parser._Parser__*``, which the pass tables call) is reached only inside the body
+  of ``Parser``; a subclass reaches it through ``self`` too, and a receiver heki cannot tie to a class is reported
+  (``unresolved = "report"``).
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
   sites, ``allowlist:heki-baseline:EFF201`` of ``scripts/check_ratchets.py``.
+
+The file also sets ``required-version`` to at least the heki that the ``heki`` dependency group of pyproject.toml pins,
+so an older heki stops with a clear error instead of failing on a key it does not know.
 """
 
 from __future__ import annotations
@@ -54,6 +62,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
@@ -71,6 +81,7 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
+PYPROJECT = ROOT / "pyproject.toml"
 SOURCE_ROOT = ROOT / PACKAGE_DIR
 STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
@@ -393,6 +404,59 @@ def builder_contracts(repo: Repo, records: Iterable[BuilderHome] = BUILDER_HOMES
     return contracts
 
 
+FINAL_FACTS = Home("parser/_phases.py", "FinalFacts")
+"""The facts final at B1, built once per parse."""
+FINAL_FACTS_SITE = Home("parser/generation.py", "GenerationStore.seal_facts")
+"""The one function that builds ``FinalFacts``."""
+PARSER = Home("parser/base.py", "Parser")
+"""The class whose name-mangled members only its own body reaches."""
+
+
+def pipeline_contracts(repo: Repo) -> list[str]:
+    """Return the contracts of the pass pipeline: one builder of ``FinalFacts``, ``Parser``'s mangled members kept.
+
+    The constants above name the scopes; a name that no module of the package defines stops the build.
+    """
+    scopes = {
+        (module, scope.qualname)
+        for rel, module in _package_modules(repo).items()
+        for scope in repo.model(rel).scopes
+        if scope.kind in {"class", "function"}
+    }
+    for home in (FINAL_FACTS, FINAL_FACTS_SITE, PARSER):
+        if (_module(home.path), home.name) not in scopes:
+            message = f"{home.path} defines no {home.name}"
+            raise SystemExit(message)
+    parser = [f"{_module(PARSER.path)}.{PARSER.name}._{PARSER.name}__*"]
+    body = _scope(_module(PARSER.path), PARSER.name)
+    return [
+        _table(
+            "call-owners",
+            name="final-facts-built-by-seal-facts",
+            targets=[f"{_module(FINAL_FACTS.path)}.{FINAL_FACTS.name}"],
+            allowed_callers=_scope(_module(FINAL_FACTS_SITE.path), FINAL_FACTS_SITE.name),
+            references="reads",
+            attribution="lexical",
+        ),
+        _table(
+            "call-owners",
+            name="parser-mangled-call",
+            targets=parser,
+            allowed_callers=body,
+            unresolved="report",
+            attribution="lexical",
+        ),
+        _table(
+            "read-owners",
+            name="parser-mangled-read",
+            targets=parser,
+            allowed_readers=body,
+            unresolved="report",
+            attribution="lexical",
+        ),
+    ]
+
+
 def in_host_scope(path: Path) -> bool:
     """Return whether the host contracts (and not ruff's SLF001, see pyproject.toml) own private access in a file.
 
@@ -461,6 +525,12 @@ def environment_contracts() -> list[str]:
     ]
 
 
+def required_version() -> str:
+    """Return the ``required-version`` of the contracts: at least the heki that the ``heki`` dependency group pins."""
+    group = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["dependency-groups"]["heki"]
+    return f">={next(pin.removeprefix('heki==') for pin in group if pin.startswith('heki=='))}"
+
+
 def generate() -> str:
     """Return the contents of scripts/heki.toml."""
     repo = Repo(ROOT, Page([], [], [], []))
@@ -470,9 +540,11 @@ def generate() -> str:
         *decision_home_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
+        *pipeline_contracts(repo),
         *environment_contracts(),
     ]
-    return "\n".join([f"{HEADER}\n[lint]\nselect = {_array(RULES)}\n", *contracts])
+    head = f"{HEADER}\nrequired-version = {_quote(required_version())}\n\n[lint]\nselect = {_array(RULES)}\n"
+    return "\n".join([head, *contracts])
 
 
 def main(argv: list[str] | None = None) -> int:

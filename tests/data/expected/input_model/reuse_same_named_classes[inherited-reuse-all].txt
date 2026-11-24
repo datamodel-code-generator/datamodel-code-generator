@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 
-from legacy import Item
+from legacy import Item as Item1
 from pydantic import BaseModel
-from shop import Item as Item1
+from shop import Item
 
 
 class Base(BaseModel):
-    item: Item1
+    item: Item
 
 
 class Child(Base):
-    legacy_item: Item
+    item: Item
+    legacy_item: Item1

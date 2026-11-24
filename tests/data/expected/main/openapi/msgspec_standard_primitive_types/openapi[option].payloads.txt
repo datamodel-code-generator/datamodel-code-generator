@@ -1,0 +1,4 @@
+valid: accepted
+address is a number: rejected
+address of a list is a number: rejected
+id is no UUID: rejected

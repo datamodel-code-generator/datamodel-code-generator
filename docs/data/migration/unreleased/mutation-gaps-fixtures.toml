@@ -1,8 +1,0 @@
-[[change]]
-id = "mutation-gaps-fixtures"
-category = "harness"
-title = "Count of the payload validation schema fixtures"
-summary = "The payload validation fixture count includes the new test inputs; the package writes the same output."
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

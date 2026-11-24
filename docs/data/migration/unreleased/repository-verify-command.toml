@@ -1,9 +1,0 @@
-[[change]]
-id = "repository-verify-command"
-category = "harness"
-title = "The where script reports the new length of related_tests.py"
-summary = "The stored error names the line count of scripts/related_tests.py, which grew with the selection of changed tests; the package writes the same output."
-refs = ["#7370"]
-covers = [
-    "where_script/where_reads_other_inputs[line-past-the-file].txt",
-]

@@ -141,7 +141,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111,standard-py310-20261112,standard-py311-20261112,standard-py312-20261112,standard-py313-20261112,standard-py314-20261112,standard-py315-20261112,practical-py310-20261112,practical-py311-20261112,practical-py312-20261112,practical-py313-20261112,practical-py314-20261112,practical-py315-20261112,standard-py310-20261113,standard-py311-20261113,standard-py312-20261113,standard-py313-20261113,standard-py314-20261113,standard-py315-20261113,practical-py310-20261113,practical-py311-20261113,practical-py312-20261113,practical-py313-20261113,practical-py314-20261113,practical-py315-20261113,standard-py310-20261118,standard-py311-20261118,standard-py312-20261118,standard-py313-20261118,standard-py314-20261118,standard-py315-20261118,practical-py310-20261118,practical-py311-20261118,practical-py312-20261118,practical-py313-20261118,practical-py314-20261118,practical-py315-20261118,standard-py310-20261120,standard-py311-20261120,standard-py312-20261120,standard-py313-20261120,standard-py314-20261120,standard-py315-20261120,practical-py310-20261120,practical-py311-20261120,practical-py312-20261120,practical-py313-20261120,practical-py314-20261120,practical-py315-20261120,standard-py310-20261123,standard-py311-20261123,standard-py312-20261123,standard-py313-20261123,standard-py314-20261123,standard-py315-20261123,practical-py310-20261123,practical-py311-20261123,practical-py312-20261123,practical-py313-20261123,practical-py314-20261123,practical-py315-20261123}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111,standard-py310-20261112,standard-py311-20261112,standard-py312-20261112,standard-py313-20261112,standard-py314-20261112,standard-py315-20261112,practical-py310-20261112,practical-py311-20261112,practical-py312-20261112,practical-py313-20261112,practical-py314-20261112,practical-py315-20261112,standard-py310-20261113,standard-py311-20261113,standard-py312-20261113,standard-py313-20261113,standard-py314-20261113,standard-py315-20261113,practical-py310-20261113,practical-py311-20261113,practical-py312-20261113,practical-py313-20261113,practical-py314-20261113,practical-py315-20261113,standard-py310-20261118,standard-py311-20261118,standard-py312-20261118,standard-py313-20261118,standard-py314-20261118,standard-py315-20261118,practical-py310-20261118,practical-py311-20261118,practical-py312-20261118,practical-py313-20261118,practical-py314-20261118,practical-py315-20261118,standard-py310-20261120,standard-py311-20261120,standard-py312-20261120,standard-py313-20261120,standard-py314-20261120,standard-py315-20261120,practical-py310-20261120,practical-py311-20261120,practical-py312-20261120,practical-py313-20261120,practical-py314-20261120,practical-py315-20261120,standard-py310-20261123,standard-py311-20261123,standard-py312-20261123,standard-py313-20261123,standard-py314-20261123,standard-py315-20261123,practical-py310-20261123,practical-py311-20261123,practical-py312-20261123,practical-py313-20261123,practical-py314-20261123,practical-py315-20261123,standard-py310-20261124,standard-py311-20261124,standard-py312-20261124,standard-py313-20261124,standard-py314-20261124,standard-py315-20261124,practical-py310-20261124,practical-py311-20261124,practical-py312-20261124,practical-py313-20261124,practical-py314-20261124,practical-py315-20261124}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
@@ -884,6 +884,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         frozenset or Mapping, as in 0.90.0
 
 [36;1mField customization[0m:
+  --apply-default-values-to-true-properties, --no-apply-default-values-to-true-properties
+                        Give a property whose schema is `true` the default
+                        that --default-values gives it, in the class that
+                        declares it and in a child that restates an inherited
+                        property as `true` (`name: str | None = 'rex'` for
+                        `Dog.name`); without it such a property takes no
+                        default, as in 0.100.0
   --apply-field-options-to-every-field, --no-apply-field-options-to-every-field
                         Apply the field options to every kind of field: a
                         GraphQL field, a property whose schema is `true` or
@@ -983,6 +990,27 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --remove-special-field-name-prefix
                         Remove field name prefix if it has a special meaning
                         e.g. underscores
+  --rename-fields-hiding-types-from-type-checkers, --no-rename-fields-hiding-types-from-type-checkers
+                        Tell a field that the class body assigns (a default or
+                        `field(...)`) and that is named like the type it is
+                        annotated with from that type for type checkers, which
+                        read the annotation as the field: msgspec.Struct
+                        renames the field and keeps the wire name in `name=`,
+                        dataclasses.dataclass, which has no alias, renames the
+                        type, as --field-type-collision-strategy rename-type
+                        does for Pydantic; it also gives a field that a
+                        subclass redeclares the name of the renamed field, as
+                        --rename-redeclared-fields-hiding-types does. Without
+                        it these outputs keep the field and the type names, as
+                        in 0.100.0, and type checkers report the annotation
+  --rename-redeclared-fields-hiding-types, --no-rename-redeclared-fields-hiding-types
+                        Give a field that a subclass redeclares the name its
+                        base's field was given where that field is renamed
+                        because it is named like its type (`Pet_1` with
+                        `alias='Pet'`), so the subclass holds one field for
+                        the wire key; without it the redeclared field keeps
+                        its name beside the inherited renamed one, so two
+                        fields read the key, as in 0.100.0
   --serialization-aliases SERIALIZATION_ALIASES
                         Serialization alias mapping as inline JSON or a JSON
                         file path for Pydantic v2. Format: {'<schema_field>':
@@ -1490,6 +1518,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         (UUID, IPv4Address, etc.) instead of str. Affects
                         dataclass, msgspec, TypedDict output. Pydantic already
                         uses these types by default.
+  --use-str-for-formats-msgspec-cannot-decode, --no-use-str-for-formats-msgspec-cannot-decode
+                        Write str for the formats whose standard library class
+                        msgspec has no decoder for (ipv4, ipv6, ipv4-network,
+                        ipv6-network, path) under --use-standard-primitive-
+                        types, so msgspec.Struct output decodes a document
+                        that holds them; without it the Struct holds
+                        IPv4Address, IPv6Address, IPv4Network, IPv6Network and
+                        Path, as in 0.100.0, which msgspec decodes only with a
+                        dec_hook. Other output model types keep the classes.
   --use-tag-as-union-variant-name
                         Name inline oneOf/anyOf branch models after their tag:
                         what --infer-union-variant-names does, skipping tags

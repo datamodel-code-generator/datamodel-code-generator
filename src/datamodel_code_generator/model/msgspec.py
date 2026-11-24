@@ -78,11 +78,13 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _forbids_unknown_fields_marked,
     _has_opaque_custom_base,
+    _is_instance_field,
     _keeps_stripped_place,
     _ModelKeys,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
+    _same_model,
     _ValueFactory,
     linearize_data_models,
 )
@@ -108,6 +110,7 @@ from datamodel_code_generator.reference import FieldNameResolver, ModelType, fie
 from datamodel_code_generator.types import (
     NONE,
     DataType,
+    Types,
     _copy_data_type,
     _is_value_literal,
     _qualified_type_path,
@@ -626,16 +629,6 @@ def _union_leaves(data_type: DataType) -> Sequence[DataType]:
     return ()
 
 
-def _is_instance_field(field: DataModelFieldBase) -> bool:
-    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
-    return not field.is_class_var
-
-
-def _same_model(model: DataModel) -> DataModel:
-    """Return the model itself as the model whose layout it has."""
-    return model
-
-
 def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001
     """Return that only a configured base, which the layout check finds itself, hides the slots of a model."""
     return False
@@ -726,6 +719,7 @@ class Struct(DataModel):
     _READ_BY_MSGSPEC: ClassVar[bool] = True
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
+    HIDING_FIELD_RESOLUTION: ClassVar[Literal["field", "type"] | None] = "field"
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True
     FIRST_BASE_CONFIGURES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
@@ -2298,6 +2292,14 @@ class DataTypeManager(_DataTypeManager):
     REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.regex_engines
     WRITES_UNTYPED_VALUE_TYPE: ClassVar[bool] = False
     """msgspec decodes neither ``pydantic.JsonValue`` nor a recursive alias, and decodes ``Any`` into JSON values."""
+    _UNDECODED_STANDARD_PRIMITIVE_TYPES: ClassVar[frozenset[Types]] = frozenset({
+        Types.ipv4,
+        Types.ipv6,
+        Types.ipv4_network,
+        Types.ipv6_network,
+        Types.path,
+    })
+    """msgspec has no decoder for the ``ipaddress`` classes or ``Path``: they are decoded as ``str``, which it reads."""
 
     @property
     @override

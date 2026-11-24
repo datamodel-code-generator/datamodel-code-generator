@@ -1,0 +1,6 @@
+option = "--keep-string-keywords-beside-formats"
+input = "jsonschema/format_string_keywords.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]
+off_args = []
+warns_without = "fields holding AnyUrl are written without max_length"

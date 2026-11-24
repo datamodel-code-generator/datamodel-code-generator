@@ -7,7 +7,9 @@ Run it in the checkout to verify. It judges the working tree (uncommitted and un
 merge base of REF (default: origin/main) and HEAD:
 
 1. The tests the diff reaches run with pytest and line coverage: `scripts/related_tests.py` selects them (the test
-   modules that mirror the changed modules and the rows of `scripts/related_tests.toml` the diff fires).
+   modules that mirror the changed modules and the rows of `scripts/related_tests.toml` the diff fires). Where the diff
+   adds or modifies inputs of the payload suite (the paths of the row `payload-inputs`), the payload suite runs once
+   more over their cases alone (`DCG_PAYLOAD_INPUTS`), on every backend, with the nightly job's 100 examples.
 2. Where the diff changes `src/`, `scripts/behaviour_diff.py gate MERGE-BASE CHECKOUT --identity --pick CATALOG`
    compares the cells of the cell catalog that run the changed code (`scripts/_cell_catalog.py`), the merge base
    against the working tree. It prints every difference with its cell, and each changed code object no compared cell
@@ -45,6 +47,11 @@ GATE = Path(behaviour_diff.__file__).resolve()
 PACKAGE_SOURCE = f"src/{compare_release.PACKAGE}/"
 NO_TESTS_COLLECTED = 5
 """pytest's exit status when the selected paths hold no test."""
+PAYLOAD_INPUTS_ROW = "payload-inputs"
+"""The row of `scripts/related_tests.toml` whose changed paths are the payload suite's inputs."""
+PAYLOAD_SUITE = "tests/main/test_payload_validation.py"
+PAYLOAD_RUN_ENV = {"DCG_PAYLOAD_MAX_EXAMPLES": "100"}
+"""The examples of the nightly payload job; `DCG_PAYLOAD_INPUTS` makes every backend run."""
 NO_TIER_INPUT = "verify: the picked cells only"
 """A `--select` pattern no input label matches: the gate's tier runs no cell, and `--pick` adds the catalog's."""
 CATALOGS = "verify-catalogs"
@@ -90,22 +97,32 @@ def _python(root: Path) -> str:
     return str(venv if venv.exists() else sys.executable)
 
 
-def run_tests(root: Path, base: str, jobs: int, coverage: Path) -> bool:
-    """Run the tests the diff reaches with line coverage into `coverage`; return whether one failed.
+def _pytest(root: Path, jobs: int, coverage: Path, nodes: list[str], env: dict[str, str]) -> bool:
+    """Run pytest on `nodes` with line coverage appended to `coverage`; return whether a test failed.
 
     A selection of helper modules alone collects no test (pytest's status 5), which fails nothing.
     """
+    env = {**os.environ, **env, "PYTHONPATH": str(root / "src"), "COVERAGE_FILE": str(coverage)}
+    package = root / "src" / compare_release.PACKAGE
+    options = ["-q", "-p", "no:randomly", "-n", str(jobs), f"--cov={package}", "--cov-append", "--cov-report="]
+    command = [_python(root), "-m", "pytest", *options, "--cov-fail-under=0", *nodes]
+    return subprocess.run(command, cwd=root, env=env, check=False).returncode not in {0, NO_TESTS_COLLECTED}
+
+
+def run_tests(root: Path, base: str, jobs: int, coverage: Path) -> bool:
+    """Run the tests the diff reaches, then the payload suite over the inputs it reaches; return whether one failed."""
     rules_file = root / "scripts" / "related_tests.toml"
     rules = tomllib.loads(rules_file.read_text("utf-8"))["rule"] if rules_file.exists() else []
     nodes = related_tests.select(root, base, None, rules)
     print(f"verify: tests the diff reaches: {len(nodes)}", flush=True)
-    if not nodes:
-        return False
-    env = {**os.environ, "PYTHONPATH": str(root / "src"), "COVERAGE_FILE": str(coverage)}
-    package = root / "src" / compare_release.PACKAGE
-    options = ["-q", "-p", "no:randomly", "-n", str(jobs), f"--cov={package}", "--cov-report=", "--cov-fail-under=0"]
-    command = [_python(root), "-m", "pytest", *options, *nodes]
-    return subprocess.run(command, cwd=root, env=env, check=False).returncode not in {0, NO_TESTS_COLLECTED}
+    failed = bool(nodes) and _pytest(root, jobs, coverage, nodes, {})
+    known = any(rule["id"] == PAYLOAD_INPUTS_ROW for rule in rules)
+    inputs = related_tests.row_paths(root, base, None, rules, PAYLOAD_INPUTS_ROW) if known else []
+    print(f"verify: payload inputs the diff reaches: {len(inputs)}", flush=True)
+    if inputs:
+        env = {**PAYLOAD_RUN_ENV, "DCG_PAYLOAD_INPUTS": os.pathsep.join(inputs)}
+        failed = _pytest(root, jobs, coverage, [PAYLOAD_SUITE], env) or failed
+    return failed
 
 
 def _cache(cache_dir: Path | None) -> list[str]:

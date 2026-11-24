@@ -273,6 +273,7 @@ __all__ = [
     "collapse_module_root_models",
     "collapse_root_models",
     "extract_module_inherited_enums",
+    "follow_hiding_field_renames",
     "mark_unused_models_start",
     "name_inner_models_in_rules",
     "process_each_module",
@@ -310,13 +311,55 @@ class CollisionRenameHost(Protocol):
     def field_type_collision_strategy(self) -> FieldTypeCollisionStrategy | None:
         """How a field named like its type is told apart from it, if configured."""
 
+    @property
+    def rename_redeclared_fields_hiding_types(self) -> bool:
+        """Whether a class that redeclares a renamed field that hides its type holds it under the new name."""
+
+    @property
+    def rename_fields_hiding_types_from_type_checkers(self) -> bool:
+        """Whether a field that a class body assigns and that is named like its type is told apart from it."""
+
+
+def _hiding_legacy_rows(parser: CollisionRenameHost) -> frozenset[str]:
+    """Return the rows of the fields that hide their types that the options leave on, which keep released output."""
+    rows = set[str]()
+    if not parser.rename_redeclared_fields_hiding_types:
+        rows.add("legacy-redeclared-hiding-field-keeps-name")
+    if not parser.rename_fields_hiding_types_from_type_checkers:
+        rows.add("legacy-field-hides-type-from-checkers")
+    return frozenset(rows)
+
 
 def renames_colliding_types(parser: CollisionRenameHost) -> bool:
-    """Return whether the run renames a type that a field is named like, instead of the field."""
+    """Return whether the run renames a type that a field is named like, instead of the field.
+
+    The strategy asks for it where the output renames types. A type checker reads a field without an alias, which has
+    to keep its name, as the field where the class body assigns it, so under
+    ``--rename-fields-hiding-types-from-type-checkers`` such an output renames the type.
+    """
+    model_type = parser.data_model_type
     return (
         parser.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
-        and parser.data_model_type.SUPPORTS_FIELD_TYPE_RENAMING
+        and model_type.SUPPORTS_FIELD_TYPE_RENAMING
+    ) or (
+        "legacy-field-hides-type-from-checkers" not in _hiding_legacy_rows(parser)
+        and not model_type.SUPPORTS_FIELD_RENAMING
+        and model_type.HIDING_FIELD_RESOLUTION == "type"
     )
+
+
+def renames_hiding_fields(parser: CollisionRenameHost) -> bool:
+    """Return whether the run renames fields or types that a field's name hides from the class."""
+    model_type = parser.data_model_type
+    return model_type.SUPPORTS_FIELD_RENAMING or (
+        "legacy-field-hides-type-from-checkers" not in _hiding_legacy_rows(parser)
+        and model_type.HIDING_FIELD_RESOLUTION is not None
+    )
+
+
+def follows_hiding_field_renames(parser: CollisionRenameHost) -> bool:
+    """Return whether the classes of a family that redeclare a renamed field hold it under the new name."""
+    return "legacy-redeclared-hiding-field-keeps-name" not in _hiding_legacy_rows(parser)
 
 
 class ModulesHost(
@@ -929,14 +972,26 @@ def _same_named_references(model: DataModel, name: str | None, *, skips_aliases:
     return (ref for written, ref in _written_type_names(model.fields, names=names) if written == name)
 
 
-def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
-    """Return the models that the model inherits from or passes its fields on to, transitively, by model key."""
+def _model_family(
+    model: DataModel,
+    derived_models: Mapping[ModelKey, list[DataModel]],
+    *,
+    keeps: Callable[[DataModel], bool] = lambda _: True,
+) -> dict[ModelKey, DataModel]:
+    """Return the models that the model inherits from or passes its fields on to, transitively, by model key.
+
+    A walk goes on only through the models ``keeps`` holds, and a model it does not hold is not in the family.
+    """
     keys = _ModelKeys()
     return {
         keys.of(kin): kin
         for kin in reach(
             (model,),
-            lambda current: chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ())),
+            lambda current: (
+                kin
+                for kin in chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ()))
+                if keeps(kin)
+            ),
             keys.of,
         )
     }
@@ -2073,6 +2128,21 @@ def sort_models(
     parser._graph_builder.set_module_models(models, kept)
 
 
+def _rename_keeping_wire_name(parser: ModulesHost, field: DataModelFieldBase, new_name: str) -> None:
+    """Rename the field, which keeps the name it had as its alias."""
+    parser._graph_builder.rename_field(field, new_name, alias=field.name)
+
+
+def _record_hiding_name(parser: ModulesHost, family: Iterable[ModelKey], old: str | None, new: str) -> None:
+    """Record that the classes of the family write the field ``old`` that hides its type as ``new``."""
+    parser._hiding_field_names.update(dict.fromkeys(((key, old) for key in family), new))
+
+
+def _recorded_hiding_name(parser: ModulesHost, key: ModelKey, old: str | None) -> str | None:
+    """Return the name the model of ``key`` writes its field ``old`` that hides its type as, if one is recorded."""
+    return parser._hiding_field_names.get((key, old))
+
+
 def change_field_name(
     parser: ModulesHost,
     models: list[DataModel],
@@ -2080,6 +2150,8 @@ def change_field_name(
     rename_type = renames_colliding_types(parser)
     all_class_names = {cast("str", model.class_name) for model in models if model.class_name} if rename_type else set()
     resolver: ModelResolver | None = None
+    follows = follows_hiding_field_renames(parser)
+    derived_models: Mapping[ModelKey, list[DataModel]] | None = None
 
     for model in models:
         if _keeps_field_names(model, parser.data_model_type):
@@ -2106,12 +2178,58 @@ def change_field_name(
                 resolver._reset_for_reuse(reference_type_names)
                 new_field_name = resolver._get_unique_field_name(cast("str", field_name))
                 if field_name != new_field_name:
-                    parser._graph_builder.rename_field(field, new_field_name, alias=field.name)
+                    _rename_keeping_wire_name(parser, field, new_field_name)
+                    if follows and field_name in reference_type_names:
+                        derived_models = derived_models or _derived_models(_parsed_and_module_models(parser, models))
+                        _record_hiding_name(parser, _model_family(model, derived_models), field_name, new_field_name)
 
             if (current_name := field.name) in parser.builtin_names and any(
                 _is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types
             ):
                 parser._graph_builder.rename_field(field, f"{current_name}_", alias=field_name)
+
+
+def _holds_wire_key(model: DataModel, old: str, new: str) -> bool:
+    """Return whether the model's class holds the wire key ``old``, as its field ``old`` or its field ``new`` aliased.
+
+    A field the class inherits counts as one it declares, so a walk goes on through a class that only inherits it.
+    """
+    return any(
+        (field.name == old and field.alias in {None, old}) or (field.name == new and field.alias == old)
+        for field in model.effective_fields
+    )
+
+
+def follow_hiding_field_renames(parser: ModulesHost, run: ModulesRun) -> None:
+    """Hold each field that a class redeclares under the name its base gave the field that hides its type.
+
+    The renames of ``change_field_name`` and ``rename_fields_hiding_types`` are recorded for the family of the class
+    (``_hiding_field_names``). A class that redeclares the field with a type its name does not hide has no reason of
+    its own to rename it, so it would hold a second field for the wire key its base renamed. The rename follows along
+    the classes that hold that wire key, declared or inherited: bases and subclasses of a class that holds the renamed
+    field, and no class that only shares another base with one. A field of another wire key keeps its name, and so does
+    a field in a class that holds a field of the new name already, declared or inherited. The classes of a module are
+    processed before the modules that come after it, so this runs once every module is.
+    """
+    models = [model for ctx in run.contexts for model in ctx.models]
+    derived_models = _derived_models(_parsed_and_module_models(parser, models))
+    sources: dict[tuple[str, str], list[DataModel]] = {}
+    for model in models:
+        key = model_key_of(model.reference)
+        for field in model.fields:
+            alias, name = field.alias, field.name
+            if alias is not None and name is not None and _recorded_hiding_name(parser, key, alias) == name:
+                sources.setdefault((alias, name), []).append(model)
+    for (old, new), starts in sources.items():
+        for start in starts:
+            for member in _model_family(
+                start, derived_models, keeps=lambda kin, old=old, new=new: _holds_wire_key(kin, old, new)
+            ).values():
+                if any(field.name == new and field.alias != old for field in member.effective_fields):
+                    continue
+                for field in member.fields:
+                    if field.name == old and field.alias in {None, old}:
+                        _rename_keeping_wire_name(parser, field, new)
 
 
 def restore_inherited_field_names_for_unique_aliases(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -2500,6 +2618,9 @@ def hides_named_type(
     from a string under the future import and as a quoted forward reference, and native deferred annotations
     resolve a forward reference once the class exists as well. The annotation of another field sees the binding
     in any order, as Python 3.14 evaluates every annotation once the class body has run.
+
+    Under ``--rename-fields-hiding-types-from-type-checkers`` the assignment alone hides it: a type checker reads every
+    annotation as deferred, however the library resolves it at run time.
     """
     users = [
         (user, reference) for user in model.fields if (reference := _named_reference(user, field.name)) is not None
@@ -2524,9 +2645,10 @@ def hides_named_type(
             and model.assigns_forward_reference_field(field, positions.paths, index)
         )
     )
+    static = "legacy-field-hides-type-from-checkers" not in _hiding_legacy_rows(parser)
     for user, reference in users:
         is_forward = index is not None and positions.names_at_or_after(reference, index)
-        if model.class_attribute_hides_named_type(
+        if (static and assigned) or model.class_attribute_hides_named_type(
             user,
             assigned=assigned,
             resolved_late=writes_strings or is_forward,
@@ -2667,13 +2789,13 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                 }.values():
                     rename_named_type(parser, field, named, class_names, all_models, derived_models)
                 continue
-            if (new_name := parser._hiding_field_names.get((model_key_of(model.reference), field_name))) is None:
+            if (new_name := _recorded_hiding_name(parser, model_key_of(model.reference), field_name)) is None:
                 family = _model_family(model, derived_models)
                 new_name = _field_type_resolver(parser, _family_field_names(family))._get_unique_field_name(
                     cast("str", field_name)
                 )
-                parser._hiding_field_names.update(dict.fromkeys(((key, field_name) for key in family), new_name))
-            parser._graph_builder.rename_field(field, new_name, alias=field.name)
+                _record_hiding_name(parser, family, field_name, new_name)
+            _rename_keeping_wire_name(parser, field, new_name)
 
 
 def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> None:

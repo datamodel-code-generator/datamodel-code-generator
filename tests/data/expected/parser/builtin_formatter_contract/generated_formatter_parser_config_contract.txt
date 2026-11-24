@@ -11,6 +11,7 @@ reviewed-safe allow_private_network
 reviewed-safe allow_remote_refs
 reviewed-safe allow_responses_without_content
 reviewed-safe apply_default_values_for_required_fields
+reviewed-safe apply_default_values_to_true_properties
 reviewed-safe apply_field_options_to_every_field
 guarded base_class
 guarded base_class_map
@@ -139,6 +140,8 @@ reviewed-safe read_yaml_1_1_numbers_as_text
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix
 reviewed-safe remove_unused_models_beside_type_overrides
+reviewed-safe rename_fields_hiding_types_from_type_checkers
+reviewed-safe rename_redeclared_fields_hiding_types
 reviewed-safe rename_submodules_hidden_by_classes
 reviewed-safe reuse_model
 reviewed-safe reuse_scope
@@ -211,6 +214,7 @@ reviewed-safe use_site_models_for_constrained_refs
 reviewed-safe use_specialized_enum
 reviewed-safe use_standard_collections
 reviewed-safe use_standard_primitive_types
+reviewed-safe use_str_for_formats_msgspec_cannot_decode
 reviewed-safe use_strict_str_for_base64
 reviewed-safe use_subclass_enum
 reviewed-safe use_tag_as_union_variant_name

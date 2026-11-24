@@ -5472,6 +5472,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             required = False if self.force_optional_for_required_fields else original_field_name in requires
 
             if isinstance(field, bool):
+                default_state = (
+                    self._true_property_default_state(original_field_name, required=required, scope=scope)
+                    if field
+                    else None
+                )
+                default, has_default, use_default_with_required = default_state or (None, False, False)
                 boolean_field = self._build_field(
                     "legacy-boolean-property",
                     self.data_type_manager.get_data_type(Types.any),
@@ -5479,9 +5485,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     alias=alias,
                     source_name=original_field_name,
                     scope=scope,
+                    default=default,
                     required=required,
                     original_name=original_field_name,
+                    has_default=has_default,
+                    use_default_with_required=use_default_with_required,
                 )
+                if default_state is not None and self.model_resolver.default_value_overrides:
+                    self._graph_builder.record_raw_schema_default(boolean_field)
                 declaration = (
                     None
                     if (location := obj.schema_location) is None
@@ -5522,6 +5533,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for field in fields:
                 field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = scope
         return fields
+
+    def _true_property_default_state(
+        self, source_name: str, *, required: bool, scope: ClassScope | None
+    ) -> tuple[object, bool, bool] | None:
+        """Return the default state of the field of a property whose schema is ``true``, None where it reads none.
+
+        A ``true`` property takes the default ``--default-values`` gives it, as a property whose schema is ``{}`` does,
+        and records that it declares none, as a schema property does, so a child that restates an inherited property
+        as ``true`` resolves the key of its own class. Row ``legacy-default-values-skip-true-properties``, without
+        ``--apply-default-values-to-true-properties``, reads none. A ``false`` property admits no value and its caller
+        asks for none.
+        """
+        row: Literal["true-property-default", "legacy-default-values-skip-true-properties"] = (
+            "true-property-default"
+            if self.apply_default_values_to_true_properties
+            else "legacy-default-values-skip-true-properties"
+        )
+        if row == "legacy-default-values-skip-true-properties":
+            return None
+        return self._effective_default_state(source_name, None, has_default=False, required=required, scope=scope)
 
     @property
     def _root_validates_literals(self) -> bool:
@@ -8880,10 +8911,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     msg = f"its $ref chain loops back without reaching a schema to type it by: {cycle}"
                     raise SchemaParseError(msg, path=[key])
                 for model in self.results:
-                    if key in (classes := model.additional_properties_reference_classes):
-                        other_classes = {path for path in classes if path != key}
-                        self._output_model_context.store_additional_properties_reference_classes(
-                            model.extra_template_data, {*other_classes, target.path}
+                    if key in (classes := model.additional_properties_reference_classes) and isinstance(
+                        source := self._output_model_context.additional_properties_type_source(
+                            model.extra_template_data
+                        ),
+                        DataType,
+                    ):
+                        self._graph_builder.name_additional_properties_classes(
+                            model, source, {*(path for path in classes if path != key), target.path}
                         )
             if (target_model := modelled.get(target.path)) is not None and any(
                 data_type.reference is reference for data_type in target_model.all_data_types

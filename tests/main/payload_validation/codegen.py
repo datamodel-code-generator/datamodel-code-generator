@@ -64,6 +64,11 @@ def _safe_filename(case_id: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", case_id)
 
 
+def _output_path(case: SchemaCase, directory: Path) -> Path:
+    """Return where a case's models go: a module, or a package directory for a modular case."""
+    return directory / ("model" if case.modular else "model.py")
+
+
 def _write_input_schema(case: SchemaCase, directory: Path) -> Path:
     input_path = directory / f"input{case.temp_input_suffix}"
     if case.temp_input_suffix == ".json":
@@ -199,8 +204,14 @@ def _run_payload_codegen(args: list[str]) -> Exit:
 
 
 def _load_payload_type(module_name: str, output_path: Path) -> Any:
-    """Load the named alias, including None, or the sole generated class."""
-    spec = importlib.util.spec_from_file_location(module_name, output_path)
+    """Load the named alias, including None, or the sole generated class; a package directory loads its __init__."""
+    spec = (
+        importlib.util.spec_from_file_location(
+            module_name, output_path / "__init__.py", submodule_search_locations=[str(output_path)]
+        )
+        if output_path.is_dir()
+        else importlib.util.spec_from_file_location(module_name, output_path)
+    )
     if spec is None or spec.loader is None:
         msg = f"Unable to import generated module from {output_path}"
         raise PayloadAdapterError(msg)
@@ -288,7 +299,7 @@ def generate_payload_runtime(
     )
     case_dir.mkdir(parents=True, exist_ok=True)
     input_path = _write_input_schema(case, case_dir)
-    output_path = case_dir / "model.py"
+    output_path = _output_path(case, case_dir)
     with warnings.catch_warnings(record=True) as captured:
         if compare_warnings:
             warnings.simplefilter("always", UserWarning)
@@ -338,7 +349,7 @@ def stated_pydantic_floor(case: SchemaCase, directory: Path, backend: PayloadBac
     input_path = _write_input_schema(case, directory)
     with warnings.catch_warnings(record=True) as captured:
         warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
-        _run_payload_codegen([*_payload_codegen_args(case, input_path, directory / "model.py", backend), *args])
+        _run_payload_codegen([*_payload_codegen_args(case, input_path, _output_path(case, directory), backend), *args])
     return _stated_floor(captured)
 
 

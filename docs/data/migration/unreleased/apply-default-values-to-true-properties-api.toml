@@ -1,0 +1,14 @@
+[[change]]
+id = "apply-default-values-to-true-properties-api"
+category = "api"
+title = "Public names for --apply-default-values-to-true-properties"
+summary = "The option adds its config field; nothing is removed or changed."
+refs = ["#7455"]
+decision = ["#7455"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

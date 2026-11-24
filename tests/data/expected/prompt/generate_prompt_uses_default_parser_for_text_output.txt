@@ -87,6 +87,7 @@
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
 - `--no-use-standard-collections`: Use typing.Dict/List instead of built-in dict/list for container types.
 - `--no-use-standard-primitive-types`
+- `--no-use-str-for-formats-msgspec-cannot-decode`
 - `--no-use-strict-str-for-base64`
 - `--no-use-tuple-for-closed-arrays`
 - `--no-use-tuple-for-fixed-items`
@@ -132,6 +133,7 @@
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
+- `--use-str-for-formats-msgspec-cannot-decode`: Write str for the formats msgspec cannot decode under `--use-st...
 - `--use-strict-str-for-base64`: Make a `format: byte` string strict under `--strict-types str`.
 - `--use-total-false-for-typed-dict`: Generate TypedDict declarations with `total=False`.
 - `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow.
@@ -178,6 +180,8 @@
 - `--no-read-mapping-keys-by-schema-tag-type`
 - `--no-read-msgspec-union-bounds-exactly`
 - `--no-read-object-keywords-by-type`
+- `--no-rename-fields-hiding-types-from-type-checkers`
+- `--no-rename-redeclared-fields-hiding-types`
 - `--no-snake-case-field`
 - `--no-use-bounds-for-float-const`
 - `--no-use-field-description`
@@ -196,6 +200,8 @@
 - `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
 - `--read-object-keywords-by-type`: Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
+- `--rename-fields-hiding-types-from-type-checkers`: Tell a field named like its type from that type for type ch...
+- `--rename-redeclared-fields-hiding-types`: Give a field that a subclass redeclares the name its base's field w...
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 - `--set-default-enum-member`: Use the legacy flag for deserializing enum defaults.
 - `--snake-case-field`: Convert field names to snake_case format.
@@ -221,6 +227,7 @@
 - `--allow-extra-fields`: Allow extra fields in generated Pydantic models (extra='allow').
 - `--allow-leading-underscore-class-name`: Allow an explicitly specified root class name to start with an unders...
 - `--allow-population-by-field-name`: Allow Pydantic model population by field name (not just alias).
+- `--apply-default-values-to-true-properties`: Give the default of `--default-values` to a property whose schema...
 - `--apply-field-options-to-every-field`: Give the fields that leave out some field options the ones others take.
 - `--base-class`: Specify a custom base class for generated models.
 - `--base-class-map`: Specify different base classes for specific models via JSON mapping.
@@ -259,6 +266,7 @@
 - `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
+- `--no-apply-default-values-to-true-properties`
 - `--no-apply-field-options-to-every-field`
 - `--no-collapse-constrained-root-models-as-annotated`
 - `--no-collapse-reuse-models`

@@ -136,24 +136,6 @@ CONSTRAINTS: Final[tuple[Kept, ...]] = (
         "the property counts an allOf member adds to a referenced map are left out at a definition and in array "
         "items, also with --use-site-models-for-constrained-refs (row legacy-all-of-map-counts-dropped)",
     ),
-    Kept(
-        ISSUE,
-        "#7342",
-        constraints.TABLE,
-        "rejects-valid",
-        PRESET,
-        ({"type": ("ipv4",), "position": ("direct", "all-of-member", "ref-sibling"), "backend": (MSGSPEC,)},),
-        "with --use-standard-primitive-types (in the preset) msgspec gets IPv4Address, which msgspec cannot decode",
-    ),
-    Kept(
-        ISSUE,
-        "#7342",
-        constraints.TABLE,
-        "model-raises",
-        PRESET,
-        ({"type": ("ipv4",), "position": ("union-member",), "backend": (MSGSPEC,)},),
-        "the same in a union, where msgspec refuses the type outright",
-    ),
 )
 """The known differences of the constraint applicability table."""
 
@@ -334,16 +316,7 @@ TAGS: Final[tuple[Kept, ...]] = (
         tags.TABLE,
         "rejects-valid",
         PRESET,
-        (
-            {
-                "form": ("enum1-str", *_ENUM2),
-                "count": (3,),
-                "nullable": (True,),
-                "mapping": (False,),
-                "backend": (PYDANTIC_V2,),
-            },
-            {"nullable": (True,), "kind": ("anyOf",), "backend": (PYDANTIC_V2,)},
-        ),
+        ({"nullable": (True,), "kind": ("anyOf",), "backend": (PYDANTIC_V2,)},),
         "a discriminator whose tag also admits null: the model imports and rejects a tag or the null tag",
     ),
     Kept(
@@ -376,14 +349,6 @@ TAGS: Final[tuple[Kept, ...]] = (
         BOTH,
         (
             {"form": ("enum2-str",), **_SHARED_PAIR, "nullable": (True,), "mapping": (False,), "backend": (MSGSPEC,)},
-            {
-                "form": ("enum2-int",),
-                **_SHARED_PAIR,
-                "nullable": (True,),
-                "mapping": (False,),
-                "kind": ("anyOf",),
-                "backend": (MSGSPEC,),
-            },
             {
                 "form": ("enum1-str", "schema-name"),
                 **_SHARED_PAIR,

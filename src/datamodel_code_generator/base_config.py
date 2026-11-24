@@ -383,6 +383,7 @@ class BaseGenerateConfig(BaseModel):
     use_single_line_docstring: bool = False
     use_default_kwarg: bool = False
     apply_field_options_to_every_field: bool = False
+    apply_default_values_to_true_properties: bool = False
     deserialize_default_values: Sequence[DefaultValueType] = ()
     use_missing_sentinel: bool = False
     reuse_model: bool = False
@@ -400,6 +401,8 @@ class BaseGenerateConfig(BaseModel):
     use_unmapped_variant_tag_values: bool = False
     read_mapping_keys_by_schema_tag_type: bool = False
     use_root_types_for_mixed_union_map_keys: bool = False
+    rename_redeclared_fields_hiding_types: bool = False
+    rename_fields_hiding_types_from_type_checkers: bool = False
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
@@ -556,6 +559,7 @@ class BaseGenerateConfig(BaseModel):
     custom_formatters: list[str] | None = None
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
+    use_str_for_formats_msgspec_cannot_decode: bool = False
     use_object_type: bool = False
     untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None

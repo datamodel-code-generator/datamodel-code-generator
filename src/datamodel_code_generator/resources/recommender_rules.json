@@ -535,6 +535,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "Python API spelling of --use-default; changes validation."
     },
+    "apply_default_values_to_true_properties": {
+      "not_recommended": "preset",
+      "reason": "With --default-values only: set by the 20261124 presets; the recommendation starts from a preset."
+    },
     "base_class": {
       "not_recommended": "style",
       "reason": "The project's own base class."
@@ -1150,6 +1154,14 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
     },
+    "rename_redeclared_fields_hiding_types": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+    },
+    "rename_fields_hiding_types_from_type_checkers": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+    },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
       "reason": "Whether request and response models are split; the project decides which models it needs."
@@ -1534,6 +1546,10 @@
     "use_status_code_in_response_name": {
       "not_recommended": "style",
       "reason": "Names response models; the schemas scope the recommender analyses has none."
+    },
+    "use_str_for_formats_msgspec_cannot_decode": {
+      "not_recommended": "preset",
+      "reason": "With --use-standard-primitive-types and msgspec.Struct output only: set by the 20261123 presets; the recommendation starts from a preset."
     },
     "use_strict_str_for_base64": {
       "not_recommended": "preset",

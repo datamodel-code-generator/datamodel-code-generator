@@ -2281,6 +2281,16 @@ class BaseLayoutView(NamedTuple):
     is_opaque: Callable[[DataModel], bool]
 
 
+def _is_instance_field(field: DataModelFieldBase) -> bool:
+    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
+    return not field.is_class_var
+
+
+def _same_model(model: DataModel) -> DataModel:
+    """Return the model itself as the model whose layout it has."""
+    return model
+
+
 def _model_written(field: DataModelFieldBase, *, keeps_none: bool = False) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
     return ModelWritten(
@@ -2410,6 +2420,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = False
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = False
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = False
+    HIDING_FIELD_RESOLUTION: ClassVar[Literal["field", "type"] | None] = None
+    """How a type checker is told a field that the class body assigns from the type its name hides, if it is.
+
+    ``"field"`` renames the field and keeps its wire name as an alias, ``"type"`` renames the type where the field has
+    no alias to keep it by; None leaves the field (the class body does not assign it)."""
     NORMALIZES_FIELD_NAMES: ClassVar[bool] = False
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = False
     WRITES_QUOTED_NAMES_IN_TYPING_GENERICS: ClassVar[bool] = False
@@ -3531,16 +3546,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """
         return None
 
-    def _write_additional_properties_type(self, data_type: DataType) -> None:
+    def _write_additional_properties_type(
+        self, data_type: DataType, *, reference_classes: set[str] | None = None
+    ) -> None:
         """Write ``data_type`` as the type of the additional properties, with its imports, as the settings render it.
 
-        The classes it names stay those recorded for the additional properties. ``GenerationStore`` runs it
-        (``replace_additional_properties_type``).
+        The classes it names are ``reference_classes``, or stay those recorded for the additional properties.
+        ``GenerationStore`` runs it (``replace_additional_properties_type``).
         """
         self.store_additional_properties_type(
             self.extra_template_data,
             _make_referencing_type_expression(data_type),
-            set(self.additional_properties_reference_classes),
+            set(self.additional_properties_reference_classes) if reference_classes is None else reference_classes,
             imports=tuple(data_type.all_imports),
         )
         self._name_final_classes()

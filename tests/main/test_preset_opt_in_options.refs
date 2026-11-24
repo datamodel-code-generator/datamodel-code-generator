@@ -4,6 +4,8 @@
 empty-list-under-preset	main/preset_opt_in_options/option_list_in_pyproject[empty-list-under-preset].model.py
 toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].model.py	= main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
 [test_preset_option_turned_off]
+apply-default-values-to-true-properties-command-line	main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-command-line].model.py
+apply-default-values-to-true-properties-pyproject	main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-command-line].model.py
 capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
@@ -42,10 +44,14 @@ read-uuid6-uuid7-uuid8-formats-command-line	main/preset_opt_in_options/preset_op
 read-uuid6-uuid7-uuid8-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].model.py
 read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
 read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
+rename-fields-hiding-types-from-type-checkers-command-line	main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-command-line].model.py
+rename-fields-hiding-types-from-type-checkers-pyproject	main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[rename-fields-hiding-types-from-type-checkers-command-line].model.py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
 use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
 use-root-types-for-mixed-union-map-keys-command-line	main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-command-line].model.py
 use-root-types-for-mixed-union-map-keys-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-root-types-for-mixed-union-map-keys-command-line].model.py
+use-str-for-formats-msgspec-cannot-decode-command-line	main/preset_opt_in_options/preset_option_turned_off[use-str-for-formats-msgspec-cannot-decode-command-line].model.py
+use-str-for-formats-msgspec-cannot-decode-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-str-for-formats-msgspec-cannot-decode-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-str-for-formats-msgspec-cannot-decode-command-line].model.py
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].model.py
 use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].model.py
 use-unmapped-variant-tag-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-command-line].model.py
@@ -55,6 +61,8 @@ use-validate-default-for-root-model-type-aliases-pyproject	main/preset_opt_in_op
 use-x-python-import-for-every-ref-command-line	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].model.py
 use-x-python-import-for-every-ref-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].model.py
 [test_preset_sets_opt_in_option]
+apply-default-values-to-true-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-default-values-to-true-properties-practical].model.py
+apply-default-values-to-true-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-default-values-to-true-properties-standard].model.py
 apply-field-options-to-every-field-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].model.py
 apply-field-options-to-every-field-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].model.py
 capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].model.py
@@ -181,6 +189,10 @@ read-yaml-1-1-numbers-as-text-practical	main/preset_opt_in_options/preset_sets_o
 read-yaml-1-1-numbers-as-text-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].model.py
 remove-unused-models-beside-type-overrides-practical	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].model.py
 remove-unused-models-beside-type-overrides-standard	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].model.py
+rename-fields-hiding-types-from-type-checkers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-practical].model.py
+rename-fields-hiding-types-from-type-checkers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-fields-hiding-types-from-type-checkers-practical].model.py
+rename-redeclared-fields-hiding-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-redeclared-fields-hiding-types-practical].model.py
+rename-redeclared-fields-hiding-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-redeclared-fields-hiding-types-standard].model.py
 rename-submodules-hidden-by-classes-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical].tree/
 rename-submodules-hidden-by-classes-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-standard].tree/	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical].tree/
 singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].model.py
@@ -217,6 +229,8 @@ use-serialize-as-any-for-every-subclass-practical	main/preset_opt_in_options/pre
 use-serialize-as-any-for-every-subclass-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-standard].model.py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].model.py
 use-single-dict-for-object-maps-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].model.py
+use-str-for-formats-msgspec-cannot-decode-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-str-for-formats-msgspec-cannot-decode-practical].model.py
+use-str-for-formats-msgspec-cannot-decode-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-str-for-formats-msgspec-cannot-decode-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-str-for-formats-msgspec-cannot-decode-practical].model.py
 use-strict-str-for-base64-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-strict-str-for-base64-practical].model.py
 use-strict-str-for-base64-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-strict-str-for-base64-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-strict-str-for-base64-practical].model.py
 use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-practical].model.py

@@ -329,11 +329,12 @@ class Layout:
 
 @dataclass(frozen=True)
 class PresetDate:
-    """What the dated presets of one date add to the date before."""
+    """What the dated presets of one date add to the date before: its list items and the options of its groups."""
 
     date: str
     previous: str | None
     additions: tuple[str, ...]
+    options: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -414,7 +415,16 @@ def current_registries() -> Registries:
         iter_experimental_features(),
         (
             PresetDate(dates[0], None, ()),
-            *(PresetDate(date, previous, tuple(_date_additions(previous, date))) for previous, date in pairwise(dates)),
+            *(
+                PresetDate(
+                    date,
+                    previous,
+                    tuple(item for item, _ in additions),
+                    tuple(option for _, options in additions for option in options),
+                )
+                for previous, date in pairwise(dates)
+                for additions in [_date_additions(previous, date)]
+            ),
         ),
         read_surface(SRC_PATH),
     )
@@ -690,28 +700,39 @@ def _hand_changes(
         and ((target := fragments.get(record.extends)) is None or target.extends is not None or target.derived)
     )
     unreleased = {entry_id for entry_id, entry in changes.items() if entry["release"] == UNRELEASED}
+    joins = facts.preset_options
     for record in fragments.values():
-        for entry_id in _note_entries(record, unreleased):
+        for entry_id, with_refs in _note_entries(record, unreleased, joins).items():
             entry = changes[entry_id]
             entry["records"] = [*entry.get("records", []), record.id]
-            entry["record_refs"] = [*entry.get("record_refs", []), *record.refs]
+            entry["record_refs"] = [*entry.get("record_refs", []), *(record.refs if with_refs else ())]
 
 
-def _note_entries(record: Record, unreleased: set[str]) -> list[str]:
-    """Return the ids of the unreleased entries whose release-note item a fragment adds its pull request and refs to.
+def _note_entries(record: Record, unreleased: set[str], joins: frozenset[tuple[str, str]]) -> dict[str, bool]:
+    """Return the unreleased entries whose release-note item a fragment adds its pull request to, and whether its refs.
 
-    A guide record adds them to its own entry and a `new-surface` record to the derived entries of the options, option
-    values and preset dates it names. A record that extends another only covers more output of the same change, which
-    a later pull request (a stack layer, a test move) may add, so it adds nothing.
+    A guide record adds both to its own entry and a `new-surface` record to the derived entries of the options, option
+    values and preset dates it names; it adds its pull request alone to the entry of each preset date that adds one of
+    those options, so the line of a date names the pull request of every option it adds. A bare option (`--name`) also
+    names the options of a date that give it a value (`--name value`); an item with a value matches exactly. A record
+    that extends another only covers more output of the same change, which a later pull request (a stack layer, a test
+    move) may add, so it adds nothing.
     """
     if record.guide:
-        return [record.id] if record.id in unreleased else []
+        return {record.id: True} if record.id in unreleased else {}
     if record.category != Category.NEW_SURFACE:
-        return []
-    ids = [
+        return {}
+    named = [
         item if item.startswith(PRESET_SURFACE) else f"option:{item.replace(' ', '=', 1)}" for item in record.surface
     ]
-    return [entry_id for entry_id in ids if entry_id in unreleased]
+    joined = sorted({
+        date
+        for option, date in joins
+        for item in record.surface
+        if option == item or (" " not in item and option.split(" ", 1)[0] == item)
+    })
+    entries = dict.fromkeys(joined, False) | dict.fromkeys(named, True)
+    return {entry_id: with_refs for entry_id, with_refs in entries.items() if entry_id in unreleased}
 
 
 def _check_links(changes: dict[str, dict[str, Any]], order: dict[str, int], problems: list[str]) -> None:
@@ -956,6 +977,11 @@ def _facts(registries: Registries, released_surface: Surface, changes: dict[str,
             if not item.startswith(PRESET_SURFACE) or item in unreleased
         ),
         surface=frozenset(surface),
+        preset_options=frozenset(
+            (option, f"{PRESET_SURFACE}{preset.date}")
+            for preset in registries.preset_dates
+            for option in preset.options
+        ),
     )
 
 
@@ -1438,7 +1464,7 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     input is read and checked before the first write, so a refused stamp can run again: a fragment edited after the tag
     is refused, as its release would get text it did not ship, and so is one that extends a record the tag contains.
     So is a tree that changes a fact the tag fixes (`_check_released`), such as a preset date of the tag that a later
-    merge edited.
+    merge edited, and a preset date the release ships that adds nothing to the date before.
     """
     registries = registries or current_registries()
     guide = load(layout, registries, released_check=False)
@@ -1469,6 +1495,15 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     if problems:
         raise MigrationDataError(problems)
     derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
+    if empty := [
+        f"preset date {preset.date} adds nothing to the {preset.previous} presets; a date ships with an option of its "
+        "release or a Python target"
+        for preset in registries.preset_dates
+        if preset.date in tagged_surface["presets"]
+        and preset.date not in derived.get("presets", {})
+        and not preset.additions
+    ]:
+        raise MigrationDataError(empty)
     released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
     if moved:
         target = layout.changes / f"{version}.toml"

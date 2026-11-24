@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import black
 import pytest
+import tomllib
 from packaging import version
 
 from datamodel_code_generator._format_types import PythonVersion
@@ -22,6 +24,7 @@ from datamodel_code_generator.preset import (
     PresetOptionGroup,
     get_latest_preset_name,
     get_preset_infos,
+    get_preset_names,
     render_preset_history,
     render_presets,
     resolve_preset_config_updates,
@@ -32,18 +35,48 @@ from tests.conftest import assert_output
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_preset_docs.py"
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "build_preset_docs.py"
 BLACK_LT_233 = version.parse("23.3.0") > version.parse(black.__version__)
+RELEASED_DATES = frozenset(
+    tomllib.loads((ROOT / "docs/data/migration/derived.toml").read_text(encoding="utf-8"))["presets"]
+)
+"""The preset dates a release ships; the stored renderings pin these only, as the unreleased date's pages are built at
+deploy."""
+UNRELEASED_DATES = frozenset(name.rpartition("-")[2] for name in get_preset_names()) - RELEASED_DATES
+
+
+def _released_blocks(markdown: str) -> str:
+    """Return the parts of a preset page that name no unreleased date.
+
+    The page is cut at its level 1 to 3 headings and at each date's paragraph of what it adds, with its list.
+    """
+    blocks = re.split(r"(?m)^(?=#{1,3} |The \d{8} presets keep )", markdown)
+    return "".join(block for block in blocks if UNRELEASED_DATES.isdisjoint(re.findall(r"\b\d{8}\b", block)))
+
+
+def _released_presets_json(text: str) -> str:
+    """Return the JSON preset metadata of the presets of released dates."""
+    presets = [preset for preset in json.loads(text) if preset["name"].rpartition("-")[2] in RELEASED_DATES]
+    return json.dumps(presets, indent=2, ensure_ascii=False) + "\n"
 
 
 @pytest.mark.skipif(BLACK_LT_233, reason="Installed black doesn't support the Python 3.12 quick-start target")
 def test_build_preset_docs_check_is_up_to_date() -> None:
-    """Generated preset docs and quick-start examples are committed."""
+    """Generated preset names and quick-start examples are committed; the preset pages are built at deploy."""
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
 
 
+def test_build_preset_docs_pages_writes_the_preset_pages(tmp_path: Path) -> None:
+    """The pages mode writes the two preset pages into the directory it names, as the renderers render them."""
+    subprocess.run([sys.executable, str(SCRIPT), "--pages", str(tmp_path / "docs")], check=True)
+    written = {path.name: path.read_text(encoding="utf-8") for path in sorted((tmp_path / "docs").iterdir())}
+    rendered = {"preset-history.md": render_preset_history(), "presets.md": render_presets("markdown")}
+    assert_output(f"written {sorted(written)}, as rendered: {written == rendered}\n")
+
+
 def test_build_preset_docs_json_format() -> None:
-    """The docs script can print preset metadata as JSON."""
+    """The docs script can print preset metadata as JSON; the stored output keeps the presets of released dates."""
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--format", "json"],
         check=True,
@@ -51,7 +84,7 @@ def test_build_preset_docs_json_format() -> None:
         text=True,
     )
 
-    assert_output(result.stdout)
+    assert_output(_released_presets_json(result.stdout))
 
 
 def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
@@ -67,10 +100,14 @@ def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
 
 
 def test_preset_metadata_renderers() -> None:
-    """Preset metadata renderers expose the committed preset reference."""
-    assert_output(render_presets("markdown"), name="presets_markdown")
-    assert_output(render_preset_history(), name="preset_history_markdown")
-    assert_output(render_presets("json"), name="presets_json")
+    """Preset metadata renderers expose the preset reference; the stored outputs keep what names released dates only.
+
+    The pages of the unreleased date are built at deploy, so the sections and presets that name it are left out here;
+    the stamp of a release adds its date.
+    """
+    assert_output(_released_blocks(render_presets("markdown")), name="presets_markdown")
+    assert_output(_released_blocks(render_preset_history()), name="preset_history_markdown")
+    assert_output(_released_presets_json(render_presets("json")), name="presets_json")
     assert_output(
         f"{get_latest_preset_name()}\n{get_preset_infos()[0].name.value}\n",
         name="preset_names",

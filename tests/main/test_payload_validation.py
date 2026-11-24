@@ -150,8 +150,31 @@ def _backend_case_mode_from_env(raw_mode: str | None = None) -> BackendCaseMode:
             raise ValueError(msg)
 
 
+INPUTS_ENV = "DCG_PAYLOAD_INPUTS"
+REPOSITORY = Path(__file__).parents[2]
+
+
+def _reached_inputs_from_env(raw_inputs: str | None = None) -> frozenset[Path] | None:
+    """Return the input files that ``DCG_PAYLOAD_INPUTS`` names, or None when it names none.
+
+    The value holds repository paths separated by ``os.pathsep``, like ``PATH`` (a path may hold spaces): the lines
+    ``scripts/related_tests.py --paths-of payload-inputs`` prints for the inputs a change adds or modifies, joined. A
+    path that names no file fails before parametrization.
+    """
+    if raw_inputs is None:
+        raw_inputs = os.environ.get(INPUTS_ENV, "")
+    if not (names := [name for name in raw_inputs.split(os.pathsep) if name.strip()]):
+        return None
+    if missing := [name for name in names if not (REPOSITORY / name).is_file()]:
+        msg = f"{INPUTS_ENV} names no file at {', '.join(missing)}"
+        raise ValueError(msg)
+    return frozenset((REPOSITORY / name).resolve() for name in names)
+
+
 MAX_EXAMPLES = _max_examples_from_env()
-BACKEND_CASE_MODE = _backend_case_mode_from_env()
+REACHED_INPUTS = _reached_inputs_from_env()
+BACKEND_CASE_MODE: BackendCaseMode = "all" if REACHED_INPUTS is not None else _backend_case_mode_from_env()
+"""Every backend the full matrix runs is run over the cases of the inputs a change reaches."""
 PYDANTIC_RUNTIME_VERSION = Version(PYDANTIC_VERSION)
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN = Version(PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
@@ -271,6 +294,24 @@ def _backend_rejection_case_ids(
     )
 
 
+def _outside_reach_marks(
+    case: SchemaCase, reached: frozenset[Path] | None = REACHED_INPUTS
+) -> tuple[pytest.MarkDecorator, ...]:
+    """Skip a case-parametrized test of a case whose input ``DCG_PAYLOAD_INPUTS`` does not name; none when unset.
+
+    A skip, not a narrower parametrization: every item stays collected, so the stored outputs of the other cases stay
+    recorded. The tests of the suite's own tables (exclusions, counts, classifications) read every case either way.
+    """
+    if reached is None or case.source_path.resolve() in reached:
+        return ()
+    return _skip_marks(f"{INPUTS_ENV} does not name the input of {case.id}")
+
+
+def _skip_marks(reason: str | None) -> tuple[pytest.MarkDecorator, ...]:
+    """Skip a parameter for the reason given; none without one."""
+    return (pytest.mark.skip(reason=reason),) if reason else ()
+
+
 def _pydantic_v2_legacy_runtime_exclusion_reason(
     case: SchemaCase,
     backend: PayloadBackend,
@@ -291,16 +332,14 @@ def _pydantic_v2_legacy_runtime_skip_marks(
     runtime_version: Version = PYDANTIC_RUNTIME_VERSION,
     exclusion_groups: PydanticV2LegacyRuntimeExclusionGroups = PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS,
 ) -> tuple[pytest.MarkDecorator, ...]:
-    if reason := _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, runtime_version, exclusion_groups):
-        return (pytest.mark.skip(reason=reason),)
-    return ()
+    return _skip_marks(_pydantic_v2_legacy_runtime_exclusion_reason(case, backend, runtime_version, exclusion_groups))
 
 
 def _pydantic_v2_case_param(case: SchemaCase) -> pytest.ParameterSet:
     return pytest.param(
         case,
         id=case.id,
-        marks=_pydantic_v2_legacy_runtime_skip_marks(case, PayloadBackend.PYDANTIC_V2),
+        marks=(*_outside_reach_marks(case), *_pydantic_v2_legacy_runtime_skip_marks(case, PayloadBackend.PYDANTIC_V2)),
     )
 
 
@@ -308,10 +347,13 @@ def _pydantic_v2_round_trip_case_param(case: SchemaCase) -> pytest.ParameterSet:
     return pytest.param(
         case,
         id=case.id,
-        marks=_pydantic_v2_legacy_runtime_skip_marks(
-            case,
-            PayloadBackend.PYDANTIC_V2,
-            exclusion_groups=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+        marks=(
+            *_outside_reach_marks(case),
+            *_pydantic_v2_legacy_runtime_skip_marks(
+                case,
+                PayloadBackend.PYDANTIC_V2,
+                exclusion_groups=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+            ),
         ),
     )
 
@@ -321,7 +363,7 @@ def _backend_case_param(backend: PayloadBackend, case: SchemaCase) -> pytest.Par
         backend,
         case,
         id=f"{backend.value}:{case.id}",
-        marks=_pydantic_v2_legacy_runtime_skip_marks(case, backend),
+        marks=(*_outside_reach_marks(case), *_pydantic_v2_legacy_runtime_skip_marks(case, backend)),
     )
 
 
@@ -453,6 +495,8 @@ def test_payload_validation_cases_cover_discovered_schema_files() -> None:
 
     The count of the OpenAPI cases that hold the components they reference shows a change that skips them again, and
     the count of the OpenAPI candidates skipped for a reference their case cannot resolve shows those skips.
+    The count of the cases that hold a dotted component name, whose models form a package, shows a change that skips
+    them again.
     """
     unaccounted = discover_unaccounted_files(SCHEMA_CASES)
     if unaccounted:  # pragma: no cover
@@ -465,6 +509,7 @@ def test_payload_validation_cases_cover_discovered_schema_files() -> None:
         bool(case.source_schema["components"]["schemas"]) for case in SCHEMA_CASES if case.input_file_type == "openapi"
     )
     counts["openapi skipped for an unresolved internal $ref"] = len(discover_unresolved_openapi_candidates())
+    counts["openapi generated as a package"] = sum(case.modular for case in SCHEMA_CASES)
     assert_output(json.dumps(dict(sorted(counts.items())), indent=2) + "\n")
 
 
@@ -561,33 +606,6 @@ def test_payload_backend_full_matrix_exclusions_are_classified() -> None:
             f"{PayloadBackend.DATACLASSES.value}: full-matrix exclusions require reasons:\n"
             + "\n".join(unclassified_dataclasses)
         )
-
-    for backend in (PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC):
-        representative_acceptance_cases = set(BACKEND_ACCEPTANCE_CASE_IDS[backend])
-        if unclassified_acceptance := sorted(  # pragma: no cover
-            case.id
-            for case in SCHEMA_CASES
-            if case.input_file_type == "openapi"
-            and case.id not in representative_acceptance_cases
-            and not backend_acceptance_exclusion_reason(case, backend)
-        ):
-            pytest.fail(
-                f"{backend.value}: OpenAPI acceptance exclusions require reasons:\n"
-                + "\n".join(unclassified_acceptance)
-            )
-
-        representative_rejection_cases = set(BACKEND_REJECTION_CASE_IDS.get(backend, ()))
-        if unclassified_rejection := sorted(  # pragma: no cover
-            case.id
-            for case in SCHEMA_CASES
-            if case.input_file_type == "openapi"
-            and case.id not in representative_rejection_cases
-            and has_rejection_oracle_constraints(case, backend)
-            and not backend_rejection_exclusion_reason(case, backend)
-        ):
-            pytest.fail(
-                f"{backend.value}: OpenAPI rejection exclusions require reasons:\n" + "\n".join(unclassified_rejection)
-            )
 
 
 @pytest.mark.parametrize(
@@ -988,16 +1006,73 @@ def test_payload_backend_case_mode_env_rejects_invalid_values(monkeypatch: pytes
         _backend_case_mode_from_env(None)
 
 
+@pytest.mark.parametrize(
+    ("raw_inputs", "expected_inputs"),
+    [
+        (None, None),
+        ("", None),
+        (f" {os.pathsep}", None),
+        ("tests/data/jsonschema/simple_string.json", ("jsonschema/simple_string.json",)),
+        (
+            os.pathsep.join(("tests/data/jsonschema/simple_string.json", "", *["tests/data/openapi/api.yaml"] * 2)),
+            ("jsonschema/simple_string.json", "openapi/api.yaml"),
+        ),
+        (
+            "tests/data/jsonschema/non_identifier_directory_reference/my dir/spaced.json",
+            ("jsonschema/non_identifier_directory_reference/my dir/spaced.json",),
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert("A pure parser's result is compared with the paths each case names.")
+def test_payload_inputs_env_names_the_inputs_a_change_reaches(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_inputs: str | None,
+    expected_inputs: tuple[str, ...] | None,
+) -> None:
+    """The inputs are repository paths joined by ``os.pathsep``; unset or blank names none (every case runs)."""
+    monkeypatch.delenv(INPUTS_ENV, raising=False)
+    reached = _reached_inputs_from_env(raw_inputs)
+    expected = None if expected_inputs is None else frozenset((DATA_PATH / name).resolve() for name in expected_inputs)
+    assert reached == expected
+    monkeypatch.setenv(INPUTS_ENV, "tests/data/openapi/api.yaml")
+    assert _reached_inputs_from_env(None) == frozenset({(DATA_PATH / "openapi/api.yaml").resolve()})
+
+
+def test_payload_inputs_env_rejects_a_path_that_names_no_file() -> None:
+    """A mistyped or deleted input fails before parametrization instead of selecting no case."""
+    with pytest.raises(ValueError, match=r"names no file at tests/data/jsonschema/missing\.json, tests/data$"):
+        _reached_inputs_from_env(f"tests/data/jsonschema/missing.json{os.pathsep}tests/data")
+
+
+@pytest.mark.allow_direct_assert("The selected case ids are compared with the cases of the named inputs.")
+def test_payload_inputs_select_every_case_of_their_inputs() -> None:
+    """The cases of a named input run, an OpenAPI document's every candidate among them; the others are skipped."""
+    reached = _reached_inputs_from_env(
+        f"tests/data/jsonschema/simple_string.json{os.pathsep}tests/data/openapi/api.yaml"
+    )
+    selected = sorted(case.id for case in SCHEMA_CASES if not _outside_reach_marks(case, reached))
+    assert selected == [
+        "jsonschema/simple_string.json",
+        *sorted(case.id for case in SCHEMA_CASES if case.id.startswith("openapi/api.yaml::")),
+    ]
+    assert len(selected) > 2
+    assert [
+        mark.kwargs for mark in _outside_reach_marks(SCHEMA_CASE_BY_ID["jsonschema/extra_fields.json"], reached)
+    ] == [{"reason": "DCG_PAYLOAD_INPUTS does not name the input of jsonschema/extra_fields.json"}]
+    assert not any(_outside_reach_marks(case, None) for case in SCHEMA_CASES)
+
+
 @pytest.mark.allow_direct_assert
 def test_payload_backend_all_case_mode_widens_runtime_validating_backends() -> None:
-    """Full backend mode widens runtime-validating backends and leaves plain dataclasses representative-only."""
+    """Full backend mode widens validating backends over both input types; plain dataclasses stay representative."""
     for backend in (PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC):
         representative_acceptance_cases = set(_backend_acceptance_case_ids(backend, "representative"))
         all_acceptance_cases = set(_backend_acceptance_case_ids(backend, "all"))
         assert representative_acceptance_cases < all_acceptance_cases
-        assert any(
-            case_id.startswith("jsonschema/") for case_id in all_acceptance_cases - representative_acceptance_cases
-        )
+        assert {case_id.partition("/")[0] for case_id in all_acceptance_cases - representative_acceptance_cases} == {
+            "jsonschema",
+            "openapi",
+        }
 
         representative_rejection_cases = set(_backend_rejection_case_ids(backend, "representative"))
         all_rejection_cases = set(_backend_rejection_case_ids(backend, "all"))
@@ -1207,7 +1282,7 @@ def _value_neighbour_param(
         case,
         schema_validators,
         id=f"{variant}:{case.id}",
-        marks=_pydantic_v2_legacy_runtime_skip_marks(case, backend),
+        marks=(*_outside_reach_marks(case), *_pydantic_v2_legacy_runtime_skip_marks(case, backend)),
     )
 
 

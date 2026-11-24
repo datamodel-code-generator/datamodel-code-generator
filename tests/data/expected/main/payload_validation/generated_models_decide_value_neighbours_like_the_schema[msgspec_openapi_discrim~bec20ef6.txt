@@ -1,0 +1,4 @@
+[
+  "/u/kind enum \"b\": invalid, model accepts",
+  "/u/v const \"y\": invalid, model accepts"
+]

@@ -78,7 +78,11 @@ from datamodel_code_generator.model.base import (
     _path_identity_keys,
 )
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._passes._keys import _SITE_CONSTRAINTS_KEY
+from datamodel_code_generator.parser._passes._keys import (
+    _RAW_SCHEMA_DEFAULT_KEY,
+    _RAW_SCHEMA_DEFAULT_UNDEFINED,
+    _SITE_CONSTRAINTS_KEY,
+)
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
     PARSED,
@@ -196,12 +200,14 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "mark_serialized_as_any",
     "mark_target_null",
     "override_type_import",
+    "name_additional_properties_classes",
     "name_enum_member",
     "name_enum_member_literal_class",
     "name_reference",
     "omit_field_default",
     "record_dropped_multiple_of",
     "record_nullable_without_default",
+    "record_raw_schema_default",
     "record_site_constraints",
     "record_values_as_written",
     "record_widened_values",
@@ -1925,6 +1931,12 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    def record_raw_schema_default(field_: DataModelFieldBase) -> None:
+        """Record that the property a field is built from declares no default, which ``--default-values`` gives."""
+        field_.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = _RAW_SCHEMA_DEFAULT_UNDEFINED
+        bump_field(field_)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().omit_field_default() instead.", category=None)
     def omit_field_default(field_: DataModelFieldBase) -> None:
         """Write a field without its default: the default None, and the ``nullable`` it has without the default."""
@@ -2085,7 +2097,23 @@ class GenerationStore:  # noqa: PLR0904
         The model writes the setting again (``DataModel._write_additional_properties_type``); the generation index
         holds no site of such a type.
         """
-        model._write_additional_properties_type(data_type)  # noqa: SLF001
+        GenerationStore._write_additional_properties_type(model, data_type)
+
+    @staticmethod
+    def name_additional_properties_classes(model: DataModel, data_type: DataType, reference_classes: set[str]) -> None:
+        """Give a model ``data_type`` as the type of its additional properties, naming ``reference_classes``.
+
+        They replace the classes recorded, as a parse that redirects the users of a reference they name names its
+        target instead (``GraphBuilder``'s).
+        """
+        GenerationStore._write_additional_properties_type(model, data_type, reference_classes)
+
+    @staticmethod
+    def _write_additional_properties_type(
+        model: DataModel, data_type: DataType, reference_classes: set[str] | None = None
+    ) -> None:
+        """Write the additional properties of a model again, naming ``reference_classes`` or the classes recorded."""
+        model._write_additional_properties_type(data_type, reference_classes=reference_classes)  # noqa: SLF001
         model.invalidate_render_caches()
         bump_model(model)
 
@@ -2686,6 +2714,12 @@ class GraphBuilder:
         """Give a model ``data_type`` as the type of the additional properties its settings write (``extra_items``)."""
         self._store.replace_additional_properties_type(model, data_type)  # ty: ignore[deprecated]
 
+    def name_additional_properties_classes(
+        self, model: DataModel, data_type: DataType, reference_classes: set[str]
+    ) -> None:
+        """Give a model ``data_type`` as the type of its additional properties, which name ``reference_classes``."""
+        self._store.name_additional_properties_classes(model, data_type, reference_classes)
+
     def replace_field_type(
         self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh = "now"
     ) -> None:
@@ -2748,6 +2782,10 @@ class GraphBuilder:
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default, through the store."""
         self._store.record_nullable_without_default(field_, nullable)  # ty: ignore[deprecated]
+
+    def record_raw_schema_default(self, field_: DataModelFieldBase) -> None:
+        """Record that the property a field is built from declares no default, through the store."""
+        self._store.record_raw_schema_default(field_)
 
     def omit_field_default(self, field_: DataModelFieldBase) -> None:
         """Write a field without its default, through the store."""

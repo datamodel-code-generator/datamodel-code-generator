@@ -36,6 +36,7 @@ __all__ = [
     "FIX_CONSTRUCTOR_FIELD_ORDERING",
     "FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY",
     "FIX_TAG_OPT_OUT_FIELD_ORDERING",
+    "FLATTEN_CONFLICTING_FINAL_LAYOUTS",
     "FLATTEN_NARROWED_INHERITED_FIELDS",
     "HOOK_BODIES",
     "NAME_MODELS",
@@ -698,7 +699,7 @@ RENAME_FIELDS_HIDING_TYPES = PassDecl(
     ),
     writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, RenderFact.CLASS_NAMES),
     after=(After("refresh_field_config", "the field config is refreshed with the aliases before renaming"),),
-    condition="an output that renames fields",
+    condition="an output that renames fields, or --rename-fields-hiding-types-from-type-checkers",
 )
 REMOVE_OVERRIDDEN_MODELS = PassDecl(
     "remove_overridden_models",
@@ -778,6 +779,35 @@ APPLY_BASE_CLASS_TYPE_OVERRIDES = PassDecl(
     trigger=Trigger("--type-overrides gives a model-level key", _facts(Fact.TYPE_OVERRIDES)),
 )
 
+FOLLOW_HIDING_FIELD_RENAMES = PassDecl(
+    "follow_hiding_field_renames",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_NAMES),
+    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES),
+    summary=(
+        "After every module is processed: holds a field that a class redeclares under the name its family gave the "
+        "field that hides its type, so the class has one field for the wire key."
+    ),
+    condition="--rename-redeclared-fields-hiding-types or --rename-fields-hiding-types-from-type-checkers",
+    after=(
+        After("record_decimal_alias_models", "the Decimal check reads the field names as parsed"),
+        After("alias_shadowed_imports", "the import aliases read the field names as parsed"),
+        After("reuse_model", "reuse reads the field names of the models it merges as parsed"),
+        After("change_field_name", "applies the renames it recorded for the family"),
+        After(
+            "restore_inherited_field_names_for_unique_aliases",
+            "the inherited names it restores are those before a family rename",
+        ),
+        After("refresh_field_config", "the field config is refreshed with the aliases before renaming"),
+        After("rename_fields_hiding_types", "applies the renames it recorded for the family"),
+        After("apply_field_type_overrides", "scoped overrides name the fields as parsed"),
+        After(
+            "fix_constructor_field_ordering_early", "the early ordering reads the names before every field has its own"
+        ),
+    ),
+)
 SETTLE_KEPT_PARENT_ROOTS = PassDecl(
     "settle_kept_parent_roots",
     Phase.MODULES,
@@ -1003,6 +1033,48 @@ TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     ),
     condition="msgspec",
 )
+FLATTEN_CONFLICTING_FINAL_LAYOUTS = PassDecl(
+    "flatten_conflicting_final_layouts",
+    Phase.CROSS_MODULE,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.TYPE_OVERRIDES,
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_TYPES,
+        Fact.CONTAINERS,
+        Fact.REQUIRED,
+        Fact.NULLABLE,
+        Fact.METADATA,
+        Fact.DISCRIMINATOR_TAGS,
+        RenderFact.MODULE_MEMBERSHIP,
+        RenderFact.MODULE_IMPORTS,
+    ),
+    writes=_facts(
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.FIELD_TYPES,
+        Fact.REQUIRED,
+        Fact.DEFAULTS,
+        RenderFact.FIELD_ORDER,
+        RenderFact.BACKEND_CONFIG,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
+    after=(
+        After(
+            "tag_fields_of_tagged_bases",
+            "both make models of any module declare the fields of their bases and import what those fields name",
+        ),
+    ),
+    summary=(
+        "Makes a msgspec Struct whose generated bases conflict once every module is processed (the layouts the "
+        "L4 prediction of reuse did not foresee) declare every field of its bases without them, bases first, "
+        "importing the models of other modules that the copied fields name."
+    ),
+)
 FLATTEN_NARROWED_INHERITED_FIELDS = PassDecl(
     "flatten_narrowed_inherited_fields",
     Phase.CROSS_MODULE,
@@ -1034,6 +1106,10 @@ FLATTEN_NARROWED_INHERITED_FIELDS = PassDecl(
             "tag_fields_of_tagged_bases",
             "both make models of any module declare the fields of their bases and import what those fields name",
         ),
+        After(
+            "flatten_conflicting_final_layouts",
+            "both make models of any module declare the fields of their bases and import what those fields name",
+        ),
     ),
     summary=(
         "Makes a TypedDict whose key narrows a key of a generated base, as a type checker holds to the base's type, "
@@ -1056,6 +1132,10 @@ WRITE_ENUM_MEMBER_TAGS_AS_VALUES = PassDecl(
         After(
             "flatten_narrowed_inherited_fields",
             "writes the values of the tags that models copy from their bases with the other fields",
+        ),
+        After(
+            "flatten_conflicting_final_layouts",
+            "writes the values of the tags that structs copy from their bases with the other fields",
         ),
     ),
     summary="Writes the values of the enum members that tag a variant, where the output's Literal holds no member.",
@@ -1085,6 +1165,10 @@ IMPORT_REMOVED_REUSE_CANONICALS = PassDecl(
             "flatten_narrowed_inherited_fields",
             "repairs the imports of every module once the fields models copy from their bases import theirs",
         ),
+        After(
+            "flatten_conflicting_final_layouts",
+            "repairs the imports of every module once the fields structs copy from their bases import theirs",
+        ),
     ),
     removed_by="the step that writes imports from module import plans",
     trigger=Trigger("reuse removed a duplicate that a model named (_removed_reuse_users)", frozenset()),
@@ -1104,6 +1188,10 @@ IMPORT_RENAMED_TYPES = PassDecl(
         After(
             "flatten_narrowed_inherited_fields",
             "imports renamed types once the fields models copy from their bases import theirs",
+        ),
+        After(
+            "flatten_conflicting_final_layouts",
+            "imports renamed types once the fields structs copy from their bases import theirs",
         ),
         After(
             "import_removed_reuse_canonicals",
@@ -1942,6 +2030,7 @@ PASS_DECLS: tuple[PassDecl, ...] = (
     FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY,
     SNAPSHOT_MODULE_UNUSED_MODELS,
     APPLY_BASE_CLASS_TYPE_OVERRIDES,
+    FOLLOW_HIDING_FIELD_RENAMES,
     SETTLE_KEPT_PARENT_ROOTS,
     WRITE_RULE_ALIASES_AS_CLASSES,
     NAME_INNER_MODELS_IN_RULES,
@@ -1951,6 +2040,7 @@ PASS_DECLS: tuple[PassDecl, ...] = (
     TYPE_USERS_OF_LOOPING_REF_CHAINS_BY_ANY,
     WRITE_PLAIN_ALIASES_FOR_RECURSIVE_MODELS,
     TAG_FIELDS_OF_TAGGED_BASES,
+    FLATTEN_CONFLICTING_FINAL_LAYOUTS,
     FLATTEN_NARROWED_INHERITED_FIELDS,
     WRITE_ENUM_MEMBER_TAGS_AS_VALUES,
     WARN_ENUMS_ADMITTING_OTHER_VALUES,

@@ -1111,6 +1111,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self.data_type_manager.use_untyped_value_type(config.untyped_value_type)
         self.data_type_manager.use_target_pydantic_version(config.target_pydantic_version)
+        self.data_type_manager.use_str_for_formats_msgspec_cannot_decode(
+            enabled=config.use_str_for_formats_msgspec_cannot_decode
+        )
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
         self.data_type_manager.read_length_keywords_by_type = config.read_length_keywords_by_type
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly
@@ -1186,6 +1189,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_single_line_docstring: bool = config.use_single_line_docstring
         self.use_default_kwarg: bool = config.use_default_kwarg
         self.apply_field_options_to_every_field: bool = config.apply_field_options_to_every_field
+        self.apply_default_values_to_true_properties: bool = config.apply_default_values_to_true_properties
         self.use_missing_sentinel: bool = config.use_missing_sentinel
         self.deserialize_default_value_types: frozenset[DefaultValueType] = frozenset(config.deserialize_default_values)
         self._decimal_default_warning_count = 0
@@ -1433,6 +1437,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_unmapped_variant_tag_values = config.use_unmapped_variant_tag_values
         self.read_mapping_keys_by_schema_tag_type = config.read_mapping_keys_by_schema_tag_type
         self.use_root_types_for_mixed_union_map_keys = config.use_root_types_for_mixed_union_map_keys
+        self.rename_redeclared_fields_hiding_types = config.rename_redeclared_fields_hiding_types
+        self.rename_fields_hiding_types_from_type_checkers = config.rename_fields_hiding_types_from_type_checkers
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
         self.tag_msgspec_by_payload_name = config.tag_msgspec_by_payload_name
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias

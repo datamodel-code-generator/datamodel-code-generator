@@ -1,0 +1,3 @@
+exit 1, files kept: True
+Invalid migration data:
+- preset date 20260301 adds nothing to the 20260201 presets; a date ships with an option of its release or a Python target
