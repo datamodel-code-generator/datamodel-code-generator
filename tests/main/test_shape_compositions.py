@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -195,13 +196,11 @@ def _parameter_values(box: Mapping[str, tuple[object, ...]], name: str) -> set[o
 
 
 def _box_misses(family: str, box: Mapping[str, tuple[object, ...]]) -> list[tuple[str, tuple[object, ...]]]:
-    """Return the entries of a composition rule's box that name a parameter or value no covered cell has.
+    """Return the entries of a box of a composition rule of a known family that name a parameter or value no cell has.
 
     A box of ``COMPOSITION`` names composition parameters (``_parameter_values``), any other a placement's view
-    (``_view_domain``). An empty box names nothing and covers every cell: it is one miss.
+    (``_view_domain``).
     """
-    if not box:
-        return [("", ())]
     if family == COMPOSITION:
         return [(name, values) for name, values in box.items() if not set(values) <= _parameter_values(box, name)]
     domain = _view_domain(family)
@@ -215,27 +214,104 @@ def _reference_holds(rule: Kept) -> bool:
     return rule.basis == ISSUE and re.fullmatch(r"#[1-9][0-9]*", rule.reference) is not None
 
 
+def _rule_problems(rule: Kept) -> list[str]:
+    """Return why a composition rule is malformed, one line each; none for a well-formed rule.
+
+    It names a placement or ``COMPOSITION``, a kind of ``KINDS``, contracts of ``CONTRACTS``, an issue or a legacy row
+    of its basis, and boxes that are not empty (an empty box covers every cell) and name only parameters and values
+    that a cell of its family has (``_box_misses``).
+    """
+    if rule.family not in PLACEMENTS and rule.family != COMPOSITION:
+        return [f"family {rule.family!r} is neither a placement nor {COMPOSITION!r}"]
+    problems = [f"kind {rule.kind!r} is not a verdict kind"] if rule.kind not in KINDS else []
+    problems += [] if _reference_holds(rule) else [f"{rule.basis} {rule.reference!r} names no record of its basis"]
+    problems += (
+        [f"contracts {sorted(rule.contracts)} are not all contracts"] if rule.contracts - CONTRACTS.keys() else []
+    )
+    for index, box in enumerate(rule.boxes):
+        problems += [f"box {index} is empty"] if not box else []
+        problems += [
+            f"box {index}: {name} = {values!r} names no cell" for name, values in _box_misses(rule.family, box)
+        ]
+    return problems
+
+
 @pytest.mark.allow_direct_assert("The composition rules are a static table; each check lists the rules that break it.")
 def test_composition_rules_are_well_formed() -> None:
     """Every composition rule names a placement, kind, contracts, issue or legacy row and view values that exist.
 
     A rule of ``COMPOSITION`` names composition parameters and values that the levels its boxes name have instead
-    (``_parameter_values``); no box is empty.
+    (``_parameter_values``); no box is empty (``_rule_problems``).
     """
-    assert [
-        rule.reference
-        for rule in COMPOSED
-        if (rule.family not in PLACEMENTS and rule.family != COMPOSITION)
-        or rule.kind not in KINDS
-        or not _reference_holds(rule)
-        or not rule.contracts <= CONTRACTS.keys()
-    ] == []
-    assert [
-        (rule.reference, name, values)
-        for rule in COMPOSED
-        for box in rule.boxes
-        for name, values in _box_misses(rule.family, box)
-    ] == []
+    assert [(rule.reference, problem) for rule in COMPOSED for problem in _rule_problems(rule)] == []
+
+
+_PARAMETER_RULE = next(rule for rule in COMPOSED if rule.family == COMPOSITION)
+_VIEW_RULE = next(rule for rule in COMPOSED if rule.family != COMPOSITION)
+MALFORMED_RULES = {
+    "unknown family": (replace(_VIEW_RULE, family="nope"), ["family 'nope' is neither a placement nor 'composition'"]),
+    "unknown kind": (replace(_VIEW_RULE, kind="nope"), ["kind 'nope' is not a verdict kind"]),
+    "unknown legacy row": (replace(_VIEW_RULE, reference="nope"), ["legacy row 'nope' names no record of its basis"]),
+    "issue without a number": (
+        replace(_VIEW_RULE, basis=ISSUE, reference="7112"),
+        ["issue '7112' names no record of its basis"],
+    ),
+    "unknown contract": (
+        replace(_VIEW_RULE, contracts=frozenset({"nope"})),
+        ["contracts ['nope'] are not all contracts"],
+    ),
+    "empty view box": (replace(_VIEW_RULE, boxes=({},)), ["box 0 is empty"]),
+    "unknown view value": (
+        replace(_VIEW_RULE, boxes=({"inner union": ("yes",)},)),
+        ["box 0: inner union = ('yes',) names no cell"],
+    ),
+    "empty parameter box": (replace(_PARAMETER_RULE, boxes=({},)), ["box 0 is empty"]),
+    "unknown parameter": (
+        replace(_PARAMETER_RULE, boxes=({"0.nope": ("x",)},)),
+        ["box 0: 0.nope = ('x',) names no cell"],
+    ),
+    "unknown family value": (
+        replace(_PARAMETER_RULE, boxes=({"0.family": ("nope",)},)),
+        ["box 0: 0.family = ('nope',) names no cell"],
+    ),
+    "depth without the parameter": (
+        replace(_PARAMETER_RULE, boxes=({"0.leaf": ("str_or_arr",)},)),
+        ["box 0: 0.leaf = ('str_or_arr',) names no cell"],
+    ),
+    "depth beyond the levels": (
+        replace(_PARAMETER_RULE, boxes=({"3.family": ("mixin",)},)),
+        ["box 0: 3.family = ('mixin',) names no cell"],
+    ),
+    "parameter of another family": (
+        replace(_PARAMETER_RULE, boxes=({"1.family": ("mixin",), "1.leaf": ("str_or_arr",)},)),
+        ["box 0: 1.leaf = ('str_or_arr',) names no cell"],
+    ),
+    "view key in a parameter box": (
+        replace(_PARAMETER_RULE, boxes=({"inner": ("extend",)},)),
+        ["box 0: inner = ('extend',) names no cell"],
+    ),
+    "unknown backend": (
+        replace(_PARAMETER_RULE, boxes=({"0.family": ("mixin",), "backend": ("nope",)},)),
+        ["box 0: backend = ('nope',) names no cell"],
+    ),
+    "a backend and a parameter of any family at its depth": (
+        replace(_PARAMETER_RULE, boxes=({"1.leaf": ("str_or_arr",), "backend": (PYDANTIC_V2,)},)),
+        [],
+    ),
+}
+"""Rules made from the committed ones, each with the problems ``_rule_problems`` names: one per kind of refusal."""
+
+
+@pytest.mark.allow_direct_assert("The problems of each malformed rule are compared with the ones it has.")
+@pytest.mark.parametrize("case", list(MALFORMED_RULES))
+def test_malformed_composition_rules_are_refused(case: str) -> None:
+    """A rule made from a committed one with one malformed part has exactly that problem.
+
+    A parameter box is checked at its depth against the families it names there, so ``1.leaf`` of a mixin names no
+    cell, while ``1.leaf`` without a family at depth 1 is the extend's.
+    """
+    rule, problems = MALFORMED_RULES[case]
+    assert _rule_problems(rule) == problems
 
 
 @pytest.mark.allow_direct_assert("The filter's answers on two compositions are compared.")
