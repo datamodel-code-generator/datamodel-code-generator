@@ -39,6 +39,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   heki cannot tie to a class.
 - ``call-owners`` (``MUT204``, ``MUT207``) of the decision writer: each method ``writer_methods`` of a decision's
   declaration names is called only in the module of that decision.
+- ``call-owners`` (``MUT204``) of the import ledger: the methods that change an ``Imports`` (``IMPORTS_MUTATORS`` of
+  ``scripts/fact_tables.py``) are called only in the ledger's module, the ``imports`` module and the defs
+  ``LEDGER_WRITERS`` names.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder and by the scopes that only ask
   it for ``typed_children`` (`scripts._decision_home_reads.typed_children_readers`).
 - ``read-owners``, ``call-owners`` and ``write-owners`` of the host rule (``MUT201``, ``MUT203``, ``MUT204``): the
@@ -76,11 +79,14 @@ from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
     DECISION_ACCESSORS,
+    IMPORTS_MUTATORS,
+    LEDGER_WRITERS,
     STORE_MEMBERS,
     Access,
     AttributeFact,
     DecisionAccessor,
     FactKind,
+    LedgerWriter,
     MemberUse,
     StoreMember,
     holds_render_facts,
@@ -102,6 +108,10 @@ STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
 DECISION_WRITER = f"{PACKAGE}.parser._phases._DecisionWriter"
 """The one writer of the decisions (``parser/_phases.py``), over the store: what a decision calls to write."""
+IMPORTS = f"{PACKAGE}.imports.Imports"
+"""The imports of a generated module (``imports.py``), which the import ledger writes."""
+IMPORT_LEDGER = "parser/_imports_plan.py"
+"""The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
 RULES = ("EFF201", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
 HEADER = """\
@@ -420,6 +430,38 @@ def decision_contracts(
     ]
 
 
+def import_ledger_contracts(
+    repo: Repo, mutators: Iterable[str] = IMPORTS_MUTATORS, writers: Iterable[LedgerWriter] = LEDGER_WRITERS
+) -> list[str]:
+    """Return the ``call-owners`` contract of the methods that change an ``Imports``: only the ledger calls them.
+
+    The import ledger's module, the ``imports`` module and the defs ``LEDGER_WRITERS`` names call the
+    ``IMPORTS_MUTATORS``; any other call, judged in the scope that makes it, is a finding.
+    """
+    functions = _package_functions(repo)
+    module, _, owner = IMPORTS.rpartition(".")
+    targets = [f"{module}:{owner}.{name}" for name in mutators]
+    allowed = [*_scope(_module(IMPORT_LEDGER), ""), *_scope(module, "")]
+    for target in targets:
+        if target.replace(":", ".") not in functions:
+            message = f"IMPORTS_MUTATORS: {owner} defines no method {target.rpartition('.')[2]}"
+            raise SystemExit(message)
+    for writer in writers:
+        if f"{_module(writer.path)}.{writer.name}" not in functions:
+            message = f"LEDGER_WRITERS: {writer.path} defines no {writer.name}"
+            raise SystemExit(message)
+        allowed += _scope(_module(writer.path), writer.name)
+    return [
+        _table(
+            "call-owners",
+            name="imports-through-the-ledger",
+            targets=targets,
+            allowed_callers=allowed,
+            attribution="lexical",
+        )
+    ]
+
+
 class _Protocols:
     """The members the Protocols of the package declare, by name, and the classes of the package, by dotted name."""
 
@@ -590,6 +632,7 @@ def generate() -> str:
         *decision_home_contracts(repo),
         *decision_writer_contracts(repo),
         *decision_contracts(repo),
+        *import_ledger_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
         *environment_contracts(),

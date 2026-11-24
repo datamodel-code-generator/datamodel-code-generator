@@ -5861,6 +5861,12 @@ forbidden-readers = ["datamodel_code_generator.parser._held_null:*", "datamodel_
 attribution = "lexical"
 unresolved = "report"
 
+[[call-owners]]
+name = "imports-through-the-ledger"
+targets = ["datamodel_code_generator.imports:Imports.append", "datamodel_code_generator.imports:Imports.apply_alias", "datamodel_code_generator.imports:Imports.extract_future", "datamodel_code_generator.imports:Imports.remap_modules", "datamodel_code_generator.imports:Imports.remove", "datamodel_code_generator.imports:Imports.remove_referenced_imports", "datamodel_code_generator.imports:Imports.remove_unused"]
+allowed-callers = ["datamodel_code_generator.parser._imports_plan:*", "datamodel_code_generator.imports:*", "datamodel_code_generator.model.pydantic_v2.base_model:BaseModel.resolve_module_import_conflicts", "datamodel_code_generator.model.pydantic_v2.base_model:BaseModel.resolve_module_import_conflicts.*", "datamodel_code_generator.parser._init_exports:build_all_exports_code", "datamodel_code_generator.parser._init_exports:build_all_exports_code.*", "datamodel_code_generator.parser.base:Parser.__generate_forwarder_content", "datamodel_code_generator.parser.base:Parser.__generate_forwarder_content.*"]
+attribution = "lexical"
+
 [[read-owners]]
 name = "table:parser/jsonschema.py:JsonSchemaParser._DEFINITION_TABLE"
 targets = ["datamodel_code_generator.parser._rw_split.RwSplitHost._DEFINITION_TABLE", "datamodel_code_generator.parser.jsonschema.JsonSchemaParser._DEFINITION_TABLE"]

@@ -1,0 +1,11 @@
+[[change]]
+id = "src-checkers-heki-ledger-test"
+category = "harness"
+title = "No test of a ledger bypass by a parser subclass"
+summary = "The test that a custom parser writing a module's imports outside the import ledger fails the MODULE_IMPORTS check goes with that half of the check; heki checks the package's own calls."
+refs = ["#1"]
+covers = [
+    "main/main_general/module_imports_written_outside_the_import_ledger[off].txt",
+    "main/main_general/module_imports_written_outside_the_import_ledger[report].report.txt",
+    "main/main_general/module_imports_written_outside_the_import_ledger[report].txt",
+]

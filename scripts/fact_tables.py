@@ -38,6 +38,10 @@ schema-validator plan cache names ``RenderFact.MODULE_CODE``, the code it holds.
 render facts, each with what it reads, all of it final at B1; ``scripts/build_heki_contracts.py`` lets the decisions
 reach their reads.
 
+``IMPORTS_MUTATORS`` lists the methods that change an ``Imports`` (``imports.py``), which only the import ledger
+(``parser/_imports_plan.py:ModuleImportLedger``), the ``imports`` module itself and the writers ``LEDGER_WRITERS`` names
+call; ``scripts/build_heki_contracts.py`` makes them one heki contract.
+
 ``STORE_MEMBERS`` lists the members of the graph that only the generation store, the member's own class (a method)
 or module (an attribute) and the modules a row names may use: the methods that write the graph for the store
 operations that run them (the hooks a store operation runs and the reference mutators: ``MemberUse.CALL``), and the
@@ -58,6 +62,8 @@ from datamodel_code_generator.parser._facts import Phase  # noqa: PLC2701
 __all__ = [
     "ATTRIBUTE_FACTS",
     "DECISION_ACCESSORS",
+    "IMPORTS_MUTATORS",
+    "LEDGER_WRITERS",
     "RENDER_FACT_FREEZE_POINTS",
     "STORE_MEMBERS",
     "Access",
@@ -66,6 +72,7 @@ __all__ = [
     "Fact",
     "FactKind",
     "FreezePoint",
+    "LedgerWriter",
     "MemberUse",
     "RenderFact",
     "StoreMember",
@@ -1391,3 +1398,47 @@ DECISION_ACCESSORS: tuple[DecisionAccessor, ...] = (
 """The members of the graph classes a decision may call although they read render facts: each reads only facts final
 at B1. ``scripts/build_heki_contracts.py`` makes them, with their overrides, the allowed callees of the decisions'
 boundary, so the reads inside count as theirs, not the decision's."""
+
+
+IMPORTS_MUTATORS: tuple[str, ...] = (
+    "append",
+    "apply_alias",
+    "extract_future",
+    "remap_modules",
+    "remove",
+    "remove_referenced_imports",
+    "remove_unused",
+)
+"""The methods of ``imports.py:Imports`` that change it: the import ledger (``parser/_imports_plan.py``), the
+``imports`` module and the ``LEDGER_WRITERS`` alone call them, so the live imports of a module are what its ledger
+entries hold."""
+
+
+@final
+@record
+class LedgerWriter:
+    """One row of ``LEDGER_WRITERS``: a def besides the import ledger that changes an ``Imports``, and why it may."""
+
+    path: str
+    name: str
+    reason: str
+
+
+LEDGER_WRITERS: tuple[LedgerWriter, ...] = (
+    LedgerWriter(
+        "model/pydantic_v2/base_model.py",
+        "BaseModel.resolve_module_import_conflicts",
+        "the output model's hook gets the live imports inside ModuleImportLedger.external, which records its changes",
+    ),
+    LedgerWriter(
+        "parser/_init_exports.py",
+        "build_all_exports_code",
+        "the re-exports of a package __init__ module, built and written at once: no module imports",
+    ),
+    LedgerWriter(
+        "parser/base.py",
+        "Parser.__generate_forwarder_content",
+        "the imports of a forwarder module, built and written at once: no module imports",
+    ),
+)
+"""The defs besides the import ledger that call the ``IMPORTS_MUTATORS``."""

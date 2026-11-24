@@ -23,7 +23,7 @@ import tomllib
 
 from scripts import build_heki_contracts, check_ratchets
 from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
-from scripts.fact_tables import ATTRIBUTE_FACTS, DecisionAccessor, MemberUse, StoreMember
+from scripts.fact_tables import ATTRIBUTE_FACTS, DecisionAccessor, LedgerWriter, MemberUse, StoreMember
 from scripts.pass_decls import DECISION_DECLS
 from tests.capabilities import needs
 
@@ -1032,3 +1032,104 @@ def test_heki_reports_a_decision_that_reads_a_render_fact(tmp_path: Path) -> Non
             ("_held_null.py", "untyped", "MUT206", "is_optional"),
         ],
     ), result.stderr
+
+
+SEEDED_IMPORT_WRITES = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/imports.py": (
+        "class Imports:\n    def __init__(self) -> None:\n        self.names: list[str] = []\n\n"
+        "    def append(self, name: str) -> None:\n        self.names.append(name)\n\n"
+        "    def merged(self, other: 'Imports') -> 'Imports':\n        merged = Imports()\n"
+        "        for name in other.names:\n            merged.append(name)\n        return merged\n"
+    ),
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_imports_plan.py": (
+        "from datamodel_code_generator.imports import Imports\n\n\n"
+        "class ModuleImportLedger:\n    def append(self, imports: Imports, name: str) -> None:\n"
+        "        imports.append(name)\n"
+    ),
+    f"{PACKAGE}/parser/_init_exports.py": (
+        "from datamodel_code_generator.imports import Imports\n\n\n"
+        "def build_all_exports_code(imports: Imports) -> None:\n    imports.append('re-export')\n\n\n"
+        "def beside_the_writer(imports: Imports) -> None:\n    imports.append('not the writer')\n"
+    ),
+    f"{PACKAGE}/parser/passes.py": (
+        "from typing import Any, cast\n\n"
+        "from datamodel_code_generator.imports import Imports\n\n\n"
+        "class ModuleContext:\n    def __init__(self) -> None:\n        self.imports = Imports()\n\n\n"
+        "def direct(ctx: ModuleContext) -> None:\n    ctx.imports.append('os')\n\n\n"
+        "def _add(imports: Imports) -> None:\n    imports.append('os')\n\n\n"
+        "def through_a_helper(ctx: ModuleContext) -> None:\n    _add(ctx.imports)\n\n\n"
+        "def untyped(ctx: ModuleContext) -> None:\n    cast('Any', ctx).imports.append('os')\n"
+    ),
+}
+"""The ledger and the imports module change an ``Imports``, and so does a ``LEDGER_WRITERS`` def; another def of the
+writer's module, a pass directly and through a helper, and a pass on an untyped value change it too."""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_imports_written_outside_the_ledger(tmp_path: Path) -> None:
+    """A method that changes an ``Imports`` is called only in the ledger, the ``imports`` module and the writers.
+
+    A call in another def, also of a writer's module, is a finding in the scope that makes it, a helper's included;
+    one on a value heki cannot type is not seen (a gap of heki, which a write-owners form would close).
+    """
+    for name, text in SEEDED_IMPORT_WRITES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    writers = [LedgerWriter("parser/_init_exports.py", "build_all_exports_code", "re-exports")]
+    contracts.write_text(
+        "\n".join(build_heki_contracts.import_ledger_contracts(repo, ("append",), writers)), encoding="utf-8"
+    )
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].rpartition(".")[2])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("_init_exports.py", "beside_the_writer", "MUT204", "append"),
+            ("passes.py", "_add", "MUT204", "append"),
+            ("passes.py", "direct", "MUT204", "append"),
+        ],
+    ), result.stderr
+
+
+@pytest.mark.parametrize(
+    ("mutators", "writers", "message"),
+    [
+        pytest.param(("never_defined",), (), "IMPORTS_MUTATORS: Imports defines no method never_defined", id="mutator"),
+        pytest.param(
+            (),
+            (LedgerWriter("parser/base.py", "Parser.never_defined", "none"),),
+            "LEDGER_WRITERS: parser/base.py defines no Parser.never_defined",
+            id="writer",
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
+def test_import_ledger_rows_name_defined_methods(
+    mutators: tuple[str, ...], writers: tuple[LedgerWriter, ...], message: str
+) -> None:
+    """``IMPORTS_MUTATORS`` names methods of ``Imports`` and ``LEDGER_WRITERS`` defs the package defines."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.import_ledger_contracts(repo, mutators, writers)
+
+    assert str(stopped.value) == message

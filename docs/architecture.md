@@ -641,9 +641,10 @@ replay of the entries and their replay without those imports, so the module line
 written outside the ledger stay. The named row `legacy.enum-member-import-bindings` uses it: an Enum's `imports` keep
 the imports of its member declarations (pydantic's `Field` for described members), so the module binds their names
 for class names and reuse keys as in 0.86.0, while the import block leaves them out. The output model's `resolve_module_import_conflicts` gets the live
-`Imports`; `ModuleImportLedger.external` records what it changed. `DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`
-compares each module's imports with the replay of their entries when the import text is written, so a write that
-bypasses the ledger fails the check, which the test suite turns on. The names the module's `ModelResolver` gives its
+`Imports`; `ModuleImportLedger.external` records what it changed. heki's `imports-through-the-ledger` contract reports
+a call of a method that changes an `Imports` (`IMPORTS_MUTATORS` of `scripts/fact_tables.py`) outside the ledger, the
+`imports` module and the writers `LEDGER_WRITERS` names: this hook, and the builders of the re-exports of a package
+`__init__` module and of a forwarder module's imports, which write them at once. The names the module's `ModelResolver` gives its
 imports are asked for through the ledger too (`NameLog`). After the last rename, `tests/checks/module_imports.py` plans
 the models each module names from the final names (`NameTable`): `ModuleImportPlan` holds the imports of other modules'
 models, named by `allocate_bindings` in the order the module asked for them (row `legacy.alias-order`), and what the
