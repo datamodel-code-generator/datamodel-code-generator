@@ -121,7 +121,7 @@ _UNTYPED_VALUE_DATA_TYPE_KEY = "_untyped_value_name"
 """The name an untyped value is written as under --untyped-value-type, on the ``Any`` type that stands for it."""
 _DEEP_COPY_LEAVES_OUT: Final = frozenset({_LITERAL_IMPORT_DATA_TYPE_KEY})
 """The private state of a type that a deep copy leaves out and every other copy keeps: the ``Literal`` import alias."""
-_RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
+_RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union"]
 
 
 class DefaultValueRecipe(Enum):
@@ -1307,11 +1307,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
         ``"reference-null"`` writes the None of the nullable model the type names into ``is_optional`` when the
         rendered None comes from that model (``rendered_nullability``), marked as not the type's own.
-        ``"member-null"`` writes the None that a union takes over from a member, ``"null-moved-to-union"`` takes the
-        None off a member whose union writes it now, and ``"empty-union"`` gives a union without a member to write
-        the import of the ``Any`` it renders as. Before render preparation only union flattening and the imports
-        that L3 collects (row ``legacy-l3-import-nullability``) write nullability; rendering and import collection
-        write none.
+        ``"member-null"`` writes the None that a union takes over from a member, and ``"null-moved-to-union"`` takes
+        the None off a member whose union writes it now. Before render preparation only union flattening and the
+        imports that L3 collects (row ``legacy-l3-import-nullability``) write nullability; rendering and import
+        collection write none.
         """
         null: NullSource | None = None
         match write:
@@ -1326,9 +1325,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 null = "member"
             case "null-moved-to-union":
                 self.is_optional = False
-                return
-            case "empty-union":
-                self.import_ = self.import_ or IMPORT_ANY
                 return
             case _:  # pragma: no cover - the match covers every write
                 assert_never(write)
@@ -1675,7 +1671,6 @@ def _render_union(node: DataType, members: tuple[TypeExpr, ...], *, discriminate
         kept, takes_null = _drop_none_after_none_alias(members, kept, takes_null=takes_null)
     if not kept:
         text = ANY
-        node._materialize_render_state("empty-union")  # noqa: SLF001
     elif len(kept) == 1:
         text = kept[0]
     else:

@@ -1409,8 +1409,7 @@ FINALIZE_RENDERED_NULLABILITY = PassDecl(
     writes=_facts(Fact.NULLABLE, Fact.FIELD_TYPES),
     summary=(
         "Writes the None each type hint renders, once, after the module bodies set union operators and quotes;"
-        " rendering and import collection write none. Rendering the members' hints writes the import of the Any an"
-        " empty union renders as."
+        " rendering and import collection write none."
     ),
 )
 COLLECT_ALL_MODELS = PassDecl(
@@ -1973,7 +1972,7 @@ RENDER_MODULES = PassDecl(
     reads=_facts(*Fact, *RenderFact),
     writes=_facts(Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES, RenderFact.UNBOUND_FIELDS),
     summary=(
-        "L7: renders every module; writes the import of the Any an empty union renders as; binds the names that a "
+        "L7: renders every module; binds the names that a "
         "field name hides from the text it renders under aliases (``object_aliased``); seeds a parse again where a "
         "module of a modular output fails to import, or where the names a package binds disagree with the renames of "
         "its submodules."
