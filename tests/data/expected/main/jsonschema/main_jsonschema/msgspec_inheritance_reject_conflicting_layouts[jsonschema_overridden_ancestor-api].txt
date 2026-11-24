@@ -1,0 +1,1 @@
+msgspec.Struct model 'Payload' has incompatible layouts from generated bases 'A' and 'B'.

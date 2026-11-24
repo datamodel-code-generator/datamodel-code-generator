@@ -1,0 +1,34 @@
+[[change]]
+id = "bug-g10-msgspec-reuse-overridden"
+category = "harness"
+title = "Pin msgspec structs whose bases hide a layout the generator does not know"
+summary = "Stored refusals of six new cases where a type override, a configured base or x-python-import hides the layout of a direct base or of an ancestor of a base of a conflicting msgspec struct, with and without --reuse-model, and the stored output of two such cases without --reuse-model; the package writes the same refusals and output as the latest release."
+refs = ["#7446"]
+covers = [
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_configured_indirect_base-api].py",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_configured_indirect_base-api].runtime.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_configured_indirect_base-cli].py",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_configured_indirect_base-cli].runtime.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_overridden_indirect_base-api].py",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_overridden_indirect_base-api].runtime.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_overridden_indirect_base-cli].py",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_preserve_compatible_layouts[jsonschema_overridden_indirect_base-cli].runtime.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_ancestor-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_ancestor-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_ancestor-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_direct_base-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_direct_base-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_overridden_direct_base-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_configured_indirect_base-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_configured_indirect_base-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_configured_indirect_base-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_imported_ancestor-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_imported_ancestor-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_imported_ancestor-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_overridden_indirect_base-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_overridden_indirect_base-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_overridden_indirect_base-cli].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_type_differs_overridden_ancestor-api].absent.txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_type_differs_overridden_ancestor-api].txt",
+    "main/jsonschema/main_jsonschema/msgspec_inheritance_reject_conflicting_layouts[jsonschema_reuse_type_differs_overridden_ancestor-cli].txt",
+]
