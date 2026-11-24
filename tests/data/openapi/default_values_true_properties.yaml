@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Kennel
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name: {type: string}
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+      properties:
+        name: true
+        bark: {type: boolean}
+    Owner:
+      type: object
+      properties:
+        any-value: true
+        dog: {$ref: '#/components/schemas/Dog'}
