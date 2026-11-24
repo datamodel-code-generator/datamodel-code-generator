@@ -1,6 +1,0 @@
-[[change]]
-id = "preset-20261123-gate-output"
-category = "internal"
-title = "The behaviour gate lists the 20261123 presets"
-summary = "Stored test output of the behaviour gate, which lists the 20261123 presets; the package writes the same output for the same call."
-refs = ["#7399"]

@@ -1,7 +1,0 @@
-[[change]]
-id = "rename-redeclared-fields-hiding-types-payloads"
-extends = "rename-redeclared-fields-hiding-types"
-covers = [
-    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_field_named_like_type_modules_pets.json~e148b31b].errors.txt",
-    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_field_named_like_type_modules_pets.json].errors.txt",
-]

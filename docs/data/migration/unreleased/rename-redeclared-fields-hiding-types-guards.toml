@@ -1,8 +1,0 @@
-[[change]]
-id = "rename-redeclared-fields-hiding-types-guards"
-extends = "rename-redeclared-fields-hiding-types"
-covers = [
-    "main/jsonschema/field_named_like_type_options/redeclared_field_follows_rename_only_where_it_is_the_same_field[option-msgspec].py",
-    "main/jsonschema/field_named_like_type_options/redeclared_field_follows_rename_only_where_it_is_the_same_field[option].py",
-    "main/jsonschema/field_named_like_type_options/redeclared_field_follows_rename_only_where_it_is_the_same_field[released].py",
-]
