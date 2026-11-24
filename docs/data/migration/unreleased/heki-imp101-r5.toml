@@ -1,0 +1,9 @@
+[[change]]
+id = "heki-imp101-r5"
+category = "harness"
+title = "Check import cycles with heki IMP101"
+summary = "The import cycles of the package are checked by heki; the package writes the same output."
+covers = [
+    "architecture_boundaries/import_cycles_count_the_imports_that_close_them.txt",
+    "check_ratchets_script/check_ratchets_against_base[import-cycles].txt",
+]

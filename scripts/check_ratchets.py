@@ -23,10 +23,11 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
-- ``import-cycle:<measure>@<area>``: the modules on import cycles of the package (``src``) and of ``scripts``, read by
-  `scripts/_import_cycles.py` from the model's import graph: ``module-level`` counts the cycles of the imports that run
-  when their module is imported, ``lazy`` those of every import (function-local and ``TYPE_CHECKING`` ones too) and
-  ``largest-lazy`` the largest of those; each module counts once, at its first import into its cycle.
+- ``import-cycle:<measure>@scripts``: the modules on import cycles of ``scripts``, read by
+  `scripts/_import_cycles.py` from the model's import graph (the package's cycles are heki's ``IMP101``):
+  ``module-level`` counts the cycles of the imports that run when their module is imported, ``lazy`` those of every
+  import (function-local and ``TYPE_CHECKING`` ones too) and ``largest-lazy`` the largest of those; each module counts
+  once, at its first import into its cycle.
 - ``source-rule:<rule>``: the sites of each rule of `scripts/check_source_rules.py` that runs without a base, as its
   ``--count`` prints them. A rule absolute in the head or in the base revision (read with the base's own rules) fails
   on any site, whatever the base holds. The base-relative rules (``lost-last-caller``) report candidates that need
@@ -1131,8 +1132,8 @@ def _named_output_tally(tally: Tally, root: Path) -> None:
 
 
 def _import_cycle_tally(tally: Tally, root: Path, files: list[str]) -> None:
-    """Count the modules on the import cycles of the package and of ``scripts`` among the tree's files."""
-    for key, found in import_cycles(root, files=files).items():
+    """Count the modules on the import cycles of ``scripts`` among the tree's files."""
+    for key, found in import_cycles(root, files).items():
         for path, line in (site for cycle in found for site in cycle):
             tally.add(key, path, line)
 

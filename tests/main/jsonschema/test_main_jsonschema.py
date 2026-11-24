@@ -38559,43 +38559,6 @@ def test_main_jsonschema_reference_edges_of_parser_hooks(parser_type: type[JsonS
     assert_output(str(parser.parse()))
 
 
-class _SharedSchemaWriterParser(JsonSchemaParser):
-    """Writes the description of each schema a reference loads: a reader that changes the object the graph shares."""
-
-    def _load_ref_schema_object(self, ref: str) -> Any:
-        loaded = super()._load_ref_schema_object(ref)
-        loaded.description = "written"
-        return loaded
-
-
-@pytest.mark.parametrize("flag", ["check", "report", "off"])
-def test_schema_graph_check_of_a_reader_that_writes_a_shared_schema(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
-) -> None:
-    """A reader that writes a schema object the graph validated once and shares is reported, and generation goes on.
-
-    The check (`1`, as the test suite sets it) compares each shared object at the end of L1 with the fingerprint taken
-    when it was validated and raises, `report:<path>` appends the changed locations as a JSON line, and with the check
-    off (`0`) the parser generates from the written objects.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
-    parser = _SharedSchemaWriterParser(
-        JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN]
-    )
-    if flag == "check":
-        with pytest.raises(
-            CheckFailure,
-            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: shared schema objects changed after validation: "
-            "redirect.json#/properties/kept$",
-        ):
-            parser.parse()
-        return
-    assert_output(str(parser.parse()))
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
-
-
 class _LoadedDocumentWriterParser(JsonSchemaParser):
     """Writes a definition of the document being parsed when a reference loads: a reader that changes a loaded one."""
 

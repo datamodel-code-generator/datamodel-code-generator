@@ -1,11 +1,12 @@
-"""``SCHEMA_GRAPH``: no reader writes a schema object the schema graph validated once and shares, or a schema site.
+"""``SCHEMA_GRAPH``: no reader writes a loaded document, a value a document record keeps for a pointer or a schema site.
 
-``SchemaGraphBuilder.schema`` validates each JSON object of a loaded document once and gives every reader the same
-object. The wrapper of ``schema`` keeps a fingerprint of each object when it is validated, and the check compares the
-objects with their fingerprints at the end of L1. The wrapper of ``prepare_schema_resources`` keeps the fingerprint of
-each document as the loader read it, when it is first prepared, and the same check compares the documents with them:
-the parser never writes a loaded document. The wrapper of ``pointer_value`` reads a value the record of a document keeps
-for a pointer anew from its tree at every ask and compares the two.
+The wrapper of ``prepare_schema_resources`` keeps the fingerprint of each document as the loader read it, when it is
+first prepared, and the check compares the documents with them at the end of L1: the parser never writes a loaded
+document. The wrapper of ``pointer_value`` reads a value the record of a document keeps for a pointer anew from its tree
+at every ask and compares the two. That no reader writes an object ``SchemaGraphBuilder.schema``, ``pointer_value``,
+``prepare_schema_resources`` or ``ApiOpenAPIParser._site_facts`` returns is heki's ``MUT202`` (``readonly-returns`` of
+``scripts/build_heki_contracts.py``); a write reached through a parameter or an attribute, which heki does not follow
+to those functions, is this check's.
 
 ``ApiOpenAPIParser._site_facts`` reads the site of a location once, for the target bindings. Its wrapper reads a kept
 site anew from the documents at every read and compares the two, and the wrapper of ``site_facts_of`` reports a string
@@ -15,7 +16,7 @@ site anew from the documents at every read and compares the two, and the wrapper
 from __future__ import annotations
 
 from dataclasses import fields
-from functools import cached_property, wraps
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.checks.areas import Area, mode
@@ -25,17 +26,14 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
 
-_SHARED: Final = "shared schemas"
-"""The schema objects each schema graph validated in the parse, with their fingerprints, by the id of the graph."""
 _LOADED: Final = "loaded documents"
 """The documents each schema graph prepared as the loader read them, with their names and fingerprints, by identity."""
 
 
 def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:
-    """Return a comparable record of what an object holds, its attributes and those of the objects it holds included.
+    """Return a comparable record of what a value of a document holds, the values its containers hold included.
 
-    The values ``functools.cached_property`` keeps in an object's ``__dict__`` are not part of it. A container that is
-    its own ancestor is recorded by its type.
+    A container that is its own ancestor is recorded by its type.
     """
     if (value_id := id(value)) in active:
         return type(value)
@@ -46,50 +44,7 @@ def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:
         case list() | tuple() | set() | frozenset():
             items = sorted(value, key=repr) if isinstance(value, (set, frozenset)) else value
             return type(value), tuple(_fingerprint(item, active) for item in items)
-    if not isinstance(attributes := getattr(value, "__dict__", None), dict):
-        return type(value), value
-    kind = type(value)
-    return (
-        kind,
-        tuple(
-            (name, _fingerprint(item, active))
-            for name, item in attributes.items()
-            if not isinstance(getattr(kind, name, None), cached_property)
-        ),
-        tuple(
-            _fingerprint(getattr(value, name, None), active)
-            for name in ("__pydantic_fields_set__", "__pydantic_extra__", "__pydantic_private__")
-        ),
-    )
-
-
-def schema(original: Callable[..., Any]) -> Callable[..., Any]:
-    """Wrap ``SchemaGraphBuilder.schema``: keep the fingerprint of each object the graph validates for its readers.
-
-    A value the graph does not locate is validated at every read and shared by none, so it is not kept.
-    """
-
-    @wraps(original)
-    def schema(self: Any, raw: object, kind: type[Any], validate: Callable[[], Any]) -> Any:
-        if (
-            (graph_mode := mode(Area.SCHEMA_GRAPH)) is None
-            or not isinstance(raw, dict)
-            or id(raw) not in self.locations
-        ):
-            return original(self, raw, kind, validate)
-
-        def validated() -> Any:
-            value = validate()
-            graph_mode.state.setdefault((_SHARED, id(self)), []).append((
-                self.locations[id(raw)],
-                value,
-                _fingerprint(value),
-            ))
-            return value
-
-        return original(self, raw, kind, validated)
-
-    return schema
+    return type(value), value
 
 
 def prepare_schema_resources(original: Callable[..., Any]) -> Callable[..., Any]:
@@ -142,22 +97,12 @@ def pointer_value(original: Callable[..., object]) -> Callable[..., object]:
     return pointer_value
 
 
-def check_shared_schemas(parser: Any) -> None:
-    """Report the shared schema objects that changed after validation, and the loaded documents, at the end of L1."""
+def check_loaded_documents(parser: Any) -> None:
+    """Report the loaded documents that changed after their load, at the end of L1."""
     if (graph := parser._schema_graph) is None or (graph_mode := mode(Area.SCHEMA_GRAPH)) is None:
         return
     from datamodel_code_generator._url_redaction import redact_reference
 
-    if changed := [
-        redact_reference(str(location))
-        for location, value, recorded in graph_mode.state.get((_SHARED, id(graph)), ())
-        if _fingerprint(value) != recorded
-    ]:
-        graph_mode.violation(
-            f"shared schema objects changed after validation: {', '.join(changed)}",
-            kind="shared-schema",
-            locations=changed,
-        )
     if written := [
         redact_reference(document)
         for document, raw, recorded in graph_mode.state.get((_LOADED, id(graph)), {}).values()
