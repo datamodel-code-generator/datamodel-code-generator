@@ -222,8 +222,15 @@ TYPES: Final[tuple[Kept, ...]] = (
                 "child_first": (True,),
                 "via": ("direct", "allof-siblings"),
             },
+            {
+                "how": ("require",),
+                "leaf": _REQUIRED_LEAVES,
+                "via": ("alias", "ref-siblings"),
+                "backend": (PYDANTIC_V2,),
+            },
         ),
-        "the same under the preset, where bounded scalars are typed too",
+        "the same under the preset, where bounded scalars are typed too, and so is the inherited property of a "
+        "Pydantic child whose parent is an alias or a $ref with sibling properties",
     ),
     Kept(
         ISSUE,
@@ -258,9 +265,10 @@ TYPES: Final[tuple[Kept, ...]] = (
         PRESET,
         (
             {"inherited": ("model",), "override": ("other",), "backend": (PYDANTIC_V2, MSGSPEC)},
-            {"name": ("pet",), "override": ("other",), "backend": (DATACLASSES,)},
+            {"override": ("other",), "backend": (DATACLASSES,)},
         ),
-        "the same under the preset, which renames the field Pet to pet with an alias where the output has aliases",
+        "the same under the preset, which renames the field Pet to pet with an alias where the output has aliases, and "
+        "the class Pet where it has none",
     ),
     Kept(
         ISSUE,
@@ -284,8 +292,10 @@ TYPES: Final[tuple[Kept, ...]] = (
         (
             {"how": ("narrow",), "leaf": ("enum",)},
             {"how": ("narrow",), "leaf": ("str_or_arr",), "via": ("direct", "alias", "allof-siblings")},
+            {"how": ("narrow",), "leaf": ("str_or_arr",), "via": ("ref-siblings",), "backend": (PYDANTIC_V2,)},
         ),
-        "the same under the preset, where the narrowed enum is a Literal of a member's value",
+        "the same under the preset, where the narrowed enum is a Literal of a member's value, and a Pydantic child of "
+        "a $ref with sibling properties types the narrowed union",
     ),
     Kept(
         ISSUE,
@@ -359,15 +369,6 @@ TYPES: Final[tuple[Kept, ...]] = (
         DEFAULT,
         ({"name": ("Pet",), "backend": (DATACLASSES, MSGSPEC)},),
         "a field named like the class of its type keeps the name, and in the class body the name is the field",
-    ),
-    Kept(
-        ISSUE,
-        _FIELD_NAMED_LIKE_TYPE,
-        "redeclare",
-        INVALID_TYPE_FORM,
-        PRESET,
-        ({"name": ("Pet",), "backend": (DATACLASSES,)},),
-        "the same under the preset for dataclasses, which have no alias to rename the field with",
     ),
 )
 """Every known ty error of the shape families' modules (the nightly static tier)."""

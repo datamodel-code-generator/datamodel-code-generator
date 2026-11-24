@@ -473,7 +473,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7171",
         "mixin",
         "reversed-all-of",
-        BOTH,
+        DEFAULT,
         ({"first": ("int", "int_min"), "second": ("num",)}, {"first": ("num",), "second": ("int", "int_min")}),
         "reversing the allOf members of a number and an integer declaration of one property changes its type",
     ),
