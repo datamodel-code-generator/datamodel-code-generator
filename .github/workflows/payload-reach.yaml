@@ -1,0 +1,57 @@
+name: Payload inputs
+
+on:
+  pull_request:
+    paths:
+      - "tests/data/jsonschema/**"
+      - "tests/data/openapi/**"
+
+concurrency:
+  group: payload-inputs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  payload-inputs:
+    name: ${{ matrix.tox_env }} over the inputs the pull request changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        tox_env:
+          - py311-payload-runtime-min
+          - py311-payload-runtime-latest
+          - py314-payload-runtime-min
+          - py314-payload-runtime-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: List the payload inputs the pull request adds or modifies
+        id: inputs
+        run: |
+          inputs=$(python3 scripts/related_tests.py --base "origin/$BASE_REF" --head HEAD --paths-of payload-inputs | paste -sd:)
+          echo "inputs=$inputs" >> "$GITHUB_OUTPUT"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+      - name: Install the latest version of uv
+        if: steps.inputs.outputs.inputs != ''
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-suffix: ${{ matrix.tox_env }}
+          save-cache: false
+      - name: Install tox
+        if: steps.inputs.outputs.inputs != ''
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Run the payload suite over the cases of those inputs
+        if: steps.inputs.outputs.inputs != ''
+        run: tox run --skip-missing-interpreters false -e ${{ matrix.tox_env }}
+        env:
+          DCG_PAYLOAD_INPUTS: ${{ steps.inputs.outputs.inputs }}
+          DCG_PAYLOAD_MAX_EXAMPLES: "100"
+          UV_PYTHON_PREFERENCE: "only-managed"
