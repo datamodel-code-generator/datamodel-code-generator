@@ -175,6 +175,17 @@ def _key_lines(lines: Sequence[str], start: int, end: int) -> dict[str, tuple[in
     return found
 
 
+def _same_value(left: object, right: object) -> bool:
+    """Return whether two parsed TOML values are equal and of the same type: ``1`` is not ``True``."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(_same_value(value, right[key]) for key, value in left.items())
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(map(_same_value, left, right))
+    return left == right
+
+
 def _merged_table_text(text: str, table: tuple[str, ...], values: Mapping[str, TomlValue]) -> tuple[str, list[str]]:
     """Return a pyproject.toml text with ``values`` set in ``table``, and the keys that are new or change.
 
@@ -188,7 +199,11 @@ def _merged_table_text(text: str, table: tuple[str, ...], values: Mapping[str, T
     for key in table:
         node = node.setdefault(key, {})
     spelled = {field_name(key): key for key in node}
-    if not (changed := [key for key, value in wanted.items() if node.get(spelled.get(field_name(key))) != value]):
+    if not (
+        changed := [
+            key for key, value in wanted.items() if not _same_value(node.get(spelled.get(field_name(key))), value)
+        ]
+    ):
         return text, []
     for key in changed:
         node.pop(spelled.get(field_name(key), key), None)
@@ -209,7 +224,7 @@ def _merged_table_text(text: str, table: tuple[str, ...], values: Mapping[str, T
             if name in new:
                 lines[begin:stop] = [new[name]]
     edited = "".join(lines)
-    if not _parses(edited) or tomllib.loads(edited) != expected:
+    if not _parses(edited) or not _same_value(tomllib.loads(edited), expected):
         raise _UnprovenEditError
     return edited, changed
 
@@ -242,7 +257,7 @@ def _write_pyproject_table(
     """
     shown = Path(os.path.relpath(path)).as_posix()
     original = path.read_bytes() if path.exists() else None
-    written = partial(_WrittenConfig, shown, table, original is None)
+    written = partial(_WrittenConfig, shown, table, False)
     if values is None:
         return written([], "the recommendation has no pyproject.toml block to write")
     if path.parent != Path.cwd() and PYPROJECT_PATH_FIELDS.intersection(map(field_name, values)):
@@ -272,7 +287,7 @@ def _write_pyproject_table(
             publish_staged_files([(staged, path)])
         finally:
             release_all((*anchors, *contexts))
-    return written(keys)
+    return _WrittenConfig(shown, table, original is None and bool(keys), keys)
 
 
 def _written_text(written: _WrittenConfig, values: Mapping[str, TomlValue], notes: Sequence[str], command: str) -> str:
@@ -280,6 +295,8 @@ def _written_text(written: _WrittenConfig, values: Mapping[str, TomlValue], note
     if written.keys:
         head = f"{'Created' if written.created else 'Updated'} {written.path}:"
         body = _format_pyproject_config({key: values[key] for key in written.keys}, written.table).splitlines()
+    elif not values and not Path(written.path).exists():
+        head, body = f"There are no values to write to {written.path}; nothing was written.", []
     else:
         head, body = f"{written.path} already holds these values; nothing was written:", [toml_table(written.table)]
     lines = [head, *(f"  {line}" for line in body)]

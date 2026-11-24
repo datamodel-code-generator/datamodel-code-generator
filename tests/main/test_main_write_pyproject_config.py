@@ -233,3 +233,27 @@ def test_write_pyproject_config_needs_a_table(
         expected_stderr=f"Error: --write-pyproject-config {expected_stderr}\n",
         use_builtin_default_formatter=False,
     )
+
+
+def test_write_pyproject_config_compares_values_by_type(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """An integer where a boolean is wanted is rewritten; the same boolean stays as it is."""
+    args = ["--input", "api.yaml", "--input-file-type", "openapi", "--snake-case-field", "--generate-pyproject-config"]
+    table = b"[tool.datamodel-codegen]\nsnake-case-field = 1\n"
+    assert_output(_write(tmp_path, args, capsys, pyproject=table).decode(), name="pyproject")
+    assert_output(_write(tmp_path, args, capsys).decode(), name="pyproject")
+
+
+def test_write_pyproject_config_without_values_creates_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A command whose only option is a credential has no values: no file is created and none is claimed."""
+    tmp_path.mkdir(exist_ok=True)
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--http-headers", "A: b", "--generate-pyproject-config", WRITE],
+            capsys=capsys,
+            assert_no_stderr=True,
+            derived_stdout=True,
+            use_builtin_default_formatter=False,
+        )
+    assert not (tmp_path / "pyproject.toml").exists()

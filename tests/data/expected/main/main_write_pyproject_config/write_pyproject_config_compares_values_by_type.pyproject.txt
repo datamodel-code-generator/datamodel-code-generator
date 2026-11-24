@@ -1,0 +1,4 @@
+[tool.datamodel-codegen]
+snake-case-field = true
+input = "api.yaml"
+input-file-type = "openapi"
