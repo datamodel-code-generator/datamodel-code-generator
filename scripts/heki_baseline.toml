@@ -9131,13 +9131,6 @@ count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser._type_references_to_definitions_without_model"
-rule_code = "MUT201"
-target = "DataModel.extra_template_data"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser._unescaped_slash_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"

@@ -1,0 +1,13 @@
+[[change]]
+id = "heki-026-additional-properties-classes-api"
+category = "api"
+title = "A store operation that names the classes of the additional properties"
+summary = "GraphBuilder.name_additional_properties_classes() (and GenerationStore.name_additional_properties_classes()) gives a model the type of its additional properties with the classes they name, which replace those recorded; nothing is removed or changed."
+refs = ["#1"]
+decision = ["#1"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
