@@ -33,6 +33,12 @@ Pass the options you have already decided on, such as `--output-model-type` and 
 recommendation starts from the matching preset. When they are in `pyproject.toml`, run the command from the project
 directory; `--profile NAME` and a single `--job NAME` select a profile or a job as they do for generation.
 
+When no option, key, or preset sets the target Python version, the recommendation takes it from `requires-python` in
+`pyproject.toml` (the file with the table, else the one in the working directory) and adds `--target-python-version`
+to the command and the block. It reads one lower bound written as `>=3.12`, `~=3.12`, or `==3.12.*`, with any upper
+bounds or exclusions beside it; for other forms it assumes the default and says so in the notes. Generation itself
+never reads `requires-python`.
+
 The command prints the report and exits. It does not write files or change your configuration.
 
 To compare names in the layout you generate, pass `--output` as you would for generation: a file path selects one

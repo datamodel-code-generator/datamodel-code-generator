@@ -534,7 +534,7 @@ sentinel	api_generation/fastapi_cli/implied_settings[sentinel].txt
 	api_generation/fastapi_cli/include_paths.stderr.txt
 	api_generation/fastapi_cli/include_paths.txt
 [test_fastapi_cli_information]
-	api_generation/fastapi_cli/information.stdout.txt	= main/list_experimental.txt
+	api_generation/fastapi_cli/information.stdout.txt	= main/main_general/list_experimental.stdout.txt
 [test_fastapi_cli_input_diff]
 json-changed	api_generation/fastapi_cli/input_diff[json-changed].stdout.json
 json-form-baseline	api_generation/fastapi_cli/input_diff[json-form-baseline].stdout.json

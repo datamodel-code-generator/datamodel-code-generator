@@ -467,8 +467,14 @@ def test_recommend_options_without_schema_rules(
     _recommend(tmp_path, capsys, args, inputs=inputs)
 
 
-def test_recommend_options_from_stdin(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """Analyse a schema read from stdin; without a file name, the root class name is left to the user."""
+def test_recommend_options_from_stdin(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """Analyse a schema read from stdin; without a file name, the root class name is left to the user.
+
+    It runs outside any project, so no requires-python sets the target.
+    """
+    monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         stdin_path=INPUT_PATH / "stdin.json",
         monkeypatch=monkeypatch,
@@ -565,6 +571,36 @@ def test_recommend_options_for_projects(
         capsys,
         args,
         inputs=_inputs(INPUT_PATH / "api.yaml", INPUT_PATH / project / "pyproject.toml"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("pyproject", "args"),
+    [
+        pytest.param('requires-python = ">=3.12, <4"', [], id="lower-bound"),
+        pytest.param(
+            'requires-python = "~=3.13.1"\n[tool.datamodel-codegen]\ninput = "api.yaml"', [], id="table-changes"
+        ),
+        pytest.param('requires-python = ">=3.9"', [], id="older-than-supported"),
+        pytest.param('requires-python = "==3.16.*"', [], id="newer-than-supported"),
+        pytest.param('requires-python = ">3.11"', [], id="other-form"),
+        pytest.param('requires-python = ">=3.12"', ["--target-python-version", "3.13"], id="option-sets-it"),
+    ],
+)
+def test_recommend_options_reads_requires_python(
+    pyproject: str, args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Take the target Python version from requires-python when nothing sets it, and add it to the command and table.
+
+    One lower bound is read, with upper bounds beside it, and clamped to the supported targets; another form, or a
+    target an option sets, keeps the note or the option.
+    """
+    (tmp_path / "pyproject.toml").write_text(f'[project]\nname = "app"\n{pyproject}\n', encoding="utf-8")
+    _recommend(
+        tmp_path,
+        capsys,
+        ["--input", "api.yaml", "--input-file-type", "openapi", *args],
+        inputs=_inputs(INPUT_PATH / "api.yaml"),
     )
 
 
