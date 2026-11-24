@@ -180,6 +180,7 @@ playground = [
   "t-linter>=0.8",
   "tdom>=0.1.16; python_version>='3.14'",
 ]
+zizmor = [ "zizmor>=1.32" ]
 
 [tool.hatch]
 version.source = "vcs"
@@ -197,6 +198,8 @@ build.targets.sdist.include = [
 ]
 
 [tool.uv]
+exclude-newer = "3d"
+exclude-newer-package = { heki = false }
 conflicts = [
   [
     { group = "blacklatest" },
