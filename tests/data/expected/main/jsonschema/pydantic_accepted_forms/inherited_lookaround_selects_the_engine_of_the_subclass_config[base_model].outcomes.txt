@@ -1,0 +1,35 @@
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Mixed.label is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{Lu}'; Wide.title is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}'; Marked.mark is generated without this constraint.
+Child
+valid: valid
+lookahead: string_pattern_mismatch
+serial: string_pattern_mismatch
+Grandchild
+valid: valid
+lookahead: string_pattern_mismatch
+Mixed
+valid: valid
+lookahead: string_pattern_mismatch
+digit label: valid
+Labelled
+valid: valid
+digit label: string_pattern_mismatch
+Tagged
+valid: valid
+lookahead: string_pattern_mismatch
+digit label: valid
+Wide
+valid: valid
+lookahead: string_pattern_mismatch
+lower title: valid
+Titled
+valid: valid
+lower title: string_pattern_mismatch
+Stamped
+valid: valid
+lookahead: string_pattern_mismatch
+Sealed
+valid: valid
+lookahead: string_pattern_mismatch
+extra: unexpected_keyword_argument

@@ -603,7 +603,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.METADATA, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
         FreezePoint.RENDER,
-        store_ops=("drop_field_discriminator", "set_field_extra", "set_field_extras"),
+        store_ops=("drop_field_discriminator", "drop_field_extra", "set_field_extra", "set_field_extras"),
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -641,6 +641,17 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_SET, Fact.DISCRIMINATOR_TAGS),
         Phase.CROSS_MODULE,
         FreezePoint.B1,
+        store_ops=("drop_field_extra", "set_field_extra"),
+        access=Access.ITEM,
+    ),
+    AttributeFact(
+        "DataModelFieldBase",
+        'extras["_compiled_python_pattern"]',
+        FactKind.PRESENTATION,
+        (RenderFact.IMPORT_ALIASES,),
+        Phase.IMPORTS,
+        FreezePoint.RENDER,
+        store_ops=("set_field_extra",),
         access=Access.ITEM,
     ),
     AttributeFact(

@@ -7696,7 +7696,7 @@ typing.TypedDict	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[t
 	main/jsonschema/main_jsonschema/ref_with_additional_keywords/
 [test_main_jsonschema_reference_edges_of_parser_hooks]
 key	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[key].txt
-target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
+target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].txt
 [test_main_jsonschema_reference_to_schema_without_model]
 	main/jsonschema/main_jsonschema/reference_to_schema_without_model.py
 [test_main_jsonschema_remote_relative_ref_without_fragment]
@@ -14036,10 +14036,6 @@ True-True-null_pattern-api	main/jsonschema/main_jsonschema/root_alias_null_const
 True-True-null_pattern-cli	main/jsonschema/main_jsonschema/root_alias_null_constraints[True-True-null_pattern-cli].native.txt	= main/jsonschema/main_jsonschema/root_alias_null_constraints[False-False-null_numeric-api].native.txt
 True-True-null_pattern-cli	main/jsonschema/main_jsonschema/root_alias_null_constraints[True-True-null_pattern-cli].native_error.txt	?	= main/jsonschema/main_jsonschema/numeric_allof_types[False-AllOfMergeMode.All-null_first_nullable-api].native_error.txt
 True-True-null_pattern-cli	main/jsonschema/main_jsonschema/root_alias_null_constraints[True-True-null_pattern-cli].py	= main/jsonschema/main_jsonschema/root_alias_null_constraints[True-True-null_pattern-api].py
-[test_schema_graph_check_of_a_reader_that_writes_a_shared_schema]
-off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[off].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[report].report.txt
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 [test_schema_import_paths_for_target]
 python-3.10	main/jsonschema/main_jsonschema/schema_import_paths_for_target[python-3.10].py
 python-3.12	main/jsonschema/main_jsonschema/schema_import_paths_for_target[python-3.12].py

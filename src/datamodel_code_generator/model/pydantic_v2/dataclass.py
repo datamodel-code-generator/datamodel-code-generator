@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, ClassVar
+from warnings import warn
 
 from typing_extensions import override
 
@@ -30,6 +31,7 @@ from datamodel_code_generator.model.base import (
     _NestedModelFactory,
     _order_refusals,
     _reference_names_model,
+    get_effective_fields,
 )
 from datamodel_code_generator.model.dataclass import _DataclassReuseMixin
 from datamodel_code_generator.model.pydantic_v2._config import (
@@ -42,9 +44,11 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
+    _built_bases,
     _config_dict_items,
     _import_rendered_alias_generator,
     _PydanticV2Model,
+    has_lookaround_pattern,
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     Constraints as _Constraints,
@@ -58,6 +62,8 @@ from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
 _MUTABLE_DEFAULT_FACTORY = Why(RuleId("D4.default.dataclass-mutable-factory"), keyword="default")
+_REDECLARED_FIELDS_KEY = "redeclared_python_rejected_fields"
+"""The copies of inherited fields a dataclass writes without a pattern its engine cannot build (#7452)."""
 _VISIBLE_METADATA = Why(RuleId("D11.pydantic-dataclass.visible-metadata"), option="--use-annotated")
 """The dataclass must see the call's metadata: the call follows a plain annotation instead of going into it."""
 
@@ -260,6 +266,121 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         if self._own_patterns_select_python():
             self._select_python_regex_engine()
 
+    @classmethod
+    @override
+    def _select_engines_for_bases(cls, models: list[DataModel], selected: set[int]) -> None:
+        """Select ``python-re`` in each dataclass whose config builds a base's pattern that needs it; return its users.
+
+        Pydantic builds the fields a dataclass inherits again with the config it applies, its own, else its first
+        base's, so a dataclass whose config lacks the engine fails at import (#7452). The dataclasses whose config it
+        would take decide first (``_config_chain``), after every other reason to select the engine, so the engine is
+        selected here only where nothing else selected it. ``selected`` gains the dataclasses
+        that apply such a config, their own or the one they take.
+        """
+        decided: dict[int, bool] = {}
+        for model in models:
+            if isinstance(model, DataClass):
+                DataClass._decide_engine_for_bases(model, decided)
+        selected.update(
+            id(model)
+            for model in models
+            if isinstance(model, DataClass) and decided[id(DataClass._config_chain(model)[-1])]
+        )
+
+    def _decide_engine_for_bases(self, decided: dict[int, bool]) -> None:
+        """Select ``python-re`` where a base's pattern needs it, once the dataclasses whose config it takes decided.
+
+        The config the dataclass gets keeps every item of the config it applied (#7452).
+        """
+        if id(self) in decided:
+            return
+        decided[id(self)] = False
+        for base in self._config_chain()[1:]:
+            DataClass._decide_engine_for_bases(base, decided)
+        if self._inherited_patterns_select_python():
+            self._select_python_regex_engine(self._config_chain()[-1].extra_template_data.get("config"))
+            decided[id(self)] = True
+
+    def _inherited_patterns_select_python(self) -> bool:
+        """Return whether a string pattern of a base needs ``python-re`` that the config the dataclass applies lacks.
+
+        Only the declarations the dataclass inherits count (``get_effective_fields``), not those it redeclares. A
+        configured base class the generator does not read may set the engine, so a config it may set is kept. A
+        pattern ``re.compile`` wraps runs on Python's ``re`` whatever the config, so it does not count.
+        """
+        inherited = [field for field in get_effective_fields(self) if field.parent is not self]
+        if not has_lookaround_pattern(inherited, include_compiled=False, surrogates=False):
+            return False
+        for base in [base for base in _built_bases(self) if isinstance(base, DataClass) and base is not self]:
+            DataClass._apply_lookaround_regex_engine(base)
+        items, known = self.applied_config()
+        return (known is None or "regex_engine" in known) and items.get("regex_engine") != '"python-re"'
+
+    @classmethod
+    @override
+    def _redeclare_rejected_patterns(
+        cls, models: list[DataModel], selected: set[int], built: Mapping[int, DataModel]
+    ) -> None:
+        """Redeclare the inherited fields whose pattern its engine cannot build in each dataclass of ``selected``.
+
+        Each of them selected ``python-re`` for a base (``_select_engines_for_bases``); a base decides before its
+        subclasses.
+        """
+        repairing = {id(model): model for model in models if isinstance(model, DataClass) and id(model) in selected}
+        done: set[int] = set()
+        for model in repairing.values():
+            DataClass._redeclare_inherited_fields(model, built, repairing, done)
+
+    def _redeclare_inherited_fields(
+        self, built: Mapping[int, DataModel], repairing: Mapping[int, DataClass], done: set[int]
+    ) -> None:
+        """Redeclare each inherited field whose pattern the dataclass's engine cannot build, without that pattern.
+
+        The dataclass builds each declaration it inherits (``get_effective_fields``) with its own config, which
+        selects ``python-re`` for a base's pattern (#7452). A declaration of a model the engine builds (``built``)
+        already leaves out a pattern Python's ``re`` rejects (#6593), and so does a copy that a dataclass between it
+        and the declaring base writes, which decides first; for another declaration of its module, the dataclass
+        writes a copy that leaves the pattern out, so the base keeps its output, and warns as for its own fields.
+        """
+        if id(self) in done:
+            return
+        done.add(id(self))
+        bases = [base for base in _built_bases(self) if base is not self]
+        for base in bases:
+            if (repairer := repairing.get(id(base))) is not None:
+                DataClass._redeclare_inherited_fields(repairer, built, repairing, done)
+        redeclared: list[DataModelFieldBase] = []
+        for field in get_effective_fields(self):
+            owner = field.parent
+            if owner is None or owner is self or id(owner) in built or owner.module_path != self.module_path:
+                continue
+            if any(
+                isinstance(base, DataClass)
+                and any(copy.name == field.name for copy in DataClass._class_body_fields(base))
+                and any(ancestor is owner for ancestor in _built_bases(base))
+                for base in bases
+                if base is not owner
+            ):
+                continue
+            copy = field.copy_owning(register_references=False, parent=self)
+            if (
+                (message := copy.dropped_constraints_warning) is not None
+                and isinstance(copy, DataModelFieldV2)
+                and copy._python_rejected_patterns()  # noqa: SLF001
+            ):
+                if copy.required and _has_pydantic_dataclass_field_assignment(field):
+                    copy.force_field_assignment()
+                    copy.invalidate_semantic_caches()
+                warn(message, stacklevel=2)
+                redeclared.append(copy)
+        if redeclared:
+            self._set_internal_template_data(_REDECLARED_FIELDS_KEY, redeclared)
+
+    @override
+    def _class_body_fields(self) -> list[DataModelFieldBase]:
+        """Return the fields the class body writes: the inherited ones it redeclares, then its own."""
+        return [*self._internal_template_data.get(_REDECLARED_FIELDS_KEY, ()), *self.fields]
+
     @override
     def _takes_config_of(self, base: DataModel) -> bool:
         """Return whether the dataclass applies the config of a base: its first, where it has no config of its own."""
@@ -289,20 +410,34 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
 
-        Without either, a configured base class the generator does not read may give them all. A base on an
-        inheritance cycle, which generation rejects later, adds nothing.
+        Without either, a configured base class the generator does not read may give them all (``_config_chain``).
         """
-        if own := self._rendered_config_items():
+        if own := DataClass._rendered_config_items(owner := self._config_chain()[-1]):
             return dict(own), None
-        visiting |= {id(self)}
-        return next(
-            (
-                base._applied_config(visiting)  # noqa: SLF001
-                for base in _find_base_classes(self)
-                if isinstance(base, DataClass) and id(base) not in visiting
-            ),
-            ({}, frozenset() if _has_opaque_custom_base(self, self.BASE_CLASS) else None),
-        )
+        return {}, frozenset() if _has_opaque_custom_base(owner, owner.BASE_CLASS) else None
+
+    def _config_chain(self) -> list[DataClass]:
+        """Return the dataclass, then each first dataclass base whose config the one before takes, as it has none.
+
+        A base on an inheritance cycle, which generation rejects later, ends the chain.
+        """
+        chain = [self]
+        while (
+            not DataClass._rendered_config_items(chain[-1])
+            and (
+                base := next(
+                    (
+                        base
+                        for base in _find_base_classes(chain[-1])
+                        if isinstance(base, DataClass) and all(base is not seen for seen in chain)
+                    ),
+                    None,
+                )
+            )
+            is not None
+        ):
+            chain.append(base)
+        return chain
 
     @property
     @override

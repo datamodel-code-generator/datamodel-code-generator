@@ -192,6 +192,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "detach_model_data_type_refs",
     "discard_derived_facts",
     "drop_field_discriminator",
+    "drop_field_extra",
     "drop_held_null",
     "drop_union_operator",
     "force_field_assignment",
@@ -1945,6 +1946,12 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    def drop_field_extra(field_: DataModelFieldBase, key: str) -> None:
+        """Drop one entry from a field's extras dict, which every holder of the dict sees."""
+        field_.extras.pop(key, None)
+        bump_field(field_)
+
+    @staticmethod
     def drop_field_discriminator(field_: DataModelFieldBase) -> None:
         """Drop a field's discriminator from its extras and from its type, which every holder of the type sees."""
         field_.extras.pop("discriminator", None)
@@ -2486,6 +2493,10 @@ class GraphBuilder:
     def drop_field_discriminator(self, field_: DataModelFieldBase) -> None:
         """Drop a field's discriminator from its extras and from its type, which every holder of the type sees."""
         self._store.drop_field_discriminator(field_)
+
+    def drop_field_extra(self, field_: DataModelFieldBase, key: str) -> None:
+        """Drop one entry from a field's extras dict, which every holder of the dict sees."""
+        self._store.drop_field_extra(field_, key)
 
     def drop_held_null(self, data_type: DataType) -> None:
         """Drop the None a reference type restates of the model it names, which holds null itself."""

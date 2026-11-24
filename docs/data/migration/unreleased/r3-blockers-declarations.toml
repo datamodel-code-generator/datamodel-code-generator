@@ -1,0 +1,10 @@
+[[change]]
+id = "r3-blockers-declarations"
+category = "internal"
+title = "Pass declarations of the recursion facts, field names and site constraints"
+summary = "The pass tables list the passes that write the recursion facts, the field names that restoring inherited names swaps and the site constraints of dict key types; the package writes the same output."
+covers = [
+    "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
+    "where_script/where_grammar[ambiguous-name].txt",
+    "where_script/where_grammar[kind-fact].txt",
+]

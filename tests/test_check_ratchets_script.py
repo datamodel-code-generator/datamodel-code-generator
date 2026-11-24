@@ -282,17 +282,12 @@ COUNTER = {
 IMPORT_ONE_WAY = {
     "scripts/report.py": FUTURE + "\nfrom scripts import guide\n\nTITLE = guide.TITLE\n",
     "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n',
-    "src/datamodel_code_generator/__init__.py": "",
-    "src/datamodel_code_generator/types.py": FUTURE + "\nfrom datamodel_code_generator import base\n",
-    "src/datamodel_code_generator/base.py": FUTURE + "\nVALUE = 1\n",
 }
-"""Imports one way, in ``scripts`` and in the package: no import cycle."""
+"""Imports one way in ``scripts``: no import cycle."""
 IMPORT_BACK = {
-    "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n\n\ndef load() -> object:\n    from scripts import report\n\n'
-    "    return report\n",
-    "src/datamodel_code_generator/base.py": FUTURE + "\nfrom datamodel_code_generator import types\n\nVALUE = 1\n",
+    "scripts/guide.py": FUTURE + '\nfrom scripts import report\n\nTITLE = "guide"\nLOAD = report\n',
 }
-"""An import back inside a function of ``scripts`` (lazy keys only) and at module level in the package (every key)."""
+"""An import back at module level in ``scripts``: every key rises."""
 IMPORT_IGNORED = {
     ".gitignore": "scripts/local_*.py\n",
     "scripts/local_a.py": FUTURE + "\nfrom scripts import local_b\n\nVALUE = local_b.VALUE\n",

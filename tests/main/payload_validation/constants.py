@@ -527,6 +527,13 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/discriminator_pattern.yaml::components.schemas.PaymentRequest": (
         "a pattern uses \\p{...}, which Python's re rejects, and the suite checks patterns with re"
     ),
+    **dict.fromkeys(
+        (
+            "openapi/inherited_lookaround_dataclass_modules.yaml::components.schemas.d.Local",
+            "openapi/inherited_lookaround_dataclass_modules.yaml::components.schemas.d.Wide",
+        ),
+        "a pattern uses \\p{...}, which Python's re rejects, and the suite checks patterns with re",
+    ),
     "openapi/annotated_model_defaults.yaml::components.schemas.Broken": (
         "its default 'many' for an integer violates its schema, and the generated model validates the default; "
         "test_main_openapi_annotated_model_defaults checks that Broken() fails"

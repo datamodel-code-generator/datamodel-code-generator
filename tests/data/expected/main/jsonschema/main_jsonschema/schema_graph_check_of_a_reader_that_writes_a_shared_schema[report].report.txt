@@ -1,1 +1,0 @@
-{"area": "SCHEMA_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH: shared schema objects changed after validation: redirect.json#/properties/kept", "kind": "shared-schema", "locations": ["redirect.json#/properties/kept"]}

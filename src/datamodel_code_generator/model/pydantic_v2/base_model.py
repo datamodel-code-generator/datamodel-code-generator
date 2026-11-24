@@ -70,6 +70,7 @@ from datamodel_code_generator.model._render_plan import (
     frozen_render_plan,
 )
 from datamodel_code_generator.model.base import (
+    _COMPILED_PATTERN_KEY,
     ALL_MODEL,
     UNDEFINED,
     BaseClassDataType,
@@ -316,7 +317,6 @@ _PIN_ALIASES_INTERNAL_KEY = "_pin_aliases_with_alias_generator"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
 _RENDERED_NONE = "None"
-_COMPILED_PATTERN_KEY = "_compiled_python_pattern"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
 _MIN_QUOTED_STRING_LENGTH = 2
@@ -1761,18 +1761,23 @@ def _holds_lone_surrogate(models: Iterable[DataModel]) -> bool:
     )
 
 
+def _built_bases(model: DataModel) -> Iterator[DataModel]:
+    """Yield the model, then every base it inherits, whose fields Pydantic builds again with the config it applies."""
+    walk = _base_walk((model,))
+    for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE):
+        yield walk.node_of[key]
+
+
 def _config_scopes(model: DataModel) -> Iterator[tuple[DataModel, bool]]:
     """Yield the models whose patterns the config a model applies builds, each with whether it is a type alias.
 
-    The model and the bases it inherits, whose fields Pydantic builds again with its config, and the type aliases it
-    reaches through any chain of fields and base classes (``models_reaching_string_pattern_aliases``), whose string
-    patterns it builds.
+    The model and the bases it inherits (``_built_bases``), and the type aliases it reaches through any chain of
+    fields and base classes (``models_reaching_string_pattern_aliases``), whose string patterns it builds.
     """
     from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
 
-    walk = _base_walk((model,))
-    for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE):
-        yield walk.node_of[key], False
+    for current in _built_bases(model):
+        yield current, False
     reached = reach(
         (model,),
         lambda current: [
@@ -1954,9 +1959,13 @@ class _PydanticV2Model(DataModel):
         A BaseModel whose own patterns need the engine selects it (``_own_patterns_select_python``); a config that
         already names an engine is kept. So does a model that reaches a string pattern type alias: the references of
         its fields count, and those of the bases whose config it does not take (``_bases_without_inherited_config``). A
-        lone surrogate selects it where the config allows it (``_select_surrogate_regex_engines``). Every model whose
+        lone surrogate selects it where the config allows it (``_select_surrogate_regex_engines``), and so does a
+        dataclass for the patterns of the bases its config builds (``_select_engines_for_bases``). Every model whose
         patterns a config selecting it builds (``_config_scopes``), a dataclass's once it selected its engine, is
         marked once (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
+        A config that selects the engine only for the patterns of its bases marks the models that apply it alone: they
+        redeclare each inherited field whose pattern the engine cannot build (``_redeclare_rejected_patterns``), and the
+        bases keep their output (#7452).
         """
         for model in models:
             if isinstance(model, BaseModel) and model._own_patterns_select_python():  # noqa: SLF001
@@ -1966,14 +1975,33 @@ class _PydanticV2Model(DataModel):
                 if isinstance(model, cls) and _uses_reached_alias(model, reached):
                     _select_python_engine(model, through_alias=True)
         _select_surrogate_regex_engines(models, cls)
+        for_bases: set[int] = set()
+        cls._select_engines_for_bases(models, for_bases)
         built: dict[int, DataModel] = {}
         for model in models:
             if isinstance(model, _PydanticV2Model) and model._builds_patterns_with_python_engine():  # noqa: SLF001
-                built.update((id(current), current) for current, _ in _config_scopes(model))
+                if id(model) in for_bases:
+                    built[id(model)] = model
+                else:
+                    built.update((id(current), current) for current, _ in _config_scopes(model))
         for current in built.values():
             current._set_internal_template_data(PYTHON_ENGINE_BUILDS_KEY, value=True)  # noqa: SLF001
             for field in current.fields:
                 field.invalidate_semantic_caches()
+        cls._redeclare_rejected_patterns(models, for_bases, built)
+
+    @classmethod
+    def _select_engines_for_bases(cls, models: list[DataModel], selected: set[int]) -> None:
+        """Select ``python-re`` where a config builds a base's pattern that needs it; ``selected`` gains its users.
+
+        None does: a model merges the config of every base, which selects the engine for its own patterns.
+        """
+
+    @classmethod
+    def _redeclare_rejected_patterns(
+        cls, models: list[DataModel], selected: set[int], built: Mapping[int, DataModel]
+    ) -> None:
+        """Redeclare in each model of ``selected`` the inherited fields whose pattern its engine cannot build."""
 
     @override
     def _builds_patterns_with_python_engine(self) -> bool:
@@ -2029,15 +2057,19 @@ class _PydanticV2Model(DataModel):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
-    def _select_python_regex_engine(self) -> None:
+    def _select_python_regex_engine(self, applied_config: object = None) -> None:
         """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
 
         Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
         config names (#5637). The model gets a config of its own: the one in the template data may be shared with
         every model of the same name (``--extra-template-data``). It reads the items of that config, so a config that
-        is no mapping adds none.
+        is no mapping adds none. A config the model took from a base (``applied_config``) gives its items first, as
+        Pydantic stops applying it once the model has a config of its own.
         """
-        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
+        config_parameters = {
+            **dict(_config_dict_items(applied_config)),
+            **dict(_config_dict_items(self.extra_template_data.get("config"))),
+        }
         if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
             return
         config_parameters["regex_engine"] = '"python-re"'

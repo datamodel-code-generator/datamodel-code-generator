@@ -605,16 +605,24 @@ modules (`_runtime/`), which generated packages copy, import only the standard
 library, the third-party packages generated code depends on, and each other
 relatively.
 
-The guard also rejects an import cycle of the package whose imports all run
-when their modules are imported: at module or class level and outside
-`if TYPE_CHECKING:`, under a version, platform or `ImportError` guard too.
-`scripts/check_ratchets.py` counts the modules on the import cycles of the
-package (`src`) and of `scripts/` as `import-cycle:<measure>@<area>` keys
-(`scripts/_import_cycles.py`): `module-level` for those cycles, `lazy` for the
-cycles of every import, function-local and `TYPE_CHECKING` ones included, and
-`largest-lazy` for the largest of them. Instead of importing back, inside a
-function or not, move what the modules share into a module that imports none
-of them.
+heki's `IMP101` reports each group of modules of the package that import each
+other, by any import: at module or class level, in a function and under
+`if TYPE_CHECKING:` (the contracts name every kind in `[imports] cycle-edges`).
+Its report names the modules of the group, so `scripts/heki_baseline.toml`
+holds today's four groups, and a new cycle, a module that joins a group and two
+groups that merge are new reports. A cycle of the imports that run while their
+modules load (module or class level, under a version, platform or
+`ImportError` guard too) is refused whatever the baseline holds: the `heki`
+lane runs `IMP101` over those imports alone
+(`tests/test_build_heki_contracts_script.py`), as a group reports once and such
+a cycle inside a group of lazy ones adds no report. `scripts/check_ratchets.py`
+counts the modules on the import cycles of `scripts/` as
+`import-cycle:<measure>@scripts` keys (`scripts/_import_cycles.py`):
+`module-level` for the cycles of the imports that run when their module is
+imported, `lazy` for the cycles of every import, function-local and
+`TYPE_CHECKING` ones included, and `largest-lazy` for the largest of them.
+Instead of importing back, move what the modules share into a module that
+imports none of them.
 
 heki, a development dependency of its own `heki` group (which `dev` includes;
 of CI, only the `heki` lane of `tox run -e heki` installs it, and the tests that
@@ -829,7 +837,7 @@ made a write its pass does not declare.
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
 | `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan (`tests/checks/module_imports.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, every model parsed from a JSON document has an owner or is a root at the end of L1, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
-| `SCHEMA_GRAPH` | no reader writes a schema object the schema graph validated once and shares (`tests/checks/schema_graph.py`, [Layers](architecture.md#layers), L0) |
+| `SCHEMA_GRAPH` | no reader writes a loaded document, a value a document record keeps for a pointer or a schema site the target bindings read, and no string `$ref` of a schema site leads to no loaded schema when the site is read; heki's `MUT202` holds the schema objects the schema graph validated once and shares (`tests/checks/schema_graph.py`, [Layers](architecture.md#layers), L0) |
 | `TEMPLATE_ASSIGNMENTS` | every class-scope field line that a model's built-in template renders after B2, annotated or assigned, binds the field's name (`= value`) exactly where the model's row of `classify_assignment` decides that the class body binds the field, as the compiled renderer or Jinja writes it; not checked: renders before B2, models under a custom root template, models whose class brings its own assignment hooks (rule `hook`), fields the text writes no line for, and text the running Python cannot parse; the shapes of `LEGACY_ROWS` (`legacy-annotated-factory-binds`, `legacy-typed-dict-binds`, `legacy-enum-member-unbound`) differ today and are only recorded with a report file (`tests/checks/template_assignments.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
 | `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |

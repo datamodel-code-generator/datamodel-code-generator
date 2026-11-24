@@ -1,0 +1,21 @@
+[[change]]
+id = "bug-7452-dataclass-regex-engine-warning"
+category = "notice"
+kind = "warning"
+action = "warn"
+title = "A pydantic dataclass that redeclares an inherited field without a pattern Python's re rejects warns"
+summary = "Where a pydantic_v2.dataclass selects python-re for a look-around pattern of a base and another base has a pattern Python's re rejects, such as \\p{L}, the dataclass redeclares that field of a base of its module without the pattern and warns that the field is generated without the constraint. Such a module failed at import before."
+refs = ["#7489"]
+source = "release-note"
+
+[[change.cells]]
+input = ["tests/data/jsonschema/inherited_lookaround_dataclass_config.json"]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+match = "^\\[warning\\] added builtins.UserWarning: Python's regex engine, which the config building it selects, does not compile pattern="
+
+[[change.cells]]
+input = ["tests/data/openapi/inherited_lookaround_dataclass_modules.yaml"]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+match = "^\\[warning\\] added builtins.UserWarning: Python's regex engine, which the config building it selects, does not compile pattern=|^\\[message\\] (added|removed) first attempt: "

@@ -140,10 +140,10 @@ the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them a
 """
 
 
-def _heki(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    """Run heki of the environment (the heki dependency group installs it) with the contracts of the repository."""
+def _heki(*args: str, cwd: Path, config: Path = CONTRACTS) -> subprocess.CompletedProcess[str]:
+    """Run heki of the environment (the heki dependency group installs it), with the contracts of the repository."""
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
-    command = [heki, "check", "--config", str(CONTRACTS), *args, "src"]
+    command = [heki, "check", "--config", str(config), *args, "src"]
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
 
 
@@ -224,6 +224,137 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
             (f"{PACKAGE}/parser/seeded.py", "users", "MUT203", "Reference.children", 1),
             (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", environment, 14),
             (f"{PACKAGE}/parser/seeded_env.py", "old_python", "EFF201", environment, 1),
+        ],
+    ), result.stderr
+
+
+SEEDED_CYCLES = {
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/body_a.py": "from datamodel_code_generator import body_b\n\nVALUE = body_b\n",
+    f"{PACKAGE}/body_b.py": "from datamodel_code_generator import body_a\n\nVALUE = body_a\n",
+    f"{PACKAGE}/function_a.py": "from datamodel_code_generator import function_b\n\nVALUE = function_b\n",
+    f"{PACKAGE}/function_b.py": (
+        "def load() -> object:\n    from datamodel_code_generator import function_a\n\n    return function_a\n"
+    ),
+    f"{PACKAGE}/typing_a.py": "from datamodel_code_generator import typing_b\n\nVALUE = typing_b\n",
+    f"{PACKAGE}/typing_b.py": (
+        "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from datamodel_code_generator import typing_a\n"
+    ),
+    f"{PACKAGE}/one_way_a.py": "from datamodel_code_generator import one_way_b\n\nVALUE = one_way_b\n",
+    f"{PACKAGE}/one_way_b.py": "VALUE = 1\n",
+}
+"""Three pairs of modules that import each other, by an import at module level, in a function and under
+``TYPE_CHECKING``, and a pair that imports one way."""
+MODULE_LEVEL_CYCLES = """\
+[lint]
+select = ["IMP101"]
+fail-on = "warning"
+
+[imports]
+cycle-edges = ["body"]
+"""
+"""heki's ``IMP101`` over the imports that run while their modules load, which the package holds to no cycle whatever
+the baseline of the contracts keeps: such a cycle inside a group of modules that already import each other adds no
+report of the contracts, which report a group once."""
+
+
+def _cycle_reports(result: subprocess.CompletedProcess[str]) -> list[tuple[str, str, str]]:
+    """Return the path, rule and target of each report of a heki run with JSON output."""
+    return sorted(
+        (Path(item["path"]).as_posix(), item["rule_code"], item["target"]) for item in json.loads(result.stdout)
+    )
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the guard of the package must fail the test, not be stored as an expected output")
+def test_the_package_has_no_import_cycle_that_runs_while_its_modules_load(tmp_path: Path) -> None:
+    """No import cycle of the package runs while its modules load: at module or class level, under a guard too."""
+    config = tmp_path / "module_level_cycles.toml"
+    config.write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
+
+    result = _heki("--output-format", "full", cwd=ROOT, config=config)
+
+    assert result.returncode == 0, (
+        "an import here runs while its module loads and closes an import cycle; move what its modules share into a "
+        "module that imports none of them\n" + result.stdout + result.stderr
+    )
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
+    """A cycle fails the check whether the import that closes it runs while its module loads, in a function or never.
+
+    Each report names the modules of its cycle, which a baseline entry keeps. The guard of the imports that run while
+    their modules load reports only the first.
+    """
+    for name, text in SEEDED_CYCLES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+    (config := tmp_path / "module_level_cycles.toml").write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
+
+    result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+    module_level = _heki("--output-format", "json", cwd=tmp_path, config=config)
+
+    body = (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b")
+    assert (result.returncode, _cycle_reports(result)) == (
+        1,
+        [
+            body,
+            (f"{PACKAGE}/function_b.py", "IMP101", f"{PACKAGE_NAME}.function_a, {PACKAGE_NAME}.function_b"),
+            (f"{PACKAGE}/typing_b.py", "IMP101", f"{PACKAGE_NAME}.typing_a, {PACKAGE_NAME}.typing_b"),
+        ],
+    ), result.stderr
+    assert (module_level.returncode, _cycle_reports(module_level)) == (1, [body]), module_level.stderr
+
+
+SEEDED_SHARED = {
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_schema_graph.py": (
+        'class Schema:\n    def __init__(self) -> None:\n        self.title = ""\n\n\n'
+        "class SchemaGraphBuilder:\n    def __init__(self) -> None:\n        self.shared = Schema()\n\n"
+        "    def schema(self) -> Schema:\n        return self.shared\n"
+    ),
+    f"{PACKAGE}/parser/reader.py": (
+        "from datamodel_code_generator.parser._schema_graph import Schema, SchemaGraphBuilder\n\n\n"
+        "def read(graph: SchemaGraphBuilder) -> str:\n    return graph.schema().title\n\n\n"
+        'def write(graph: SchemaGraphBuilder) -> None:\n    graph.schema().title = "written"\n\n\n'
+        "def write_through_a_helper(graph: SchemaGraphBuilder) -> None:\n    _rename(graph.schema())\n\n\n"
+        'def _rename(schema: Schema) -> None:\n    schema.title = "written"\n\n\n'
+        'def write_a_parameter(schema: Schema) -> None:\n    schema.title = "written"\n'
+    ),
+}
+"""A package whose ``reader.py`` reads, and writes, the object that ``SchemaGraphBuilder.schema`` shares.
+
+``write_through_a_helper`` hands the shared object to a function that writes it; ``write_a_parameter`` writes a
+parameter that no call of the package gives the shared object, which heki does not follow.
+"""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_a_write_of_an_object_the_schema_graph_shares(tmp_path: Path) -> None:
+    """A function that writes the object ``SchemaGraphBuilder.schema`` returns fails the check; a reader does not.
+
+    The write through a helper that is given the object fails too, as the helper is a function that mutates it.
+    """
+    for name, text in SEEDED_SHARED.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+
+    result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+
+    found = sorted(
+        (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            (f"{PACKAGE}/parser/reader.py", "write", "MUT202"),
+            (f"{PACKAGE}/parser/reader.py", "write_through_a_helper", "MUT202"),
         ],
     ), result.stderr
 
@@ -849,6 +980,17 @@ def test_store_members_name_a_method_or_a_bookkeeping_row(
         build_heki_contracts.store_member_contracts(repo)
 
     assert str(stopped.value) == message
+
+
+@pytest.mark.allow_direct_assert("a stale producer must stop the build, not be stored as an expected output")
+def test_shared_producers_name_a_function_the_package_defines() -> None:
+    """A ``SHARED_PRODUCERS`` row names a function its module defines."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.shared_object_contracts(repo, [("parser/_schema_graph.py", "SchemaGraphBuilder.gone")])
+
+    assert str(stopped.value) == "SHARED_PRODUCERS: parser/_schema_graph.py defines no function SchemaGraphBuilder.gone"
 
 
 SEEDED_DECISION_WRITES = {
