@@ -537,7 +537,7 @@
     },
     "apply_default_values_to_true_properties": {
       "not_recommended": "preset",
-      "reason": "With --default-values only: set by the 20261123 presets; the recommendation starts from a preset."
+      "reason": "With --default-values only: set by the 20261124 presets; the recommendation starts from a preset."
     },
     "base_class": {
       "not_recommended": "style",

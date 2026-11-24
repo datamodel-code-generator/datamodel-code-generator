@@ -1851,6 +1851,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         help="Give a property whose schema is `true` the default that --default-values gives it, in the class that "
         "declares it and in a child that restates an inherited property as `true` (`name: str | None = 'rex'` for "
         "`Dog.name`); without it such a property takes no default, as in 0.100.0",
+        preset=PresetJoin(
+            "20261124",
+            {"apply_default_values_to_true_properties": True},
+            title="Default values of true properties",
+            description=(
+                "Under --default-values, give a property whose schema is true the default its Class.field or field "
+                "key gives it, also where a child restates an inherited property as true, as a property whose schema "
+                "is {} takes it."
+            ),
+        ),
     ),
     flag(
         (Section.FIELD, _C.MODEL),

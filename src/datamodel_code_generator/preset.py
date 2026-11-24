@@ -295,6 +295,19 @@ class PresetName(str, Enum):
     PracticalPy31420261123 = "practical-py314-20261123"
     PracticalPy31520261123 = "practical-py315-20261123"
 
+    StandardPy31020261124 = "standard-py310-20261124"
+    StandardPy31120261124 = "standard-py311-20261124"
+    StandardPy31220261124 = "standard-py312-20261124"
+    StandardPy31320261124 = "standard-py313-20261124"
+    StandardPy31420261124 = "standard-py314-20261124"
+    StandardPy31520261124 = "standard-py315-20261124"
+    PracticalPy31020261124 = "practical-py310-20261124"
+    PracticalPy31120261124 = "practical-py311-20261124"
+    PracticalPy31220261124 = "practical-py312-20261124"
+    PracticalPy31320261124 = "practical-py313-20261124"
+    PracticalPy31420261124 = "practical-py314-20261124"
+    PracticalPy31520261124 = "practical-py315-20261124"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -680,6 +693,7 @@ _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]]
     "20261118": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261120": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261123": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261124": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1505,6 +1519,12 @@ _STANDARD_20261123_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261120 groups and the groups of the options whose rows join the 20261123 presets, in the order of 0.101.0."""
 
+_STANDARD_20261124_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261123_OPTION_GROUPS,
+    *_joined_groups("20261124"),
+)
+"""The 20261123 groups and the groups of the options whose rows join the 20261124 presets."""
+
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
     "20260826": _STANDARD_20260826_OPTION_GROUPS,
@@ -1520,6 +1540,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261118": _STANDARD_20261118_OPTION_GROUPS,
     "20261120": _STANDARD_20261120_OPTION_GROUPS,
     "20261123": _STANDARD_20261123_OPTION_GROUPS,
+    "20261124": _STANDARD_20261124_OPTION_GROUPS,
 }
 
 
