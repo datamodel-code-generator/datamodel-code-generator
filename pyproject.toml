@@ -199,7 +199,7 @@ build.targets.sdist.include = [
 
 [tool.uv]
 exclude-newer = "3d"
-exclude-newer-package = { heki = false }
+exclude-newer-package = { datamodel-code-generator = false, heki = false }
 conflicts = [
   [
     { group = "blacklatest" },
