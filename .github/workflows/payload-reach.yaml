@@ -33,6 +33,7 @@ jobs:
           persist-credentials: false
       - name: List the payload inputs the pull request adds or modifies
         id: inputs
+        shell: bash
         run: |
           inputs=$(python3 scripts/related_tests.py --base "origin/$BASE_REF" --head HEAD --paths-of payload-inputs | paste -sd:)
           echo "inputs=$inputs" >> "$GITHUB_OUTPUT"
