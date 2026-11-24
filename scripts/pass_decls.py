@@ -228,8 +228,12 @@ SORT_DATA_MODELS = PassDecl(
     Scope.GLOBAL,
     PassKind.PLAN,
     reads=_facts(Fact.BASES, Fact.FIELD_TYPES, RenderFact.MODEL_ORDER),
-    writes=_facts(RenderFact.MODEL_ORDER),
+    writes=_facts(RenderFact.MODEL_ORDER, RenderFact.PLANS),
     summary="Orders models by dependency and lists those that need forward-reference updates.",
+    after=(
+        After("settle_yielding_names", "both write plans; the recursion facts are listed for the named models"),
+        After("name_models", "both write plans; the recursion facts are listed for the named models"),
+    ),
 )
 RECORD_SOURCE_REFERENCE_PATHS = PassDecl(
     "record_source_reference_paths",
@@ -337,6 +341,7 @@ REUSE_MODEL_TREE_SCOPE = PassDecl(
         Fact.NULLABLE,
         RenderFact.MODULE_MEMBERSHIP,
         RenderFact.CLASS_NAMES,
+        RenderFact.PLANS,
     ),
     after=(
         After("apply_forced_invalid_dotted_stdout_repair", "shares the duplicates of the repaired module layout"),
@@ -451,8 +456,18 @@ OVERRIDE_REQUIRED_FIELD = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.REQUIRED, Fact.DEFAULTS),
-    writes=_facts(Fact.FIELD_SET, Fact.REQUIRED, Fact.DEFAULTS),
+    writes=_facts(Fact.FIELD_SET, Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.REQUIRED, Fact.DEFAULTS),
     summary="Replaces inherited placeholders by copies of the inherited fields.",
+    after=(
+        After(
+            "record_decimal_alias_models",
+            "restoring inherited names swaps names within a model, so the names the Decimal check read stay",
+        ),
+        After(
+            "alias_shadowed_imports",
+            "restoring inherited names swaps names within a model, so the names the import aliases read stay",
+        ),
+    ),
 )
 REPLACE_UNIQUE_LIST_TO_SET = PassDecl(
     "replace_unique_list_to_set",
@@ -505,7 +520,7 @@ REUSE_MODEL = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.PLANS),
-    writes=_facts(Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE),
+    writes=_facts(Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.PLANS),
     after=(
         After("set_reference_default_value_to_field", "compares models with their final defaults"),
         After("extract_inherited_enum", "compares models after inherited enums became models of their own"),
@@ -552,6 +567,7 @@ COLLAPSE_ROOT_MODELS = PassDecl(
         Fact.METADATA,
         RenderFact.CLASS_NAMES,
         RenderFact.MODULE_IMPORTS,
+        RenderFact.PLANS,
     ),
     after=(
         After("reuse_model", "inlines the root models that reuse keeps"),
@@ -737,7 +753,13 @@ TYPE_DICT_KEYS_BY_ROOT_TYPES = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_TYPES, Fact.CONSTRAINTS, Fact.MODEL_KIND, Fact.METADATA, RenderFact.MODULE_MEMBERSHIP),
-    writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.BACKEND_CONFIG),
+    writes=_facts(
+        Fact.FIELD_TYPES,
+        Fact.CONSTRAINTS,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+        RenderFact.BACKEND_CONFIG,
+    ),
     after=(After("apply_field_type_overrides", "types dict keys after field types are overridden"),),
     summary="Types each dict key that names a root model whose instances cannot be dict keys by its root type.",
 )
