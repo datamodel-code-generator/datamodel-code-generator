@@ -1,9 +1,0 @@
-[[change]]
-id = "read-mapping-keys-by-schema-tag-type-old-pydantic"
-extends = "read-mapping-keys-by-schema-tag-type"
-covers = [
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_var~43493e6e.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_var~8f443982.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~3916884d.txt",
-    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~7020ccbe.txt",
-]

@@ -1,0 +1,349 @@
+# The changes of 0.101.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "allof-enum-member-root-enum-class"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "A named allOf whose merged root is an enum class is written as that enum"
+summary = "A named allOf of an untyped constraint $ref and a typed enum member, such as allOf: [{$ref: ThreeLetters}, {type: string, enum: [GBP, JPY]}], stopped with \"a $ref chain that loops back\" for Pydantic and msgspec output, and under --collapse-root-models and the presets wrote a field or a root model that accepted no value of the enum; it is now written as its enum class, which accepts the values of the enum. Standard dataclasses keep Any without --intersect-merged-allof-members."
+refs = ["#7399", "#7314"]
+decision = ["#7314"]
+
+[[change]]
+id = "allof-parents-as-their-models-api"
+category = "api"
+title = "Public names for --read-allof-parents-as-their-models and --read-set-item-fields-in-class-order"
+summary = "The options add their config fields; nothing is removed or changed."
+refs = ["#7400"]
+decision = ["#7400"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+
+[[change]]
+id = "asyncapi-handshake-model-defaults"
+category = "experimental"
+title = "AsyncAPI handshake parameters take the default of their model field"
+summary = "A WebSocket handshake query or header parameter of a generated AsyncAPI client took the default at the end of its whole `$ref` chain, while the models take a referenced default one reference deep. The parameter now takes the default of its model field, so both agree: two references deep, or under --collapse-root-models or --ignore-ref-siblings-by-schema-version, the argument has no default where the model field has none."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#6975"]
+affects = { experimental = ["cli-option.generate-client"] }
+
+[[change]]
+id = "asyncapi-multi-format-schema-references"
+category = "experimental"
+title = "A reference to a component Multi Format Schema Object names the schema it holds"
+summary = "A payload, headers or component $ref to a Multi Format Schema Object in components.schemas, also through component aliases, is typed by the JSON Schema the object holds: the RootModel[Any] read from the wrapper (NoteModel) is gone, the payload, headers and alias classes are root models over the held model, and the held model takes the component's name where the wrapper took it before (Tag1 is Tag)."
+refs = ["#6936"]
+decision = ["#6936"]
+kind = "experimental"
+action = "review"
+source = "release-note"
+affects = { experimental = ["input-format.asyncapi"] }
+
+[[change]]
+id = "asyncapi-readers-shared-public-names"
+category = "api"
+decision = ["#6937"]
+action = "review"
+source = "release-note"
+kind = "python-api"
+affects = { python_api = ["datamodel_code_generator.parser.asyncapi.JSON_SCHEMA_FORMATS"] }
+title = "Public name of the AsyncAPI JSON Schema media types lists application/schema"
+summary = "parser.asyncapi.JSON_SCHEMA_FORMATS gains the bare application/schema media type; the models are written as before."
+refs = ["#6937"]
+
+[[change]]
+id = "asyncapi-readers-shared"
+category = "experimental"
+title = "AsyncAPI input reads schemas through the shared document readers"
+summary = "An AsyncAPI document registers its component schemas, and the schema a component Multi Format Schema Object holds, as schema resources, so plain-name anchors resolve; application/schema is a JSON Schema schemaFormat. Both inputs failed before."
+refs = ["#6841", "#6937"]
+decision = ["#6841"]
+kind = "experimental"
+action = "none"
+source = "release-note"
+affects = { experimental = ["input-format.asyncapi"] }
+
+[[change]]
+id = "bug-cli-check-formatter-context-fix"
+category = "api"
+title = "A check or JSON run reads a custom formatter's relative paths where the output lies"
+summary = "--check and --output-format json build the custom formatter in the directory of the real output, as the run that writes does, so a relative path of --custom-formatters-kwargs is found; they built it in a staging directory, where it was not."
+refs = ["#6945"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-cli-config-keys-warning"
+category = "api"
+title = "A Pydantic v2 model warns for the config keys it leaves out of model_config"
+summary = "A key of the config entry of --extra-template-data that pydantic_v2.BaseModel does not write, such as validate_assignment, was dropped without a message; the generation now warns and names the keys the model writes. The output is unchanged."
+refs = ["#7001"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-cli-hidden-binary-inputs"
+category = "api"
+title = "A directory input skips hidden files that are not text"
+summary = "A hidden file of a directory input (a name or a directory below the input that starts with a dot) whose first bytes hold a NUL byte, such as the .DS_Store file Finder writes, is no longer read as a schema, so generation no longer stops with Invalid file format; a hidden file that reads as text stays an input."
+refs = ["#7128"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-cli-hidden-inputs-output"
+category = "default-fix"
+title = "A directory input with hidden files that are not text generates the same models"
+summary = "The stored outputs of the directory inputs with hidden files; the models are the same as without those files."
+refs = ["#7128"]
+decision = ["#7398"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-cli-late-warnings-once"
+category = "api"
+title = "A stdout run with a repaired dotted schema name shows the warnings of the last passes once"
+summary = "Output to stdout that needs the repair of a dotted schema name parses the input again; that parse no longer repeats the warnings of the last passes, such as the dropped pattern of an AnyUrl or the serialized Decimal default."
+refs = ["#6926"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-cli-watch-argument-input"
+category = "api"
+title = "A watch holding the remote lock watches the input an argument gives"
+summary = "A run with --watch that holds the remote lock watches the path of --input, not the input of pyproject.toml."
+refs = ["#7047"]
+decision = ["#7398"]
+kind = "cli"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-g116-json-bytes-api"
+category = "api"
+title = "Name the strict default recipes and whether a model reads JSON bytes as UTF-8 text"
+summary = "reads_json_bytes_as_text() of the Pydantic v2 models tells whether validating a model reads bytes from JSON text as the text's UTF-8 bytes: True where the config it applies is known (no configured base class the generator cannot read), as the generator writes no val_json_bytes. DataTypeManager.STRICT_DEFAULT_VALUE_RECIPES and get_strict_default_value_recipe() give the recipe (new DefaultValueRecipe members Bytes, Date, Time and DateTime) of the strict bytes, date, time and datetime types whose JSON value is written as its Python value in a default Pydantic validates; GraphBuilder.set_field_runtime_default() writes such a default with the imports its runtime expressions name. Strict bytes are written as bytes only where a Pydantic v2 model answers True."
+refs = ["#7420"]
+decision = ["#7420"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-g116-strict-string-defaults"
+category = "default-fix"
+title = "A default Pydantic validates holds the values strict types read from its JSON text"
+summary = "With --strict-types bytes, datetime, date, time or a strict Decimal, a field whose type names a model and whose default holds the text or number of a JSON document was written Field(<default>, validate_default=True). Pydantic validates that default as Python input, where strict mode refuses the JSON value, so every instance that left the field out failed. The default is now written as the values Pydantic reads from the JSON default: bytes for a strict bytes, datetime_module.date.fromisoformat(...) and the like for an RFC 3339 date, time or datetime, Decimal(...) for a strict Decimal, through root models, objects, lists, sets, tuples and mappings. validate_default stays, so Pydantic still validates the value; text that is no RFC 3339 date or time, a value under a union of several types, bytes under a configured base class the generator cannot read and an object key the field is not written to read are left as written, so Pydantic reports them as before. Only outputs that failed at every construction without the field change; model_json_schema() shows the default as Pydantic serializes the converted value."
+refs = ["#7420", "#7380"]
+decision = ["#7420"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "client-codec-enum-kinds"
+category = "experimental"
+title = "Generated dataclass clients decode boolean and number enums inside a union"
+summary = "In a union, the dataclasses.dataclass client codec read an enum's JSON kinds from its string and integer values alone, so a boolean or float enum decoded to the raw value and accepted values outside the enum. It now reads the kind of every value: `false` of `enum: [false]` decodes to the member and `true` is refused, as in Pydantic clients. A union of an open number or boolean enum and a plain number or boolean is now refused at generation, as open string and integer enums already were."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7014"]
+affects = { experimental = ["cli-option.generate-client"] }
+
+[[change]]
+id = "client-field-null-arguments"
+category = "experimental"
+title = "Client field arguments keep the None of a nullable field"
+summary = "Field arguments (`--client-body-arguments both`) and the other client and server plans now type a field with the None its model accepts where the schema admits null, also when the null sits on the field rather than in its type: a nullable map with `patternProperties` or `propertyNames`, and OpenAPI 3.0 `nullable: true` references, maps and arrays. `labels: {type: [object, 'null'], patternProperties: ...}` now gives `labels: dict[str, str] | None` where it gave `dict[str, str]`. A union of several part or payload types writes None once, last."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7348"]
+affects = { experimental = ["cli-option.generate-client"] }
+
+[[change]]
+id = "client-wire-null-nullable-false"
+category = "experimental"
+title = "Helper selectors read the null a field's own type accepts beside nullable: false"
+summary = "A helper selector of a generated client read no null for a field declared `nullable: false` whose own type accepts null (`allOf: [{$ref: MaybeText}]`, MaybeText nullable), except through a type alias, so the result depended on --use-type-alias. The models accept null in both forms, so the selector now reads it in both, and a root model's null counts like an alias's: a cursor over such a field needs a `{kind: null}` end condition with and without --use-type-alias."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7115"]
+affects = { experimental = ["cli-option.generate-client"] }
+
+[[change]]
+id = "client-wrapped-union-discriminator"
+category = "experimental"
+title = "Generated dataclass and TypedDict clients read a nullable discriminated union by its own discriminator"
+summary = "A property, array item or map value typed as a discriminated union or null (`anyOf: [{$ref: D}, {type: 'null'}]` with `D` a `oneOf` with a `discriminator`) stopped generation of dataclasses.dataclass and typing.TypedDict clients with 'needs a declared discriminator'. The codec now reads each model by the discriminator of the union it comes from, as it already did for `D` alone; several such unions join their declarations when they share the property."
+kind = "experimental"
+action = "review"
+source = "release-note"
+refs = ["#7303"]
+affects = { experimental = ["cli-option.generate-client"] }
+
+[[change]]
+id = "held-resources-generation-warnings"
+category = "notice"
+title = "Warnings of a run that reads a held schema where its URL loads nothing"
+summary = "A run that failed on the read of a URL another document of the run declares now generates, so it shows the warnings of the generation it reaches, such as the notice that Black and isort become optional and the warnings of references resolved for compatibility, and a modular result written to standard output stops with the message that it needs an output directory."
+refs = ["#7159", "#6999"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "held-resources-read-where-their-url-loads-nothing"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Read a held schema where the URL that names it loads nothing"
+summary = "A reference to a URL that another document of the run declares (an embedded OpenAPI component $id, the root $id of a sibling input, a local document a remote one refers back to) reads that schema where reading the URL fails, instead of exiting with an HTTP or store error; a local document entered from a remote one resolves its references from its own location. A URL that serves a document is still read, as in 0.100.0."
+refs = ["#7159", "#6999"]
+decision = ["#7159", "#6999"]
+
+[[change]]
+id = "input-model-unserializable-fields-of-held-classes"
+category = "default-fix"
+title = "--input-model keeps the Python type of an unserializable field in every held class"
+summary = "A field JSON Schema cannot express, such as a Callable, kept its Python type (callback: Callable[[int], int]) only in a Pydantic model; in a dataclass, TypedDict, Pydantic dataclass or RootModel that the model holds it became str, which refused every valid value, and with --field-include-all-keys the id() of a schema reached the output as x-python-unserializable, a different number on every run. The field now keeps its type, found by the class the schema generation recorded for the definition, so two same-named classes keep their own fields. Class and field names stay."
+refs = ["#7433", "#6885"]
+decision = ["#7433"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "intersect-merged-allof-members-api"
+category = "api"
+title = "Public names for --intersect-merged-allof-members"
+summary = "The option adds its config fields and the PresetName members and preset_names entries of the 20261123 presets; nothing is removed or changed."
+refs = ["#7399"]
+decision = ["#7399"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"
+
+[[change]]
+id = "keep-string-keywords-beside-formats-api"
+category = "api"
+title = "Public names for --keep-string-keywords-beside-formats"
+summary = "The option adds its config fields; nothing is removed or changed."
+refs = ["#7198", "#7345", "#7181"]
+decision = ["#7198", "#7345", "#7181"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+
+[[change]]
+id = "lone-variant-root-model-tag"
+category = "output-text"
+kind = "output-text"
+action = "none"
+source = "release-note"
+title = "A lone variant's RootModel tag writes no discriminator unless the target is Pydantic 2.14"
+summary = "A union of one variant whose tag field is a RootModel of a Literal (a $ref to a const or one-value enum) is written without discriminator= unless --target-pydantic-version is 2.14, as Pydantic reads a tag through a RootModel only from 2.13 and the module failed to import on the releases an unset or older target allows (#7327); on Pydantic 2.13 and later the union accepts and rejects the same payloads, and class names, fields and parsed values stay."
+refs = ["#7405", "#7327"]
+
+[[change]]
+id = "read-mapping-keys-api"
+category = "api"
+kind = "python-api"
+action = "review"
+source = "release-note"
+title = "Public names for the 20261123 presets and the mapping-key option"
+summary = "The option adds its config fields (GenerateConfig, ParserConfig and their dicts), the PresetName members and preset_names entries of the 20261123 presets, and the requirement row pydantic.root_model_tag (Pydantic 2.13); nothing is removed or changed."
+refs = ["#7405"]
+decision = ["#7405"]
+
+[[change]]
+id = "read-refs-in-their-resources-api"
+category = "api"
+title = "Public names for --read-refs-in-their-resources"
+summary = "The option adds its config fields and the PresetName members and preset_names entries of the 20261123 presets; nothing is removed or changed."
+refs = ["#6946"]
+decision = ["#6946"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"
+
+[[change]]
+id = "reuse-same-named-input-model-classes"
+category = "default-fix"
+title = "--input-model reuse imports the class a definition comes from"
+summary = "With `--input-model-ref-strategy reuse-all` or `reuse-foreign`, a field whose type is one class (`item: Item` of `shop.Item`) was typed by another class of that name that the model's fields also name, such as `type[legacy.Item]` or a nested `Legacy.Item` (`item: legacy.Item`), which refused every valid value. It is now typed by its own class (`from shop import Item`), also for a dataclass or TypedDict input and for the fields of a parent model; this is the output of 0.75.0. Every imported name keeps the class it named in 0.100.0 (here `Item` is `shop.Item` and `Item1` is `legacy.Item`), so `from <generated module> import Item` is unchanged. Class and field names stay; schema-valid documents that were refused now validate. Code that passed an object of the other class (a `legacy.Item`) to such a field, against the schema, is now refused."
+refs = ["#7390", "#6883"]
+decision = ["#7390"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "strict-date-time-types-api"
+category = "api"
+title = "Public names for the strict date and time types"
+summary = "The StrictTypes members datetime, date and time, the Pydantic import IMPORT_STRICT and the data type StrictAnnotatedDataType are added, and PROMPT_GUIDANCE_SECTIONS lists the new values; nothing is removed."
+refs = ["#2500"]
+decision = ["#2500"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.types.StrictTypes"] }
+source = "release-note"
+
+[[change]]
+id = "union-map-key-root-models"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "A map key names the root type of its RootModel members"
+summary = "A map key that is a union (propertyNames anyOf or oneOf) whose members are all RootModels, a one-member wrapper of a RootModel included, was written with the RootModel class, which Pydantic cannot use as a dict key, so every key the union accepts raised TypeError. The members are now written as their root types, as a key that names the RootModel alone is; the class itself stays. A union key with a member that is no RootModel (a str, a constr call, an enum, Any) keeps the RootModel class unless --use-root-types-for-mixed-union-map-keys is set."
+refs = ["#7434"]
+decision = ["#7434"]
+
+[[change]]
+id = "use-root-types-for-mixed-union-map-keys-api"
+category = "api"
+title = "Public names for --use-root-types-for-mixed-union-map-keys"
+summary = "The option adds its config fields; nothing is removed or changed."
+refs = ["#6933"]
+decision = ["#6933"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+
+[[change]]
+id = "variant-tags-that-admit-null"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "Discriminated variants whose tag also admits null"
+summary = "A union that writes discriminator= over a variant whose tag field admits None is written without it, as Pydantic reads no such tag and the module failed to import (#7102); a null in the variant's enum is no tag, so it takes the enum's values instead of its schema name or, inline, the internal path marker (#7357), and an inline msgspec variant of several values takes them in its tag field and stays untagged. Variant classes keep their names, fields and the null their schema admits."
+refs = ["#7405", "#7102", "#7357"]
+decision = ["#7405"]
