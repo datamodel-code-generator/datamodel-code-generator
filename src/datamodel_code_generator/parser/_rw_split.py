@@ -288,8 +288,8 @@ class RwSplitHost(AllOfValuesHost, Protocol):
     ) -> None:
         """Resolve an inherited schema default in the derived class scope."""
 
-    @staticmethod
     def _copy_inherited_field(
+        self,
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
         *,

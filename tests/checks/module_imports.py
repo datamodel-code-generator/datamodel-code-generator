@@ -1,7 +1,9 @@
 """``MODULE_IMPORTS``: every module's imports are what its import ledger replays, and what its import plan holds.
 
 The imports of every module, and those all modules share, equal the replay of their ledger entries when the module's
-import text is written, so a write that bypasses ``ModuleImportLedger`` fails. After the last rename, each module's
+import text is written, so a write that bypasses ``ModuleImportLedger`` fails: also a write heki's contract
+``imports-through-the-ledger`` cannot see, an entry or attribute of an ``Imports`` changed in place or a call on a
+value heki cannot tie to a class. After the last rename, each module's
 import plan (``ModuleImportPlan``) is made from the final names (``NameTable``): its own models by their class names,
 those of other modules through imports whose names ``allocate_bindings`` gives from the names the module asked for
 through the ledger (``NameLog``). The module must write for each model it names what the plan writes, and its imports

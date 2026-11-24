@@ -168,8 +168,8 @@ if TYPE_CHECKING:
         RenderInputs,
         RenderReady,
     )
-    from datamodel_code_generator.model._views import FieldView, ModelForm
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
+    from datamodel_code_generator.types import ModelForm
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
 
@@ -2348,7 +2348,12 @@ def _classify_field_assignment(
     return classify_assignment(_assignment_inputs(field, row, written))
 
 
-def _field_source_name(field: FieldView) -> str | None:
+def _model_of_reference(reference: Reference) -> DataModel | None:
+    """Return the model a reference names, as the written output holds it, or None when it names no model."""
+    return source if isinstance(source := reference.source, DataModel) else None
+
+
+def _field_source_name(field: DataModelFieldBase) -> str | None:
     """Return the name the schema gives the field: its original name, else its name."""
     return field.original_name if field.original_name is not None else field.name
 

@@ -332,82 +332,7 @@ def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_
         reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
         writes=frozenset(written),
     )
-    return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
-
-
-def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
-    """Return a registry of one decision ``name`` that reads defaults and writes nothing, running ``run``."""
-    return _decide_writing(name, run)
-
-
-READ: list[str] = []
-STASHED: list[Any] = []
-
-
-def _read_facts_and_render_facts(facts: Any, _writer: Any) -> None:
-    """Read facts of every field through the views, then render facts: a marker, a name, a key of ``__dict__``."""
-    STASHED.append(facts)
-    READ.append(f"{len(set(facts.live_models))} live models")
-    for model in facts.live_models:
-        READ.append(f"{len(model.fields)} fields in a {type(model.fields).__name__}")
-        for field in model.fields:
-            data_type = field.data_type
-            READ.append(
-                f"{field.name}: {data_type.type}, admits None {data_type.admits_none}, same view "
-                f"{data_type == field.data_type}, equals its type name {data_type == data_type.type}, "
-                f"default factory {field.extras.get('default_factory')}, extras {sorted(field.extras)}"
-            )
-            READ.append(f"is_optional {data_type.is_optional}, kw_only {field.extras.get('kw_only')}")
-            READ.append(f"forced {field.__dict__.get('_forced_field_assignment')}")
-        READ.append(f"{model.class_name} named {model.reference.name}")
-
-
-class RenderReadingParser(JsonSchemaParser):
-    """Runs a decision that reads render facts, and reads a name through its facts once the modules are finalized."""
-
-    _DECISION_PASSES = _decide("read_render_facts", _read_facts_and_render_facts)
-
-    def _finalize_modules(self, *args: Any, **kwargs: object) -> None:
-        super()._finalize_modules(*args, **kwargs)
-        READ.append(f"after the decisions: {STASHED[-1].live_models[0].class_name}")
-
-
-class NameReadingParser(JsonSchemaParser):
-    """Runs a decision that reads the name of each model."""
-
-    _DECISION_PASSES = _decide(
-        "read_names", lambda facts, _writer: READ.extend(m.class_name for m in facts.live_models)
-    )
-
-
-def test_fact_finality_reports_render_facts_that_decisions_read(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """A decision reads facts through views; each render fact it reads is reported, and so is one read later.
-
-    A render fact is an attribute, or a key of ``extras`` or ``__dict__``, that holds no fact final at B1.
-    """
-    report = tmp_path / "violations.jsonl"
-    _finality_only(monkeypatch, f"report:{report}")
-    READ.clear()
-
-    RenderReadingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
-
-    assert_output("".join(f"{line}\n" for line in READ), name="read")
-    assert_output(_reported(report), name="violations")
-
-
-def test_fact_finality_raises_at_the_first_render_fact_a_decision_reads(monkeypatch: pytest.MonkeyPatch) -> None:
-    """When the check raises, the first render fact a decision reads stops the generation, naming the decision."""
-    _finality_only(monkeypatch, "1")
-    READ.clear()
-
-    with pytest.raises(
-        CheckFailure,
-        match=rf"^{CHECK_FACT_FINALITY_ENV}: read_names render-read: DataModel\.class_name \(CLASS_NAMES\) of Person "
-        r"during DECIDE$",
-    ):
-        NameReadingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
+    return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, run),)
 
 
 MODELS: list[DataModel] = []
@@ -419,39 +344,6 @@ class CapturingParser(JsonSchemaParser):
     def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
         MODELS[:] = models
         return super()._process_single_module(module_, models, *args)
-
-
-def _iterate_names(form: str) -> Callable[[Any, Any], None]:
-    """Return a decision that reaches the keys of the ``__dict__`` of the first field only through ``form``."""
-
-    def run(facts: Any, _writer: Any) -> None:
-        MODELS[0].fields[0].__dict__["_forced_field_assignment"] = True
-        keys = facts.live_models[0].fields[0].__dict__
-        READ.append(
-            {
-                "iter": lambda: str(list(iter(keys))),
-                "len": lambda: str(len(keys)),
-                "keys": lambda: str(list(keys.keys())),
-                "items": lambda: str(len(list(keys.items()))),
-                "contains": lambda: str("_forced_field_assignment" in keys),
-            }[form]()
-        )
-
-    return run
-
-
-@pytest.mark.parametrize("form", ["iter", "len", "keys", "items", "contains"])
-def test_fact_finality_reports_render_facts_that_decisions_iterate(monkeypatch: pytest.MonkeyPatch, form: str) -> None:
-    """Iterating, counting, listing or testing the keys of a dict attribute reports its render-fact keys."""
-    READ.clear()
-
-    class IteratingParser(CapturingParser):
-        _DECISION_PASSES = _decide("iterate_keys", _iterate_names(form))
-
-    _finality_only(monkeypatch, "1")
-
-    with pytest.raises(CheckFailure, match=rf"^{CHECK_FACT_FINALITY_ENV}: iterate_keys render-read: .* during DECIDE$"):
-        IteratingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
 
 
 def _write_default(_facts: Any, _writer: Any) -> None:

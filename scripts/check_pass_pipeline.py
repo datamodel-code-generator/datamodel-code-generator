@@ -14,10 +14,7 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
 * the decision registry of ``Parser`` and of every parser class that sets one (``_DECISION_PASSES``) holds global
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
-  their issue, have writer protocols that ``_DecisionWriter`` implements, and satisfy the order rule, which computes
-  the order the registry lists them in;
-* every member of the views of ``model/_views.py`` reads an ``ATTRIBUTE_FACTS`` row of its class that holds a fact
-  final at B1, or that holds no fact (identity), unless ``VIEW_ACCESSORS`` lists it;
+  their issue, and satisfy the order rule, which computes the order the registry lists them in;
 * every ``warn()`` of the parser, model and type modules whose ``stacklevel`` reaches past its caller is listed in
   ``DEEP_WARNINGS`` with the frame it names, so that a warning the pipeline would attribute to its own frames shows.
 
@@ -41,8 +38,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
-from typing_extensions import get_protocol_members
-
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 PACKAGE = SRC / "datamodel_code_generator"
@@ -52,21 +47,10 @@ for path in (SRC, ROOT):
         sys.path.insert(0, str(path))
 
 from datamodel_code_generator.__main__ import main as generate_main  # noqa: E402
-from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
-    DataTypeView,
-    FieldView,
-    ModelView,
-    ReferenceView,
-)
 from datamodel_code_generator.parser._facts import Phase  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._passes import _tables  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._passes._tables import PIPELINE  # noqa: E402, PLC2701
-from datamodel_code_generator.parser._phases import (  # noqa: E402, PLC2701
-    DecisionPass,
-    DecisionWriter,
-    FinalFacts,
-    _DecisionWriter,
-)
+from datamodel_code_generator.parser._phases import DecisionPass, FinalFacts  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     ForEachModule,
     HookCall,
@@ -76,7 +60,7 @@ from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
 )
 from datamodel_code_generator.parser.base import Parser  # noqa: E402
 from scripts._source_model import SourceModule  # noqa: E402
-from scripts.fact_tables import ATTRIBUTE_FACTS, Fact, RenderFact  # noqa: E402
+from scripts.fact_tables import Fact, RenderFact  # noqa: E402
 from scripts.pass_decls import (  # noqa: E402
     BOUNDARY_BEFORE,
     DECISION_DECLS,
@@ -88,7 +72,6 @@ from scripts.pass_decls import (  # noqa: E402
     PassKind,
     Scope,
 )
-from tests.checks.finality import _reads_render_fact  # noqa: E402, PLC2701
 from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: E402
 
 if TYPE_CHECKING:
@@ -99,7 +82,6 @@ __all__ = [
     "DECISION_DECLS",
     "After",
     "DecisionPass",
-    "DecisionWriter",
     "Fact",
     "FinalFacts",
     "OrderCheck",
@@ -387,17 +369,15 @@ def _reaches(successors: Mapping[str, set[str]], start: str, goal: str) -> bool:
 
 
 def decision_order(
-    decisions: Sequence[DecisionPass[Any]], decls: Mapping[str, PassDecl] = DECISION_DECLS
-) -> tuple[DecisionPass[Any], ...]:
+    decisions: Sequence[DecisionPass], decls: Mapping[str, PassDecl] = DECISION_DECLS
+) -> tuple[DecisionPass, ...]:
     """Return ``decisions`` in the order the order rule computes from ``decls``, registration breaking ties."""
     by_name = {decision.spec["name"]: decision for decision in decisions}
     order = check_order([decls[decision.spec["name"]] for decision in decisions], computed=True).order
     return tuple(by_name[name] for name in order)
 
 
-def decision_problems(
-    decisions: Sequence[DecisionPass[Any]], decls: Mapping[str, PassDecl] = DECISION_DECLS
-) -> list[str]:
+def decision_problems(decisions: Sequence[DecisionPass], decls: Mapping[str, PassDecl] = DECISION_DECLS) -> list[str]:
     """Return what is wrong with one decision registry, against ``decls`` and the rules of the decision phase."""
     problems: list[str] = []
     table = {decl.name for decl in PASS_DECLS}
@@ -420,10 +400,6 @@ def decision_problems(
             problems.append(f"decision {name} reads or writes {', '.join(render)}: decisions read and write facts")
         if not decision.spec["issue"]:
             problems.append(f"decision {name} names no issue")
-        if DecisionWriter not in decision.writer.__mro__:
-            problems.append(f"decision {name} writes through {decision.writer.__name__}, no DecisionWriter")
-        elif missing := sorted(get_protocol_members(decision.writer) - set(dir(_DecisionWriter))):
-            problems.append(f"decision {name} writes through {', '.join(missing)}, which _DecisionWriter lacks")
     if len(seen) == len(decisions) and seen <= decls.keys():
         result = check_order([decls[decision.spec["name"]] for decision in decisions], computed=True)
         problems.extend(f"decision phase: {problem}" for problem in result.problems)
@@ -449,72 +425,6 @@ def registry_problems() -> list[str]:
         if cls.__module__.startswith("datamodel_code_generator.") and "_DECISION_PASSES" in vars(cls)
         for problem in decision_problems(cls._DECISION_PASSES)
     ]
-
-
-VIEW_OWNERS: dict[type[Any], str] = {
-    DataTypeView: "DataType",
-    FieldView: "DataModelFieldBase",
-    ModelView: "DataModel",
-    ReferenceView: "Reference",
-}
-"""The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
-VIEW_ACCESSORS = {
-    "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
-    "DataTypeView._renders_none": (
-        "the type, the name a type override gives it, the reference, the literals and the container kind of the type"
-        " and of its one member, final at B1: the names import binding and forward references give later go to types"
-        " that name a model"
-    ),
-    "DataTypeView._writes_nothing_of_its_own": (
-        "the type, the name a type override gives it, the reference and the container kind, final at B1: the names"
-        " import binding and forward references give later go to types that name a model"
-    ),
-    "FieldView.nullable_without_default": (
-        "the nullability the parse records without the default (NULLABLE_WITHOUT_DEFAULT_KEY), else NULLABLE, final"
-        " at B1"
-    ),
-    "ModelView.effective_fields": (
-        "the fields of the model and of its bases in C3 order (BASES, FIELD_SET), final at B1"
-    ),
-    "ModelView.additional_properties_type": (
-        "the type of the additional properties that the parser stores for the settings of the class (TypedDict"
-        " extra_items), whose nodes are field types, final at B1"
-    ),
-    "FieldView.union_sibling_constraints": "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
-    "FieldView.written_constraints": "the CONSTRAINTS its call writes for its field type, final at B1",
-    "ModelView.form": "the model kind, final at B1",
-    "ModelView.has_length": (
-        "the sequence interface a root model takes where it is parsed (L1) and the container kind of its root type,"
-        " final at B1"
-    ),
-    "ModelView.holds_null": "the model kind, and the nullability of its root type or its enum members, final at B1",
-    "ModelView.set_item_hash": (
-        "the model kind, the dataclass decorator, the struct options of its chain and the class and field types of a"
-        " frozen Pydantic class, final at B1"
-    ),
-    "ModelView.value_base": "the model kind and the base classes of an enum, final at B1",
-}
-"""The view members that read no row of their own, each with what it reads."""
-
-
-def view_problems() -> list[str]:
-    """Return the view members that read a render fact, read no row, or that ``VIEW_ACCESSORS`` lists for nothing."""
-    rows = {(row.owner, row.attribute): row for row in ATTRIBUTE_FACTS}
-    problems: list[str] = []
-    members: set[str] = set()
-    for view, owner in VIEW_OWNERS.items():
-        for member in sorted(get_protocol_members(view)):
-            members.add(name := f"{view.__name__}.{member}")
-            if name in VIEW_ACCESSORS:
-                continue
-            if (row := rows.get((owner, member))) is None:
-                problems.append(f"{name} reads no row of {owner}: list it in VIEW_ACCESSORS with what it reads")
-            elif _reads_render_fact(row):
-                problems.append(f"{name} reads a render fact ({', '.join(fact.name for fact in row.facts)})")
-    problems.extend(
-        f"VIEW_ACCESSORS lists {name}, which no view has" for name in sorted(VIEW_ACCESSORS.keys() - members)
-    )
-    return problems
 
 
 _MODELS: dict[Path, SourceModule] = {}
@@ -627,7 +537,6 @@ def main(argv: list[str] | None = None) -> int:
     problems = [
         *table_problems(),
         *registry_problems(),
-        *view_problems(),
         *warning_problems(),
     ]
     for problem in problems:

@@ -511,7 +511,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`model/enum.py`: `enum_value_base` (rows `EnumValueBaseRow`)",
         adapters=(
             "`model/enum.py:Enum.value_base` (read by `types.py:DataTypeManager._constraint_keywords` through "
-            "`ModelView.value_base`); `parser/_tag_plan.py:_member_choice_keys` (the keys of the choices that members "
+            "`DataModel.value_base`); `parser/_tag_plan.py:_member_choice_keys` (the keys of the choices that members "
             "make, read by `_written_enum_member_keys` before the tags are written and by `settle_site` after), "
             "`parser/_tag_plan.py:writes_member_values` (the members of a plain Enum that "
             "`--use-enum-values-in-discriminator` writes as tags hold their values beside them, `Literal[Kind.a, "
@@ -1654,7 +1654,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "members of a type that is a union at its top level and `types.py:written_union_members` the members of a "
             "union as written, with such member unions spread (msgspec's plain-union checks, and the nested-union "
             "checks of `parser/_passes/imports.py` and `parser/_passes/_shared.py:_iter_discriminator_data_types`), "
-            "through `types.py:_union_members` and `_written_union_members`, which the decisions call for views; "
+            "through `types.py:_union_members` and `_written_union_members`, which the decisions call; "
             "`parser/_passes/_shared.py:msgspec_union_members` the union a msgspec type writes (its own, or the items "
             "of a list, set or map), which the msgspec decoding warnings and `parser/_str_like_unions.py` read; a "
             "container's item union takes `constructed` from `DataType.__init__`, and the None of its items stays "
@@ -2754,7 +2754,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_contains_model_reference`, `_iter_alias_references`; `parser/_passes/modules.py:_value_positions`; "
             "`parser/_type_overrides.py:apply_override_to_data_type`; "
             "`model/_field_imports.py:write_pre_render_nullability`; `parser/_held_null.py:_types`, over the "
-            "decision's views; `model/pydantic_base.py:DataModelField._has_anyurl_outside_container`), "
+            "decision's models; `model/pydantic_base.py:DataModelField._has_anyurl_outside_container`), "
             "`_parse_memo.py:ParseMemo.bump_node`, `types.py:_copy_data_type`, "
             "`model/msgspec.py:DataModelField._unconstrained_members`, "
             "`model/msgspec.py:DataModelField._written_type`, `model/pydantic_base.py:DataModelField._written_type`, "

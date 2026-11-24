@@ -12,27 +12,19 @@ wrapped too (#5595).
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
+from datamodel_code_generator.parser._phases import DecisionPass
 
 if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
-    from datamodel_code_generator.model._views import ModelView
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
 
-__all__ = ["SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS", "SerializeAsAnyWriter"]
-
-
-class SerializeAsAnyWriter(DecisionWriter, Protocol):
-    """The write of the decision: whether a type naming a model is wrapped in ``SerializeAsAny``."""
-
-    def mark_serialized_as_any(self, model: ModelView, *, wrapped: bool) -> None:
-        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny``."""
+__all__ = ["SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS"]
 
 
-def _serialize_as_any_for_every_subclass(facts: FinalFacts, writer: SerializeAsAnyWriter) -> None:
+def _serialize_as_any_for_every_subclass(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Mark every live model by whether a live model below it in the class hierarchy declares fields of its own.
 
     The bases are read from the live models, keyed by model key, so a model that reuse made a subclass of its
@@ -60,7 +52,6 @@ SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS = DecisionPass(
         "name": "serialize_as_any_for_every_subclass",
         "issue": "#5673",
     },
-    SerializeAsAnyWriter,
     _serialize_as_any_for_every_subclass,
     when=lambda parser: parser.use_serialize_as_any and parser.config.use_serialize_as_any_for_every_subclass,
 )

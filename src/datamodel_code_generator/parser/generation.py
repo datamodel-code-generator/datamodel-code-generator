@@ -48,7 +48,7 @@ from itertools import chain, groupby, pairwise
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, SupportsIndex, TypeAlias, TypeVar, final, overload
 
-from typing_extensions import deprecated, override
+from typing_extensions import override
 
 from datamodel_code_generator._constraint_applicability import (
     DROPPED_MULTIPLE_OF_KEY,
@@ -107,7 +107,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
-    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
@@ -1279,7 +1278,7 @@ class GenerationStore:  # noqa: PLR0904
         """The memos of the parse, which ``Parser.parse`` makes current while it runs."""
         self.phase = Phase.PARSE
         """The phase of the pipeline that runs now, which the parser pipeline sets as it enters it."""
-        self._builder = GraphBuilder(self, _BuilderToken())
+        self._builder = GraphBuilder(self)
 
     @classmethod
     def create_with_results(cls) -> tuple[GenerationStore, list[DataModel]]:
@@ -1345,15 +1344,14 @@ class GenerationStore:  # noqa: PLR0904
     def seal_facts(  # noqa: PLR6301
         self,
         modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
-        member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
+        member_keywords: Callable[[DataType, Callable[[Reference], DataModel | None]], frozenset[str] | None],
         options: DecisionOptions,
-        constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None],
+        constrained_member: Callable[[DataType, Mapping[str, object]], object | None],
     ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
-        ``member_keywords``, and the type that holds keywords in place of a member through ``constrained_member``. This
-        is the only construction of ``FinalFacts``.
+        A decision reads each model, the keywords of a union member through ``member_keywords``, and the type that holds
+        keywords in place of a member through ``constrained_member``. This is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(
@@ -1364,7 +1362,6 @@ class GenerationStore:  # noqa: PLR0904
             options,
         )
 
-    @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)
     def register_model(self, model: DataModel) -> None:
         """Register a model the output writes.
 
@@ -1378,19 +1375,16 @@ class GenerationStore:  # noqa: PLR0904
         self._retired_models.pop(id(model), None)
         self._built_models.append(model)
 
-    @deprecated("Use GenerationStore.builder().retire_model() instead.", category=None)
     def retire_model(self, model: DataModel) -> None:
         """Record that ``model`` leaves the output; the parsed universe keeps it, the emitted one drops it."""
         self._retired_models[id(model)] = model
 
-    @deprecated("Use GenerationStore.builder().replace_model() instead.", category=None)
     def replace_model(self, model: DataModel, replacement: DataModel) -> None:
         """Record that ``replacement``, built after parsing under the same model key, takes the place of ``model``."""
         self._builder.retire_model(model)
         self._builder.register_model(replacement)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_module_models() instead.", category=None)
     def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None:
         """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place.
 
@@ -1435,7 +1429,6 @@ class GenerationStore:  # noqa: PLR0904
         return None
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().record_values_as_written() instead.", category=None)
     def record_values_as_written(owner: DataModel | DataType, values: Sequence[Any]) -> None:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of.
 
@@ -1445,7 +1438,6 @@ class GenerationStore:  # noqa: PLR0904
         owner.__dict__[VALUES_AS_WRITTEN_KEY] = tuple(values)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().record_dropped_multiple_of() instead.", category=None)
     def record_dropped_multiple_of(data_type: DataType, value: float) -> None:
         """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it.
 
@@ -1455,7 +1447,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().record_site_constraints() instead.", category=None)
     def record_site_constraints(data_type: DataType, constraints: Mapping[str, Any]) -> None:
         """Keep on the type of an allOf site the constraint keywords the site adds to the target the type names.
 
@@ -1465,7 +1456,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().write_field_call_in_annotated() instead.", category=None)
     def write_field_call_in_annotated(field_: DataModelFieldBase) -> None:
         """Make a field write its ``Field()`` call in ``Annotated`` metadata, as ``--use-annotated`` writes it.
 
@@ -1476,7 +1466,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().record_widened_values() instead.", category=None)
     def record_widened_values(data_type: DataType, values: Sequence[object]) -> None:
         """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds.
 
@@ -1486,7 +1475,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().restore_required_inherited_field() instead.", category=None)
     def restore_required_inherited_field(model: DataModel, field_: DataModelFieldBase) -> bool:
         """Run the model's ``restore_required_inherited_field_state`` hook for a field; return what it returns.
 
@@ -1500,35 +1488,30 @@ class GenerationStore:  # noqa: PLR0904
         return restored
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().adopt_base_options() instead.", category=None)
     def adopt_base_options(model: DataModel) -> None:
         """Run the model's ``adopt_base_options`` hook: it takes the options of the generated bases it flattens."""
         model.adopt_base_options()
         bump_model(model)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().force_field_assignment() instead.", category=None)
     def force_field_assignment(field_: DataModelFieldBase) -> None:
         """Run the field's ``force_field_assignment`` hook: it renders an explicit required-field assignment."""
         field_.force_field_assignment()
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().mark_forward_references() instead.", category=None)
     def mark_forward_references(model: DataModel) -> None:
         """Make a model write its fields for the quoted forward references they hold: unions with ``Union``."""
         model.has_forward_reference = True
         bump_model(model)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().mark_serialized_as_any() instead.", category=None)
     def mark_serialized_as_any(model: DataModel, wrapped: bool) -> None:  # noqa: FBT001
         """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny``, which the types naming it read."""
         model.serialized_as_any = wrapped
         bump_model(model)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().mark_target_null() instead.", category=None)
     def mark_target_null(data_type: DataType) -> None:
         """Mark the None of a new reference type as the one the schema it references admits.
 
@@ -1539,14 +1522,12 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().clear_target_null() instead.", category=None)
     def clear_target_null(data_type: DataType) -> None:
         """Forget that the None of a type is its target's, after a null of another source joined it."""
         data_type._update_type_null(target=False)  # noqa: SLF001
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().write_rendered_null() instead.", category=None)
     def write_rendered_null(data_type: DataType) -> None:
         """Write into ``is_optional`` the None that the hint of ``data_type`` renders, marked as render preparation's.
 
@@ -1563,7 +1544,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().drop_held_null() instead.", category=None)
     def drop_held_null(data_type: DataType) -> None:
         """Drop the None a reference type restates of the model it names, which holds null itself.
 
@@ -1575,7 +1555,6 @@ class GenerationStore:  # noqa: PLR0904
         data_type._update_type_null(reference_written=False, held_dropped=True)  # noqa: SLF001
         bump_node(data_type)
 
-    @deprecated("Use GenerationStore.builder().note_changed_models() instead.", category=None)
     def note_changed_models(self, *models: object) -> None:
         """Record ``models`` again at the next refresh, after their types changed outside the store.
 
@@ -1678,7 +1657,6 @@ class GenerationStore:  # noqa: PLR0904
         self._facts_version += 1
         self._dirty = False
 
-    @deprecated("Use GenerationStore.builder().discard_derived_facts() instead.", category=None)
     def discard_derived_facts(self) -> None:
         """Release cached dependency facts while preserving stable model identities."""
         if self._defer_refresh_depth:
@@ -1690,7 +1668,6 @@ class GenerationStore:  # noqa: PLR0904
         self._rebuild_required = True
         self._dirty = True
 
-    @deprecated("Use GenerationStore.builder().replace_data_type_ref() instead.", category=None)
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:
         """Set ``data_type.reference`` while preserving reverse reference links; its new site is redirected."""
         if new_reference is not None:
@@ -1699,12 +1676,10 @@ class GenerationStore:  # noqa: PLR0904
         self._replace_data_type_reference(data_type, new_reference)
         self._data_types_changed((data_type,), (cache_owners,))
 
-    @deprecated("Use GenerationStore.builder().detach_data_type_ref() instead.", category=None)
     def detach_data_type_ref(self, data_type: DataType) -> None:
         """Remove ``data_type`` from its reference and invalidate derived facts."""
         self._builder.replace_data_type_ref(data_type, None)
 
-    @deprecated("Use GenerationStore.builder().update_model_reference() instead.", category=None)
     def update_model_reference(
         self,
         model: DataModel,
@@ -1738,7 +1713,6 @@ class GenerationStore:  # noqa: PLR0904
         model.invalidate_render_caches()
         self._invalidate()
 
-    @deprecated("Use GenerationStore.builder().rename_model() instead.", category=None)
     def rename_model(
         self,
         model: DataModel,
@@ -1788,7 +1762,6 @@ class GenerationStore:  # noqa: PLR0904
             )
         )
 
-    @deprecated("Use GenerationStore.builder().replace_field_type() instead.", category=None)
     def replace_field_type(
         self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh = "now"
     ) -> None:
@@ -1800,7 +1773,6 @@ class GenerationStore:  # noqa: PLR0904
         self._note_model_revision(field_.parent)
         self._refresh_after_write(refresh)
 
-    @deprecated("Use GenerationStore.builder().swap_data_type() instead.", category=None)
     def swap_data_type(self, data_type: DataType, new_data_type: DataType, *, refresh: Refresh = "now") -> None:
         """Put ``new_data_type`` where ``data_type`` is in its parent: a field's type or a member of a data type.
 
@@ -1812,7 +1784,6 @@ class GenerationStore:  # noqa: PLR0904
         data_type.swap_with(new_data_type)
         self._refresh_after_write(refresh)
 
-    @deprecated("Use GenerationStore.builder().apply_const() instead.", category=None)
     def apply_const(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
         """Run the field's ``process_const`` hook, which may type its const as a Literal and write its default.
 
@@ -1827,7 +1798,6 @@ class GenerationStore:  # noqa: PLR0904
         self._refresh_after_write(refresh)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().apply_literal_default() instead.", category=None)
     def apply_literal_default(field_: DataModelFieldBase, decision: LiteralDefault) -> None:
         """Write the default, requiredness and nullability ``decide_literal_default`` decides for a field.
 
@@ -1838,7 +1808,6 @@ class GenerationStore:  # noqa: PLR0904
             field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
         bump_field(field_)
 
-    @deprecated("Use GenerationStore.builder().drop_union_member_constraints() instead.", category=None)
     def drop_union_member_constraints(
         self, field_: DataModelFieldBase, *, refresh: Refresh = "now", options: ConstraintOptions | None = None
     ) -> None:
@@ -1861,7 +1830,6 @@ class GenerationStore:  # noqa: PLR0904
         self._builder.note_changed_models(field_.parent)
         self._refresh_after_write(refresh)
 
-    @deprecated("Use GenerationStore.builder().use_assignment_for_forward_references() instead.", category=None)
     def use_assignment_for_forward_references(
         self, model: DataModel, positions: Mapping[str, int], index: int, *, refresh: Refresh = "now"
     ) -> bool:
@@ -1880,7 +1848,6 @@ class GenerationStore:  # noqa: PLR0904
         return True
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().rename_field() instead.", category=None)
     def rename_field(field_: DataModelFieldBase, name: str, *, alias: str | None = None) -> None:
         """Give a field a new Python name, and ``alias`` as its alias when it has none, so it keeps its wire name."""
         if alias is not None and field_.alias is None:
@@ -1890,7 +1857,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_field_identity() instead.", category=None)
     def set_field_identity(
         field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
     ) -> None:
@@ -1905,7 +1871,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_field_default() instead.", category=None)
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
         field_.default = default
@@ -1921,7 +1886,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().record_nullable_without_default() instead.", category=None)
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default; none where it equals its ``nullable``."""
         if nullable is field_.nullable:
@@ -1937,7 +1901,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().omit_field_default() instead.", category=None)
     def omit_field_default(field_: DataModelFieldBase) -> None:
         """Write a field without its default: the default None, and the ``nullable`` it has without the default."""
         field_.default = None
@@ -1946,7 +1909,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().require_field() instead.", category=None)
     def require_field(field_: DataModelFieldBase, *, use_default_with_required: bool) -> None:
         """Make a field required, and write its default beside it when ``use_default_with_required``."""
         field_.required = True
@@ -1955,7 +1917,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_field_constraints() instead.", category=None)
     def set_field_constraints(
         field_: DataModelFieldBase,
         constraints: Any,
@@ -1972,21 +1933,18 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_field_extras() instead.", category=None)
     def set_field_extras(field_: DataModelFieldBase, extras: dict[str, Any]) -> None:
         """Give a field a new extras dict."""
         field_.extras = extras
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_field_extra() instead.", category=None)
     def set_field_extra(field_: DataModelFieldBase, key: str, value: Any) -> None:
         """Write one entry into a field's extras dict, which every holder of the dict sees."""
         field_.extras[key] = value
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().drop_field_discriminator() instead.", category=None)
     def drop_field_discriminator(field_: DataModelFieldBase) -> None:
         """Drop a field's discriminator from its extras and from its type, which every holder of the type sees."""
         field_.extras.pop("discriminator", None)
@@ -1995,35 +1953,30 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(field_.data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_type_discriminator() instead.", category=None)
     def set_type_discriminator(data_type: DataType, discriminator: str | None) -> None:
         """Write the discriminator of a data type, or none, which every holder of the type sees."""
         data_type.discriminator = discriminator
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().drop_union_operator() instead.", category=None)
     def drop_union_operator(data_type: DataType) -> None:
         """Join the members of a data type with ``Union`` instead of ``|``, which every holder of the type sees."""
         data_type.use_union_operator = False
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().use_typing_generics() instead.", category=None)
     def use_typing_generics(data_type: DataType) -> None:
         """Write the containers of a data type with the ``typing`` generics, which every holder of the type sees."""
         data_type.use_standard_collections = False
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().override_type_import() instead.", category=None)
     def override_type_import(data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""
         data_type.import_ = import_
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().set_type_expressions() instead.", category=None)
     def set_type_expressions(
         data_type: DataType,
         *,
@@ -2051,7 +2004,6 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().name_reference() instead.", category=None)
     def name_reference(data_type: DataType, alias: str | None) -> None:
         """Write the expression a reference type names its model by, such as a quoted forward reference or an import.
 
@@ -2061,21 +2013,18 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().name_enum_member() instead.", category=None)
     def name_enum_member(field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
         """Write the expression the enum member in the default of a field names its enum by, which the field sees."""
         member.alias = alias
         bump_field(field_)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().name_enum_member_literal_class() instead.", category=None)
     def name_enum_member_literal_class(data_type: DataType, enum_class: str) -> None:
         """Write the expression the members of an enum member literal name their enum by, which every holder sees."""
         data_type.enum_member_literals = [(enum_class, member) for _, member in data_type.enum_member_literals]
         bump_node(data_type)
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().add_model_import() instead.", category=None)
     def add_model_import(model: DataModel, import_: Import) -> None:
         """Add an import to a model once."""
         if import_ in model.imports:
@@ -2083,14 +2032,12 @@ class GenerationStore:  # noqa: PLR0904
         model._additional_imports.append(import_)  # noqa: SLF001
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().bind_builtin_names() instead.", category=None)
     def bind_builtin_names(model: DataModel, bindings: Mapping[str, str]) -> None:
         """Write the bare builtins of a model through the aliases its module imports them by."""
         model._builtin_name_bindings = bindings  # noqa: SLF001
         model.invalidate_render_caches()
 
     @staticmethod
-    @deprecated("Use GenerationStore.builder().replace_additional_properties_type() instead.", category=None)
     def replace_additional_properties_type(model: DataModel, data_type: DataType) -> None:
         """Give a model ``data_type`` as the type of the additional properties its settings write (``extra_items``).
 
@@ -2117,7 +2064,6 @@ class GenerationStore:  # noqa: PLR0904
         model.invalidate_render_caches()
         bump_model(model)
 
-    @deprecated("Use GenerationStore.builder().replace_nested_data_type() instead.", category=None)
     def replace_nested_data_type(
         self,
         parent_data_type: DataType,
@@ -2191,7 +2137,6 @@ class GenerationStore:  # noqa: PLR0904
         self._note_changed_data_types((data_type,))
         self._invalidate()
 
-    @deprecated("Use GenerationStore.builder().inline_shared() instead.", category=None)
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
         """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``.
 
@@ -2207,7 +2152,6 @@ class GenerationStore:  # noqa: PLR0904
         self._state_tree_sites("inline_shared", (copied,), via=site.reference)
         return copied
 
-    @deprecated("Use GenerationStore.builder().set_nested_data_types() instead.", category=None)
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
         """Replace nested data types and invalidate derived facts; the new sites under ``data_type`` are overridden."""
         nested_data_types = list(nested_data_types)
@@ -2220,12 +2164,10 @@ class GenerationStore:  # noqa: PLR0904
             nested_data_type.parent = data_type
         self._data_types_changed((data_type,), (cache_owners,))
 
-    @deprecated("Use GenerationStore.builder().append_field() instead.", category=None)
     def append_field(self, model: DataModel, field_: DataModelFieldBase) -> None:
         """Append a field to ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._add_field("append_field", model, field_, None)
 
-    @deprecated("Use GenerationStore.builder().insert_field() instead.", category=None)
     def insert_field(self, model: DataModel, index: int, field_: DataModelFieldBase) -> None:
         """Insert a field into ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._add_field("insert_field", model, field_, index)
@@ -2241,7 +2183,6 @@ class GenerationStore:  # noqa: PLR0904
             model.fields.insert(index, field_)
         self._model_changed(model)
 
-    @deprecated("Use GenerationStore.builder().set_fields() instead.", category=None)
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._state_model_sites("set_fields", model)
@@ -2257,7 +2198,6 @@ class GenerationStore:  # noqa: PLR0904
             field_.invalidate_semantic_caches(invalidate_parent=False)
         self._model_changed(model)
 
-    @deprecated("Use GenerationStore.builder().set_base_classes() instead.", category=None)
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None:
         """Replace ``model`` base classes and invalidate derived facts; the new sites of ``model`` are overridden."""
         self._state_model_sites("set_base_classes", model)
@@ -2265,14 +2205,12 @@ class GenerationStore:  # noqa: PLR0904
         self._model_changed(model)
         _settle_alias_forms(model)
 
-    @deprecated("Use GenerationStore.builder().reset_base_classes() instead.", category=None)
     def reset_base_classes(self, model: DataModel) -> None:
         """Reset ``model`` to its default base classes and invalidate derived facts; its new sites are overridden."""
         self._state_model_sites("reset_base_classes", model)
         model.set_base_class()
         self._model_changed(model)
 
-    @deprecated("Use GenerationStore.builder().redirect_reference_users() instead.", category=None)
     def redirect_reference_users(
         self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
@@ -2299,7 +2237,6 @@ class GenerationStore:  # noqa: PLR0904
             for child in data_type_children(model.reference)
         )
 
-    @deprecated("Use GenerationStore.builder().redirect_model_reference_users() instead.", category=None)
     def redirect_model_reference_users(
         self,
         model: DataModel,
@@ -2332,7 +2269,6 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate_owner_caches(cache_owners)
         self._invalidate()
 
-    @deprecated("Use GenerationStore.builder().collapse_root_data_type() instead.", category=None)
     def collapse_root_data_type(self, data_type: DataType, inner_reference: Reference) -> None:
         """Replace a root-model data type with its inner reference; its site is collapsed from the root model."""
         self._state_sites_at("collapse_root_data_type", (data_type,), via=data_type.reference)
@@ -2341,7 +2277,6 @@ class GenerationStore:  # noqa: PLR0904
                 drop_child_and_detached(data_type.reference, data_type)
             self._builder.replace_data_type_ref(data_type, inner_reference)
 
-    @deprecated("Use GenerationStore.builder().detach_model_data_type_refs() instead.", category=None)
     def detach_model_data_type_refs(self, model: DataModel) -> None:
         """Detach every referenced data type currently owned by ``model``."""
         with self._builder.defer_refresh():
@@ -2349,7 +2284,6 @@ class GenerationStore:  # noqa: PLR0904
                 if data_type.reference:
                     self._builder.detach_data_type_ref(data_type)
 
-    @deprecated("Use GenerationStore.builder().defer_refresh() instead.", category=None)
     @contextmanager
     def defer_refresh(self) -> Generator[None, None, None]:
         """Batch mutation invalidations and rebuild derived facts once on exit."""
@@ -2469,35 +2403,29 @@ class GenerationStore:  # noqa: PLR0904
         return iter(self.models)
 
 
-@final
-class _BuilderToken:
-    """What only ``GenerationStore`` holds, so that only ``GenerationStore.builder`` makes a ``GraphBuilder``."""
-
-    __slots__ = ()
-
-
 @final  # noqa: PLR0904
 class GraphBuilder:
     """The capability to change the generation graph: one method per mutation of ``GENERATION_STORE_MUTATION_METHODS``.
 
     ``GenerationStore.builder()`` returns the store's one builder. Each method calls the store's operation of the same
-    name, which subclasses may override and which the debug checks wrap on the store, and which is deprecated for every
-    other caller. Decisions read ``FinalFacts`` instead.
+    name, which subclasses may override and which the debug checks wrap on the store; heki's contracts
+    (``store-op:`` and ``graph-builder`` of ``scripts/heki.toml``) report a call of an operation, or a builder made,
+    outside this module. Decisions read ``FinalFacts`` instead.
     """
 
     __slots__ = ("_store",)
 
-    def __init__(self, store: GenerationStore, token: _BuilderToken) -> None:  # noqa: ARG002
-        """Hold ``store``; ``token`` is the store's own."""
+    def __init__(self, store: GenerationStore) -> None:
+        """Hold ``store``."""
         self._store = store
 
     def add_model_import(self, model: DataModel, import_: Import) -> None:
         """Add an import to a model once."""
-        self._store.add_model_import(model, import_)  # ty: ignore[deprecated]
+        self._store.add_model_import(model, import_)
 
     def bind_builtin_names(self, model: DataModel, bindings: Mapping[str, str]) -> None:
         """Write the bare builtins of a model through ``GenerationStore.bind_builtin_names``."""
-        self._store.bind_builtin_names(model, bindings)  # ty: ignore[deprecated]
+        self._store.bind_builtin_names(model, bindings)
 
     def set_type_expressions(
         self,
@@ -2510,7 +2438,7 @@ class GraphBuilder:
         runtime_expression_imports: tuple[Import, ...] | None = None,
     ) -> None:
         """Write what a data type renders by through ``GenerationStore.set_type_expressions``."""
-        self._store.set_type_expressions(  # ty: ignore[deprecated]
+        self._store.set_type_expressions(
             data_type,
             type_=type_,
             import_=import_,
@@ -2521,129 +2449,129 @@ class GraphBuilder:
 
     def append_field(self, model: DataModel, field_: DataModelFieldBase) -> None:
         """Append a field to ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
-        self._store.append_field(model, field_)  # ty: ignore[deprecated]
+        self._store.append_field(model, field_)
 
     def apply_const(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
         """Run the field's ``process_const`` hook, which may type its const as a Literal and write its default."""
-        self._store.apply_const(field_, refresh=refresh)  # ty: ignore[deprecated]
+        self._store.apply_const(field_, refresh=refresh)
 
     def apply_literal_default(self, field_: DataModelFieldBase, decision: LiteralDefault) -> None:
         """Write what ``decide_literal_default`` decides for a field, through the store."""
-        self._store.apply_literal_default(field_, decision)  # ty: ignore[deprecated]
+        self._store.apply_literal_default(field_, decision)
 
     def clear_target_null(self, data_type: DataType) -> None:
         """Forget that the None of a type is its target's, after a null of another source joined it."""
-        self._store.clear_target_null(data_type)  # ty: ignore[deprecated]
+        self._store.clear_target_null(data_type)
 
     def collapse_root_data_type(self, data_type: DataType, inner_reference: Reference) -> None:
         """Replace a root-model data type with its inner reference; its site is collapsed from the root model."""
-        self._store.collapse_root_data_type(data_type, inner_reference)  # ty: ignore[deprecated]
+        self._store.collapse_root_data_type(data_type, inner_reference)
 
     def defer_refresh(self) -> AbstractContextManager[None]:
         """Batch mutation invalidations and rebuild derived facts once on exit."""
-        return self._store.defer_refresh()  # ty: ignore[deprecated]
+        return self._store.defer_refresh()
 
     def detach_data_type_ref(self, data_type: DataType) -> None:
         """Remove ``data_type`` from its reference and invalidate derived facts."""
-        self._store.detach_data_type_ref(data_type)  # ty: ignore[deprecated]
+        self._store.detach_data_type_ref(data_type)
 
     def detach_model_data_type_refs(self, model: DataModel) -> None:
         """Detach every referenced data type currently owned by ``model``."""
-        self._store.detach_model_data_type_refs(model)  # ty: ignore[deprecated]
+        self._store.detach_model_data_type_refs(model)
 
     def discard_derived_facts(self) -> None:
         """Release cached dependency facts while preserving stable model identities."""
-        self._store.discard_derived_facts()  # ty: ignore[deprecated]
+        self._store.discard_derived_facts()
 
     def drop_field_discriminator(self, field_: DataModelFieldBase) -> None:
         """Drop a field's discriminator from its extras and from its type, which every holder of the type sees."""
-        self._store.drop_field_discriminator(field_)  # ty: ignore[deprecated]
+        self._store.drop_field_discriminator(field_)
 
     def drop_held_null(self, data_type: DataType) -> None:
         """Drop the None a reference type restates of the model it names, which holds null itself."""
-        self._store.drop_held_null(data_type)  # ty: ignore[deprecated]
+        self._store.drop_held_null(data_type)
 
     def drop_union_member_constraints(
         self, field_: DataModelFieldBase, *, refresh: Refresh = "now", options: ConstraintOptions | None = None
     ) -> None:
         """Run the field's ``unconstrain_union_members`` hook, which writes members into the union lists it holds."""
-        self._store.drop_union_member_constraints(field_, refresh=refresh, options=options)  # ty: ignore[deprecated]
+        self._store.drop_union_member_constraints(field_, refresh=refresh, options=options)
 
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
         """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``."""
-        return self._store.inline_shared(root_type, site)  # ty: ignore[deprecated]
+        return self._store.inline_shared(root_type, site)
 
     def insert_field(self, model: DataModel, index: int, field_: DataModelFieldBase) -> None:
         """Insert a field into ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
-        self._store.insert_field(model, index, field_)  # ty: ignore[deprecated]
+        self._store.insert_field(model, index, field_)
 
     def adopt_base_options(self, model: DataModel) -> None:
         """Make the options of the generated bases a model flattens its own through the store."""
-        self._store.adopt_base_options(model)  # ty: ignore[deprecated]
+        self._store.adopt_base_options(model)
 
     def force_field_assignment(self, field_: DataModelFieldBase) -> None:
         """Render an explicit required-field assignment for a field through the store."""
-        self._store.force_field_assignment(field_)  # ty: ignore[deprecated]
+        self._store.force_field_assignment(field_)
 
     def mark_forward_references(self, model: DataModel) -> None:
         """Make a model write its fields for quoted forward references through the store."""
-        self._store.mark_forward_references(model)  # ty: ignore[deprecated]
+        self._store.mark_forward_references(model)
 
     def mark_serialized_as_any(self, model: DataModel, wrapped: bool) -> None:  # noqa: FBT001
         """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` through the store."""
-        self._store.mark_serialized_as_any(model, wrapped)  # ty: ignore[deprecated]
+        self._store.mark_serialized_as_any(model, wrapped)
 
     def mark_target_null(self, data_type: DataType) -> None:
         """Mark the None of a new reference type as the one the schema it references admits."""
-        self._store.mark_target_null(data_type)  # ty: ignore[deprecated]
+        self._store.mark_target_null(data_type)
 
     def note_changed_models(self, *models: object) -> None:
         """Record ``models`` again at the next refresh, after their types changed outside the store."""
-        self._store.note_changed_models(*models)  # ty: ignore[deprecated]
+        self._store.note_changed_models(*models)
 
     def drop_union_operator(self, data_type: DataType) -> None:
         """Join the members of a data type with ``Union`` instead of ``|``, which every holder of the type sees."""
-        self._store.drop_union_operator(data_type)  # ty: ignore[deprecated]
+        self._store.drop_union_operator(data_type)
 
     def use_typing_generics(self, data_type: DataType) -> None:
         """Write the containers of a data type with the ``typing`` generics, which every holder of the type sees."""
-        self._store.use_typing_generics(data_type)  # ty: ignore[deprecated]
+        self._store.use_typing_generics(data_type)
 
     def override_type_import(self, data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""
-        self._store.override_type_import(data_type, import_)  # ty: ignore[deprecated]
+        self._store.override_type_import(data_type, import_)
 
     def name_reference(self, data_type: DataType, alias: str | None) -> None:
         """Write the expression a reference type names its model by through ``GenerationStore.name_reference``."""
-        self._store.name_reference(data_type, alias)  # ty: ignore[deprecated]
+        self._store.name_reference(data_type, alias)
 
     def name_enum_member(self, field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
         """Write the expression the enum member in a default names its enum by through ``name_enum_member``."""
-        self._store.name_enum_member(field_, member, alias)  # ty: ignore[deprecated]
+        self._store.name_enum_member(field_, member, alias)
 
     def name_enum_member_literal_class(self, data_type: DataType, enum_class: str) -> None:
         """Write the expression an enum member literal names its enum by through ``name_enum_member_literal_class``."""
-        self._store.name_enum_member_literal_class(data_type, enum_class)  # ty: ignore[deprecated]
+        self._store.name_enum_member_literal_class(data_type, enum_class)
 
     def record_dropped_multiple_of(self, data_type: DataType, value: float) -> None:
         """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it."""
-        self._store.record_dropped_multiple_of(data_type, value)  # ty: ignore[deprecated]
+        self._store.record_dropped_multiple_of(data_type, value)
 
     def record_values_as_written(self, owner: DataModel | DataType, values: Sequence[Any]) -> None:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of."""
-        self._store.record_values_as_written(owner, values)  # ty: ignore[deprecated]
+        self._store.record_values_as_written(owner, values)
 
     def record_site_constraints(self, data_type: DataType, constraints: Mapping[str, Any]) -> None:
         """Keep on the type of an allOf site the constraint keywords the site adds to the target the type names."""
-        self._store.record_site_constraints(data_type, constraints)  # ty: ignore[deprecated]
+        self._store.record_site_constraints(data_type, constraints)
 
     def write_field_call_in_annotated(self, field_: DataModelFieldBase) -> None:
         """Make a field write its ``Field()`` call in ``Annotated`` metadata through the store."""
-        self._store.write_field_call_in_annotated(field_)  # ty: ignore[deprecated]
+        self._store.write_field_call_in_annotated(field_)
 
     def record_widened_values(self, data_type: DataType, values: Sequence[object]) -> None:
         """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds."""
-        self._store.record_widened_values(data_type, values)  # ty: ignore[deprecated]
+        self._store.record_widened_values(data_type, values)
 
     def redirect_model_reference_users(
         self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False
@@ -2653,9 +2581,7 @@ class GraphBuilder:
         ``keeps_named`` says each user keeps the null of the schema it names
         (``--keep-reference-null-on-merged-models``).
         """
-        self._store.redirect_model_reference_users(  # ty: ignore[deprecated]
-            model, models, new_reference, keeps_named=keeps_named
-        )
+        self._store.redirect_model_reference_users(model, models, new_reference, keeps_named=keeps_named)
 
     def redirect_reference_users(
         self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
@@ -2666,17 +2592,17 @@ class GraphBuilder:
         ``keeps_named`` that each user keeps the null of the schema it names
         (``--keep-reference-null-on-merged-models``).
         """
-        return self._store.redirect_reference_users(  # ty: ignore[deprecated]
+        return self._store.redirect_reference_users(
             old_reference, new_reference, merged=merged, keeps_named=keeps_named
         )
 
     def register_model(self, model: DataModel) -> None:
         """Register a model the output writes."""
-        self._store.register_model(model)  # ty: ignore[deprecated]
+        self._store.register_model(model)
 
     def rename_field(self, field_: DataModelFieldBase, name: str, *, alias: str | None = None) -> None:
         """Rename a field through ``GenerationStore.rename_field``."""
-        self._store.rename_field(field_, name, alias=alias)  # ty: ignore[deprecated]
+        self._store.rename_field(field_, name, alias=alias)
 
     def rename_model(
         self,
@@ -2695,7 +2621,7 @@ class GraphBuilder:
         ``scheme`` names the scheme of the rename, which the store records with it (``GenerationStore.renames``), and
         ``schema_path`` the path of the schema the model stands for at ``new_path`` where that is not ``new_path``.
         """
-        self._store.rename_model(  # ty: ignore[deprecated]
+        self._store.rename_model(
             model,
             class_name=class_name,
             reference_name=reference_name,
@@ -2708,11 +2634,11 @@ class GraphBuilder:
 
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:
         """Set ``data_type.reference`` while preserving reverse reference links; its new site is redirected."""
-        self._store.replace_data_type_ref(data_type, new_reference)  # ty: ignore[deprecated]
+        self._store.replace_data_type_ref(data_type, new_reference)
 
     def replace_additional_properties_type(self, model: DataModel, data_type: DataType) -> None:
         """Give a model ``data_type`` as the type of the additional properties its settings write (``extra_items``)."""
-        self._store.replace_additional_properties_type(model, data_type)  # ty: ignore[deprecated]
+        self._store.replace_additional_properties_type(model, data_type)
 
     def name_additional_properties_classes(
         self, model: DataModel, data_type: DataType, reference_classes: set[str]
@@ -2724,37 +2650,37 @@ class GraphBuilder:
         self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh = "now"
     ) -> None:
         """Replace a field's data type and invalidate derived facts; the sites of the new type are overridden."""
-        self._store.replace_field_type(field_, new_data_type, refresh=refresh)  # ty: ignore[deprecated]
+        self._store.replace_field_type(field_, new_data_type, refresh=refresh)
 
     def replace_model(self, model: DataModel, replacement: DataModel) -> None:
         """Record that ``replacement``, built after parsing under the same model key, takes the place of ``model``."""
-        self._store.replace_model(model, replacement)  # ty: ignore[deprecated]
+        self._store.replace_model(model, replacement)
 
     def replace_nested_data_type(
         self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType
     ) -> None:
         """Replace a nested data type in its place in a tuple, last in a union (row ``legacy-replacement-last``)."""
-        self._store.replace_nested_data_type(parent_data_type, old_data_type, new_data_type)  # ty: ignore[deprecated]
+        self._store.replace_nested_data_type(parent_data_type, old_data_type, new_data_type)
 
     def require_field(self, field_: DataModelFieldBase, *, use_default_with_required: bool) -> None:
         """Make a field required, and write its default beside it when ``use_default_with_required``."""
-        self._store.require_field(field_, use_default_with_required=use_default_with_required)  # ty: ignore[deprecated]
+        self._store.require_field(field_, use_default_with_required=use_default_with_required)
 
     def reset_base_classes(self, model: DataModel) -> None:
         """Reset ``model`` to its default base classes and invalidate derived facts; its new sites are overridden."""
-        self._store.reset_base_classes(model)  # ty: ignore[deprecated]
+        self._store.reset_base_classes(model)
 
     def restore_required_inherited_field(self, model: DataModel, field_: DataModelFieldBase) -> bool:
         """Give a required inherited field back to the constructor through the store; return whether it was."""
-        return self._store.restore_required_inherited_field(model, field_)  # ty: ignore[deprecated]
+        return self._store.restore_required_inherited_field(model, field_)
 
     def retire_model(self, model: DataModel) -> None:
         """Record that ``model`` leaves the output; the parsed universe keeps it, the emitted one drops it."""
-        self._store.retire_model(model)  # ty: ignore[deprecated]
+        self._store.retire_model(model)
 
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None:
         """Replace ``model`` base classes and invalidate derived facts; the new sites of ``model`` are overridden."""
-        self._store.set_base_classes(model, base_classes)  # ty: ignore[deprecated]
+        self._store.set_base_classes(model, base_classes)
 
     def set_field_constraints(
         self,
@@ -2765,13 +2691,13 @@ class GraphBuilder:
         union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
         """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
-        self._store.set_field_constraints(  # ty: ignore[deprecated]
+        self._store.set_field_constraints(
             field_, constraints, type_dependent=type_dependent, union_siblings=union_siblings
         )
 
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
-        self._store.set_field_default(field_, default)  # ty: ignore[deprecated]
+        self._store.set_field_default(field_, default)
 
     def set_field_runtime_default(
         self, field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]
@@ -2781,7 +2707,7 @@ class GraphBuilder:
 
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default, through the store."""
-        self._store.record_nullable_without_default(field_, nullable)  # ty: ignore[deprecated]
+        self._store.record_nullable_without_default(field_, nullable)
 
     def record_raw_schema_default(self, field_: DataModelFieldBase) -> None:
         """Record that the property a field is built from declares no default, through the store."""
@@ -2789,54 +2715,54 @@ class GraphBuilder:
 
     def omit_field_default(self, field_: DataModelFieldBase) -> None:
         """Write a field without its default, through the store."""
-        self._store.omit_field_default(field_)  # ty: ignore[deprecated]
+        self._store.omit_field_default(field_)
 
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None:
         """Write one entry into a field's extras dict, which every holder of the dict sees."""
-        self._store.set_field_extra(field_, key, value)  # ty: ignore[deprecated]
+        self._store.set_field_extra(field_, key, value)
 
     def set_field_extras(self, field_: DataModelFieldBase, extras: dict[str, Any]) -> None:
         """Give a field a new extras dict."""
-        self._store.set_field_extras(field_, extras)  # ty: ignore[deprecated]
+        self._store.set_field_extras(field_, extras)
 
     def set_field_identity(
         self, field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
     ) -> None:
         """Give a field the names and aliases ``identity`` holds, through ``GenerationStore.set_field_identity``."""
-        self._store.set_field_identity(field_, identity, inherits=inherits)  # ty: ignore[deprecated]
+        self._store.set_field_identity(field_, identity, inherits=inherits)
 
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
-        self._store.set_fields(model, fields)  # ty: ignore[deprecated]
+        self._store.set_fields(model, fields)
 
     def set_module_models(self, models: list[DataModel], members: Iterable[DataModel]) -> None:
         """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place."""
-        self._store.set_module_models(models, members)  # ty: ignore[deprecated]
+        self._store.set_module_models(models, members)
 
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
         """Replace nested data types and invalidate derived facts; the new sites under ``data_type`` are overridden."""
-        self._store.set_nested_data_types(data_type, nested_data_types)  # ty: ignore[deprecated]
+        self._store.set_nested_data_types(data_type, nested_data_types)
 
     def set_type_discriminator(self, data_type: DataType, discriminator: str | None) -> None:
         """Write the discriminator of a data type, or none, which every holder of the type sees."""
-        self._store.set_type_discriminator(data_type, discriminator)  # ty: ignore[deprecated]
+        self._store.set_type_discriminator(data_type, discriminator)
 
     def swap_data_type(self, data_type: DataType, new_data_type: DataType, *, refresh: Refresh = "now") -> None:
         """Put ``new_data_type`` where ``data_type`` is in its parent: a field's type or a member of a data type."""
-        self._store.swap_data_type(data_type, new_data_type, refresh=refresh)  # ty: ignore[deprecated]
+        self._store.swap_data_type(data_type, new_data_type, refresh=refresh)
 
     def update_model_reference(
         self, model: DataModel, *, new_path: str | None = None, new_file_path: Path | None = None
     ) -> None:
         """Update a model's reference path or output file and invalidate facts; ``rename_model`` changes names."""
-        self._store.update_model_reference(model, new_path=new_path, new_file_path=new_file_path)  # ty: ignore[deprecated]
+        self._store.update_model_reference(model, new_path=new_path, new_file_path=new_file_path)
 
     def use_assignment_for_forward_references(
         self, model: DataModel, positions: Mapping[str, int], index: int, *, refresh: Refresh = "now"
     ) -> bool:
         """Run the model's ``assign_forward_reference_fields`` hook; return whether it changed the model."""
-        return self._store.use_assignment_for_forward_references(model, positions, index, refresh=refresh)  # ty: ignore[deprecated]
+        return self._store.use_assignment_for_forward_references(model, positions, index, refresh=refresh)
 
     def write_rendered_null(self, data_type: DataType) -> None:
         """Write into ``is_optional`` the None that the hint of ``data_type`` renders."""
-        self._store.write_rendered_null(data_type)  # ty: ignore[deprecated]
+        self._store.write_rendered_null(data_type)

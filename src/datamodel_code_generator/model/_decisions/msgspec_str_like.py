@@ -17,7 +17,7 @@ from datamodel_code_generator.model._decisions.enum_kind import literal_value_ki
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from datamodel_code_generator.model._views import DataTypeView
+    from datamodel_code_generator.types import DataType
 
 __all__ = ["MSGSPEC_STR_LIKE_TYPES", "STR", "merged_str_like_union_message", "msgspec_str_like_leaf"]
 
@@ -37,7 +37,7 @@ STR: Final = "str"
 """The builtin str, which the str values of a ``Literal`` count as."""
 
 
-def msgspec_str_like_leaf(leaf: DataTypeView) -> str | None:
+def msgspec_str_like_leaf(leaf: DataType) -> str | None:
     """Return the str-like member msgspec counts a type that names no model as, or None when it counts as none.
 
     ``str`` and a ``Literal`` holding a str value count as ``str``; every other str-like type counts as its own name.
