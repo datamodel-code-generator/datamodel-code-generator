@@ -48,7 +48,7 @@ from scripts._change_records import ASPECTS, RULES, Category, CellKind, split_op
 from scripts._source_model import SourceModelError, SourceModule
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
 
     from scripts._change_records import CellSelector, Record
     from scripts._source_model import Scope
@@ -683,27 +683,30 @@ class CellEvidence:
     removed: frozenset[str] = frozenset()
 
 
-DECISIVE = frozenset({Category.DEFAULT_FIX, Category.DECIDED_CHANGE, Category.EXPERIMENTAL, Category.CRASH_FIX})
-"""The categories whose evidence, where it holds on a cell, covers the kinds they admit without `output-text`'s."""
 DECISIONS = frozenset({Category.DEFAULT_FIX, Category.DECIDED_CHANGE})
-"""The categories whose evidence is that a covering selector selects each change line of a cell."""
+"""The categories whose covering selectors select change lines of every aspect."""
+LINE_CATEGORIES = DECISIONS | {Category.NOTICE}
+"""The categories that explain a cell's change lines one by one, those of the kinds they admit that a covering selector
+selects; a record of another category explains the kinds it admits as a whole where its evidence holds."""
 LINE_ASPECT = re.compile(r"^\[([a-z_-]+)\]")
 KIND_ASPECTS = {CellKind.EXIT: "exit", CellKind.WARNINGS: "warning", CellKind.MESSAGES: "message"}
-"""The aspect of the change lines that show a difference of each kind that has lines."""
+"""The aspect of the change lines that show a difference of each kind that has lines; any other aspect shows output."""
+ASPECT_KINDS = {aspect: kind for kind, aspect in KIND_ASPECTS.items()}
+
+
+def _line_aspect(line: str) -> str:
+    return found[1] if (found := LINE_ASPECT.match(line)) else ""
 
 
 def _line_matches(line: str, selector: CellSelector) -> bool:
-    aspect = found[1] if (found := LINE_ASPECT.match(line)) else ""
-    return (selector.aspects is None or aspect in selector.aspects) and (
+    return (selector.aspects is None or _line_aspect(line) in selector.aspects) and (
         selector.match is None or re.search(selector.match, line) is not None
     )
 
 
-def _unshown(found: frozenset[CellKind], lines: Sequence[str]) -> str | None:
-    """Return the kinds of a difference no change line shows, or None: line-based evidence checks nothing for them."""
-    shown = {match[1] for line in lines if (match := LINE_ASPECT.match(line))}
-    unshown = [kind for kind, aspect in KIND_ASPECTS.items() if kind in found and aspect not in shown]
-    return f"the {', '.join(unshown)} difference shows in no change line" if unshown else None
+def _line_kind(line: str) -> CellKind:
+    """Return the kind of difference a change line shows: exit, warnings or messages by its aspect, else output."""
+    return ASPECT_KINDS.get(_line_aspect(line), CellKind.OUTPUT)
 
 
 def _feature_applies(feature: str, cell: RunCell) -> bool:
@@ -714,26 +717,16 @@ def _feature_applies(feature: str, cell: RunCell) -> bool:
     return kind == "cli-option" and any(option.partition("=")[0] == f"--{name}" for option in cell.options)
 
 
-def evidence_problem(
-    record: Record,
-    selectors: Collection[CellSelector],
-    cell: RunCell,
-    found: frozenset[CellKind],
-    evidence: CellEvidence,
-) -> str | None:
-    """Return why a record's category's evidence does not hold on a differing cell its `selectors` cover, or None.
+def evidence_problem(record: Record, cell: RunCell, found: frozenset[CellKind], evidence: CellEvidence) -> str | None:
+    """Return why a record's category's evidence does not hold on a differing cell it covers, or None.
 
     `output-text`: a no-behaviour model output; `crash-fix`: the classifier's crash-fix (an exit difference from a
-    failure to 0); a decision: every change line inside a covering selector's aspects and match; `experimental`: a
-    feature of the record in the cell and an equal companion cell; `notice`: equal output and exit, every warning and
-    message line matching; `api`: a removed option the record names, which the head refuses. Other categories cover no
-    cell. A decision and a notice prove nothing where a signature could not be taken, or where an exit, warning or
-    message difference shows in no change line (the exit, warning and message lines, `change_lines`): the cell is
-    unproved for them. That the kinds a category does not admit are equal is `judge`'s check over every covering
-    record, not a record's evidence.
+    failure to 0); `experimental`: a feature of the record in the cell and an equal companion cell; `api`: a removed
+    option the record names, which the head refuses; a decision and a notice: a signature was taken, so the change
+    lines are known. Other categories cover no cell. Which change lines a decision's or a notice's selectors select,
+    and whether the covering records explain every difference, is `judge`'s check over every covering record.
     """
     problems: tuple[tuple[bool, str], ...] = ((True, f"category {record.category} covers no cell"),)
-    unshown = _unshown(found, evidence.lines)
     match record.category:
         case Category.OUTPUT_TEXT:
             problems = (
@@ -751,13 +744,8 @@ def evidence_problem(
                     f"the exit status went {evidence.exits[0]} -> {evidence.exits[1]}, not from a failure to 0",
                 ),
             )
-        case Category.DEFAULT_FIX | Category.DECIDED_CHANGE:
-            outside = [line for line in evidence.lines if not any(_line_matches(line, item) for item in selectors)]
-            problems = (
-                (evidence.signature_failed, "a signature could not be taken, so the change lines are unknown"),
-                (bool(outside), f"a change line is outside its aspects and match: {outside[:1]}"),
-                (unshown is not None, unshown or ""),
-            )
+        case Category.DEFAULT_FIX | Category.DECIDED_CHANGE | Category.NOTICE:
+            problems = ((evidence.signature_failed, "a signature could not be taken, so the change lines are unknown"),)
         case Category.EXPERIMENTAL:
             problems = (
                 (
@@ -765,14 +753,6 @@ def evidence_problem(
                     "no feature of it is in the cell",
                 ),
                 (not evidence.companion_equal, "the cell without the feature's options differs too: it needs a record"),
-            )
-        case Category.NOTICE:
-            notices = [line for line in evidence.lines if line.startswith(("[warning]", "[message]"))]
-            outside = [line for line in notices if not any(_line_matches(line, item) for item in selectors)]
-            problems = (
-                (evidence.signature_failed, "a signature could not be taken, so the change lines are unknown"),
-                (bool(outside), f"a warning or message line is outside its match: {outside[:1]}"),
-                (unshown is not None, unshown or ""),
             )
         case Category.API:
             named = set(dict(record.affects).get("options", ()))
@@ -788,18 +768,80 @@ def _admits(record: Record) -> frozenset[CellKind]:
     return frozenset() if record.category is None else RULES[record.category].cells.kinds
 
 
+@dataclass(frozen=True)
+class _Explanation:
+    """What the covering records whose evidence holds explain of a differing cell (`judge`).
+
+    `whole`: the kinds a holding record of a category outside `LINE_CATEGORIES` explains as a whole; `matched`: the
+    indices of the change lines each holding line record selects; `explained`: the indices of the lines explained;
+    `open`: the kinds left unexplained.
+    """
+
+    whole: frozenset[CellKind]
+    matched: dict[int, frozenset[int]]
+    explained: frozenset[int]
+    open: frozenset[CellKind]
+
+
+def _explain(
+    differing: frozenset[CellKind],
+    lines: Sequence[str],
+    *,
+    covering: dict[int, list[CellSelector]],
+    admitted: dict[int, frozenset[CellKind]],
+    holding: Mapping[int, Category | None],
+) -> _Explanation:
+    """Return what the holding covering records (`holding`: their categories by index) explain of a cell, together.
+
+    A line is explained where its kind is explained as a whole, or a covering selector of a holding line record that
+    admits its kind selects it. A kind is explained as a whole, or by its lines: it shows in a line and every line of it
+    is explained; output that shows in no line is explained by a holding decision that selects a line of the cell, or
+    covers a cell without lines (a no-behaviour output).
+    """
+    shown = [_line_kind(line) for line in lines]
+    whole = frozenset().union(
+        *(admitted[index] for index, category in holding.items() if category not in LINE_CATEGORIES)
+    )
+    matched = {
+        index: frozenset(
+            number
+            for number, line in enumerate(lines)
+            if shown[number] in admitted[index] and any(_line_matches(line, selector) for selector in covering[index])
+        )
+        for index, category in holding.items()
+        if category in LINE_CATEGORIES
+    }
+    explained = frozenset(number for number, kind in enumerate(shown) if kind in whole).union(*matched.values())
+    deciding = any(holding[index] in DECISIONS and (selected or not lines) for index, selected in matched.items())
+    unexplained = {shown[number] for number in range(len(lines)) if number not in explained}
+    unlined = {kind for kind in differing - set(shown) if not (kind == CellKind.OUTPUT and deciding)}
+    return _Explanation(whole, matched, explained, frozenset((unexplained | unlined) - whole))
+
+
+def _unexplained_reason(
+    record: Record, left_kinds: frozenset[CellKind], lines: Sequence[str], explained: frozenset[int]
+) -> str:
+    """Return why a holding line record leaves `left_kinds` unexplained: a line no record explains, or no line."""
+    left = [line for number, line in enumerate(lines) if number not in explained and _line_kind(line) in left_kinds]
+    if left and record.category in DECISIONS:
+        return f"a change line is outside its aspects and match: {left[:1]}"
+    if left:
+        return f"a warning or message line is outside its match: {left[:1]}"
+    return f"the {', '.join(kind for kind in CellKind if kind in left_kinds)} difference shows in no change line"
+
+
 def judge(cell: RunCell, found: frozenset[CellKind], records: Sequence[Record], evidence: CellEvidence) -> Verdict:
-    """Return whether the records cover a differing cell: `accepted`, by the indices of the records that cover it.
+    """Return whether the records cover a differing cell: `accepted`, by the indices of the records that explain it.
 
     `records` are those whose selectors may cover the cell (an extending record passed as its target with its own id and
     cells); a record covers it where one of its selectors does (`covers`). The covering records must admit every kind of
-    the difference (`found`), the union of their categories' kinds, so a kind one record's category does not admit needs
-    to be equal only where no other covering record admits it (`output-text` beside `notice` covers a no-behaviour text
-    change with a new warning), and the covering decision records (`DECISIONS`) select the change lines together: each
-    line must be inside the aspects and match of a covering selector of one of them (two changes of one release each
-    select their own lines). Where a covering record of a decisive category (`DECISIVE`) holds its evidence, the kinds
-    it admits need no other evidence, `output-text`'s included; every other covering record that admits a kind left over
-    must hold its evidence. Else the cell is a `violation` with the reasons.
+    the difference (`found`, and the kind of each change line), the union of their categories' kinds, and together
+    explain every kind and every change line (`_explain`) with the records whose evidence holds (`evidence_problem`):
+    a record of a line category (`LINE_CATEGORIES`) explains the lines its covering selectors select, any other its
+    admitted kinds as a whole. So two changes of one release that each declare their own lines pass, and a record
+    whose evidence fails on the cell is no failure where the others explain all it admits. Else the cell is a
+    `violation`, with a reason from each covering record that admits a kind left unexplained: its evidence's problem,
+    the first line no record explains, or the kinds that show in no line.
     """
     if not found:
         return Verdict("violation", ("the cell has no differing kind to judge",))
@@ -810,38 +852,38 @@ def judge(cell: RunCell, found: frozenset[CellKind], records: Sequence[Record], 
     }
     if not covering:
         return Verdict("violation", ("no record's [[change.cells]] covers the cell",))
-    admitted = {index: _admits(records[index]) & found for index in covering}
-    if missing := found - set().union(*admitted.values()):
+    differing = found | {_line_kind(line) for line in evidence.lines}
+    admitted = {index: _admits(records[index]) & differing for index in covering}
+    if missing := differing - set().union(*admitted.values()):
         return Verdict(
             "violation", tuple(f"no covering record admits the cell's {kind} difference" for kind in sorted(missing))
         )
-    decisions = [selector for index in covering if records[index].category in DECISIONS for selector in covering[index]]
-    problems = {
-        index: evidence_problem(
-            records[index],
-            decisions if records[index].category in DECISIONS else covering[index],
-            cell,
-            found,
-            evidence,
-        )
-        for index in admitted
-        if admitted[index]
-    }
-    settled = set().union(
-        *(
-            admitted[index]
-            for index, problem in problems.items()
-            if problem is None and records[index].category in DECISIVE
-        )
-    )
-    failing = [index for index, problem in problems.items() if problem is not None and not admitted[index] <= settled]
-    if failing:
+    problems = {index: evidence_problem(records[index], cell, found, evidence) for index in admitted if admitted[index]}
+    holding = {index: records[index].category for index, problem in problems.items() if problem is None}
+    explanation = _explain(differing, evidence.lines, covering=covering, admitted=admitted, holding=holding)
+    if left := explanation.open:
         return Verdict(
             "violation",
-            tuple(f"{records[index].id} ({records[index].category}): {problems[index]}" for index in failing),
+            tuple(
+                f"{records[index].id} ({records[index].category}): "
+                + (
+                    problems[index]
+                    or _unexplained_reason(
+                        records[index], admitted[index] & left, evidence.lines, explanation.explained
+                    )
+                )
+                for index in problems
+                if admitted[index] & left
+            ),
         )
-    holding = frozenset(index for index, problem in problems.items() if problem is None)
-    return Verdict("accepted", tuple(f"covered by {records[index].id}" for index in sorted(holding)), holding)
+    explaining = frozenset(
+        index
+        for index in holding
+        if index not in explanation.matched
+        or explanation.matched[index]
+        or (not evidence.lines and CellKind.OUTPUT in admitted[index])
+    )
+    return Verdict("accepted", tuple(f"covered by {records[index].id}" for index in sorted(explaining)), explaining)
 
 
 def _read(text: str) -> SourceModule:

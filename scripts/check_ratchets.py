@@ -204,6 +204,7 @@ HEKI_RULES = {
     "shallow-copy-nested-mutation": "MUT115",
     "sentinel-lost-in-deepcopy": "MUT118",
     "change-lost-on-new-object": "MUT119",
+    "readonly-view-mutation": "MUT120",
     "write-owner-violation": "MUT201",
     "readonly-return-mutation": "MUT202",
     "read-owner-violation": "MUT203",
@@ -226,6 +227,9 @@ HEKI_RULES = {
     "generator-never-iterated": "EFF116",
     "unretained-async-task": "EFF107",
     "effect-boundary-violation": "EFF201",
+    "import-cycle": "IMP101",
+    "import-owner-violation": "IMP201",
+    "unresolved-guarded-import": "IMP202",
     "loop-carried-concat": "DATA101",
     "list-quadratic-concat": "OPT101",
     "set-dict-quadratic-merge": "OPT102",
@@ -239,7 +243,7 @@ HEKI_RULES = {
     "loop-invariant-container-rebuild": "OPT130",
 }
 """The rules of the pinned heki by name (``heki rule --all``): a suppression may name a rule by its code or its name."""
-HEKI_CODE = re.compile(r"(?:EFF|MUT|DATA|OPT)\d{3}", re.IGNORECASE)
+HEKI_CODE = re.compile(r"(?:EFF|MUT|DATA|OPT|IMP)\d{3}", re.IGNORECASE)
 COMMENT_HINT = re.compile(r"pragma:|ignore|noqa", re.IGNORECASE)
 CALL_HINT = re.compile(
     r"cast|attr\(|attrgetter|__getattribute__|import_module|__import__|filterwarnings|simplefilter|catch_warnings"

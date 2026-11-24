@@ -31,6 +31,7 @@ from datamodel_code_generator import (
     DataModelType,
     Error,
     InputFileType,
+    NamingHintWarning,
     OpenAPIScope,
     PythonVersionMin,
     ReadOnlyWriteOnlyModelType,
@@ -12408,6 +12409,25 @@ def test_main_openapi_keep_content_parameter_refs(output_file: Path, extra_args:
     )
 
 
+def test_main_openapi_boolean_parameter_schemas(output_file: Path) -> None:
+    """Read a parameter whose schema is `true` or `false` as `Any`, as an empty or boolean media schema is (#7454).
+
+    Query, path, path-item, webhook and referenced parameters take the type; a header parameter and the response
+    headers, which get no field, validate too.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "boolean_parameter_schemas.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *("--openapi-scopes", "schemas", "paths", "parameters", "webhooks", "--include-path-parameters"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -17960,7 +17980,8 @@ def test_main_openapi_name_allof_union_members_after_branches_nested(
     ``Event1Base``, and its members, their bases and its shared part are named after that name (``Event1Base1``,
     ``Event1Base1Base``, ``Event1BaseBase``), as under ``--naming-strategy enclosing-model``. Under
     ``--distribute-allof-over-unions`` each member of ``Pair`` combines a branch of each of its two oneOfs, so every
-    branch is combined twice and none is the base of one member, also where ``--model-name-map`` names a member.
+    branch is combined twice and none is the base of one member, also where ``--model-name-map`` names a member. The
+    branch of ``Event`` that holds a oneOf warns that its variant checks none of its properties.
     """
 
     def branches(*names: str) -> dict[str, Any]:
@@ -18001,20 +18022,24 @@ def test_main_openapi_name_allof_union_members_after_branches_nested(
         }),
         encoding="utf-8",
     )
-    run_main_and_assert(
-        input_path=input_file,
-        output_path=output_file,
-        input_file_type="openapi",
-        extra_args=[
-            "--name-allof-union-members-after-branches",
-            "--distribute-allof-over-unions",
-            *extra_args,
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        force_exec_validation=True,
-    )
+    with (
+        pytest.warns(UserWarning, match="--distribute-allof-over-object-branches gives it one variant per model"),
+        contextlib.nullcontext() if extra_args else pytest.warns(NamingHintWarning),
+    ):
+        run_main_and_assert(
+            input_path=input_file,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--name-allof-union-members-after-branches",
+                "--distribute-allof-over-unions",
+                *extra_args,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
 
 
 def test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models() -> None:

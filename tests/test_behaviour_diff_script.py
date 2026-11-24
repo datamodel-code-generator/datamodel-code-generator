@@ -4176,6 +4176,16 @@ NO_BEHAVIOUR = CellEvidence("no-behaviour", model_files=True, rule_b=True, paylo
 TYPE_LINE = "[type] Model:a: int -> float"
 DECIDED = _judged("decided-change", _lines("tests/data/**", aspects=("type",), match="int -> float"))
 OUTPUT, EXIT, WARNINGS, MESSAGES = CellKind.OUTPUT, CellKind.EXIT, CellKind.WARNINGS, CellKind.MESSAGES
+GAP_NOTICE = _judged("notice", _lines("tests/data/**", match="gap"))
+TRACK_NOTICE = replace(GAP_NOTICE, id="other-notice", cells=(_lines("tests/data/**", match="track"),))
+GAP_WARNING, TRACK_WARNING = "[warning] added UserWarning: mind the gap", "[warning] added UserWarning: off the track"
+TWO_CHANGES = (GAP_WARNING, TRACK_WARNING, "[message] removed first attempt: off the track", "[message] added gap")
+"""The warning and message lines of two changes of one release on one cell, each declared by its own notice."""
+CRASH_FIXED = CellEvidence(
+    "crash-fix", lines=("[exit] 2 -> 0", GAP_WARNING, TRACK_WARNING, "[message] removed handled: Error"), exits=(2, 0)
+)
+REMOVED_FLAG = CellEvidence("violation", lines=("[exit] 0 -> 2",), exits=(0, 2), removed=frozenset({"--old-flag"}))
+OLD_FLAG_API = _judged("api", affects=(("options", ("--old-flag",)),))
 JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviour_diff.Cell]] = {
     "no record": ([], {OUTPUT}, NO_BEHAVIOUR, _cell()),
     "no selector covers the cell": (
@@ -4442,14 +4452,127 @@ JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviou
     ),
     "a record without a category": ([_judged(None)], {OUTPUT}, NO_BEHAVIOUR, _cell()),
     "a harness record": ([_judged("harness")], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+    "two notices, each line matched by one": (
+        [GAP_NOTICE, TRACK_NOTICE],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=TWO_CHANGES),
+        _cell(),
+    ),
+    "two notices and a warning line neither matches": (
+        [GAP_NOTICE, TRACK_NOTICE],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=(*TWO_CHANGES, "[warning] added UserWarning: other")),
+        _cell(),
+    ),
+    "one notice and the lines of another change it does not declare": (
+        [GAP_NOTICE],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=TWO_CHANGES),
+        _cell(),
+    ),
+    "a crash-fix on a cell that was no crash, two notices matching every line": (
+        [_judged("crash-fix"), GAP_NOTICE, TRACK_NOTICE],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=TWO_CHANGES),
+        _cell(),
+    ),
+    "a crash-fix on a cell that was no crash, two notices and a message line neither matches": (
+        [_judged("crash-fix"), GAP_NOTICE, TRACK_NOTICE],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=(*TWO_CHANGES, "[message] added other")),
+        _cell(),
+    ),
+    "a crash-fix on a cell that was no crash beside a notice, a warning line it does not match": (
+        [_judged("crash-fix"), GAP_NOTICE],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=("[warning] added UserWarning: other", "[message] added gap")),
+        _cell(),
+    ),
+    "a crash-fix and two notices, each warning matched by one": (
+        [_judged("crash-fix"), GAP_NOTICE, TRACK_NOTICE],
+        {OUTPUT, EXIT, WARNINGS, MESSAGES},
+        CRASH_FIXED,
+        _cell(),
+    ),
+    "a crash-fix and a notice that matches the warnings only": (
+        [_judged("crash-fix"), _judged("notice", _lines("tests/data/**", match="UserWarning"))],
+        {OUTPUT, EXIT, WARNINGS, MESSAGES},
+        CRASH_FIXED,
+        _cell(),
+    ),
+    "a crash-fix and two notices when a signature could not be taken": (
+        [_judged("crash-fix"), GAP_NOTICE, TRACK_NOTICE],
+        {OUTPUT, EXIT, WARNINGS, MESSAGES},
+        replace(CRASH_FIXED, signature_failed=True),
+        _cell(),
+    ),
+    "api beside a crash-fix on a cell that now fails": (
+        [OLD_FLAG_API, _judged("crash-fix")],
+        {EXIT, MESSAGES},
+        REMOVED_FLAG,
+        _cell(options=("--old-flag",)),
+    ),
+    "api beside a decision that selects none of the lines": (
+        [OLD_FLAG_API, DECIDED],
+        {EXIT, MESSAGES},
+        REMOVED_FLAG,
+        _cell(options=("--old-flag",)),
+    ),
+    "output-text beside a crash-fix on a cell that was no crash": (
+        [_judged("output-text"), _judged("crash-fix")],
+        {OUTPUT},
+        NO_BEHAVIOUR,
+        _cell(),
+    ),
+    "output-text and a notice beside an experimental record whose companion differs": (
+        [
+            _judged("experimental", affects=(("experimental", ("cli-option.generate-client",)),)),
+            _judged("output-text"),
+            GAP_NOTICE,
+        ],
+        {OUTPUT, WARNINGS},
+        replace(NO_BEHAVIOUR, companion_equal=False, lines=(GAP_WARNING,)),
+        _cell(options=("--generate-client",)),
+    ),
+    "output-text and two notices, one matching no line": (
+        [_judged("output-text"), GAP_NOTICE, TRACK_NOTICE],
+        {OUTPUT, WARNINGS},
+        replace(NO_BEHAVIOUR, lines=(GAP_WARNING,)),
+        _cell(),
+    ),
+    "a decision that selects no line beside a notice, on output that shows in no line": (
+        [DECIDED, GAP_NOTICE],
+        {OUTPUT, WARNINGS},
+        CellEvidence("violation", lines=(GAP_WARNING,)),
+        _cell(),
+    ),
+    "a notice and a signature line while the output is equal": (
+        [GAP_NOTICE],
+        {WARNINGS},
+        CellEvidence("same", lines=(TYPE_LINE, GAP_WARNING)),
+        _cell(),
+    ),
+    "output-text and a decision on a no-behaviour cell": (
+        [_judged("output-text"), DECIDED],
+        {OUTPUT},
+        NO_BEHAVIOUR,
+        _cell(),
+    ),
+    "a decision that selects the exit line beside a notice, on output that shows in no line": (
+        [_judged("default-fix", _lines("tests/data/**", aspects=("exit",))), GAP_NOTICE],
+        {OUTPUT, EXIT, WARNINGS},
+        CellEvidence("violation", lines=("[exit] 0 -> 1", GAP_WARNING), exits=(0, 1)),
+        _cell(),
+    ),
 }
 
 
 @pytest.mark.parametrize("case", sorted(JUDGE_CASES))
 def test_judge(case: str) -> None:
-    """A differing cell passes when the records that cover it admit each kind of its difference with their evidence.
+    """A differing cell passes when the records that cover it admit each kind of its difference and explain it together.
 
-    A decision's, an experimental or a crash-fix record's holding evidence covers the kinds it admits alone.
+    Decisions and notices explain the lines their selectors select, the other categories the kinds they admit, where
+    their evidence holds; a record whose evidence fails is no failure where the others explain all it admits.
     """
     records, found, evidence, cell = JUDGE_CASES[case]
     verdict = judge(cell, frozenset(found), records, evidence)

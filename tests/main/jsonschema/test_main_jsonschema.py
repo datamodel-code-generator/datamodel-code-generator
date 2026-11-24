@@ -58,6 +58,7 @@ from datamodel_code_generator import (
     GenerateConfig,
     InputFileType,
     InvalidFileFormatError,
+    NamingHintWarning,
     PythonVersion,
     PythonVersionMin,
     SchemaResourceRefWarning,
@@ -30072,26 +30073,30 @@ def test_main_jsonschema_runtime_root_merges_generic_base_config(output_dir: Pat
 
 def test_main_jsonschema_property_count_cross_module_with_generic_base_class(output_dir: Path) -> None:
     """Reuse an imported generic base before runtime helpers in split modules."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_property_count_cross_module",
-        output_path=output_dir,
-        input_file_type="jsonschema",
-        extra_args=[
-            "--extra-fields",
-            "forbid",
-            "--generate-schema-validators",
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--use-generic-base-class",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        force_exec_validation=True,
-        runtime_validation_module="property_parent",
-        runtime_validation_model_name="PropertyParent",
-        runtime_validation_data={"value": "x", "second": "y"},
-    )
+    with (
+        pytest.warns(UserWarning, match="an allOf over a union, which is no class a model can extend"),
+        pytest.warns(NamingHintWarning),
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_property_count_cross_module",
+            output_path=output_dir,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--extra-fields",
+                "forbid",
+                "--generate-schema-validators",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--use-generic-base-class",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+            runtime_validation_module="property_parent",
+            runtime_validation_model_name="PropertyParent",
+            runtime_validation_data={"value": "x", "second": "y"},
+        )
     with _generated_package_module(output_dir, "property_parent") as module:
         validate_json = _model_json_validator(module.PropertyParent)
         _assert_model_json_invalid(validate_json, '{"value":"x"}', "value_error")
@@ -30100,23 +30105,27 @@ def test_main_jsonschema_property_count_cross_module_with_generic_base_class(out
 
 def test_main_jsonschema_property_count_cross_module_capabilities(output_dir: Path) -> None:
     """Retain property and core validators across module-boundary allOf inheritance."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_property_count_cross_module",
-        output_path=output_dir,
-        input_file_type="jsonschema",
-        extra_args=[
-            "--generate-schema-validators",
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        force_exec_validation=True,
-        runtime_validation_module="property_child",
-        runtime_validation_model_name="PropertyChild",
-        runtime_validation_data={"base": "x", "child": "y"},
-    )
+    with (
+        pytest.warns(UserWarning, match="an allOf over a union, which is no class a model can extend"),
+        pytest.warns(NamingHintWarning),
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_property_count_cross_module",
+            output_path=output_dir,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--generate-schema-validators",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+            runtime_validation_module="property_child",
+            runtime_validation_model_name="PropertyChild",
+            runtime_validation_data={"base": "x", "child": "y"},
+        )
     for module_path, model_name, valid_json, invalid_json, expected_error_type in (
         (
             "property_child",
@@ -40449,15 +40458,21 @@ def test_main_jsonschema_distribute_allof_over_unions_through_ref(
     of ``Mid`` and ``Leaf``, across the three documents; a member naming a schema already read in place adds
     nothing, so ``Loop`` and ``Back``, each an allOf over the other, end (without the option their models fail to
     import). A member of another document is read as that document reads it: the ``$recursiveRef: "#"`` of ``Mid``
-    names the root of its own document (``child: RecursiveMid``), not that of ``Recursive``.
+    names the root of its own document (``child: RecursiveMid``), not that of ``Recursive``. Without the option the
+    dropped member warns.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / input_name,
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
-        force_exec_validation=True,
-    )
+    with (
+        nullcontext()
+        if extra_args
+        else pytest.warns(UserWarning, match="an allOf over a union, which is no class a model can extend")
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / input_name,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+            force_exec_validation=True,
+        )
 
 
 @pytest.mark.parametrize(

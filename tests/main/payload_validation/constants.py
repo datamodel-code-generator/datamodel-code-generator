@@ -171,6 +171,21 @@ EXCLUDED_FILES: dict[str, str] = {
         "which hypothesis-jsonschema cannot satisfy for generic payload validation"
     ),
     "jsonschema/unknown_format.json": "unknown format fixture intentionally emits a generator warning",
+    "jsonschema/allof_union_object_branches/union_branches.json": (
+        "pins the 0.100.0 output --distribute-allof-over-object-branches fixes, with its warning: a branch that is "
+        "itself a union gives a variant of the other members alone; test_allof_union_object_branches validates its "
+        "payloads"
+    ),
+    "jsonschema/allof_union_object_branches/other_document/model.json": (
+        "pins the 0.100.0 output --distribute-allof-over-object-branches fixes, with its warning: a branch that is "
+        "itself a union gives a variant of the other members alone; test_allof_union_object_branches validates its "
+        "payloads"
+    ),
+    "openapi/allof_union_object_branches/discriminated.yaml": (
+        "pins the 0.100.0 output --distribute-allof-over-object-branches fixes, with its warning: a branch that is "
+        "itself a union gives a variant of the other members alone; test_allof_union_object_branches validates its "
+        "payloads"
+    ),
     "jsonschema/format_string_keywords.json": (
         "option-only e2e fixture of --keep-string-keywords-beside-formats; payload validation intentionally uses "
         "default generation, which drops the keywords; test_keep_string_keywords_beside_formats and the decision "

@@ -3,7 +3,7 @@ id = "derived-triggers"
 category = "internal"
 title = "List the passes that skip in their bodies in the pipeline traces"
 summary = "The pipeline traces name the passes that now run on every input and return early, and the trigger and when checks have stored listings."
-refs = ["#1"]
+refs = ["#7490"]
 covers = [
     "parser/pipeline/trace_matches_golden[jsonschema].txt",
     "parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt",
