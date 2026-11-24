@@ -10,13 +10,6 @@
 # approvals.
 
 [[approved]]
-key = "allowlist:heki-baseline"
-head = 1871
-pr = 7491
-decision = ["#7491"]
-reason = "heki's IMP101 checks the import cycles of the package over every import, function-local and TYPE_CHECKING ones included: the 4 lazy cycle groups the import-cycle:lazy@src (33 sites) and import-cycle:largest-lazy@src (25 sites) keys counted join the heki baseline as one entry each, so the baseline rises once by 4 while those keys go away"
-
-[[approved]]
 key = "abnormal-path@tests"
 head = 54
 pr = 7495
