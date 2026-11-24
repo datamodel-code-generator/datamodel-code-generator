@@ -22,24 +22,24 @@ other members, or an alias of a ``Literal`` of str and other values.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.msgspec_str_like import STR, msgspec_str_like_leaf
 from datamodel_code_generator.parser._passes._shared import msgspec_union_members
 from datamodel_code_generator.parser._passes.imports import _msgspec_enum_kinds
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
+from datamodel_code_generator.parser._phases import DecisionPass, live_model_of
 from datamodel_code_generator.reference import _json_number_of
 from datamodel_code_generator.types import _union_members, _written_member, _written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
 
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
 
-__all__ = ["MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS", "StrLikeUnionWriter"]
+__all__ = ["MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS"]
 
 _Slot: TypeAlias = "tuple[DataTypeView, str | None]"
 """A written member of a union and the str-like member msgspec counts it as, or None."""
@@ -57,24 +57,6 @@ _Member: TypeAlias = "DataTypeView | str | tuple[bool | int | str, ...]"
 
 _Rewrite: TypeAlias = "tuple[DataTypeView, tuple[_Member, ...]]"
 """A union of a field's type tree and the members it is written with."""
-
-
-class StrLikeUnionWriter(DecisionWriter, Protocol):
-    """The write of the decision: one ``str`` for the str-like members of the unions of a field."""
-
-    def merge_str_like_members(
-        self,
-        model: ModelView,
-        field: FieldView,
-        rewrites: Sequence[_Rewrite],
-        merged: Sequence[DataTypeView],
-    ) -> None:
-        """Write the unions of ``rewrites``, types of ``field`` of ``model``, with the members each names.
-
-        A name among them is a new plain type (``str``, ``None``) and a tuple a new ``Literal`` of its values;
-        ``merged`` are the members the field loses, whose references are dropped. The field gets a copy of its type
-        tree; the nodes other fields share stay as they are.
-        """
 
 
 def _union_roots(data_type: DataTypeView, *, spread: bool = False) -> Iterator[DataTypeView]:
@@ -202,7 +184,7 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
     return rewrites
 
 
-def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: StrLikeUnionWriter) -> None:
+def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Write one ``str`` for the str-like members of every union of a live model that msgspec refuses for them.
 
     Every union is decided on the types before the first write, so a union that names a type alias reads the alias's
@@ -228,12 +210,11 @@ def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: StrLikeUnio
         )
 
 
-MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS: Final[DecisionPass[StrLikeUnionWriter]] = DecisionPass(
+MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS: Final[DecisionPass] = DecisionPass(
     {
         "name": "merge_msgspec_str_like_union_members",
         "issue": "fix-msgspec-str-like-unions",
     },
-    StrLikeUnionWriter,
     _merge_msgspec_str_like_union_members,
     when=lambda parser: (
         parser.merge_msgspec_str_like_union_members and parser.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR

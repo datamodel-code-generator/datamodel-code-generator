@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+from dataclasses import replace
 from fnmatch import fnmatchcase
 from pathlib import Path
 
@@ -23,6 +24,7 @@ import tomllib
 from scripts import build_heki_contracts, check_ratchets
 from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
 from scripts.fact_tables import MemberUse, StoreMember
+from scripts.pass_decls import DECISION_DECLS
 from tests.capabilities import needs
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -843,3 +845,95 @@ def test_store_members_name_a_method_or_a_bookkeeping_row(
         build_heki_contracts.store_member_contracts(repo)
 
     assert str(stopped.value) == message
+
+
+SEEDED_DECISION_WRITES = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_phases.py": (
+        "class _DecisionWriter:\n"
+        "    def drop_held_null(self, field: object) -> None:\n        self.dropped = field\n\n"
+        "    def omit_default(self, field: object) -> None:\n        self.omitted = field\n"
+    ),
+    f"{PACKAGE}/parser/_held_null.py": (
+        "from datamodel_code_generator.model.helpers import omit_through_a_helper\n"
+        "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
+        "def own_write(writer: _DecisionWriter) -> None:\n    writer.drop_held_null(1)\n\n\n"
+        "def other_write(writer: _DecisionWriter) -> None:\n    writer.omit_default(1)\n\n\n"
+        "def helper_write(writer: _DecisionWriter) -> None:\n    omit_through_a_helper(writer)\n\n\n"
+        "def untyped_write(writer) -> None:\n    writer.omit_default(1)\n"
+    ),
+    f"{PACKAGE}/parser/_incomplete_defaults.py": (
+        "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
+        "def own_write(writer: _DecisionWriter) -> None:\n    writer.omit_default(1)\n"
+    ),
+    f"{PACKAGE}/model/__init__.py": "",
+    f"{PACKAGE}/model/helpers.py": (
+        "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
+        "def omit_through_a_helper(writer: _DecisionWriter) -> None:\n    writer.omit_default(1)\n"
+    ),
+}
+"""Two decisions and their writes: ``_held_null.py`` writes through its own write, and through the write of the
+incomplete defaults directly, through a helper of another module and on an untyped receiver."""
+SEEDED_DECISION_DECLS = {
+    name: replace(DECISION_DECLS[name], module=module, writer_methods=methods)
+    for name, module, methods in (
+        ("omit_held_null", "parser/_held_null.py", ("drop_held_null",)),
+        ("omit_incomplete_model_defaults", "parser/_incomplete_defaults.py", ("omit_default",)),
+    )
+}
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_a_decision_that_calls_the_write_of_another(tmp_path: Path) -> None:
+    """A write of the decision writer is called only in the module of the decision that writes through it.
+
+    A call from another decision's module, through a helper of another module or on an untyped receiver is a finding.
+    """
+    for name, text in SEEDED_DECISION_WRITES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    contracts.write_text(
+        "\n".join(build_heki_contracts.decision_writer_contracts(repo, SEEDED_DECISION_DECLS)), encoding="utf-8"
+    )
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].rpartition(".")[2])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("_held_null.py", "other_write", "MUT204", "omit_default"),
+            ("_held_null.py", "untyped_write", "MUT207", "omit_default"),
+            ("helpers.py", "omit_through_a_helper", "MUT204", "omit_default"),
+        ],
+    ), result.stderr
+
+
+@pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
+def test_decision_writes_name_a_method_of_the_writer() -> None:
+    """A write that ``writer_methods`` of ``DECISION_DECLS`` names is a method ``_DecisionWriter`` defines."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+    decls = {"omit_held_null": replace(DECISION_DECLS["omit_held_null"], writer_methods=("never_defined",))}
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.decision_writer_contracts(repo, decls)
+
+    assert str(stopped.value) == (
+        "DECISION_DECLS: omit_held_null writes through never_defined, which _DecisionWriter does not define"
+    )

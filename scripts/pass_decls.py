@@ -121,6 +121,11 @@ class PassDecl:
     """When the pipeline runs the pass; empty when it always does."""
     trigger: Trigger | None = None
     """When the pass has something to rewrite; None when it may have something wherever it runs."""
+    module: str = ""
+    """The module that defines a decision, as its path below ``src/datamodel_code_generator``."""
+    writer_methods: tuple[str, ...] = ()
+    """The methods of the decision writer (``parser/_phases.py:_DecisionWriter``) a decision writes through, which no
+    other module calls (heki's contracts, ``scripts/build_heki_contracts.py``)."""
 
 
 def _facts(*members: Fact | RenderFact) -> frozenset[Fact | RenderFact]:
@@ -2145,6 +2150,8 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         writes=frozenset({Fact.FIELD_TYPES, Fact.NULLABLE}),
         summary="Drops the None a type restates of the model it names when that model holds null itself.",
         condition="--omit-redundant-reference-null",
+        module="parser/_held_null.py",
+        writer_methods=("drop_held_null",),
     ),
     "omit_untaken_union_constraints": PassDecl(
         "omit_untaken_union_constraints",
@@ -2163,6 +2170,8 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             After("merge_msgspec_str_like_union_members", "reads the union members after str-like members merged"),
         ),
         condition="--field-constraints",
+        module="parser/_union_constraints.py",
+        writer_methods=("drop_field_constraints",),
     ),
     "serialize_as_any_for_every_subclass": PassDecl(
         "serialize_as_any_for_every_subclass",
@@ -2177,6 +2186,8 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         ),
         after=(After("omit_held_null", "marks the models whose referencing types the None omission rewrote"),),
         condition="--use-serialize-as-any-for-every-subclass",
+        module="parser/_serialize_as_any.py",
+        writer_methods=("mark_serialized_as_any",),
     ),
     "write_unique_items_as_sets": PassDecl(
         "write_unique_items_as_sets",
@@ -2204,6 +2215,8 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             After("merge_msgspec_str_like_union_members", "reads the item types after str-like union members merged"),
         ),
         condition="--use-unique-items-as-set-by-value",
+        module="parser/_unique_sets.py",
+        writer_methods=("write_sets", "write_additional_properties_sets"),
     ),
     "omit_incomplete_model_defaults": PassDecl(
         "omit_incomplete_model_defaults",
@@ -2239,6 +2252,8 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             ),
         ),
         condition="--omit-incomplete-model-defaults",
+        module="parser/_incomplete_defaults.py",
+        writer_methods=("omit_default",),
     ),
     "merge_msgspec_str_like_union_members": PassDecl(
         "merge_msgspec_str_like_union_members",
@@ -2256,6 +2271,8 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             After("serialize_as_any_for_every_subclass", "writes the field types after the SerializeAsAny marks"),
         ),
         condition="--merge-msgspec-str-like-union-members",
+        module="parser/_str_like_unions.py",
+        writer_methods=("merge_str_like_members",),
     ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

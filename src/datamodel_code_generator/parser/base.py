@@ -721,7 +721,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _cache_local_sources_during_parse: ClassVar[bool] = False
     _cache_parsed_sources_from_path: ClassVar[bool] = False
     _collapses_list_item_root_models: ClassVar[bool] = True
-    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (
+    _DECISION_PASSES: ClassVar[tuple[DecisionPass, ...]] = (
         OMIT_HELD_NULL,
         SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
         MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS,

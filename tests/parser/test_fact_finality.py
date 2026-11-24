@@ -332,7 +332,7 @@ def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_
         reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
         writes=frozenset(written),
     )
-    return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
+    return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, run),)
 
 
 def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:

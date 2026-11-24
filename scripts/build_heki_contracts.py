@@ -67,12 +67,14 @@ from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
 from scripts.check_ratchets import ENVIRONMENT_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
 from scripts.fact_tables import ATTRIBUTE_FACTS, STORE_MEMBERS, Access, FactKind, MemberUse, StoreMember
+from scripts.pass_decls import DECISION_DECLS
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from scripts.decision_homes import BuilderHome, DecisionHome
+    from scripts.pass_decls import PassDecl
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
@@ -80,6 +82,8 @@ PYPROJECT = ROOT / "pyproject.toml"
 SOURCE_ROOT = ROOT / PACKAGE_DIR
 STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
+DECISION_WRITER = f"{PACKAGE}.parser._phases._DecisionWriter"
+"""The one writer of the decisions (``parser/_phases.py``), over the store: what a decision calls to write."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
 RULES = ("EFF201", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
 HEADER = """\
@@ -312,6 +316,39 @@ def decision_home_contracts(repo: Repo, records: Iterable[DecisionHome] = DECISI
     return [contracts[home] for home in sorted(contracts)]
 
 
+def decision_writer_contracts(repo: Repo, decls: Mapping[str, PassDecl] = DECISION_DECLS) -> list[str]:
+    """Return a ``call-owners`` contract per write of the decision writer: only the module of its decision calls it.
+
+    ``writer_methods`` of ``DECISION_DECLS`` names the methods of ``_DecisionWriter`` each decision writes through. A
+    call from another module, also through the functions it calls, or on a receiver heki cannot tie to a class is a
+    finding.
+    """
+    module, _, owner = DECISION_WRITER.rpartition(".")
+    functions = {
+        f"{name}.{scope.qualname}"
+        for rel, name in _package_modules(repo).items()
+        for scope in repo.model(rel).scopes
+        if scope.kind == "function"
+    }
+    contracts: list[str] = []
+    for decl in sorted(decls.values(), key=lambda decl: decl.name):
+        for method in decl.writer_methods:
+            if f"{DECISION_WRITER}.{method}" not in functions:
+                message = f"DECISION_DECLS: {decl.name} writes through {method}, which {owner} does not define"
+                raise SystemExit(message)
+            contracts.append(
+                _table(
+                    "call-owners",
+                    name=f"decision-writer:{method}",
+                    targets=[f"{module}:{owner}.{method}"],
+                    allowed_callers=_scope(_module(decl.module), ""),
+                    attribution="call-graph",
+                    unresolved="report",
+                )
+            )
+    return contracts
+
+
 class _Protocols:
     """The members the Protocols of the package declare, by name, and the classes of the package, by dotted name."""
 
@@ -480,6 +517,7 @@ def generate() -> str:
         *write_owner_contracts(repo),
         *store_member_contracts(repo),
         *decision_home_contracts(repo),
+        *decision_writer_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
         *environment_contracts(),

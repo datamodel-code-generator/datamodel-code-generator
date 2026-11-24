@@ -1,19 +1,20 @@
-"""The decision phase: decisions that read the facts final at B1 and write through their own writer.
+"""The decision phase: decisions that read the facts final at B1 and write through the decision writer.
 
 ``Parser`` enters ``DECIDE`` right after ``__apply_generic_base_class`` (B1). When its registry
 (``Parser._DECISION_PASSES``) holds decisions, ``GenerationStore.seal_facts`` builds the one ``FinalFacts`` of the
 parse: the live models of every module, typed as the read-only views of ``model/_views.py``. Each ``DecisionPass``
-then runs, in registry order, with ``FinalFacts`` and the writer protocol it names, which ``_DecisionWriter``
-implements over the store. Its ``DecisionSpec`` names its declaration in ``scripts/pass_decls.py``
-(``DECISION_DECLS``), to which the finality check of the test suite (``tests/checks/finality.py``) holds its writes;
-``scripts/check_pass_pipeline.py`` checks that the registry lists the decisions in the order the order rule computes
-from their declarations: a decision that reads what another writes runs after it, every other conflict needs an
-``After`` edge, and the registration order breaks ties.
+then runs, in registry order, with ``FinalFacts`` and ``_DecisionWriter``, the one writer over the store; a decision
+calls only its own writes, the methods that ``writer_methods`` of its declaration names (heki's contracts in
+``scripts/heki.toml``, which ``scripts/build_heki_contracts.py`` writes, report any other call). Its ``DecisionSpec``
+names its declaration in ``scripts/pass_decls.py`` (``DECISION_DECLS``), to which the finality check of the test suite
+(``tests/checks/finality.py``) holds its writes; ``scripts/check_pass_pipeline.py`` checks that the registry lists the
+decisions in the order the order rule computes from their declarations: a decision that reads what another writes runs
+after it, every other conflict needs an ``After`` edge, and the registration order breaks ties.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import ReadOnly, TypedDict, final
 
@@ -34,7 +35,6 @@ __all__ = [
     "DecisionPass",
     "DecisionSpec",
     "DecisionStore",
-    "DecisionWriter",
     "FinalFacts",
     "ModuleFacts",
     "container_copy",
@@ -45,18 +45,12 @@ __all__ = [
     "rewrite_field_copy",
 ]
 
-W = TypeVar("W", bound="DecisionWriter")
-
 
 class DecisionSpec(TypedDict, closed=True):
     """A decision: the name of its declaration (``scripts/pass_decls.py:DECISION_DECLS``) and the issue it fixes."""
 
     name: ReadOnly[str]
     issue: ReadOnly[str]
-
-
-class DecisionWriter(Protocol):
-    """The writes a decision may make; each decision names the protocol of its own writes, which extends this one."""
 
 
 class DecisionStore(Protocol):
@@ -165,22 +159,25 @@ class DecisionOutcome:
 
 @final
 @record
-class DecisionPass(Generic[W]):
-    """One decision: ``run`` reads ``FinalFacts`` and writes through ``writer``, the protocol of its writes.
+class DecisionPass:
+    """One decision: ``run`` reads ``FinalFacts`` and writes through the decision writer.
 
     A decision behind an option names it in ``when``; the phase seals no facts when no decision runs.
     """
 
     spec: DecisionSpec
-    writer: type[W]
-    run: Callable[[FinalFacts, W], None]
+    run: Callable[[FinalFacts, _DecisionWriter], None]
     when: Callable[[Any], bool] | None = None
     """Whether the decision runs for a parser, from its options; it always does without one."""
 
 
 @final
 class _DecisionWriter:
-    """The one implementation of the writer protocols, over the generation store; it records the models it changes."""
+    """The writes of the decisions, over the generation store; it records the models it changes.
+
+    Each write belongs to one decision, which names it in ``writer_methods`` of its declaration
+    (``scripts/pass_decls.py``).
+    """
 
     __slots__ = ("_changed", "_copy", "_merged_str_like_unions", "_store")
 
@@ -191,7 +188,7 @@ class _DecisionWriter:
         self._merged_str_like_unions: list[tuple[DataModel, DataModelFieldBase, tuple[DataType, ...]]] = []
 
     def drop_held_null(self, model: ModelView, field: FieldView, data_types: Sequence[DataTypeView]) -> None:
-        """Drop the None each of ``data_types``, types of ``field`` of ``model``, restates (``HeldNullWriter``).
+        """Drop the None each of ``data_types``, types of ``field`` of ``model``, restates (``_held_null.py``).
 
         Fields share type nodes, so the field gets a copy of its type tree that loses the Nones, and the nodes
         stay as the other fields see them.
@@ -211,7 +208,7 @@ class _DecisionWriter:
         keywords: frozenset[str],
         members: Sequence[tuple[DataTypeView, object]],
     ) -> None:
-        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``UnionConstraintsWriter``).
+        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``_union_constraints.py``).
 
         Each member of ``members``, a type of the field, is written as the type paired with it, which holds the
         keywords in its place; the field takes a copy of its type tree with them (``rewrite_copied_type``), and the
@@ -228,14 +225,14 @@ class _DecisionWriter:
         self._mark_changed(model)
 
     def mark_serialized_as_any(self, model: ModelView, *, wrapped: bool) -> None:
-        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` (``SerializeAsAnyWriter``)."""
+        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` (``_serialize_as_any.py``)."""
         self._store.mark_serialized_as_any(model, wrapped=wrapped)
         self._mark_changed(model)
 
     def write_sets(
         self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: object | None
     ) -> None:
-        """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` (``UniqueSetsWriter``).
+        """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` (``_unique_sets.py``).
 
         Fields share type nodes, so the field gets a copy of its type tree, whose copies of the lists are then swapped
         for sets, inner ones first; the nodes stay as the other fields see them.
@@ -246,7 +243,7 @@ class _DecisionWriter:
         self._mark_changed(model)
 
     def write_additional_properties_sets(self, model: ModelView, lists: Sequence[DataTypeView]) -> None:
-        """Write each of ``lists``, types of the additional properties of ``model``, as a set (``UniqueSetsWriter``).
+        """Write each of ``lists``, types of the additional properties of ``model``, as a set (``_unique_sets.py``).
 
         The model takes a copy of the type tree with the sets (``rewrite_copied_type``); the nodes stay as they are.
         """
@@ -254,7 +251,7 @@ class _DecisionWriter:
         self._mark_changed(model)
 
     def omit_default(self, model: ModelView, field: FieldView) -> None:
-        """Write ``field`` of ``model`` without its default (``IncompleteDefaultsWriter``)."""
+        """Write ``field`` of ``model`` without its default (``_incomplete_defaults.py``)."""
         self._store.omit_field_default(field)
         self._mark_changed(model)
 
@@ -265,7 +262,7 @@ class _DecisionWriter:
         rewrites: Sequence[tuple[DataTypeView, Sequence[DataTypeView | str | tuple[bool | int | str, ...]]]],
         merged: Sequence[DataTypeView],
     ) -> None:
-        """Write each union of ``rewrites``, a type of ``field`` of ``model``, with its members (StrLikeUnionWriter).
+        """Write each union of ``rewrites``, a type of ``field`` of ``model``, with its members.
 
         Fields share type nodes, so the field gets a copy of its type tree, whose copies of the unions take the copies
         of their members, a new type for a name (``str``, ``None``) and a new ``Literal`` for a tuple of values; the

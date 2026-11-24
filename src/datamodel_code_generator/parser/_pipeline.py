@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from types import FrameType
 
     from datamodel_code_generator.parser._facts import Phase
-    from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, FinalFacts
+    from datamodel_code_generator.parser._phases import DecisionPass, FinalFacts, _DecisionWriter
 
 __all__ = [
     "PARSE_CALLER",
@@ -177,7 +177,7 @@ class Runner:
         spec.run(parser, state)
 
     def run_decision(  # noqa: PLR6301
-        self, decision: DecisionPass[DecisionWriter], facts: FinalFacts, writer: DecisionWriter
+        self, decision: DecisionPass, facts: FinalFacts, writer: _DecisionWriter
     ) -> None:
         """Run one decision."""
         decision.run(facts, writer)

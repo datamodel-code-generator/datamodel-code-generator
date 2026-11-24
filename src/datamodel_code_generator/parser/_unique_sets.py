@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator._container_kinds import (
     ARRAYS,
@@ -45,7 +45,7 @@ from datamodel_code_generator.parser._passes._shared import (
     additional_properties_holder,
     plan_unique_sets,
 )
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_models_by_key
+from datamodel_code_generator.parser._phases import DecisionPass, live_models_by_key
 from datamodel_code_generator.types import _takes_json_scalar
 
 if TYPE_CHECKING:
@@ -55,30 +55,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
     from datamodel_code_generator.parser._passes._shared import AdditionalPropertiesHolder
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
 
-__all__ = ["WRITE_UNIQUE_ITEMS_AS_SETS", "UniqueSetsWriter"]
+__all__ = ["WRITE_UNIQUE_ITEMS_AS_SETS"]
 
 _ANY_TYPES = frozenset({"Any", "object"})
 """The types whose values are any value, some of which do not hash."""
-
-
-class UniqueSetsWriter(DecisionWriter, Protocol):
-    """The write of the decision: write lists of a field's type as sets, and its default as the sets write it."""
-
-    def write_sets(
-        self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: object | None
-    ) -> None:
-        """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` but None as its default.
-
-        The field gets a copy of its type tree with the sets; the nodes other fields share stay as they are.
-        """
-
-    def write_additional_properties_sets(self, model: ModelView, lists: Sequence[DataTypeView]) -> None:
-        """Write each of ``lists``, types of the additional properties of ``model`` (``extra_items``), as a set.
-
-        The model takes a copy of the type tree with the sets; the nodes stay as they are.
-        """
 
 
 class _ByValue:
@@ -334,7 +316,7 @@ class _ByValue:
         return every_value_hashes(self.item(field.data_type, {*map(id, plan.sets)}))
 
 
-def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> None:
+def _write_unique_items_as_sets(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Write the uniqueItems lists of every live model whose final items hash by value as sets.
 
     Which models hash by value is read again until no field contradicts it, then the plans of that reading are
@@ -401,7 +383,6 @@ WRITE_UNIQUE_ITEMS_AS_SETS = DecisionPass(
         "name": "write_unique_items_as_sets",
         "issue": "#4834",
     },
-    UniqueSetsWriter,
     _write_unique_items_as_sets,
     when=lambda parser: parser.use_unique_items_as_set and parser.use_unique_items_as_set_by_value,
 )

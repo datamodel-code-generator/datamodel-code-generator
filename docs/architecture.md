@@ -1032,8 +1032,7 @@ with the default None and the nullability the parse records for it without the d
 so the constructor ordering places it as a field without a default. A decision is a
 `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
 `DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,
-and the issue it fixes), the writer protocol of its
-writes (a `DecisionWriter`), `run(facts, writer)` and, for a decision behind an option, `when(parser)`. When a decision
+and the issue it fixes), `run(facts, writer)` and, for a decision behind an option, `when(parser)`. When a decision
 runs, `GenerationStore.seal_facts` builds the one `FinalFacts` of the parse: per output module, the models that render
 (unused models, which leave their modules later, are left out), as the read-only views of `model/_views.py`
 (`ModelView`, `FieldView`, `DataTypeView`, `ReferenceView`), and the keywords the value of a union member takes in the
@@ -1041,7 +1040,9 @@ output model (`member_keywords`), with the type that holds keywords in place of 
 (`constrained_member`). The views list the facts final at B1 and rendered
 nullability through `admits_none`, never the `is_optional` that render preparation writes; presentation attributes are
 not part of them, and type checking rejects writes through a view. Every decision writes through `_DecisionWriter`, the
-one implementation of the writer protocols over the store, which records the models it changes (`DecisionOutcome`). A
+one writer over the store, which records the models it changes (`DecisionOutcome`); a decision calls only its own
+writes, the methods `writer_methods` of its `PassDecl` names, which heki's `decision-writer:` contracts hold to the
+module of the decision (`module`). A
 writer never changes a data type node that other fields share: it replaces the node in the one field with a copy
 first.
 
@@ -1052,8 +1053,7 @@ breaks ties. The finality check runs each inside the
 scope of its declaration, so it holds its writes to the facts it declares. With the finality check on, `FinalFacts`
 holds guarded views that report each read of a render fact as `render-read` ([Fact Finality](#fact-finality)).
 `scripts/check_pass_pipeline.py` checks every registry: unique names that no table pass has, global transforms of
-`DECIDE` that read and write facts only, an issue each, writer protocols that `_DecisionWriter` implements, and the
-order rule, whose order the registry lists.
+`DECIDE` that read and write facts only, an issue each, and the order rule, whose order the registry lists.
 
 ### Hidden Couplings
 

@@ -14,8 +14,7 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
 * the decision registry of ``Parser`` and of every parser class that sets one (``_DECISION_PASSES``) holds global
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
-  their issue, have writer protocols that ``_DecisionWriter`` implements, and satisfy the order rule, which computes
-  the order the registry lists them in;
+  their issue, and satisfy the order rule, which computes the order the registry lists them in;
 * ``FinalFacts`` is built in one place, ``GenerationStore.seal_facts``;
 * every member of the views of ``model/_views.py`` reads an ``ATTRIBUTE_FACTS`` row of its class that holds a fact
   final at B1, or that holds no fact (identity), unless ``VIEW_ACCESSORS`` lists it;
@@ -63,12 +62,7 @@ from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._facts import Phase  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._passes import _tables  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._passes._tables import PIPELINE  # noqa: E402, PLC2701
-from datamodel_code_generator.parser._phases import (  # noqa: E402, PLC2701
-    DecisionPass,
-    DecisionWriter,
-    FinalFacts,
-    _DecisionWriter,
-)
+from datamodel_code_generator.parser._phases import DecisionPass, FinalFacts  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     ForEachModule,
     HookCall,
@@ -102,7 +96,6 @@ __all__ = [
     "DECISION_DECLS",
     "After",
     "DecisionPass",
-    "DecisionWriter",
     "Fact",
     "FinalFacts",
     "OrderCheck",
@@ -390,17 +383,15 @@ def _reaches(successors: Mapping[str, set[str]], start: str, goal: str) -> bool:
 
 
 def decision_order(
-    decisions: Sequence[DecisionPass[Any]], decls: Mapping[str, PassDecl] = DECISION_DECLS
-) -> tuple[DecisionPass[Any], ...]:
+    decisions: Sequence[DecisionPass], decls: Mapping[str, PassDecl] = DECISION_DECLS
+) -> tuple[DecisionPass, ...]:
     """Return ``decisions`` in the order the order rule computes from ``decls``, registration breaking ties."""
     by_name = {decision.spec["name"]: decision for decision in decisions}
     order = check_order([decls[decision.spec["name"]] for decision in decisions], computed=True).order
     return tuple(by_name[name] for name in order)
 
 
-def decision_problems(
-    decisions: Sequence[DecisionPass[Any]], decls: Mapping[str, PassDecl] = DECISION_DECLS
-) -> list[str]:
+def decision_problems(decisions: Sequence[DecisionPass], decls: Mapping[str, PassDecl] = DECISION_DECLS) -> list[str]:
     """Return what is wrong with one decision registry, against ``decls`` and the rules of the decision phase."""
     problems: list[str] = []
     table = {decl.name for decl in PASS_DECLS}
@@ -423,10 +414,6 @@ def decision_problems(
             problems.append(f"decision {name} reads or writes {', '.join(render)}: decisions read and write facts")
         if not decision.spec["issue"]:
             problems.append(f"decision {name} names no issue")
-        if DecisionWriter not in decision.writer.__mro__:
-            problems.append(f"decision {name} writes through {decision.writer.__name__}, no DecisionWriter")
-        elif missing := sorted(get_protocol_members(decision.writer) - set(dir(_DecisionWriter))):
-            problems.append(f"decision {name} writes through {', '.join(missing)}, which _DecisionWriter lacks")
     if len(seen) == len(decisions) and seen <= decls.keys():
         result = check_order([decls[decision.spec["name"]] for decision in decisions], computed=True)
         problems.extend(f"decision phase: {problem}" for problem in result.problems)
