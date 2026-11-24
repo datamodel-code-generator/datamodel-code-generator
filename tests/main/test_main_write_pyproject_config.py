@@ -256,4 +256,4 @@ def test_write_pyproject_config_without_values_creates_nothing(
             derived_stdout=True,
             use_builtin_default_formatter=False,
         )
-    assert not (tmp_path / "pyproject.toml").exists()
+    assert_output("".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())) or "no file\n", name="files")
