@@ -63,12 +63,14 @@ becomes final and where a decision belongs.
   its reason (`scripts/check_pass_pipeline.py` says which). Every test runs the finality check
   (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`): "... undeclared: ..." means the pass writes a fact its declaration
   does not list; the other rules report writes after a fact is final.
-- A pass that rewrites a fact some outputs lack declares a `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the
-  facts it reads): false only where running the pass would write nothing, read from what the pass reads when it
-  starts. The nightly run of the suite on the newest Python runs such passes anyway
-  (`DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS=1`, or `tox run -e pass-triggers -- <test>`): "... trigger-absent
-  write: ..." means the trigger is false where the pass writes; widen the trigger. Run it on the tests that reach a
-  trigger you add or change before you push.
+- A pass that rewrites a fact some outputs lack returns early at the top of its body when its source is empty, and
+  reads that source once. A `when` names only options (`scripts/check_pass_pipeline.py` lists them).
+  A `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the facts it reads and why the early return costs more) is
+  allowed only for the passes `TRIGGERS` of that script lists, which never grows: false only where running the pass
+  would write nothing. The nightly run of the suite on the newest Python runs such passes anyway (`tox run -e
+  pass-triggers -- <test>`, or `pytest --check-pass-triggers <test>`): "... trigger-absent write: ..." means the
+  trigger is false where the pass writes; widen the trigger. Run it on the tests that reach a trigger you add or change
+  before you push.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.
 

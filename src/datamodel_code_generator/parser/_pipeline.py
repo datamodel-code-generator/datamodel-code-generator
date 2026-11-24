@@ -77,8 +77,9 @@ def late(function: Callable[Q, R]) -> Callable[Q, R]:
 class PassSpec(Generic[P, S]):
     """One pass, named as its declaration: ``run`` runs it on the state of its segment when ``when`` (if any) holds.
 
-    ``when`` is an option the pass needs: running it anyway is not a no-op. ``trigger`` is whether the fact the pass
-    rewrites is present: where it is false, running the pass would write nothing, so the runner skips it.
+    ``when`` names only options of the run (``scripts/check_pass_pipeline.py`` checks it). ``trigger`` is whether the
+    fact the pass rewrites is present: where it is false, running the pass would write nothing, so the runner skips
+    it; only the passes that script lists have one, and every other pass returns early from its own body.
     """
 
     name: str
