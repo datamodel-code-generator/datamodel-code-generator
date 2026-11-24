@@ -1,6 +1,0 @@
-[[change]]
-id = "bug-g99-export-scopes"
-extends = "class-beside-submodule-pins"
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

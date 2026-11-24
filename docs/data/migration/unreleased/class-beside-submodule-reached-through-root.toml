@@ -5,9 +5,19 @@ kind = "default-output"
 action = "review"
 source = "release-note"
 title = "A Pydantic package class beside a same-named submodule is refused where only the root package loads the submodule"
-summary = "Where a package's __init__.py defines a class named like one of its submodules and imports from the root package (from .. import common), the root's own import of the submodule (from .pkg import Warn) was taken as a load of the __init__.py. The root runs first, so that import ran after the class was defined and bound the class, and the root's model of the submodule (Warn.Detail) read the class. Where the classes evaluate their annotations as they are defined (Pydantic, which builds a class as it is defined, or output without from __future__ import annotations) the root failed at import with AttributeError, so no module of the package imported: those runs now refuse the class as for other packages that do not load the submodule, and name --rename-submodules-hidden-by-classes. Dataclasses, TypedDict and msgspec with deferred annotations, where every module imported, keep their output."
+summary = "Where a package's __init__.py defines a class named like one of its submodules and imports from the root package (from .. import common), the root's own import of the submodule (from .pkg import Warn) was taken as a load of the __init__.py. The root runs first, so that import ran after the class was defined and bound the class, and the root's model of the submodule (Warn.Detail) read the class. Where the classes evaluate their annotations as they are defined (Pydantic, which builds a class as it is defined, or output without from __future__ import annotations) the root failed at import with AttributeError, so no module of the package imported: those runs now refuse the class as for other packages that do not load the submodule, and name --rename-submodules-hidden-by-classes. Dataclasses, TypedDict and msgspec with deferred annotations, where every module imported, keep their output; the stored outputs of the root-imported and cyclic layouts pin that."
 refs = ["#7444"]
 decision = ["#7120"]
+covers = [
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-dataclasses].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-dataclasses]/",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-msgspec].payloads.txt",
+    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-msgspec]/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_submodule~5634820c.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_submodule_nam~74388894.errors.txt",
+]
 
 [[change.cells]]
 input = ["tests/data/jsonschema/submodule_named_like_package_class_root_import.json"]
