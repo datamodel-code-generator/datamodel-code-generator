@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 319>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 320>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -504,6 +504,7 @@ class BaseGenerateConfig(BaseModel)
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False
     distribute_allof_over_unions: bool = False
+    distribute_allof_over_object_branches: bool = False
     intersect_merged_allof_members: bool = False
     read_allof_parents_as_their_models: bool = False
     read_allof_parents_in_mro_order: bool = False
@@ -732,7 +733,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 319>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 320>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -1028,6 +1029,7 @@ class ParserConfig(BaseModel)
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False
     distribute_allof_over_unions: bool = False
+    distribute_allof_over_object_branches: bool = False
     intersect_merged_allof_members: bool = False
     read_allof_parents_as_their_models: bool = False
     read_allof_parents_in_mro_order: bool = False
@@ -4184,7 +4186,7 @@ class JsonSchemaParser(Parser['JSONSchemaParserConfig', 'JsonSchemaFeatures'])
     self.reserved_refs
     self.field_keys
     self.get_field_extra_key
-LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {'intersect_allof_keywords': {'legacy-merge-row': 'a `$ref` with sibling keywords and an inherited property override are their earlier merge', 'legacy-lookahead-patterns': 'the patterns of the parts are joined by lookaheads, unwarned; an allOf member merge keeps the later pattern', 'legacy-all-of-site-form': "an allOf site of value parts keeps its earlier form, unwarned where they conflict (a model without fields only where their intersection admits an object), its root writing the keywords of parts some value meets, and a `$ref` member's sibling `enum` or `const` does not narrow its literals", 'legacy-all-of-null-as-written': "null is read as written where parts meet: a `type` without null keeps the null members beside it and those of an inherited type, an allOf map member's `type` keeps its null, and a `None` merged enum value fits"}, 'intersect_combined_schema_keywords': {'legacy-combined-branch-row': "a branch of an `anyOf` or `oneOf` is its merge with the keywords beside it (`all_of_member_row` without bounds), the branch's value of a keyword winning", 'legacy-enum-outside-type-kept': 'an `enum` value that the merged `type` rejects stays where parts meet', 'legacy-schema-maps-merged-as-schemas': 'an inherited property override merges a `properties` or `patternProperties` map as a schema: names spelled like keywords the merge mode does not inherit, or `nullable`, are dropped', 'legacy-type-narrowing-override-deferred': 'a partial override without constraints is a copy of the inherited field, which keeps the inherited type and drops at most its null, also where the override narrows the type further', 'legacy-type-shape-length-from-max-items': 'the type shape of `--allof-merge-mode none` keeps the length of a tuple only from an explicit `maxItems`', 'legacy-all-of-ref-siblings-ignored': 'an allOf member that is a `$ref` with sibling keywords is the `$ref` alone', 'legacy-all-of-alias-member-base': 'an allOf member naming a schema that is only a `$ref` takes that alias as its base', 'legacy-all-of-union-null-dropped': "the union of the variants an allOf member's anyOf or oneOf gives admits no null, even where every part does", 'legacy-all-of-required-names-dropped': 'a field, an item or a branch whose allOf names one model and adds only `required` names to it, through a member or beside the allOf, is that model, which does not require them'}, 'read_allof_parents_as_their_models': {'legacy-ref-sibling-parent-read-alone': 'an inherited schema that is a `$ref` with sibling keywords is read by its siblings alone, not as the merge its model is built from', 'legacy-inherited-required-names-unwritten': 'a name only the inherited schemas require is not written in the model, which takes the field its bases give it, optional where the base it takes it from declares it optional', 'legacy-root-site-members-as-written': 'the allOf root model row reads the members as written, so an alias of an object model beside a member that adds only a type or required names is a root model of the type'}, 'distribute_allof_over_unions': {'legacy-ref-branch-without-site-parts': 'a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf members nor the value keywords beside it, and the subtypes of a discriminated `$ref` branch take none of the allOf members', 'legacy-operation-all-of-before-union': 'an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the union dropped', 'legacy-union-parts-joined': "every anyOf and oneOf of an allOf is parsed at the site's path and their branches join one union, each with the other parts; a discriminated `$ref` branch of them is left out", 'legacy-ref-member-union-dropped': 'an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a root model', 'legacy-value-union-members-unread': "the value branches of an allOf's anyOf and oneOf are read only where every combination admits no object and the site writes a model: a field writes Any, a field of one $ref member that type, and an allOf of object branches leaves them out"}, 'intersect_merged_allof_members': {'legacy-all-of-object-merge-row': 'allOf members merged into one object are their merge row: of a property several of them declare, the later `type`, `nullable` and `multipleOf` win, two type lists join and a later `true` replaces the schema, and the allOf members of a member are dropped', 'legacy-all-of-root-first-typed-member': 'a named allOf of one `$ref` to a value schema and value members is the first typed of them with the constraints of all, the `enum` of another member dropped', 'legacy-all-of-enum-root-self-alias': 'a named allOf whose merged root is an enum written as a class names itself where no output reads the annotations (standard dataclasses), which later passes type `Any`', 'legacy-all-of-map-counts-dropped': 'an allOf of a `$ref` to a map and members that add only property counts or `propertyNames` is a model without fields at a definition, and the reference elsewhere, which only a field whose whole type it is writes the counts beside', 'legacy-all-of-base64-reference-layered': 'a length or `pattern` an allOf site adds to a `$ref` to base64 text is written beside the reference, checked on the decoded value'}}
+LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {'intersect_allof_keywords': {'legacy-merge-row': 'a `$ref` with sibling keywords and an inherited property override are their earlier merge', 'legacy-lookahead-patterns': 'the patterns of the parts are joined by lookaheads, unwarned; an allOf member merge keeps the later pattern', 'legacy-all-of-site-form': "an allOf site of value parts keeps its earlier form, unwarned where they conflict (a model without fields only where their intersection admits an object), its root writing the keywords of parts some value meets, and a `$ref` member's sibling `enum` or `const` does not narrow its literals", 'legacy-all-of-null-as-written': "null is read as written where parts meet: a `type` without null keeps the null members beside it and those of an inherited type, an allOf map member's `type` keeps its null, and a `None` merged enum value fits"}, 'intersect_combined_schema_keywords': {'legacy-combined-branch-row': "a branch of an `anyOf` or `oneOf` is its merge with the keywords beside it (`all_of_member_row` without bounds), the branch's value of a keyword winning", 'legacy-enum-outside-type-kept': 'an `enum` value that the merged `type` rejects stays where parts meet', 'legacy-schema-maps-merged-as-schemas': 'an inherited property override merges a `properties` or `patternProperties` map as a schema: names spelled like keywords the merge mode does not inherit, or `nullable`, are dropped', 'legacy-type-narrowing-override-deferred': 'a partial override without constraints is a copy of the inherited field, which keeps the inherited type and drops at most its null, also where the override narrows the type further', 'legacy-type-shape-length-from-max-items': 'the type shape of `--allof-merge-mode none` keeps the length of a tuple only from an explicit `maxItems`', 'legacy-all-of-ref-siblings-ignored': 'an allOf member that is a `$ref` with sibling keywords is the `$ref` alone', 'legacy-all-of-alias-member-base': 'an allOf member naming a schema that is only a `$ref` takes that alias as its base', 'legacy-all-of-union-null-dropped': "the union of the variants an allOf member's anyOf or oneOf gives admits no null, even where every part does", 'legacy-all-of-required-names-dropped': 'a field, an item or a branch whose allOf names one model and adds only `required` names to it, through a member or beside the allOf, is that model, which does not require them'}, 'read_allof_parents_as_their_models': {'legacy-ref-sibling-parent-read-alone': 'an inherited schema that is a `$ref` with sibling keywords is read by its siblings alone, not as the merge its model is built from', 'legacy-inherited-required-names-unwritten': 'a name only the inherited schemas require is not written in the model, which takes the field its bases give it, optional where the base it takes it from declares it optional', 'legacy-root-site-members-as-written': 'the allOf root model row reads the members as written, so an alias of an object model beside a member that adds only a type or required names is a root model of the type'}, 'distribute_allof_over_unions': {'legacy-ref-branch-without-site-parts': 'a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf members nor the value keywords beside it, and the subtypes of a discriminated `$ref` branch take none of the allOf members', 'legacy-operation-all-of-before-union': 'an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the union dropped', 'legacy-union-parts-joined': "every anyOf and oneOf of an allOf is parsed at the site's path and their branches join one union, each with the other parts; a discriminated `$ref` branch of them is left out", 'legacy-ref-member-union-dropped': 'an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a root model', 'legacy-value-union-members-unread': "the value branches of an allOf's anyOf and oneOf are read only where every combination admits no object and the site writes a model: a field writes Any, a field of one $ref member that type, and an allOf of object branches leaves them out"}, 'distribute_allof_over_object_branches': {'legacy-union-branch-of-union-as-one': "a branch of an allOf's anyOf or oneOf that is itself an anyOf or oneOf, named by a `$ref` or written there, is one base, which later passes drop as a root model, or no union variant at all", 'legacy-union-variant-required-names-inherited': 'a union variant of an allOf takes a name that another part requires as its bases hold it: optional where its branch declares it optional, and Any where the class of the other members holds it first'}, 'intersect_merged_allof_members': {'legacy-all-of-object-merge-row': 'allOf members merged into one object are their merge row: of a property several of them declare, the later `type`, `nullable` and `multipleOf` win, two type lists join and a later `true` replaces the schema, and the allOf members of a member are dropped', 'legacy-all-of-root-first-typed-member': 'a named allOf of one `$ref` to a value schema and value members is the first typed of them with the constraints of all, the `enum` of another member dropped', 'legacy-all-of-enum-root-self-alias': 'a named allOf whose merged root is an enum written as a class names itself where no output reads the annotations (standard dataclasses), which later passes type `Any`', 'legacy-all-of-map-counts-dropped': 'an allOf of a `$ref` to a map and members that add only property counts or `propertyNames` is a model without fields at a definition, and the reference elsewhere, which only a field whose whole type it is writes the counts beside', 'legacy-all-of-base64-reference-layered': 'a length or `pattern` an allOf site adds to a `$ref` to base64 text is written beside the reference, checked on the decoded value'}}
 LITERAL_DECIDABLE_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | LENGTH_KEYWORDS | {'pattern'}
 NONE = datamodel_code_generator.types.NONE
 NUMBER_KEYWORD_ORDER = datamodel_code_generator.model.pydantic_v2.types.number_kwargs
@@ -4406,7 +4408,7 @@ class HeaderObject(BaseModel)
     description: Optional[str] = None
     required: bool = False
     deprecated: bool = False
-    schema_: Optional[JsonSchemaObject] = Field(None, alias='schema')
+    schema_: JsonSchemaObject | bool | None = Field(None, alias='schema')
     example: YamlValue = None
     examples: Optional[Union[str, OrReference[ExampleObject]]] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
@@ -4487,10 +4489,15 @@ class ParameterObject(BaseModel)
     description: Optional[str] = None
     required: bool = False
     deprecated: bool = False
-    schema_: Optional[JsonSchemaObject] = Field(None, alias='schema')
+    schema_: JsonSchemaObject | bool | None = Field(None, alias='schema')
     example: YamlValue = None
     examples: Optional[Union[str, OrReference[ExampleObject]]] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
+    @classmethod
+    @override
+    def __get_pydantic_core_schema__(cls, source: type[BaseModel], handler: GetCoreSchemaHandler, /) -> CoreSchema
+    @property
+    def schema_location(self) -> SchemaLocation | None
 RE_APPLICATION_JSON_PATTERN: Pattern[str] = re.compile('^application/.*json$')
 class RawMediaObject(BaseModel)
     schema_: RawSchema | None = Field(None, alias='schema')
@@ -5034,7 +5041,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 319>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 320>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5056,7 +5063,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 315>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 316>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5536,6 +5543,7 @@ LENGTH_KEYWORDS: Final[frozenset[str]] = frozenset(LENGTH_KEYWORD_ORDER)
 LIST = 'List'
 LITERAL = 'Literal'
 MAPPING = 'Mapping'
+ModelForm: TypeAlias = Literal['alias', 'root', 'enum', 'object']
 @runtime_checkable
 class Modular(Protocol)
     @property
@@ -5821,8 +5829,6 @@ class PythonTypeExpr
 class _BaseModel(BaseModel)
     def __init__(self, **values: Any) -> None
     def dict(self, *, include: AbstractSet[int | str] | Mapping[int | str, Any] | None=None, exclude: AbstractSet[int | str] | Mapping[int | str, Any] | None=None, by_alias: bool=False, exclude_unset: bool=False, exclude_defaults: bool=False, exclude_none: bool=False) -> dict[str, Any]
-# named by the signature of datamodel_code_generator.model.base.DataModel
-ModelForm: TypeAlias = Literal['alias', 'root', 'enum', 'object']
 # named by the signature of datamodel_code_generator.model.base.DataModel
 SetItemHash: TypeAlias = Literal['value', 'identity', 'never', 'alias']
 # named by the signature of datamodel_code_generator.model.base.DataModel
@@ -6112,6 +6118,7 @@ class ParserConfigDict(TypedDict)
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]
     distribute_allof_over_unions: NotRequired[bool]
+    distribute_allof_over_object_branches: NotRequired[bool]
     intersect_merged_allof_members: NotRequired[bool]
     read_allof_parents_as_their_models: NotRequired[bool]
     read_allof_parents_in_mro_order: NotRequired[bool]
@@ -6410,6 +6417,7 @@ class BaseGenerateConfig(TypedDict)
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]
     distribute_allof_over_unions: NotRequired[bool]
+    distribute_allof_over_object_branches: NotRequired[bool]
     intersect_merged_allof_members: NotRequired[bool]
     read_allof_parents_as_their_models: NotRequired[bool]
     read_allof_parents_in_mro_order: NotRequired[bool]

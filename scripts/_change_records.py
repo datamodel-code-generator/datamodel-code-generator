@@ -229,8 +229,9 @@ class CellSelector:
     None for every one (`"*"`); `options`: option sets, None for every
     option set the run has for the inputs (`"*"`), each in the spelling the runs use (`split_options`);
     `input_file_type`: the input type the cells run with, None for the folder under `tests/data/` (a cell that runs
-    its input with another type needs it named); `aspects` and `match`: what every change line of a covered cell must
-    have, the aspect and a regular expression it holds (searched).
+    its input with another type needs it named); `aspects` and `match`: the change lines of a covered cell a decision's
+    selector (any aspect) or a notice's (warning and message lines) explains, by their aspect and a regular expression
+    they hold (searched).
     """
 
     input: tuple[str, ...]

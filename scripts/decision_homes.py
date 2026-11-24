@@ -7034,13 +7034,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`parser/_passes/settle.py:_named_model_path`, `parser/base.py:Parser._model_metadata`, the lone surrogate "
             "refusals (`model/msgspec.py:Struct._validate_renamed_field_names`, "
-            "`parser/_passes/imports.py:reject_lone_surrogates_pydantic_reads`)"
+            "`parser/_passes/imports.py:reject_lone_surrogates_pydantic_reads`), the warnings of the union rows of "
+            "an allOf (`parser/jsonschema.py:JsonSchemaParser._warn_dropped_union`)"
         ),
         sites=(
             Home("parser/_passes/settle.py", "_named_model_path"),
             Home("parser/base.py", "Parser._model_metadata"),
             Home("model/msgspec.py", "Struct._validate_renamed_field_names"),
             Home("parser/_passes/imports.py", "reject_lone_surrogates_pydantic_reads"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._warn_dropped_union"),
         ),
     ),
     DecisionHome(

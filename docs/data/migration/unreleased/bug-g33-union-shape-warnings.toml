@@ -1,0 +1,54 @@
+[[change]]
+id = "bug-g33-union-shape-warnings"
+category = "notice"
+title = "Warn where an allOf over a union drops what the union checks"
+summary = "Without --distribute-allof-over-unions an allOf member naming an allOf over a union warns that the model checks none of its branches (#5305), and without --distribute-allof-over-object-branches so does a branch of an allOf's union that is itself a union or an alias (#6869). The generated output does not change."
+refs = ["#7445"]
+kind = "warning"
+action = "warn"
+source = "release-note"
+covers = [
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[nested-branch].warnings.txt",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[polymorphism].warnings.txt",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[through-ref-member].warnings.txt",
+    "main/jsonschema/allof_union_object_branches/union_shape_warnings[with-options].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-dataclasses.dataclass-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-dataclasses.dataclass-u~6e624cdf.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-msgspec.Struct-collapse-root-models].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-msgspec.Struct-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-msgspec.Struct-use-site-models-for-constrained-refs~fc6e6d0c].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-collapse-root-models].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-c~dd34cd2e.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-field-constraints].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-f~40a46614.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-use-annotated].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.BaseModel-u~55fe4429.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.dataclass-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-pydantic_v2.dataclass-u~0a3dc111.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-typing.TypedDict-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[allof_union_through_ref-typing.TypedDict-use-site-models-for-constrained-refs~e8250df3].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-dataclasses.dataclass-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-dataclas~12a7715f.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-msgspec.Struct-collapse-root-models~d75d8d24].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-msgspec.Struct-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-msgspec.~ca1452f0.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic_v2.BaseModel-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic_v2.BaseModel-use-annotated~91657dc3].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic_v2.dataclass-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic~14558a5d.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic~42bb97ad.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic~5b86f046.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic~5bc6fdbd.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic~9d656e2f.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-pydantic~a17b4994.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-typing.TypedDict-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[allof_union_through_ref-typing.T~2dd96e1b.warnings.txt",
+]
+
+
+[[change.cells]]
+input = ["tests/data/jsonschema/allof_union_object_branches", "tests/data/jsonschema/allof_union_object_branches/other_document/model.json", "tests/data/jsonschema/allof_union_object_branches/union_branches.json", "tests/data/jsonschema/allof_union_through_ref_files", "tests/data/jsonschema/schema_intersection", "tests/data/jsonschema/schema_validators_property_count_cross_module", "tests/data/openapi/allof_union_object_branches", "tests/data/openapi/allof_union_object_branches/discriminated.yaml"]
+backends = "*"
+options = "*"
+match = "--distribute-allof-over-(unions reads the member in place|object-branches gives it one variant per model)|^\\[message\\] removed first attempt: .*Modular references require an output directory"

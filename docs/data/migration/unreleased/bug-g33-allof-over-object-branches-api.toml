@@ -1,0 +1,14 @@
+[[change]]
+id = "bug-g33-allof-over-object-branches-api"
+category = "api"
+title = "Public names for --distribute-allof-over-object-branches"
+summary = "The option adds its config field; nothing is removed or changed."
+refs = ["#7445"]
+decision = ["#7445"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

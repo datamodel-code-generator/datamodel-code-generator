@@ -875,6 +875,8 @@ refused-target-2.14	main/openapi/main_openapi/binary_request_body_pattern_warnin
 	main/openapi/main_openapi/body_and_parameters_only_schemas.py	= main/openapi/body_and_parameters/only_schemas.py
 [test_main_openapi_body_and_parameters_remote_ref]
 	main/openapi/main_openapi/body_and_parameters_remote_ref.py
+[test_main_openapi_boolean_parameter_schemas]
+	main/openapi/main_openapi/boolean_parameter_schemas.py
 [test_main_openapi_builtin_property_beside_root_models]
 dataclasses.dataclass	main/openapi/main_openapi/builtin_property_beside_root_models[dataclasses.dataclass].py
 msgspec.Struct	main/openapi/main_openapi/builtin_property_beside_root_models[msgspec.Struct].py

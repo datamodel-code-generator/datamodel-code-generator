@@ -1,0 +1,5 @@
+option = "--distribute-allof-over-object-branches"
+input = "jsonschema/allof_union_object_branches/required_names.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]
+off_args = []

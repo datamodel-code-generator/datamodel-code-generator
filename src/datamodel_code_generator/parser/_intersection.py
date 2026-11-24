@@ -243,6 +243,16 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "object branches leaves them out"
         ),
     },
+    "distribute_allof_over_object_branches": {
+        "legacy-union-branch-of-union-as-one": (
+            "a branch of an allOf's anyOf or oneOf that is itself an anyOf or oneOf, named by a `$ref` or written "
+            "there, is one base, which later passes drop as a root model, or no union variant at all"
+        ),
+        "legacy-union-variant-required-names-inherited": (
+            "a union variant of an allOf takes a name that another part requires as its bases hold it: optional where "
+            "its branch declares it optional, and Any where the class of the other members holds it first"
+        ),
+    },
     "intersect_merged_allof_members": {
         "legacy-all-of-object-merge-row": (
             "allOf members merged into one object are their merge row: of a property several of them declare, the "

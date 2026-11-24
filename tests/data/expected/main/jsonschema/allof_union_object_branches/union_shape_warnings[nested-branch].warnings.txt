@@ -1,0 +1,1 @@
+model.json#/allOf/0/oneOf/1 is a union whose models the allOf over its union does not combine with the other members, so that variant checks none of their properties; --distribute-allof-over-object-branches gives it one variant per model.

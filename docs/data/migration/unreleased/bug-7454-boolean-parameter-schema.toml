@@ -1,0 +1,22 @@
+[[change]]
+id = "bug-7454-boolean-parameter-schema"
+category = "crash-fix"
+title = "Read a boolean parameter schema as Any"
+summary = "An OpenAPI parameter or response header whose schema is true or false no longer stops the paths and parameters scopes with a validation error; the parameter is typed Any, like an empty schema."
+refs = ["#7483", "#7454"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+covers = [
+    "main/openapi/main_openapi/boolean_parameter_schemas.py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_boolean_para~0b9bf03e.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_boolean_para~57e10be1.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_boolean_paramete~0d3abf19.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_boolean_paramete~ce3b1cbe.errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_boolean_parameter_schemas.yaml].txt",
+]
+
+[[change.cells]]
+input = ["tests/data/openapi/boolean_parameter_schemas.yaml"]
+backends = "*"
+options = [["--openapi-scopes", "schemas", "paths", "parameters", "webhooks", "--include-path-parameters", "--formatters", "builtin"]]

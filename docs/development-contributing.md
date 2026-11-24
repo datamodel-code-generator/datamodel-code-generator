@@ -411,10 +411,11 @@ options = "*"
   is their folder's below `tests/data/`; a cell with another type (a `cli_doc` example) needs the type named.
 - `aspects` and `match` (optional): every change line of a covered cell must have one of the aspects and match the
   regular expression (searched) in at least one selector that covers the cell (not in every one), counting the selectors
-  of every `default-fix` and `decided-change` record that covers it; a `notice` record applies this to the `[warning]`
-  and `[message]` lines. A change line is `[aspect] ...` from the behaviour signature diff, plus `[exit] <base> ->
-  <head>`, `[warning] added|removed <text>` and `[message] added|removed <line>`. A decision category needs one of the
-  two in every selector, a `notice` needs `match`.
+  of every `default-fix` and `decided-change` record that covers it and, for the `[warning]` and `[message]` lines, of
+  every `notice` record, unless a record of another category explains the line's kind (below). A change line is
+  `[aspect] ...` from the behaviour signature diff, plus `[exit] <base> -> <head>`, `[warning] added|removed <text>` and
+  `[message] added|removed <line>`. A decision category needs one of the two in every selector, a `notice` needs
+  `match`.
 
 The gate prints a starting block for the uncovered cells: one selector per input, `options = "*"` where the cells span
 several option sets, and the first change line as a commented `match`. Write the selector narrow: one selector may name
@@ -446,22 +447,26 @@ records a PR adds must name cells.
 |---|---|---|---|
 | `output-text` | required | output | exit, warnings and messages equal unless another covering record admits them; every differing file is a model module; class `no-behaviour`; rule (b); payload cells give equal verdicts and parsed values |
 | `crash-fix` | required | output, exit, messages | class `crash-fix`; where the exit status differs, it goes from a failure to 0 |
-| `default-fix`, `decided-change` | optional; `aspects` or `match` in every selector | any | every change line inside the `aspects` and `match` of a selector of a covering `default-fix` or `decided-change` record |
+| `default-fix`, `decided-change` | optional; `aspects` or `match` in every selector | any | a signature was taken; it explains each change line inside the `aspects` and `match` of one of its covering selectors |
 | `experimental` | optional | any | a feature of `affects.experimental` is in the cell (its option is set, or its input type is the feature's); the companion cell without the feature's options is equal |
-| `notice` | required; `match` in every selector | warnings, messages | output and exit equal unless another covering record admits them; every `[warning]` and `[message]` line matches |
+| `notice` | required; `match` in every selector | warnings, messages | a signature was taken; it explains each `[warning]` and `[message]` line its covering selectors match |
 | `api` | optional | output, exit, messages | the cell sets an option `affects.options` names and the head no longer has; the head refuses the cell |
 | `new-surface`, `docs-text`, `internal`, `harness` | forbidden | none | none |
 
-"Required" applies to the records a PR adds. Several records may cover one cell: it must be admitted in every kind it
-differs by, the kinds are the union of the covering categories, and where a covering `default-fix`, `decided-change`,
-`experimental` or `crash-fix` record holds its evidence, the kinds it admits need no `output-text` evidence. A kind a
-category does not admit must be equal only where no other covering record admits it: an `output-text` and a `notice`
-record together cover a no-behaviour text change with a new warning, each proving its own kinds. The covering
-`default-fix` and `decided-change` records are judged together, line by line: every change line must be selected by a
-selector of one of them, so two changes of one release that each declare their own lines pass. A change line no covering
-decision selector selects, or a kind no covering record admits, still fails. A decision or notice record proves nothing
-where a signature could not be taken or where an exit, warning or message difference shows in no change line: the cell
-is unproved. A head that stops at the timeout or the memory cap where the base finished fails whatever the records say,
+"Required" applies to the records a PR adds. Several records may cover one cell, and they explain it together: every
+kind it differs by (and the kind of each change line: `[exit]`, `[warning]`, `[message]`, output for the others) must be
+admitted by one of them, and every kind and every change line must be explained by the covering records whose evidence
+holds. A `default-fix`, `decided-change` or `notice` record explains the change lines one of its covering selectors
+selects; a record of another category explains the kinds it admits as a whole. A kind is explained as a whole, or
+when it shows in change lines and each of them is explained; output that shows in no line (a no-behaviour change) is
+explained by a decision that selects a line of the cell, or covers a cell without lines. So an `output-text` and a
+`notice` record together cover a no-behaviour text change with a new warning, and two changes of one release that each
+declare their own lines (decisions, notices or both) pass. A record whose evidence fails on a cell is no failure there
+when the other records explain everything it admits: a `crash-fix` record that also covers a cell another change only
+adds warnings to. A change line no covering record explains, a kind no covering record admits, or a kind that shows in
+no change line where only decisions and notices could explain it still fails, with the reasons of the records that
+admit it. A decision or notice record proves nothing where a signature could not be taken: the cell is unproved for
+it. A head that stops at the timeout or the memory cap where the base finished fails whatever the records say,
 and so does a head that gives other facts on a second run.
 
 An `output-text` record also proves the stored Python modules in its `covers` that changed between the merge base and
