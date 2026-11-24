@@ -114,6 +114,15 @@ CHECK_AREA_ENVS = (
     CHECK_TEMPLATE_ASSIGNMENTS_ENV,
 )
 """The variable of every debug check area (`Area` in `tests/checks/areas.py`) set to `1`."""
+VALUE_CHECK_AREA_ENVS = (
+    CHECK_MODEL_GRAPH_ENV,
+    CHECK_SCHEMA_GRAPH_ENV,
+    CHECK_RENDER_PLANS_ENV,
+    CHECK_RENDER_MEMOS_ENV,
+    CHECK_NAMING_ENV,
+    CHECK_TEMPLATE_ASSIGNMENTS_ENV,
+)
+"""The areas that compare computed values and cost a few percent of a run; `--skip-value-checks` leaves them off."""
 CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
 CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
@@ -271,6 +280,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Of the selected tests under NODEID, run only the INDEX/TOTAL shard that --test-shard would select",
     )
     parser.addoption(
+        "--skip-value-checks",
+        action="store_true",
+        default=False,
+        help="Leave the value-comparing debug check areas off (the CI shards that another shard of the run covers)",
+    )
+    parser.addoption(
         "--expected-observe",
         metavar="DIR",
         help="Record every expected-output comparison into DIR without failing on unrecorded or changed output "
@@ -298,9 +313,11 @@ def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
     The finality sweep is turned on only from `SWEEP_PYTHON`; the trigger check only where the environment sets it.
+    `--skip-value-checks` leaves `VALUE_CHECK_AREA_ENVS` unset.
     """
     benchmarks = config.getoption("codspeed", default=False)
-    for name in () if benchmarks else CHECK_AREA_ENVS:
+    skipped = VALUE_CHECK_AREA_ENVS if config.getoption("--skip-value-checks") else ()
+    for name in () if benchmarks else (name for name in CHECK_AREA_ENVS if name not in skipped):
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")

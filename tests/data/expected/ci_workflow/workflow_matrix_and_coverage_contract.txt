@@ -269,6 +269,7 @@
   "shards_complete": true,
   "shared_http_steps": true,
   "shared_shard_steps": true,
+  "skip_value_checks_in_pull_request": "github.event_name == 'pull_request' && (matrix.coverage != true || matrix.tox_env != 'py314-parallel')",
   "triggers": {
     "pull_request": "",
     "push": {
@@ -282,5 +283,8 @@
       }
     ],
     "workflow_dispatch": ""
+  },
+  "value_check_shards_in_pull_request": {
+    "test-shard:py314-parallel:ubuntu-24.04": 16
   }
 }

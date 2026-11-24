@@ -952,6 +952,12 @@ jobs:
             --cov-report=
           )
         fi
+        # Pull requests run the value-comparing check areas only in the Python 3.14 coverage shards; pushes, the schedule
+        # and manual runs run them everywhere.
+        value_check_args=()
+        if [ "${{ github.event_name == 'pull_request' && (matrix.coverage != true || matrix.tox_env != 'py314-parallel') }}" = "true" ]; then
+          value_check_args=(--skip-value-checks)
+        fi
         tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
           -n auto \
           --dist=worksteal \
@@ -959,6 +965,7 @@ jobs:
           -m "not perf" \
           --junitxml ".tox/junit.$TOX_ENV-shard$SHARD_INDEX-$OS.xml" \
           "${coverage_args[@]}" \
+          "${value_check_args[@]}" \
           "${part_args[@]}" \
           "${test_paths[@]}"
       shell: bash

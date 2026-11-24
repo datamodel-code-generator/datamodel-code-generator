@@ -804,7 +804,10 @@ starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in
 same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
-wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
+wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run.
+`--skip-value-checks` leaves `MODEL_GRAPH`, `SCHEMA_GRAPH`, `RENDER_PLANS`, `RENDER_MEMOS`, `NAMING` and
+`TEMPLATE_ASSIGNMENTS` unset; the CI shards of a pull request pass it except in the Python 3.14 coverage shards, while
+runs of `main`, the schedule and manual runs keep every area on in every shard. Under
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 

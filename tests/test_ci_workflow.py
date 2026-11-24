@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -31,6 +32,32 @@ MISSING_TARGETS_MESSAGE = (
 def _job_count(matrix: dict[str, list[str]]) -> int:
     """Return how many jobs a job without an ``include`` matrix runs: the product of its matrix axes, else one."""
     return math.prod(len(axis) for axis in matrix.values())
+
+
+def _skip_value_checks_condition(job: dict[str, Any]) -> str:
+    """Return the expression of the sharded run step that passes ``--skip-value-checks`` when it is true."""
+    run_step = next(step for step in job["steps"] if step.get("name") == "Run sharded test suite")
+    found = re.search(r'if \[ "\$\{\{ (.+?) \}\}" = "true" \]; then\n\s+value_check_args=', run_step["run"])
+    if found is None:
+        msg = "the sharded run step has no condition that passes --skip-value-checks"
+        raise ValueError(msg)
+    return found[1]
+
+
+def _value_check_shards(groups: dict[str, list[dict[str, str]]]) -> dict[str, int]:
+    """Return, per job, tox environment and runner, how many shards keep the value checks on in a pull request."""
+    kept = [
+        (name, entry)
+        for name in ("test-shard", "test-shard-main", "test-shard-nocov", "test-shard-nocov-main")
+        for entry in groups[name]
+        if entry["coverage"] == "true" and entry["tox_env"] == "py314-parallel"
+    ]
+    return {
+        f"{name}:{entry['tox_env']}:{entry['os']}": sum(
+            other["tox_env"] == entry["tox_env"] and other["os"] == entry["os"] for other in groups[name]
+        )
+        for name, entry in kept
+    }
 
 
 def test_workflow_matrix_and_coverage_contract() -> None:
@@ -82,6 +109,8 @@ def test_workflow_matrix_and_coverage_contract() -> None:
             for entry in entries
             if entry.get("extra_tests")
         ),
+        "skip_value_checks_in_pull_request": _skip_value_checks_condition(jobs["test-shard"]),
+        "value_check_shards_in_pull_request": _value_check_shards(groups),
         "shard_profile_mapping": jobs["test-shard"]["env"]["SHARD_PROFILE"],
         "shards_complete": all(
             sorted(shards) == [(index, len(shards)) for index in range(1, len(shards) + 1)]

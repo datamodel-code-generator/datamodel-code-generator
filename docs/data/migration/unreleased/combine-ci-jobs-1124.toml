@@ -2,7 +2,7 @@
 id = "combine-ci-jobs-1124"
 category = "harness"
 title = "Run the CI jobs on counts that balance the lanes and split the behaviour gate"
-summary = "The Ubuntu coverage lanes, the macOS lanes and the Python 3.15 lanes change their shard counts and the behaviour gate runs on four jobs, so the stored workflow contract and the coverage artifact names carry the new counts; the package writes the same output."
+summary = "The Ubuntu coverage lanes, the macOS lanes and the Python 3.15 lanes change their shard counts and the behaviour gate runs on four jobs, and pull request runs leave six value-comparing check areas off outside the Python 3.14 coverage shards (`--skip-value-checks`), so the stored workflow contract and the coverage artifact names carry the new counts; the package writes the same output."
 covers = [
     "ci_coverage_script/coverage_artifact_cli[entrypoint-complete].txt",
     "ci_coverage_script/coverage_artifact_cli[entrypoint-main-only-missing].txt",
