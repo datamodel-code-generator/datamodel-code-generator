@@ -49,3 +49,8 @@ options = "*"
 input = ["tests/data/jsonschema/type_alias_lookaround"]
 backends = ["pydantic_v2.dataclass"]
 options = [["--preset", "standard-py310-20261123"], ["--preset", "standard-py314-20261123"], ["--preset", "practical-py310-20261123"], ["--preset", "practical-py314-20261123"]]
+
+[[change.cells]]
+input = ["tests/data/xmlschema/pattern_runtime.xsd"]
+backends = ["pydantic_v2.dataclass"]
+options = [["--preset", "standard-py310-20261123"], ["--preset", "standard-py314-20261123"], ["--preset", "practical-py310-20261123"], ["--preset", "practical-py314-20261123"]]
