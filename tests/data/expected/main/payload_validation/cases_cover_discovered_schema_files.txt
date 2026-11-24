@@ -1,7 +1,7 @@
 {
   "jsonschema": 1146,
-  "openapi": 2403,
-  "openapi generated as a package": 181,
+  "openapi": 2401,
+  "openapi generated as a package": 179,
   "openapi skipped for an unresolved internal $ref": 20,
-  "openapi with referenced components": 988
+  "openapi with referenced components": 986
 }
