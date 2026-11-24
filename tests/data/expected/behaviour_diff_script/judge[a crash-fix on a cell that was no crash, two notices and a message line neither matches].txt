@@ -1,0 +1,9 @@
+{
+ "cls": "violation",
+ "notes": [
+  "crash-fix (crash-fix): the cell's class is same, not crash-fix",
+  "notice (notice): a warning or message line is outside its match: ['[message] added other']",
+  "other-notice (notice): a warning or message line is outside its match: ['[message] added other']"
+ ],
+ "accepted_by": []
+}
