@@ -6383,7 +6383,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`no-place`, the fields of bases as rows `collected` or `nearest` of `DataModel._BASE_FIELDS`), "
             "`python_base_classes`, `DataModel.iter_all_fields`, `sort_data_models_for_mro` (its `c3_merge` names the "
             "core's); `parser/_passes/_shared.py:takes_positional_place`; "
-            "`parser/_passes/settle.py:sort_base_classes_for_mro`; `parser/_inherited_schemas.py`: "
+            "`parser/_passes/settle.py:sort_base_classes_for_mro`; "
+            "`parser/_passes/cross_module.py:flatten_conflicting_final_layouts` (the models with fewer ancestors "
+            "first); `parser/_inherited_schemas.py`: "
             "`linearize_inherited_schema_refs` and `sort_inherited_base_classes_for_mro` (raw schemas, `first-head`); "
             "rule `python`: `parser/_inheritance_check.py:check_model_inheritance` (behind "
             "`Parser._check_model_inheritance`), `_target_binding.py:_Models.field_bindings`"
@@ -6395,6 +6397,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/base.py", "sort_data_models_for_mro"),
             Home("parser/_passes/_shared.py", "takes_positional_place"),
             Home("parser/_passes/settle.py", "sort_base_classes_for_mro"),
+            Home("parser/_passes/cross_module.py", "flatten_conflicting_final_layouts"),
             Home("parser/_inherited_schemas.py", "linearize_inherited_schema_refs"),
             Home("parser/_inherited_schemas.py", "sort_inherited_base_classes_for_mro"),
             Home("parser/_inheritance_check.py", "check_model_inheritance"),

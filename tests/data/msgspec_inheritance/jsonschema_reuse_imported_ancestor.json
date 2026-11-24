@@ -1,0 +1,61 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/A"
+    },
+    {
+      "$ref": "#/$defs/B"
+    }
+  ],
+  "$defs": {
+    "Z": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/S"
+        }
+      ],
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      }
+    },
+    "A": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Z"
+        }
+      ],
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/S"
+        }
+      ],
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "S": {
+      "type": "object",
+      "properties": {
+        "s": {
+          "type": "integer"
+        }
+      },
+      "x-python-import": {
+        "module": "msgspec.inspect",
+        "name": "Type"
+      }
+    }
+  }
+}

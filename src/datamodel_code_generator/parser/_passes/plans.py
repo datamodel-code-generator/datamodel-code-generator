@@ -152,9 +152,9 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     Bases are handled before the models inheriting from them, as their own fields then give the layout. The
     layouts are seen as the processing of each module may leave them: a discriminator field may become a msgspec
     tag, which takes no slot, and reuse may make a duplicate an empty subclass of the model it duplicates, whose
-    layout it then has. A model that this processing leaves conflicting keeps failing the final check of the
-    output. A model that a type override replaces has a layout the generator does not know, as a configured base
-    class has.
+    layout it then has. A model that this processing leaves conflicting is flattened once every module is
+    processed (``cross_module.flatten_conflicting_final_layouts``). A model that a type override replaces has a
+    layout the generator does not know, as a configured base class has.
     """
     models = [model for _, models in module_models for model in models]
     if not (joins := [model for model in models if len(model.base_classes) > 1]):

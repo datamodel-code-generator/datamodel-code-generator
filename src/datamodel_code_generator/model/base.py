@@ -2281,6 +2281,16 @@ class BaseLayoutView(NamedTuple):
     is_opaque: Callable[[DataModel], bool]
 
 
+def _is_instance_field(field: DataModelFieldBase) -> bool:
+    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
+    return not field.is_class_var
+
+
+def _same_model(model: DataModel) -> DataModel:
+    """Return the model itself as the model whose layout it has."""
+    return model
+
+
 def _model_written(field: DataModelFieldBase, *, keeps_none: bool = False) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
     return ModelWritten(

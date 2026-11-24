@@ -78,11 +78,13 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _forbids_unknown_fields_marked,
     _has_opaque_custom_base,
+    _is_instance_field,
     _keeps_stripped_place,
     _ModelKeys,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
+    _same_model,
     _ValueFactory,
     linearize_data_models,
 )
@@ -625,16 +627,6 @@ def _union_leaves(data_type: DataType) -> Sequence[DataType]:
     if (aliased := _alias_value(data_type)) is not None:
         return (aliased[1].data_type,)
     return ()
-
-
-def _is_instance_field(field: DataModelFieldBase) -> bool:
-    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
-    return not field.is_class_var
-
-
-def _same_model(model: DataModel) -> DataModel:
-    """Return the model itself as the model whose layout it has."""
-    return model
 
 
 def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001

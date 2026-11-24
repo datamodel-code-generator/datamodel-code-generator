@@ -1,0 +1,64 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/A"
+    },
+    {
+      "$ref": "#/$defs/B"
+    },
+    {
+      "$ref": "#/$defs/D"
+    }
+  ],
+  "$defs": {
+    "Z": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      }
+    },
+    "A": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Z"
+        }
+      ],
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "Y": {
+      "type": "object",
+      "properties": {
+        "y": {
+          "type": "string"
+        }
+      }
+    },
+    "D": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Y"
+        }
+      ],
+      "properties": {
+        "d": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
