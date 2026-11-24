@@ -9,7 +9,6 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 import pytest
 import yaml
@@ -34,9 +33,9 @@ def _job_count(matrix: dict[str, list[str]]) -> int:
     return math.prod(len(axis) for axis in matrix.values())
 
 
-def _skip_value_checks_condition(job: dict[str, Any]) -> str:
+def _skip_value_checks_condition(steps: list[dict[str, str]]) -> str:
     """Return the expression of the sharded run step that passes ``--skip-value-checks`` when it is true."""
-    run_step = next(step for step in job["steps"] if step.get("name") == "Run sharded test suite")
+    run_step = next(step for step in steps if step.get("name") == "Run sharded test suite")
     found = re.search(r'if \[ "\$\{\{ (.+?) \}\}" = "true" \]; then\n\s+value_check_args=', run_step["run"])
     if found is None:
         msg = "the sharded run step has no condition that passes --skip-value-checks"
@@ -109,7 +108,7 @@ def test_workflow_matrix_and_coverage_contract() -> None:
             for entry in entries
             if entry.get("extra_tests")
         ),
-        "skip_value_checks_in_pull_request": _skip_value_checks_condition(jobs["test-shard"]),
+        "skip_value_checks_in_pull_request": _skip_value_checks_condition(jobs["test-shard"]["steps"]),
         "value_check_shards_in_pull_request": _value_check_shards(groups),
         "shard_profile_mapping": jobs["test-shard"]["env"]["SHARD_PROFILE"],
         "shards_complete": all(
