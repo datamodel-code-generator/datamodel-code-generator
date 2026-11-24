@@ -1191,6 +1191,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "oneOf of Cat and Dog that declare name optional). Without it such a branch gives a variant of the other "
         "members alone, or none, and warns, and a variant takes the name as its bases hold it, optional or Any, as in "
         "0.100.0",
+        preset=PresetJoin(
+            "20261124",
+            {"distribute_allof_over_object_branches": True},
+            title="allOf distributed over object branches",
+            description=(
+                "Give an allOf over an anyOf or oneOf one union variant per object branch, also where a branch is "
+                "itself an anyOf or oneOf, named by a $ref or written there, and have each variant declare every name "
+                "a part of the allOf requires as a required field, typed as its branch declares it, so a variant needs "
+                "such a name, and output types that validate values reject one its branch rejects."
+            ),
+        ),
     ),
     toggle(
         Section.TYPING,

@@ -719,7 +719,7 @@
     },
     "distribute_allof_over_object_branches": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261123 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261124 presets; the recommendation starts from a preset."
     },
     "duplicate_name_suffix": {
       "not_recommended": "style",
