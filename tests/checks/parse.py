@@ -103,10 +103,6 @@ def _all_models(_parser: object, state: Any) -> Sequence[Any]:
     return state.all_models
 
 
-def _additional_properties_models(_parser: object, state: Any) -> Sequence[Any]:
-    return state.additional_properties_models
-
-
 def _context_models(_parser: object, state: Any) -> Sequence[Any]:
     from datamodel_code_generator.parser._passes._shared import _context_models
 
@@ -179,7 +175,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "alias_builtins_hidden_by_submodules": _all_models,
     "bind_module_field_names": _all_models,
     "change_imported_model_name": _all_models,
-    "name_final_classes_of_additional_properties": _additional_properties_models,
+    "name_final_classes_of_additional_properties": _all_models,
     "refresh_sequence_interface_after_renames": _all_models,
     "replan_schema_validators_after_renames": _all_models,
     "decide_config_items": _all_models,

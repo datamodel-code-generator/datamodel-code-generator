@@ -6641,21 +6641,7 @@ count = 2
 path = "src/datamodel_code_generator/parser/_passes/_tables.py"
 qualname = "<module>"
 rule_code = "MUT206"
-target = "_base_stand_in_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
 target = "_const_narrowed_values"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_decimal_default_warning_count"
 count = 1
 
 [[entries]]
@@ -6670,13 +6656,6 @@ path = "src/datamodel_code_generator/parser/_passes/_tables.py"
 qualname = "<module>"
 rule_code = "MUT206"
 target = "_import_overrides"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_kept_parent_roots"
 count = 1
 
 [[entries]]
@@ -6704,27 +6683,6 @@ count = 3
 path = "src/datamodel_code_generator/parser/_passes/_tables.py"
 qualname = "<module>"
 rule_code = "MUT206"
-target = "_removed_reuse_users"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_replaced_root_models"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_self_named_root_models"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
 target = "_tag_capabilities"
 count = 6
 
@@ -6733,27 +6691,6 @@ path = "src/datamodel_code_generator/parser/_passes/_tables.py"
 qualname = "<module>"
 rule_code = "MUT206"
 target = "_tag_plan"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_translates_final_name_keys"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_type_override_imports"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
-target = "_unavailable_imports"
 count = 1
 
 [[entries]]

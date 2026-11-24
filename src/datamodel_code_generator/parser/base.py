@@ -815,21 +815,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._seed_document_roles(document_roles)
 
     @property
-    def _translates_final_name_keys(self) -> bool:
-        """Whether the run records the output names keys name (``translate_final_name_keys``).
-
-        Only where a key of the options read at L1 exists and a model was renamed after L2, in a run that does not
-        apply such names already or record what it names for ``--model-name-map`` (``records_model_names``).
-        """
-        keys = self._construction_keys
-        return (
-            bool(keys.class_names or keys.field_scopes)
-            and bool(self.generation_store.renames)
-            and not self.model_resolver.final_name_keys
-            and not self.run_context.records_model_names
-        )
-
-    @property
     def document_roles_to_seed(self) -> DocumentRoles:
         """Return the roles of documents a new attempt of a failed run starts from: none for a parser without roles."""
         return ()
