@@ -1,0 +1,10 @@
+[
+  "/level enum 1.0: valid, model rejects",
+  "/level enum null: invalid, model accepts",
+  "/marker enum null: invalid, model accepts",
+  "/null_default enum null: invalid, model accepts",
+  "/optional_marker enum null: invalid, model accepts",
+  "/optional_state enum null: invalid, model accepts",
+  "/short_marker enum null: invalid, model accepts",
+  "/state enum null: invalid, model accepts"
+]

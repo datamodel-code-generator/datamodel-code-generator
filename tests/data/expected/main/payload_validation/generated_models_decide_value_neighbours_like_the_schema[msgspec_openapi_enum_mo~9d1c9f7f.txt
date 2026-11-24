@@ -1,0 +1,5 @@
+[
+  "enum 1.0: valid, model rejects",
+  "enum 2.0: valid, model rejects",
+  "enum 3.0: valid, model rejects"
+]

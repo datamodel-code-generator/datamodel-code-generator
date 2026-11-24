@@ -1,4 +1,4 @@
-"""Print the test node ids and the environments a diff selects: changed tests, mirrors and table rows.
+"""Print the test node ids, the environments or a row's paths a diff selects: changed tests, mirrors and table rows.
 
 A changed test function or class of the test suite selects itself (a new module, a helper module or changed
 module-level code the whole module), a changed source module or script its mirror, a module the stored fast-path
@@ -186,24 +186,36 @@ def _fast_path_modules(root: Path, base: str, head: str | None) -> set[str]:
     return {name for text in files for name in MODULE_NAME.findall(text)}
 
 
+def _row_paths(root: Path, base: str, head: str | None, changed: dict[str, str], rule: dict) -> list[str]:
+    """Return the changed paths that fire a row: it matches the path, and an added or removed line its pattern."""
+    status = rule.get("status")
+    hit = [
+        path
+        for path, letter in changed.items()
+        if _matches(path, rule["paths"])
+        and not _matches(path, rule.get("exclude", []))
+        and (status is None or letter in status)
+    ]
+    if hit and "pattern" in rule:
+        pattern = re.compile(rule["pattern"])
+        hit = [path for path in hit if any(pattern.search(line) for line in _changed_lines(root, base, head, [path]))]
+    return sorted(hit)
+
+
 def _fired(root: Path, base: str, head: str | None, changed: dict[str, str], rules: list[dict]) -> list[dict]:
     """Return the rows a change fires: a changed path matches, and an added or removed line matches the pattern."""
-    fired = []
-    for rule in rules:
-        status = rule.get("status")
-        hit = [
-            path
-            for path, letter in changed.items()
-            if _matches(path, rule["paths"])
-            and not _matches(path, rule.get("exclude", []))
-            and (status is None or letter in status)
-        ]
-        if hit and "pattern" in rule:
-            pattern = re.compile(rule["pattern"])
-            hit = [line for line in _changed_lines(root, base, head, hit) if pattern.search(line)]
-        if hit:
-            fired.append(rule)
-    return fired
+    return [rule for rule in rules if _row_paths(root, base, head, changed, rule)]
+
+
+def row_paths(root: Path, base: str, head: str | None, rules: list[dict], row: str) -> list[str]:
+    """Return the sorted changed paths that fire the row with the id `row`; an unknown id raises KeyError.
+
+    The payload suite reads the inputs the `payload-inputs` row names this way: each input holds its own cases.
+    """
+    rule = next((rule for rule in rules if rule["id"] == row), None)
+    if rule is None:
+        raise KeyError(row)
+    return _row_paths(root, base, head, _changes(root, base, head), rule)
 
 
 def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
@@ -275,6 +287,15 @@ def problems(root: Path, rules: list[dict]) -> list[str]:
     return found
 
 
+def _selection(root: Path, args: argparse.Namespace, rules: list[dict]) -> list[str]:
+    """Return the lines the arguments ask for: a row's changed paths, the environments or the test node ids."""
+    if args.paths_of:
+        return row_paths(root, args.base, args.head, rules, args.paths_of)
+    if args.envs:
+        return [f"{env}\t{','.join(ids)}" for env, ids in select_envs(root, args.base, args.head, rules).items()]
+    return select(root, args.base, args.head, rules)
+
+
 def main(argv: list[str] | None = None) -> int:
     """Print the selection of a diff, or check that every row's target exists."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -291,6 +312,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="print the environments the change needs, each with the rows that ask for it, instead of the tests",
     )
+    parser.add_argument(
+        "--paths-of",
+        metavar="ROW",
+        help="print the changed paths that fire the row with this id, instead of the tests",
+    )
     args = parser.parse_args(argv)
     rules = tomllib.loads(args.rules.read_text(encoding="utf-8"))["rule"]
     root = Path.cwd()
@@ -301,13 +327,12 @@ def main(argv: list[str] | None = None) -> int:
     if not args.base:
         parser.error("--base is required unless --check is given")
     try:
-        lines = (
-            [f"{env}\t{','.join(ids)}" for env, ids in select_envs(root, args.base, args.head, rules).items()]
-            if args.envs
-            else select(root, args.base, args.head, rules)
-        )
+        lines = _selection(root, args, rules)
     except GitError as error:
         sys.stderr.write(f"related_tests: {error}\n")
+        return 2
+    except KeyError as error:
+        sys.stderr.write(f"related_tests: no row has the id {error}\n")
         return 2
     sys.stdout.write("".join(f"{line}\n" for line in lines))
     return 0

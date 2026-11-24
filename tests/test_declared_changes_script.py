@@ -85,6 +85,8 @@ def _repository(tmp_path: Path, spec: Mapping[str, Any]) -> Path:
 
     The `steps` are commits of main between the release and the base. With `origin`, origin/main points at the base,
     so the base is the default one; the commits of `layer` follow it on branch `base`, as a lower stack layer's do.
+    The commits of `pushed` precede the head, and origin/main points at the head: a push of several pull requests.
+    The files of `newer` are a commit of main beside the base, which the head merges; origin/main points at it.
     """
     repository = tmp_path / "repository"
     _write(repository, RELEASED | spec.get("release", {}))
@@ -103,8 +105,20 @@ def _repository(tmp_path: Path, spec: Mapping[str, Any]) -> Path:
         _write(repository, commit)
         _commit(repository, f"layer {number}")
     subprocess.run([*GIT, "switch", "-q", "-c", "fix-the-thing"], cwd=repository, check=True)
+    for number, commit in enumerate(spec.get("pushed", []), 1):
+        _write(repository, commit)
+        _commit(repository, f"Change something else ({number})")
     _write(repository, spec.get("head", {}))
     _commit(repository, spec.get("message", "Change the thing (#42)\n\nFixes: #41"))
+    if spec.get("pushed"):
+        subprocess.run([*GIT, "update-ref", "refs/remotes/origin/main", "HEAD"], cwd=repository, check=True)
+    if "newer" in spec:
+        subprocess.run([*GIT, "switch", "-q", "-c", "newer", "main~1"], cwd=repository, check=True)
+        _write(repository, spec["newer"])
+        _commit(repository, "main moved")
+        subprocess.run([*GIT, "update-ref", "refs/remotes/origin/main", "newer"], cwd=repository, check=True)
+        subprocess.run([*GIT, "switch", "-q", "fix-the-thing"], cwd=repository, check=True)
+        subprocess.run([*GIT, "merge", "-q", "--no-ff", "-m", "Merge main", "newer"], cwd=repository, check=True)
     _write(repository, spec.get("worktree", {}))
     return repository
 
@@ -594,6 +608,37 @@ CASES: dict[str, dict[str, Any]] = {
         "head": RENAMED_OUTPUT,
         "args": ["--main"],
     },
+    "a push to main of a src change, then a test-only change a harness record covers": {
+        "pushed": [SRC],
+        "head": NEW_OUTPUT | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+        "args": ["--main"],
+    },
+    "a push to main of a test-only change, then a src change a harness record covers": {
+        "pushed": [NEW_OUTPUT],
+        "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+        "args": ["--main"],
+    },
+    "a push to main of a src change a harness record covers, then a test-only change": {
+        "pushed": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"])],
+        "head": NEW_OUTPUT,
+        "args": ["--main"],
+    },
+    "a push to main of a src change a harness record covers, then its revert, with the gate's verdict": {
+        "pushed": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"])],
+        "head": RELEASED_SRC,
+        "verdicts": {"models/b.py": None},
+        "verdicts_head": "HEAD~1",
+        "args": ["--main"],
+    },
+    "a push to main of a src change a harness record covers, then its revert, without the gate's verdict": {
+        "pushed": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"])],
+        "head": RELEASED_SRC,
+        "args": ["--main"],
+    },
+    "the head merges a newer commit of main": {
+        "newer": {"docs/notes.md": "notes\n"},
+        "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+    },
     "a later layer deletes the record its lower layer's test commit added": {
         "origin": True,
         "layer": [SRC, NEW_OUTPUT | _record("new-output", ["models/new.py"], **OUTPUT_TEXT)],
@@ -612,7 +657,7 @@ def test_declared_changes_check(case: str, tmp_path: Path, capsys: pytest.Captur
     """The static rules over references: changes, splits, moves, removals, additions, layers, records, the release.
 
     `verdicts` are the gate's on the labels a `harness` record covers in a src change, by the label's contents at the
-    base and at `verdicts_head` (default the head).
+    base and at `verdicts_head` (default the head). The report names a pushed commit by its distance from the head.
     """
     spec = CASES[case]
     repository = _repository(tmp_path, spec)
@@ -626,7 +671,11 @@ def test_declared_changes_check(case: str, tmp_path: Path, capsys: pytest.Captur
         (verdicts := tmp_path / "verdicts.json").write_text(json.dumps({"verdicts": rows}), encoding="utf-8")
         args += ["--verdicts", str(verdicts)]
     code = declared_changes.main(args, repository)
-    assert_output(f"exit {code}\n{capsys.readouterr().out}")
+    printed = capsys.readouterr().out
+    for number in range(1, len(spec.get("pushed", [])) + 1):
+        commit = subprocess.check_output([*GIT, "rev-parse", f"HEAD~{number}"], cwd=repository, text=True)
+        printed = printed.replace(commit.strip(), f"HEAD~{number}")
+    assert_output(f"exit {code}\n{printed}")
 
 
 def _run(repository: Path, capsys: pytest.CaptureFixture[str], args: list[str]) -> str:

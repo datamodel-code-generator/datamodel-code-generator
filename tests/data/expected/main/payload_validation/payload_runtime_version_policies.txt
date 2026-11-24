@@ -33,7 +33,7 @@
       "acceptance": null,
       "round_trip": null
     },
-    "dataclass": "OpenAPI pydantic dataclass full-matrix coverage remains representative until backend-specific alias, default, and composition limits are reduced"
+    "dataclass": null
   },
   "jsonschema/schema_validators_runtime_root_cross_module/a.json": {
     "floor": "2.5",

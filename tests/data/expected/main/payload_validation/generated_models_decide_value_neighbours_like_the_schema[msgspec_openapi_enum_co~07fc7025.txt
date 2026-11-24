@@ -1,0 +1,8 @@
+[
+  "/kind enum \"b\": invalid, model accepts",
+  "/nullable enum \"a\": invalid, model accepts",
+  "/nullableKind const null: invalid, model accepts",
+  "/nullableKind enum \"b\": invalid, model accepts",
+  "/nullableKind enum null: invalid, model accepts",
+  "/plain enum \"a\": invalid, model accepts"
+]

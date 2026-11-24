@@ -63,6 +63,13 @@ class SchemaCase:
     temp_input_suffix: str
     backend_extra_args: Mapping[PayloadBackend, tuple[str, ...]] = field(default_factory=dict, repr=False)
 
+    @property
+    def modular(self) -> bool:
+        """Whether the case's models form a package: an OpenAPI component it holds has a dotted name (a module path)."""
+        return self.input_file_type == "openapi" and any(
+            "." in name for name in self.codegen_schema["components"]["schemas"]
+        )
+
 
 @dataclass(frozen=True)
 class InvalidPayloadMutation:
