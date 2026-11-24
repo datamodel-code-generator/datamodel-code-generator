@@ -39,10 +39,11 @@ take the gaps the change may cover: those of the base that the head still moves 
 change moves; `--rest` only what this change moves. The check prints one `declare` command per kind of undeclared
 output, with `--base` unless the base is that merge base.
 
-`check --ci` is the CI step's form: it reads `--verdicts FILE` only where the gate wrote it (the gate writes none for a
-change without `src/`, which needs none). When the change touches `COPY_PATHS` and the base has this check, the base's
-copy judges it first and the head's own check after it, and either one fails the step: a change cannot weaken the
-check that judges it, and a change that tightens it obeys it.
+`check --ci` is the CI step's form: it reads `--verdicts FILE` only where the gate wrote it (every gate run writes it;
+CI skips the gate where the change leaves `src/`, the change records and `scripts/` alone). A push of several pull
+requests to main is judged one squash commit at a time (`change_steps`), as each pull request was. When the change
+touches `COPY_PATHS` and the base has this check, the base's copy judges it first and the head's own check after it,
+and either one fails the step: a change cannot weaken the check that judges it, and a change that tightens it obeys it.
 """
 
 from __future__ import annotations
@@ -687,6 +688,22 @@ def _merge_base(repo: Path, head: str | None) -> str | None:
         return None
 
 
+def change_steps(repo: Path, base: str, head: str | None) -> list[tuple[str, str | None]]:
+    """Return the changes from `base` to `head` (None: the working tree) as main takes them, as (from, to) revisions.
+
+    Each first-parent commit from the base up to the head's merge base with origin/main is a change of its own: a push
+    of several pull requests to main holds one squash commit for each. The rest (a pull request, a stack layer, the
+    working tree) is one change, and so is the whole range where the base is not on that first-parent line.
+    """
+    fork = _merge_base(repo, head)
+    rows = git(repo, "rev-list", "--first-parent", "--reverse", "--parents", f"{base}..{fork}").decode() if fork else ""
+    parents = [line.split() for line in rows.splitlines()]
+    commits = [commit for commit, *_ in parents] if parents and parents[0][1:2] == [_rev(repo, base)] else []
+    if commits and head is not None and _rev(repo, head) == commits[-1]:
+        commits.pop()
+    return list(zip([base, *commits], [*commits, head], strict=True))
+
+
 def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = False) -> Report:
     """Return what the change from `base` to `head` moves and claims, and what the release since `tag` lacks.
 
@@ -1030,11 +1047,24 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _judged(repo: Path, ns: argparse.Namespace) -> Report:
-    """Return the report of `status` or `check`, with the gate's verdicts `--verdicts` names."""
-    report = evaluate(repo, *_sides(repo, ns), main=getattr(ns, "main", False))
-    report.verdicts = load_verdicts(ns.verdicts) if ns.verdicts else {}
-    return report
+def _judged(repo: Path, ns: argparse.Namespace) -> list[Report]:
+    """Return the reports of `status` or `check`, with the gate's verdicts `--verdicts` names.
+
+    There is one report per change as main takes them (`change_steps`), so a push of several pull requests to main is
+    judged as each of them was; `--main` judges the last one, whose head main holds.
+    """
+    base, head, tag = _sides(repo, ns)
+    sides = {base.rev: base, head.rev: head}
+    verdicts = load_verdicts(ns.verdicts) if ns.verdicts else {}
+    steps = change_steps(repo, base.rev or "HEAD", head.rev)
+    reports = []
+    for number, (old, new) in enumerate(steps, 1):
+        for rev in {old, new} - sides.keys():
+            sides[rev] = Side(repo, rev)
+        report = evaluate(repo, sides[old], sides[new], tag, main=getattr(ns, "main", False) and number == len(steps))
+        report.verdicts = verdicts
+        reports.append(report)
+    return reports
 
 
 def _judged_by_base(repo: Path, ns: argparse.Namespace) -> int | None:
@@ -1078,12 +1108,12 @@ def main(argv: list[str] | None = None, repo: Path | None = None) -> int:
             case "prune":
                 return prune(repo, ns)
         base_code = _judged_by_base(repo, ns) if getattr(ns, "ci", False) else None
-        report = _judged(repo, ns)
+        reports = _judged(repo, ns)
     except CheckError as error:
         print(f"{SCRIPT}: {error}", file=sys.stderr)
         return 2
-    print(format_report(report), end="")
-    own_code = 1 if ns.command == "check" and report.failed and not ns.report_only else 0
+    print("".join(map(format_report, reports)), end="")
+    own_code = 1 if ns.command == "check" and any(report.failed for report in reports) and not ns.report_only else 0
     return base_code or own_code
 
 

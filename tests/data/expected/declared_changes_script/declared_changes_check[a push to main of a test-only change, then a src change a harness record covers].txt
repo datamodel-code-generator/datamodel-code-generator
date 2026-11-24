@@ -1,0 +1,7 @@
+exit 1
+declared changes: HEAD~1 against base, release since 0.1.0
+ok
+declared changes: HEAD against HEAD~1, release since 0.1.0
+1 stored outputs a harness record covers are refused, as src/ changes:
+  models/b.py: the gate has no verdict for these contents: run 'python scripts/behaviour_diff.py gate BASE --tier pr --verdicts FILE' and pass --verdicts FILE
+failed

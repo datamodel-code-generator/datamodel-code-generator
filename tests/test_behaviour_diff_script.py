@@ -2922,7 +2922,8 @@ class CellsCase:
     which must give the gate's verdict: it fails the harness labels the gate refuses. `shards` runs the gate as that
     many shards, one after another, with the same `--verdicts` file. `shape` names, in words, the rule the case pins or
     the passing shape it keeps. `merged` ends the subject of main's next commit with that pull request, `(#n)`, and
-    `released` the release's, as a squash merge writes it.
+    `released` the release's, as a squash merge writes it. `pushed` are commits before the head, and origin/main
+    points at the head: a push of several pull requests to main.
     """
 
     verdict: str
@@ -2938,6 +2939,7 @@ class CellsCase:
     shards: int = 1
     merged: str = ""
     released: str = ""
+    pushed: tuple[dict[str, str | None], ...] = ()
 
 
 COMMENT_PLAIN = _cells_src(("plain", None, "comment"))
@@ -2960,6 +2962,12 @@ def _landed(*cells: dict[str, object], refs: tuple[str, ...] = ("#2",), extends:
 
 
 OUTPUT_TEXT_OTHER = _record("other-note", "output-text", _cells("other.json"))
+OTHER_REFACTOR = _cells_src(("other", None, "comment"), helper="HELPER = 1\n")
+"""A source change over main's change of `other` that changes no output."""
+LISTING_HARNESS = {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"} | _record(
+    "listing-test", "harness", covers=("main/jsonschema/listing.txt",)
+)
+"""A changed listing a `harness` record covers: its proof fails in a src change."""
 CHECKED = _cells_input("checked", type="int", validator=True)
 MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
@@ -3441,6 +3449,88 @@ CELLS_CASES: dict[str, CellsCase] = {
         | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
         records=True,
     ),
+    "pass: a push to main of a src change, then a test-only change a harness record covers": CellsCase(
+        "pass",
+        "harness, modified listing, in a change without src/ pushed to main after a src change",
+        {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"}
+        | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
+        pushed=(CELLS_REFACTOR,),
+        records=True,
+    ),
+    "fail: a push to main of a test-only change, then a src change a harness record covers": CellsCase(
+        "fail",
+        "harness, modified listing, in a src change pushed to main after a change without src/",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"}
+        | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
+        pushed=({"docs/notes.md": "notes\n"},),
+        records=True,
+    ),
+    "pass: a push to main of a docs change, then a test-only change a harness record covers": CellsCase(
+        "pass",
+        "harness, modified listing, in a change without src/ pushed to main after a docs change",
+        {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"}
+        | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
+        pushed=({"docs/notes.md": "notes\n"},),
+        records=True,
+    ),
+    "fail: a push to main of a src change a harness record covers, then a test-only change": CellsCase(
+        "fail",
+        "harness, modified listing, in a src change pushed to main before a change without src/",
+        {"docs/notes.md": "notes\n"},
+        pushed=(
+            CELLS_REFACTOR
+            | {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"}
+            | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
+        ),
+        records=True,
+    ),
+    "pass: a push to main of a src change a harness record covers, then its revert": CellsCase(
+        "pass",
+        "harness, modified module the proof holds for, in a src change whose revert follows in the push",
+        pushed=(
+            CELLS_REFACTOR
+            | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
+            | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        ),
+        head=_cells_src(),
+        records=True,
+    ),
+    "pass: a push to main of a src refactor, its revert, then the cells of a change merged before it": CellsCase(
+        "pass",
+        "records-only change, cells of a merged change, after a src change and its revert in the push",
+        _landed(_cells("other.json")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+        pushed=(OTHER_REFACTOR, COMMENT_OTHER),
+        records=True,
+    ),
+    "fail: a push to main of a src change a harness proof refuses, its revert, then merged cells": CellsCase(
+        "fail",
+        "harness, modified listing, in a src change of a push whose src/ ends unchanged",
+        _landed(_cells("other.json")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+        pushed=(OTHER_REFACTOR | LISTING_HARNESS, COMMENT_OTHER),
+        records=True,
+    ),
+    "fail: a push to main of a src change, its revert a harness proof refuses, then merged cells": CellsCase(
+        "fail",
+        "harness, modified listing, in the revert of a push whose src/ ends unchanged",
+        _landed(_cells("other.json")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+        pushed=(OTHER_REFACTOR, COMMENT_OTHER | LISTING_HARNESS),
+        records=True,
+    ),
+    "fail: a push to main of a src change, its revert, then cells of a pull request not merged": CellsCase(
+        "fail",
+        "records-only change, cells of an unmerged pull request, after a src change and its revert in the push",
+        _landed(_cells("other.json"), refs=("#2", "#3")),
+        base=COMMENT_OTHER | OTHER_NOTE_UNNAMED,
+        merged="#2",
+        pushed=(OTHER_REFACTOR, COMMENT_OTHER),
+    ),
     "fail: a fragment that does not parse": CellsCase(
         "fail",
         "fragment does not parse",
@@ -3605,7 +3695,11 @@ def _cells_project(case: CellsCase, repo: Path) -> dict[str, str]:
     _git("switch", "-q", "main", cwd=repo)
     main = _cells_commit(repo, case.main, "main after the fork")
     _git("switch", "-q", "-c", "pr", "layer", cwd=repo)
+    for number, pushed in enumerate(case.pushed, 1):
+        _cells_commit(repo, pushed, f"pushed {number}")
     _cells_commit(repo, case.head, "head")
+    if case.pushed:
+        _git("update-ref", "refs/remotes/origin/main", "HEAD", cwd=repo)
     orphan = _git("commit-tree", "-m", "another history", f"{release}^{{tree}}", cwd=repo)
     return {"base": base, "main": main, "tag": f"refs/tags/{CELLS_TAG}", "unknown": "4" * 40, "orphan": orphan}
 
