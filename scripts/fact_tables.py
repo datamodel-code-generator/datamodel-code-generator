@@ -804,6 +804,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.DEFAULTS,),
         Phase.MODULES,
         FreezePoint.B1,
+        store_ops=("record_raw_schema_default",),
         access=Access.DICT_KEY,
     ),
     AttributeFact(

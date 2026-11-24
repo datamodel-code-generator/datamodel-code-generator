@@ -1,0 +1,2 @@
+exit status 2
+related_tests: no row has the id 'nobody'

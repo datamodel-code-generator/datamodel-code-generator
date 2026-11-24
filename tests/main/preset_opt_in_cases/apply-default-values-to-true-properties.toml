@@ -1,0 +1,10 @@
+option = "--apply-default-values-to-true-properties"
+input = "jsonschema/default_values_true_properties/restated.json"
+input_file_type = "jsonschema"
+args = [
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--default-values",
+    '{"Dog.name": "rex", "Dog.tag": "dt", "Puppy.name": "pup"}',
+]
+off_args = ["--default-values", '{"Dog.name": "rex", "Dog.tag": "dt", "Puppy.name": "pup"}']

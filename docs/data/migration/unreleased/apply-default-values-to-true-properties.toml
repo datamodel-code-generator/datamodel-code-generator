@@ -1,0 +1,41 @@
+[[change]]
+id = "apply-default-values-to-true-properties"
+category = "new-surface"
+title = "Give --default-values to a property whose schema is true under an option"
+summary = "--apply-default-values-to-true-properties gives a property whose schema is true the default that its Class.field or field key of --default-values gives it, in the class that declares it and in a child that restates an inherited property as true (name: str | None = 'rex' for Dog.name, #7318); without it such a property takes no default, as in 0.100.0. A property whose schema is false keeps none."
+refs = ["#7455"]
+surface = ["--apply-default-values-to-true-properties"]
+covers = [
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[dataclass].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[merge-all-off].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[merge-all-on].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[merge-none].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[msgspec].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[off].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_as_true[on].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_over_a_mapped_parent[off].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_property_a_child_restates_over_a_mapped_parent[on].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[dataclass].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[flat-key].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[msgspec].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[off].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[on].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[required-use-default].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[strict-nullable].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property[use-default-kwarg].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property_in_request_and_response_models[off].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property_in_request_and_response_models[on].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property_of_an_openapi_schema[off].py",
+    "main/jsonschema/default_values_of_true_properties/default_values_reach_a_true_property_of_an_openapi_schema[on].py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_default_v~a633af0f.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_default_v~ae4f7ef2.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_default_valu~a15d9c9a.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_default_value~56408cda.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_default_value~8d851e51.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_default_values_t~4b25b5ff.errors.txt",
+    "main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-command-line].model.py",
+    "main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-pyproject].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[apply-default-values-to-true-properties-practical].model.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[apply-default-values-to-true-properties-standard].model.py",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_default_values_true_properties.yaml].txt",
+]

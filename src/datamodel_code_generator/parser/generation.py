@@ -78,7 +78,11 @@ from datamodel_code_generator.model.base import (
     _path_identity_keys,
 )
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._passes._keys import _SITE_CONSTRAINTS_KEY
+from datamodel_code_generator.parser._passes._keys import (
+    _RAW_SCHEMA_DEFAULT_KEY,
+    _RAW_SCHEMA_DEFAULT_UNDEFINED,
+    _SITE_CONSTRAINTS_KEY,
+)
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
     PARSED,
@@ -202,6 +206,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "omit_field_default",
     "record_dropped_multiple_of",
     "record_nullable_without_default",
+    "record_raw_schema_default",
     "record_site_constraints",
     "record_values_as_written",
     "record_widened_values",
@@ -1890,6 +1895,12 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    def record_raw_schema_default(field_: DataModelFieldBase) -> None:
+        """Record that the property a field is built from declares no default, which ``--default-values`` gives."""
+        field_.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = _RAW_SCHEMA_DEFAULT_UNDEFINED
+        bump_field(field_)
+
+    @staticmethod
     def omit_field_default(field_: DataModelFieldBase) -> None:
         """Write a field without its default: the default None, and the ``nullable`` it has without the default."""
         field_.default = None
@@ -2697,6 +2708,10 @@ class GraphBuilder:
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default, through the store."""
         self._store.record_nullable_without_default(field_, nullable)
+
+    def record_raw_schema_default(self, field_: DataModelFieldBase) -> None:
+        """Record that the property a field is built from declares no default, through the store."""
+        self._store.record_raw_schema_default(field_)
 
     def omit_field_default(self, field_: DataModelFieldBase) -> None:
         """Write a field without its default, through the store."""
