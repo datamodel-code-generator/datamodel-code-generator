@@ -3810,6 +3810,8 @@ class GenerationStore
     @staticmethod
     @deprecated('Use GenerationStore.builder().replace_additional_properties_type() instead.', category=None)
     def replace_additional_properties_type(model: DataModel, data_type: DataType) -> None
+    @staticmethod
+    def name_additional_properties_classes(model: DataModel, data_type: DataType, reference_classes: set[str]) -> None
     @deprecated('Use GenerationStore.builder().replace_nested_data_type() instead.', category=None)
     def replace_nested_data_type(self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType) -> None
     @deprecated('Use GenerationStore.builder().inline_shared() instead.', category=None)
@@ -3887,6 +3889,7 @@ class GraphBuilder
     def rename_model(self, model: DataModel, *, class_name: str | None=None, reference_name: str | None=None, clear_duplicate_name: bool=False, new_path: str | None=None, new_file_path: Path | None=None, scheme: RenameScheme | None=None, schema_path: str | None=None) -> None
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None
     def replace_additional_properties_type(self, model: DataModel, data_type: DataType) -> None
+    def name_additional_properties_classes(self, model: DataModel, data_type: DataType, reference_classes: set[str]) -> None
     def replace_field_type(self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh='now') -> None
     def replace_model(self, model: DataModel, replacement: DataModel) -> None
     def replace_nested_data_type(self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType) -> None
@@ -3935,7 +3938,7 @@ class ModelRename
     new_class_name: str
     scheme: RenameScheme | None
     reference_name: str
-NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 47>)
+NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 48>)
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
     uses _OrderedSetItem = TypeVar('_OrderedSetItem')
 OwnerModels = typing.Any

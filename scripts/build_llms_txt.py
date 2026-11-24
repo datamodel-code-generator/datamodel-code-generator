@@ -27,6 +27,8 @@ DOCS_DIR = ROOT_DIR / "docs"
 ZENSICAL_TOML = ROOT_DIR / "zensical.toml"
 MIGRATION_BUILDER = Path(__file__).parent / "build_migration_docs.py"
 """Builds the upgrade guide's pages from the repository's records, as the docs deploy does before this script."""
+PRESET_BUILDER = Path(__file__).parent / "build_preset_docs.py"
+"""Builds the preset pages from the preset registry, as the docs deploy does before this script."""
 OPTIONAL_PATTERNS = ("faq.md", "development-contributing.md", "preset-history.md", "cli-reference/manual/*.md")
 SKIP_PREFIXES = ("```", "!!!", "[![", "![", "<", "---")
 MAX_DESC_LINES, MAX_DESC_LEN = 2, 150
@@ -253,6 +255,16 @@ def build_missing_guide(docs_dir: Path, builder: Path = MIGRATION_BUILDER) -> No
     subprocess.run([sys.executable, str(builder), *arguments], check=True)
 
 
+def build_preset_pages(docs_dir: Path, builder: Path = PRESET_BUILDER) -> None:
+    """Build the preset pages, which llms.txt lists, when their builder is present.
+
+    The pages are built at deploy and not committed, so a local run builds them first, as the deploy does; a page an
+    earlier run left is rebuilt, as it may be stale.
+    """
+    if builder.exists():
+        subprocess.run([sys.executable, str(builder), "--pages", str(docs_dir)], check=True)
+
+
 def main() -> int:
     """Run the llms.txt generator."""
     parser = argparse.ArgumentParser(description="Generate llms.txt files from documentation")
@@ -261,6 +273,7 @@ def main() -> int:
     args = parser.parse_args()
 
     build_missing_guide(DOCS_DIR)
+    build_preset_pages(DOCS_DIR)
     config = parse_zensical_toml(ZENSICAL_TOML)
     sections = flatten_nav(config["nav"])
     pages = collect_pages(sections, config["site_url"])

@@ -1,6 +1,0 @@
-[[change]]
-id = "use-str-for-formats-msgspec-cannot-decode-api"
-extends = "read-mapping-keys-api"
-covers = [
-    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
-]

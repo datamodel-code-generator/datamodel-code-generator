@@ -1,0 +1,10 @@
+[[change]]
+id = "heki-026-where"
+category = "internal"
+title = "Decision-home rows of the where script"
+summary = "The where script lists the union assembly row as a site of the types.py adapters that the decision homes now name."
+covers = [
+    "where_script/where_grammar[line-in-a-method].txt",
+    "where_script/where_grammar[method-with-users].txt",
+    "where_script/where_grammar[symbol-of-a-file].txt",
+]

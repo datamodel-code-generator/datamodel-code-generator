@@ -83,6 +83,7 @@ ImportPass: TypeAlias = Literal[
     "import-renamed-types",
     "import-enum-member-literal-classes",
     "tag-fields-of-tagged-bases",
+    "flatten-conflicting-final-layouts",
     "flatten-narrowed-inherited-fields",
     "generic-base-class",
     "inherited-keyword-only-copies",
@@ -125,6 +126,8 @@ ImportPass: TypeAlias = Literal[
   repairs of the same names.
 * ``tag-fields-of-tagged-bases``: ``tag_fields_of_tagged_bases`` (L6), the models that the fields a reused msgspec
   struct copies from its bases name from the module of that struct.
+* ``flatten-conflicting-final-layouts``: ``flatten_conflicting_final_layouts`` (L6), the models that the fields a
+  msgspec struct whose generated bases conflict copies from them name from the module of that struct.
 * ``flatten-narrowed-inherited-fields``: ``flatten_narrowed_inherited_fields`` (L6), the models that the fields a model
   whose field narrows an inherited one copies from its bases name from the module of that model.
 * ``generic-base-class``: ``apply_generic_base_class`` (L6), the generated base model instead of the output base class.

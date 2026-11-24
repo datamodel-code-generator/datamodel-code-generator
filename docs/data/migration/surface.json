@@ -125,6 +125,8 @@
   "input_filename",
   "intersect_allof_keywords",
   "intersect_combined_schema_keywords",
+  "intersect_merged_allof_members",
+  "keep_bases_beside_generic_base_class",
   "keep_constrained_root_models_in_every_container",
   "keep_content_parameter_refs",
   "keep_defaults_of_inherited_required_fields",
@@ -134,10 +136,12 @@
   "keep_field_defaults_off_branch_roots",
   "keep_first_character_of_path_keys",
   "keep_model_order",
+  "keep_null_of_nullable_items",
   "keep_reference_null_on_collapsed_root_models",
   "keep_reference_null_on_merged_models",
   "keep_self_referencing_array_items",
   "keep_shared_members_on_collapsed_root_models",
+  "keep_string_keywords_beside_formats",
   "keyword_only",
   "locked",
   "lockfile",
@@ -170,6 +174,7 @@
   "parent_scoped_naming",
   "pin_aliases_with_alias_generator",
   "preset",
+  "read_allof_parents_as_their_models",
   "read_allof_parents_in_mro_order",
   "read_const_beside_enum",
   "read_dynamic_anchors_in_document_order",
@@ -181,18 +186,23 @@
   "read_input_model_dataclass_fields_by_alias",
   "read_kubernetes_extensions",
   "read_length_keywords_by_type",
+  "read_mapping_keys_by_schema_tag_type",
   "read_msgspec_union_bounds_exactly",
   "read_nullable_beside_type_list",
   "read_object_keywords_by_type",
   "read_only_write_only_model_type",
   "read_ref_siblings_in_closed_allof_members",
+  "read_refs_in_their_resources",
   "read_schema_version_per_document",
+  "read_set_item_fields_in_class_order",
   "read_single_allof_refs_in_their_documents",
   "read_unevaluated_properties",
   "read_uuid6_uuid7_uuid8_formats",
   "read_yaml_1_1_numbers_as_text",
   "remove_special_field_name_prefix",
   "remove_unused_models_beside_type_overrides",
+  "rename_fields_hiding_types_from_type_checkers",
+  "rename_redeclared_fields_hiding_types",
   "rename_submodules_hidden_by_classes",
   "reuse_every_reached_input_model_type",
   "reuse_model",
@@ -274,6 +284,7 @@
   "use_plain_alias_for_recursive_models",
   "use_root_model_sequence_interface",
   "use_root_model_type_alias",
+  "use_root_types_for_mixed_union_map_keys",
   "use_schema_description",
   "use_serialization_alias",
   "use_serialize_as_any",
@@ -286,6 +297,7 @@
   "use_standard_collections",
   "use_standard_primitive_types",
   "use_status_code_in_response_name",
+  "use_str_for_formats_msgspec_cannot_decode",
   "use_strict_str_for_base64",
   "use_subclass_enum",
   "use_tag_as_union_variant_name",
@@ -881,8 +893,20 @@
    ],
    "choices": null
   },
+  "--intersect-merged-allof-members": {
+   "aliases": [
+    "--no-intersect-merged-allof-members"
+   ],
+   "choices": null
+  },
   "--job": {
    "aliases": [],
+   "choices": null
+  },
+  "--keep-bases-beside-generic-base-class": {
+   "aliases": [
+    "--no-keep-bases-beside-generic-base-class"
+   ],
    "choices": null
   },
   "--keep-constrained-root-models-in-every-container": {
@@ -937,6 +961,12 @@
    "aliases": [],
    "choices": null
   },
+  "--keep-null-of-nullable-items": {
+   "aliases": [
+    "--no-keep-null-of-nullable-items"
+   ],
+   "choices": null
+  },
   "--keep-reference-null-on-collapsed-root-models": {
    "aliases": [
     "--no-keep-reference-null-on-collapsed-root-models"
@@ -958,6 +988,12 @@
   "--keep-shared-members-on-collapsed-root-models": {
    "aliases": [
     "--no-keep-shared-members-on-collapsed-root-models"
+   ],
+   "choices": null
+  },
+  "--keep-string-keywords-beside-formats": {
+   "aliases": [
+    "--no-keep-string-keywords-beside-formats"
    ],
    "choices": null
   },
@@ -1212,6 +1248,7 @@
     "practical-py310-20261113",
     "practical-py310-20261118",
     "practical-py310-20261120",
+    "practical-py310-20261123",
     "practical-py311-20260619",
     "practical-py311-20260826",
     "practical-py311-20260909",
@@ -1225,6 +1262,7 @@
     "practical-py311-20261113",
     "practical-py311-20261118",
     "practical-py311-20261120",
+    "practical-py311-20261123",
     "practical-py312-20260619",
     "practical-py312-20260826",
     "practical-py312-20260909",
@@ -1238,6 +1276,7 @@
     "practical-py312-20261113",
     "practical-py312-20261118",
     "practical-py312-20261120",
+    "practical-py312-20261123",
     "practical-py313-20260619",
     "practical-py313-20260826",
     "practical-py313-20260909",
@@ -1251,6 +1290,7 @@
     "practical-py313-20261113",
     "practical-py313-20261118",
     "practical-py313-20261120",
+    "practical-py313-20261123",
     "practical-py314-20260619",
     "practical-py314-20260826",
     "practical-py314-20260909",
@@ -1264,6 +1304,7 @@
     "practical-py314-20261113",
     "practical-py314-20261118",
     "practical-py314-20261120",
+    "practical-py314-20261123",
     "practical-py315-20261015",
     "practical-py315-20261017",
     "practical-py315-20261027",
@@ -1274,6 +1315,7 @@
     "practical-py315-20261113",
     "practical-py315-20261118",
     "practical-py315-20261120",
+    "practical-py315-20261123",
     "standard-py310-20260619",
     "standard-py310-20260826",
     "standard-py310-20260909",
@@ -1287,6 +1329,7 @@
     "standard-py310-20261113",
     "standard-py310-20261118",
     "standard-py310-20261120",
+    "standard-py310-20261123",
     "standard-py311-20260619",
     "standard-py311-20260826",
     "standard-py311-20260909",
@@ -1300,6 +1343,7 @@
     "standard-py311-20261113",
     "standard-py311-20261118",
     "standard-py311-20261120",
+    "standard-py311-20261123",
     "standard-py312-20260619",
     "standard-py312-20260826",
     "standard-py312-20260909",
@@ -1313,6 +1357,7 @@
     "standard-py312-20261113",
     "standard-py312-20261118",
     "standard-py312-20261120",
+    "standard-py312-20261123",
     "standard-py313-20260619",
     "standard-py313-20260826",
     "standard-py313-20260909",
@@ -1326,6 +1371,7 @@
     "standard-py313-20261113",
     "standard-py313-20261118",
     "standard-py313-20261120",
+    "standard-py313-20261123",
     "standard-py314-20260619",
     "standard-py314-20260826",
     "standard-py314-20260909",
@@ -1339,6 +1385,7 @@
     "standard-py314-20261113",
     "standard-py314-20261118",
     "standard-py314-20261120",
+    "standard-py314-20261123",
     "standard-py315-20261015",
     "standard-py315-20261017",
     "standard-py315-20261027",
@@ -1348,11 +1395,18 @@
     "standard-py315-20261112",
     "standard-py315-20261113",
     "standard-py315-20261118",
-    "standard-py315-20261120"
+    "standard-py315-20261120",
+    "standard-py315-20261123"
    ]
   },
   "--profile": {
    "aliases": [],
+   "choices": null
+  },
+  "--read-allof-parents-as-their-models": {
+   "aliases": [
+    "--no-read-allof-parents-as-their-models"
+   ],
    "choices": null
   },
   "--read-allof-parents-in-mro-order": {
@@ -1421,6 +1475,12 @@
    ],
    "choices": null
   },
+  "--read-mapping-keys-by-schema-tag-type": {
+   "aliases": [
+    "--no-read-mapping-keys-by-schema-tag-type"
+   ],
+   "choices": null
+  },
   "--read-msgspec-union-bounds-exactly": {
    "aliases": [
     "--no-read-msgspec-union-bounds-exactly"
@@ -1452,9 +1512,21 @@
    ],
    "choices": null
   },
+  "--read-refs-in-their-resources": {
+   "aliases": [
+    "--no-read-refs-in-their-resources"
+   ],
+   "choices": null
+  },
   "--read-schema-version-per-document": {
    "aliases": [
     "--no-read-schema-version-per-document"
+   ],
+   "choices": null
+  },
+  "--read-set-item-fields-in-class-order": {
+   "aliases": [
+    "--no-read-set-item-fields-in-class-order"
    ],
    "choices": null
   },
@@ -1493,6 +1565,18 @@
   "--remove-unused-models-beside-type-overrides": {
    "aliases": [
     "--no-remove-unused-models-beside-type-overrides"
+   ],
+   "choices": null
+  },
+  "--rename-fields-hiding-types-from-type-checkers": {
+   "aliases": [
+    "--no-rename-fields-hiding-types-from-type-checkers"
+   ],
+   "choices": null
+  },
+  "--rename-redeclared-fields-hiding-types": {
+   "aliases": [
+    "--no-rename-redeclared-fields-hiding-types"
    ],
    "choices": null
   },
@@ -1671,9 +1755,12 @@
    "choices": [
     "bool",
     "bytes",
+    "date",
+    "datetime",
     "float",
     "int",
-    "str"
+    "str",
+    "time"
    ]
   },
   "--strip-default-none": {
@@ -1929,6 +2016,12 @@
    "aliases": [],
    "choices": null
   },
+  "--use-root-types-for-mixed-union-map-keys": {
+   "aliases": [
+    "--no-use-root-types-for-mixed-union-map-keys"
+   ],
+   "choices": null
+  },
   "--use-schema-description": {
    "aliases": [
     "--no-use-schema-description"
@@ -1993,6 +2086,12 @@
   },
   "--use-status-code-in-response-name": {
    "aliases": [],
+   "choices": null
+  },
+  "--use-str-for-formats-msgspec-cannot-decode": {
+   "aliases": [
+    "--no-use-str-for-formats-msgspec-cannot-decode"
+   ],
    "choices": null
   },
   "--use-strict-str-for-base64": {
@@ -2312,6 +2411,20 @@
    "standard-py313-20261120": "a9f37691574dc865",
    "standard-py314-20261120": "a9f37691574dc865",
    "standard-py315-20261120": "a9f37691574dc865"
+  },
+  "20261123": {
+   "practical-py310-20261123": "4d6f99412f97dab9",
+   "practical-py311-20261123": "df3ff271ab4086ef",
+   "practical-py312-20261123": "df3ff271ab4086ef",
+   "practical-py313-20261123": "df3ff271ab4086ef",
+   "practical-py314-20261123": "df3ff271ab4086ef",
+   "practical-py315-20261123": "df3ff271ab4086ef",
+   "standard-py310-20261123": "9b312a81bf154788",
+   "standard-py311-20261123": "c9c830f36d469fec",
+   "standard-py312-20261123": "c9c830f36d469fec",
+   "standard-py313-20261123": "c9c830f36d469fec",
+   "standard-py314-20261123": "c9c830f36d469fec",
+   "standard-py315-20261123": "c9c830f36d469fec"
   }
  },
  "python_api": [

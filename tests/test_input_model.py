@@ -1478,11 +1478,13 @@ def test_input_model_reuse_same_named_classes(
     fields; ``Basket`` names the nested ``Basket.Legacy.Item``, and the parent ``Base`` of ``Child`` holds
     ``shop.Item`` where ``Child`` names ``legacy.Item``. ``Override`` redeclares the ``legacy.Item`` field of its parent
     ``LegacyBase`` as ``shop.Item``: the two classes get distinct definition names across the schemas of the model and
-    its parent, so each field imports its own class. Up to 0.100.0 the field of a Pydantic model or a dataclass input
-    was typed by the class of that name the fields reach last, which rejects every valid value; the definitions of two
-    input models were already read by identity. The ``Color`` of ``Painting`` and the ``legacy.Color`` of its
-    ``Frame`` have one schema, which Pydantic merges into one definition, so the definition keeps the class of its
-    name. The input modules are written for the test, as tests/data/python holds no new modules.
+    its parent, so each field imports its own class. ``Child`` still redeclares the ``item`` of ``Base``, which the
+    schema of ``Child`` names apart from ``legacy.Item``, so ``Item`` stays ``shop.Item`` as in 0.100.0. Up to 0.100.0
+    the field of a Pydantic model or a dataclass input was typed by the class of that name the fields reach last, which
+    rejects every valid value; the definitions of two input models were already read by identity. The ``Color`` of
+    ``Painting`` and the ``legacy.Color`` of its ``Frame`` have one schema, which Pydantic merges into one definition,
+    so the definition keeps the class of its name. The input modules are written for the test, as tests/data/python
+    holds no new modules.
     """
     monkeypatch.chdir(tmp_path)
     for module in ("shop", "legacy"):

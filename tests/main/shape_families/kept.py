@@ -473,7 +473,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "#7171",
         "mixin",
         "reversed-all-of",
-        BOTH,
+        DEFAULT,
         ({"first": ("int", "int_min"), "second": ("num",)}, {"first": ("num",), "second": ("int", "int_min")}),
         "reversing the allOf members of a number and an integer declaration of one property changes its type",
     ),
@@ -528,10 +528,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "container",
         "client",
         DEFAULT,
-        (
-            {"container": _ALL_MAPS, "nullable": (True,), "backend": (DATACLASSES,)},
-            {"container": _ALL_MAPS, "nullable": (True,), "required": (False,), "backend": (MSGSPEC,)},
-        ),
+        ({"container": _ALL_MAPS, "nullable": (True,), "required": (False,), "backend": (MSGSPEC,)},),
         "the client's field argument of a nullable map with key constraints drops the None its model field keeps",
     ),
     Kept(
@@ -540,17 +537,8 @@ KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         "backends",
         BOTH,
-        ({"tag": ("enum2-str", "enum2-int"), "nullable": (False,), "backend": (MSGSPEC,)},),
+        ({"tag": ("enum2-str", "enum2-int"), "backend": (MSGSPEC,)},),
         "msgspec cannot decode the union whose variant has several tags, the Pydantic model can",
-    ),
-    Kept(
-        ISSUE,
-        "#7101",
-        "tagged",
-        "backends",
-        PRESET,
-        ({"tag": ("enum2-str", "enum2-int"), "nullable": (True,), "backend": (MSGSPEC,)},),
-        "msgspec cannot decode the union whose variant has several tags, the Pydantic model imports under the preset",
     ),
     Kept(
         ISSUE,
@@ -558,10 +546,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         "backends",
         DEFAULT,
-        (
-            {"tag": ("enum1-str",), "nullable": (False,), "backend": (MSGSPEC,)},
-            {"tag": ("enum1-str",), "nullable": (True,), "mapping": (True,), "kind": ("anyOf",), "backend": (MSGSPEC,)},
-        ),
+        ({"tag": ("enum1-str",), "backend": (MSGSPEC,)},),
         "msgspec cannot decode a union of Structs that are not all tagged, the Pydantic model can",
     ),
     Kept(
@@ -572,15 +557,6 @@ KEPT: Final[tuple[Kept, ...]] = (
         PRESET,
         ({"tag": ("enum1-str",), "nullable": (True,), "backend": (MSGSPEC,)},),
         "msgspec cannot decode an enum tag with a null member, the Pydantic model imports under the preset",
-    ),
-    Kept(
-        ISSUE,
-        "#7102",
-        "tagged",
-        "backends",
-        PRESET,
-        ({"nullable": (True,), "mapping": (False,), "backend": (TYPED_DICT,)},),
-        "the Pydantic model of a tag that admits null rejects every tag under the preset, TypedDict accepts them",
     ),
     Kept(
         LIBRARY_LIMIT,

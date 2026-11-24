@@ -196,6 +196,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "mark_serialized_as_any",
     "mark_target_null",
     "override_type_import",
+    "name_additional_properties_classes",
     "name_enum_member",
     "name_enum_member_literal_class",
     "name_reference",
@@ -2085,7 +2086,23 @@ class GenerationStore:  # noqa: PLR0904
         The model writes the setting again (``DataModel._write_additional_properties_type``); the generation index
         holds no site of such a type.
         """
-        model._write_additional_properties_type(data_type)  # noqa: SLF001
+        GenerationStore._write_additional_properties_type(model, data_type)
+
+    @staticmethod
+    def name_additional_properties_classes(model: DataModel, data_type: DataType, reference_classes: set[str]) -> None:
+        """Give a model ``data_type`` as the type of its additional properties, naming ``reference_classes``.
+
+        They replace the classes recorded, as a parse that redirects the users of a reference they name names its
+        target instead (``GraphBuilder``'s).
+        """
+        GenerationStore._write_additional_properties_type(model, data_type, reference_classes)
+
+    @staticmethod
+    def _write_additional_properties_type(
+        model: DataModel, data_type: DataType, reference_classes: set[str] | None = None
+    ) -> None:
+        """Write the additional properties of a model again, naming ``reference_classes`` or the classes recorded."""
+        model._write_additional_properties_type(data_type, reference_classes=reference_classes)  # noqa: SLF001
         model.invalidate_render_caches()
         bump_model(model)
 
@@ -2685,6 +2702,12 @@ class GraphBuilder:
     def replace_additional_properties_type(self, model: DataModel, data_type: DataType) -> None:
         """Give a model ``data_type`` as the type of the additional properties its settings write (``extra_items``)."""
         self._store.replace_additional_properties_type(model, data_type)  # ty: ignore[deprecated]
+
+    def name_additional_properties_classes(
+        self, model: DataModel, data_type: DataType, reference_classes: set[str]
+    ) -> None:
+        """Give a model ``data_type`` as the type of its additional properties, which name ``reference_classes``."""
+        self._store.name_additional_properties_classes(model, data_type, reference_classes)
 
     def replace_field_type(
         self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh = "now"

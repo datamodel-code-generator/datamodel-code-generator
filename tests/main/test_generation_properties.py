@@ -3,7 +3,8 @@
 Determinism: every input is generated for every output model type it is checked with, in two fresh processes under
 different ``PYTHONHASHSEED`` values, the second running the inputs in reverse order, and once more in the first process
 with the mapping keys of the input reordered where their order is no meaning. All three runs must write the same files
-with the same bytes and exit alike.
+with the same bytes and exit alike. A job that a debug check of the suite stops is named by ``KNOWN_CHECK_FAILURES``,
+with its issue.
 
 Which key order is meaning follows the generator's documented behaviour:
 
@@ -55,6 +56,7 @@ import pytest
 
 from datamodel_code_generator import DataModelType
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
+from tests.checks.areas import Area, read_modes
 from tests.main.conftest import EXPERIMENTAL_MISSING_IMPORT_WARNING
 from tests.main.payload_validation import (
     SCHEMA_CASES,
@@ -116,18 +118,24 @@ import sys
 import warnings
 
 from datamodel_code_generator.__main__ import main
+from tests.checks.areas import CheckFailure
 
 warnings.simplefilter("ignore")
 codes = []
 for argv in json.loads(open(sys.argv[1], encoding="utf-8").read()):
     print(*argv, file=sys.stderr, flush=True)
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        codes.append(int(main(argv)))
+        try:
+            codes.append(int(main(argv)))
+        except CheckFailure as failure:
+            codes.append(f"{type(failure).__name__}: {failure}")
 json.dump(codes, sys.stdout)
 """
 """Generate every argument list of the JSON file named by the first argument, in order, and write the exit codes.
 
-Each argument list goes to stderr before its generation, so a run that stops names the job it stopped in.
+A generation that a debug check of the suite stops writes the check's message in place of its exit code
+(``KNOWN_CHECK_FAILURES``), and the run goes on with the next one. Each argument list goes to stderr before its
+generation, so a run that stops names the job it stopped in.
 """
 
 
@@ -335,7 +343,19 @@ def _start(argvs: list[list[str]], seed: str, path: Path) -> subprocess.Popen[st
 
 
 EXIT: Final = "<exit status>"
-"""The name under which an output tree holds the exit status of its generation."""
+"""The name under which an output tree holds the exit status of its generation, or the check that stopped it."""
+KNOWN_CHECK_FAILURES: Final[Mapping[str, tuple[str, str]]] = {
+    f"client/fields-cycle.yaml/{model_type.value}": ("#7362", "fix_constructor_field_ordering ordering-input")
+    for model_type in (
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.MsgspecStruct,
+    )
+}
+"""The jobs that a debug check of the suite stops (``CheckFailure``), each with its issue and the part of the check's
+message that names it: the constructor field order of dataclass-like models reads the fields of an ``allOf`` cycle
+before the import pass makes them final (#7362). Held both ways: a job that a check stops other than as an entry
+names fails, and so does an entry whose job generates."""
 
 
 def _trees(process: subprocess.Popen[str], directories: list[Path]) -> list[dict[str, str]]:
@@ -420,12 +440,27 @@ JOB_CHUNKS: Final = [
 ]
 
 
-@pytest.mark.allow_direct_assert("Each line names a job whose runs differ, with the first differing file.")
+@pytest.mark.allow_direct_assert(
+    "Each line names a job a debug check stops unlike KNOWN_CHECK_FAILURES, or whose runs differ, with the first diff."
+)
 @pytest.mark.parametrize(("group", "start"), JOB_CHUNKS)
 def test_generation_is_deterministic(group: str, start: int, tmp_path: Path) -> None:
     """Every job writes the same bytes across hash seeds, processes, job order and the key order that is no meaning."""
     jobs = JOB_GROUPS[group]()[:: MODE.job_stride][start : start + CHUNK]
-    found = run_differences(jobs, generate_runs(jobs, tmp_path))
+    trees = generate_runs(jobs, tmp_path)
+    stopped = {job.name: tree[EXIT] for job, tree in zip(jobs, trees["first"], strict=True) if not tree[EXIT].isdigit()}
+    finality = read_modes().get(Area.FACT_FINALITY)
+    raising = finality is not None and finality.report_path is None
+    known = {job.name: KNOWN_CHECK_FAILURES[job.name] for job in jobs if raising and job.name in KNOWN_CHECK_FAILURES}
+    unlike = sorted(
+        name
+        for name in stopped.keys() | known.keys()
+        if name not in stopped or name not in known or known[name][1] not in stopped[name]
+    )
+    assert not unlike, "debug checks stop jobs unlike KNOWN_CHECK_FAILURES:\n" + "\n".join(
+        f"{name}: {stopped.get(name, 'generates')} (known: {known.get(name)})" for name in unlike
+    )
+    found = run_differences(jobs, trees)
     assert not found, "generation differs between runs:\n" + "\n\n".join(found)
 
 
@@ -505,18 +540,10 @@ ROUND_TRIP_KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         DUMP_CHANGES,
         DEFAULT,
-        (
-            {
-                "tag": ("enum1-str", "enum2-str"),
-                "nullable": (True,),
-                "mapping": (False,),
-                "kind": ("oneOf",),
-                "backend": (PYDANTIC_V2,),
-            },
-        ),
-        "a union whose tags also admit null is written without discriminator= (#7102), as Pydantic reads no tag that "
-        "admits None: smart mode picks the variant of a null tag by its other fields, and the dump of one variant "
-        "can validate back as another",
+        ({"tag": ("enum1-str", "enum2-str"), "nullable": (True,), "backend": (PYDANTIC_V2,)},),
+        "a union whose tags also admit null is written without discriminator= (#7102), with or without a mapping, as "
+        "Pydantic reads no tag that admits None: smart mode picks the variant of a null tag by its other fields, and "
+        "the dump of one variant can validate back as another",
     ),
 )
 """The known round trip differences of the shape families, written as ``shape_families/kept.py`` writes its rules."""

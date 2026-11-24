@@ -1,8 +1,0 @@
-[[change]]
-id = "payload-nested-unique-sets"
-category = "harness"
-title = "Leave a nested unique-set payload input out of the dump round trip and the msgspec rejection check"
-summary = "The payload suite skips two checks of one test input; the package writes the same output."
-covers = [
-    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_nested_unique_item_sets.json].errors.txt",
-]

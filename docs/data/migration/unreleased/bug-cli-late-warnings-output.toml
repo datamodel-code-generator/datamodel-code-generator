@@ -1,9 +1,0 @@
-[[change]]
-id = "bug-cli-late-warnings-output"
-category = "harness"
-title = "The stdout output of a repaired run is the same"
-summary = "The stored stdout of the test that pins the warnings of a repaired dotted schema name; the module is the same."
-refs = ["#6926"]
-covers = [
-    "main/openapi/main_openapi/main_invalid_dotted_schema_name_stdout_late_pass_warnings.stdout.py",
-]
