@@ -2057,7 +2057,7 @@ class _PydanticV2Model(DataModel):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
-    def _select_python_regex_engine(self, applied_config: Any = None) -> None:
+    def _select_python_regex_engine(self, applied_config: object = None) -> None:
         """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
 
         Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
