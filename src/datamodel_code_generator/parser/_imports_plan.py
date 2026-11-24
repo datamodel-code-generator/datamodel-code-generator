@@ -16,7 +16,10 @@ Code that the parser hands the live ``Imports`` (``DataModel.resolve_module_impo
 The re-exports of package ``__init__`` modules and the imports of forwarder modules are built and written at once by
 one function each and are not module imports in this sense. Only this module, ``imports.py`` and those writers
 (``LEDGER_WRITERS`` of ``scripts/fact_tables.py``) call a method that changes an ``Imports``; heki's contract
-``imports-through-the-ledger`` reports any other call.
+``imports-through-the-ledger`` reports any other call. The ``DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`` check of
+the test suite (``tests/checks/module_imports.py``) compares each module's imports with the replay of their entries
+when the module's import text is written, so it also fails a write heki does not see (an entry or attribute of an
+``Imports`` changed in place, a call on a value heki cannot tie to a class).
 
 The names a module's ``ModelResolver`` gives its imports are asked for through the ledger too (``add_name``,
 ``release_names``), so that the check sees, in order, every name a module asked for and released.

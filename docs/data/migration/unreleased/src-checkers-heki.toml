@@ -1,8 +1,8 @@
 [[change]]
 id = "src-checkers-heki"
 category = "internal"
-title = "heki checks what the decision views and writer protocols and the replay of the import ledger checked"
-summary = "The read-only views, the writer protocols of the decisions and the replay half of the MODULE_IMPORTS check give way to heki contracts written from the repository's tables; the package writes the same output."
+title = "heki checks what the decision views and writer protocols checked"
+summary = "The read-only views and the writer protocols of the decisions give way to heki contracts written from the repository's tables, and heki holds the calls that change a module's imports to the import ledger beside the MODULE_IMPORTS replay; the package writes the same output."
 refs = ["#1"]
 covers = [
     "architecture_boundaries/architecture_boundary_source_classification.txt",

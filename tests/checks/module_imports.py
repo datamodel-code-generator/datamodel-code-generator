@@ -1,7 +1,9 @@
-"""``MODULE_IMPORTS``: every module's imports are what its import plan holds.
+"""``MODULE_IMPORTS``: every module's imports are what its import ledger replays, and what its import plan holds.
 
-That only ``ModuleImportLedger`` writes the imports of a module is heki's check (the contract
-``imports-through-the-ledger`` of ``scripts/heki.toml``), not this module's. After the last rename, each module's
+The imports of every module, and those all modules share, equal the replay of their ledger entries when the module's
+import text is written, so a write that bypasses ``ModuleImportLedger`` fails: also a write heki's contract
+``imports-through-the-ledger`` cannot see, an entry or attribute of an ``Imports`` changed in place or a call on a
+value heki cannot tie to a class. After the last rename, each module's
 import plan (``ModuleImportPlan``) is made from the final names (``NameTable``): its own models by their class names,
 those of other modules through imports whose names ``allocate_bindings`` gives from the names the module asked for
 through the ledger (``NameLog``). The module must write for each model it names what the plan writes, and its imports
@@ -282,13 +284,43 @@ def _replay(ledger: Any, imports: Imports, *, without: str | None = None) -> Imp
     return replay((entry for entry in entries if entry.producer.pass_ != without), use_exact=imports.use_exact)
 
 
-def _check_module_imports(imports_mode: Mode, parser: Any, ctx: Any) -> None:
-    """Report where the module's import plan lacks what the module writes for a model it names or imports of it.
+def _differences(live: Imports, replayed: Imports) -> tuple[str, ...]:
+    """Name the parts of two imports that differ: names per module (in module order), counts, aliases, reference paths.
 
-    The plan must hold what the module writes for each model it names and every import of another module's model; a
-    report file also gets how many it compared.
+    Reading ``Imports.alias`` creates empty alias maps, which bind nothing and are not compared.
+    """
+    return tuple(
+        name
+        for name, differs in (
+            ("names", list(live.items()) != list(replayed.items())),
+            ("counter", live.counter != replayed.counter),
+            ("alias", _bound_aliases(live) != _bound_aliases(replayed)),
+            ("reference_paths", live.reference_paths != replayed.reference_paths),
+        )
+        if differs
+    )
+
+
+def _bound_aliases(imports: Imports) -> dict[str | None, dict[str, str]]:
+    return {module: aliases for module, aliases in imports.alias.items() if aliases}
+
+
+def _check_module_imports(imports_mode: Mode, parser: Any, ctx: Any) -> None:
+    """Report the shared imports and the module's imports where they differ from the replay of their ledger.
+
+    Such a difference is a write that did not go through ``ModuleImportLedger``. The module's import plan must also
+    hold what the module writes for each model it names and every import of another module's model; a report file
+    also gets how many it compared.
     """
     ledger = parser._import_ledger
+    for label, imports in (("shared imports", parser.imports), (f"imports of {'/'.join(ctx.module)}", ctx.imports)):
+        if differences := _differences(imports, _replay(ledger, imports)):
+            _violation(
+                imports_mode,
+                f"{label} differ from the replay of their ledger in {', '.join(differences)}",
+                imports=label,
+                parts=list(differences),
+            )
     module, plan = "/".join(ctx.module), imports_mode.state[_PLANS, id(ctx.imports)][1]
     if differences := plan.differences(_replay(ledger, ctx.imports, without="field-name-bindings")):
         _violation(

@@ -3201,6 +3201,37 @@ def test_import_overrides_on_a_target_without_shared_imports(output_file: Path) 
     )
 
 
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_module_imports_written_outside_the_import_ledger(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A custom ``_process_single_module`` that appends to the module's imports itself bypasses the import ledger.
+
+    The check (`1`, as the test suite sets it) raises when the module's import text is written; `report:<path>`
+    appends a JSON line and goes on; with the check off (`0`) the import is counted once more and the output reads the
+    same.
+    """
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class DirectImportWriter(JsonSchemaParser):
+        def _process_single_module(self, *args: Any, **kwargs: Any) -> Any:
+            context = super()._process_single_module(*args, **kwargs)
+            context.imports.append(Import.from_full_path("pydantic.BaseModel"))
+            return context
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODULE_IMPORTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = DirectImportWriter(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(CheckFailure, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 def test_models_named_outside_the_import_plan(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A custom ``_process_single_module`` that changes a module after its imports were made departs from its plan.
 
