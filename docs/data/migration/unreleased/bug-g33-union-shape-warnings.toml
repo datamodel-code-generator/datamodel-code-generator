@@ -52,3 +52,11 @@ input = ["tests/data/jsonschema/allof_union_object_branches", "tests/data/jsonsc
 backends = "*"
 options = "*"
 match = "--distribute-allof-over-(unions reads the member in place|object-branches gives it one variant per model)|^\\[message\\] removed first attempt: .*Modular references require an output directory"
+
+[[change.cells]]
+input = ["composition:*/**/union/**", "composition:*/**/tagged/**"]
+input_file_type = "jsonschema"
+backends = "*"
+options = "*"
+aspects = ["warning"]
+match = "--distribute-allof-over-(unions reads the member in place|object-branches gives it one variant per model)"
