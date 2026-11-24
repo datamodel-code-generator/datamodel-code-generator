@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "abnormal-path@tests"
+head = 54
+pr = 7495
+decision = ["#7495"]
+reason = "--write-pyproject-config re-reads pyproject.toml just before its atomic replace so a second writer's edit is not lost; the test of that branch simulates the second writer, which only an abnormal_path test can do (owner decision, 2026-11-24)"
