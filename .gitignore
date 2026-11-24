@@ -13,4 +13,6 @@ docs/assets/playground/generated/
 docs/migration/from-*.md
 docs/llms-full.txt
 docs/migration/changes.md
+docs/presets.md
+docs/preset-history.md
 docs/data/migration.json

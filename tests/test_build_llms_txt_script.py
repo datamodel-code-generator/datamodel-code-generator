@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_llms_txt.py"
 MIGRATION_SCRIPT = ROOT / "scripts" / "build_migration_docs.py"
+PRESET_SCRIPT = ROOT / "scripts" / "build_preset_docs.py"
 
 
 def _not_pages(directory: str, names: list[str]) -> list[str]:
@@ -27,8 +28,8 @@ def _not_pages(directory: str, names: list[str]) -> list[str]:
 def test_build_llms_txt_check_is_up_to_date(tmp_path: Path) -> None:
     """The committed llms.txt is up to date with the pages the docs deploy has; llms-full.txt is built at deploy.
 
-    The deploy builds the upgrade guide's all-changes page, which llms.txt lists, before this script, so the check runs
-    on a copy of the pages with that page built.
+    The deploy builds the upgrade guide's all-changes page and the preset pages, which llms.txt lists, before this
+    script, so the check runs on a copy of the pages with those pages built.
     """
     checkout = tmp_path / "checkout"
     docs = checkout / "docs"
@@ -38,6 +39,7 @@ def test_build_llms_txt_check_is_up_to_date(tmp_path: Path) -> None:
     shutil.copy2(SCRIPT, checkout / "scripts")
     migration = ["--docs-dir", str(docs / "migration"), "--json", str(docs / "data" / "migration.json")]
     subprocess.run([sys.executable, str(MIGRATION_SCRIPT), *migration], check=True)
+    subprocess.run([sys.executable, str(PRESET_SCRIPT), "--pages", str(docs)], check=True)
     subprocess.run([sys.executable, str(checkout / "scripts" / SCRIPT.name), "--check"], check=True)
 
 
@@ -49,6 +51,20 @@ def test_build_llms_txt_builds_the_missing_guide_page_first(tmp_path: Path) -> N
     built = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*") if path.is_file())
     build_llms_txt.build_missing_guide(docs, tmp_path / "absent.py")
     assert_output(f"built {built}\n")
+
+
+def test_build_llms_txt_builds_the_preset_pages_first(tmp_path: Path) -> None:
+    """A local run builds the preset pages the deploy builds, also over a stale page, so llms.txt reads them current."""
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "presets.md").write_text("stale\n", encoding="utf-8")
+    build_llms_txt.build_preset_pages(docs, PRESET_SCRIPT)
+    built = sorted(path.name for path in docs.iterdir())
+    stale = (docs / "presets.md").read_text(encoding="utf-8") == "stale\n"
+    (docs / "presets.md").unlink()
+    build_llms_txt.build_preset_pages(docs, tmp_path / "absent.py")
+    after = sorted(path.name for path in docs.iterdir())
+    assert_output(f"built {built}, stale page kept: {stale}\nwithout a builder: {after}\n")
 
 
 def test_build_llms_txt_writes_both_files_and_checks_only_the_index(

@@ -1091,6 +1091,24 @@ def test_build_migration_docs_preset_line_names_the_records_of_its_options(
     assert_output(f"exit {code}\n{capsys.readouterr().out}")
 
 
+def test_build_migration_docs_preset_line_names_the_record_of_a_value_option(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A bare-option record also reaches the date whose group lists the option with a value.
+
+    The group lists `--new-flag chosen`; the record names `--new-flag`. A record that names the value itself keeps
+    exact matching.
+    """
+    record = RECORDS["new-flag"].replace(', "preset:20260301"', "").replace("covers", 'refs = ["#5201"]\ncovers')
+    _write_data(tmp_path, CHANGES, UNRELEASED | {"new-flag": record})
+    prs = tmp_path / "record-prs.json"
+    prs.write_text(json.dumps(RECORD_PRS), encoding="utf-8")
+    *kept, joined = REGISTRIES.preset_dates
+    registries = replace(REGISTRIES, preset_dates=(*kept, replace(joined, options=("--new-flag chosen",))))
+    code = main([*_args(tmp_path), "--release-notes", "unreleased", "--record-prs", str(prs)], registries)
+    assert_output(f"exit {code}\n{capsys.readouterr().out}")
+
+
 def test_migration_selector_script() -> None:
     """The hub's script shows the hidden selector, also after the page content changes, and opens the chosen range."""
     driver = """

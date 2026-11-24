@@ -1150,6 +1150,10 @@ pull request the release-note item of the date names, and a fragment for the lis
 `python scripts/declared_changes.py declare my-new-option-preset --extends preset-<date> --rest`. A lane that adds an
 option to the presets edits neither `preset.py`, the preset test nor `preset-<date>.toml`.
 
+The preset pages (`docs/presets.md`, `docs/preset-history.md`) are built when the site is deployed and not committed,
+as the upgrade guide's pages are: `python scripts/build_preset_docs.py --pages` writes them locally, and the stored
+renderings of `tests/test_build_preset_docs_script.py` keep what names a released date only.
+
 ### Step 2: Add a test with documentation marker (Required)
 
 Create a test that demonstrates the option and add the `@pytest.mark.cli_doc()` marker:
