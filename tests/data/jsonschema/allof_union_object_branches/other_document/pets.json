@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Cat": {"type": "object", "properties": {"meow": {"type": "boolean"}}, "required": ["meow"]},
+    "Dog": {"oneOf": [{"$ref": "#/$defs/BigDog"}, {"$ref": "#/$defs/SmallDog"}]},
+    "BigDog": {"type": "object", "properties": {"big": {"type": "boolean"}}, "required": ["big"]},
+    "SmallDog": {"type": "object", "properties": {"small": {"type": "boolean"}}, "required": ["small"]}
+  }
+}

@@ -46,6 +46,7 @@ reviewed-safe default_value_overrides
 reviewed-safe defer_formatting
 reviewed-safe deserialize_default_values
 reviewed-safe disable_appending_item_suffix
+reviewed-safe distribute_allof_over_object_branches
 reviewed-safe distribute_allof_over_unions
 guarded dump_resolve_reference_action
 reviewed-safe duplicate_name_suffix

@@ -1,3 +1,7 @@
+allof_union_through_ref.json#/$defs/Leaf/allOf/0 names an allOf over a union, which is no class a model can extend, so the model checks none of its branches; --distribute-allof-over-unions reads the member in place.
+allof_union_through_ref.json#/$defs/Narrowed/allOf/0 names an allOf over a union, which is no class a model can extend, so the model checks none of its branches; --distribute-allof-over-unions reads the member in place.
+allof_union_through_ref.json#/$defs/Loosened/allOf/0 names an allOf over a union, which is no class a model can extend, so the model checks none of its branches; --distribute-allof-over-unions reads the member in place.
+allof_union_through_ref.json#/$defs/Coded/allOf/0 names an allOf over a union, which is no class a model can extend, so the model checks none of its branches; --distribute-allof-over-unions reads the member in place.
 Field name `mid` is duplicated on Coded
 msgspec cannot decode the union Parent: its Struct types Parent1, Parent2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
 msgspec cannot decode the union Mid: its Struct types Mid4, Mid5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
