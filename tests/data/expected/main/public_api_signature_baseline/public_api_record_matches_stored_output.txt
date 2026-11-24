@@ -4470,7 +4470,7 @@ class HeaderObject(BaseModel)
     description: Optional[str] = None
     required: bool = False
     deprecated: bool = False
-    schema_: Optional[JsonSchemaObject] = Field(None, alias='schema')
+    schema_: JsonSchemaObject | bool | None = Field(None, alias='schema')
     example: YamlValue = None
     examples: Optional[Union[str, OrReference[ExampleObject]]] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
@@ -4551,10 +4551,15 @@ class ParameterObject(BaseModel)
     description: Optional[str] = None
     required: bool = False
     deprecated: bool = False
-    schema_: Optional[JsonSchemaObject] = Field(None, alias='schema')
+    schema_: JsonSchemaObject | bool | None = Field(None, alias='schema')
     example: YamlValue = None
     examples: Optional[Union[str, OrReference[ExampleObject]]] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
+    @classmethod
+    @override
+    def __get_pydantic_core_schema__(cls, source: type[BaseModel], handler: GetCoreSchemaHandler, /) -> CoreSchema
+    @property
+    def schema_location(self) -> SchemaLocation | None
 RE_APPLICATION_JSON_PATTERN: Pattern[str] = re.compile('^application/.*json$')
 class RawMediaObject(BaseModel)
     schema_: RawSchema | None = Field(None, alias='schema')
