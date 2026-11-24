@@ -232,6 +232,7 @@ _ENUM_TAGGED_VARIANTS = Path(__file__).parents[1] / "data/openapi/discriminator_
 """Variants in the module ``pets`` whose tag field is typed by an enum of the root module."""
 
 
+@pytest.mark.value_checks
 def test_trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false(monkeypatch: pytest.MonkeyPatch) -> None:
     """A pass that rewrites what its trigger does not name fails the parse when the trigger check runs it anyway.
 
@@ -242,6 +243,31 @@ def test_trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false(mon
     monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "1")
     with pytest.raises(CheckFailure) as raised:
         _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
+    assert_output(f"{raised.value}\n")
+
+
+class _DescribingRuntimeImports(JsonSchemaParser):
+    """A parser extension that describes every model where it merges the imports of runtime expressions."""
+
+    def _merge_runtime_expression_imports(self, contexts: Any, model_imports: Any) -> None:
+        for context in contexts:
+            for model in context.models:
+                model.description = "described"
+        super()._merge_runtime_expression_imports(contexts, model_imports)
+
+
+@pytest.mark.value_checks
+def test_trigger_check_reports_a_fact_a_pass_writes_where_its_trigger_is_false(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A pass that changes a fact where its trigger is false fails the parse when the trigger check runs it anyway.
+
+    ``merge_runtime_expression_imports`` runs where a default needs a runtime expression; the schema has none, and the
+    extension describes every model in it.
+    """
+    monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "1")
+    with pytest.raises(CheckFailure) as raised:
+        _DescribingRuntimeImports(_RENAMED_DEFINITION, formatters=[Formatter.BUILTIN]).parse()
     assert_output(f"{raised.value}\n")
 
 

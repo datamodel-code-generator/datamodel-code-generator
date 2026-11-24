@@ -119,17 +119,14 @@ VALUE_CHECK_AREA_ENVS = (
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_RENDER_PLANS_ENV,
     CHECK_RENDER_MEMOS_ENV,
+    CHECK_FACT_FINALITY_ENV,
     CHECK_NAMING_ENV,
     CHECK_TEMPLATE_ASSIGNMENTS_ENV,
 )
 """The areas that compare computed values and cost a few percent of a run; `--skip-value-checks` leaves them off."""
-CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
 CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
-SWEEP_PYTHON = (3, 15)
-"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep,
-the others compare only the models a pass touched. `CHECK_PASS_TRIGGERS_ENV` stays off unless the environment sets it
-or `--check-pass-triggers` is given: the nightly workflow (`tox run -e pass-triggers`) runs the suite on `SWEEP_PYTHON`
-with it on."""
+"""Stays off unless the environment sets it or `--check-pass-triggers` is given: the nightly workflow
+(`tox run -e pass-triggers`) runs the suite on the newest Python with it on. It needs `CHECK_FACT_FINALITY_ENV`."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
 """What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
 
@@ -319,15 +316,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
-    The finality sweep is turned on only from `SWEEP_PYTHON`; the trigger check only by `--check-pass-triggers` or where
-    the environment sets it. `--skip-value-checks` leaves `VALUE_CHECK_AREA_ENVS` unset.
+    The trigger check is turned on only by `--check-pass-triggers` or where the environment sets it.
+    `--skip-value-checks` leaves `VALUE_CHECK_AREA_ENVS` unset.
     """
     benchmarks = config.getoption("codspeed", default=False)
     skipped = VALUE_CHECK_AREA_ENVS if config.getoption("--skip-value-checks") else ()
     for name in () if benchmarks else (name for name in CHECK_AREA_ENVS if name not in skipped):
         os.environ.setdefault(name, "1")
-    if not benchmarks and sys.version_info >= SWEEP_PYTHON:
-        os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
     os.environ[CHECK_PASS_TRIGGERS_ENV] = (
         "1"
         if config.getoption("check_pass_triggers") and not benchmarks

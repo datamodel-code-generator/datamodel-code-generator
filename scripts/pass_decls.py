@@ -2,14 +2,15 @@
 
 One ``PassDecl`` per pass: the methods and named steps of ``parser/base.py`` that the pipeline tables of ``Parser``
 (``parser/_passes/_tables.py``) run, joined to their ``PassSpec`` by name. ``reads`` and ``writes`` use the facts of
-``scripts/fact_tables.py``. The test suite runs every pass inside the scope of its declaration
-(``tests/checks/finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the writes against it and
-a pass trace records the pass. The writes of ``fact`` rows are checked at run time; reads and the writes of presentation
-rows are declared from the code; ``after`` edges order the passes whose facts conflict
-(``scripts/check_pass_pipeline.py:check_order``). A ``trigger`` declares when the fact a pass rewrites is present: its
-``PassSpec`` skips the pass where it is absent, and the trigger reads only facts the pass reads. ``PASS_DECLS`` lists
-every declaration in execution order and is the source of the generated pass table in ``docs/architecture.md``;
-``DECISION_DECLS`` declares the decisions of the decision registries (``parser/_phases.py``) by name.
+``scripts/fact_tables.py``. heki holds the writes of each pass to its declaration (the ``pass:<name>`` boundaries
+``scripts/build_heki_contracts.py`` builds from it); the test suite runs every pass inside the scope of its declaration
+(``tests/checks/finality.py``), where a pass trace records the pass and ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``
+checks that a module pass changes only the models of its module. Reads are declared from the code; ``after`` edges
+order the passes whose facts conflict (``scripts/check_pass_pipeline.py:check_order``). A ``trigger`` declares when
+the fact a pass rewrites is present: its ``PassSpec`` skips the pass where it is absent, and the trigger reads only
+facts the pass reads. ``PASS_DECLS`` lists every declaration in execution order and is the source of the generated
+pass table in ``docs/architecture.md``; ``DECISION_DECLS`` declares the decisions of the decision registries
+(``parser/_phases.py``) by name.
 
 The tables carry no label that only the checks read: ``BOUNDARY_BEFORE`` names the segments that enter a boundary and
 ``HOOK_BODIES`` the table that the default implementation of each hook runs.

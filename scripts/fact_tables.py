@@ -4,9 +4,9 @@
 ``scripts/check_generation_store_usage.py`` reads this module with ``ast`` (it never imports the package), so every
 row is a literal ``AttributeFact(...)`` call whose arguments are strings, tuples, ``None`` or members of the enums
 below and of ``Phase``, which the generation store enters and ``parser/_facts.py`` defines. Later readers: heki's
-contracts (``scripts/build_heki_contracts.py``, among them the render facts no decision reads), the write guards of the
-finality check (which attributes to guard per class), the finality fingerprints (the ``fact`` rows) and the Fact
-Finality table of ``docs/architecture.md``.
+contracts (``scripts/build_heki_contracts.py``, among them the render facts no decision reads and the pass
+boundaries), the write guards of the finality check (which attributes to guard per class), the finality fingerprints
+(the ``fact`` rows) and the Fact Finality table of ``docs/architecture.md``.
 
 Columns of a row:
 
@@ -21,7 +21,7 @@ Columns of a row:
 * ``final_after``: the last phase that writes the attribute in today's pipeline.
 * ``frozen_at``: the latest freeze point among the row's facts (every ``Fact`` freezes at B1, every ``RenderFact`` at
   its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts), after which no pass may write the attribute
-  in the target pipeline. The finality checks still check each ``Fact`` at B1 unless a pass declares an exception.
+  in the target pipeline. heki's pass boundaries check each ``Fact`` at B1 unless a pass declares an exception.
   ``None`` for caches and bookkeeping.
 * ``store_ops``: the ``GenerationStore`` operations allowed to write it (``scripts/build_heki_contracts.py`` makes them
   the writers of a heki contract); every other write is recorded in ``scripts/heki_baseline.toml`` until a later

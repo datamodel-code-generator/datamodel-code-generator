@@ -57,12 +57,16 @@ becomes final and where a decision belongs.
   `Reference.children` a `MUT203` one: call the store operation or ask the generation index instead.
   `scripts/check_generation_store_usage.py` checks that every attribute and `__dict__` key the model graph writes has
   a row in the table.
-- Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; the
-  finality check of the test suite (`tests/checks/finality.py`) runs it inside the scope of that declaration; a pass
-  that conflicts with an earlier one of its segment needs an `after` edge with
-  its reason (`scripts/check_pass_pipeline.py` says which). Every test runs the finality check
-  (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`): "... undeclared: ..." means the pass writes a fact its declaration
-  does not list; the other rules report writes after a fact is final.
+- Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; a
+  pass that conflicts with an earlier one of its segment needs an `after` edge with its reason
+  (`scripts/check_pass_pipeline.py` says which, and that each pass runs in the phase it declares). heki holds each pass
+  to its declaration: the `pass:<name>` boundaries that `scripts/build_heki_contracts.py` builds from the declarations
+  and the fact tables (`scripts/heki.toml`). A `pass:<name>:<row>` finding means the pass, or a function it calls,
+  writes a row whose facts it does not declare, or writes it after the fact is final; a `pass-glue:<row>` finding a
+  fact write between the passes. Declare the fact or move the write, then rebuild the contracts. What depends on
+  values stays a runtime check of the test suite (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`,
+  `tests/checks/finality.py`): "... other-module: ..." means a module pass changed a model of another module, and
+  "... ordering-input: ..." that a base field constructor ordering read changed before B2.
 - A pass that rewrites a fact some outputs lack returns early at the top of its body when its source is empty, and
   reads that source once. A `when` names only options (`scripts/check_pass_pipeline.py` lists them).
   A `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the facts it reads and why the early return costs more) is

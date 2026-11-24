@@ -1,0 +1,1 @@
+{"pass_name": "override_required_field", "rule": "other-module", "row": "DataModel.description", "facts": ["METADATA"], "model": "Chocolate", "phase": "MODULES", "known": false}

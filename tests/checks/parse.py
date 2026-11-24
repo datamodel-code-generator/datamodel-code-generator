@@ -4,9 +4,9 @@ The run of the whole pipeline (``PIPELINE``) of a parse reads the modes of its c
 on, opens the finality check of ``finality.py`` (``PARSE_CHECKS``). When the pipeline enters ``PARSED``, the checks of
 L1 run and the finality check arms; when the modules are final (``FINALIZE_SEGMENTS``), the model graph check compares
 the models they write with the emitted ones; from B2 on (``render_ready``), every fact and render plan of the parse is
-final. Every pass and decision runs inside the finality scope of its declaration, and every output module inside its
-module checkpoint, as the pass trace (``trace.py``) records them. ``Parser.parse`` itself stays unwrapped: it remembers
-the frame that called it, which warnings name.
+final. Every pass runs inside the finality scope of its declaration and every output module inside its module
+checkpoint; the pass trace (``trace.py``) records them and the decisions. ``Parser.parse`` itself stays unwrapped: it
+remembers the frame that called it, which warnings name.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import replace
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
-from scripts.pass_decls import BOUNDARY_BEFORE, DECISION_DECLS, HOOK_BODIES, PASS_DECLS, Boundary
+from scripts.pass_decls import BOUNDARY_BEFORE, HOOK_BODIES, PASS_DECLS, Boundary
 from tests.checks import areas
 from tests.checks.areas import MODES, Area, read_modes
 from tests.checks.finality import (
@@ -99,22 +99,6 @@ def _live_models(_parser: object, state: Any) -> Sequence[Any]:
     return state.live_models
 
 
-def _all_models(_parser: object, state: Any) -> Sequence[Any]:
-    return state.all_models
-
-
-def _context_models(_parser: object, state: Any) -> Sequence[Any]:
-    from datamodel_code_generator.parser._passes._shared import _context_models
-
-    return _context_models(state.contexts)
-
-
-def _models_before_override_removal(parser: Any, state: Any) -> Sequence[Any]:
-    from datamodel_code_generator.parser._passes._tables import _models_before_override_removal
-
-    return _models_before_override_removal(parser, state)
-
-
 CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "delete_duplicate_models": _models,
     "replace_duplicate_name_in_module": _models,
@@ -144,43 +128,14 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "fix_constructor_field_ordering_early": _model_list_before_override_removal,
     "snapshot_module_unused_models": _model_list,
     "apply_base_class_type_overrides": _model_list,
-    "settle_discriminated_unions": _context_models,
-    "tag_fields_of_tagged_bases": _context_models,
-    "flatten_narrowed_inherited_fields": _context_models,
-    "write_enum_member_tags_as_values": _context_models,
     "assign_forward_reference_fields": _model_list,
-    "fix_constructor_field_ordering": _models_before_override_removal,
     "unbind_hidden_type_fields": _model_list,
     "update_type_aliases": _model_list,
     "collect_live_models": _model_list,
     "set_validate_default_on_fields": _live_models,
     "warn_required_assignments_after_defaults": _live_models,
-    "fix_tag_opt_out_field_ordering": _context_models,
-    "finalize_rendered_nullability": _context_models,
-    "prepare_type_alias_fields": _all_models,
-    "finalize_type_alias_users": _all_models,
-    "mark_set_item_models_hashable": _all_models,
-    "finalize_structured_imports": _all_models,
-    "finalize_sequence_interface": _all_models,
-    "order_constructor_fields_by_decided_nested_factories": _all_models,
-    "snapshot_model_imports": _all_models,
-    "append_model_imports": _all_models,
-    "remove_unused_models": _all_models,
-    "prepare_schema_runtime_validation_module_code": _all_models,
-    "sync_schema_runtime_validation_module_imports": _all_models,
-    "merge_runtime_expression_imports": _all_models,
-    "remove_unused_imports": _all_models,
-    "resolve_module_import_conflicts": _all_models,
-    "alias_builtin_shadowing_module_imports": _all_models,
-    "alias_builtins_hidden_by_submodules": _all_models,
-    "bind_module_field_names": _all_models,
-    "change_imported_model_name": _all_models,
-    "name_final_classes_of_additional_properties": _all_models,
-    "refresh_sequence_interface_after_renames": _all_models,
-    "replan_schema_validators_after_renames": _all_models,
-    "decide_config_items": _all_models,
 }
-"""The models the finality check compares when a pass ends, besides those it touched, by pass name."""
+"""The models of its module a module pass compares when it ends, besides those it touched, by pass name."""
 
 
 def _wrap_hooks(parser_class: type) -> None:
@@ -290,18 +245,12 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
 
 
 def run_decision(original: Callable[..., None]) -> Callable[..., None]:
-    """Wrap ``Runner.run_decision``: a decision is traced and runs inside the finality scope of its declaration.
-
-    The declaration is the entry of ``DECISION_DECLS`` that the decision names.
-    """
+    """Wrap ``Runner.run_decision``: a decision is traced by the name its spec gives."""
 
     @wraps(original)
     def run_decision(self: Any, decision: Any, facts: object, writer: object) -> None:
-        name = decision.spec["name"]
-        _traced(name)
-        checks = PARSE_CHECKS.get()
-        with NO_SCOPE if checks is None else checks.fact_pass(DECISION_DECLS[name], None):
-            return original(self, decision, facts, writer)
+        _traced(decision.spec["name"])
+        return original(self, decision, facts, writer)
 
     return run_decision
 

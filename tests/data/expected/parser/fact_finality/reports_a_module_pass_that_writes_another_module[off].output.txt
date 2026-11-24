@@ -1,0 +1,312 @@
+# __init__.py
+from ._internal import DifferentTea, Error, Id, OptionalModel, Result, Source
+
+__all__ = ["DifferentTea", "Error", "Id", "OptionalModel", "Result", "Source"]
+
+# woo/__init__.py
+
+# nested/__init__.py
+
+# foo/__init__.py
+from .._internal import Cocoa, Tea
+
+__all__ = ["Cocoa", "Tea"]
+
+# _internal.py
+from __future__ import annotations
+
+from typing import List, Optional
+
+from pydantic import BaseModel, RootModel
+
+from . import models
+
+
+class OptionalModel(RootModel[str]):
+    """
+    described
+    """
+
+    root: str
+
+
+class Id(RootModel[str]):
+    """
+    described
+    """
+
+    root: str
+
+
+class Error(BaseModel):
+    """
+    described
+    """
+
+    code: int
+    message: str
+
+
+class Result(BaseModel):
+    """
+    described
+    """
+
+    event: Optional[models.Event] = None
+
+
+class Source(BaseModel):
+    """
+    described
+    """
+
+    country: Optional[str] = None
+
+
+class DifferentTea(BaseModel):
+    """
+    described
+    """
+
+    foo: Optional[Tea] = None
+    nested: Optional[Tea_1] = None
+
+
+class Tea(BaseModel):
+    """
+    described
+    """
+
+    flavour: Optional[str] = None
+    id: Optional[Id] = None
+
+
+class Cocoa(BaseModel):
+    """
+    described
+    """
+
+    quality: Optional[int] = None
+
+
+class Tea_1(BaseModel):
+    """
+    described
+    """
+
+    flavour: Optional[str] = None
+    id: Optional[Id] = None
+    self: Optional[Tea_1] = None
+    optional: Optional[List[OptionalModel]] = None
+
+
+class TeaClone(BaseModel):
+    """
+    described
+    """
+
+    flavour: Optional[str] = None
+    id: Optional[Id] = None
+    self: Optional[Tea_1] = None
+    optional: Optional[List[OptionalModel]] = None
+
+
+class ListModel(RootModel[List[Tea_1]]):
+    """
+    described
+    """
+
+    root: List[Tea_1]
+
+# woo/boo.py
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+from .. import bar
+from .._internal import Cocoa, Source
+
+
+class Chocolate(BaseModel):
+    """
+    described
+    """
+
+    flavour: Optional[str] = None
+    source: Optional[Source] = None
+    cocoa: Optional[Cocoa] = None
+    field: Optional[bar.FieldModel] = None
+
+# nested/foo.py
+from .._internal import ListModel
+from .._internal import Tea_1 as Tea
+from .._internal import TeaClone
+
+__all__ = ["ListModel", "Tea", "TeaClone"]
+
+# foo/bar.py
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel
+
+
+class Thing(BaseModel):
+    """
+    described
+    """
+
+    attributes: Optional[Dict[str, Any]] = None
+
+
+class Thang(BaseModel):
+    """
+    described
+    """
+
+    attributes: Optional[List[Dict[str, Any]]] = None
+
+
+class Others(BaseModel):
+    """
+    described
+    """
+
+    name: Optional[str] = None
+
+
+class Clone(Thing):
+    """
+    described
+    """
+
+    others: Optional[Others] = None
+
+# models.py
+from __future__ import annotations
+
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import BaseModel
+
+
+class Species(Enum):
+    """
+    described
+    """
+
+    dog = 'dog'
+    cat = 'cat'
+    snake = 'snake'
+
+
+class Pet(BaseModel):
+    """
+    described
+    """
+
+    id: int
+    name: str
+    tag: Optional[str] = None
+    species: Optional[Species] = None
+
+
+class User(BaseModel):
+    """
+    described
+    """
+
+    id: int
+    name: str
+    tag: Optional[str] = None
+
+
+class Event(BaseModel):
+    """
+    described
+    """
+
+    name: Optional[Union[str, float, int, bool, Dict[str, Any], List[str]]] = None
+
+# collections.py
+from __future__ import annotations
+
+from enum import Enum
+from typing import List, Optional
+
+from pydantic import AnyUrl, BaseModel, Field, RootModel
+
+from . import models
+
+
+class Pets(RootModel[List[models.Pet]]):
+    """
+    described
+    """
+
+    root: List[models.Pet]
+
+
+class Users(RootModel[List[models.User]]):
+    """
+    described
+    """
+
+    root: List[models.User]
+
+
+class Rules(RootModel[List[str]]):
+    """
+    described
+    """
+
+    root: List[str]
+
+
+class Stage(Enum):
+    """
+    described
+    """
+
+    test = 'test'
+    dev = 'dev'
+    stg = 'stg'
+    prod = 'prod'
+
+
+class Api(BaseModel):
+    """
+    described
+    """
+
+    apiKey: Optional[str] = Field(None, description='To be used as a dataset parameter value')
+    apiVersionNumber: Optional[str] = Field(None, description='To be used as a version parameter value')
+    apiUrl: Optional[AnyUrl] = Field(None, description="The URL describing the dataset's fields")
+    apiDocumentationUrl: Optional[AnyUrl] = Field(None, description='A URL to the API console for each API')
+    stage: Optional[Stage] = None
+
+
+class Apis(RootModel[List[Api]]):
+    """
+    described
+    """
+
+    root: List[Api]
+
+# bar.py
+from __future__ import annotations
+
+from pydantic import Field, RootModel
+
+
+class FieldModel(RootModel[str]):
+    """
+    described
+    """
+
+    root: str = Field(..., examples=['green'])
+

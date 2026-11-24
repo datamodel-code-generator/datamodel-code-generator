@@ -1,1 +1,1 @@
-{"pass_name": "prepare_type_alias_fields", "rule": "frozen", "row": "DataModelFieldBase.extras", "facts": ["METADATA"], "model": "MappingAdditionalProperty", "phase": "RENDER_PREPARATION", "known": true}
+{"pass_name": "fix_constructor_field_ordering", "rule": "ordering-input", "row": "DataType.is_optional", "facts": ["NULLABLE"], "model": "NamedCat", "phase": "IMPORTS", "known": true}
