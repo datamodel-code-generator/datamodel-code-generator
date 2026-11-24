@@ -537,17 +537,8 @@ KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         "backends",
         BOTH,
-        ({"tag": ("enum2-str", "enum2-int"), "nullable": (False,), "backend": (MSGSPEC,)},),
+        ({"tag": ("enum2-str", "enum2-int"), "backend": (MSGSPEC,)},),
         "msgspec cannot decode the union whose variant has several tags, the Pydantic model can",
-    ),
-    Kept(
-        ISSUE,
-        "#7101",
-        "tagged",
-        "backends",
-        PRESET,
-        ({"tag": ("enum2-str", "enum2-int"), "nullable": (True,), "backend": (MSGSPEC,)},),
-        "msgspec cannot decode the union whose variant has several tags, the Pydantic model imports under the preset",
     ),
     Kept(
         ISSUE,
@@ -555,10 +546,7 @@ KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         "backends",
         DEFAULT,
-        (
-            {"tag": ("enum1-str",), "nullable": (False,), "backend": (MSGSPEC,)},
-            {"tag": ("enum1-str",), "nullable": (True,), "mapping": (True,), "kind": ("anyOf",), "backend": (MSGSPEC,)},
-        ),
+        ({"tag": ("enum1-str",), "backend": (MSGSPEC,)},),
         "msgspec cannot decode a union of Structs that are not all tagged, the Pydantic model can",
     ),
     Kept(

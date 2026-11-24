@@ -505,18 +505,10 @@ ROUND_TRIP_KEPT: Final[tuple[Kept, ...]] = (
         "tagged",
         DUMP_CHANGES,
         DEFAULT,
-        (
-            {
-                "tag": ("enum1-str", "enum2-str"),
-                "nullable": (True,),
-                "mapping": (False,),
-                "kind": ("oneOf",),
-                "backend": (PYDANTIC_V2,),
-            },
-        ),
-        "a union whose tags also admit null is written without discriminator= (#7102), as Pydantic reads no tag that "
-        "admits None: smart mode picks the variant of a null tag by its other fields, and the dump of one variant "
-        "can validate back as another",
+        ({"tag": ("enum1-str", "enum2-str"), "nullable": (True,), "backend": (PYDANTIC_V2,)},),
+        "a union whose tags also admit null is written without discriminator= (#7102), with or without a mapping, as "
+        "Pydantic reads no tag that admits None: smart mode picks the variant of a null tag by its other fields, and "
+        "the dump of one variant can validate back as another",
     ),
 )
 """The known round trip differences of the shape families, written as ``shape_families/kept.py`` writes its rules."""
