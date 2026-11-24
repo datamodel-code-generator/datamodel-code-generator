@@ -15,3 +15,8 @@ covers = [
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_boolean_paramete~ce3b1cbe.errors.txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_boolean_parameter_schemas.yaml].txt",
 ]
+
+[[change.cells]]
+input = ["tests/data/openapi/boolean_parameter_schemas.yaml"]
+backends = "*"
+options = [["--openapi-scopes", "schemas", "paths", "parameters", "webhooks", "--include-path-parameters", "--formatters", "builtin"]]
