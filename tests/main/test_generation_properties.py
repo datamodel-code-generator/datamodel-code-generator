@@ -56,7 +56,7 @@ import pytest
 
 from datamodel_code_generator import DataModelType
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
-from tests.checks.areas import Area, mode
+from tests.checks.areas import Area, read_modes
 from tests.main.conftest import EXPERIMENTAL_MISSING_IMPORT_WARNING
 from tests.main.payload_validation import (
     SCHEMA_CASES,
@@ -449,7 +449,7 @@ def test_generation_is_deterministic(group: str, start: int, tmp_path: Path) -> 
     jobs = JOB_GROUPS[group]()[:: MODE.job_stride][start : start + CHUNK]
     trees = generate_runs(jobs, tmp_path)
     stopped = {job.name: tree[EXIT] for job, tree in zip(jobs, trees["first"], strict=True) if not tree[EXIT].isdigit()}
-    finality = mode(Area.FACT_FINALITY)
+    finality = read_modes().get(Area.FACT_FINALITY)
     raising = finality is not None and finality.report_path is None
     known = {job.name: KNOWN_CHECK_FAILURES[job.name] for job in jobs if raising and job.name in KNOWN_CHECK_FAILURES}
     unlike = sorted(
