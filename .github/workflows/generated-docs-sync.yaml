@@ -86,7 +86,6 @@ jobs:
             docs/index.md
             docs/model-reuse.md
             docs/openapi.md
-            docs/presets.md
             docs/conformance.md
             docs/fastapi-code-generator-migration.md
             docs/fastapi-server.md

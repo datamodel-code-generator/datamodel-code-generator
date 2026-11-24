@@ -53,6 +53,11 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   receiver of the method that holds the access or a value typed with a ``*Host`` Protocol declaring the member
   (``MUT205``, ``MUT206``, ``MUT207`` report what heki cannot tie to a class). heki names no member of a module
   outside the package, so ruff's ``banned-api`` holds ``sys._getframe`` in these modules instead.
+- ``call-owners`` and ``read-owners`` of the pass pipeline (``MUT203``, ``MUT204``): ``FinalFacts`` is built only by
+  ``GenerationStore.seal_facts`` (a class attribute, a decorator or a default argument counts as a read), and a
+  name-mangled member of ``Parser`` (``Parser._Parser__*``, which the pass tables call) is reached only inside the body
+  of ``Parser``; a subclass reaches it through ``self`` too, and a receiver heki cannot tie to a class is reported
+  (``unresolved = "report"``).
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
@@ -591,6 +596,59 @@ def builder_contracts(repo: Repo, records: Iterable[BuilderHome] = BUILDER_HOMES
     return contracts
 
 
+FINAL_FACTS = Home("parser/_phases.py", "FinalFacts")
+"""The facts final at B1, built once per parse."""
+FINAL_FACTS_SITE = Home("parser/generation.py", "GenerationStore.seal_facts")
+"""The one function that builds ``FinalFacts``."""
+PARSER = Home("parser/base.py", "Parser")
+"""The class whose name-mangled members only its own body reaches."""
+
+
+def pipeline_contracts(repo: Repo) -> list[str]:
+    """Return the contracts of the pass pipeline: one builder of ``FinalFacts``, ``Parser``'s mangled members kept.
+
+    The constants above name the scopes; a name that no module of the package defines stops the build.
+    """
+    scopes = {
+        (module, scope.qualname)
+        for rel, module in _package_modules(repo).items()
+        for scope in repo.model(rel).scopes
+        if scope.kind in {"class", "function"}
+    }
+    for home in (FINAL_FACTS, FINAL_FACTS_SITE, PARSER):
+        if (_module(home.path), home.name) not in scopes:
+            message = f"{home.path} defines no {home.name}"
+            raise SystemExit(message)
+    parser = [f"{_module(PARSER.path)}.{PARSER.name}._{PARSER.name}__*"]
+    body = _scope(_module(PARSER.path), PARSER.name)
+    return [
+        _table(
+            "call-owners",
+            name="final-facts-built-by-seal-facts",
+            targets=[f"{_module(FINAL_FACTS.path)}.{FINAL_FACTS.name}"],
+            allowed_callers=_scope(_module(FINAL_FACTS_SITE.path), FINAL_FACTS_SITE.name),
+            references="reads",
+            attribution="lexical",
+        ),
+        _table(
+            "call-owners",
+            name="parser-mangled-call",
+            targets=parser,
+            allowed_callers=body,
+            unresolved="report",
+            attribution="lexical",
+        ),
+        _table(
+            "read-owners",
+            name="parser-mangled-read",
+            targets=parser,
+            allowed_readers=body,
+            unresolved="report",
+            attribution="lexical",
+        ),
+    ]
+
+
 def in_host_scope(path: Path) -> bool:
     """Return whether the host contracts (and not ruff's SLF001, see pyproject.toml) own private access in a file.
 
@@ -678,6 +736,7 @@ def generate() -> str:
         *import_ledger_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
+        *pipeline_contracts(repo),
         *environment_contracts(),
     ]
     head = f"{HEADER}\nrequired-version = {_quote(required_version())}\n\n[lint]\nselect = {_array(RULES)}\n"

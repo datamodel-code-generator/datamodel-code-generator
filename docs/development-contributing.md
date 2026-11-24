@@ -309,7 +309,8 @@ field as `GenerateConfig.<field>`, a template by its path under the template dir
 registry schedules its removal. New options and option values get their entries from the same comparison.
 `surface.json` also holds what the latest release fixes, and the build fails when your change moves it: a digest of
 the options of each dated preset (the presets of a released date are frozen, and one date at most is unreleased: add
-this release's options to it), the digest of the recommender rules with their `rules_revision` (rules that differ
+this release's options to it; `--stamp` refuses a release whose new date adds neither an option nor a Python target to
+the date before), the digest of the recommender rules with their `rules_revision` (rules that differ
 from the release's need a new revision, once per release), and the experimental feature ids with their `since_version` (a feature the release
 lacks names a later `since_version`; one it has keeps its own). If a release is tagged but not stamped, stamp it first. A preset option without a `--no-` form fails at import, in
 `PresetOptionGroup`.
@@ -335,7 +336,9 @@ The release draft is rebuilt from these records on every merge: the sections `--
 (Breaking Changes by kind, Deprecations, New Warnings, New Options, New Dated Presets, Experimental Features, Changes
 That Need No Action), then GitHub's generated change list. Each item ends with the pull request that added its record
 (`scripts/record_prs.py` reads it from git; a `new-surface` record names the options and presets it adds) and its
-`refs`; a record that extends another adds nothing. `--has-breaking unreleased` decides between a minor and a patch
+`refs`; a record that extends another adds nothing. The item of a dated preset also names the pull request of the
+`new-surface` record of each option the date adds, without that record's refs, so the record of a date lists no
+options. `--has-breaking unreleased` decides between a minor and a patch
 release. Write no release notes anywhere else: the draft's text comes from the records alone, and the next rebuild
 replaces any edit of it. The analysis of each merged pull request looks for breaking changes that no record declares
 and labels the pull request `undeclared-change`; the draft then starts with an Undeclared Changes block that lists
@@ -1095,6 +1098,61 @@ config models. A row marked `config=False` is the option of a command that no co
 `test_option_table_matches_the_config_models` (`tests/cli_doc/test_cli_options_sync.py`) fails for a row without its
 field and for a config field without a row; a field that no option sets is listed in `CONFIG_ONLY_FIELDS` there, with
 the reason.
+
+An opt-in option, one that changes the output of the inputs it reaches, joins the unreleased dated presets on its own
+row: the `preset` cell names the date, the value the presets give the option's config field, and the option group the
+preset pages list for it. `preset.py` derives the groups of that date from these cells, in the order of the option
+table, so neither it nor any other list of the date is edited by hand:
+
+```python
+toggle(
+    Section.TYPING,
+    "--my-new-option",
+    help="Description of what this option does",
+    preset=PresetJoin(
+        "YYYYMMDD",  # the unreleased date
+        {"my_new_option": True},
+        title="Title of its preset group",
+        description="What the presets get from it.",
+    ),
+)
+```
+
+The config is written as `PresetConfig` takes it, so the type checker reads the field and its value. `PresetJoin` also
+takes the `output_model_types`, `input_file_types` and `requires_python_strenum` the group applies to. The date is the
+one unreleased date of `preset_names.py`; when every date is released, the first opt-in pull request of the cycle opens
+the next one, named by its own date, in `preset_names.py` and with a tuple in `preset.py` that reads its groups with
+`_joined_groups`. A released date keeps the order of its groups (20261123 keeps that of 0.101.0, which shipped before
+the cells). `test_static_tables_keep_their_invariants` fails for a join whose date does
+not add its group, for a config that sets another field than the row's own, and for a field that two groups of one
+preset set, both for every output model type or both for the same one.
+
+The preset test (`tests/main/test_preset_opt_in_options.py`) reads the options a date adds from the same groups and
+takes the input that shows the option from a case file, `tests/main/preset_opt_in_cases/<test id>.toml`:
+
+```toml
+option = "--my-new-option"
+input = "jsonschema/example.json"  # under tests/data
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]  # beside the preset, where it sets the option
+off_args = []  # beside --output-model-type pydantic_v2.BaseModel, where the option is turned off
+```
+
+A case without `off_args` has no turned-off test. A case may also name the `off` argument that turns the option off
+(an alias's `--no-` form; a value option, written `option = "--my-option value"`, names it always), the `warns_with`
+and `warns_without` patterns its input warns with and `filterwarnings`. `test_case_files_match_the_joined_options`
+fails for a joined option without a case file and for a case file whose option joins no date. The pull request that
+opens a date also adds its `PRESET_RELEASES` entry there, the date before and `_argv(_added_options(previous, date))`,
+and a `PRACTICAL_OPT_IN_OPTIONS` entry when its practical presets add options.
+
+The records of a joined option are its own: the option's `new-surface` record (`surface = ["--my-new-option"]`), whose
+pull request the release-note item of the date names, and a fragment for the listings the join moves, written by
+`python scripts/declared_changes.py declare my-new-option-preset --extends preset-<date> --rest`. A lane that adds an
+option to the presets edits neither `preset.py`, the preset test nor `preset-<date>.toml`.
+
+The preset pages (`docs/presets.md`, `docs/preset-history.md`) are built when the site is deployed and not committed,
+as the upgrade guide's pages are: `python scripts/build_preset_docs.py --pages` writes them locally, and the stored
+renderings of `tests/test_build_preset_docs_script.py` keep what names a released date only.
 
 ### Step 2: Add a test with documentation marker (Required)
 

@@ -1058,6 +1058,57 @@ def test_build_migration_docs_stamp_retained_extension(tmp_path: Path, capsys: p
     assert_output(f"exits {refused}, {stamped}\n{printed.err}{before}{_files(data / 'changes')}")
 
 
+def test_build_migration_docs_stamp_refuses_an_empty_preset_date(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A release whose new preset date adds no option group and no Python target to the date before is not stamped."""
+    data = _write_data(tmp_path, CHANGES, UNRELEASED)
+    tree = tmp_path / "tag"
+    (tree / "docs" / "data" / "migration" / "unreleased").mkdir(parents=True)
+    tagged = _tag_registries(data, tree / "src" / "datamodel_code_generator")
+    *kept, shipped = tagged.preset_dates
+    registries = replace(tagged, preset_dates=(*kept, replace(shipped, additions=())))
+    before = _files(data)
+    code = main([*_args(tmp_path), "--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"], registries)
+    assert_output(f"exit {code}, files kept: {_files(data) == before}\n{capsys.readouterr().err}")
+
+
+def test_build_migration_docs_preset_line_names_the_records_of_its_options(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The release-note item of a preset date names the pull request of each record of an option the date adds.
+
+    A `new-surface` record that names an option of the date, and not the date, adds its pull request to the date's
+    item without its refs, which stay on the option's item.
+    """
+    record = RECORDS["new-flag"].replace(', "preset:20260301"', "").replace("covers", 'refs = ["#5201"]\ncovers')
+    _write_data(tmp_path, CHANGES, UNRELEASED | {"new-flag": record})
+    prs = tmp_path / "record-prs.json"
+    prs.write_text(json.dumps(RECORD_PRS), encoding="utf-8")
+    *kept, joined = REGISTRIES.preset_dates
+    registries = replace(REGISTRIES, preset_dates=(*kept, replace(joined, options=("--new-flag",))))
+    code = main([*_args(tmp_path), "--release-notes", "unreleased", "--record-prs", str(prs)], registries)
+    assert_output(f"exit {code}\n{capsys.readouterr().out}")
+
+
+def test_build_migration_docs_preset_line_names_the_record_of_a_value_option(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A bare-option record also reaches the date whose group lists the option with a value.
+
+    The group lists `--new-flag chosen`; the record names `--new-flag`. A record that names the value itself keeps
+    exact matching.
+    """
+    record = RECORDS["new-flag"].replace(', "preset:20260301"', "").replace("covers", 'refs = ["#5201"]\ncovers')
+    _write_data(tmp_path, CHANGES, UNRELEASED | {"new-flag": record})
+    prs = tmp_path / "record-prs.json"
+    prs.write_text(json.dumps(RECORD_PRS), encoding="utf-8")
+    *kept, joined = REGISTRIES.preset_dates
+    registries = replace(REGISTRIES, preset_dates=(*kept, replace(joined, options=("--new-flag chosen",))))
+    code = main([*_args(tmp_path), "--release-notes", "unreleased", "--record-prs", str(prs)], registries)
+    assert_output(f"exit {code}\n{capsys.readouterr().out}")
+
+
 def test_migration_selector_script() -> None:
     """The hub's script shows the hidden selector, also after the page content changes, and opens the chosen range."""
     driver = """

@@ -1,0 +1,5 @@
+option = "--read-set-item-fields-in-class-order"
+input = "jsonschema/unique_items_by_value_inherited_fields.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"]
+off_args = ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"]

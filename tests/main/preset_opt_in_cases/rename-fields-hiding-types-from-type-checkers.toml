@@ -1,0 +1,5 @@
+option = "--rename-fields-hiding-types-from-type-checkers"
+input = "jsonschema/field_named_like_type_assigned.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "dataclasses.dataclass"]
+off_args = ["--output-model-type", "dataclasses.dataclass"]

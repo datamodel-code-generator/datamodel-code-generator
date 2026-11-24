@@ -7,7 +7,6 @@ on:
       - 'src/datamodel_code_generator/**'
       - 'README.md'
       - 'docs/index.md'
-      - 'docs/presets.md'
       - 'scripts/build_preset_docs.py'
       - 'tests/data/jsonschema/tutorial_pet.json'
 

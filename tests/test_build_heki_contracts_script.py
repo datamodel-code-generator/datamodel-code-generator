@@ -529,8 +529,9 @@ SEEDED_BUILDERS = {
         "    return parser._container_flags(obj, 'list')\n"
     ),
     f"{PACKAGE}/model.py": (
+        "from pydantic import BaseModel\n\n"
         "from datamodel_code_generator.types import DataType\n\n\n"
-        "class Ref:\n    @classmethod\n    def model_construct(cls) -> 'Ref':\n        return cls()\n\n\n"
+        "class Ref(BaseModel):\n    pass\n\n\n"
         "def name_model() -> Ref:\n    return Ref()\n\n\n"
         "def outside() -> DataType:\n    return DataType(is_dict=True)\n"
     ),
@@ -579,7 +580,7 @@ SEEDED_BUILDER_RECORDS = (
         output="seeded: a named model",
         prose="",
         builder=Home("model.py", "name_model"),
-        marks=(Mark("datamodel_code_generator.model.Ref"), Mark("datamodel_code_generator.model.Ref.model_construct")),
+        marks=(Mark("datamodel_code_generator.model.Ref"),),
     ),
 )
 
@@ -630,7 +631,7 @@ def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
             ("maps.py", "flags", "MUT204", "types.DataType(is_dict=True)"),
             ("maps.py", "seeded_slot", "MUT204", 'parser.maps.MapsHost._container_flags(slot="dict")'),
             ("maps.py", "subclass_map", "MUT204", "types.DataType(is_dict=True)"),
-            ("naming.py", "construct", "MUT204", "model.Ref.model_construct"),
+            ("naming.py", "construct", "MUT204", "model.Ref"),
             ("naming.py", "rename", "MUT204", "model.Ref"),
         ],
     ), result.stderr
@@ -1213,3 +1214,16 @@ def test_store_operations_name_a_method_of_the_store() -> None:
         build_heki_contracts.store_operation_contracts(repo, ("never_defined",))
 
     assert str(stopped.value) == "GENERATION_STORE_MUTATION_METHODS: GenerationStore defines no never_defined"
+
+
+@pytest.mark.parametrize("name", ["FINAL_FACTS", "FINAL_FACTS_SITE", "PARSER"])
+@pytest.mark.allow_direct_assert("a stale pipeline home must stop the build, not be stored as an expected output")
+def test_pipeline_contracts_name_scopes_the_package_defines(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """The scopes the pipeline contracts name exist in the package."""
+    monkeypatch.setattr(build_heki_contracts, name, Home("parser/base.py", "NeverDefined"))
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.pipeline_contracts(repo)
+
+    assert str(stopped.value) == "parser/base.py defines no NeverDefined"

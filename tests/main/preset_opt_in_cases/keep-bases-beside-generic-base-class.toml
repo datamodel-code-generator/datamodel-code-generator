@@ -1,0 +1,13 @@
+option = "--keep-bases-beside-generic-base-class"
+input = "jsonschema/generic_base_class_bases/api.json"
+input_file_type = "jsonschema"
+args = [
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--use-generic-base-class",
+    "--extra-fields",
+    "forbid",
+    "--base-class-map",
+    '{"Tag": "mypkg.base.TagBase"}',
+]
+off_args = ["--use-generic-base-class", "--extra-fields", "forbid", "--base-class-map", '{"Tag": "mypkg.base.TagBase"}']

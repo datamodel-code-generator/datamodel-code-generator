@@ -1,0 +1,5 @@
+option = "--read-refs-in-their-resources"
+input = "jsonschema/embedded_resource_definitions.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]
+off_args = []
