@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Registry",
+  "type": "object",
+  "properties": {
+    "child": {"$ref": "#/$defs/Child"},
+    "grandchild": {"$ref": "#/$defs/Grandchild"},
+    "mixed": {"$ref": "#/$defs/Mixed"},
+    "tagged": {"$ref": "#/$defs/Tagged"},
+    "wide": {"$ref": "#/$defs/Wide"},
+    "other": {"$ref": "#/$defs/Other"},
+    "stamped": {"$ref": "#/$defs/Stamped"}
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "code": {"type": "string", "pattern": "^(?!tmp)[a-z]+$"}
+      }
+    },
+    "Child": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"type": "object", "properties": {"serial": {"type": "string", "pattern": "^[0-9]+$"}}}
+      ]
+    },
+    "Middle": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"type": "object", "properties": {"level": {"type": "integer"}}}
+      ]
+    },
+    "Grandchild": {
+      "allOf": [
+        {"$ref": "#/$defs/Middle"},
+        {"type": "object", "properties": {"note": {"type": "string"}}}
+      ]
+    },
+    "Labelled": {
+      "type": "object",
+      "properties": {
+        "label": {"type": "string", "pattern": "^\\p{L}+$", "title": "Label"},
+        "kind": {"type": "string", "pattern": "^[a-z]+$"}
+      }
+    },
+    "Mixed": {
+      "allOf": [
+        {"$ref": "#/$defs/Labelled"},
+        {"$ref": "#/$defs/Base"},
+        {"type": "object", "properties": {"size": {"type": "integer"}}}
+      ]
+    },
+    "Tagged": {
+      "allOf": [
+        {"$ref": "#/$defs/Mixed"},
+        {"type": "object", "properties": {"tag": {"type": "string"}}}
+      ]
+    },
+    "Titled": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string", "pattern": "^\\p{Lu}"}
+      }
+    },
+    "Wide": {
+      "allOf": [
+        {"$ref": "#/$defs/Mixed"},
+        {"$ref": "#/$defs/Titled"}
+      ]
+    },
+    "Marked": {
+      "type": "object",
+      "properties": {
+        "mark": {"type": "string", "pattern": "^\\p{L}"}
+      }
+    },
+    "Other": {
+      "allOf": [
+        {"$ref": "#/$defs/Marked"},
+        {"type": "object", "properties": {"ref": {"type": "string", "pattern": "^(?=r)[a-z]+$"}}}
+      ]
+    },
+    "Stamped": {
+      "allOf": [
+        {"$ref": "#/$defs/Marked"},
+        {"$ref": "#/$defs/Base"}
+      ]
+    }
+  }
+}

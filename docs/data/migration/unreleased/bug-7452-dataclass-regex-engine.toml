@@ -1,0 +1,45 @@
+[[change]]
+id = "bug-7452-dataclass-regex-engine"
+category = "crash-fix"
+title = "Select python-re in a pydantic dataclass that builds a base's lookaround"
+summary = "A pydantic_v2.dataclass whose config does not select python-re, such as one with its own config under --extra-fields, or one that takes the config of another first base, now selects it when a base it inherits has a pattern only Python's re reads. Such a module failed at import with a SchemaError. Where a base of its module also has a pattern Python's re rejects, such as \\p{L}, the dataclass redeclares the inherited field without it and warns, and the base keeps its output."
+refs = ["#1"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+covers = [
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[base_model].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[base_model].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[dataclass].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[extra_allow].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[extra_allow].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[extra_forbid].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[extra_forbid].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[field_constraints].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[field_constraints].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[frozen].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[frozen].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[population_by_name].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_lookaround_selects_the_engine_of_the_subclass_config[population_by_name].py",
+    "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[constr].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[constr]/",
+    "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[extra_allow].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[extra_allow]/",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_inherited_lookaround_dataclass_modules.yaml].txt",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/inherited_lookaround_dataclass_config.json"]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+
+[[change.cells]]
+input = ["tests/data/openapi/inherited_lookaround_dataclass_modules.yaml"]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+
+[[change.cells]]
+input = ["tests/data/jsonschema/type_alias_lookaround"]
+backends = ["pydantic_v2.dataclass"]
+options = [["--preset", "standard-py310-20261123"], ["--preset", "standard-py314-20261123"], ["--preset", "practical-py310-20261123"], ["--preset", "practical-py314-20261123"]]

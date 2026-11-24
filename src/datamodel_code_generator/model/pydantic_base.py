@@ -298,10 +298,7 @@ class DataModelField(DataModelFieldBase):
             if overridden.reason == "override-type-does-not-take":
                 reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {overridden.detail}")
                 count += cast("int", overridden.value)
-        if rejected := [
-            *(o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS),
-            *(pattern for _, pattern in self._rejected_type_patterns()),
-        ]:
+        if rejected := self._python_rejected_patterns():
             reasons.append(
                 "Python's regex engine, which the config building it selects, does not compile "
                 + ", ".join(f"pattern={represent_python_value(value)}" for value in rejected)
@@ -402,6 +399,17 @@ class DataModelField(DataModelFieldBase):
             if data_type.kwargs
             and isinstance(pattern := data_type.kwargs.get("pattern"), str)
             and self._python_engine_rejects(pattern)
+        ]
+
+    def _python_rejected_patterns(self) -> list[object]:
+        """Return the patterns ``python-re`` builds and Python's ``re`` rejects that the field leaves out.
+
+        The ``pattern`` of its ``Field()`` (the render plan's ``omitted``) and those of its types
+        (``_rejected_type_patterns``).
+        """
+        return [
+            *(o.value for o in self._render_plan().omitted if o.why.rule == _PYTHON_ENGINE_REJECTS),
+            *(pattern for _, pattern in self._rejected_type_patterns()),
         ]
 
     def _written_type(self) -> DataType | None:
