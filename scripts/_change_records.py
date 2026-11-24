@@ -487,6 +487,13 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/test_pre_commit_hooks.py::*", "*", Owner.INTERNAL),
     ("tests/test_release_draft_workflow.py::*", "*", Owner.INTERNAL),
     ("tests/test_repository_transfer.py::*", "*", Owner.INTERNAL),
+    (
+        "tests/model/test_compiled_templates.py::test_template_inventory_is_derived_from_all_builtin_sources*",
+        "*",
+        Owner.INTERNAL,
+    ),
+    ("tests/model/test_compiled_templates.py::test_*match*_jinja*", "*", Owner.INTERNAL),
+    ("tests/model_codecs/test_wire_values.py::test_runtime_imports_stay_embeddable", "*", Owner.INTERNAL),
     ("*", "payloads/*", Owner.MODELS),
     ("*", "*native*error*", Owner.MODELS),
     ("*", "*generated*error*", Owner.MODELS),
@@ -501,8 +508,9 @@ output are listings, and so are the outputs of the tests of the scripts that bui
 (`tests/test_build_*_script.py`, the changelog's); traces and reports of internals (the modules the CLI's fast paths
 import among them), and the checks and tools of the repository, are internal: the tests of every other repository
 script (`tests/test_*_script.py`), of the source model and the checks that read the repository's source, of the CI and
-release workflows and of the test harness. Every other stored output, the tests of the package's own modules
-included, is model output. This table and `RULES` judge the
+release workflows and of the test harness, and the reports on the package's own build: the inventory of the builtin
+templates, the Jinja oracles that render them from sample contexts, and the imports of each runtime module. Every
+other stored output, the tests of the package's own modules included, is model output. This table and `RULES` judge the
 records, so a change to either is a change of the check.
 
 Notices are told from model output by their labels for now: a text output named for a warning, a refusal or an error
