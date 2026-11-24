@@ -23,7 +23,6 @@ from datamodel_code_generator.parser._passes._keys import (
     _RAW_SCHEMA_DEFAULT_KEY,
 )
 from datamodel_code_generator.parser._passes._shared import _InheritedTypeModifiers, placeholder_identity
-from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.types import DataType, _copy_data_type, _is_plain_none, build_union, union_members
 
 if TYPE_CHECKING:
@@ -32,6 +31,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._null_facts import NullRule
+    from datamodel_code_generator.parser.generation import GraphBuilder
 
 
 def _copy_data_model_field(
@@ -140,16 +140,18 @@ def _nullable_without_inherited_null(*, override_nullable: bool | None, required
 
 
 def _apply_inherited_field_nullability(
+    builder: GraphBuilder,
     copied_field: DataModelFieldBase,
     current_type: _InheritedTypeModifiers,
 ) -> None:
     """Keep omission optionality separate from the schema's null intersection: an optional copy's type admits None."""
     if not copied_field.required and current_type.is_optional:
         copied_field.data_type.is_optional = True
-        GenerationStore.clear_target_null(copied_field.data_type)  # ty: ignore[deprecated]
+        builder.clear_target_null(copied_field.data_type)
 
 
 def _keep_nullable_without_default(
+    builder: GraphBuilder,
     copied_field: DataModelFieldBase,
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
@@ -167,10 +169,11 @@ def _keep_nullable_without_default(
             override_nullable=field.nullable_without_default, required=copied_field.required
         )
     if copied_field.nullable_without_default is not without_default:
-        GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]
+        builder.record_nullable_without_default(copied_field, without_default)
 
 
 def _copy_resolved_inherited_field(
+    builder: GraphBuilder,
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     *,
@@ -179,7 +182,7 @@ def _copy_resolved_inherited_field(
     register_references: bool = True,
     reserved_names: set[str] | None = None,
 ) -> DataModelFieldBase | None:
-    """Resolve a deferred inherited field without copying its reference graph."""
+    """Resolve a deferred inherited field without copying its reference graph; ``builder`` writes the copy's nulls."""
     deferred_type = field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY)
     deferred_field = field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)
     match deferred_type, deferred_field:
@@ -226,8 +229,8 @@ def _copy_resolved_inherited_field(
                 identity=placeholder_identity(field),
                 **facts,
             )
-            _apply_inherited_field_nullability(copied_field, current_type)
-            _keep_nullable_without_default(copied_field, field, inherited_field, current_type)
+            _apply_inherited_field_nullability(builder, copied_field, current_type)
+            _keep_nullable_without_default(builder, copied_field, field, inherited_field, current_type)
             if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                 copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, ClassScope():

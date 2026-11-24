@@ -34,7 +34,7 @@ class DecideHost(ReplacedRootsHost, GenerationStoreHost, TargetPythonVersionHost
     """The decision registry, the generation store and the type manager of the parser that the decision phase reads."""
 
     @property
-    def _DECISION_PASSES(self) -> tuple[DecisionPass[Any], ...]:  # noqa: N802
+    def _DECISION_PASSES(self) -> tuple[DecisionPass, ...]:  # noqa: N802
         """The decision passes of the parser class, in registry order."""
 
     @property

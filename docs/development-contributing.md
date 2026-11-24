@@ -723,8 +723,8 @@ remains the only authority for names. Do not move name generation or parser
 dispatch into the generation index.
 
 Use the store's `GraphBuilder` (`generation_store.builder()`, `self._graph_builder` in
-parser code) for parser-side mutations that affect generation facts; the same
-methods on `GenerationStore` are deprecated:
+parser code) for parser-side mutations that affect generation facts; heki reports
+a call of the same methods on `GenerationStore` outside `parser/generation.py`:
 
 - Register parsed models with `builder.register_model(model)`.
 - Replace references with `builder.replace_data_type_ref(...)` or
@@ -809,7 +809,10 @@ starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in
 same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
-wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
+wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run.
+`--skip-value-checks` leaves `MODEL_GRAPH`, `SCHEMA_GRAPH`, `RENDER_PLANS`, `RENDER_MEMOS`, `NAMING` and
+`TEMPLATE_ASSIGNMENTS` unset; the CI shards of a pull request pass it except in the Python 3.14 coverage shards, while
+runs of `main`, the schedule and manual runs keep every area on in every shard. Under
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
@@ -838,8 +841,10 @@ to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps t
 `test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
 not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
 installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` and `PASS_TRIGGERS` are the exceptions: `tests/conftest.py`
-sets them to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison and the
-passes whose trigger is false, while the others skip those passes as users do.
+sets `FACT_FINALITY_SWEEP` to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full
+comparison, and leaves `PASS_TRIGGERS` off unless the environment sets it, so the pull request and push runs skip the
+passes whose trigger is false as users do. The nightly workflow runs the suite on the newest Python with it on
+(`tox run -e pass-triggers`); set it to `1` to run it on a test of your own, for example after changing a trigger.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in
 `tests/main/_builtin_parity.py` read it on every call and then generate each output of the default formatters a

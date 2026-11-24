@@ -12,26 +12,18 @@ default. The warning of render preparation about such defaults reads them throug
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator.parser._passes._shared import required_fields_a_default_lacks
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
+from datamodel_code_generator.parser._phases import DecisionPass, live_model_of
 
 if TYPE_CHECKING:
-    from datamodel_code_generator.model._views import FieldView, ModelView
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
 
-__all__ = ["OMIT_INCOMPLETE_MODEL_DEFAULTS", "IncompleteDefaultsWriter"]
-
-
-class IncompleteDefaultsWriter(DecisionWriter, Protocol):
-    """The write of the decision: a field written without its default."""
-
-    def omit_default(self, model: ModelView, field: FieldView) -> None:
-        """Write ``field`` of ``model`` without its default: the default None and its ``nullable`` without it."""
+__all__ = ["OMIT_INCOMPLETE_MODEL_DEFAULTS"]
 
 
-def _omit_incomplete_model_defaults(facts: FinalFacts, writer: IncompleteDefaultsWriter) -> None:
+def _omit_incomplete_model_defaults(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Write each field of a live model whose object default lacks required fields of its model without the default.
 
     The models a reference names are the live models, by model key. A write changes the default and the nullability
@@ -49,7 +41,6 @@ OMIT_INCOMPLETE_MODEL_DEFAULTS = DecisionPass(
         "name": "omit_incomplete_model_defaults",
         "issue": "#6551",
     },
-    IncompleteDefaultsWriter,
     _omit_incomplete_model_defaults,
     when=lambda parser: parser.omit_incomplete_model_defaults,
 )

@@ -511,7 +511,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`model/enum.py`: `enum_value_base` (rows `EnumValueBaseRow`)",
         adapters=(
             "`model/enum.py:Enum.value_base` (read by `types.py:DataTypeManager._constraint_keywords` through "
-            "`ModelView.value_base`); `parser/_tag_plan.py:_member_choice_keys` (the keys of the choices that members "
+            "`DataModel.value_base`); `parser/_tag_plan.py:_member_choice_keys` (the keys of the choices that members "
             "make, read by `_written_enum_member_keys` before the tags are written and by `settle_site` after), "
             "`parser/_tag_plan.py:writes_member_values` (the members of a plain Enum that "
             "`--use-enum-values-in-discriminator` writes as tags hold their values beside them, `Literal[Kind.a, "
@@ -1654,7 +1654,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "members of a type that is a union at its top level and `types.py:written_union_members` the members of a "
             "union as written, with such member unions spread (msgspec's plain-union checks, and the nested-union "
             "checks of `parser/_passes/imports.py` and `parser/_passes/_shared.py:_iter_discriminator_data_types`), "
-            "through `types.py:_union_members` and `_written_union_members`, which the decisions call for views; "
+            "through `types.py:_union_members` and `_written_union_members`, which the decisions call; "
             "`parser/_passes/_shared.py:msgspec_union_members` the union a msgspec type writes (its own, or the items "
             "of a list, set or map), which the msgspec decoding warnings and `parser/_str_like_unions.py` read; a "
             "container's item union takes `constructed` from `DataType.__init__`, and the None of its items stays "
@@ -2754,7 +2754,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_contains_model_reference`, `_iter_alias_references`; `parser/_passes/modules.py:_value_positions`; "
             "`parser/_type_overrides.py:apply_override_to_data_type`; "
             "`model/_field_imports.py:write_pre_render_nullability`; `parser/_held_null.py:_types`, over the "
-            "decision's views; `model/pydantic_base.py:DataModelField._has_anyurl_outside_container`), "
+            "decision's models; `model/pydantic_base.py:DataModelField._has_anyurl_outside_container`), "
             "`_parse_memo.py:ParseMemo.bump_node`, `types.py:_copy_data_type`, "
             "`model/msgspec.py:DataModelField._unconstrained_members`, "
             "`model/msgspec.py:DataModelField._written_type`, `model/pydantic_base.py:DataModelField._written_type`, "
@@ -3652,16 +3652,25 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(
             Home("parser/_passes/_import_edges.py", "relative_import_targets"),
             Home("parser/_passes/_import_edges.py", "module_import_edges"),
+            Home("parser/_passes/_import_edges.py", "init_loads"),
             Home("parser/_passes/_import_edges.py", "_written_package"),
         ),
-        core="`parser/_passes/_import_edges.py`: `relative_import_targets`, `module_import_edges`, `_written_package`",
+        core=(
+            "`parser/_passes/_import_edges.py`: `relative_import_targets`, `module_import_edges`, `init_loads`, "
+            "`_written_package`"
+        ),
         adapters=(
             "every caller calls the core: the modules the written modules load "
             "(`parser/_passes/imports.py:_loaded_modules`, for the imports of a package's `__init__.py` that a loaded "
             "submodule hides), the refusal of a block written with a part Python cannot import by "
             "(`parser/_passes/imports.py:reject_unimportable_imports`), the refusal of a class named like a module "
             "below its package, unless the package loads the module first "
-            "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders) "
+            "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders, "
+            "and `_class_named_like_submodule`, which keeps the reading of 0.90.0 to 0.100.0 of an ancestor "
+            "package's imports where the classes do not evaluate their annotations as they are defined, row "
+            "`legacy-running-packages-load`), "
+            "the import of the models of a submodule from the submodule where its package loads it before its class "
+            "(`parser/_passes/imports.py:submodules_hidden_by_packages`) "
             "and the packages whose `__init__.py` a module writes (the aliases of `parser/_passes/imports.py` for the "
             "names a package's submodules hide)"
         ),
@@ -3669,6 +3678,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_passes/imports.py", "_loaded_modules"),
             Home("parser/_passes/imports.py", "reject_unimportable_imports"),
             Home("parser/_passes/imports.py", "reject_class_named_like_submodule"),
+            Home("parser/_passes/imports.py", "_class_named_like_submodule"),
+            Home("parser/_passes/imports.py", "submodules_hidden_by_packages"),
             Home("__init__.py"),
         ),
     ),
@@ -7115,7 +7126,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/graphql.py:GraphQLParser._resolve_typename_collisions`; "
             "`_client/target.py:_HelperDigests.contract`; `input_model.py:_native_generic_field_paths`; "
             "`model/pydantic_v2/base_model.py:has_lookaround_pattern` (the models whose patterns a Pydantic dataclass "
-            "reads, row `legacy-dataclass-follows-every-reference`)"
+            "reads, row `legacy-dataclass-follows-every-reference`); "
+            "`parser/_passes/_import_edges.py:init_loads` (the modules a package's `__init__.py` loads)"
         ),
         sites=(
             Home("_reference_graph.py", "ReferenceGraph.reached"),
@@ -7128,6 +7140,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_client/target.py", "_HelperDigests.contract"),
             Home("input_model.py", "_native_generic_field_paths"),
             Home("model/pydantic_v2/base_model.py", "has_lookaround_pattern"),
+            Home("parser/_passes/_import_edges.py", "init_loads"),
         ),
     ),
     DecisionHome(

@@ -1,0 +1,9 @@
+[[change]]
+id = "bug-g99-export-scopes-input-count"
+category = "docs-text"
+title = "The payload test lists the inputs of the package class beside a submodule tests"
+summary = "Inputs were added for the tests of a package class beside a same-named submodule, so the count of discovered schema files moves."
+refs = ["#7444"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

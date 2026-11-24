@@ -25,16 +25,15 @@ writes; the fix of each deletes its row.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, final
+from typing import TYPE_CHECKING, Literal, NamedTuple, Protocol, TypeAlias, final
 
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model._render_plan import AssignmentFacts
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Collection, Mapping
 
     from datamodel_code_generator.model._render_plan import AssignmentRule, ConstructorDefault
-    from datamodel_code_generator.model._views import FieldView
 
 __all__ = [
     "AssignmentInputs",
@@ -282,7 +281,23 @@ def participates_in_constructor(row: AssignmentRow, *, init_excluded: bool, clas
     return not class_var if row in {"model", "pydantic-dataclass"} else True
 
 
-def excluded_from_init(field: FieldView) -> bool:
+class _FieldInputs(Protocol):
+    """What ``excluded_from_init`` and ``requires_value`` read of a field (``DataModelFieldBase``)."""
+
+    @property
+    def required(self) -> bool:
+        """Whether the field is required."""
+
+    @property
+    def use_default_with_required(self) -> bool:
+        """Whether a required field keeps its default."""
+
+    @property
+    def extras(self) -> Mapping[str, object]:
+        """The field metadata, the ``init`` marker among them."""
+
+
+def excluded_from_init(field: _FieldInputs) -> bool:
     """Return whether a field declares ``init=False``, which leaves it out of a dataclass ``__init__``.
 
     The ``init_excluded`` of ``AssignmentInputs`` and ``DataclassItemInputs`` is this answer, and so is the one the
@@ -291,7 +306,7 @@ def excluded_from_init(field: FieldView) -> bool:
     return field.extras.get("init") is False
 
 
-def requires_value(field: FieldView) -> bool:
+def requires_value(field: _FieldInputs) -> bool:
     """Return whether a field must be given a value: it is required and does not keep its default beside it.
 
     A required field keeps its default where ``--use-default`` writes it (``use_default_with_required``). The

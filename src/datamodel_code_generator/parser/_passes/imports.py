@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 import operator
 from collections import defaultdict
-from functools import partial
+from functools import cache, partial
 from itertools import chain, repeat
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
@@ -21,7 +21,6 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, WIDENED_VALUES_KEY, int_beyond_values
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SLOT_CLASSES
-from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import counted, english_list, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -86,6 +85,7 @@ from datamodel_code_generator.parser._passes._import_edges import (
     failing_import_reads,
     import_cycle_seeds,
     import_plan,
+    init_loads,
     module_import_edges,
     relative_import_targets,
     runs_into_import_cycle,
@@ -149,7 +149,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
-    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.model_metadata import ModelMetadata
@@ -1026,11 +1025,11 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
     )
 
 
-def _msgspec_enum_kinds(model: ModelView) -> frozenset[str]:
+def _msgspec_enum_kinds(model: DataModel) -> frozenset[str]:
     """Return the kinds of the members of an enum that msgspec reads (``enum_member_kinds``).
 
-    msgspec skips a list or an object value, which has no hash. The warnings read an ``Enum`` and the decision of
-    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) a view of one.
+    msgspec skips a list or an object value, which has no hash. The warnings and the decision of
+    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) read an ``Enum``.
     """
     return enum_member_kinds(
         (get_raw_enum_member_value(field.default) for field in model.fields), value_base=model.value_base
@@ -2099,9 +2098,11 @@ def submodules_hidden_by_packages(
     shared ones and on a target with native deferred annotations its own (``_writes_module_future_annotations``):
     those hide the submodule from every module. It defines its classes after its imports, so a class hides the
     submodule from every module but the ``__init__.py`` itself, and only where the ``__init__.py`` imports from the
-    submodule, for a type or for the class of an enum member literal: the submodule is then loaded before the class
-    takes the name, and no later import of it replaces the class. A module names the hidden modules by their module
-    names, as ``reference_import_target`` reads them.
+    submodule, for a type or for the class of an enum member literal, or loads it as it runs (``init_loads``: an
+    import, a module it imports, ``--all-exports-scope``): the submodule is then loaded before the class takes the
+    name, and no later import of it replaces the class. A module that the ``__init__.py`` loads as it runs reads the
+    submodule under its name before the class exists, so a load of that kind hides it only from the other modules.
+    A module names the hidden modules by their module names, as ``reference_import_target`` reads them.
     """
     treat_dot_as_module, module_names = parser.treat_dot_as_module, naming.model_path_to_module_name
 
@@ -2119,7 +2120,15 @@ def submodules_hidden_by_packages(
         for ctx in contexts
         if ctx.models and (package := _written_package(ctx, treat_dot_as_module=treat_dot_as_module)) is not None
     }
+
+    @cache
+    def import_edges() -> dict[str, set[str]]:
+        return module_import_edges(
+            contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=config.all_exports_scope
+        )
+
     hidden: dict[ModulePath, tuple[set[tuple[str, ...]], set[tuple[str, ...]]]] = {}
+    unloaded: dict[ModulePath, tuple[set[tuple[str, ...]], set[str]]] = {}
     for ctx in contexts:
         parts = module_parts(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
         if not (ctx.models and parts and (init := inits.get(package := parts[:-1])) is not None):
@@ -2131,13 +2140,18 @@ def submodules_hidden_by_packages(
         ):
             for found in hidden.setdefault(package, (set(), set())):
                 found.update(modules)
-        elif any(model.class_name == name for model in init.models) and any(
-            is_within(named, module)
-            for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
-            for module in modules
-        ):
-            hidden.setdefault(package, (set(), set()))[1].update(modules)
-    if not hidden:
+        elif any(model.class_name == name for model in init.models):
+            if any(
+                is_within(named, module)
+                for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
+                for module in modules
+            ):
+                hidden.setdefault(package, (set(), set()))[1].update(modules)
+            elif loaded := init_loads(import_edges(), package, modules):
+                late_modules, late_loaded = unloaded.setdefault(package, (set(), set()))
+                late_modules.update(modules)
+                late_loaded.update(loaded)
+    if not hidden and not unloaded:
         return {}
     result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
     for ctx in contexts:
@@ -2147,6 +2161,13 @@ def submodules_hidden_by_packages(
             for hidden_package, (from_init, from_others) in hidden.items()
             for module in (from_init if hidden_package == package else from_others)
         }
+        written = written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module)
+        modules.update(
+            module
+            for (late_modules, late_loaded) in unloaded.values()
+            if written not in late_loaded
+            for module in late_modules
+        )
         if modules:
             result[ctx.module] = frozenset(modules)
     return result
@@ -2465,17 +2486,38 @@ def add_root_init_result(run: FinishRun[Any, Any, Any]) -> None:
 
 
 def render(parser: RenderHost[ConfigT, ContextT, ResultT], run: FinishRun[ConfigT, ContextT, ResultT]) -> None:
-    """Render every module into the output of ``parse()``."""
-    run.output = render_modules(
-        parser,
-        run.module_results,
-        contexts=run.contexts,
-        sorted_data_models=run.sorted_data_models,
-        model_identities=run.model_identities,
-        config=run.config,
-        forwarder_map=run.forwarder_map,
-        require_update=parser._recursion_facts["require_update"],
-    )
+    """Render every module into the output of ``parse()``.
+
+    A class that a submodule of its package hides (``reject_class_named_like_submodule``, judged before the first
+    module) is refused once the modules are written and their import check ran (``check_import_reads``), unless that
+    check seeds a parse again, which lays out the modules of an import cycle anew (``_raise_hidden_class_refusal``).
+    A failure while the modules are written gives way to the refusal, which was judged first.
+    """
+    try:
+        run.output = render_modules(
+            parser,
+            run.module_results,
+            contexts=run.contexts,
+            sorted_data_models=run.sorted_data_models,
+            model_identities=run.model_identities,
+            config=run.config,
+            forwarder_map=run.forwarder_map,
+            require_update=parser._recursion_facts["require_update"],
+        )
+    except Error:
+        _raise_hidden_class_refusal(parser)
+        raise
+    _raise_hidden_class_refusal(parser)
+
+
+def _raise_hidden_class_refusal(parser: RenderHost[ConfigT, ContextT, ResultT]) -> None:
+    """Raise the refusal of a class its package's submodule hides, unless the run parses again with new seeds.
+
+    The parse again keeps the refusal (``Parser.hidden_class_refusal``), and the run raises it where it keeps this
+    parse (``_parse_with_import_cycle_seeds``).
+    """
+    if parser.import_cycle_seeds_to_apply is None and (refusal := parser.hidden_class_refusal) is not None:
+        raise Error(refusal)
 
 
 def record_model_placement(
@@ -2537,13 +2579,18 @@ def _class_named_like_submodule(
     *,
     treat_dot_as_module: bool | None,
     all_exports_scope: AllExportsScope | None,
-) -> tuple[ModulePath, str, tuple[str, ...], tuple[str, ...]] | None:
-    """Return the first class a package's ``__init__.py`` binds beside a module of its name that replaces it, or None.
+) -> Iterator[tuple[tuple[ModulePath, str, tuple[str, ...], tuple[str, ...]], bool]]:
+    """Yield each class a package's ``__init__.py`` binds beside a module of its name that replaces it, in order.
 
     The module replaces the class where the ``__init__.py`` does not load it while its imports run, before its classes
     are defined (``reject_class_named_like_submodule``); a forwarder loads the modules it re-exports from
-    (``Forwarder.names``) and what they load. The class comes with the written path of the ``__init__.py``, the
-    module's parts and the path of its file.
+    (``Forwarder.names``) and what they load. 0.90.0 to 0.100.0 took the imports of an ancestor package, which has
+    started before the ``__init__.py``, as loads too (``init_loads`` row ``legacy-running-packages-load``) and wrote
+    such output: the ancestor runs first and its import of the module's name gets the class, so a model it reads of
+    the module through that name fails where its class evaluates its annotations, and the ancestor fails at import
+    with every module below it; each class comes with whether that reading loads the module, which keeps the output
+    where the classes do not evaluate their annotations as they are defined (``_evaluates_class_annotations``). The
+    class comes with the written path of the ``__init__.py``, the module's parts and the path of its file.
     """
     written = sorted(
         ((written_path(ctx.module, treat_dot_as_module=treat_dot_as_module), ctx) for ctx in contexts if ctx.models),
@@ -2561,7 +2608,7 @@ def _class_named_like_submodule(
         if (file := submodules.get(module := (*path[:-1], name))) is not None
     ]
     if not clashes:
-        return None
+        return
     edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
     written_modules = {
         ctx.module_key: written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module) for ctx in contexts
@@ -2572,10 +2619,9 @@ def _class_named_like_submodule(
                 written_modules[source] for source, _, _ in forwarder.names
             )
     for path, name, module, file in clashes:
-        loaded = reach([dotted_module(path)], lambda importer: edges.get(importer, ()))
-        if not any(is_within_name(loaded_name, ".".join(module)) for loaded_name in loaded):
-            return path, name, module, file
-    return None
+        if not init_loads(edges, path[:-1], [module]):
+            released = bool(init_loads(edges, path[:-1], [module], row="legacy-running-packages-load"))
+            yield (path, name, module, file), released
 
 
 def _hidden_class_refusal(
@@ -2650,6 +2696,7 @@ def reject_class_named_like_submodule(
     forwarder_map: ForwarderMap,
     *,
     all_exports_scope: AllExportsScope | None,
+    use_deferred_annotations: bool,
 ) -> None:
     """Refuse a package whose ``__init__.py`` binds a class named like a module or package below it.
 
@@ -2660,16 +2707,32 @@ def reject_class_named_like_submodule(
     written. It holds where the ``__init__.py`` loads the module while its imports run, before its classes are
     defined or re-exported (it imports from the module or below it, a module it imports does, or
     ``--all-exports-scope`` re-exports a module of it): the class takes the name after, and no later import rebinds it
-    (``submodules_hidden_by_packages``). Renaming the class or the module changes names that the models and the files
-    go by, so the run fails and names both. Under --rename-submodules-hidden-by-classes, where the renames of the
+    (``submodules_hidden_by_packages``), and where only an ancestor package imports the module and the classes do
+    not evaluate their annotations as they are defined (the output of 0.90.0 to 0.100.0,
+    ``_class_named_like_submodule``). Renaming the class or the module changes names that the models and the files go
+    by, so the run fails and names both. Under --rename-submodules-hidden-by-classes, where the renames of the
     submodules disagree with the names the packages bind here (``_final_class_seeds``), the run is parsed again with
     those names instead, and the refusal is kept for the run (``Parser.hidden_class_refusal``), which raises it if
-    the parse again does not import.
+    the parse again does not import. Otherwise the refusal waits for the import check of the output
+    (``render``): where the output runs into an import cycle, the parse again lays the modules out anew and
+    the run raises it only if that parse does not import either.
     """
     config, treat_dot_as_module = parser.config, parser.treat_dot_as_module
     bindings = _package_bindings(contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module)
-    hidden = _class_named_like_submodule(
-        contexts, bindings, forwarder_map, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope
+    evaluates_annotations = _evaluates_class_annotations(parser, use_deferred_annotations=use_deferred_annotations)
+    hidden = next(
+        (
+            clash
+            for clash, released in _class_named_like_submodule(
+                contexts,
+                bindings,
+                forwarder_map,
+                treat_dot_as_module=treat_dot_as_module,
+                all_exports_scope=all_exports_scope,
+            )
+            if evaluates_annotations or not released
+        ),
+        None,
     )
     refusal = None if hidden is None else _hidden_class_refusal(hidden, config)
     if (
@@ -2679,8 +2742,8 @@ def reject_class_named_like_submodule(
         parser.import_cycle_seeds_to_apply = seeds
         parser.hidden_class_refusal = refusal
         parser.fails_to_import = refusal is not None
-    elif refusal is not None:
-        raise Error(refusal)
+    else:
+        parser.hidden_class_refusal = refusal
 
 
 def reject_unimportable_imports(
@@ -2762,7 +2825,13 @@ def render_modules(
     ):
         contexts = [ctx._replace(module=expanded_path(ctx.module)) for ctx in contexts]
 
-    reject_class_named_like_submodule(parser, contexts, forwarder_map, all_exports_scope=config.all_exports_scope)
+    reject_class_named_like_submodule(
+        parser,
+        contexts,
+        forwarder_map,
+        all_exports_scope=config.all_exports_scope,
+        use_deferred_annotations=config.use_deferred_annotations,
+    )
     for ctx in contexts:
         result = parser._generate_module_output(
             ctx, config, contexts, forwarder_map, require_update, future_imports_str, shared_imports_str
@@ -2838,6 +2907,15 @@ def _definition_reads(
             values = field.default if isinstance(field.default, list) else [field.default]
             texts.extend(value.alias for value in values if isinstance(value, Member))
     return frozenset(read for text in texts if (read := _module_read(text, submodules)) is not None)
+
+
+def _evaluates_class_annotations(parser: DataModelTypeHost, *, use_deferred_annotations: bool) -> bool:
+    """Return whether the classes of the output evaluate their annotations as they are defined.
+
+    They do where the modules do not defer them, and in Pydantic output whatever the modules defer, as Pydantic builds
+    a class as it is defined.
+    """
+    return not use_deferred_annotations or parser.data_model_type._READ_BY_PYDANTIC
 
 
 def _structure_modules(
@@ -2936,7 +3014,7 @@ def check_import_reads(
     )
     if not runs_into_import_cycle(plan):
         return
-    evaluates_annotations = not use_deferred_annotations or parser.data_model_type._READ_BY_PYDANTIC
+    evaluates_annotations = _evaluates_class_annotations(parser, use_deferred_annotations=use_deferred_annotations)
     reads: dict[str, frozenset[tuple[str, str]]] = {}
     for ctx in contexts if parser.custom_template_dir is None else ():
         module = written_module(ctx.module)

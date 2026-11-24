@@ -1,0 +1,4 @@
+{"detail": {"message": "m"}, "warn": {"count": 1}}: accepted Order(detail=Detail(message='m'), warn=Warn(count=1, common=None))
+{"detail": {"message": 1}}: rejected ValidationError
+{"count": 1, "common": {"code": "c"}}: accepted Warn(count=1, common=Common(code='c'))
+{"count": "x"}: rejected ValidationError

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Common": {"type": "object", "properties": {"code": {"type": "string"}}},
+    "Top": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/pkg.Warn.Detail"}}},
+    "pkg.Warn": {"type": "object", "properties": {"count": {"type": "integer"}, "common": {"$ref": "#/$defs/Common"}}},
+    "pkg.Warn.Detail": {"type": "object", "properties": {"message": {"type": "string"}}}
+  }
+}

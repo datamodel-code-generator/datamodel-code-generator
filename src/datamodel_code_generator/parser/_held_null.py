@@ -10,39 +10,29 @@ only the None marked as the target's (``GenerationStore.mark_target_null``) and 
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
+from datamodel_code_generator.parser._phases import DecisionPass
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterator
 
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.types import DataType
 
-__all__ = ["OMIT_HELD_NULL", "HeldNullWriter"]
-
-
-class HeldNullWriter(DecisionWriter, Protocol):
-    """The write of the decision: drop the None a type restates of the model it names."""
-
-    def drop_held_null(self, model: ModelView, field: FieldView, data_types: Sequence[DataTypeView]) -> None:
-        """Drop the None each of ``data_types``, types of ``field`` of ``model``, restates of the model it names.
-
-        The field gets a copy of its type tree that loses the Nones; the nodes other fields share stay as they are.
-        """
+__all__ = ["OMIT_HELD_NULL"]
 
 
-def _types(data_type: DataTypeView) -> Iterator[DataTypeView]:
+def _types(data_type: DataType) -> Iterator[DataType]:
     """Yield ``data_type`` and every type nested in it (``type_children``), each after the types it holds."""
     for child in type_children(data_type):
         yield from _types(child)
     yield data_type
 
 
-def _omit_held_null(facts: FinalFacts, writer: HeldNullWriter) -> None:
+def _omit_held_null(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Drop the None of every type of a live model that names a live model holding null.
 
     Which models hold null is read for every model before the first write, so a root model whose root names a model
@@ -67,7 +57,6 @@ OMIT_HELD_NULL = DecisionPass(
         "name": "omit_held_null",
         "issue": "#5081",
     },
-    HeldNullWriter,
     _omit_held_null,
     when=lambda parser: parser.omit_redundant_reference_null,
 )

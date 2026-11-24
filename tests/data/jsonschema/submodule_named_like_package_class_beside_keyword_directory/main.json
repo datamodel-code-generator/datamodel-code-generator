@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "title": "Top",
+  "properties": {"detail": {"$ref": "#/$defs/pkg.Warn.Detail"}, "k": {"$ref": "class/k.json"}, "w": {"$ref": "#/$defs/pkg.Warn"}},
+  "$defs": {
+    "pkg.Warn": {"type": "object", "properties": {"count": {"type": "integer"}}},
+    "pkg.Warn.Detail": {"type": "object", "properties": {"message": {"type": "string"}}}
+  }
+}

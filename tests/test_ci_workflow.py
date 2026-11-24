@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import subprocess
@@ -27,11 +28,42 @@ MISSING_TARGETS_MESSAGE = (
 )
 
 
+def _job_count(matrix: dict[str, list[str]]) -> int:
+    """Return how many jobs a job without an ``include`` matrix runs: the product of its matrix axes, else one."""
+    return math.prod(len(axis) for axis in matrix.values())
+
+
+def _skip_value_checks_condition(steps: list[dict[str, str]]) -> str:
+    """Return the expression of the sharded run step that passes ``--skip-value-checks`` when it is true."""
+    run_step = next(step for step in steps if step.get("name") == "Run sharded test suite")
+    return re.findall(r'if \[ "\$\{\{ (.+?) \}\}" = "true" \]; then\n\s+value_check_args=', run_step["run"])[0]
+
+
+def _value_check_shards(groups: dict[str, list[dict[str, str]]]) -> dict[str, int]:
+    """Return, per job, tox environment and runner, how many shards keep the value checks on in a pull request."""
+    kept = [
+        (name, entry)
+        for name in ("test-shard", "test-shard-main", "test-shard-nocov", "test-shard-nocov-main")
+        for entry in groups[name]
+        if entry["coverage"] == "true" and entry["tox_env"] == "py314-parallel"
+    ]
+    return {
+        f"{name}:{entry['tox_env']}:{entry['os']}": sum(
+            other["tox_env"] == entry["tox_env"] and other["os"] == entry["os"] for other in groups[name]
+        )
+        for name, entry in kept
+    }
+
+
 def test_workflow_matrix_and_coverage_contract() -> None:
     """Changing dependency groups must preserve every existing test environment."""
     workflow = yaml.load((ROOT / ".github/workflows/test.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     jobs = workflow["jobs"]
-    groups = {name: job["strategy"]["matrix"]["include"] for name, job in jobs.items() if "strategy" in job}
+    groups = {
+        name: job["strategy"]["matrix"]["include"]
+        for name, job in jobs.items()
+        if "include" in job.get("strategy", {}).get("matrix", {})
+    }
     names = []
     main_only_names = set()
     producers = []
@@ -62,13 +94,18 @@ def test_workflow_matrix_and_coverage_contract() -> None:
     all_setup_steps = [step for job in jobs.values() for step in job["steps"] if "setup-uv@" in step.get("uses", "")]
     output = {
         "configurations": sorted(configurations),
-        "job_count": len(configurations) + sum("strategy" not in job for job in jobs.values()),
+        "job_count": len(configurations)
+        + sum(
+            _job_count(job.get("strategy", {}).get("matrix", {})) for name, job in jobs.items() if name not in groups
+        ),
         "extra_tests": sorted(
             f"{entry['tox_env']}:shard{entry['shard']}:{entry['extra_tests']}"
             for entries in groups.values()
             for entry in entries
             if entry.get("extra_tests")
         ),
+        "skip_value_checks_in_pull_request": _skip_value_checks_condition(jobs["test-shard"]["steps"]),
+        "value_check_shards_in_pull_request": _value_check_shards(groups),
         "shard_profile_mapping": jobs["test-shard"]["env"]["SHARD_PROFILE"],
         "shards_complete": all(
             sorted(shards) == [(index, len(shards)) for index in range(1, len(shards) + 1)]

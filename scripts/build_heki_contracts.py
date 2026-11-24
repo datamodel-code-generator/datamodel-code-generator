@@ -15,6 +15,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   operations and the generation store module may write the attributes, and each write is judged in the scope that
   holds it. A ``__dict__`` key row names the value of its constant; a
   cached-property row also forbids the decorator on its owner.
+- ``call-owners`` (``MUT204``, ``MUT207``) of the store operations: each operation that
+  ``GENERATION_STORE_MUTATION_METHODS`` names is called only in the store module, where ``GraphBuilder`` calls it for
+  the passes, and only the store module makes a ``GraphBuilder``.
 - ``call-owners``, ``read-owners`` and ``write-owners`` of the members of the graph only the store may use
   (``STORE_MEMBERS`` of ``scripts/fact_tables.py``): each method that writes the graph for the store operations that
   run it is callable by the store module, its own class (through its own receiver too) and the other such methods,
@@ -32,6 +35,18 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   record's ``within`` directory by no other function. A table, parse method or mark that is a member of a class is
   also named as the member of every Protocol of the package that declares it, since heki judges a use through a value
   typed with a host Protocol by the Protocol's declaration.
+- ``effect-boundaries`` (``EFF201``) and ``read-owners`` (``MUT203``, ``MUT206``) of the decisions: the modules of the
+  decisions (``module`` of ``DECISION_DECLS`` in ``scripts/pass_decls.py``) read no render fact (an attribute or
+  ``__dict__`` key of the graph whose ``ATTRIBUTE_FACTS`` row holds no ``Fact`` final at B1, or a dict attribute one of
+  whose entries is one), also through the functions
+  they call, outside the decision writer and the members ``DECISION_ACCESSORS`` lists, nor such an attribute on a value
+  heki cannot tie to a class.
+- ``call-owners`` (``MUT204``, ``MUT207``) of the decision writer: each method ``writer_methods`` of a decision's
+  declaration names is called only in the module of that decision (``module``, which every declaration names), and
+  every other public method only in the decision phase.
+- ``call-owners`` (``MUT204``) of the import ledger: the methods that change an ``Imports`` (``IMPORTS_MUTATORS`` of
+  ``scripts/fact_tables.py``) are called only in the ledger's module, the ``imports`` module and the defs
+  ``LEDGER_WRITERS`` names.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder and by the scopes that only ask
   it for ``typed_children`` (`scripts._decision_home_reads.typed_children_readers`).
 - ``read-owners``, ``call-owners`` and ``write-owners`` of the host rule (``MUT201``, ``MUT203``, ``MUT204``): the
@@ -68,16 +83,32 @@ import tomllib
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
-from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
+from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
 from scripts.check_ratchets import ENVIRONMENT_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
-from scripts.fact_tables import ATTRIBUTE_FACTS, STORE_MEMBERS, Access, FactKind, MemberUse, StoreMember
+from scripts.fact_tables import (
+    ATTRIBUTE_FACTS,
+    DECISION_ACCESSORS,
+    IMPORTS_MUTATORS,
+    LEDGER_WRITERS,
+    STORE_MEMBERS,
+    Access,
+    AttributeFact,
+    DecisionAccessor,
+    FactKind,
+    LedgerWriter,
+    MemberUse,
+    StoreMember,
+    holds_render_facts,
+)
+from scripts.pass_decls import DECISION_DECLS
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from scripts.decision_homes import BuilderHome, DecisionHome
+    from scripts.pass_decls import PassDecl
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
@@ -85,6 +116,16 @@ PYPROJECT = ROOT / "pyproject.toml"
 SOURCE_ROOT = ROOT / PACKAGE_DIR
 STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
+GRAPH_BUILDER = f"{STORE_MODULE}.GraphBuilder"
+"""The capability to change the graph, which only the store makes: every store operation is called through it."""
+DECISION_WRITER = f"{PACKAGE}.parser._phases._DecisionWriter"
+"""The one writer of the decisions (``parser/_phases.py``), over the store: what a decision calls to write."""
+DECISION_PHASE = "parser/_passes/decide.py"
+"""The decision phase, which runs the decisions with the one decision writer and reads what they changed."""
+IMPORTS = f"{PACKAGE}.imports.Imports"
+"""The imports of a generated module (``imports.py``), which the import ledger writes."""
+IMPORT_LEDGER = "parser/_imports_plan.py"
+"""The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
 RULES = ("EFF201", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
 HEADER = """\
@@ -171,15 +212,31 @@ def _attribute(repo: Repo, attribute: str, access: Access) -> str:
     return values.pop()
 
 
-def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
-    """Return the ``CALL`` rows of ``STORE_MEMBERS``, each with the scopes of the method and of its overrides.
+def _container(row: AttributeFact) -> str:
+    """Return the dict attribute an ``Access.ITEM`` row names an entry of (``extras`` of ``extras["kw_only"]``)."""
+    return row.attribute.partition("[")[0]
+
+
+def _package_functions(repo: Repo) -> set[str]:
+    """Return the dotted name of every function and method the package defines."""
+    return {
+        f"{module}.{scope.qualname}"
+        for rel, module in _package_modules(repo).items()
+        for scope in repo.model(rel).scopes
+        if scope.kind == "function"
+    }
+
+
+def _methods(
+    repo: Repo, members: Iterable[StoreMember | DecisionAccessor], table: str
+) -> dict[StoreMember | DecisionAccessor, list[str]]:
+    """Return each row of a table that names a method, with the scopes of the method and of its overrides.
 
     An override is a method of that name in a class of the package that derives from the row's class, through bases
     read by origin.
     """
     index = PackageIndex()
     classes: dict[tuple[str, str], list[str]] = {}
-    functions: set[str] = set()
     for rel, module in _package_modules(repo).items():
         model = repo.model(rel)
         for scope in model.scopes:
@@ -187,8 +244,7 @@ def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
                 classes[module, scope.qualname] = [
                     index.resolve(o) for base in bases(scope) if (o := model.origin(base))
                 ]
-            elif scope.kind == "function":
-                functions.add(f"{module}.{scope.qualname}")
+    functions = _package_functions(repo)
     bases_of = {f"{module}.{qualname}": parents for (module, qualname), parents in classes.items()}
 
     def derives(name: str, root: str) -> bool:
@@ -200,13 +256,11 @@ def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
             todo += [parent for parent in bases_of.get(current, []) if parent not in seen]
         return False
 
-    methods: dict[StoreMember, list[str]] = {}
-    for member in STORE_MEMBERS:
-        if member.use is not MemberUse.CALL:
-            continue
+    methods: dict[StoreMember | DecisionAccessor, list[str]] = {}
+    for member in members:
         owner = f"{_module(member.path)}.{member.owner}"
         if f"{owner}.{member.name}" not in functions:
-            message = f"STORE_MEMBERS: {member.path} defines no method {member.owner}.{member.name}"
+            message = f"{table}: {member.path} defines no method {member.owner}.{member.name}"
             raise SystemExit(message)
         methods[member] = sorted(
             f"{module}:{qualname}.{member.name}"
@@ -214,6 +268,11 @@ def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
             if f"{module}.{qualname}.{member.name}" in functions and derives(f"{module}.{qualname}", owner)
         )
     return methods
+
+
+def _store_methods(repo: Repo) -> dict[StoreMember | DecisionAccessor, list[str]]:
+    """Return the ``CALL`` rows of ``STORE_MEMBERS``, each with the scopes of the method and of its overrides."""
+    return _methods(repo, (member for member in STORE_MEMBERS if member.use is MemberUse.CALL), "STORE_MEMBERS")
 
 
 def _store_hooks(repo: Repo) -> list[str]:
@@ -315,6 +374,174 @@ def decision_home_contracts(repo: Repo, records: Iterable[DecisionHome] = DECISI
             attribution="lexical",
         )
     return [contracts[home] for home in sorted(contracts)]
+
+
+def decision_writer_contracts(repo: Repo, decls: Mapping[str, PassDecl] = DECISION_DECLS) -> list[str]:
+    """Return a ``call-owners`` contract per method of the decision writer: only the module of its decision calls it.
+
+    ``writer_methods`` of ``DECISION_DECLS`` names the methods of ``_DecisionWriter`` each decision writes through, and
+    ``module`` the module of the decision. A public method no decision names belongs to the decision phase
+    (``DECISION_PHASE``), which runs the decisions and reads what they changed. A call from another module, also
+    through the functions it calls, or on a receiver heki cannot tie to a class is a finding.
+    """
+    module, _, owner = DECISION_WRITER.rpartition(".")
+    functions = _package_functions(repo)
+    modules = set(_package_modules(repo).values())
+    contracts: list[str] = []
+    claimed: set[str] = set()
+    for decl in sorted(decls.values(), key=lambda decl: decl.name):
+        if not decl.writer_methods or _module(decl.module) not in modules:
+            message = f"DECISION_DECLS: {decl.name} names no module of the package or no write (module, writer_methods)"
+            raise SystemExit(message)
+        claimed.update(decl.writer_methods)
+        for method in decl.writer_methods:
+            if f"{DECISION_WRITER}.{method}" not in functions:
+                message = f"DECISION_DECLS: {decl.name} writes through {method}, which {owner} does not define"
+                raise SystemExit(message)
+            contracts.append(
+                _table(
+                    "call-owners",
+                    name=f"decision-writer:{method}",
+                    targets=[f"{module}:{owner}.{method}"],
+                    allowed_callers=_scope(_module(decl.module), ""),
+                    attribution="call-graph",
+                    unresolved="report",
+                )
+            )
+    prefix = f"{DECISION_WRITER}."
+    contracts.extend(
+        _table(
+            "call-owners",
+            name=f"decision-writer:{method}",
+            targets=[f"{module}:{owner}.{method}"],
+            allowed_callers=_scope(_module(DECISION_PHASE), ""),
+            attribution="call-graph",
+            unresolved="report",
+        )
+        for method in sorted(
+            name.removeprefix(prefix)
+            for name in functions
+            if name.startswith(prefix) and not name.removeprefix(prefix).startswith("_")
+        )
+        if "." not in method and method not in claimed
+    )
+    return contracts
+
+
+def decision_contracts(
+    repo: Repo,
+    decls: Mapping[str, PassDecl] = DECISION_DECLS,
+    accessors: Iterable[DecisionAccessor] = DECISION_ACCESSORS,
+    rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS,
+) -> list[str]:
+    """Return the contracts that hold the decisions to the facts final at B1: they read no render fact.
+
+    A render fact is an attribute or ``__dict__`` key of a graph class whose row holds facts none of which is a
+    ``Fact`` final at B1 (``holds_render_facts``). An entry of a dict attribute that holds one makes the whole attribute
+    a target, as heki reads an entry as a read of the whole attribute: the decisions read its other entries through
+    the members ``DECISION_ACCESSORS`` lists. The modules of the decisions (``module`` of ``DECISION_DECLS``) reach none
+    of them, through the functions they call too, outside the decision writer and those members
+    (``effect-boundaries``), and read none on a receiver heki cannot tie to a class (``read-owners``).
+    """
+    modules = sorted({_module(decl.module) for decl in decls.values() if decl.module})
+    targets = sorted({
+        f"{row.owner}.{name}"
+        for row in rows
+        if holds_render_facts(row) and row.owner not in PARSER_STATE_OWNERS
+        for name in [_container(row) if row.access is Access.ITEM else _attribute(repo, row.attribute, row.access)]
+    })
+    callees = sorted({
+        scope.replace(":", ".")
+        for scopes in _methods(repo, accessors, "DECISION_ACCESSORS").values()
+        for scope in scopes
+    })
+    return [
+        _table(
+            "effect-boundaries",
+            name="decisions-read-final-facts",
+            scopes=modules,
+            forbid=["reads-targets"],
+            read_targets=targets,
+            allowed_callees=[DECISION_WRITER, *callees],
+        ),
+        _table(
+            "read-owners",
+            name="decisions-read-final-facts",
+            targets=targets,
+            forbidden_readers=[f"{module}:*" for module in modules],
+            attribution="lexical",
+            unresolved="report",
+        ),
+    ]
+
+
+def import_ledger_contracts(
+    repo: Repo, mutators: Iterable[str] = IMPORTS_MUTATORS, writers: Iterable[LedgerWriter] = LEDGER_WRITERS
+) -> list[str]:
+    """Return the ``call-owners`` contract of the methods that change an ``Imports``: only the ledger calls them.
+
+    The import ledger's module, the ``imports`` module and the defs ``LEDGER_WRITERS`` names call the
+    ``IMPORTS_MUTATORS``; any other call, judged in the scope that makes it, is a finding.
+    """
+    functions = _package_functions(repo)
+    module, _, owner = IMPORTS.rpartition(".")
+    targets = [f"{module}:{owner}.{name}" for name in mutators]
+    allowed = [*_scope(_module(IMPORT_LEDGER), ""), *_scope(module, "")]
+    for target in targets:
+        if target.replace(":", ".") not in functions:
+            message = f"IMPORTS_MUTATORS: {owner} defines no method {target.rpartition('.')[2]}"
+            raise SystemExit(message)
+    for writer in writers:
+        if f"{_module(writer.path)}.{writer.name}" not in functions:
+            message = f"LEDGER_WRITERS: {writer.path} defines no {writer.name}"
+            raise SystemExit(message)
+        allowed += _scope(_module(writer.path), writer.name)
+    return [
+        _table(
+            "call-owners",
+            name="imports-through-the-ledger",
+            targets=targets,
+            allowed_callers=allowed,
+            attribution="lexical",
+        )
+    ]
+
+
+def store_operation_contracts(repo: Repo, operations: Iterable[str] = GENERATION_STORE_MUTATION_METHODS) -> list[str]:
+    """Return the contracts that route every change of the graph through the store's ``GraphBuilder``.
+
+    A store operation (``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
+    ``parser/generation.py``) is called only in the store module, where the builder calls it, also on a receiver heki
+    cannot tie to a class (``store-op:``); only the store module makes a ``GraphBuilder`` (``graph-builder``).
+    """
+    functions = _package_functions(repo)
+    owner = f"{STORE_MODULE}.GenerationStore"
+    contracts: list[str] = []
+    for operation in sorted(operations):
+        if f"{owner}.{operation}" not in functions:
+            message = f"GENERATION_STORE_MUTATION_METHODS: GenerationStore defines no {operation}"
+            raise SystemExit(message)
+        contracts.append(
+            _table(
+                "call-owners",
+                name=f"store-op:{operation}",
+                targets=[f"{STORE_MODULE}:GenerationStore.{operation}"],
+                allowed_callers=_scope(STORE_MODULE, ""),
+                unresolved="report",
+                attribution="lexical",
+            )
+        )
+    builder_module, _, builder = GRAPH_BUILDER.rpartition(".")
+    return [
+        *contracts,
+        _table(
+            "call-owners",
+            name="graph-builder",
+            targets=[f"{builder_module}:{builder}"],
+            allowed_callers=_scope(STORE_MODULE, ""),
+            attribution="lexical",
+        ),
+    ]
 
 
 class _Protocols:
@@ -537,7 +764,11 @@ def generate() -> str:
     contracts = [
         *write_owner_contracts(repo),
         *store_member_contracts(repo),
+        *store_operation_contracts(repo),
         *decision_home_contracts(repo),
+        *decision_writer_contracts(repo),
+        *decision_contracts(repo),
+        *import_ledger_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
         *pipeline_contracts(repo),

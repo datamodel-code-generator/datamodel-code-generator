@@ -1,8 +1,6 @@
-order: decide_unique_containers -> apply_generic_base_class -> decide_defaults
+order: decide_unique_containers -> apply_generic_base_class
 problem: decision decide_unique_containers names no issue
 problem: decision decide_unique_containers is registered twice
 problem: decision apply_generic_base_class has the name of a table pass
 problem: decision apply_generic_base_class declares a module check of CROSS_MODULE, not a global transform of DECIDE
 problem: decision apply_generic_base_class reads or writes CLASS_NAMES: decisions read and write facts
-problem: decision apply_generic_base_class writes through drop_everything, which _DecisionWriter lacks
-problem: decision decide_defaults writes through BaseModel, no DecisionWriter

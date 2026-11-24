@@ -35,6 +35,7 @@ from datamodel_code_generator.model.base import (
     _default_state,
     _effective_field_owners,
     _model_key_of_model,
+    _model_of_reference,
     ordering_constructor_fields,
     set_item_models_keeping_builtin_hash,
 )
@@ -476,7 +477,7 @@ def set_validate_default_on_fields(
             if not _applies_default(model_field):
                 continue
             if model_field.VALIDATES_STRUCTURED_DEFAULTS and (
-                lacks := required_fields_a_default_lacks(model_field, _model_named)
+                lacks := required_fields_a_default_lacks(model_field, _model_of_reference)
             ):
                 incomplete.append(_incomplete_model_default(model, model_field, *lacks))
             if (
@@ -520,11 +521,6 @@ def _incomplete_model_defaults_message(fields: list[str]) -> str:
         f"{for_count(count, 'the property', 'such a property')} out fails (JSON Schema does not validate a default). "
         "--omit-incomplete-model-defaults writes such a property without its default."
     )
-
-
-def _model_named(reference: Any) -> DataModel | None:
-    """Return the model a reference names, or None for a reference that names none."""
-    return source if isinstance(source := reference.source, DataModel) else None
 
 
 def deserialize_default_value(
@@ -668,7 +664,7 @@ def _validated_default_value(
 
     def read(node: DataType, value: object, holder: DataModel) -> object:
         if (reference := node.reference) is not None:
-            return model_value(_model_named(reference), value, holder)
+            return model_value(_model_of_reference(reference), value, holder)
         if node in ARRAYS and isinstance(value, _ARRAY_VALUES):
             return array_value(node, value, holder)
         if node in MAPPINGS and isinstance(value, dict):
