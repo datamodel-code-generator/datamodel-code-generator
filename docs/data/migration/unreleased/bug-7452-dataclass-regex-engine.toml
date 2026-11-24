@@ -26,6 +26,12 @@ covers = [
     "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[constr]/",
     "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[extra_allow].outcomes.txt",
     "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_the_module_of_its_base[extra_allow]/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_inherited_lo~94a9d901.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_inherited_lo~a1df0c12.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_inherited_lo~a259f362.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_inherited_lookar~a7967633.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_inherited_lookar~cf244f1e.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_inherited_lookar~e7bf177c.errors.txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_inherited_lookaround_dataclass_modules.yaml].txt",
 ]
 
