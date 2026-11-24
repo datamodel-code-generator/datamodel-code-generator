@@ -22,26 +22,28 @@ other members, or an alias of a ``Literal`` of str and other values.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.msgspec_str_like import STR, msgspec_str_like_leaf
 from datamodel_code_generator.parser._passes._shared import msgspec_union_members
 from datamodel_code_generator.parser._passes.imports import _msgspec_enum_kinds
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
+from datamodel_code_generator.parser._phases import DecisionPass, live_model_of
 from datamodel_code_generator.reference import _json_number_of
 from datamodel_code_generator.types import _union_members, _written_member, _written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
 
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
-__all__ = ["MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS", "StrLikeUnionWriter"]
+__all__ = ["MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS"]
 
-_Slot: TypeAlias = "tuple[DataTypeView, str | None]"
+_Slot: TypeAlias = "tuple[DataType, str | None]"
 """A written member of a union and the str-like member msgspec counts it as, or None."""
 
 
@@ -51,33 +53,15 @@ class _UnmergeableError(Exception):
 
 _NONE: Final = "None"
 
-_Member: TypeAlias = "DataTypeView | str | tuple[bool | int | str, ...]"
+_Member: TypeAlias = "DataType | str | tuple[bool | int | str, ...]"
 """A member a union is written with: a member it holds, a new plain type by name (``str`` or ``None``), or a new
 ``Literal`` of the values a merged ``Literal`` holds besides its str values."""
 
-_Rewrite: TypeAlias = "tuple[DataTypeView, tuple[_Member, ...]]"
+_Rewrite: TypeAlias = "tuple[DataType, tuple[_Member, ...]]"
 """A union of a field's type tree and the members it is written with."""
 
 
-class StrLikeUnionWriter(DecisionWriter, Protocol):
-    """The write of the decision: one ``str`` for the str-like members of the unions of a field."""
-
-    def merge_str_like_members(
-        self,
-        model: ModelView,
-        field: FieldView,
-        rewrites: Sequence[_Rewrite],
-        merged: Sequence[DataTypeView],
-    ) -> None:
-        """Write the unions of ``rewrites``, types of ``field`` of ``model``, with the members each names.
-
-        A name among them is a new plain type (``str``, ``None``) and a tuple a new ``Literal`` of its values;
-        ``merged`` are the members the field loses, whose references are dropped. The field gets a copy of its type
-        tree; the nodes other fields share stay as they are.
-        """
-
-
-def _union_roots(data_type: DataTypeView, *, spread: bool = False) -> Iterator[DataTypeView]:
+def _union_roots(data_type: DataType, *, spread: bool = False) -> Iterator[DataType]:
     """Yield each union of a type tree that no enclosing union spreads, inner ones first.
 
     A union member that is a union of its own is written as members of the enclosing union, so only the enclosing one
@@ -98,10 +82,10 @@ class _Classifier:
 
     __slots__ = ("_model_of",)
 
-    def __init__(self, model_of: Callable[[ReferenceView], ModelView | None]) -> None:
+    def __init__(self, model_of: Callable[[Reference], DataModel | None]) -> None:
         self._model_of = model_of
 
-    def slot(self, member: DataTypeView, seen: frozenset[int] = frozenset()) -> str | None:
+    def slot(self, member: DataType, seen: frozenset[int] = frozenset()) -> str | None:
         """Return the str-like member ``member`` counts as, or None; raise ``_UnmergeableError`` where it cannot merge.
 
         A type alias or root model of one type counts as that type, and one of a union whose members are all
@@ -137,11 +121,11 @@ class _Classifier:
                     raise _UnmergeableError
         return None
 
-    def _slots(self, union: DataTypeView, seen: frozenset[int] = frozenset()) -> list[_Slot]:
+    def _slots(self, union: DataType, seen: frozenset[int] = frozenset()) -> list[_Slot]:
         """Return each written member of ``union`` with the str-like member it counts as."""
         return [(member, self.slot(member, seen)) for member in _written_union_members(msgspec_union_members(union))]
 
-    def merge(self, union: DataTypeView) -> Sequence[DataTypeView]:
+    def merge(self, union: DataType) -> Sequence[DataType]:
         """Return the written members of ``union`` that one ``str`` replaces, or nothing when it is left as it is.
 
         Those are its str-like members when msgspec counts them as more than one member and the decision can merge
@@ -156,14 +140,14 @@ class _Classifier:
         return [member for member, counted in slots if counted is not None]
 
 
-def _other_literals(leaf: DataTypeView) -> tuple[bool | int | str, ...]:
+def _other_literals(leaf: DataType) -> tuple[bool | int | str, ...]:
     """Return the values of a ``Literal`` holding a str value besides its str values, which ``str`` does not take."""
     if not any(literal_value_kind(value) == STR for value in leaf.literals):
         return ()
     return tuple(value for value in leaf.literals if literal_value_kind(value) not in {STR, "none"})
 
 
-def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewrite]:
+def _rewrites(union: DataType, merged: Sequence[DataType]) -> list[_Rewrite]:
     """Return the member lists that write ``union`` with one ``str`` in place of ``merged``, inner unions first.
 
     The ``str`` takes the place of the first merged member as the union is written, followed by ``None`` when a
@@ -180,7 +164,7 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
     rewrites: list[_Rewrite] = []
     placed = False
 
-    def rewrite(owner: DataTypeView) -> tuple[_Member, ...]:
+    def rewrite(owner: DataType) -> tuple[_Member, ...]:
         nonlocal placed
         members: list[_Member] = []
         for member in owner.data_types:
@@ -202,7 +186,7 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
     return rewrites
 
 
-def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: StrLikeUnionWriter) -> None:
+def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Write one ``str`` for the str-like members of every union of a live model that msgspec refuses for them.
 
     Every union is decided on the types before the first write, so a union that names a type alias reads the alias's
@@ -228,12 +212,11 @@ def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: StrLikeUnio
         )
 
 
-MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS: Final[DecisionPass[StrLikeUnionWriter]] = DecisionPass(
+MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS: Final[DecisionPass] = DecisionPass(
     {
         "name": "merge_msgspec_str_like_union_members",
         "issue": "fix-msgspec-str-like-unions",
     },
-    StrLikeUnionWriter,
     _merge_msgspec_str_like_union_members,
     when=lambda parser: (
         parser.merge_msgspec_str_like_union_members and parser.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR

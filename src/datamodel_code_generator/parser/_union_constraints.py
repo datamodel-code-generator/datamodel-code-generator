@@ -15,40 +15,26 @@ no ``Field()`` arguments (msgspec, which leaves out what a union does not take w
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator._container_kinds import CONTAINERS
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
+from datamodel_code_generator.parser._phases import DecisionPass, live_model_of
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
-__all__ = ["OMIT_UNTAKEN_UNION_CONSTRAINTS", "UnionConstraintsWriter"]
-
-
-class UnionConstraintsWriter(DecisionWriter, Protocol):
-    """The write of the decision: leave keywords out of the constraints of a field."""
-
-    def drop_field_constraints(
-        self,
-        model: ModelView,
-        field: FieldView,
-        keywords: frozenset[str],
-        members: Sequence[tuple[DataTypeView, object]],
-    ) -> None:
-        """Write the constraints of ``field`` of ``model`` without those of ``keywords``, ``members`` in place.
-
-        Each member of ``members``, a type of the field, is written as the type paired with it.
-        """
+__all__ = ["OMIT_UNTAKEN_UNION_CONSTRAINTS"]
 
 
 def _keeps_check(  # noqa: PLR0917
     facts: FinalFacts,
-    model_of: Callable[[ReferenceView], ModelView | None],
-    data_type: DataTypeView,
+    model_of: Callable[[Reference], DataModel | None],
+    data_type: DataType,
     keyword: str,
     value: object,
     seen: frozenset[int] = frozenset(),
@@ -83,16 +69,16 @@ def _keeps_check(  # noqa: PLR0917
 
 def _members_constrained_in_place(
     facts: FinalFacts,
-    model_of: Callable[[ReferenceView], ModelView | None],
-    data_type: DataTypeView,
+    model_of: Callable[[Reference], DataModel | None],
+    data_type: DataType,
     untaken: Mapping[str, object],
-) -> list[tuple[DataTypeView, object]] | None:
+) -> list[tuple[DataType, object]] | None:
     """Return each member of ``data_type`` that loses a check of ``untaken`` with the type that holds it in place.
 
     A member keeps a check as ``_keeps_check`` says; one that loses some is written with them where it is a plain
     string (``FinalFacts.constrained_member``). None when a member that loses a check is anything else.
     """
-    planned: list[tuple[DataTypeView, object]] = []
+    planned: list[tuple[DataType, object]] = []
     pending = [data_type]
     while pending:
         current = pending.pop()
@@ -111,7 +97,7 @@ def _members_constrained_in_place(
     return planned
 
 
-def _omit_untaken_union_constraints(facts: FinalFacts, writer: UnionConstraintsWriter) -> None:
+def _omit_untaken_union_constraints(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Leave out of each field the keywords beside a union that its type does not take, when no check is lost.
 
     The keywords are those the call of the field writes (``written_constraints``) at the value the union declares them
@@ -139,7 +125,6 @@ OMIT_UNTAKEN_UNION_CONSTRAINTS = DecisionPass(
         "name": "omit_untaken_union_constraints",
         "issue": "#6022",
     },
-    UnionConstraintsWriter,
     _omit_untaken_union_constraints,
     when=lambda parser: parser.field_constraints,
 )

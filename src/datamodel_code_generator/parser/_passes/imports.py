@@ -149,7 +149,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
-    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.model_metadata import ModelMetadata
@@ -1051,11 +1050,11 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
     )
 
 
-def _msgspec_enum_kinds(model: ModelView) -> frozenset[str]:
+def _msgspec_enum_kinds(model: DataModel) -> frozenset[str]:
     """Return the kinds of the members of an enum that msgspec reads (``enum_member_kinds``).
 
-    msgspec skips a list or an object value, which has no hash. The warnings read an ``Enum`` and the decision of
-    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) a view of one.
+    msgspec skips a list or an object value, which has no hash. The warnings and the decision of
+    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) read an ``Enum``.
     """
     return enum_member_kinds(
         (get_raw_enum_member_value(field.default) for field in model.fields), value_base=model.value_base

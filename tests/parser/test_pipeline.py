@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from itertools import starmap
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -337,18 +337,11 @@ def test_trigger_problems(
     assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
 
 
-class WideWriter(check_pass_pipeline.DecisionWriter, Protocol):
-    """A writer protocol with a write that the decision writer does not implement."""
-
-    def drop_everything(self) -> None:
-        """Drop every default."""
-
-
-def _no_decision(_facts: check_pass_pipeline.FinalFacts, _writer: check_pass_pipeline.DecisionWriter) -> None:
+def _no_decision(_facts: check_pass_pipeline.FinalFacts, _writer: object) -> None:
     """Decide nothing."""
 
 
-Declared = tuple[check_pass_pipeline.PassDecl | None, check_pass_pipeline.DecisionPass[Any]]
+Declared = tuple[check_pass_pipeline.PassDecl | None, check_pass_pipeline.DecisionPass]
 """A decision with its declaration, which ``DECISION_DECLS`` would hold, or None for a decision without one."""
 
 
@@ -356,10 +349,9 @@ def _decision(
     decl: check_pass_pipeline.PassDecl,
     *,
     run: Callable[[check_pass_pipeline.FinalFacts, Any], None] = _no_decision,
-    writer: type[Any] = check_pass_pipeline.DecisionWriter,
     issue: str = "#0",
 ) -> Declared:
-    return decl, check_pass_pipeline.DecisionPass({"name": decl.name, "issue": issue}, writer, run)
+    return decl, check_pass_pipeline.DecisionPass({"name": decl.name, "issue": issue}, run)
 
 
 WAVE_B_REGISTRATION = ("decide_literal_fields", "decide_unique_containers", "decide_constraints", "decide_defaults")
@@ -389,9 +381,7 @@ DECISION_REGISTRIES = {
         _wave_b_decisions("declared")[0],
         (
             None,
-            check_pass_pipeline.DecisionPass(
-                {"name": "G99", "issue": "#0"}, check_pass_pipeline.DecisionWriter, _no_decision
-            ),
+            check_pass_pipeline.DecisionPass({"name": "G99", "issue": "#0"}, _no_decision),
         ),
     ],
     "broken": [
@@ -405,9 +395,7 @@ DECISION_REGISTRIES = {
                 check_pass_pipeline.PassKind.CHECK,
                 reads=frozenset({check_pass_pipeline.RenderFact.CLASS_NAMES}),
             ),
-            writer=WideWriter,
         ),
-        _decision(_decl("decide_defaults", {"DEFAULTS"}, {"DEFAULTS"}, []), writer=BaseModel),
     ],
 }
 

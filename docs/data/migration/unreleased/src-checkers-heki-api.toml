@@ -1,0 +1,13 @@
+[[change]]
+id = "src-checkers-heki-api"
+category = "api"
+title = "Store signatures name the graph classes, and its operations lose their deprecation markers"
+summary = "GenerationStore.seal_facts, FinalFacts and the union keyword methods of DataTypeManager name DataType, DataModel and Reference where they named the read-only views of model/_views.py, which are gone. The operations of GenerationStore lose their @deprecated(category=None) markers, which warned no caller at run time, and GraphBuilder(store) takes no token; heki keeps the package's own calls of the operations inside the generation store."
+refs = ["#7484"]
+decision = ["#7484"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

@@ -723,8 +723,8 @@ remains the only authority for names. Do not move name generation or parser
 dispatch into the generation index.
 
 Use the store's `GraphBuilder` (`generation_store.builder()`, `self._graph_builder` in
-parser code) for parser-side mutations that affect generation facts; the same
-methods on `GenerationStore` are deprecated:
+parser code) for parser-side mutations that affect generation facts; heki reports
+a call of the same methods on `GenerationStore` outside `parser/generation.py`:
 
 - Register parsed models with `builder.register_model(model)`.
 - Replace references with `builder.replace_data_type_ref(...)` or

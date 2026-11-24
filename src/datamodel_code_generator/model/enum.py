@@ -35,8 +35,8 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.model._decisions.enum_kind import EnumBase, EnumKind
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
-    from datamodel_code_generator.model._views import ModelForm
     from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import ModelForm
 
 
 _INT: str = "int"

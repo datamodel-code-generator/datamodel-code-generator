@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator._container_kinds import (
     ARRAYS,
@@ -45,7 +45,7 @@ from datamodel_code_generator.parser._passes._shared import (
     additional_properties_holder,
     plan_unique_sets,
 )
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_models_by_key
+from datamodel_code_generator.parser._phases import DecisionPass, live_models_by_key
 from datamodel_code_generator.types import _takes_json_scalar
 
 if TYPE_CHECKING:
@@ -53,32 +53,15 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
+    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._passes._shared import AdditionalPropertiesHolder
-    from datamodel_code_generator.parser._phases import FinalFacts
+    from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.types import DataType
 
-__all__ = ["WRITE_UNIQUE_ITEMS_AS_SETS", "UniqueSetsWriter"]
+__all__ = ["WRITE_UNIQUE_ITEMS_AS_SETS"]
 
 _ANY_TYPES = frozenset({"Any", "object"})
 """The types whose values are any value, some of which do not hash."""
-
-
-class UniqueSetsWriter(DecisionWriter, Protocol):
-    """The write of the decision: write lists of a field's type as sets, and its default as the sets write it."""
-
-    def write_sets(
-        self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: object | None
-    ) -> None:
-        """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` but None as its default.
-
-        The field gets a copy of its type tree with the sets; the nodes other fields share stay as they are.
-        """
-
-    def write_additional_properties_sets(self, model: ModelView, lists: Sequence[DataTypeView]) -> None:
-        """Write each of ``lists``, types of the additional properties of ``model`` (``extra_items``), as a set.
-
-        The model takes a copy of the type tree with the sets; the nodes stay as they are.
-        """
 
 
 class _ByValue:
@@ -100,7 +83,7 @@ class _ByValue:
     )
 
     def __init__(self, facts: FinalFacts) -> None:
-        self.live: dict[ModelKey, ModelView] = live_models_by_key(facts)
+        self.live: dict[ModelKey, DataModel] = live_models_by_key(facts)
         self.class_hash: dict[ModelKey, SetItemHash] = {
             key: model.set_item_hash(user_imports=facts.options.user_imports) for key, model in self.live.items()
         }
@@ -111,7 +94,7 @@ class _ByValue:
         self.aliases: dict[ModelKey, bool] = {}
         self._alias_sets: dict[ModelKey, set[int]] = {}
 
-    def _valued_alias(self, key: ModelKey) -> ModelView | None:
+    def _valued_alias(self, key: ModelKey) -> DataModel | None:
         """Return the live model of ``key`` if it is a type alias with a value (``DataModel.form``), else None."""
         return model if (model := self.live.get(key)) is not None and model.form == "alias" and model.fields else None
 
@@ -146,7 +129,7 @@ class _ByValue:
             sets = self._alias_sets[key] = {*map(id, self.plan(value).sets)}
             self.aliases[key] = every_value_hashes(self.item(value.data_type, sets))
 
-    def plan(self, field: FieldView | AdditionalPropertiesHolder) -> UniqueItemsPlan:
+    def plan(self, field: DataModelFieldBase | AdditionalPropertiesHolder) -> UniqueItemsPlan:
         """Return the arrays of ``field`` that become sets.
 
         The type of the additional properties of a model (``additional_properties_holder``) is read as a field.
@@ -162,7 +145,7 @@ class _ByValue:
             ),
         )
 
-    def item(self, data_type: DataTypeView, sets: Collection[int]) -> ValueHashItem:  # noqa: PLR0911
+    def item(self, data_type: DataType, sets: Collection[int]) -> ValueHashItem:  # noqa: PLR0911
         """Return the facts of an item type that ``every_value_hashes`` reads.
 
         ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set
@@ -176,7 +159,7 @@ class _ByValue:
         if (python_type := data_type.python_type) is not None:
             return python_type_value_hash(python_type.expression)
 
-        def read(nested: DataTypeView) -> ValueHashItem:
+        def read(nested: DataType) -> ValueHashItem:
             return self.item(nested, sets)
 
         if data_type.is_tuple:
@@ -189,7 +172,7 @@ class _ByValue:
             return ValueHashItem(hashes=False)
         return ValueHashItem(members=tuple(map(read, data_type.data_types)))
 
-    def written_default(self, field: FieldView, plan: UniqueItemsPlan) -> object | None:
+    def written_default(self, field: DataModelFieldBase, plan: UniqueItemsPlan) -> object | None:
         """Return the array or object default of a field as its final types write it, or None where they write no set.
 
         An array of the default that sits where a type writes a set, a list of the field's type that ``plan`` makes a
@@ -280,14 +263,14 @@ class _ByValue:
             return any(self._takes(member, value, followed) for member in node.data_types)
         return _takes_json_scalar(node, value)
 
-    def fields(self, model: ModelView) -> Iterator[FieldView]:
+    def fields(self, model: DataModel) -> Iterator[DataModelFieldBase]:
         """Yield the fields whose values decide whether the instances of a model hash: its own and those it inherits.
 
         A name is the field of the first model that declares it, the model before its bases, as a field a model
         declares again replaces the one it inherits in its instances. The models are read nearest first (row
         ``legacy-unique-sets-level-order``, `ReferenceGraph.level_order`), so a name declared by a base two levels up
         and by a later direct base is the later base's field, where the class takes the first. Under
-        --read-set-item-fields-in-class-order the fields of the class's C3 order (``ModelView.effective_fields``) are
+        --read-set-item-fields-in-class-order the fields of the class's C3 order (``DataModel.effective_fields``) are
         read too, and a model hashes by value only where the fields of both readings hash: the class's own fields
         decide it, so a set of its instances never holds a value that does not hash (#6997), and where only the level
         order reads a field that does not hash its list stays as in 0.100.0. Without the option (row
@@ -299,6 +282,7 @@ class _ByValue:
         walk = walk_graph(GraphSnapshot.BASES, EdgeKind.BASE, (model,), _view_key, self._bases)
         names: set[str | None] = set()
         read: set[int] = set()
+        field: DataModelFieldBase
         for key in walk.graph.level_order(walk.starts[0], EdgeKind.BASE):
             for field in walk.node_of[key].fields:
                 if field.name is None or field.name not in names:
@@ -308,7 +292,7 @@ class _ByValue:
         if self._reads_class_fields:
             yield from (field for field in model.effective_fields if id(field) not in read)
 
-    def _bases(self, model: ModelView) -> Iterator[ModelView]:
+    def _bases(self, model: DataModel) -> Iterator[DataModel]:
         """Return the live models a model names as its bases."""
         return (
             base
@@ -316,7 +300,7 @@ class _ByValue:
             if (reference := data_type.reference) is not None and (base := self.live.get(model_key_of(reference)))
         )
 
-    def field_values_hash(self, field: FieldView, plan: UniqueItemsPlan) -> bool:
+    def field_values_hash(self, field: DataModelFieldBase, plan: UniqueItemsPlan) -> bool:
         """Return whether every value a field holds hashes, once its planned lists are sets.
 
         An array default is a list or a set, which does not hash (a view reads a list as a tuple), unless it is written
@@ -325,7 +309,7 @@ class _ByValue:
         """
         if (default := self.written_default(field, plan)) is None:
             default = field.default
-        if isinstance(default, (list, tuple, set)) or "default_factory" in field.extras:
+        if isinstance(default, (list, tuple, set)) or field.has_default_factory:
             return False
         try:
             hash(default)
@@ -334,7 +318,7 @@ class _ByValue:
         return every_value_hashes(self.item(field.data_type, {*map(id, plan.sets)}))
 
 
-def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> None:
+def _write_unique_items_as_sets(facts: FinalFacts, writer: _DecisionWriter) -> None:
     """Write the uniqueItems lists of every live model whose final items hash by value as sets.
 
     Which models hash by value is read again until no field contradicts it, then the plans of that reading are
@@ -374,7 +358,7 @@ def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> 
         writer.write_additional_properties_sets(model, plan.sets)
 
 
-def _view_key(model: ModelView) -> ModelKey:
+def _view_key(model: DataModel) -> ModelKey:
     """Return the model key of a live model, by which the walk of its bases tells models apart."""
     return model_key_of(model.reference)
 
@@ -401,7 +385,6 @@ WRITE_UNIQUE_ITEMS_AS_SETS = DecisionPass(
         "name": "write_unique_items_as_sets",
         "issue": "#4834",
     },
-    UniqueSetsWriter,
     _write_unique_items_as_sets,
     when=lambda parser: parser.use_unique_items_as_set and parser.use_unique_items_as_set_by_value,
 )
