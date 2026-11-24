@@ -2877,7 +2877,7 @@ def _isolate_builtin_formatter_config(
 
 @pytest.fixture(autouse=True)
 def _value_check_areas(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Turn the value-comparing check areas on, where unset, for tests marked ``value_checks``.
+    """Turn the value-comparing check areas on for tests marked ``value_checks``.
 
     A test of an area, or one whose stored output records which areas run, must not depend on the shard's
     `--skip-value-checks`.
@@ -2885,8 +2885,7 @@ def _value_check_areas(request: pytest.FixtureRequest, monkeypatch: pytest.Monke
     if request.node.get_closest_marker("value_checks") is None:
         return
     for name in VALUE_CHECK_AREA_ENVS:
-        if name not in os.environ:
-            monkeypatch.setenv(name, "1")
+        monkeypatch.setenv(name, "1")
 
 
 @pytest.fixture
