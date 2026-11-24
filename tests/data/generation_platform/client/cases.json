@@ -6907,6 +6907,12 @@
     "config": {"tools": "functions", "operations": [{"ref": "/paths/~1pets~1{petId}/get", "description": "Show one pet by its id."}]},
     "modules": [["client", "_generated", "tools.py"]]
   },
+  "tools-adversarial": {
+    "input": "tools-adversarial.yaml",
+    "model": {"use_schema_description": true},
+    "config": {"tools": "functions"},
+    "modules": [["client", "_generated", "tools.py"]]
+  },
   "tools-extras": {
     "input": "tools.yaml",
     "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],

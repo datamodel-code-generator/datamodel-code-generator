@@ -604,6 +604,8 @@ text-bound-types-reuse	api_generation/client_generation/client_render[text-bound
 tools	api_generation/client_generation/client_render[tools].pydantic_v2_BaseModel/
 tools	api_generation/client_generation/client_render[tools].pydantic_v2_dataclass/
 tools	api_generation/client_generation/client_render[tools].txt
+tools-adversarial	api_generation/client_generation/client_render[tools-adversarial].pydantic_v2_BaseModel/
+tools-adversarial	api_generation/client_generation/client_render[tools-adversarial].txt
 tools-descriptions	api_generation/client_generation/client_render[tools-descriptions].pydantic_v2_BaseModel/
 tools-descriptions	api_generation/client_generation/client_render[tools-descriptions].txt
 tools-extras	api_generation/client_generation/client_render[tools-extras].pydantic_v2_dataclass/

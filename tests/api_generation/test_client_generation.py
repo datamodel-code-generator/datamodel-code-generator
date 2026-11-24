@@ -302,6 +302,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "tools-left-out",
         "tools-descriptions",
         "tools-untrusted",
+        "tools-adversarial",
         "tools-extras",
     ],
 )
