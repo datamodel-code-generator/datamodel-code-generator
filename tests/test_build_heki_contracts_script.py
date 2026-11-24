@@ -244,16 +244,15 @@ SEEDED_CYCLES = {
     f"{PACKAGE}/one_way_b.py": "VALUE = 1\n",
 }
 """Three pairs of modules that import each other, by an import at module level, in a function and under
-``TYPE_CHECKING``, and a pair that imports one way: only the first is a cycle of the imports that run while the
-modules load."""
+``TYPE_CHECKING``, and a pair that imports one way."""
 
 
 @needs("heki")
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_the_import_cycles_that_run_while_their_modules_load(tmp_path: Path) -> None:
-    """A cycle closed by an import that runs while its module loads fails the check.
+def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
+    """A cycle fails the check whether the import that closes it runs while its module loads, in a function or never.
 
-    One closed in a function or under ``TYPE_CHECKING`` does not.
+    Each report names the modules of its cycle, which a baseline entry keeps.
     """
     for name, text in SEEDED_CYCLES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -270,6 +269,8 @@ def test_heki_reports_the_import_cycles_that_run_while_their_modules_load(tmp_pa
         1,
         [
             (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b"),
+            (f"{PACKAGE}/function_b.py", "IMP101", f"{PACKAGE_NAME}.function_a, {PACKAGE_NAME}.function_b"),
+            (f"{PACKAGE}/typing_b.py", "IMP101", f"{PACKAGE_NAME}.typing_a, {PACKAGE_NAME}.typing_b"),
         ],
     ), result.stderr
 

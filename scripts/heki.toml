@@ -8,7 +8,7 @@ select = ["EFF201", "IMP101", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", 
 fail-on = "warning"
 
 [imports]
-cycle-edges = ["body"]
+cycle-edges = ["body", "lazy", "function", "type-checking"]
 
 [[write-owners]]
 name = "cache:no store operation"

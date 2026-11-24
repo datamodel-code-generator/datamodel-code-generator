@@ -605,11 +605,12 @@ modules (`_runtime/`), which generated packages copy, import only the standard
 library, the third-party packages generated code depends on, and each other
 relatively.
 
-heki's `IMP101` reports an import cycle of the package whose imports all run
-while their modules load: at module or class level, under a version, platform
-or `ImportError` guard too (the contracts name the `body` kind in
-`[imports] cycle-edges`); an import in a function or under `if TYPE_CHECKING:`
-closes none, and the package has no such cycle today. `scripts/check_ratchets.py`
+heki's `IMP101` reports each group of modules of the package that import each
+other, by any import: at module or class level, in a function and under
+`if TYPE_CHECKING:` (the contracts name every kind in `[imports] cycle-edges`).
+Its report names the modules of the group, so `scripts/heki_baseline.toml`
+holds today's four groups, and a new cycle, a module that joins a group and two
+groups that merge are new reports. `scripts/check_ratchets.py`
 counts the modules on the import cycles of `scripts/` as
 `import-cycle:<measure>@scripts` keys (`scripts/_import_cycles.py`):
 `module-level` for the cycles of the imports that run when their module is

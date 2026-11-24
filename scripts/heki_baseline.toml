@@ -3180,6 +3180,13 @@ target = "datamodel_code_generator.python_literal.stable_repr"
 count = 2
 
 [[entries]]
+path = "src/datamodel_code_generator/_python_type_annotation_codec.py"
+qualname = "<module>"
+rule_code = "IMP101"
+target = "datamodel_code_generator._python_type_annotation, datamodel_code_generator._python_type_annotation_codec"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/_recommend/_report.py"
 qualname = "_option_lines"
 rule_code = "MUT204"
@@ -4633,6 +4640,13 @@ path = "src/datamodel_code_generator/model/base.py"
 qualname = "_set_nested_model_default_factory_order"
 rule_code = "MUT201"
 target = "DataModel._nested_model_default_factory_recursive_keys"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/dataclass.py"
+qualname = "<module>"
+rule_code = "IMP101"
+target = "datamodel_code_generator.model, datamodel_code_generator.model._constraints, datamodel_code_generator.model.base, datamodel_code_generator.model.dataclass, datamodel_code_generator.model.field_name, datamodel_code_generator.model.msgspec, datamodel_code_generator.model.pydantic_base, datamodel_code_generator.model.pydantic_v2, datamodel_code_generator.model.pydantic_v2._config, datamodel_code_generator.model.pydantic_v2._schema_runtime_validation, datamodel_code_generator.model.pydantic_v2.base_model, datamodel_code_generator.model.pydantic_v2.dataclass, datamodel_code_generator.model.pydantic_v2.root_model, datamodel_code_generator.model.pydantic_v2.root_model_type_alias, datamodel_code_generator.model.pydantic_v2.type_alias, datamodel_code_generator.model.pydantic_v2.types, datamodel_code_generator.model.pydantic_v2.version, datamodel_code_generator.model.runtime_validation, datamodel_code_generator.model.scalar, datamodel_code_generator.model.type_alias, datamodel_code_generator.model.typed_dict, datamodel_code_generator.model.types, datamodel_code_generator.model.union, datamodel_code_generator.reference, datamodel_code_generator.types"
 count = 1
 
 [[entries]]
@@ -7808,6 +7822,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_rw_split.py"
+qualname = "<module>"
+rule_code = "IMP101"
+target = "datamodel_code_generator.parser._inherited_schemas, datamodel_code_generator.parser._rw_split"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_rw_split.py"
 qualname = "get_rw_model_variant_reference"
 rule_code = "MUT201"
 target = "Reference.loaded"
@@ -8658,6 +8679,13 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._apply_final_class_field_aliases"
 rule_code = "MUT205"
 target = "DataModelFieldBase"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "Parser._model_resolver_class"
+rule_code = "IMP101"
+target = "datamodel_code_generator.parser._api_reference, datamodel_code_generator.parser._schema_object, datamodel_code_generator.parser._schema_reading, datamodel_code_generator.parser.base"
 count = 1
 
 [[entries]]
