@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "named": {"$ref": "#/$defs/NamedPet"},
+    "beside_first": {"$ref": "#/$defs/BesideFirst"},
+    "beside_last": {"$ref": "#/$defs/BesideLast"},
+    "vip": {"$ref": "#/$defs/VipContact"},
+    "owned": {"$ref": "#/$defs/OwnedPet"},
+    "tagged": {"$ref": "#/$defs/TaggedNamedPet"}
+  },
+  "$defs": {
+    "NamedPet": {"allOf": [{"$ref": "#/$defs/Pet"}, {"required": ["name"]}]},
+    "BesideFirst": {"allOf": [{"$ref": "#/$defs/Pet"}], "required": ["name"]},
+    "Pet": {"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]},
+    "Cat": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}, "meow": {"type": "boolean"}},
+      "required": ["meow"]
+    },
+    "Dog": {
+      "type": "object",
+      "properties": {"name": {"type": "string", "maxLength": 8}, "bark": {"type": "boolean"}},
+      "required": ["bark"]
+    },
+    "BesideLast": {"allOf": [{"$ref": "#/$defs/Pet"}], "required": ["name"]},
+    "VipContact": {
+      "allOf": [
+        {"$ref": "#/$defs/Contact"},
+        {"type": "object", "properties": {"level": {"type": "integer"}}, "required": ["id", "level"]}
+      ]
+    },
+    "Contact": {
+      "type": "object",
+      "properties": {"id": {"type": "integer"}, "email": {"type": "string"}, "phone": {"type": "string"}},
+      "anyOf": [{"required": ["email"]}, {"required": ["phone"]}]
+    },
+    "OwnedPet": {
+      "allOf": [
+        {"$ref": "#/$defs/Tagged"},
+        {"type": "object", "properties": {"owner": {"type": "string"}}}
+      ]
+    },
+    "TaggedNamedPet": {
+      "allOf": [
+        {"$ref": "#/$defs/TaggedPet"},
+        {"type": "object", "properties": {"name": {"type": "string", "minLength": 1}}, "required": ["name"]}
+      ]
+    },
+    "TaggedPet": {
+      "type": "object",
+      "properties": {"label": {"type": "string"}},
+      "required": ["label"],
+      "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]
+    },
+    "Tagged": {
+      "oneOf": [
+        {"type": "object", "properties": {"tag": {"type": "string"}}, "required": ["owner"]},
+        {"type": "object", "properties": {"tag": {"type": "integer"}}, "required": ["tag"]}
+      ]
+    }
+  }
+}

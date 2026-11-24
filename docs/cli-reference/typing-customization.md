@@ -7,6 +7,7 @@
 | [`--allof-class-hierarchy`](#allof-class-hierarchy) | Controls how allOf schemas are represented in the generated ... |
 | [`--allof-merge-mode`](#allof-merge-mode) | Merge constraints from root model references in allOf schema... |
 | [`--disable-future-imports`](#disable-future-imports) | Prevent automatic addition of __future__ imports in generate... |
+| [`--distribute-allof-over-object-branches`](#distribute-allof-over-object-branches) | Give an allOf over a union a complete variant per object bra... |
 | [`--distribute-allof-over-unions`](#distribute-allof-over-unions) | Read an `allOf` with the `anyOf` and `oneOf` it holds or sit... |
 | [`--enum-field-as-literal`](#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum cla... |
 | [`--enum-field-as-literal-map`](#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
@@ -1152,6 +1153,518 @@ postponed evaluation of annotations (PEP 563).
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--distribute-allof-over-object-branches` {#distribute-allof-over-object-branches}
+
+Give an allOf over a union a complete variant per object branch.
+
+An `allOf` whose member is an `anyOf` or `oneOf` (`NamedPet: {allOf: [Pet, {required: [name]}]}` with `Pet` a `oneOf`
+of `Cat` and `Dog`) gives one union variant per branch, the branch's class with the class of the other members.
+Without this option a variant takes a name another member requires as its bases hold it: optional where its branch
+declares it optional, `Any` where only the class of the other members holds it, and for a name required beside the
+`allOf` the field of whichever base was generated first, so a payload without the name, or with a value its branch
+rejects, is accepted, as in 0.100.0. A branch that is itself a union, named by a `$ref` (`Dog: {oneOf: [BigDog,
+SmallDog]}`) or written there, gives a variant without any field of that union, which accepts payloads no branch
+does, or no variant at all, and an alias branch gives a variant without the fields of the schema it names. With
+`--distribute-allof-over-object-branches` each variant requires every name a part of the `allOf` requires, typed as
+the field it takes from its branch, and a branch that is a union, or an allOf or a `$ref` with sibling keywords over
+one, gives one variant per object branch of it, as when the union lists those branches itself. A branch whose union
+leads back to the allOf (a parent's `oneOf` of children that are an `allOf` of that parent) stays as it is. Without the
+option such a branch warns.
+
+**Related:** [`--distribute-allof-over-unions`](#distribute-allof-over-unions), [`--read-allof-parents-as-their-models`](#read-allof-parents-as-their-models)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input required_names.json --distribute-allof-over-object-branches # (1)!
+    ```
+
+    1. :material-arrow-left: `--distribute-allof-over-object-branches` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "named": {"$ref": "#/$defs/NamedPet"},
+        "beside_first": {"$ref": "#/$defs/BesideFirst"},
+        "beside_last": {"$ref": "#/$defs/BesideLast"},
+        "vip": {"$ref": "#/$defs/VipContact"},
+        "owned": {"$ref": "#/$defs/OwnedPet"},
+        "tagged": {"$ref": "#/$defs/TaggedNamedPet"}
+      },
+      "$defs": {
+        "NamedPet": {"allOf": [{"$ref": "#/$defs/Pet"}, {"required": ["name"]}]},
+        "BesideFirst": {"allOf": [{"$ref": "#/$defs/Pet"}], "required": ["name"]},
+        "Pet": {"oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]},
+        "Cat": {
+          "type": "object",
+          "properties": {"name": {"type": "string"}, "meow": {"type": "boolean"}},
+          "required": ["meow"]
+        },
+        "Dog": {
+          "type": "object",
+          "properties": {"name": {"type": "string", "maxLength": 8}, "bark": {"type": "boolean"}},
+          "required": ["bark"]
+        },
+        "BesideLast": {"allOf": [{"$ref": "#/$defs/Pet"}], "required": ["name"]},
+        "VipContact": {
+          "allOf": [
+            {"$ref": "#/$defs/Contact"},
+            {"type": "object", "properties": {"level": {"type": "integer"}}, "required": ["id", "level"]}
+          ]
+        },
+        "Contact": {
+          "type": "object",
+          "properties": {"id": {"type": "integer"}, "email": {"type": "string"}, "phone": {"type": "string"}},
+          "anyOf": [{"required": ["email"]}, {"required": ["phone"]}]
+        },
+        "OwnedPet": {
+          "allOf": [
+            {"$ref": "#/$defs/Tagged"},
+            {"type": "object", "properties": {"owner": {"type": "string"}}}
+          ]
+        },
+        "TaggedNamedPet": {
+          "allOf": [
+            {"$ref": "#/$defs/TaggedPet"},
+            {"type": "object", "properties": {"name": {"type": "string", "minLength": 1}}, "required": ["name"]}
+          ]
+        },
+        "TaggedPet": {
+          "type": "object",
+          "properties": {"label": {"type": "string"}},
+          "required": ["label"],
+          "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]
+        },
+        "Tagged": {
+          "oneOf": [
+            {"type": "object", "properties": {"tag": {"type": "string"}}, "required": ["owner"]},
+            {"type": "object", "properties": {"tag": {"type": "integer"}}, "required": ["tag"]}
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  required_names.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel, constr
+
+
+        class NamedPet1(BaseModel):
+            name: Any
+
+
+        class BesideFirst1(BaseModel):
+            name: Any
+
+
+        class Cat(BaseModel):
+            name: str | None = None
+            meow: bool
+
+
+        class Dog(BaseModel):
+            name: constr(max_length=8) | None = None
+            bark: bool
+
+
+        class BesideLast1(BaseModel):
+            name: Any
+
+
+        class BesideLast2(Cat, BesideLast1):
+            name: str
+
+
+        class BesideLast3(Dog, BesideLast1):
+            name: constr(max_length=8)
+
+
+        class BesideLast(RootModel[BesideLast2 | BesideLast3]):
+            root: BesideLast2 | BesideLast3
+
+
+        class VipContact1(BaseModel):
+            id: int | None = None
+            email: str
+            phone: str | None = None
+
+
+        class VipContact2(BaseModel):
+            id: int | None = None
+            email: str | None = None
+            phone: str
+
+
+        class VipContact3(BaseModel):
+            level: int
+
+
+        class VipContact4(VipContact1, VipContact3):
+            id: int
+
+
+        class VipContact5(VipContact2, VipContact3):
+            id: int
+
+
+        class VipContact(RootModel[VipContact4 | VipContact5]):
+            root: VipContact4 | VipContact5
+
+
+        class Contact1(BaseModel):
+            id: int | None = None
+            email: str
+            phone: str | None = None
+
+
+        class Contact2(BaseModel):
+            id: int | None = None
+            email: str | None = None
+            phone: str
+
+
+        class Contact(RootModel[Contact1 | Contact2]):
+            root: Contact1 | Contact2
+
+
+        class OwnedPet1(BaseModel):
+            tag: str | None = None
+
+
+        class OwnedPet2(BaseModel):
+            tag: int
+
+
+        class OwnedPet3(BaseModel):
+            owner: str | None = None
+
+
+        class OwnedPet4(OwnedPet1, OwnedPet3):
+            owner: str
+
+
+        class OwnedPet5(OwnedPet2, OwnedPet3):
+            pass
+
+
+        class OwnedPet(RootModel[OwnedPet4 | OwnedPet5]):
+            root: OwnedPet4 | OwnedPet5
+
+
+        class TaggedNamedPet1(Cat):
+            label: str
+
+
+        class TaggedNamedPet2(Dog):
+            label: str
+
+
+        class TaggedNamedPet3(BaseModel):
+            name: constr(min_length=1)
+
+
+        class TaggedNamedPet4(TaggedNamedPet1, TaggedNamedPet3):
+            name: constr(min_length=1)
+
+
+        class TaggedNamedPet5(TaggedNamedPet2, TaggedNamedPet3):
+            name: constr(min_length=1, max_length=8)
+
+
+        class TaggedNamedPet(RootModel[TaggedNamedPet4 | TaggedNamedPet5]):
+            root: TaggedNamedPet4 | TaggedNamedPet5
+
+
+        class TaggedPet1(Cat):
+            label: str
+
+
+        class TaggedPet2(Dog):
+            label: str
+
+
+        class TaggedPet(RootModel[TaggedPet1 | TaggedPet2]):
+            root: TaggedPet1 | TaggedPet2
+
+
+        class Tagged1(BaseModel):
+            tag: str | None = None
+
+
+        class Tagged2(BaseModel):
+            tag: int
+
+
+        class Tagged(RootModel[Tagged1 | Tagged2]):
+            root: Tagged1 | Tagged2
+
+
+        class NamedPet2(Cat, NamedPet1):
+            name: str
+
+
+        class NamedPet3(Dog, NamedPet1):
+            name: constr(max_length=8)
+
+
+        class NamedPet(RootModel[NamedPet2 | NamedPet3]):
+            root: NamedPet2 | NamedPet3
+
+
+        class BesideFirst2(Cat, BesideFirst1):
+            name: str
+
+
+        class BesideFirst3(Dog, BesideFirst1):
+            name: constr(max_length=8)
+
+
+        class BesideFirst(RootModel[BesideFirst2 | BesideFirst3]):
+            root: BesideFirst2 | BesideFirst3
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog
+
+
+        class Model(BaseModel):
+            named: NamedPet | None = None
+            beside_first: BesideFirst | None = None
+            beside_last: BesideLast | None = None
+            vip: VipContact | None = None
+            owned: OwnedPet | None = None
+            tagged: TaggedNamedPet | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  required_names.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel, constr
+
+
+        class NamedPet1(BaseModel):
+            name: Any
+
+
+        class BesideFirst1(BaseModel):
+            name: Any
+
+
+        class Cat(BaseModel):
+            name: str | None = None
+            meow: bool
+
+
+        class Dog(BaseModel):
+            name: constr(max_length=8) | None = None
+            bark: bool
+
+
+        class BesideLast1(BaseModel):
+            name: Any
+
+
+        class BesideLast2(Cat, BesideLast1):
+            name: str
+
+
+        class BesideLast3(Dog, BesideLast1):
+            name: constr(max_length=8)
+
+
+        class BesideLast(RootModel[BesideLast2 | BesideLast3]):
+            root: BesideLast2 | BesideLast3
+
+
+        class VipContact1(BaseModel):
+            id: int | None = None
+            email: str
+            phone: str | None = None
+
+
+        class VipContact2(BaseModel):
+            id: int | None = None
+            email: str | None = None
+            phone: str
+
+
+        class VipContact3(BaseModel):
+            level: int
+
+
+        class VipContact4(VipContact1, VipContact3):
+            pass
+
+
+        class VipContact5(VipContact2, VipContact3):
+            pass
+
+
+        class VipContact(RootModel[VipContact4 | VipContact5]):
+            root: VipContact4 | VipContact5
+
+
+        class Contact1(BaseModel):
+            id: int | None = None
+            email: str
+            phone: str | None = None
+
+
+        class Contact2(BaseModel):
+            id: int | None = None
+            email: str | None = None
+            phone: str
+
+
+        class Contact(RootModel[Contact1 | Contact2]):
+            root: Contact1 | Contact2
+
+
+        class OwnedPet1(BaseModel):
+            tag: str | None = None
+
+
+        class OwnedPet2(BaseModel):
+            tag: int
+
+
+        class OwnedPet3(BaseModel):
+            owner: str | None = None
+
+
+        class OwnedPet4(OwnedPet1, OwnedPet3):
+            pass
+
+
+        class OwnedPet5(OwnedPet2, OwnedPet3):
+            pass
+
+
+        class OwnedPet(RootModel[OwnedPet4 | OwnedPet5]):
+            root: OwnedPet4 | OwnedPet5
+
+
+        class TaggedNamedPet1(Cat):
+            label: str
+
+
+        class TaggedNamedPet2(Dog):
+            label: str
+
+
+        class TaggedNamedPet3(BaseModel):
+            name: constr(min_length=1)
+
+
+        class TaggedNamedPet4(TaggedNamedPet1, TaggedNamedPet3):
+            pass
+
+
+        class TaggedNamedPet5(TaggedNamedPet2, TaggedNamedPet3):
+            pass
+
+
+        class TaggedNamedPet(RootModel[TaggedNamedPet4 | TaggedNamedPet5]):
+            root: TaggedNamedPet4 | TaggedNamedPet5
+
+
+        class TaggedPet1(Cat):
+            label: str
+
+
+        class TaggedPet2(Dog):
+            label: str
+
+
+        class TaggedPet(RootModel[TaggedPet1 | TaggedPet2]):
+            root: TaggedPet1 | TaggedPet2
+
+
+        class Tagged1(BaseModel):
+            tag: str | None = None
+
+
+        class Tagged2(BaseModel):
+            tag: int
+
+
+        class Tagged(RootModel[Tagged1 | Tagged2]):
+            root: Tagged1 | Tagged2
+
+
+        class NamedPet2(Cat, NamedPet1):
+            pass
+
+
+        class NamedPet3(Dog, NamedPet1):
+            pass
+
+
+        class NamedPet(RootModel[NamedPet2 | NamedPet3]):
+            root: NamedPet2 | NamedPet3
+
+
+        class BesideFirst2(Cat, BesideFirst1):
+            name: Any
+
+
+        class BesideFirst3(Dog, BesideFirst1):
+            name: Any
+
+
+        class BesideFirst(RootModel[BesideFirst2 | BesideFirst3]):
+            root: BesideFirst2 | BesideFirst3
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog
+
+
+        class Model(BaseModel):
+            named: NamedPet | None = None
+            beside_first: BesideFirst | None = None
+            beside_last: BesideLast | None = None
+            vip: VipContact | None = None
+            owned: OwnedPet | None = None
+            tagged: TaggedNamedPet | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
