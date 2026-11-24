@@ -4,13 +4,13 @@ category = "default-fix"
 kind = "default-output"
 action = "review"
 source = "release-note"
-title = "A package class beside a same-named submodule is refused where only the root package loads the submodule"
-summary = "Where a package's __init__.py defines a class named like one of its submodules and imports from the root package (from .. import common), the root's own import of the submodule was taken as a load of the __init__.py. The root runs first, so that import ran after the class was defined and replaced it: the Pydantic output failed at import with AttributeError, and the other backends failed where the annotations are resolved (type hints, msgspec decoding). The run now refuses the class as it does for other packages that do not load the submodule, and names --rename-submodules-hidden-by-classes."
+title = "A Pydantic package class beside a same-named submodule is refused where only the root package loads the submodule"
+summary = "Where a package's __init__.py defines a class named like one of its submodules and imports from the root package (from .. import common), the root's own import of the submodule (from .pkg import Warn) was taken as a load of the __init__.py. The root runs first, so that import ran after the class was defined and bound the class: a root that reads the submodule's models as it runs (Warn.Detail) got the class, and the Pydantic output, which builds its classes as they are defined, failed at import with AttributeError, so no module of the package imported. Pydantic models and Pydantic dataclasses now refuse the class as other packages that do not load the submodule do, and name --rename-submodules-hidden-by-classes. Dataclasses, TypedDict and msgspec, where every module imported, keep their output."
 refs = ["#7444"]
-decision = ["#7444"]
+decision = ["#7120"]
 
 [[change.cells]]
 input = ["tests/data/jsonschema/submodule_named_like_package_class_root_import.json"]
-backends = ["dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "typing.TypedDict"]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 options = "*"
 aspects = ["exit", "message"]

@@ -4568,6 +4568,17 @@ class a later rename moves off its name keeps its name.""",
             ],
             id="class-root-import-all-exports-children",
         ),
+        *(
+            pytest.param(
+                "submodule_named_like_package_class_root_import.json",
+                output_model_type,
+                "3.10",
+                [],
+                [("pkg", "Warn", ['{"count": 1, "common": {"code": "c"}}', '{"count": "x"}'])],
+                id=f"class-root-import-{suffix}",
+            )
+            for output_model_type, suffix in (("dataclasses.dataclass", "dataclasses"), ("msgspec.Struct", "msgspec"))
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -4614,7 +4625,11 @@ def test_main_jsonschema_submodule_hidden_by_package(
     is still bound by ``pkg/__init__.py``, so its submodule stays renamed. Where the first parse would refuse the class
     but its output runs into an import cycle (``pkg/__init__.py`` imports ``Common`` from the root package, which
     imports ``pkg``), the refusal waits for the parse again, whose merge into ``_internal.py`` writes the class and
-    imports. The models are decoded after the first module named is imported, in one import of the package.
+    imports. Where only the root package imports the submodule (``from .pkg import Warn``, ``Warn.Detail``) and
+    ``pkg/__init__.py`` imports from the root, 0.90.0 to 0.100.0 wrote the output: the root gets the class, which only
+    fails where the root reads ``Warn.Detail`` as it runs, so a dataclass or a Struct with deferred annotations keeps it
+    and every module imports. The models are decoded after the first module named is imported, in one import of the
+    package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -40812,79 +40827,96 @@ def test_main_jsonschema_refuses_keyword_module(
     )
 
 
+_REFUSAL_BACKENDS = ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+_PYDANTIC_BACKENDS = ("pydantic_v2.BaseModel", "pydantic_v2.dataclass")
+
+
 @pytest.mark.parametrize(
-    ("input_name", "extra_args", "message"),
+    ("output_model_type", "input_name", "extra_args", "message"),
     [
-        pytest.param(
-            "module_named_like_package_class_unloaded",
-            [],
-            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
-            id="module",
-        ),
-        pytest.param(
-            "module_named_like_package_class_directory",
-            [],
-            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn/__init__.py)",
-            id="package",
-        ),
-        pytest.param(
-            "module_named_like_package_class_directory",
-            ["--all-exports-scope", "children"],
-            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn/__init__.py)",
-            id="package-not-exported",
-        ),
-        pytest.param(
-            "module_named_like_root_class",
-            [],
-            "the class 'Warn' in the root package beside the module 'Warn' (Warn.py)",
-            id="root",
-        ),
-        pytest.param(
-            "submodule_named_like_import_renamed_class",
-            ["--type-overrides", '{"Other.a": "decimal.Decimal"}'],
-            "the class 'Decimal1' in the package 'pkg' beside the module 'pkg.Decimal1' (pkg/Decimal1.py)",
-            id="import-renamed",
-        ),
-        pytest.param(
-            "submodule_named_like_collapsed_root_class",
-            ["--collapse-root-models", "--collapse-root-models-name-strategy", "parent"],
-            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
-            id="collapse-renamed",
-        ),
-        pytest.param(
-            "submodule_named_like_forwarded_class",
-            [],
-            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
-            id="forwarded",
-        ),
-        pytest.param(
-            "submodule_named_like_package_class_root_import",
-            [],
-            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
-            id="root-import",
-        ),
-        pytest.param(
-            "submodule_named_like_package_class_beside_keyword_directory",
-            [],
-            "the class 'Warn' in the package 'main.pkg' beside the module 'main.pkg.Warn' (main/pkg/Warn.py)",
-            id="beside-keyword-directory",
-        ),
-        pytest.param(
-            "shared_module_named_like_root_class",
-            [
-                "--rename-submodules-hidden-by-classes",
-                "--reuse-model",
-                "--reuse-scope",
-                "tree",
-                "--shared-module-name",
-                "Common",
-            ],
-            "the class 'Common' in the root package beside the module 'Common' (Common.py)",
-            id="shared-module",
-        ),
+        pytest.param(output_model_type, input_name, extra_args, message, id=f"{output_model_type}-{case_id}")
+        for input_name, extra_args, message, case_id, output_model_types in (
+            (
+                "module_named_like_package_class_unloaded",
+                [],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+                "module",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "module_named_like_package_class_directory",
+                [],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn/__init__.py)",
+                "package",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "module_named_like_package_class_directory",
+                ["--all-exports-scope", "children"],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn/__init__.py)",
+                "package-not-exported",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "module_named_like_root_class",
+                [],
+                "the class 'Warn' in the root package beside the module 'Warn' (Warn.py)",
+                "root",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "submodule_named_like_import_renamed_class",
+                ["--type-overrides", '{"Other.a": "decimal.Decimal"}'],
+                "the class 'Decimal1' in the package 'pkg' beside the module 'pkg.Decimal1' (pkg/Decimal1.py)",
+                "import-renamed",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "submodule_named_like_collapsed_root_class",
+                ["--collapse-root-models", "--collapse-root-models-name-strategy", "parent"],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+                "collapse-renamed",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "submodule_named_like_forwarded_class",
+                [],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+                "forwarded",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "submodule_named_like_package_class_root_import",
+                [],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+                "root-import",
+                _PYDANTIC_BACKENDS,
+            ),
+            (
+                "submodule_named_like_package_class_beside_keyword_directory",
+                [],
+                "the class 'Warn' in the package 'main.pkg' beside the module 'main.pkg.Warn' (main/pkg/Warn.py)",
+                "beside-keyword-directory",
+                _REFUSAL_BACKENDS,
+            ),
+            (
+                "shared_module_named_like_root_class",
+                [
+                    "--rename-submodules-hidden-by-classes",
+                    "--reuse-model",
+                    "--reuse-scope",
+                    "tree",
+                    "--shared-module-name",
+                    "Common",
+                ],
+                "the class 'Common' in the root package beside the module 'Common' (Common.py)",
+                "shared-module",
+                _REFUSAL_BACKENDS,
+            ),
+        )
+        for output_model_type in output_model_types
     ],
 )
-@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
 def test_main_jsonschema_refuses_class_named_like_submodule(
     output_dir: Path,
     capsys: pytest.CaptureFixture[str],
@@ -40900,7 +40932,9 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
     ``--all-exports-scope`` re-exports a module of it) the output works and is written. An import of the root package
     (``from .. import common``) loads nothing while the ``__init__.py`` runs, as the root has started before it, so the
-    root's own import of ``pkg.Warn`` runs after the class is defined and the run fails. The refusal is judged before
+    root's own import of ``pkg.Warn`` runs after the class is defined and gets the class: the run fails where the root
+    reads ``Warn.Detail`` as it runs, as Pydantic builds a class as it is defined, and the other backends keep the
+    output of 0.90.0 to 0.100.0 (``test_main_jsonschema_submodule_hidden_by_package``). The refusal is judged before
     the modules are written, so it is the error a run reports where writing them fails too (a directory named like the
     keyword ``class``). The class names are the final
     ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a

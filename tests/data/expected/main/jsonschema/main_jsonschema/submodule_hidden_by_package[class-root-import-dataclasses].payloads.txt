@@ -1,0 +1,2 @@
+{"count": 1, "common": {"code": "c"}}: accepted Warn(count=1, common=Common(code='c'))
+{"count": "x"}: rejected ValidationError

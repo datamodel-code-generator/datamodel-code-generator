@@ -30,7 +30,6 @@ covers = [
     "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-files-all-exports-treat-dot-as-module]/",
     "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-nested-ancestor-import-all-exports-children].payloads.txt",
     "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-nested-ancestor-import-all-exports-children]/",
-    "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-cycle]/",
     "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-all-exports-children].payloads.txt",
     "main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-root-import-all-exports-children]/",
     "main/jsonschema/main_jsonschema/submodule_hidden_by_package_loaded_through_module.payloads.txt",

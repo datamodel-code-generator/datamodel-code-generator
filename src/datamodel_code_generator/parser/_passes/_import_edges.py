@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections import defaultdict
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._model_keys import model_key_of
@@ -69,6 +69,7 @@ __all__ = [
     "ImportCycleSeeds",
     "ImportLine",
     "ImportPlan",
+    "InitLoadsRow",
     "failing_import_reads",
     "generic_base_class_module",
     "import_cycle_seeds",
@@ -86,6 +87,8 @@ ImportLine: TypeAlias = tuple[str, str]
 """A name that a relative import block imports, and the name the module binds it to."""
 ImportBlock: TypeAlias = tuple[str, tuple[ImportLine, ...]]
 """The dotted name of the module that a relative import block names, and its import lines in written order."""
+InitLoadsRow: TypeAlias = Literal["init", "legacy-running-packages-load"]
+"""How ``init_loads`` reads the imports of the packages above: as loading nothing, or as 0.90.0 to 0.100.0 did."""
 
 
 @record(eq=False)
@@ -210,7 +213,11 @@ def module_import_edges(
 
 
 def init_loads(
-    edges: Mapping[str, set[str]], package: ModulePath, modules: Iterable[tuple[str, ...]]
+    edges: Mapping[str, set[str]],
+    package: ModulePath,
+    modules: Iterable[tuple[str, ...]],
+    *,
+    row: InitLoadsRow = "init",
 ) -> frozenset[str]:
     """Return the modules the ``__init__.py`` of ``package`` loads, by dotted name, or none if it loads no ``modules``.
 
@@ -221,9 +228,13 @@ def init_loads(
     ``__init__.py`` does, so an import of it loads nothing: the walk neither takes it nor follows its edges (its
     imports and ``--all-exports-scope`` re-exports). The refusal of a class beside a module
     (``reject_class_named_like_submodule``) and the import of the models of that module from the module itself
-    (``submodules_hidden_by_packages``) both read this.
+    (``submodules_hidden_by_packages``) both read this. ``row="legacy-running-packages-load"`` keeps the reading of
+    0.90.0 to 0.100.0, which followed the imports of an ancestor package too, for the output of those releases that
+    the refusal keeps (``_class_named_like_submodule``).
     """
-    running = {".".join(package[:depth]) for depth in range(len(package))}
+    running = (
+        set() if row == "legacy-running-packages-load" else {".".join(package[:depth]) for depth in range(len(package))}
+    )
     loaded = frozenset(
         reach(
             [".".join(package)],
