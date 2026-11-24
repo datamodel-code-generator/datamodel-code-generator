@@ -309,7 +309,7 @@ class _ByValue:
         """
         if (default := self.written_default(field, plan)) is None:
             default = field.default
-        if isinstance(default, (list, tuple, set)) or "default_factory" in field.extras:
+        if isinstance(default, (list, tuple, set)) or field.has_default_factory:
             return False
         try:
             hash(default)

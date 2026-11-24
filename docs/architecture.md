@@ -1040,8 +1040,8 @@ the output model (`member_keywords`), with the type that holds keywords in place
 (`constrained_member`). A decision reads only the facts final at B1 and rendered nullability through `admits_none`,
 never the `is_optional` that render preparation writes nor a presentation attribute: heki's
 `decisions-read-final-facts` contracts report a read of a render fact (an attribute or `__dict__` key whose row in
-`scripts/fact_tables.py` holds no `Fact` final at B1; heki reads a key of `extras` as the whole attribute, so those rows
-are not judged) in the modules of the decisions (`module` of their `PassDecl`), also through the functions they
+`scripts/fact_tables.py` holds no `Fact` final at B1; heki reads a key of `extras` as the whole attribute, so a dict
+attribute one of whose keys is a render fact is one as a whole) in the modules of the decisions (`module` of their `PassDecl`), also through the functions they
 call, except inside the decision writer and the members `DECISION_ACCESSORS` lists with what they read, and a read
 of such an attribute on a value heki cannot tie to a class. Every decision writes through `_DecisionWriter`, the
 one writer over the store, which records the models it changes (`DecisionOutcome`); a decision calls only its own

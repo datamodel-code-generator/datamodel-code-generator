@@ -1348,6 +1348,12 @@ DECISION_ACCESSORS: tuple[DecisionAccessor, ...] = (
     DecisionAccessor(
         "model/base.py",
         "DataModelFieldBase",
+        "has_default_factory",
+        "whether the field names a default factory (the default_factory entry of extras, DEFAULTS), final at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModelFieldBase",
         "union_sibling_constraints",
         "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
     ),

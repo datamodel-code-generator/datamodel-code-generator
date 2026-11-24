@@ -37,7 +37,8 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   typed with a host Protocol by the Protocol's declaration.
 - ``effect-boundaries`` (``EFF201``) and ``read-owners`` (``MUT203``, ``MUT206``) of the decisions: the modules of the
   decisions (``module`` of ``DECISION_DECLS`` in ``scripts/pass_decls.py``) read no render fact (an attribute or
-  ``__dict__`` key of the graph whose ``ATTRIBUTE_FACTS`` row holds no ``Fact`` final at B1), also through the functions
+  ``__dict__`` key of the graph whose ``ATTRIBUTE_FACTS`` row holds no ``Fact`` final at B1, or a dict attribute one of
+  whose entries is one), also through the functions
   they call, outside the decision writer and the members ``DECISION_ACCESSORS`` lists, nor such an attribute on a value
   heki cannot tie to a class.
 - ``call-owners`` (``MUT204``, ``MUT207``) of the decision writer: each method ``writer_methods`` of a decision's
@@ -209,6 +210,11 @@ def _attribute(repo: Repo, attribute: str, access: Access) -> str:
         message = f"{attribute}: a __dict__ key constant must be bound to one string in the package, found {values}"
         raise SystemExit(message)
     return values.pop()
+
+
+def _container(row: AttributeFact) -> str:
+    """Return the dict attribute an ``Access.ITEM`` row names an entry of (``extras`` of ``extras["kw_only"]``)."""
+    return row.attribute.partition("[")[0]
 
 
 def _package_functions(repo: Repo) -> set[str]:
@@ -431,16 +437,18 @@ def decision_contracts(
     """Return the contracts that hold the decisions to the facts final at B1: they read no render fact.
 
     A render fact is an attribute or ``__dict__`` key of a graph class whose row holds facts none of which is a
-    ``Fact`` final at B1 (``holds_render_facts``); an entry of a dict attribute is not one, as heki reads an entry as a
-    read of the whole attribute. The modules of the decisions (``module`` of ``DECISION_DECLS``) reach none of them,
-    through the functions they call too, outside the decision writer and the members ``DECISION_ACCESSORS`` lists
+    ``Fact`` final at B1 (``holds_render_facts``). An entry of a dict attribute that holds one makes the whole attribute
+    a target, as heki reads an entry as a read of the whole attribute: the decisions read its other entries through
+    the members ``DECISION_ACCESSORS`` lists. The modules of the decisions (``module`` of ``DECISION_DECLS``) reach none
+    of them, through the functions they call too, outside the decision writer and those members
     (``effect-boundaries``), and read none on a receiver heki cannot tie to a class (``read-owners``).
     """
     modules = sorted({_module(decl.module) for decl in decls.values() if decl.module})
     targets = sorted({
-        f"{row.owner}.{_attribute(repo, row.attribute, row.access)}"
+        f"{row.owner}.{name}"
         for row in rows
-        if holds_render_facts(row) and row.owner not in PARSER_STATE_OWNERS and row.access is not Access.ITEM
+        if holds_render_facts(row) and row.owner not in PARSER_STATE_OWNERS
+        for name in [_container(row) if row.access is Access.ITEM else _attribute(repo, row.attribute, row.access)]
     })
     callees = sorted({
         scope.replace(":", ".")

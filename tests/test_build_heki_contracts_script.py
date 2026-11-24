@@ -985,7 +985,9 @@ SEEDED_DECISION_READS = {
     f"{PACKAGE}/model/base.py": (
         "from datamodel_code_generator.types import DataType\n\n\n"
         "class DataModel:\n    def __init__(self) -> None:\n        self.class_name = 'Model'\n"
-        "        self.data_type = DataType()\n"
+        "        self.data_type = DataType()\n\n\n"
+        "class DataModelFieldBase:\n    def __init__(self) -> None:\n        self.extras: dict[str, object] = {}\n\n"
+        "    @property\n    def has_default_factory(self) -> bool:\n        return 'default_factory' in self.extras\n"
     ),
     f"{PACKAGE}/model/helpers.py": (
         "from datamodel_code_generator.types import DataType\n\n\n"
@@ -997,7 +999,7 @@ SEEDED_DECISION_READS = {
         "class _DecisionWriter:\n    def rename(self, model: DataModel) -> str:\n        return model.class_name\n"
     ),
     f"{PACKAGE}/parser/_held_null.py": (
-        "from datamodel_code_generator.model.base import DataModel\n"
+        "from datamodel_code_generator.model.base import DataModel, DataModelFieldBase\n"
         "from datamodel_code_generator.model.helpers import reads_render_fact\n"
         "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
         "def reads_facts(model: DataModel, writer: _DecisionWriter) -> object:\n"
@@ -1005,17 +1007,24 @@ SEEDED_DECISION_READS = {
         "def direct(model: DataModel) -> bool:\n    return model.data_type.is_optional\n\n\n"
         "def name(model: DataModel) -> str:\n    return model.class_name\n\n\n"
         "def through_a_helper(model: DataModel) -> bool:\n    return reads_render_fact(model.data_type)\n\n\n"
-        "def untyped(data_type) -> bool:\n    return data_type.is_optional\n"
+        "def untyped(data_type) -> bool:\n    return data_type.is_optional\n\n\n"
+        "def factory(field: DataModelFieldBase) -> bool:\n    return field.has_default_factory\n\n\n"
+        "def keyword_only(field: DataModelFieldBase) -> object:\n    return field.extras['kw_only']\n"
     ),
     f"{PACKAGE}/parser/_incomplete_defaults.py": "def decide() -> None:\n    pass\n",
 }
 """A decision module that reads the facts of a model, the rendered nullability through an accessor and through the
-decision writer, and render facts: directly, the name of a model, through a helper of another module and on an untyped
-value."""
+decision writer, whether a field names a default factory through an accessor, and render facts: directly, the name of a
+model, through a helper of another module, on an untyped value and an entry of a dict attribute."""
 SEEDED_DECISION_ROWS = [
     replace(row, owner=owner)
     for row in ATTRIBUTE_FACTS
-    for owner, attribute in (("DataType", "is_optional"), ("DataModel", "class_name"), ("DataType", "type"))
+    for owner, attribute in (
+        ("DataType", "is_optional"),
+        ("DataModel", "class_name"),
+        ("DataType", "type"),
+        ("DataModelFieldBase", 'extras["kw_only"]'),
+    )
     if (row.owner, row.attribute) == (owner, attribute)
 ]
 
@@ -1026,7 +1035,8 @@ def test_heki_reports_a_decision_that_reads_a_render_fact(tmp_path: Path) -> Non
     """A decision reads only the facts final at B1: a render fact it reads, also through a helper, is a finding.
 
     Reads inside the decision writer and an accessor ``DECISION_ACCESSORS`` lists are theirs; a read of a render
-    fact's attribute on an untyped value is one heki cannot tell, which it reports.
+    fact's attribute on an untyped value is one heki cannot tell, which it reports. An entry that holds a render fact
+    makes its whole dict attribute one, as heki reads an entry as the attribute.
     """
     for name, text in SEEDED_DECISION_READS.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -1034,7 +1044,10 @@ def test_heki_reports_a_decision_that_reads_a_render_fact(tmp_path: Path) -> Non
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    accessors = [DecisionAccessor("types.py", "DataType", "admits_none", "the rendered nullability")]
+    accessors = [
+        DecisionAccessor("types.py", "DataType", "admits_none", "the rendered nullability"),
+        DecisionAccessor("model/base.py", "DataModelFieldBase", "has_default_factory", "the default factory entry"),
+    ]
     contracts.write_text(
         "\n".join(
             build_heki_contracts.decision_contracts(repo, SEEDED_DECISION_DECLS, accessors, SEEDED_DECISION_ROWS)
@@ -1060,6 +1073,13 @@ def test_heki_reports_a_decision_that_reads_a_render_fact(tmp_path: Path) -> Non
         [
             ("_held_null.py", "direct", "EFF201", "decisions-read-final-facts:reads:DataType.is_optional"),
             ("_held_null.py", "direct", "MUT203", "DataType.is_optional"),
+            (
+                "_held_null.py",
+                "keyword_only",
+                "EFF201",
+                "decisions-read-final-facts:reads:DataModelFieldBase.extras",
+            ),
+            ("_held_null.py", "keyword_only", "MUT203", "DataModelFieldBase.extras"),
             ("_held_null.py", "name", "EFF201", "decisions-read-final-facts:reads:DataModel.class_name"),
             ("_held_null.py", "name", "MUT203", "DataModel.class_name"),
             ("_held_null.py", "through_a_helper", "EFF201", "decisions-read-final-facts:reads:DataType.is_optional"),
