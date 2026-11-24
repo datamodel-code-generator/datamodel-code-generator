@@ -9810,13 +9810,6 @@ count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
-qualname = "DataType._rendered_null_source"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model._decisions.nullability.rendered_nullability"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
 qualname = "DataType._set_enum_member_literal_reference"
 rule_code = "MUT201"
 target = "DataType._enum_member_literal_reference"
@@ -9964,13 +9957,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/types.py"
-qualname = "_hint_null"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model._decisions.nullability.rendered_nullability"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
 qualname = "_import_paths"
 rule_code = "MUT204"
 target = "datamodel_code_generator.imports._import_path"
@@ -9995,27 +9981,6 @@ path = "src/datamodel_code_generator/types.py"
 qualname = "_link_parts"
 rule_code = "MUT204"
 target = "datamodel_code_generator._graph_links.add_child"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "_link_parts"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model._decisions.union_assembly.MemberFacts"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "_link_parts"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model._decisions.union_assembly.assemble_union"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/types.py"
-qualname = "_merge_union_members"
-rule_code = "MUT204"
-target = "datamodel_code_generator.model._decisions.union_assembly.merge_members"
 count = 1
 
 [[entries]]

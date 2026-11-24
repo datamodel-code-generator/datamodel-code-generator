@@ -394,7 +394,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         adapters=(
             "`types.py:DataType.admits_none`, `items_admit_none` (the None of a container's item union, inside it), "
-            "`names_nullable_model`, `adds_reference_null`; `model/_field_imports.py:field_none_source` (the field's "
+            "`names_nullable_model`, `adds_reference_null`, `_rendered_null_source` (the type's own facts into "
+            "`rendered_nullability`) and `_hint_null` (the same with the members answering by their hints); "
+            "`model/_field_imports.py:field_none_source` (the field's "
             "facts into `field_renders_none`, for `model/base.py:DataModelFieldBase._field_null_source` and "
             "`field_admits_none`); writes: `types.py:DataType._materialize_render_state` (see L7) and the record, "
             "through `DataType._update_type_null`, from the store operations `redirect_reference_users`, "
@@ -413,6 +415,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("types.py", "DataType.items_admit_none"),
             Home("types.py", "DataType.names_nullable_model"),
             Home("types.py", "DataType.adds_reference_null"),
+            Home("types.py", "DataType._rendered_null_source"),
+            Home("types.py", "_hint_null"),
             Home("model/_field_imports.py", "field_none_source"),
             Home("model/base.py", "DataModelFieldBase._field_null_source"),
             Home("model/_field_imports.py", "field_admits_none"),
@@ -1642,7 +1646,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`types.py:build_union` (with the builder's `self.data_type`) for `parser/jsonschema.py` and "
             "`parser/openapi.py`, `model/msgspec.py:DataModelField._ordered_union_data_type`; "
             "`types.py:DataType.__init__`; `parser/generation.py:GenerationStore.replace_nested_data_type` (L5 "
-            "collapse); `parser/graphql.py:GraphQLParser.parse_union`; `types.py:render_type_expr` (`_render_union`); "
+            "collapse); `parser/graphql.py:GraphQLParser.parse_union`; `types.py:render_type_expr` (`_render_union`, "
+            "with `_merge_union_members`, which hands it the hints of the members); `types.py:_link_parts` "
+            "(`constructed`, for every `DataType` built with members); "
             "`_target_binding.py` (`_ordered_union`, the structural projection); "
             "`model/pydantic_v2/base_model.py:DataModelField._type_hint_with_missing_sentinel`; "
             "`parser/_passes/render_prep.py:_flatten_union_members` (`flattened`); `types.py:union_members` gives the "
@@ -1666,6 +1672,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/graphql.py", "GraphQLParser.parse_union"),
             Home("types.py", "render_type_expr"),
             Home("types.py", "_render_union"),
+            Home("types.py", "_merge_union_members"),
+            Home("types.py", "_link_parts"),
             Home("_target_binding.py", "_ordered_union"),
             Home("model/pydantic_v2/base_model.py", "DataModelField._type_hint_with_missing_sentinel"),
             Home("parser/_passes/render_prep.py", "_flatten_union_members"),
