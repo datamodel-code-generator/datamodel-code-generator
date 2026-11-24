@@ -1,6 +1,0 @@
-[[change]]
-id = "use-str-for-formats-msgspec-cannot-decode-input-count"
-extends = "use-str-for-formats-msgspec-cannot-decode"
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

@@ -1,9 +1,0 @@
-[[change]]
-id = "union-map-key-inputs-listing"
-category = "docs-text"
-title = "The payload test lists the inputs of the union map key tests"
-summary = "Three schema inputs were added for the union map key tests, so the count of discovered schema files moves."
-refs = ["#7434"]
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

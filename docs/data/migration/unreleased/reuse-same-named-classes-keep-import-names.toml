@@ -1,6 +1,0 @@
-[[change]]
-id = "reuse-same-named-classes-keep-import-names"
-extends = "reuse-same-named-input-model-classes"
-covers = [
-    "input_model/reuse_same_named_classes[inherited-reuse-all].txt",
-]
