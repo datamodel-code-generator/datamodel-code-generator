@@ -3546,16 +3546,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """
         return None
 
-    def _write_additional_properties_type(self, data_type: DataType) -> None:
+    def _write_additional_properties_type(
+        self, data_type: DataType, *, reference_classes: set[str] | None = None
+    ) -> None:
         """Write ``data_type`` as the type of the additional properties, with its imports, as the settings render it.
 
-        The classes it names stay those recorded for the additional properties. ``GenerationStore`` runs it
-        (``replace_additional_properties_type``).
+        The classes it names are ``reference_classes``, or stay those recorded for the additional properties.
+        ``GenerationStore`` runs it (``replace_additional_properties_type``).
         """
         self.store_additional_properties_type(
             self.extra_template_data,
             _make_referencing_type_expression(data_type),
-            set(self.additional_properties_reference_classes),
+            set(self.additional_properties_reference_classes) if reference_classes is None else reference_classes,
             imports=tuple(data_type.all_imports),
         )
         self._name_final_classes()

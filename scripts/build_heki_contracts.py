@@ -44,6 +44,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
   sites, ``allowlist:heki-baseline:EFF201`` of ``scripts/check_ratchets.py``.
+
+The file also sets ``required-version`` to at least the heki that the ``heki`` dependency group of pyproject.toml pins,
+so an older heki stops with a clear error instead of failing on a key it does not know.
 """
 
 from __future__ import annotations
@@ -54,6 +57,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
@@ -71,6 +76,7 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "scripts" / "heki.toml"
+PYPROJECT = ROOT / "pyproject.toml"
 SOURCE_ROOT = ROOT / PACKAGE_DIR
 STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
@@ -461,6 +467,12 @@ def environment_contracts() -> list[str]:
     ]
 
 
+def required_version() -> str:
+    """Return the ``required-version`` of the contracts: at least the heki that the ``heki`` dependency group pins."""
+    group = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["dependency-groups"]["heki"]
+    return f">={next(pin.removeprefix('heki==') for pin in group if pin.startswith('heki=='))}"
+
+
 def generate() -> str:
     """Return the contents of scripts/heki.toml."""
     repo = Repo(ROOT, Page([], [], [], []))
@@ -472,7 +484,8 @@ def generate() -> str:
         *host_contracts(repo),
         *environment_contracts(),
     ]
-    return "\n".join([f"{HEADER}\n[lint]\nselect = {_array(RULES)}\n", *contracts])
+    head = f"{HEADER}\nrequired-version = {_quote(required_version())}\n\n[lint]\nselect = {_array(RULES)}\n"
+    return "\n".join([head, *contracts])
 
 
 def main(argv: list[str] | None = None) -> int:
