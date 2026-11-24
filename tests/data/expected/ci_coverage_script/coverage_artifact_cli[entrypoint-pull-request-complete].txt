@@ -27,6 +27,8 @@
     ".coverage.py311-parallel-shard20-ubuntu-24.04",
     ".coverage.py311-parallel-shard21-ubuntu-24.04",
     ".coverage.py311-parallel-shard22-ubuntu-24.04",
+    ".coverage.py311-parallel-shard23-ubuntu-24.04",
+    ".coverage.py311-parallel-shard24-ubuntu-24.04",
     ".coverage.py311-parallel-shard3-ubuntu-24.04",
     ".coverage.py311-parallel-shard4-ubuntu-24.04",
     ".coverage.py311-parallel-shard5-ubuntu-24.04",
@@ -42,6 +44,8 @@
     ".coverage.py314-parallel-shard12-ubuntu-24.04",
     ".coverage.py314-parallel-shard13-ubuntu-24.04",
     ".coverage.py314-parallel-shard14-ubuntu-24.04",
+    ".coverage.py314-parallel-shard15-ubuntu-24.04",
+    ".coverage.py314-parallel-shard16-ubuntu-24.04",
     ".coverage.py314-parallel-shard2-ubuntu-24.04",
     ".coverage.py314-parallel-shard3-ubuntu-24.04",
     ".coverage.py314-parallel-shard4-ubuntu-24.04",
@@ -58,8 +62,6 @@
     ".coverage.py315-parallel-shard14-ubuntu-24.04",
     ".coverage.py315-parallel-shard15-ubuntu-24.04",
     ".coverage.py315-parallel-shard16-ubuntu-24.04",
-    ".coverage.py315-parallel-shard17-ubuntu-24.04",
-    ".coverage.py315-parallel-shard18-ubuntu-24.04",
     ".coverage.py315-parallel-shard2-ubuntu-24.04",
     ".coverage.py315-parallel-shard3-ubuntu-24.04",
     ".coverage.py315-parallel-shard4-ubuntu-24.04",
@@ -76,5 +78,5 @@
     ".coverage.pydantic25-ubuntu-24.04"
   ],
   "stderr": "",
-  "stdout": "Validated 73 coverage artifacts\n"
+  "stdout": "Validated 75 coverage artifacts\n"
 }

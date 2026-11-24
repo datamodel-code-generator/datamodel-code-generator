@@ -771,7 +771,7 @@ pass will do, and it is declared (`PassDecl.trigger`, "Skipped unless" in the ta
 which the pass declares as reads, so that the order rule covers them. A trigger reads the facts the package makes: a
 parser subclass or a model class that makes such a fact elsewhere keeps the pass running only where the trigger names
 it (constructor ordering also runs for a model class that overrides `restore_required_inherited_field_state`). With
-`DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS` on (the test suite on the newest Python), a pass whose trigger is false
+`DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS` on (the nightly run of the test suite on the newest Python), a pass whose trigger is false
 runs anyway and fails on any fact, memo revision, import, parser attribute, run-state field or warning it changes
 (`tests/checks/finality.py:ParseChecks.idle_pass`); the other lanes skip it as users do, and every lane compares the same stored output.
 

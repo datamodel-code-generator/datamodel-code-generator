@@ -17,6 +17,7 @@ from tests.data.python.generation_observer import GenerationObserver
 DATA = Path(__file__).parents[1] / "data"
 
 
+@pytest.mark.value_checks
 @pytest.mark.parametrize("backend", list(DataModelType))
 def test_generation_observation(backend: DataModelType, tmp_path: Path) -> None:
     """Freeze bytes, actual engine calls, input immutability, and graph disposal."""

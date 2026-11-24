@@ -1,4 +1,19 @@
 {
+  "behaviour-gate:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "behaviour-gate:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "behaviour-gate:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "check:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -45,6 +60,21 @@
     "stderr": ""
   },
   "empty": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:behaviour-gate:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:behaviour-gate:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:behaviour-gate:skipped": {
     "exit": 1,
     "results_match": true,
     "stderr": ""
@@ -251,6 +281,26 @@
   },
   "mid-stack:test-shard:success": {
     "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:behaviour-gate:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:behaviour-gate:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:behaviour-gate:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:behaviour-gate:success": {
+    "exit": 0,
     "results_match": true,
     "stderr": ""
   },

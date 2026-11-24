@@ -118,6 +118,7 @@ def test_check_seams() -> None:
     assert_output(report())
 
 
+@pytest.mark.value_checks
 def test_checks_run_in_a_python_a_test_starts() -> None:
     """A Python that a test starts runs the checks the variables turn on, as the test process does."""
     result = subprocess.run(
@@ -176,6 +177,7 @@ class _RenamingParser(JsonSchemaParser):
         self.model_resolver.references["#/definitions/Pet"].name = "Animal"
 
 
+@pytest.mark.value_checks
 def test_naming_check_reports_a_name_no_naming_call_gives() -> None:
     """A name that no naming call of the resolver gives fails the parse when ``name_models`` starts.
 
