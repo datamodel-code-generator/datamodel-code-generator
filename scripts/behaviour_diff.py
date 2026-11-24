@@ -1213,7 +1213,8 @@ class Plan:
     has no such tag. `judged` are those records, an extending record as its target with its own id, covers and cells;
     `head` and `before` the candidate's and the base's records by id. `presets` are the latest tag's (None: the
     base's own, for a release the repository has no tag of). `changed` are the files below tests/data a PR changes;
-    `src` and `oracle` say whether it changes src/ and the gate's own files (a release run always runs); `groups`
+    `src` says whether any change of it, as main takes them (`declared_changes.change_steps`), changes src/, and
+    `oracle` whether it changes the gate's own files (a release run always runs); `groups`
     the (input, output model type) pairs of the run each selector covers, which share a shard (`place`); `spaces` the
     label spaces whose cells the run builds (`build_cells`), which judge the selectors of those spaces only. `landed`
     are the records of a PR run that record a change merged before its base (`landed_records`), by id, with the
@@ -1371,7 +1372,10 @@ def plan_records(ns: argparse.Namespace, candidate: Candidate) -> Plan:
         tag_commit = compare_release.commit_of(f"refs/tags/{tag}", repo) or None
         plan = Plan(base, release=False, tag=tag, tag_commit=tag_commit, head=head, before=before)
         plan.changed = changed_paths(repo, base, candidate.revision, ("tests/data",))
-        plan.src = bool(changed_paths(repo, base, candidate.revision, ("src",)))
+        plan.src = any(
+            changed_paths(repo, old, new, ("src",))
+            for old, new in declared_changes.change_steps(repo, base, candidate.revision)
+        )
         plan.oracle = bool(changed_paths(repo, base, candidate.revision, ORACLE_FILES))
         added = [record for record_id, record in head.items() if record_id not in before]
         problems = [

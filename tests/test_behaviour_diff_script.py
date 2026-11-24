@@ -3477,6 +3477,15 @@ CELLS_CASES: dict[str, CellsCase] = {
         | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
         records=True,
     ),
+    "pass: a push to main of a src change a harness record covers, then its revert": CellsCase(
+        "pass",
+        "harness, modified module the proof holds for, in a src change whose revert follows in the push",
+        pushed=CELLS_REFACTOR
+        | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
+        | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        head=_cells_src(),
+        records=True,
+    ),
     "fail: a fragment that does not parse": CellsCase(
         "fail",
         "fragment does not parse",

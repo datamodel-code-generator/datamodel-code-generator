@@ -623,6 +623,18 @@ CASES: dict[str, dict[str, Any]] = {
         "head": NEW_OUTPUT,
         "args": ["--main"],
     },
+    "a push to main of a src change a harness record covers, then its revert, with the gate's verdict": {
+        "pushed": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"])],
+        "head": RELEASED_SRC,
+        "verdicts": {"models/b.py": None},
+        "verdicts_head": "HEAD~1",
+        "args": ["--main"],
+    },
+    "a push to main of a src change a harness record covers, then its revert, without the gate's verdict": {
+        "pushed": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"])],
+        "head": RELEASED_SRC,
+        "args": ["--main"],
+    },
     "the head merges a newer commit of main": {
         "newer": {"docs/notes.md": "notes\n"},
         "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
