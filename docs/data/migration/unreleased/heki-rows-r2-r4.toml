@@ -1,0 +1,8 @@
+[[change]]
+id = "heki-rows-r2-r4"
+category = "harness"
+title = "Pass pipeline form without the FinalFacts and mangled-member findings"
+summary = "The pass-pipeline verdicts of the source forms no longer list the FinalFacts and mangled-member findings, which heki contracts now judge; the package writes the same output."
+covers = [
+    "source_model/every_rule_states_its_verdicts[pass-pipeline].txt",
+]

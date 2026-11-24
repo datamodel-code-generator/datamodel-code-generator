@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"id": {"type": "string", "readOnly": true}, "name": {"type": "string"}}},
+    "Dog": {"allOf": [{"$ref": "#/$defs/Pet"}], "properties": {"name": true, "note": true, "bark": {"type": "boolean"}}}
+  },
+  "title": "Kennel", "type": "object", "properties": {"dog": {"$ref": "#/$defs/Dog"}}
+}

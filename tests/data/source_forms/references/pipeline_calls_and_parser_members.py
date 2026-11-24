@@ -1,8 +1,8 @@
-"""The pass pipeline check: where ``FinalFacts`` is built, who reaches a mangled ``Parser`` member, deep warnings.
+"""Deep warnings, and the origins the model reads in a ``Parser`` body, a decorator, a default and ``getattr``.
 
-A call in a decorator or a default runs in the scope around the definition. A ``Parser`` member is any name its body
-binds with two leading underscores; a place reaches one by attribute or through ``getattr`` and its aliases, by origin
-(a parameter named ``getattr`` is not the builtin). A warning is deep when its ``stacklevel`` is a call or above 2.
+A call in a decorator or a default runs in the scope around the definition. A place reaches a ``Parser`` member by
+attribute or through ``getattr`` and its aliases, by origin (a parameter named ``getattr`` is not the builtin). A
+warning is deep when its ``stacklevel`` is a call or above 2; the pass pipeline check reads only that.
 """
 
 from warnings import warn

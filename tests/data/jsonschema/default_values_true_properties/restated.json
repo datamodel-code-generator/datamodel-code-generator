@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}, "tag": {"type": "string", "default": "none"}}},
+    "Dog": {
+      "allOf": [{"$ref": "#/$defs/Pet"}],
+      "properties": {"name": true, "tag": true, "bark": {"type": "boolean"}},
+      "unevaluatedProperties": false
+    },
+    "Puppy": {
+      "allOf": [{"$ref": "#/$defs/Dog"}],
+      "properties": {"name": true, "age": {"type": "integer"}}
+    }
+  },
+  "title": "Kennel",
+  "type": "object",
+  "properties": {"dog": {"$ref": "#/$defs/Dog"}, "puppy": {"$ref": "#/$defs/Puppy"}}
+}

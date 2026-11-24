@@ -383,6 +383,7 @@ class BaseGenerateConfig(BaseModel):
     use_single_line_docstring: bool = False
     use_default_kwarg: bool = False
     apply_field_options_to_every_field: bool = False
+    apply_default_values_to_true_properties: bool = False
     deserialize_default_values: Sequence[DefaultValueType] = ()
     use_missing_sentinel: bool = False
     reuse_model: bool = False

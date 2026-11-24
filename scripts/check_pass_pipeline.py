@@ -16,10 +16,8 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
   their issue, have writer protocols that ``_DecisionWriter`` implements, and satisfy the order rule, which computes
   the order the registry lists them in;
-* ``FinalFacts`` is built in one place, ``GenerationStore.seal_facts``;
 * every member of the views of ``model/_views.py`` reads an ``ATTRIBUTE_FACTS`` row of its class that holds a fact
   final at B1, or that holds no fact (identity), unless ``VIEW_ACCESSORS`` lists it;
-* no code outside the body of ``Parser`` reaches a name-mangled member of ``Parser``, which the tables call;
 * every ``warn()`` of the parser, model and type modules whose ``stacklevel`` reaches past its caller is listed in
   ``DEEP_WARNINGS`` with the frame it names, so that a warning the pipeline would attribute to its own frames shows.
 
@@ -77,7 +75,7 @@ from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     StepLike,
 )
 from datamodel_code_generator.parser.base import Parser  # noqa: E402
-from scripts._source_model import SourceModule, nested_name  # noqa: E402
+from scripts._source_model import SourceModule  # noqa: E402
 from scripts.fact_tables import ATTRIBUTE_FACTS, Fact, RenderFact  # noqa: E402
 from scripts.pass_decls import (  # noqa: E402
     BOUNDARY_BEFORE,
@@ -96,7 +94,6 @@ from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
-    from scripts._source_model import Scope as ModelScope
 
 __all__ = [
     "DECISION_DECLS",
@@ -520,10 +517,6 @@ def view_problems() -> list[str]:
     return problems
 
 
-FINAL_FACTS_SITE = "parser/generation.py:GenerationStore.seal_facts"
-"""The one place that builds ``FinalFacts``."""
-
-
 _MODELS: dict[Path, SourceModule] = {}
 
 
@@ -547,92 +540,9 @@ def _callee(model: SourceModule, call: ast.Call) -> str | None:
     return call.func.attr if isinstance(call.func, ast.Attribute) else _spellings(model).get(call.func)
 
 
-def calls(model: SourceModule, name: str) -> Iterator[tuple[str, int]]:
-    """Yield the scope (``Class.function``, empty at module level) and the line of each call of ``name`` in a module."""
-    for node in ast.walk(model.tree):
-        if isinstance(node, ast.Call) and _callee(model, node) == name:
-            yield nested_name(model.scope_of(node)), node.lineno
-
-
 def _holding(paths: Iterable[Path], *words: str) -> Iterator[Path]:
     """Yield the modules whose text holds one of ``words``: a module without any of them cannot spell what is sought."""
     return (path for path in sorted(paths) if any(word in path.read_text(encoding="utf-8") for word in words))
-
-
-def final_facts_problems(package: Path = PACKAGE) -> list[str]:
-    """Return the places other than ``FINAL_FACTS_SITE`` that build ``FinalFacts``, or that none builds it."""
-    sites = [
-        f"{path.relative_to(package).as_posix()}:{scope}"
-        for path in _holding(package.rglob("*.py"), "FinalFacts")
-        for scope, _ in calls(_model(path), "FinalFacts")
-    ]
-    if sites == [FINAL_FACTS_SITE]:
-        return []
-    return [f"FinalFacts is built in {sites}, not only in {FINAL_FACTS_SITE}"]
-
-
-def parser_body(model: SourceModule) -> ModelScope | None:
-    """Return the scope of the module-level class ``Parser`` of a module, if it defines one."""
-    return next(
-        (
-            scope
-            for scope in model.scopes
-            if scope.kind == "class" and scope.parent is model.module_scope and scope.code_name == "Parser"
-        ),
-        None,
-    )
-
-
-def mangled_members(model: SourceModule) -> frozenset[str]:
-    """Return the ``__name`` members that the body of a module's ``Parser`` defines (none without one)."""
-    body = parser_body(model)
-    bindings = model.bindings(scope=body) if body is not None else []
-    return frozenset(
-        binding.name for binding in bindings if binding.name.startswith("__") and not binding.name.endswith("__")
-    )
-
-
-def _reached_member(model: SourceModule, node: ast.AST, members: frozenset[str]) -> str | None:
-    """Return the mangled ``Parser`` member that ``node`` reaches, by attribute or by a string ``*attr`` argument."""
-    attr = node.attr if isinstance(node, ast.Attribute) else _attribute_argument(model, node)
-    return attr if attr is not None and (attr.startswith("_Parser__") or attr in members) else None
-
-
-ATTRIBUTE_FUNCTIONS = frozenset({"builtins.getattr", "builtins.setattr", "builtins.hasattr", "builtins.delattr"})
-"""The calls that reach an attribute by a string name, by origin."""
-
-
-def _attribute_argument(model: SourceModule, node: ast.AST) -> str | None:
-    """Return the string attribute name a ``getattr``-family call passes, if ``node`` is one."""
-    if not isinstance(node, ast.Call) or model.origin(node.func) not in ATTRIBUTE_FUNCTIONS:
-        return None
-    if len(node.args) < 2:  # noqa: PLR2004
-        return None
-    name = node.args[1]
-    return name.value if isinstance(name, ast.Constant) and isinstance(name.value, str) else None
-
-
-def reached_members(model: SourceModule, members: frozenset[str], *, own: bool) -> Iterator[tuple[int, str]]:
-    """Yield the line and the member of each place of a module that reaches a mangled ``Parser`` member.
-
-    With ``own``, the module's ``Parser`` is the one that defines them, and the places inside its body are left out.
-    """
-    body = parser_body(model) if own else None
-    inside = {id(node) for node in ast.walk(body.node)} if body is not None else set()
-    for node in ast.walk(model.tree):
-        if id(node) not in inside and (attr := _reached_member(model, node, members)) is not None:
-            yield node.lineno, attr
-
-
-def mangling_problems(package: Path = PACKAGE) -> list[str]:
-    """Return the places outside the body of ``Parser`` that reach a name-mangled member of ``Parser``."""
-    base = package / "parser" / "base.py"
-    members = mangled_members(_model(base))
-    return [
-        f"{path.relative_to(package).as_posix()}:{line} reaches Parser.{attr} outside the body of Parser"
-        for path in _holding(package.rglob("*.py"), "_Parser__", *members)
-        for line, attr in reached_members(_model(path), members, own=path == base)
-    ]
 
 
 def _deep_warning(model: SourceModule, call: ast.Call) -> bool:
@@ -717,9 +627,7 @@ def main(argv: list[str] | None = None) -> int:
     problems = [
         *table_problems(),
         *registry_problems(),
-        *final_facts_problems(),
         *view_problems(),
-        *mangling_problems(),
         *warning_problems(),
     ]
     for problem in problems:

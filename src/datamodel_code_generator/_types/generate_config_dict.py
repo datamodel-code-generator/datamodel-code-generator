@@ -111,6 +111,7 @@ class BaseGenerateConfig(TypedDict):
     use_single_line_docstring: NotRequired[bool]
     use_default_kwarg: NotRequired[bool]
     apply_field_options_to_every_field: NotRequired[bool]
+    apply_default_values_to_true_properties: NotRequired[bool]
     deserialize_default_values: NotRequired[Sequence[DefaultValueType]]
     use_missing_sentinel: NotRequired[bool]
     reuse_model: NotRequired[bool]
