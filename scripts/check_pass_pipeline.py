@@ -12,7 +12,7 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
 * a ``PassSpec`` has a ``trigger`` exactly where its declaration has one, and the trigger reads only facts the pass
   reads, so that the order rule covers what it reads;
 * a ``when`` names only what the run's options set (``CONFIGURATION``), so that nothing produced gates a pass except a
-  ``trigger``; ``WHEN_PRODUCED`` lists the passes still gated on a produced fact, a set that only shrinks;
+  ``trigger``;
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
 * the decision registry of ``Parser`` and of every parser class that sets one (``_DECISION_PASSES``) holds global
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
@@ -171,24 +171,6 @@ CONFIGURATION = frozenset({
 """What a ``when`` may name: the options of the run (attributes ``Parser.__init__`` sets from the configuration, the
 settings of a run's state), constants of the output classes, and the helpers that read nothing else. The first
 attribute of a parameter counts, so ``self.config.aliases`` names ``config``."""
-WHEN_PRODUCED = frozenset({
-    "apply_base_stand_in_imports",
-    "bind_module_field_names",
-    "merge_runtime_expression_imports",
-    "name_final_classes_of_additional_properties",
-    "name_inner_models_in_rules",
-    "record_decimal_alias_models",
-    "record_model_placement",
-    "refresh_sequence_interface_after_renames",
-    "reject_unavailable_imports",
-    "replan_schema_validators_after_renames",
-    "settle_kept_parent_roots",
-    "settle_module_unused_models",
-    "translate_final_name_keys",
-    "warn_about_decimal_defaults",
-})
-"""The passes whose ``when`` still names a fact the parse or an earlier pass produces: a change that moves the test
-into the body of the pass removes its entry, and no entry is added."""
 DEEP_WARNINGS = {
     "model/pydantic_v2/base_model.py:_warn_template_update": "the caller of render() (L7)",
     "parser/_intersection.py:warn_unsatisfiable": "the parser method that met the unsatisfiable schema (L1)",
@@ -371,29 +353,16 @@ def _gate_reads(gate: ast.expr) -> set[str]:
     return reads
 
 
-def when_problems(
-    model: SourceModule | None = None,
-    produced: Collection[str] = WHEN_PRODUCED,
-    allowed: Collection[str] = CONFIGURATION,
-) -> list[str]:
-    """Return the passes whose ``when`` names a fact that is no option of the run, and the entries that no longer do.
+def when_problems(model: SourceModule | None = None, allowed: Collection[str] = CONFIGURATION) -> list[str]:
+    """Return the passes whose ``when`` names a fact that is no option of the run.
 
     A pass that waits for a produced fact decides on it in its body, or declares a ``trigger``.
     """
-    gates = _gates(model or _model(Path(_tables.__file__)))
-    found = {name: sorted(_gate_reads(gate) - set(allowed)) for name, gate in gates.items()}
     return [
-        *(
-            f"the when of {name} names {', '.join(names)}, which no option of the run sets (CONFIGURATION): decide on "
-            "it in the pass, or declare a trigger with its reason"
-            for name, names in found.items()
-            if names and name not in produced
-        ),
-        *(
-            f"WHEN_PRODUCED lists {name}, whose when names nothing but options: remove it"
-            for name in sorted(produced)
-            if not found.get(name)
-        ),
+        f"the when of {name} names {', '.join(names)}, which no option of the run sets (CONFIGURATION): decide on it "
+        "in the pass, or declare a trigger with its reason"
+        for name, gate in _gates(model or _model(Path(_tables.__file__))).items()
+        if (names := sorted(_gate_reads(gate) - set(allowed)))
     ]
 
 

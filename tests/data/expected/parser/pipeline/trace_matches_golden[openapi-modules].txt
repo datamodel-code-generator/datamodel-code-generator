@@ -35,6 +35,7 @@ reset_per_run_state
 set_circular_root_model_paths
 record_emitting_modules
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -53,6 +54,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -71,6 +73,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -89,6 +92,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -107,6 +111,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -125,6 +130,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -143,6 +149,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -161,6 +168,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -179,6 +187,7 @@ remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -196,7 +205,10 @@ rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
+settle_kept_parent_roots
 write_rule_aliases_as_classes
+name_inner_models_in_rules
+apply_base_stand_in_imports
 settle_discriminated_unions
 constrain_fields_by_their_reference_sites
 write_plain_aliases_for_recursive_models
@@ -279,14 +291,22 @@ remove_unused_imports
 resolve_module_import_conflicts
 alias_builtin_shadowing_module_imports
 alias_builtins_hidden_by_submodules
+bind_module_field_names
 change_imported_model_name
 import_models_of_hidden_submodules
+name_final_classes_of_additional_properties
+refresh_sequence_interface_after_renames
+replan_schema_validators_after_renames
 decide_config_items
+reject_unavailable_imports
 record_generated_class_names
+translate_final_name_keys
+record_model_placement
 check_model_inheritance
 reject_alias_cycles_without_schema
 reject_lone_surrogates_pydantic_reads
 warn_about_dropped_constraints
+warn_about_decimal_defaults
 warn_about_variant_discriminator_tags
 set_nested_model_default_factory_metadata
 record_pydantic_floor

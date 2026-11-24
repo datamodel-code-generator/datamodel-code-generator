@@ -175,6 +175,7 @@ __all__ = [
     "FinishHost",
     "ImportsHost",
     "RenderHost",
+    "RunContextView",
     "add_root_init_result",
     "alias_builtin_shadowing_module_imports",
     "alias_builtins_hidden_by_submodules",
@@ -255,6 +256,18 @@ class ImportsHost(
         """Return whether a module writes ``from __future__ import annotations`` of its own, beside shared imports."""
 
 
+class RunContextView(Protocol):
+    """What the passes read of the settings of a facade-managed run: ``parser/base.py:ParserRunContext``."""
+
+    @property
+    def preserve_circular_root_models(self) -> bool:
+        """Whether collapse keeps every circular root model named (the retry after a collapse recursion)."""
+
+    @property
+    def untyped_nullable_maps(self) -> bool:
+        """Whether the run parses the values of nullable maps untyped, as earlier releases did."""
+
+
 class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost, Protocol):
     """The options and run state of the parser that the finish passes read and write."""
 
@@ -267,6 +280,18 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     generated_class_names: tuple[tuple[str, str], ...]
     model_placement: dict[ModulePath, frozenset[str]]
     typed_map_values_may_move_models: bool
+
+    @property
+    def _translates_final_name_keys(self) -> bool:
+        """Whether the run records the output names keys name (``translate_final_name_keys``)."""
+
+    @property
+    def run_context(self) -> RunContextView:
+        """The settings of the facade-managed run."""
+
+    @property
+    def typed_nullable_maps(self) -> bool:
+        """Whether the parse typed the values of a nullable map."""
 
     @property
     def _construction_keys(self) -> ConstructionKeys:
@@ -1150,7 +1175,8 @@ def _remap_imports(ledger: ModuleImportLedger, imports: Imports, overrides: Mapp
 
 def warn_about_decimal_defaults(parser: FinishHost) -> None:
     """Emit one actionable warning for all Decimal defaults in this generation."""
-    count = parser._decimal_default_warning_count
+    if not (count := parser._decimal_default_warning_count):
+        return
     examples = listed_with_more(parser._decimal_default_warning_examples or (), count)
     values, verb = counted(count, "Decimal default value"), for_count(count, "was", "were")
     if DefaultValueType.Decimal in parser.deserialize_default_value_types:
@@ -1653,6 +1679,8 @@ def import_names_class(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> 
 
 def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
     """Bind the field names of each module that its imports shadow, before the renames read the module imports."""
+    if not import_names_class(parser, state):
+        return
     for ctx in state.contexts:
         _bind_module_field_names(
             ctx.models,
@@ -2364,6 +2392,8 @@ def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> N
 
     A setting names them unquoted where each is bound when the class statement runs (``_binds_named_classes``).
     """
+    if not state.collect_additional_properties_models():
+        return
     positions = {id(model): (ctx.module, index) for ctx in state.contexts for index, model in enumerate(ctx.models)}
     for model in state.additional_properties_models:
         model._name_final_classes(binds_named_classes=_binds_named_classes(model, positions))
@@ -2390,6 +2420,8 @@ def _binds_named_classes(model: DataModel, positions: Mapping[int, tuple[ModuleP
 
 def refresh_sequence_interface_after_renames(state: _FinalizeState[Any]) -> None:
     """Decide the sequence interface again after models were renamed."""
+    if not state.renamed_models:
+        return
     for model in state.all_models:
         model.finalize_sequence_interface()
 
@@ -2401,6 +2433,8 @@ def replan_schema_validators_after_renames(parser: ImportsHost[ContextT], state:
     invalidates every module plan; renaming only changes synthetic helper names, and the snapshots of their
     imports are kept synchronized defensively.
     """
+    if not state.renamed_models:
+        return
     for ctx in state.contexts:
         parser.data_model_type.invalidate_module_code_cache(ctx.models)
     parser._prepare_schema_runtime_validation_module_code(state.contexts)
@@ -2438,6 +2472,8 @@ def translate_final_name_keys(parser: FinishHost, run: FinishRun[Any, ModuleCont
     name is recorded where a ``ConstructionKeys`` key names it or its class name, the part after its last dot, and it
     is not the name the model had at L2.
     """
+    if not parser._translates_final_name_keys:
+        return
     origins: dict[str, tuple[str, str]] = {}
     for rename in parser.generation_store.renames:
         origin = (
@@ -2490,6 +2526,8 @@ def record_model_placement(
     cycle, or a module shared by reused models, and keep a model only as a nullable map they make recursive,
     which ``--collapse-root-models`` would otherwise collapse.
     """
+    if not (parser.typed_nullable_maps or parser.run_context.untyped_nullable_maps):
+        return
     groups = parser._reuse_groups
     placement = {ctx.module: ctx.models for ctx in contexts}
     parser.model_placement = {

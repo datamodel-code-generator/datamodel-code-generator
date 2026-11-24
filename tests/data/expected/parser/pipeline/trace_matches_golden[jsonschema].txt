@@ -19,6 +19,7 @@ detect_standard_generation_templates
 reset_per_run_state
 record_emitting_modules
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -34,6 +35,8 @@ rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
 snapshot_module_unused_models
+settle_kept_parent_roots
+apply_base_stand_in_imports
 settle_discriminated_unions
 constrain_fields_by_their_reference_sites
 write_plain_aliases_for_recursive_models
@@ -41,6 +44,7 @@ flatten_conflicting_final_layouts
 warn_enums_admitting_other_values
 import_removed_reuse_canonicals
 import_renamed_types
+settle_module_unused_models
 unbind_hidden_type_fields
 update_type_aliases
 collect_live_models
@@ -59,13 +63,19 @@ remove_unused_models
 remove_unused_imports
 resolve_module_import_conflicts
 alias_builtins_hidden_by_submodules
+bind_module_field_names
 change_imported_model_name
+name_final_classes_of_additional_properties
 decide_config_items
+reject_unavailable_imports
 record_generated_class_names
+translate_final_name_keys
+record_model_placement
 check_model_inheritance
 reject_alias_cycles_without_schema
 reject_lone_surrogates_pydantic_reads
 warn_about_dropped_constraints
+warn_about_decimal_defaults
 warn_about_variant_discriminator_tags
 record_pydantic_floor
 add_root_init_result

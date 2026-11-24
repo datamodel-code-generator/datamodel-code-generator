@@ -23,6 +23,7 @@ unconstrain_union_members
 set_circular_root_model_paths
 record_emitting_modules
 -- module
+record_decimal_alias_models
 alias_shadowed_imports
 override_required_field
 change_from_import
@@ -38,6 +39,8 @@ remove_overridden_models
 type_dict_keys_by_root_types
 fix_constructor_field_ordering_early
 snapshot_module_unused_models
+settle_kept_parent_roots
+apply_base_stand_in_imports
 constrain_fields_by_their_reference_sites
 tag_fields_of_tagged_bases
 flatten_conflicting_final_layouts
@@ -48,6 +51,7 @@ import_renamed_types
 omit_untaken_union_constraints
 assign_forward_reference_fields
 fix_constructor_field_ordering
+settle_module_unused_models
 unbind_hidden_type_fields
 update_type_aliases
 collect_live_models
@@ -66,12 +70,18 @@ remove_unused_models
 remove_unused_imports
 resolve_module_import_conflicts
 alias_builtins_hidden_by_submodules
+bind_module_field_names
 change_imported_model_name
+name_final_classes_of_additional_properties
 decide_config_items
+reject_unavailable_imports
 record_generated_class_names
+translate_final_name_keys
+record_model_placement
 check_model_inheritance
 reject_alias_cycles_without_schema
 warn_about_dropped_constraints
+warn_about_decimal_defaults
 warn_about_variant_discriminator_tags
 warn_about_msgspec_decoding
 exit status: 2

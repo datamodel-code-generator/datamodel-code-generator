@@ -175,8 +175,10 @@ def reject_unavailable_imports(parser: TypeOverridesHost, contexts: Sequence[Mod
 
     The first such type in schema order is reported, so the message does not depend on set iteration order.
     """
+    if not (unavailable := parser._unavailable_imports):
+        return
     all_imports = (parser.imports, *(ctx.imports for ctx in contexts))
-    for (from_, name), message in parser._unavailable_imports.items():
+    for (from_, name), message in unavailable.items():
         if any(name in imports.get(from_, ()) for imports in all_imports):
             raise Error(message)
 

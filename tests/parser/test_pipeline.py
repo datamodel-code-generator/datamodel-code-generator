@@ -257,27 +257,23 @@ def test_check_order(decls: list[check_pass_pipeline.PassDecl], computed: bool) 
 
 WHEN_CASES = {
     "options-only": (
-        (
-            'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations)\n'
-            'PassSpec("b", f, when=lambda self, _: modules.renames_hiding_fields(self) and self.reuse_scope)\n'
-            'PassSpec("c", f, when=lambda *_: _PYDANTIC_FLOORS.get() is not None)\n'
-            'PassSpec("d", f, when=_writes_unique_sets_in_modules)\n'
-        ),
-        (),
+        'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations)\n'
+        'PassSpec("b", f, when=lambda self, _: modules.renames_hiding_fields(self) and self.reuse_scope)\n'
+        'PassSpec("c", f, when=lambda *_: _PYDANTIC_FLOORS.get() is not None)\n'
+        'PassSpec("d", f, when=_writes_unique_sets_in_modules)\n'
     ),
-    "a-produced-record": ('PassSpec("a", f, when=lambda self, s: self.use_annotated and s.renamed_models)\n', ()),
-    "a-produced-length": ('PassSpec("a", f, when=lambda _, s: len(s.module_models) > 1)\n', ()),
-    "a-helper-of-a-module": ('PassSpec("a", f, when=imports.import_names_class)\n', ()),
-    "a-listed-pass": ('PassSpec("a", f, when=lambda self, _: bool(self._kept_parent_roots))\n', ("a",)),
-    "a-listed-pass-that-waits-for-options": ('PassSpec("a", f, when=lambda self, _: self.reuse_model)\n', ("a",)),
+    "a-produced-record": 'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.renamed_models)\n',
+    "a-produced-length": 'PassSpec("a", f, when=lambda _, s: len(s.module_models) > 1)\n',
+    "a-helper-of-a-module": 'PassSpec("a", f, when=imports.import_names_class)\n',
+    "a-record-of-the-parser": 'PassSpec("a", f, when=lambda self, _: bool(self._kept_parent_roots))\n',
 }
-"""Tables of one pass each, and the passes ``WHEN_PRODUCED`` lists."""
+"""Tables of one pass each."""
 
 
-@pytest.mark.parametrize(("table", "produced"), WHEN_CASES.values(), ids=WHEN_CASES)
-def test_when_names_only_options(table: str, produced: tuple[str, ...]) -> None:
-    """A ``when`` naming a produced fact is reported unless its pass is listed; a listed pass must still name one."""
-    problems = check_pass_pipeline.when_problems(SourceModule(table), produced)
+@pytest.mark.parametrize("table", WHEN_CASES.values(), ids=WHEN_CASES)
+def test_when_names_only_options(table: str) -> None:
+    """A ``when`` that names a produced fact is reported."""
+    problems = check_pass_pipeline.when_problems(SourceModule(table))
 
     assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
 

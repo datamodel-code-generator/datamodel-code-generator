@@ -1383,6 +1383,8 @@ def settle_module_unused_models(
 
     One that removal leaves written in a merged module (``run_unused_models``) stays live there (#5905).
     """
+    if not run.unused_models:
+        return
     leaving = run_unused_models(parser, run)
     for prepared in prepared_modules:
         if prepared.current_unused_models:
