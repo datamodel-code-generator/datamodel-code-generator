@@ -215,9 +215,7 @@ def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> 
                 flatten(model)
             case _:
                 for field in decision.untagged:
-                    builder.set_field_extras(
-                        field, {key: value for key, value in field.extras.items() if key != "is_classvar"}
-                    )
+                    builder.drop_field_extra(field, "is_classvar")
                     if not (field.data_type.literals or field.data_type.enum_member_literals):
                         builder.replace_field_type(field, field.data_type.__class__(literals=[field.extras["const"]]))
                 model.opt_out_of_inherited_tag()
