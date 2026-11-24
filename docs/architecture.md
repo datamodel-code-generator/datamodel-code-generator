@@ -1046,7 +1046,8 @@ call, except inside the decision writer and the members `DECISION_ACCESSORS` lis
 of such an attribute on a value heki cannot tie to a class. Every decision writes through `_DecisionWriter`, the
 one writer over the store, which records the models it changes (`DecisionOutcome`); a decision calls only its own
 writes, the methods `writer_methods` of its `PassDecl` names, which heki's `decision-writer:` contracts hold to the
-module of the decision (`module`). A
+module of the decision (`module`; the contracts are not built while a declaration lacks either), and only the decision
+phase (`parser/_passes/decide.py`) calls a public method of the writer that no declaration names. A
 writer never changes a data type node that other fields share: it replaces the node in the one field with a copy
 first.
 

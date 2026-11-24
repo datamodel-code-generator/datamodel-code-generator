@@ -41,7 +41,8 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   they call, outside the decision writer and the members ``DECISION_ACCESSORS`` lists, nor such an attribute on a value
   heki cannot tie to a class.
 - ``call-owners`` (``MUT204``, ``MUT207``) of the decision writer: each method ``writer_methods`` of a decision's
-  declaration names is called only in the module of that decision.
+  declaration names is called only in the module of that decision (``module``, which every declaration names), and
+  every other public method only in the decision phase.
 - ``call-owners`` (``MUT204``) of the import ledger: the methods that change an ``Imports`` (``IMPORTS_MUTATORS`` of
   ``scripts/fact_tables.py``) are called only in the ledger's module, the ``imports`` module and the defs
   ``LEDGER_WRITERS`` names.
@@ -118,6 +119,8 @@ GRAPH_BUILDER = f"{STORE_MODULE}.GraphBuilder"
 """The capability to change the graph, which only the store makes: every store operation is called through it."""
 DECISION_WRITER = f"{PACKAGE}.parser._phases._DecisionWriter"
 """The one writer of the decisions (``parser/_phases.py``), over the store: what a decision calls to write."""
+DECISION_PHASE = "parser/_passes/decide.py"
+"""The decision phase, which runs the decisions with the one decision writer and reads what they changed."""
 IMPORTS = f"{PACKAGE}.imports.Imports"
 """The imports of a generated module (``imports.py``), which the import ledger writes."""
 IMPORT_LEDGER = "parser/_imports_plan.py"
@@ -368,16 +371,23 @@ def decision_home_contracts(repo: Repo, records: Iterable[DecisionHome] = DECISI
 
 
 def decision_writer_contracts(repo: Repo, decls: Mapping[str, PassDecl] = DECISION_DECLS) -> list[str]:
-    """Return a ``call-owners`` contract per write of the decision writer: only the module of its decision calls it.
+    """Return a ``call-owners`` contract per method of the decision writer: only the module of its decision calls it.
 
-    ``writer_methods`` of ``DECISION_DECLS`` names the methods of ``_DecisionWriter`` each decision writes through. A
-    call from another module, also through the functions it calls, or on a receiver heki cannot tie to a class is a
-    finding.
+    ``writer_methods`` of ``DECISION_DECLS`` names the methods of ``_DecisionWriter`` each decision writes through, and
+    ``module`` the module of the decision. A public method no decision names belongs to the decision phase
+    (``DECISION_PHASE``), which runs the decisions and reads what they changed. A call from another module, also
+    through the functions it calls, or on a receiver heki cannot tie to a class is a finding.
     """
     module, _, owner = DECISION_WRITER.rpartition(".")
     functions = _package_functions(repo)
+    modules = set(_package_modules(repo).values())
     contracts: list[str] = []
+    claimed: set[str] = set()
     for decl in sorted(decls.values(), key=lambda decl: decl.name):
+        if not decl.writer_methods or _module(decl.module) not in modules:
+            message = f"DECISION_DECLS: {decl.name} names no module of the package or no write (module, writer_methods)"
+            raise SystemExit(message)
+        claimed.update(decl.writer_methods)
         for method in decl.writer_methods:
             if f"{DECISION_WRITER}.{method}" not in functions:
                 message = f"DECISION_DECLS: {decl.name} writes through {method}, which {owner} does not define"
@@ -392,6 +402,23 @@ def decision_writer_contracts(repo: Repo, decls: Mapping[str, PassDecl] = DECISI
                     unresolved="report",
                 )
             )
+    prefix = f"{DECISION_WRITER}."
+    contracts.extend(
+        _table(
+            "call-owners",
+            name=f"decision-writer:{method}",
+            targets=[f"{module}:{owner}.{method}"],
+            allowed_callers=_scope(_module(DECISION_PHASE), ""),
+            attribution="call-graph",
+            unresolved="report",
+        )
+        for method in sorted(
+            name.removeprefix(prefix)
+            for name in functions
+            if name.startswith(prefix) and not name.removeprefix(prefix).startswith("_")
+        )
+        if "." not in method and method not in claimed
+    )
     return contracts
 
 

@@ -17,6 +17,7 @@ import sysconfig
 from dataclasses import replace
 from fnmatch import fnmatchcase
 from pathlib import Path
+from typing import Any
 
 import pytest
 import tomllib
@@ -857,7 +858,13 @@ SEEDED_DECISION_WRITES = {
     f"{PACKAGE}/parser/_phases.py": (
         "class _DecisionWriter:\n"
         "    def drop_held_null(self, field: object) -> None:\n        self.dropped = field\n\n"
-        "    def omit_default(self, field: object) -> None:\n        self.omitted = field\n"
+        "    def omit_default(self, field: object) -> None:\n        self.omitted = field\n\n"
+        "    def outcome(self) -> object:\n        return self.dropped\n"
+    ),
+    f"{PACKAGE}/parser/_passes/__init__.py": "",
+    f"{PACKAGE}/parser/_passes/decide.py": (
+        "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
+        "def decide(writer: _DecisionWriter) -> object:\n    return writer.outcome()\n"
     ),
     f"{PACKAGE}/parser/_held_null.py": (
         "from datamodel_code_generator.model.helpers import omit_through_a_helper\n"
@@ -865,7 +872,8 @@ SEEDED_DECISION_WRITES = {
         "def own_write(writer: _DecisionWriter) -> None:\n    writer.drop_held_null(1)\n\n\n"
         "def other_write(writer: _DecisionWriter) -> None:\n    writer.omit_default(1)\n\n\n"
         "def helper_write(writer: _DecisionWriter) -> None:\n    omit_through_a_helper(writer)\n\n\n"
-        "def untyped_write(writer) -> None:\n    writer.omit_default(1)\n"
+        "def untyped_write(writer) -> None:\n    writer.omit_default(1)\n\n\n"
+        "def phase_read(writer: _DecisionWriter) -> object:\n    return writer.outcome()\n"
     ),
     f"{PACKAGE}/parser/_incomplete_defaults.py": (
         "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
@@ -877,8 +885,9 @@ SEEDED_DECISION_WRITES = {
         "def omit_through_a_helper(writer: _DecisionWriter) -> None:\n    writer.omit_default(1)\n"
     ),
 }
-"""Two decisions and their writes: ``_held_null.py`` writes through its own write, and through the write of the
-incomplete defaults directly, through a helper of another module and on an untyped receiver."""
+"""Two decisions, their writes and the decision phase: ``_held_null.py`` writes through its own write, through the
+write of the incomplete defaults directly, through a helper of another module and on an untyped receiver, and calls
+the writer method no decision names, which the decision phase calls."""
 SEEDED_DECISION_DECLS = {
     name: replace(DECISION_DECLS[name], module=module, writer_methods=methods)
     for name, module, methods in (
@@ -893,7 +902,8 @@ SEEDED_DECISION_DECLS = {
 def test_heki_reports_a_decision_that_calls_the_write_of_another(tmp_path: Path) -> None:
     """A write of the decision writer is called only in the module of the decision that writes through it.
 
-    A call from another decision's module, through a helper of another module or on an untyped receiver is a finding.
+    A call from another decision's module, through a helper of another module or on an untyped receiver is a finding,
+    and so is a call of a public method no decision names outside the decision phase.
     """
     for name, text in SEEDED_DECISION_WRITES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -922,24 +932,45 @@ def test_heki_reports_a_decision_that_calls_the_write_of_another(tmp_path: Path)
         1,
         [
             ("_held_null.py", "other_write", "MUT204", "omit_default"),
+            ("_held_null.py", "phase_read", "MUT204", "outcome"),
             ("_held_null.py", "untyped_write", "MUT207", "omit_default"),
             ("helpers.py", "omit_through_a_helper", "MUT204", "omit_default"),
         ],
     ), result.stderr
 
 
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        (
+            {"writer_methods": ("never_defined",)},
+            "DECISION_DECLS: omit_held_null writes through never_defined, which _DecisionWriter does not define",
+        ),
+        (
+            {"module": ""},
+            "DECISION_DECLS: omit_held_null names no module of the package or no write (module, writer_methods)",
+        ),
+        (
+            {"module": "parser/never_defined.py"},
+            "DECISION_DECLS: omit_held_null names no module of the package or no write (module, writer_methods)",
+        ),
+        (
+            {"writer_methods": ()},
+            "DECISION_DECLS: omit_held_null names no module of the package or no write (module, writer_methods)",
+        ),
+    ],
+    ids=["undefined-write", "no-module", "unknown-module", "no-write"],
+)
 @pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
-def test_decision_writes_name_a_method_of_the_writer() -> None:
-    """A write that ``writer_methods`` of ``DECISION_DECLS`` names is a method ``_DecisionWriter`` defines."""
+def test_decision_writes_name_a_method_of_the_writer(changes: dict[str, Any], message: str) -> None:
+    """Each declaration of ``DECISION_DECLS`` names its module and writes, methods ``_DecisionWriter`` defines."""
     repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
-    decls = {"omit_held_null": replace(DECISION_DECLS["omit_held_null"], writer_methods=("never_defined",))}
+    decls = {"omit_held_null": replace(DECISION_DECLS["omit_held_null"], **changes)}
 
     with pytest.raises(SystemExit) as stopped:
         build_heki_contracts.decision_writer_contracts(repo, decls)
 
-    assert str(stopped.value) == (
-        "DECISION_DECLS: omit_held_null writes through never_defined, which _DecisionWriter does not define"
-    )
+    assert str(stopped.value) == message
 
 
 SEEDED_DECISION_READS = {

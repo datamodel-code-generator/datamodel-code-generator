@@ -6315,6 +6315,13 @@ allowed-callers = ["datamodel_code_generator.parser._unique_sets:*"]
 attribution = "call-graph"
 unresolved = "report"
 
+[[call-owners]]
+name = "decision-writer:outcome"
+targets = ["datamodel_code_generator.parser._phases:_DecisionWriter.outcome"]
+allowed-callers = ["datamodel_code_generator.parser._passes.decide:*"]
+attribution = "call-graph"
+unresolved = "report"
+
 [[effect-boundaries]]
 name = "decisions-read-final-facts"
 scopes = ["datamodel_code_generator.parser._held_null", "datamodel_code_generator.parser._incomplete_defaults", "datamodel_code_generator.parser._serialize_as_any", "datamodel_code_generator.parser._str_like_unions", "datamodel_code_generator.parser._union_constraints", "datamodel_code_generator.parser._unique_sets"]

@@ -125,7 +125,8 @@ class PassDecl:
     """The module that defines a decision, as its path below ``src/datamodel_code_generator``."""
     writer_methods: tuple[str, ...] = ()
     """The methods of the decision writer (``parser/_phases.py:_DecisionWriter``) a decision writes through, which no
-    other module calls (heki's contracts, ``scripts/build_heki_contracts.py``)."""
+    other module calls (heki's contracts, ``scripts/build_heki_contracts.py``, which every decision's ``module`` and
+    writes are required for; a public method no decision names is the decision phase's)."""
 
 
 def _facts(*members: Fact | RenderFact) -> frozenset[Fact | RenderFact]:
