@@ -257,22 +257,26 @@ def _write_pyproject_table(
     """
     shown = Path(os.path.relpath(path)).as_posix()
     original = path.read_bytes() if path.exists() else None
-    written = partial(_WrittenConfig, shown, table, False)
+    written = partial(_WrittenConfig, shown, table, created=False)
     if values is None:
-        return written([], "the recommendation has no pyproject.toml block to write")
+        return written(keys=[], refused="the recommendation has no pyproject.toml block to write")
     if path.parent != Path.cwd() and PYPROJECT_PATH_FIELDS.intersection(map(field_name, values)):
-        return written([], f"the paths of the command are relative to the working directory, not to {shown}")
+        return written(
+            keys=[], refused=f"the paths of the command are relative to the working directory, not to {shown}"
+        )
     data = original or b""
     bom = codecs.BOM_UTF8 if data.startswith(codecs.BOM_UTF8) else b""
     try:
         edited, keys = _merged_table_text(data[len(bom) :].decode(), table, values)
     except _UnprovenEditError:
-        return written([], f"{toml_table(table)} is written in a form this command does not edit: {_FORMS}")
+        return written(
+            keys=[], refused=f"{toml_table(table)} is written in a form this command does not edit: {_FORMS}"
+        )
     except ValueError as error:
-        return written([], f"it is not valid TOML: {error}")
+        return written(keys=[], refused=f"it is not valid TOML: {error}")
     if keys:
         if (path.read_bytes() if path.exists() else None) != original:
-            return written([], "it changed while the command ran")
+            return written(keys=[], refused="it changed while the command ran")
         from datamodel_code_generator._publication import (  # noqa: PLC0415
             publish_staged_files,
             release_all,
