@@ -420,6 +420,60 @@ def test_unicode_property_beside_a_lookahead_is_left_out_of_constr(
 @pytest.mark.parametrize(
     "extra_args",
     [
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--extra-fields", "allow"], id="extra_allow"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--extra-fields", "forbid"], id="extra_forbid"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.dataclass", "--allow-population-by-field-name"],
+            id="population_by_name",
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--frozen-dataclasses"], id="frozen"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="field_constraints"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--extra-fields", "allow"], id="base_model"),
+    ],
+)
+def test_inherited_lookaround_selects_the_engine_of_the_subclass_config(
+    output_file: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Select ``python-re`` in a dataclass whose config builds a lookahead of a base without it (#7452).
+
+    Pydantic builds the fields of every base again with the config a dataclass applies: its own, else its first
+    base's. ``Child``, ``Middle`` and ``Grandchild`` with a config of their own, ``Mixed``, which takes the empty
+    config of ``Labelled``, and the dataclasses built on it once failed at import. ``Mixed`` and ``Wide`` redeclare the
+    inherited ``\p{L}`` and ``\p{Lu}`` fields without the pattern, ``Tagged`` inherits ``Mixed``'s, and ``Labelled``
+    and ``Titled`` keep theirs; ``Stamped`` builds ``Marked``, which ``Other`` already builds with ``python-re``.
+    ``Sealed`` took the ``extra='forbid'`` of ``Closed`` and keeps it in the config it gets. A dataclass that takes the
+    config of ``Base`` and every BaseModel, which merges the config of its bases, keep their output. The lookahead
+    rejects what it rejects in each.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "inherited_lookaround_dataclass_config.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    payloads = {
+        "Child": {"valid": {"code": "abc", "serial": "12"}, "lookahead": {"code": "tmpx"}, "serial": {"serial": "x"}},
+        "Grandchild": {"valid": {"code": "abc", "level": 1}, "lookahead": {"code": "tmpx"}},
+        "Mixed": {"valid": {"label": "l", "code": "abc"}, "lookahead": {"code": "tmpx"}, "digit label": {"label": "1"}},
+        "Labelled": {"valid": {"label": "Zo\u00eb"}, "digit label": {"label": "1"}},
+        "Tagged": {"valid": {"label": "l", "tag": "t"}, "lookahead": {"code": "tmpx"}, "digit label": {"label": "1"}},
+        "Wide": {"valid": {"title": "T", "code": "abc"}, "lookahead": {"code": "tmpx"}, "lower title": {"title": "t"}},
+        "Titled": {"valid": {"title": "T"}, "lower title": {"title": "t"}},
+        "Stamped": {"valid": {"mark": "m", "code": "abc"}, "lookahead": {"code": "tmpx"}},
+        "Sealed": {"valid": {"name": "n", "code": "abc"}, "lookahead": {"code": "tmpx"}, "extra": {"other": "o"}},
+    }
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    for model_name, cases in payloads.items():
+        with _generated_model(output_file, "inherited_lookaround_dataclass_config", model_name) as model:
+            outcomes += f"{model_name}\n{_outcomes(model, cases)}"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
         pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="constr"),
         pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"], id="annotated"),
         pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"], id="type_alias"),
@@ -559,6 +613,54 @@ def test_patterns_python_re_rejects_in_a_root_union_and_in_a_base(
     outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
     with _generated_model(output_file, document, model_name) as model:
         outcomes += _outcomes(model, payloads)
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="constr"),
+        pytest.param(["--extra-fields", "allow"], id="extra_allow"),
+    ],
+)
+def test_inherited_unicode_property_is_redeclared_in_the_module_of_its_base(
+    output_dir: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Redeclare a base's ``\p{...}`` field without it where the dataclass selects ``python-re`` for a base (#7452).
+
+    ``d.Local`` and ``d.Wide`` build the lookahead of ``b.Coded`` from another module, so they select ``python-re`` and
+    redeclare the fields of the bases of their module without the pattern Python's ``re`` rejects: ``owner``, whose
+    type names ``d.Person``, and the required ``title`` that ``d.Titled`` writes keyword-only. The bases, which
+    imported before, keep their output and reject what they rejected. ``e.Recoded`` redeclares the lookahead it
+    inherits, so its config keeps its engine.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "inherited_lookaround_dataclass_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            *extra_args,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    payloads = {
+        "Named": {"valid": {"name": "Zo\u00eb"}, "digits": {"name": "12"}},
+        "Owned": {"valid": {"owner": "X"}, "lower owner": {"owner": "x"}},
+        "Local": {"valid": {"name": "12", "owner": "x", "code": "ab"}, "lookahead": {"code": "xa"}},
+        "Titled": {"valid": {"title": "T"}, "lower title": {"title": "t"}},
+        "Wide": {"valid": {"title": "t", "code": "ab"}, "lookahead": {"title": "T", "code": "xa"}},
+    }
+    with _generated_package_module(output_dir, "d") as generated:
+        for model_name, cases in payloads.items():
+            outcomes += f"{model_name}\n{_outcomes(getattr(generated, model_name), cases)}"
+    with _generated_package_module(output_dir, "e") as generated:
+        outcomes += f"Recoded\n{_outcomes(generated.Recoded, {'valid': {'code': 'xa'}, 'digits': {'name': '12'}})}"
     assert_output(outcomes, name="outcomes")
 
 

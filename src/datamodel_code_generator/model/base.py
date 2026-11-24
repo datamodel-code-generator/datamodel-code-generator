@@ -3280,7 +3280,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def imports(self) -> tuple[Import, ...]:
         """Get all imports required by this model and its fields: the fields' kept imports, then the model's own."""
         return chain_as_tuple(
-            (i for f in self.fields for i in field_imports(f)),
+            (i for f in self._class_body_fields() for i in field_imports(f)),
             self._additional_imports,
         )
 
@@ -3804,14 +3804,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     @property
     def _custom_template_fields(self) -> Sequence[DataModelFieldBase | _RenderedDataModelField]:
         """Return custom-template fields, allocating proxies only when escaping changes a docstring."""
+        fields = self._class_body_fields()
         if not any(
             field.use_field_description or field.use_field_description_example or field.use_inline_field_description
-            for field in self.fields
+            for field in fields
         ):
-            return self.fields
+            return fields
 
         rendered_fields: list[DataModelFieldBase | _RenderedDataModelField] | None = None
-        for index, field in enumerate(self.fields):
+        for index, field in enumerate(fields):
             if (docstring := field.docstring) is None or (
                 escaped_docstring := escape_docstring(docstring)
             ) == docstring:
@@ -3821,9 +3822,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
             if rendered_fields is None:
                 rendered_fields = []
-                rendered_fields.extend(self.fields[:index])
+                rendered_fields.extend(fields[:index])
             rendered_fields.append(_RenderedDataModelField(field, escaped_docstring or ""))
-        return self.fields if rendered_fields is None else rendered_fields
+        return fields if rendered_fields is None else rendered_fields
 
     def _template_fields(self, *, use_custom_template: bool) -> Sequence[DataModelFieldBase | _RenderedDataModelField]:
         """Return fields in the representation expected by the selected template, their plans rebuilt if changed."""
@@ -3869,8 +3870,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return fields with docstrings prepared for built-in templates."""
         return [
             _RenderedDataModelField(field, self._format_docstring(field.docstring, self.FIELD_DOCSTRING_INDENT))
-            for field in self.fields
+            for field in self._class_body_fields()
         ]
+
+    def _class_body_fields(self) -> list[DataModelFieldBase]:
+        """Return the fields the class body writes: the model's own."""
+        return self.fields
 
 
 def _model_package_class(cls: type) -> bool:

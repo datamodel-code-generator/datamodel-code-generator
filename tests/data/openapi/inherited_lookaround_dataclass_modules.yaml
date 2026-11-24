@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    b.Coded:
+      type: object
+      properties:
+        code: {type: string, pattern: '^(?!x)[a-z]+$'}
+    d.Person:
+      type: object
+      properties:
+        id: {type: integer}
+    d.Named:
+      type: object
+      properties:
+        name: {type: string, pattern: '^\p{L}+$'}
+    d.Owned:
+      type: object
+      properties:
+        owner:
+          oneOf:
+            - $ref: '#/components/schemas/d.Person'
+            - {type: string, pattern: '^\p{Lu}'}
+    d.Local:
+      allOf:
+        - $ref: '#/components/schemas/d.Named'
+        - $ref: '#/components/schemas/d.Owned'
+        - $ref: '#/components/schemas/b.Coded'
+    d.Nicked:
+      type: object
+      properties:
+        nick: {type: string, default: z}
+    d.Titled:
+      allOf:
+        - $ref: '#/components/schemas/d.Nicked'
+        - type: object
+          required: [title]
+          properties:
+            title: {type: string, pattern: '^\p{Lu}'}
+    d.Wide:
+      allOf:
+        - $ref: '#/components/schemas/d.Titled'
+        - $ref: '#/components/schemas/b.Coded'
+    e.Recoded:
+      allOf:
+        - $ref: '#/components/schemas/b.Coded'
+        - type: object
+          properties:
+            code: {type: string, pattern: '^[a-z]+$'}
+            name: {type: string, pattern: '^\p{L}+$'}

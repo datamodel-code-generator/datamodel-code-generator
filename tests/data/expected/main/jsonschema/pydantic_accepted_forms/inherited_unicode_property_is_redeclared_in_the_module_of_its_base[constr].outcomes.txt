@@ -1,0 +1,22 @@
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{Lu}'; Local.owner is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Local.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{Lu}'; Wide.title is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Recoded.name is generated without this constraint.
+Named
+valid: valid
+digits: string_pattern_mismatch
+Owned
+valid: valid
+lower owner: dataclass_type, string_pattern_mismatch
+Local
+valid: valid
+lookahead: string_pattern_mismatch
+Titled
+valid: valid
+lower title: string_pattern_mismatch
+Wide
+valid: valid
+lookahead: string_pattern_mismatch
+Recoded
+valid: valid
+digits: valid
