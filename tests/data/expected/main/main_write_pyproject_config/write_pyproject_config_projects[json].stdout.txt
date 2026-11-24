@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "pyproject-config",
+  "content": "[tool.datamodel-codegen]\ninput = \"api.yaml\"\noutput = \"models.py\"\n",
+  "config": {
+    "tool": {
+      "datamodel-codegen": {
+        "input": "api.yaml",
+        "output": "models.py"
+      }
+    }
+  },
+  "written": {
+    "path": "pyproject.toml",
+    "table": [
+      "tool",
+      "datamodel-codegen"
+    ],
+    "created": true,
+    "keys": [
+      "input",
+      "output"
+    ],
+    "refused": null
+  }
+}

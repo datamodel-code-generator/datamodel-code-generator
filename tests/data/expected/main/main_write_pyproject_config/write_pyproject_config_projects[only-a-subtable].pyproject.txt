@@ -1,0 +1,1 @@
+'[tool.datamodel-codegen.jobs.api]\ninput = "api.yaml"\n\n[tool.datamodel-codegen]\ninput = "api.yaml"\noutput = "models.py"\n'

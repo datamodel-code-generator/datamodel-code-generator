@@ -1,0 +1,7 @@
+There are no values to write to pyproject.toml; nothing was written.
+
+Notes
+  - --http-headers is not repeated here; add it to the command again.
+
+Command
+  datamodel-codegen

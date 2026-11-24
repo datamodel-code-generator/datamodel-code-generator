@@ -340,6 +340,7 @@ datamodel-codegen [OPTIONS]
 | [`--update-lock`](general-options.md#update-lock) | Create or atomically update the selected remote lock after generation (experimen... |
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
+| [`--write-pyproject-config`](general-options.md#write-pyproject-config) | Write the recommended or generated table into pyproject.toml (experimental). |
 
 ### 🚀 Target Generation Options
 
@@ -730,3 +731,4 @@ All options sorted alphabetically:
 - [`--watch`](general-options.md#watch) - Watch input file(s) for changes and regenerate output automa...
 - [`--watch-delay`](general-options.md#watch-delay) - Set debounce delay in seconds for watch mode.
 - [`--wrap-string-literal`](template-customization.md#wrap-string-literal) - Wrap long string literals across multiple lines.
+- [`--write-pyproject-config`](general-options.md#write-pyproject-config) - Write the recommended or generated table into pyproject.toml...

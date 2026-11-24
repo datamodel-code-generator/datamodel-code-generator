@@ -15,7 +15,7 @@ This documentation is auto-generated from test cases.
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 27 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 28 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -69,6 +69,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--untrusted-input`](general-options.md#untrusted-input) | Implies | Always | [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--write-pyproject-config`](general-options.md#write-pyproject-config) | Conflicts | Always | [`--ignore-pyproject`](general-options.md#ignore-pyproject) | - |
 | [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-asyncapi-perspective` requires `--generate-client httpx2`. |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
@@ -506,3 +507,4 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--watch`](general-options.md#watch)
 - [`--watch-delay`](general-options.md#watch-delay)
 - [`--wrap-string-literal`](template-customization.md#wrap-string-literal)
+- [`--write-pyproject-config`](general-options.md#write-pyproject-config)

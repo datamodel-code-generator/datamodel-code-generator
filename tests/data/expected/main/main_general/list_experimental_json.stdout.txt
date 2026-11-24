@@ -126,6 +126,15 @@
     "tracking_issue": null
   },
   {
+    "id": "cli-option.write-pyproject-config",
+    "kind": "cli-option",
+    "message": "Writing the pyproject.toml table is experimental; the file it chooses, the edits it refuses, and its report may change.",
+    "note": "It writes the table --recommend-options prints into the pyproject.toml that gives the table, else into ./pyproject.toml, and the table of --generate-pyproject-config into ./pyproject.toml; a missing file is created with the table alone. Only the keys to add or change are set; the file keeps its other text, line endings and byte order mark. An edit that tomllib does not read back as exactly those keys set, such as one of an inline table or dotted keys, is refused: nothing is written and the block is printed as before. HTTP headers and query parameters are never written, and URLs are written without credentials, query and fragment.",
+    "since_version": "0.102.0",
+    "target": "--write-pyproject-config, its report, and the written key of the recommend-options and pyproject-config JSON payloads",
+    "tracking_issue": null
+  },
+  {
     "id": "extra.httpx2",
     "kind": "extra",
     "message": "The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",

@@ -1,0 +1,7 @@
+Created pyproject.toml:
+  [tool.datamodel-codegen]
+  input = "api.yaml"
+  output = "models.py"
+
+Command
+  datamodel-codegen

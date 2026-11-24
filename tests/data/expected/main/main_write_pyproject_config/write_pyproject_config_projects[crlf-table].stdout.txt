@@ -1,0 +1,17 @@
+Updated pyproject.toml:
+  [tool.datamodel-codegen]
+  collapse-reuse-models = true
+  enum-field-as-literal = "all"
+  naming-strategy = "enclosing-model"
+  preset = "standard-py312-20261124"
+  reuse-model = true
+  target-python-version = "3.12"
+  treat-dot-as-module = false
+  use-tag-as-union-variant-name = true
+
+Notes
+  - Target Python 3.12 comes from requires-python ">=3.12" in pyproject.toml.
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --input api.yaml --input-file-type openapi

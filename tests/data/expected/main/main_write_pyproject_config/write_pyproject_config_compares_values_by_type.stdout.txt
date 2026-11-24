@@ -1,0 +1,8 @@
+Updated pyproject.toml:
+  [tool.datamodel-codegen]
+  input = "api.yaml"
+  input-file-type = "openapi"
+  snake-case-field = true
+
+Command
+  datamodel-codegen

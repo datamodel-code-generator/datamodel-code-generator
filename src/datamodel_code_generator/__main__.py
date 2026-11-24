@@ -101,7 +101,7 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     _reset_namespace(namespace)
     arg_parser.parse_args(namespace=namespace)
     schema_output_name = namespace.output_format_json_schema
-    steps_aside = _skill_options_given(namespace)
+    steps_aside = _skill_options_given(namespace) or namespace.write_pyproject_config
     if not steps_aside and schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
         sys.exit(_print_json_schema(schema_output_name))
     if not steps_aside and schema_output_name is None and namespace.generate_prompt is not None:
@@ -131,7 +131,14 @@ from datamodel_code_generator._cli_messages import (
     _recommend_options_conflict,
 )
 from datamodel_code_generator._config_export import EXCLUDED_CONFIG_OPTIONS as EXCLUDED_CONFIG_OPTIONS
-from datamodel_code_generator._config_export import _cli_config_values, _format_pyproject_config, _pyproject_config_data
+from datamodel_code_generator._config_export import (
+    _cli_config_values,
+    _format_pyproject_config,
+    _pyproject_config_data,
+    _shareable_values,
+    _write_pyproject_table,
+    _written_text,
+)
 from datamodel_code_generator._config_export import generate_cli_command as generate_cli_command
 from datamodel_code_generator._config_export import generate_pyproject_config as generate_pyproject_config
 from datamodel_code_generator._config_fields import JSON_FIELDS, TARGET_SELECTORS, names_file
@@ -197,6 +204,7 @@ if TYPE_CHECKING:
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._cli_config import Config
+    from datamodel_code_generator._config_export import _WrittenConfig
     from datamodel_code_generator._lock_plan import RemoteLockPlan as _RemoteLockPlan
     from datamodel_code_generator._naming_hint import NamingHint
     from datamodel_code_generator._publication import (
@@ -211,6 +219,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._publication import (
         StagingDirectory as _StagingDirectory,
     )
+    from datamodel_code_generator._recommend import Recommendation
     from datamodel_code_generator._structured_output import (
         CommandOutputKind,
         GeneratedFilePayload,
@@ -1074,6 +1083,7 @@ def _run_recommend_options(
         config = _imply_target_settings(config)
 
     record: RunOptions = config._run_options  # noqa: SLF001
+    project_file = None if args.ignore_pyproject else pyproject_path or Path.cwd() / "pyproject.toml"
     try:
         recommendation = recommend_options(
             RecommendRequest(
@@ -1089,7 +1099,7 @@ def _run_recommend_options(
                 mode=args.recommend_options if isinstance(args.recommend_options, str) else None,
                 response_observer=_recommend_lock_observer(config, pyproject_path),
                 target=None if target is None else option_flag(target[0]),
-                project_file=None if args.ignore_pyproject else pyproject_path or Path.cwd() / "pyproject.toml",
+                project_file=project_file,
             )
         )
     except (Error, RemoteLockError) as e:
@@ -1101,25 +1111,45 @@ def _run_recommend_options(
         else []
     )
     command = shell_command(arguments) if recommendation.runnable else None
-    pyproject = (
-        None
-        if recommendation.config_values is None
-        else _format_pyproject_config(
-            hyphenated(recommendation.config_values, ordered=True),
-            recommendation.table,
-        )
-    )
+    config_values = recommendation.config_values
+    values = None if config_values is None else hyphenated(config_values, ordered=True)
+    pyproject = None if values is None else _format_pyproject_config(values, recommendation.table)
     content = render_text(recommendation, command=command, pyproject=pyproject)
+    written = (
+        _write_pyproject_table(project_file, recommendation.table, values)
+        if args.write_pyproject_config and project_file is not None
+        else None
+    )
+    written_payload = None if written is None else written.payload()
     if args.generate_prompt is not None:
         from datamodel_code_generator.prompt import generate_prompt  # noqa: PLC0415
 
-        payload = recommendation_payload(recommendation, content=content, arguments=arguments)
+        payload = recommendation_payload(recommendation, content=content, arguments=arguments, written=written_payload)
         print(generate_prompt(args, arg_parser.format_help(), arg_parser, recommendation=payload))
     elif args.output_format == "json":
-        print(render_json(recommendation, content=content, arguments=arguments))
+        print(render_json(recommendation, content=content, arguments=arguments, written=written_payload))
     else:
-        print(content, end="")
-    return Exit.OK
+        print(content if written is None or written.refused else _summary(recommendation, written, values), end="")
+    return _written_exit(written)
+
+
+def _summary(recommendation: Recommendation, written: _WrittenConfig, values: Mapping[str, Any] | None) -> str:
+    """Return what --write-pyproject-config wrote for a recommendation, with the command that generates next."""
+    rest = {
+        name: value
+        for name, value in recommendation.command_values.items()
+        if name not in (recommendation.config_values or {})
+    }
+    command = shell_command([*recommendation.command_selector, *_cli_arguments(rest)])
+    return f"{_written_text(written, values or {}, recommendation.notes, command)}\n"
+
+
+def _written_exit(written: _WrittenConfig | None) -> Exit:
+    """Return the exit of a command that may write pyproject.toml: an error, said on stderr, when it wrote nothing."""
+    if written is None or written.refused is None:
+        return Exit.OK
+    print(f"Error: nothing was written to {written.path}: {written.refused}", file=sys.stderr)
+    return Exit.ERROR
 
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
@@ -2044,10 +2074,6 @@ def _main(
 
     arg_parser.parse_args(args, namespace=namespace)
 
-    if namespace.recommend_options is not None and (conflict := _recommend_options_conflict(namespace)):
-        print(f"Error: --recommend-options cannot be used with {conflict}", file=sys.stderr)
-        return Exit.ERROR
-
     if namespace.output_format == "json":
         from importlib import import_module  # ruff: ignore[import-outside-top-level]
 
@@ -2083,8 +2109,28 @@ def _command_output(namespace: Namespace) -> Exit | None:
     """Run a command that installs a skill or prints and exits, or None for a command that generates.
 
     Such a command installs the agent skill, prints the version, a JSON Schema, the pyproject.toml configuration of
-    the arguments or a prompt; the options of ``--install-skill`` without it are refused.
+    the arguments or a prompt. Options it cannot take are refused first: those --recommend-options refuses, the
+    options of ``--install-skill`` without it, and ``--write-pyproject-config`` without a command that prints a table.
     """
+    writes = namespace.write_pyproject_config
+    recommends = namespace.recommend_options is not None
+    if conflict := _first_conflict((
+        (
+            recommend_conflict := recommends and _recommend_options_conflict(namespace),
+            f"--recommend-options cannot be used with {recommend_conflict}",
+        ),
+        (
+            _skill_options_given(namespace) and namespace.install_skill is None,
+            "--skill-scope and --overwrite-skill require --install-skill",
+        ),
+        (writes and namespace.ignore_pyproject, "--write-pyproject-config cannot be used with --ignore-pyproject"),
+        (
+            writes and not namespace.generate_pyproject_config and not recommends,
+            "--write-pyproject-config requires --recommend-options or --generate-pyproject-config",
+        ),
+    )):
+        print(f"Error: {conflict}", file=sys.stderr)
+        return Exit.ERROR
     if (agent := namespace.install_skill) is not None:
         from datamodel_code_generator._agent_skill_cli import install_agent_skill_command  # noqa: PLC0415
 
@@ -2095,9 +2141,6 @@ def _command_output(namespace: Namespace) -> Exit | None:
                 overwrite=namespace.overwrite_skill,
             )
         )
-    if _skill_options_given(namespace):
-        print("Error: --skill-scope and --overwrite-skill require --install-skill", file=sys.stderr)
-        return Exit.ERROR
 
     if namespace.version:
         print(f"datamodel-codegen {get_version()}")
@@ -2108,12 +2151,7 @@ def _command_output(namespace: Namespace) -> Exit | None:
         return Exit.OK
 
     if namespace.generate_pyproject_config:
-        config_data = _pyproject_config_data(namespace)
-        return _print_command_output(
-            "pyproject-config",
-            _format_pyproject_config(config_data),
-            lambda: {"config": {"tool": {"datamodel-codegen": _json_ready(config_data)}}},
-        )
+        return _print_pyproject_config(namespace)
 
     if namespace.generate_prompt is not None and namespace.recommend_options is None:
         from datamodel_code_generator.prompt import generate_prompt  # noqa: PLC0415
@@ -2123,6 +2161,31 @@ def _command_output(namespace: Namespace) -> Exit | None:
         print(prompt_output)
         return Exit.OK
     return None
+
+
+def _print_pyproject_config(namespace: Namespace) -> Exit:
+    """Print the pyproject.toml table of the arguments; with --write-pyproject-config, write it to ./pyproject.toml.
+
+    The file is written without credentials and with URLs redacted; the report then shows what was written.
+    """
+    config_data = _pyproject_config_data(namespace)
+    content = _format_pyproject_config(config_data)
+    written = None
+    if namespace.write_pyproject_config:
+        shared, notes = _shareable_values(_cli_config_values(namespace))
+        values = hyphenated(shared)
+        written = _write_pyproject_table(Path.cwd() / "pyproject.toml", CONFIG_TABLE, values)
+        if written.refused is None and namespace.output_format != "json":
+            content = _written_text(written, values, notes, shell_command(()))
+    _print_command_output(
+        "pyproject-config",
+        content,
+        lambda: {
+            "config": {"tool": {"datamodel-codegen": _json_ready(config_data)}},
+            "written": None if written is None else written.payload(),
+        },
+    )
+    return _written_exit(written)
 
 
 def _command_pyproject(namespace: Namespace) -> Exit | tuple[Mapping[str, object], Path | None]:

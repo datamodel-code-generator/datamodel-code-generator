@@ -323,4 +323,5 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--watch": "Watch input file(s) for changes and regenerate output automatically.",
     "--watch-delay": "Set debounce delay in seconds for watch mode.",
     "--wrap-string-literal": "Wrap long string literals across multiple lines.",
+    "--write-pyproject-config": "Write the recommended or generated table into pyproject.toml (experimental).",
 }

@@ -148,12 +148,26 @@ CommandOutputKind: TypeAlias = Literal[
 ]
 
 
+class WrittenConfigPayload(_Payload):
+    """What --write-pyproject-config wrote (experimental)."""
+
+    path: str = Field(description="The pyproject.toml, relative to the working directory.")
+    table: list[str] = Field(description="The keys of the table, such as tool and datamodel-codegen.")
+    created: bool = Field(description="Whether the file did not exist before.")
+    keys: list[str] = Field(description="The keys written, those the file did not hold with these values.")
+    refused: str | None = Field(description="Why nothing was written; null when the keys were written.")
+
+
+_WRITTEN_DESCRIPTION = "What --write-pyproject-config wrote; absent without the option (experimental)."
+
+
 class PyprojectConfigOutputPayload(_Envelope):
     """Structured JSON payload emitted by --generate-pyproject-config."""
 
     kind: Literal["pyproject-config"]
     content: str
     config: dict[str, Any]
+    written: WrittenConfigPayload | None = Field(default=None, description=_WRITTEN_DESCRIPTION)
 
 
 class CliCommandOutputPayload(_Envelope):
@@ -461,6 +475,7 @@ class RecommendOptionsPayload(_Envelope):
         description="Whether config is a complete table, or only the keys to add or change in an existing one."
     )
     content: str
+    written: WrittenConfigPayload | None = Field(default=None, description=_WRITTEN_DESCRIPTION)
 
 
 CommandOutputPayload: TypeAlias = (
@@ -514,23 +529,25 @@ def generation_output_json(
     return _dump_payload(GenerationPayload(**OUTPUT_HEAD, kind="generation", output=output, files=files, target=target))
 
 
-def command_output_json(
-    kind: CommandOutputKind,
-    content: str,
-    *,
-    config: dict[str, Any] | None = None,
-    items: list[dict[str, Any]] | None = None,
-    arguments: list[str] | None = None,
-) -> str:
+def command_output_json(kind: CommandOutputKind, content: str, **given: object) -> str:
+    """Return the JSON payload of a command output: ``given`` sets ``config``, ``items``, ``arguments`` or ``written``.
+
+    A key the payload of the kind lacks is left out, and an absent list or table is empty.
+    """
     payload_class = _COMMAND_OUTPUT_PAYLOADS[kind]
-    extras = {"config": config or {}, "arguments": arguments or [], "items": items or []}
+    extras = {"config": {}, "arguments": [], "items": [], **{name: value for name, value in given.items() if value}}
     payload = payload_class.model_validate({
         **OUTPUT_HEAD,
         "kind": kind,
         "content": content,
         **{name: value for name, value in extras.items() if name in payload_class.model_fields},
     })
-    return dump_json(payload.model_dump(mode="json"), "ordered")
+    return dump_json(payload_values(payload), "ordered")
+
+
+def payload_values(payload: _Payload) -> dict[str, object]:
+    """Return the JSON values of a payload; ``written`` is left out where --write-pyproject-config was not given."""
+    return {key: value for key, value in payload.model_dump(mode="json").items() if key != "written" or value}
 
 
 def check_output_json(

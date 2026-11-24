@@ -1,0 +1,19 @@
+Created pyproject.toml:
+  [tool.datamodel-codegen]
+  collapse-reuse-models = true
+  enum-field-as-literal = "all"
+  input = "api.yaml"
+  input-file-type = "openapi"
+  naming-strategy = "enclosing-model"
+  preset = "standard-py310-20261124"
+  reuse-model = true
+  treat-dot-as-module = false
+  use-tag-as-union-variant-name = true
+
+Notes
+  - Target Python is not set: the recommendation assumes 3.10, the default. Set
+    --target-python-version to start from the preset of the Python version the project runs.
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen

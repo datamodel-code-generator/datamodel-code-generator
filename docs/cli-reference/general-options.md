@@ -31,6 +31,7 @@
 | [`--update-lock`](#update-lock) | Create or atomically update the selected remote lock after g... |
 | [`--watch`](#watch) | Watch input file(s) for changes and regenerate output automa... |
 | [`--watch-delay`](#watch-delay) | Set debounce delay in seconds for watch mode. |
+| [`--write-pyproject-config`](#write-pyproject-config) | Write the recommended or generated table into pyproject.toml... |
 
 ---
 
@@ -3285,6 +3286,230 @@ the generator waits the specified time before regenerating.
 
     ```
     Watching
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--write-pyproject-config` {#write-pyproject-config}
+
+Write the recommended or generated table into pyproject.toml (experimental).
+
+`--write-pyproject-config` writes the table that `--recommend-options` prints into the pyproject.toml that gives
+the table, else into ./pyproject.toml, and the table of `--generate-pyproject-config` into ./pyproject.toml; it
+creates a missing file with the table alone. It sets only the keys to add or change, keeps the rest of the file as
+written, and prints the keys it wrote, the notes, and the command that generates next. An edit it cannot prove
+with `tomllib`, such as one of an inline table or of dotted keys, writes nothing: the block is printed as before
+and the command exits with an error that says why.
+
+**Related:** [`--generate-pyproject-config`](#generate-pyproject-config), [`--recommend-options`](#recommend-options)
+
+**See also:** [pyproject.toml Configuration](../pyproject_toml.md)
+
+**Option relationships:**
+
+- **Conflicts:** [`--ignore-pyproject`](general-options.md#ignore-pyproject)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input api.yaml --input-file-type openapi --recommend-options quick --write-pyproject-config # (1)!
+    ```
+
+    1. :material-arrow-left: `--write-pyproject-config` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Store API
+      version: 1.0.0
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          responses:
+            '200':
+              description: Pets
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pet'
+      /orders:
+        post:
+          operationId: createOrder
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Order'
+          responses:
+            '201':
+              description: Created
+    components:
+      schemas:
+        Pet:
+          type: object
+          properties:
+            name:
+              type: string
+            status:
+              type: string
+              enum: [available, pending, sold]
+            size:
+              type: string
+              enum: [small, medium, large]
+            owner:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+        Order:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [placed, approved, delivered]
+            owner:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            total:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            payment:
+              $ref: '#/components/schemas/Payment'
+        Store:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [open, closed]
+            owner:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            revenue:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+        Payment:
+          oneOf:
+            - type: object
+              properties:
+                type:
+                  const: card
+                number:
+                  type: string
+            - type: object
+              properties:
+                type:
+                  const: bank
+                iban:
+                  type: string
+        billing.Invoice:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [draft, sent, paid]
+            payer:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            total:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            tax:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            shipment:
+              $ref: '#/components/schemas/shipping.Shipment'
+        shipping.Shipment:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [packed, shipped, delivered]
+            recipient:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            cost:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            invoice:
+              $ref: '#/components/schemas/billing.Invoice'
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```
+    Created pyproject.toml:
+      [tool.datamodel-codegen]
+      collapse-reuse-models = true
+      enum-field-as-literal = "all"
+      input = "api.yaml"
+      input-file-type = "openapi"
+      naming-strategy = "enclosing-model"
+      preset = "standard-py310-20261124"
+      reuse-model = true
+      treat-dot-as-module = false
+      use-tag-as-union-variant-name = true
+
+    Notes
+      - Target Python is not set: the recommendation assumes 3.10, the default. Set
+        --target-python-version to start from the preset of the Python version the project runs.
+      - The rules were calibrated on the 20261017 presets.
+
+    Command
+      datamodel-codegen
     ```
 
     <!-- fmt: on -->

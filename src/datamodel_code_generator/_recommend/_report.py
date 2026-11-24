@@ -11,9 +11,10 @@ from datamodel_code_generator._message_text import counted, wrapped_lines
 from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._recommend._rules import format_text
 from datamodel_code_generator._recommend._signals import Signals
+from datamodel_code_generator.cli_options import _values_arguments
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from datamodel_code_generator._recommend import Disagreement, Option, Recommendation, Trial
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics, NameStability
@@ -313,7 +314,6 @@ def _candidate_payload(outcome: CandidateOutcome) -> RecommendCandidatePayload:
         RecommendNameMetricsPayload,
         RecommendNameStabilityPayload,
     )
-    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
 
     candidate, metrics, stability = outcome.candidate, outcome.metrics, outcome.stability
     return RecommendCandidatePayload(
@@ -394,18 +394,26 @@ def _nested(table: tuple[str, ...], values: dict[str, Any]) -> dict[str, Any]:
     return nested
 
 
-def render_json(recommendation: Recommendation, *, content: str, arguments: list[str]) -> str:
+def render_json(
+    recommendation: Recommendation, *, content: str, arguments: list[str], written: Mapping[str, object] | None = None
+) -> str:
     """Render a recommendation as the recommend-options JSON payload."""
-    return dump_json(recommendation_payload(recommendation, content=content, arguments=arguments), "ordered")
+    return dump_json(
+        recommendation_payload(recommendation, content=content, arguments=arguments, written=written), "ordered"
+    )
 
 
-def recommendation_payload(recommendation: Recommendation, *, content: str, arguments: list[str]) -> dict[str, Any]:
-    """Return the recommend-options JSON payload of a recommendation as JSON values."""
+def recommendation_payload(
+    recommendation: Recommendation, *, content: str, arguments: list[str], written: Mapping[str, object] | None = None
+) -> dict[str, Any]:
+    """Return the recommend-options JSON payload of a recommendation as JSON values, with what was written if given."""
     from datamodel_code_generator._structured_output import (  # noqa: PLC0415
         RecommendBaselinePayload,
         RecommendContextPayload,
         RecommendInputPayload,
         RecommendOptionsPayload,
+        WrittenConfigPayload,
+        payload_values,
     )
 
     signals = recommendation.signals or _NO_SIGNALS
@@ -446,5 +454,6 @@ def recommendation_payload(recommendation: Recommendation, *, content: str, argu
         config=None if config is None else _nested(recommendation.table, hyphenated(config, ordered=True)),
         config_complete=recommendation.config_complete,
         content=content,
+        written=None if written is None else WrittenConfigPayload.model_validate(written),
     )
-    return payload.model_dump(mode="json")
+    return payload_values(payload)

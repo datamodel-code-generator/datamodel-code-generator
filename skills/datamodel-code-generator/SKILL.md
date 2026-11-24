@@ -61,14 +61,14 @@ If offline and no installed command is available, say that the CLI cannot be run
 
 ## Option discovery for agents
 
-Before choosing options, run the recommender (experimental) and apply its result:
+Before choosing options, run the recommender (experimental) and let it write its result into `pyproject.toml`:
 
 ```bash
 datamodel-codegen --input SCHEMA [--input-file-type TYPE] [--output-model-type TYPE] \
-  --recommend-options --output-format json
+  --recommend-options --write-pyproject-config
 ```
 
-Use `arguments` from the payload (or `config` for a project configured in `pyproject.toml`) as the starting command. Do not add options it lists under `not_recommended` without a stated reason.
+It prints the keys it wrote and the command to generate with; run that command with `--output`, then `--check` in CI. If it exits with an error, it wrote nothing and printed the full report instead: apply its `pyproject.toml` block or command yourself. For the full report as data, run the same command without `--write-pyproject-config` and with `--output-format json`. Do not add options it lists under `not_recommended` without a stated reason.
 
 When the user's goal needs judgment beyond the schema's shape, use the CLI's own LLM workflow and add `--recommend-options` to it, so the prompt includes the recommendation; decide from both:
 

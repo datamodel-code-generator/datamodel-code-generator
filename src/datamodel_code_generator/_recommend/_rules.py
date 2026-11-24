@@ -16,6 +16,7 @@ from datamodel_code_generator._recommend._signals import (
     SignalName,
     normalize_name,
 )
+from datamodel_code_generator.preset import PresetConfig, _pyproject_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -182,8 +183,6 @@ def _rule_values(rule: Rule) -> dict[str, OptionValue]:
     only shown, so any generation option may be one.
     """
     if rule.optional is None:
-        from datamodel_code_generator.preset import PresetConfig, _pyproject_values  # noqa: PLC0415
-
         return _pyproject_values(PresetConfig(**rule.set).items())
     from datamodel_code_generator.config import GenerateConfig  # noqa: PLC0415
 

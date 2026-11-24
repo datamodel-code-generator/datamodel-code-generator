@@ -39,7 +39,8 @@ to the command and the block. It reads one lower bound written as `>=3.12`, `~=3
 bounds or exclusions beside it; for other forms it assumes the default and says so in the notes. Generation itself
 never reads `requires-python`.
 
-The command prints the report and exits. It does not write files or change your configuration.
+The command prints the report and exits. It changes no file unless you add `--write-pyproject-config`
+([Apply it](#apply-it)).
 
 To compare names in the layout you generate, pass `--output` as you would for generation: a file path selects one
 module, a directory a package. Nothing is written there. Generating every candidate takes about as long as generating
@@ -227,6 +228,23 @@ The counts, presets and options come from your schema and the installed version.
 
 ## Apply it
 
+Add `--write-pyproject-config` to let the command write the `pyproject.toml` block for you, then generate:
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-options --write-pyproject-config
+datamodel-codegen --output models.py
+```
+
+It writes into the `pyproject.toml` that has the `[tool.datamodel-codegen]` table, else into `./pyproject.toml`, which
+it creates with the table alone when there is none. Only the keys to add or change are set; comments, other tables,
+line endings, and the rest of the file stay as they are. It then prints the keys it wrote, the notes, and the command
+that generates next. When it cannot prove its edit (an inline table or dotted keys), when the preset is on the command
+line, or when the file changed while the command ran, it writes nothing, prints the report as without the option, and
+exits with an error that says why. `--generate-pyproject-config --write-pyproject-config` writes the arguments of a
+command into `./pyproject.toml` the same way.
+
+To apply the report by hand:
+
 - **No `pyproject.toml` configuration yet:** copy the `pyproject.toml` block into your `pyproject.toml`, add `output`,
   and run `datamodel-codegen`. Or run the printed command with `--output`.
 - **Existing `[tool.datamodel-codegen]` table:** the report shows `pyproject.toml: keys to add or change` with only
@@ -239,8 +257,9 @@ report lists it under "Your configuration" instead of changing it. Adopting a ne
 classes: "Changes from the current configuration" counts them and shows examples, so review imports of the generated
 models before switching an existing project.
 
-`--http-headers` and `--http-query-parameters` are not repeated in the printed command, and URLs are shown without
-their user information, query, and fragment; add them again when you run it. A remote input is read once, checked
+`--http-headers` and `--http-query-parameters` are not repeated in the printed command or written to
+`pyproject.toml`, and URLs are shown and written without their user information, query, and fragment; add them
+again when you run it. A remote input is read once, checked
 against the remote reference lock as generation checks it (`--locked`, `--lockfile`), and the lock is never written.
 
 ## JSON output
@@ -377,10 +396,11 @@ Every candidate is then generated for both versions, and the Trial table gains a
 ## FAQ
 
 **Does it generate code?**
-It writes nothing. To compare candidates, it generates their models in memory and reads only the class names.
+No. To compare candidates, it generates their models in memory and reads only the class names.
 
 **Does it change my `pyproject.toml`?**
-No. It prints a command and a configuration block; you decide what to apply.
+Only with `--write-pyproject-config`, which writes the keys of the printed block and nothing else. Without it,
+the command prints a command and a configuration block and you decide what to apply.
 
 **Will it override options I set?**
 No. Explicit options are kept, and disagreements are reported under "Your configuration".

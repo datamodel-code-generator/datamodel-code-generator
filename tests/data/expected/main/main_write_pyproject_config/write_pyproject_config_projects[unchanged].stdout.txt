@@ -1,0 +1,5 @@
+pyproject.toml already holds these values; nothing was written:
+  [tool.datamodel-codegen]
+
+Command
+  datamodel-codegen
