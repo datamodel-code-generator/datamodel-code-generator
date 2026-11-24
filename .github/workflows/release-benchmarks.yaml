@@ -3,7 +3,8 @@ name: Release Benchmarks
 on:
   pull_request:
     types: [labeled]
-  workflow_run:
+  # Publish runs only on a release tag push or a maintainer's dispatch; the jobs check out main, never PR code.
+  workflow_run:  # zizmor: ignore[dangerous-triggers] starts only after a trusted Publish run
     workflows: ["Publish"]
     types: [completed]
   workflow_dispatch:
@@ -271,6 +272,8 @@ jobs:
         with:
           app-id: ${{ secrets.GENERATED_DOCS_APP_ID }}
           private-key: ${{ secrets.GENERATED_DOCS_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
       - name: Create or update release benchmark data PR
         id: pr
         env:

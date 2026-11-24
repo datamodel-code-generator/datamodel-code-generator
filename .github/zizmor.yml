@@ -1,0 +1,9 @@
+rules:
+  dependabot-cooldown:
+    config:
+      # The cooldown of .github/dependabot.yaml, the same as exclude-newer in pyproject.toml.
+      days: 3
+  self-repository:
+    # Every `./` action and workflow call runs after the job's own checkout of this repository. actionlint 1.7.12
+    # still rejects the `$/` form; revisit when it accepts it.
+    disable: true

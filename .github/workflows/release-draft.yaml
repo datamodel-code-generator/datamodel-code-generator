@@ -8,7 +8,7 @@ on:
   # Use pull_request_target to always use the workflow file from main branch
   # This ensures new PRs from branches that don't have the latest workflow will still work
   # Security note: This is safe because we only run on merged PRs (code is already in main)
-  pull_request_target:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers] merged PRs only; every job checks out main
     types: [closed]
     branches: [main]
 
@@ -242,11 +242,15 @@ jobs:
 
       - name: Prepare release analysis route
         id: analysis-route
+        env:
+          CHANGED_FILES_PATH: ${{ steps.pr-diff.outputs.trusted_changed_files_path }}
+          EXPECTED_CHANGED_FILES: ${{ needs.resolve-pr.outputs.changed_files }}
+          ANALYSIS_PATH: ${{ steps.pr-diff.outputs.analysis_path }}
         run: |
           python3 scripts/prepare_release_draft_analysis.py \
-            --changed-files-path "${{ steps.pr-diff.outputs.trusted_changed_files_path }}" \
-            --expected-changed-files "${{ needs.resolve-pr.outputs.changed_files }}" \
-            --analysis-path "${{ steps.pr-diff.outputs.analysis_path }}" \
+            --changed-files-path "$CHANGED_FILES_PATH" \
+            --expected-changed-files "$EXPECTED_CHANGED_FILES" \
+            --analysis-path "$ANALYSIS_PATH" \
             --github-output-path "$GITHUB_OUTPUT"
 
       - name: Run Claude Code Analysis
@@ -406,7 +410,7 @@ jobs:
           enable-cache: false
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
 
       - name: Build the release notes from the change records
         env:

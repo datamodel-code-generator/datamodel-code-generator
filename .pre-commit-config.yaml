@@ -5,22 +5,23 @@ ci:
 
 repos:
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.39.0
+  rev: a76b92851fc9eede9f9bc4073eb55202f34eb0df  # frozen: 0.39.0
   hooks:
     - id: check-github-workflows
       args: [ "--verbose" ]
+    - id: check-dependabot
 - repo: https://github.com/tox-dev/tox-ini-fmt
-  rev: "1.10.2"
+  rev: 5958832392866c69b12c4b675ebf6af8ea38be85  # frozen: 1.10.2
   hooks:
     - id: tox-ini-fmt
       args: ["-p", "fix"]
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: v2.30.6
+  rev: 3c6e76e10abcae02303212289efed3413350769c  # frozen: v2.30.6
   hooks:
     - id: pyproject-fmt
       args: ["--max-supported-python=3.15"]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.17.4'
+  rev: c0f278f1254ccc8fb09676bcdb8d847e7db493e5  # frozen: v0.17.4
   hooks:
   - id: ruff-format
     exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/"
@@ -29,7 +30,7 @@ repos:
     # Autouse fixtures intentionally isolate shared state and block accidental network access.
     args: ["--preview", "--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--extend-ignore", "D421,PLW0717,RUF067,RUF069,RUF074,RUF075,RUF105,pytest-fixture-autouse"]
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.4.3
+  rev: 57b21406f092110c18776e39b0bda50d37c945c8  # frozen: v2.4.3
   hooks:
   - id: codespell
     additional_dependencies:
@@ -91,4 +92,11 @@ repos:
     language: python
     additional_dependencies: [heki==0.2.7]
     files: ^(src/datamodel_code_generator/.*\.py|scripts/heki\.toml|scripts/heki_baseline\.toml)$
+    pass_filenames: false
+  - id: zizmor
+    name: Audit the workflows, actions and Dependabot configuration with zizmor
+    entry: zizmor --offline .
+    language: python
+    additional_dependencies: [zizmor==1.32.0]
+    files: ^(\.github/.*\.ya?ml|action\.yml|\.pre-commit-config\.yaml|\.pre-commit-hooks\.yaml)$
     pass_filenames: false

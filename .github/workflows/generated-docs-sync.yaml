@@ -145,6 +145,8 @@ jobs:
         with:
           app-id: ${{ secrets.GENERATED_DOCS_APP_ID }}
           private-key: ${{ secrets.GENERATED_DOCS_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
       - name: Create or update generated docs PR
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

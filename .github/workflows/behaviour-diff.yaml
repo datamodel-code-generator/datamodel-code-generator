@@ -110,7 +110,7 @@ jobs:
           restore-keys: |
             behaviour-diff-pr-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-
       - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+        run: uv sync --locked --python 3.14.6 --extra all --group dev
       - name: Run the PR tier
         env:
           BASE: ${{ steps.base.outputs.tag }}
@@ -175,7 +175,7 @@ jobs:
           restore-keys: |
             behaviour-diff-${{ env.TIER }}-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-
       - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+        run: uv sync --locked --python 3.14.6 --extra all --group dev
       - name: Run the shard
         env:
           BASE: ${{ steps.base.outputs.tag }}
