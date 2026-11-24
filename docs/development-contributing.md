@@ -309,7 +309,8 @@ field as `GenerateConfig.<field>`, a template by its path under the template dir
 registry schedules its removal. New options and option values get their entries from the same comparison.
 `surface.json` also holds what the latest release fixes, and the build fails when your change moves it: a digest of
 the options of each dated preset (the presets of a released date are frozen, and one date at most is unreleased: add
-this release's options to it), the digest of the recommender rules with their `rules_revision` (rules that differ
+this release's options to it; `--stamp` refuses a release whose new date adds neither an option nor a Python target to
+the date before), the digest of the recommender rules with their `rules_revision` (rules that differ
 from the release's need a new revision, once per release), and the experimental feature ids with their `since_version` (a feature the release
 lacks names a later `since_version`; one it has keeps its own). If a release is tagged but not stamped, stamp it first. A preset option without a `--no-` form fails at import, in
 `PresetOptionGroup`.
@@ -335,7 +336,9 @@ The release draft is rebuilt from these records on every merge: the sections `--
 (Breaking Changes by kind, Deprecations, New Warnings, New Options, New Dated Presets, Experimental Features, Changes
 That Need No Action), then GitHub's generated change list. Each item ends with the pull request that added its record
 (`scripts/record_prs.py` reads it from git; a `new-surface` record names the options and presets it adds) and its
-`refs`; a record that extends another adds nothing. `--has-breaking unreleased` decides between a minor and a patch
+`refs`; a record that extends another adds nothing. The item of a dated preset also names the pull request of the
+`new-surface` record of each option the date adds, without that record's refs, so the record of a date lists no
+options. `--has-breaking unreleased` decides between a minor and a patch
 release. Write no release notes anywhere else: the draft's text comes from the records alone, and the next rebuild
 replaces any edit of it. The analysis of each merged pull request looks for breaking changes that no record declares
 and labels the pull request `undeclared-change`; the draft then starts with an Undeclared Changes block that lists
@@ -1141,6 +1144,11 @@ and `warns_without` patterns its input warns with and `filterwarnings`. `test_ca
 fails for a joined option without a case file and for a case file whose option joins no date. The pull request that
 opens a date also adds its `PRESET_RELEASES` entry there, the date before and `_argv(_added_options(previous, date))`,
 and a `PRACTICAL_OPT_IN_OPTIONS` entry when its practical presets add options.
+
+The records of a joined option are its own: the option's `new-surface` record (`surface = ["--my-new-option"]`), whose
+pull request the release-note item of the date names, and a fragment for the listings the join moves, written by
+`python scripts/declared_changes.py declare my-new-option-preset --extends preset-<date> --rest`. A lane that adds an
+option to the presets edits neither `preset.py`, the preset test nor `preset-<date>.toml`.
 
 ### Step 2: Add a test with documentation marker (Required)
 

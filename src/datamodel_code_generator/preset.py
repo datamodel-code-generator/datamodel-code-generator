@@ -1657,27 +1657,29 @@ def _date_additions_markdown(since: str) -> list[str]:
     dates = dates[dates.index(since) :]
     lines: list[str] = []
     for previous, date in _pairwise(dates):
-        added = _date_additions(previous, date)
+        added = [item for item, _ in _date_additions(previous, date)]
         heading = f"The {date} presets keep the {previous} options{' and add:' if added else '.'}"
         lines.extend((heading, "", *added, *([""] if added else [])))
     return lines
 
 
-def _date_additions(previous: str, date: str) -> list[str]:
-    """Return the list items of what the presets of ``date`` add to those of ``previous``.
+def _date_additions(previous: str, date: str) -> list[tuple[str, tuple[str, ...]]]:
+    """Return the list items of what the presets of ``date`` add to those of ``previous``, each with its options.
 
-    A date adds its new Python targets and the option groups its standard or practical presets list that the date before
-    does not, each written as the reference tables write it: its title, its options and its description.
+    A date adds its new Python targets, which have no options, and the option groups its standard or practical presets
+    list that the date before does not, each written as the reference tables write it: its title, its options and its
+    description.
     """
     targets = [
         target.value
         for target in _PRESET_NAMES_BY_TARGET["standard", date]
         if target not in _PRESET_NAMES_BY_TARGET["standard", previous]
     ]
+    no_options: tuple[str, ...] = ()
     return [
-        *(f"- Python {target} targets" for target in targets),
+        *((f"- Python {target} targets", no_options) for target in targets),
         *(
-            _group_item(group, family)
+            (_group_item(group, family), group.options)
             for family, groups_by_date in (
                 ("", _STANDARD_OPTION_GROUPS_BY_DATE),
                 (" (practical presets)", _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE),
