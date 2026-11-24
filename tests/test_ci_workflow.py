@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import subprocess
@@ -27,11 +28,20 @@ MISSING_TARGETS_MESSAGE = (
 )
 
 
+def _job_count(matrix: dict[str, list[str]]) -> int:
+    """Return how many jobs a job without an ``include`` matrix runs: the product of its matrix axes, else one."""
+    return math.prod(len(axis) for axis in matrix.values())
+
+
 def test_workflow_matrix_and_coverage_contract() -> None:
     """Changing dependency groups must preserve every existing test environment."""
     workflow = yaml.load((ROOT / ".github/workflows/test.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     jobs = workflow["jobs"]
-    groups = {name: job["strategy"]["matrix"]["include"] for name, job in jobs.items() if "strategy" in job}
+    groups = {
+        name: job["strategy"]["matrix"]["include"]
+        for name, job in jobs.items()
+        if "include" in job.get("strategy", {}).get("matrix", {})
+    }
     names = []
     main_only_names = set()
     producers = []
@@ -62,7 +72,10 @@ def test_workflow_matrix_and_coverage_contract() -> None:
     all_setup_steps = [step for job in jobs.values() for step in job["steps"] if "setup-uv@" in step.get("uses", "")]
     output = {
         "configurations": sorted(configurations),
-        "job_count": len(configurations) + sum("strategy" not in job for job in jobs.values()),
+        "job_count": len(configurations)
+        + sum(
+            _job_count(job.get("strategy", {}).get("matrix", {})) for name, job in jobs.items() if name not in groups
+        ),
         "extra_tests": sorted(
             f"{entry['tox_env']}:shard{entry['shard']}:{entry['extra_tests']}"
             for entries in groups.values()
