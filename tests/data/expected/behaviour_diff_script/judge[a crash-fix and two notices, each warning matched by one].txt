@@ -1,0 +1,13 @@
+{
+ "cls": "accepted",
+ "notes": [
+  "covered by crash-fix",
+  "covered by notice",
+  "covered by other-notice"
+ ],
+ "accepted_by": [
+  "crash-fix",
+  "notice",
+  "other-notice"
+ ]
+}

@@ -1622,8 +1622,9 @@ def judge_cell(
 
     Equal facts, and sides the timeout or the memory cap stopped both, need nothing (None). A head stopped where the
     base finished is a violation no record covers: its output is unfinished. Otherwise the head runs a second time,
-    which must give the same facts; then the records that cover the cell must admit every kind of its difference
-    with the evidence of their categories (`judge`), computed only for the categories that cover it.
+    which must give the same facts; then the records that cover the cell must admit every kind of its difference and
+    explain it together with the evidence of their categories (`judge`), computed only for the categories that cover
+    it.
     """
     base, candidate = outcomes
     old, new = compare_release.cell_facts(base), compare_release.cell_facts(candidate)
