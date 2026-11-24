@@ -161,7 +161,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DefaultState, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
-    from datamodel_code_generator.model._model_form import ModelForm
     from datamodel_code_generator.model._render_plan import (
         NestedFactoryMetadata,
         Omitted,
@@ -170,6 +169,7 @@ if TYPE_CHECKING:
         RenderReady,
     )
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
+    from datamodel_code_generator.types import ModelForm
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
 

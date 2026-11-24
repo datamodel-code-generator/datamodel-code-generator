@@ -335,11 +335,6 @@ def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_
     return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, run),)
 
 
-def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
-    """Return a registry of one decision ``name`` that reads defaults and writes nothing, running ``run``."""
-    return _decide_writing(name, run)
-
-
 MODELS: list[DataModel] = []
 
 

@@ -229,7 +229,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
-    from datamodel_code_generator.model._model_form import ModelForm
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -1394,6 +1393,11 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
 
 DataTypeT = TypeVar("DataTypeT", bound=DataType)
+
+
+ModelForm: TypeAlias = Literal["alias", "root", "enum", "object"]
+"""How a model holds its value: a type alias stands for the type of its field, a root model wraps the value of its
+field, an enum is one of its members and any other model holds its fields."""
 
 
 TypeForm: TypeAlias = Literal["written", "base", "single", "union", "tuple", "literal"]
