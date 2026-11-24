@@ -1,0 +1,1 @@
+a has a trigger in the tables that its declaration does not

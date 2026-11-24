@@ -63,10 +63,12 @@ becomes final and where a decision belongs.
   its reason (`scripts/check_pass_pipeline.py` says which). Every test runs the finality check
   (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`): "... undeclared: ..." means the pass writes a fact its declaration
   does not list; the other rules report writes after a fact is final.
-- A pass that rewrites a fact some outputs lack declares a `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the
-  facts it reads): false only where running the pass would write nothing, read from what the pass reads when it
-  starts. The newest Python's lane runs such passes anyway (`DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS`): "...
-  trigger-absent write: ..." means the trigger is false where the pass writes; widen the trigger.
+- A pass that rewrites a fact some outputs lack returns early from the first statement of its body when its source
+  is empty, and works on that same local. A `when` names only options (`scripts/check_pass_pipeline.py` lists them).
+  A `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the facts it reads and why the early return costs more) is
+  allowed only for the passes `TRIGGERS` of that script lists, which never grows: false only where running the pass
+  would write nothing. `pytest --check-pass-triggers` runs such passes anyway: "... trigger-absent write: ..." means
+  the trigger is false where the pass writes; widen the trigger.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.
 

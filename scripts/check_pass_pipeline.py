@@ -9,8 +9,9 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
 * the labels name segments and hooks of the tables, every hook has its body, and the segments enter the boundaries in
   the order ``BOUNDARIES`` gives;
 * the passes of each segment satisfy the order rule (``check_order``);
-* a ``PassSpec`` has a ``trigger`` exactly where its declaration has one, and the trigger reads only facts the pass
-  reads, so that the order rule covers what it reads;
+* a ``PassSpec`` has a ``trigger`` exactly where its declaration has one, the trigger reads only facts the pass
+  reads, so that the order rule covers what it reads, and only the passes ``TRIGGERS`` lists have one, each with the
+  reason its exact form is not the skip (``Trigger.kept_because``);
 * a ``when`` names only what the run's options set (``CONFIGURATION``), so that nothing produced gates a pass except a
   ``trigger``;
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
@@ -90,6 +91,7 @@ from scripts.pass_decls import (  # noqa: E402
     PassDecl,
     PassKind,
     Scope,
+    Trigger,
 )
 from tests.checks.finality import _reads_render_fact  # noqa: E402, PLC2701
 from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: E402
@@ -111,12 +113,24 @@ __all__ = [
     "Phase",
     "RenderFact",
     "Scope",
+    "Trigger",
     "check_order",
     "decision_order",
 ]
 
 BOUNDARIES = (Boundary.PARSED, Boundary.FACTS_FINAL, Boundary.DECIDED, Boundary.RENDER_READY)
 """The boundaries the segments enter, in order; ``MODULE_DONE`` ends each module body."""
+TRIGGERS = frozenset({
+    "alias_builtin_shadowing_module_imports",
+    "fix_constructor_field_ordering",
+    "fix_constructor_field_ordering_early",
+    "import_enum_member_literal_classes",
+    "import_models_of_hidden_submodules",
+    "merge_runtime_expression_imports",
+    "resolve_circular_imports",
+})
+"""The passes that may have a trigger, a set that only shrinks: a pass skips by the first statement of its body that
+returns on an empty source. A change that removes a trigger removes its entry, and no entry is added."""
 REPAIRS = frozenset({
     "bind_module_field_names",
     "fix_tag_opt_out_field_ordering",
@@ -307,17 +321,36 @@ def table_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[
     return problems
 
 
-def trigger_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[str]:
-    """Return the passes whose table entry and declaration disagree on a trigger, and the triggers that read more."""
+def trigger_problems(
+    pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE,
+    decls: Sequence[PassDecl] = PASS_DECLS,
+    kept: Collection[str] = TRIGGERS,
+) -> list[str]:
+    """Return the passes whose table entry and declaration disagree on a trigger, and the triggers that read more.
+
+    A trigger is a second predicate beside its pass, which only the test suite's idle run checks: a pass may have one
+    only where ``kept`` lists it, and its declaration says why the skip cannot be the body's own first statement.
+    """
     triggered = {step.name for step in _walk(pipeline) if isinstance(step, PassSpec) and step.trigger is not None}
-    declared = {decl.name for decl in PASS_DECLS if decl.trigger is not None}
+    declared = {decl.name for decl in decls if decl.trigger is not None}
     return [
         *(f"{name} has a trigger in the tables that its declaration does not" for name in sorted(triggered - declared)),
         *(f"{name} declares a trigger that its table entry does not have" for name in sorted(declared - triggered)),
         *(
             f"the trigger of {decl.name} reads {_facts_text(extra)}, which the pass does not declare as reads"
-            for decl in PASS_DECLS
+            for decl in decls
             if decl.trigger is not None and (extra := decl.trigger.reads - decl.reads)
+        ),
+        *(
+            f"{name} has a trigger that TRIGGERS does not list: return early from the first statement of the body "
+            "instead, or list it with the reason the exact form costs more"
+            for name in sorted(declared - set(kept))
+        ),
+        *(f"TRIGGERS lists {name}, which has no trigger: remove it" for name in sorted(set(kept) - declared)),
+        *(
+            f"the trigger of {decl.name} gives no reason it is kept (Trigger.kept_because)"
+            for decl in decls
+            if decl.trigger is not None and not decl.trigger.kept_because.strip()
         ),
     ]
 

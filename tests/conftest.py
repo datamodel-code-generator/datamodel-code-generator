@@ -117,8 +117,7 @@ CHECK_AREA_ENVS = (
 CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
 CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
-"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` and `CHECK_PASS_TRIGGERS_ENV` to `1`:
-one CI lane runs the sweep and the passes whose trigger is false, the others skip those passes as users do."""
+"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
 """What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
 
@@ -258,6 +257,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Collect CLI documentation metadata from tests marked with @pytest.mark.cli_doc",
     )
     parser.addoption(
+        "--check-pass-triggers",
+        action="store_true",
+        default=False,
+        help="Run each pass whose trigger is false anyway and fail on what it changes (PASS_TRIGGERS)",
+    )
+    parser.addoption(
         "--test-shard",
         metavar="INDEX/TOTAL",
         help="Run one of TOTAL shards of the selected tests, split by their measured CI durations",
@@ -296,14 +301,16 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
-    The finality sweep and the trigger check are turned on only from `SWEEP_PYTHON`.
+    The finality sweep is turned on only from `SWEEP_PYTHON`, and the trigger check only by `--check-pass-triggers`.
     """
     benchmarks = config.getoption("codspeed", default=False)
     for name in () if benchmarks else CHECK_AREA_ENVS:
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
-        os.environ.setdefault(CHECK_PASS_TRIGGERS_ENV, "1")
+    os.environ.setdefault(
+        CHECK_PASS_TRIGGERS_ENV, "1" if config.getoption("check_pass_triggers") and not benchmarks else "0"
+    )
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "

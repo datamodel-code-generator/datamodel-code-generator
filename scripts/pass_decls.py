@@ -95,10 +95,15 @@ class After(NamedTuple):
 
 
 class Trigger(NamedTuple):
-    """When the fact a pass rewrites is present (``PassSpec.trigger``): its text and the facts it reads."""
+    """When the fact a pass rewrites is present (``PassSpec.trigger``): its text, the facts it reads, and the reason.
+
+    A pass has a trigger only where the exact form, a first statement of its body that returns on an empty source, costs
+    more than the trigger (``kept_because``): the test suite checks the skip only where ``PASS_TRIGGERS`` is on.
+    """
 
     text: str
     reads: frozenset[Fact | RenderFact]
+    kept_because: str
 
 
 @final
@@ -127,11 +132,15 @@ def _facts(*members: Fact | RenderFact) -> frozenset[Fact | RenderFact]:
     return frozenset(members)
 
 
-_SEVERAL_MODULES: Final = Trigger("the output writes more than one module", _facts(RenderFact.MODULE_MEMBERSHIP))
+def _several_modules(kept_because: str) -> Trigger:
+    return Trigger("the output writes more than one module", _facts(RenderFact.MODULE_MEMBERSHIP), kept_because)
+
+
 _ORDERS_CONSTRUCTORS: Final = Trigger(
     "a model orders keyword-only fields (SUPPORTS_KW_ONLY) or restores the fields it inherits "
     "(restore_required_inherited_field_state)",
     _facts(Fact.MODEL_KIND),
+    "the filter of the models that order constructors moves into the body with the constructor ordering rework",
 )
 
 
@@ -361,7 +370,7 @@ RESOLVE_CIRCULAR_IMPORTS = PassDecl(
         "Merges modules that import each other, or whose import an earlier attempt found to fail, into _internal "
         "modules."
     ),
-    trigger=_SEVERAL_MODULES,
+    trigger=_several_modules("the exact form builds the module graph for a single module too"),
 )
 CONFIGURE_CODE_FORMATTER = PassDecl(
     "configure_code_formatter",
@@ -1208,6 +1217,8 @@ IMPORT_ENUM_MEMBER_LITERAL_CLASSES = PassDecl(
     trigger=Trigger(
         "--use-enum-values-in-discriminator, or a const narrows a value to an enum member (_const_narrowed_values)",
         frozenset(),
+        "the exact form walks every data type of every model; an index of the literals would be new bookkeeping that "
+        "copied data types miss",
     ),
     after=(
         After("import_renamed_types", "imports literal classes next to the renamed types"),
@@ -1586,7 +1597,11 @@ MERGE_RUNTIME_EXPRESSION_IMPORTS = PassDecl(
             "both add module imports; runtime expressions come after validator helpers",
         ),
     ),
-    trigger=Trigger("a pass created a runtime expression (_has_runtime_expressions)", frozenset()),
+    trigger=Trigger(
+        "a pass created a runtime expression (_has_runtime_expressions)",
+        frozenset(),
+        "the exact form walks every data type; the producers of a runtime expression set the flag instead",
+    ),
 )
 REMOVE_UNUSED_IMPORTS = PassDecl(
     "remove_unused_imports",
@@ -1618,7 +1633,7 @@ ALIAS_BUILTIN_SHADOWING_MODULE_IMPORTS = PassDecl(
     writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
     after=(After("resolve_module_import_conflicts", "aliases the module imports once their names are final"),),
     summary="Aliases a module import named like a builtin that its module also writes bare, e.g. ``list[str]``.",
-    trigger=_SEVERAL_MODULES,
+    trigger=_several_modules("the exact form walks every named data type of every module"),
 )
 ALIAS_BUILTINS_HIDDEN_BY_SUBMODULES = PassDecl(
     "alias_builtins_hidden_by_submodules",
@@ -1702,7 +1717,7 @@ IMPORT_MODELS_OF_HIDDEN_SUBMODULES = PassDecl(
         "enum member literal through that import, e.g. ``Literal[Kind.book]``, and imports under an alias what the "
         "``__init__`` imports by the name of a submodule that the output loads, e.g. ``Any_aliased``."
     ),
-    trigger=_SEVERAL_MODULES,
+    trigger=_several_modules("its first step is another rewrite, which would have to be a pass of its own"),
 )
 NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     "name_final_classes_of_additional_properties",
