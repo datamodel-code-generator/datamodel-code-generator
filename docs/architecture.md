@@ -775,9 +775,9 @@ other edges. An explicit edge replaces the derived edge of its pair; one that ru
 reads is a provisional read, listed below the table. `scripts/check_pass_pipeline.py` (run by the test suite) checks
 that the tables run every declaration once in `PASS_DECLS` order, in the phase of its segment and with its scope, that
 the segments enter the boundaries in order and satisfy the order rule, that the repair set only shrinks, that every
-decision registry follows the rules of the [Decision Phase](#decision-phase), that only `GenerationStore.seal_facts`
-builds `FinalFacts`, that no code outside `Parser` reaches its name-mangled members, and lists the warnings whose
-`stacklevel` reaches past their caller. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
+decision registry follows the rules of the [Decision Phase](#decision-phase), and lists the warnings whose
+`stacklevel` reaches past their caller. heki's contracts hold the construction of `FinalFacts` to
+`GenerationStore.seal_facts` and the name-mangled members of `Parser` to its body. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
 runs; the test suite keeps the traces of a few inputs and checks that some input runs every declared pass. The finality
 check ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator
 runs; reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and a table

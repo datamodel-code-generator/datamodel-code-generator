@@ -6089,6 +6089,27 @@ protocol-subclasses = false
 unresolved = "report"
 attribution = "lexical"
 
+[[call-owners]]
+name = "final-facts-built-by-seal-facts"
+targets = ["datamodel_code_generator.parser._phases.FinalFacts"]
+allowed-callers = ["datamodel_code_generator.parser.generation:GenerationStore.seal_facts", "datamodel_code_generator.parser.generation:GenerationStore.seal_facts.*"]
+references = "reads"
+attribution = "lexical"
+
+[[call-owners]]
+name = "parser-mangled-call"
+targets = ["datamodel_code_generator.parser.base.Parser._Parser__*"]
+allowed-callers = ["datamodel_code_generator.parser.base:Parser", "datamodel_code_generator.parser.base:Parser.*"]
+unresolved = "report"
+attribution = "lexical"
+
+[[read-owners]]
+name = "parser-mangled-read"
+targets = ["datamodel_code_generator.parser.base.Parser._Parser__*"]
+allowed-readers = ["datamodel_code_generator.parser.base:Parser", "datamodel_code_generator.parser.base:Parser.*"]
+unresolved = "report"
+attribution = "lexical"
+
 [[effect-boundaries]]
 name = "no-environment-reads"
 scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*", "datamodel_code_generator.*:<module>", "datamodel_code_generator:<module>"]

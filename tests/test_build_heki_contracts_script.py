@@ -844,3 +844,16 @@ def test_store_members_name_a_method_or_a_bookkeeping_row(
         build_heki_contracts.store_member_contracts(repo)
 
     assert str(stopped.value) == message
+
+
+@pytest.mark.parametrize("name", ["FINAL_FACTS", "FINAL_FACTS_SITE", "PARSER"])
+@pytest.mark.allow_direct_assert("a stale pipeline home must stop the build, not be stored as an expected output")
+def test_pipeline_contracts_name_scopes_the_package_defines(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """The scopes the pipeline contracts name exist in the package."""
+    monkeypatch.setattr(build_heki_contracts, name, Home("parser/base.py", "NeverDefined"))
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.pipeline_contracts(repo)
+
+    assert str(stopped.value) == "parser/base.py defines no NeverDefined"
