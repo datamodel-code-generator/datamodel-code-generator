@@ -99,7 +99,6 @@ from typing import TYPE_CHECKING, Final, NamedTuple
 import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from datamodel_code_generator.parser._facts import Phase  # noqa: PLC2701
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
 from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
@@ -119,6 +118,7 @@ from scripts.fact_tables import (
     FreezePoint,
     LedgerWriter,
     MemberUse,
+    Phase,
     RenderFact,
     StoreMember,
     freeze_point,
@@ -822,6 +822,8 @@ MODEL_CLASS = f"{PACKAGE}.model.base.DataModel"
 """The model class a table step's ``self.data_model_type`` is."""
 STEP_CLASSES = {f"{PACKAGE}.parser._pipeline.PassSpec": "pass", f"{PACKAGE}.parser._pipeline.HookCall": "hook"}
 DECISION_CLASS = f"{PACKAGE}.parser._phases.DecisionPass"
+LATE = f"{PACKAGE}.parser._pipeline.late"
+"""The marker of a step whose function the parser instance looks up when the step runs."""
 FREEZE_PHASES = {FreezePoint.B1: Phase.RENDER_PREPARATION, FreezePoint.B2: Phase.IMPORTS}
 """The first phase in which the facts final at each freeze point are frozen.
 
@@ -901,6 +903,7 @@ class _TableSteps:
         self.index = PackageIndex()
         self.model = repo.model(f"{PACKAGE_DIR}{TABLES}")
         self.modules = set(_package_modules(repo).values())
+        self.lambdas = {id(scope.node): scope for scope in self.model.scopes if scope.kind == "lambda"}
 
     def _symbol(self, dotted: str) -> str | None:
         """Return a function or class of the package as ``module:qualname``, or None outside the package."""
@@ -917,31 +920,27 @@ class _TableSteps:
         raise SystemExit(message)
 
     def _callee(self, func: ast.expr, receiver: str | None) -> list[str]:
-        match func:
-            case ast.Attribute(value=ast.Name(id=name), attr=attr) if name == receiver:
-                found = self.classes.definers(PARSER_CLASS, attr)
-            case ast.Attribute(value=ast.Attribute(value=ast.Name(id=name), attr="data_model_type"), attr=attr) if (
-                name == receiver
+        """Return the scopes of the functions a call of ``func`` runs, ``receiver`` being the step's parser."""
+        root = None
+        if isinstance(func, ast.Attribute) and receiver is not None:
+            roots = {receiver: PARSER_CLASS, f"{receiver}.data_model_type": MODEL_CLASS}
+            if (root := roots.get(self.model.source(func.value))) is not None and (
+                found := self.classes.definers(root, func.attr)
             ):
-                found = self.classes.definers(MODEL_CLASS, attr)
-            case _ if (origin := self.model.origin(func)) is not None:
-                return [] if (symbol := self._symbol(origin)) is None else [symbol]
-            case _:
-                found = []
-        if not found:
-            message = f"{TABLES}: cannot tell which function `{ast.unparse(func)}` calls"
-            raise SystemExit(message)
-        return found
+                return found
+        if root is None and (origin := self.model.origin(func)) is not None:
+            return [] if (symbol := self._symbol(origin)) is None else [symbol]
+        message = f"{TABLES}: cannot tell which function `{ast.unparse(func)}` calls"
+        raise SystemExit(message)
 
     def run(self, node: ast.expr) -> list[str]:
         """Return the scopes of the functions a step's run runs."""
-        match node:
-            case ast.Call(func=ast.Name(id="late"), args=[target]):
-                return self._callee(target, None)
-            case ast.Lambda(args=arguments, body=body):
-                receiver = arguments.args[0].arg if arguments.args else None
-                calls = (call.func for call in ast.walk(body) if isinstance(call, ast.Call))
-                return sorted({symbol for func in calls for symbol in self._callee(func, receiver)})
+        if isinstance(node, ast.Call) and self.model.origin(node.func) == LATE and node.args:
+            return self._callee(node.args[0], None)
+        if (scope := self.lambdas.get(id(node))) is not None:
+            receiver = next((name for name, bound in scope.bindings.items() if bound[0].kind == "param"), None)
+            calls = (call.func for call in ast.walk(scope.node) if isinstance(call, ast.Call))
+            return sorted({symbol for func in calls for symbol in self._callee(func, receiver)})
         return self._callee(node, None)
 
     def steps(self) -> dict[str, tuple[str, list[str]]]:
@@ -952,8 +951,9 @@ class _TableSteps:
                 isinstance(call, ast.Call)
                 and (kind := STEP_CLASSES.get(self.model.origin(call.func) or ""))
                 and isinstance(name := call.args[0], ast.Constant)
+                and isinstance(step := name.value, str)
             ):
-                found[name.value] = (kind, self.run(call.args[1]))
+                found[step] = (kind, self.run(call.args[1]))
         return found
 
     def decisions(self, decls: Mapping[str, PassDecl]) -> dict[str, list[str]]:
