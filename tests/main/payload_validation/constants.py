@@ -958,12 +958,33 @@ PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
     "jsonschema/root_alias_constraints/lookaround.json",
 )
 """Lookaround aliases validated on their own: only a compiled pattern carries the engine without a config."""
+PYDANTIC_V2_DATACLASS_BARE_PYTHON_RE_ALIAS_CASE_IDS = (
+    "openapi/pattern_backreference.yaml::components.schemas.Doubled",
+    "openapi/pattern_size_alternation.yaml::components.schemas.Principal",
+    "openapi/pattern_size_any_character.yaml::components.schemas.Comment",
+    "openapi/pattern_size_counted_group.yaml::components.schemas.Address",
+    "openapi/pattern_size_negated_characters.yaml::components.schemas.Text",
+    "openapi/pattern_size_negated_newline.yaml::components.schemas.Line",
+    "openapi/pattern_size_repetitions.yaml::components.schemas.UserArn",
+    "openapi/pattern_size_word_and_digit_class.yaml::components.schemas.ResourceName",
+    "openapi/pattern_size_word_and_space_class.yaml::components.schemas.Title",
+    "openapi/read_only_write_only_extra_items_patterns.yaml::components.schemas.Passwords",
+)
+"""Aliases of patterns the Rust engine refuses (a backreference, a pattern above its size limit), on their own."""
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
-    PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
-        PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
-        "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
-        "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
-    ),
+    PayloadBackend.PYDANTIC_V2_DATACLASS: {
+        **dict.fromkeys(
+            PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
+            "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
+            "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
+        ),
+        **dict.fromkeys(
+            PYDANTIC_V2_DATACLASS_BARE_PYTHON_RE_ALIAS_CASE_IDS,
+            "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string patterns "
+            "the Rust engine refuses (a backreference, a size above its limit) that a bare type alias has no model "
+            "config to select regex_engine='python-re' for",
+        ),
+    },
 }
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
@@ -1022,6 +1043,8 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                 (
                     "jsonschema/allof_map_member_counts_no_merge.json",
                     "jsonschema/type_overrides_replace_whole_type.json",
+                    "openapi/false_all_of_values.yaml::components.schemas.Holder",
+                    "openapi/false_values.yaml::components.schemas.Holder",
                 ),
                 "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
                 "('at most N items after validation, not N')",
@@ -1066,9 +1089,42 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                     (
                         "jsonschema/discriminator_msgspec_wire_name.json",
                         "jsonschema/msgspec_tag_below_instance_field.json",
+                        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Mammal",
+                        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Pet",
+                        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Quoted",
+                        "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Garage",
+                        "openapi/discriminator_with_properties.yaml::components.schemas.CustomContextVariable",
+                        "openapi/field_options_every_field.yaml::components.schemas.Owner",
                     ),
-                    "Pydantic before 2.11.0 does not support the alias of a hyphenated discriminator property in a "
-                    "discriminated union of dataclasses",
+                    "Pydantic before 2.11.0 does not support the alias of a discriminator property whose name is no "
+                    "identifier (pet-type, @type) in a discriminated union of dataclasses",
+                ),
+            },
+        },
+    ),
+    (
+        "2.12.0",
+        {
+            PayloadBackend.PYDANTIC_V2_DATACLASS: {
+                **dict.fromkeys(
+                    (
+                        "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneRootTag",
+                        "openapi/variant_tag_values/lone_root_model_tag.yaml::components.schemas.PaymentMethod",
+                    ),
+                    "Pydantic 2.0.x refuses a dataclass variant whose tag is a root model of a Literal ('needs field "
+                    "type to be of type Literal'); 2.12, the next pinned runtime, validates it",
+                ),
+                "openapi/discriminator_duplicate_value.yaml::components.schemas.GroupedItem": (
+                    "Pydantic 2.0.x refuses a discriminator value that maps to two dataclass variants ('mapped to "
+                    "multiple choices'); 2.12, the next pinned runtime, validates it"
+                ),
+                **dict.fromkeys(
+                    (
+                        f"openapi/allof_with_required_inherited_coverage.yaml::components.schemas.{name}"
+                        for name in ("NestedCombinatorObjectAllOf", "NestedOneOfObjectAllOf")
+                    ),
+                    "Pydantic 2.0.x cannot build the schema of a nested dataclass union that refers to itself "
+                    "('Definitions error'); 2.12, the next pinned runtime, validates it",
                 ),
             },
         },

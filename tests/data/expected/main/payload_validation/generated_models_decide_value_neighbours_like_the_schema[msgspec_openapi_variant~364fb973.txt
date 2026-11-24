@@ -1,0 +1,14 @@
+[
+  "/type const 1: invalid, model accepts",
+  "/type const 1.0: invalid, model accepts",
+  "/type const [\"card\"]: invalid, model accepts",
+  "/type const null: invalid, model accepts",
+  "/type const true: invalid, model accepts",
+  "/type const {\"a\": \"card\"}: invalid, model accepts",
+  "discriminator {\"number\": \"a\", \"type\": 1.0}: invalid, model accepts",
+  "discriminator {\"number\": \"a\", \"type\": 1}: invalid, model accepts",
+  "discriminator {\"number\": \"a\", \"type\": [\"card\"]}: invalid, model accepts",
+  "discriminator {\"number\": \"a\", \"type\": null}: invalid, model accepts",
+  "discriminator {\"number\": \"a\", \"type\": true}: invalid, model accepts",
+  "discriminator {\"number\": \"a\", \"type\": {\"a\": \"card\"}}: invalid, model accepts"
+]

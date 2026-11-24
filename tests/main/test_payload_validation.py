@@ -604,33 +604,6 @@ def test_payload_backend_full_matrix_exclusions_are_classified() -> None:
             + "\n".join(unclassified_dataclasses)
         )
 
-    for backend in (PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC):
-        representative_acceptance_cases = set(BACKEND_ACCEPTANCE_CASE_IDS[backend])
-        if unclassified_acceptance := sorted(  # pragma: no cover
-            case.id
-            for case in SCHEMA_CASES
-            if case.input_file_type == "openapi"
-            and case.id not in representative_acceptance_cases
-            and not backend_acceptance_exclusion_reason(case, backend)
-        ):
-            pytest.fail(
-                f"{backend.value}: OpenAPI acceptance exclusions require reasons:\n"
-                + "\n".join(unclassified_acceptance)
-            )
-
-        representative_rejection_cases = set(BACKEND_REJECTION_CASE_IDS.get(backend, ()))
-        if unclassified_rejection := sorted(  # pragma: no cover
-            case.id
-            for case in SCHEMA_CASES
-            if case.input_file_type == "openapi"
-            and case.id not in representative_rejection_cases
-            and has_rejection_oracle_constraints(case, backend)
-            and not backend_rejection_exclusion_reason(case, backend)
-        ):
-            pytest.fail(
-                f"{backend.value}: OpenAPI rejection exclusions require reasons:\n" + "\n".join(unclassified_rejection)
-            )
-
 
 @pytest.mark.parametrize(
     "case_id",
@@ -1088,14 +1061,15 @@ def test_payload_inputs_select_every_case_of_their_inputs() -> None:
 
 @pytest.mark.allow_direct_assert
 def test_payload_backend_all_case_mode_widens_runtime_validating_backends() -> None:
-    """Full backend mode widens runtime-validating backends and leaves plain dataclasses representative-only."""
+    """Full backend mode widens validating backends over both input types; plain dataclasses stay representative."""
     for backend in (PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC):
         representative_acceptance_cases = set(_backend_acceptance_case_ids(backend, "representative"))
         all_acceptance_cases = set(_backend_acceptance_case_ids(backend, "all"))
         assert representative_acceptance_cases < all_acceptance_cases
-        assert any(
-            case_id.startswith("jsonschema/") for case_id in all_acceptance_cases - representative_acceptance_cases
-        )
+        assert {case_id.partition("/")[0] for case_id in all_acceptance_cases - representative_acceptance_cases} == {
+            "jsonschema",
+            "openapi",
+        }
 
         representative_rejection_cases = set(_backend_rejection_case_ids(backend, "representative"))
         all_rejection_cases = set(_backend_rejection_case_ids(backend, "all"))
