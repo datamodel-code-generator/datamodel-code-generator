@@ -68,6 +68,24 @@ CANDIDATES = {
 files of the test suite it adds."""
 
 
+def _without_pytest_failure_text(lines: list[str]) -> list[str]:
+    """Return `lines` without the inner pytest runs' tracebacks and failure messages.
+
+    Their text and the width they truncate to follow the environment's pytest and terminal; the node ids of the
+    `FAILED` summary lines stay.
+    """
+    kept: list[str] = []
+    in_tracebacks = False
+    for line in lines:
+        if line.startswith("=") and " FAILURES " in line:
+            in_tracebacks = True
+        elif line.startswith("=") and " short test summary info " in line:
+            in_tracebacks = False
+        elif not in_tracebacks:
+            kept.append(line.split(" - ")[0] if line.startswith("FAILED tests/") else line)
+    return kept
+
+
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
@@ -107,7 +125,7 @@ def test_verify_compares_the_picked_cells_twice(
     out = capfd.readouterr().out
     lines = [
         re.sub(r"\d+s\b", "<n>s", re.sub(r"-[0-9a-f]{8}\"", '-<random>"', line))
-        for line in out.splitlines()
+        for line in _without_pytest_failure_text(out.splitlines())
         if line.startswith((
             "verify:",
             "WARN",

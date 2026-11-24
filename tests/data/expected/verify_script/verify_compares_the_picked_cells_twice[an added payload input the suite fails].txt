@@ -2,9 +2,7 @@ exit=1
 verify: TMP/repo (working tree) against the merge base <sha> with <sha>
 verify: tests the diff reaches: 1
 verify: payload inputs the diff reaches: 1
-    def test_inputs() -> None:
-        inputs = os.environ.get('DCG_PAYLOAD_INPUTS', 'tests/data/jsonschema/other.json')
-FAILED tests/main/test_payload_validation.py::test_inputs - AssertionError: a...
+FAILED tests/main/test_payload_validation.py::test_inputs
 verify: tests done after <n>s
 verify: src/ is unchanged since the merge base: no cell can differ
 verify: FAILED: tests (<n>s)
