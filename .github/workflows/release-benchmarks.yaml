@@ -272,8 +272,6 @@ jobs:
         with:
           app-id: ${{ secrets.GENERATED_DOCS_APP_ID }}
           private-key: ${{ secrets.GENERATED_DOCS_APP_PRIVATE_KEY }}
-          permission-contents: write
-          permission-pull-requests: write
       - name: Create or update release benchmark data PR
         id: pr
         env:

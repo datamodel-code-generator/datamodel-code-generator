@@ -95,7 +95,7 @@ repos:
     pass_filenames: false
   - id: zizmor
     name: Audit the workflows, actions and Dependabot configuration with zizmor
-    entry: zizmor --offline .
+    entry: zizmor --offline --config .github/zizmor.yml .
     language: python
     additional_dependencies: [zizmor==1.32.0]
     files: ^(\.github/.*\.ya?ml|action\.yml|\.pre-commit-config\.yaml|\.pre-commit-hooks\.yaml)$

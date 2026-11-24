@@ -2535,7 +2535,7 @@ jobs:
         run: |
           set -euo pipefail
           pin="$(uv run --no-project --python 3.13 python scripts/check_ratchets.py --ruff-pin)"
-          uv run --no-project --python 3.13 --with "ruff==${pin}" \
+          uv run --no-project --python 3.13 --with "ruff==${pin}" --exclude-newer-package ruff=false \
             python scripts/check_ratchets.py --base "$BASE" --enforce
 
   behaviour-gate:

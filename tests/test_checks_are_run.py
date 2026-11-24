@@ -62,6 +62,7 @@ AMBIGUOUS = re.compile(r"""(["'])[;&|]+\1|\\[;&|]|[^\s;&|]#""")
 SHELL_PREFIXES = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "time", "exec"})
 ASSIGNMENT = re.compile(r"[A-Za-z_]\w*=")
 UV_RUN_VALUES = frozenset({
+    "--exclude-newer-package",
     "--python",
     "-p",
     "--with",

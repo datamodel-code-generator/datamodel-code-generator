@@ -7,3 +7,9 @@ rules:
     # Every `./` action and workflow call runs after the job's own checkout of this repository. actionlint 1.7.12
     # still rejects the `$/` form; revisit when it accepts it.
     disable: true
+  github-app:
+    # These two jobs rebuild a sync branch from main and force-push it; main's commits change workflow files, so the
+    # push may need the App's workflows permission, which is not known here. They keep the installation's permissions.
+    ignore:
+      - generated-docs-sync.yaml:144
+      - release-benchmarks.yaml:271
