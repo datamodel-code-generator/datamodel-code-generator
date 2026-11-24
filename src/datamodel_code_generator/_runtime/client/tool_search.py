@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Final
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-_WORD: Final = re.compile(r"[0-9a-z]+")
+_WORD: Final = re.compile(r"[^\W_]+")
 _CAMEL: Final = re.compile(r"(?<=[0-9a-z])(?=[A-Z])")
 _PREFIX: Final = 3
 

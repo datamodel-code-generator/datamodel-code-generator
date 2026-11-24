@@ -47,6 +47,7 @@ def tools(package: ModuleType, lines: list[str]) -> None:
             ("listPets", {}),
             ("delete", {}),
             ("store", {}),
+            ("猫", {}),
             ("", {"tag": "owners"}),
         ):
             names = [entry["name"] for entry in table.search(query, **options)]

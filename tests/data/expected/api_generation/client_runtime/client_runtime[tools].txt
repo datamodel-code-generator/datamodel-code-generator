@@ -8,6 +8,7 @@
   search 'listPets' {} = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet']
   search 'delete' {} = ['pets_delete_pet']
   search 'store' {} = []
+  search '猫' {} = []
   search '' {'tag': 'owners'} = ['owners_get_owner']
   search with no limit ! ValueError: limit must be a positive integer []
   search entry = {"description": "Call GET /owners/{ownerId}.", "name": "owners_get_owner", "route": "GET /owners/{ownerId}", "signature": "def owners_get_owner(\n    *,\n    ownerId: UUID,\n) -> GetOwnerResponse: ...", "tags": ["owners"]}
@@ -83,6 +84,7 @@
   search 'listPets' {} = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet']
   search 'delete' {} = ['pets_delete_pet']
   search 'store' {} = []
+  search '猫' {} = []
   search '' {'tag': 'owners'} = ['owners_get_owner']
   search with no limit ! ValueError: limit must be a positive integer []
   search entry = {"description": "Call GET /owners/{ownerId}.", "name": "owners_get_owner", "route": "GET /owners/{ownerId}", "signature": "def owners_get_owner(\n    *,\n    ownerId: UUID,\n) -> GetOwnerResponse: ...", "tags": ["owners"]}
