@@ -5831,7 +5831,7 @@ attribution = "lexical"
 
 [[call-owners]]
 name = "builder:reference.py:ModelResolver.add"
-targets = ["datamodel_code_generator.reference.Reference", "datamodel_code_generator.reference.Reference.model_construct", "datamodel_code_generator.reference.Reference.model_validate"]
+targets = ["datamodel_code_generator.reference.Reference"]
 allowed-callers = ["datamodel_code_generator.reference:ModelResolver.add", "datamodel_code_generator.reference:ModelResolver.add.*", "datamodel_code_generator.reference:ModelResolver._register_reference", "datamodel_code_generator.reference:ModelResolver._register_reference.*"]
 attribution = "lexical"
 
@@ -6086,6 +6086,27 @@ forbidden-writers = ["datamodel_code_generator.model._field_imports:*", "datamod
 own-receiver = "allow"
 allowed-protocols = ["*Host"]
 protocol-subclasses = false
+unresolved = "report"
+attribution = "lexical"
+
+[[call-owners]]
+name = "final-facts-built-by-seal-facts"
+targets = ["datamodel_code_generator.parser._phases.FinalFacts"]
+allowed-callers = ["datamodel_code_generator.parser.generation:GenerationStore.seal_facts", "datamodel_code_generator.parser.generation:GenerationStore.seal_facts.*"]
+references = "reads"
+attribution = "lexical"
+
+[[call-owners]]
+name = "parser-mangled-call"
+targets = ["datamodel_code_generator.parser.base.Parser._Parser__*"]
+allowed-callers = ["datamodel_code_generator.parser.base:Parser", "datamodel_code_generator.parser.base:Parser.*"]
+unresolved = "report"
+attribution = "lexical"
+
+[[read-owners]]
+name = "parser-mangled-read"
+targets = ["datamodel_code_generator.parser.base.Parser._Parser__*"]
+allowed-readers = ["datamodel_code_generator.parser.base:Parser", "datamodel_code_generator.parser.base:Parser.*"]
 unresolved = "report"
 attribution = "lexical"
 

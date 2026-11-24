@@ -929,28 +929,12 @@ def _generation_store_usage(form: Path) -> list[Finding]:
 
 
 def _pass_pipeline(form: Path) -> list[Finding]:
-    """Run the pass pipeline check's readings over a form's modules, each one standing as the module of ``Parser``.
-
-    The readings are the calls that build ``FinalFacts``, the places outside the body of the form's ``Parser`` that
-    reach a mangled member of it, and the deep warnings.
-    """
-    found = []
-    for name, text in _form_files(form):
-        model = source_model.SourceModule(text, name, "forms.form")
-        members = check_pass_pipeline.mangled_members(model)
-        found += [
-            Finding("final-facts", _site(form, name, line), f"{name}:{line}: FinalFacts built in {scope or '<module>'}")
-            for scope, line in check_pass_pipeline.calls(model, "FinalFacts")
-        ]
-        found += [
-            Finding("mangled-member", _site(form, name, line), f"{name}:{line}: reaches Parser.{attr}")
-            for line, attr in check_pass_pipeline.reached_members(model, members, own=True)
-        ]
-        found += [
-            Finding("deep-warning", _site(form, name, line), f"{name}:{line}: deep warning in {function}")
-            for function, line in check_pass_pipeline.deep_warnings(model)
-        ]
-    return found
+    """Run the pass pipeline check's reading over a form's modules: the deep warnings."""
+    return [
+        Finding("deep-warning", _site(form, name, line), f"{name}:{line}: deep warning in {function}")
+        for name, text in _form_files(form)
+        for function, line in check_pass_pipeline.deep_warnings(source_model.SourceModule(text, name, "forms.form"))
+    ]
 
 
 def _coverage_exclusions(form: Path) -> list[Finding]:
