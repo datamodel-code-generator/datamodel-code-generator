@@ -1,0 +1,8 @@
+[[change]]
+id = "bug-7454-boolean-parameter-schema-input-count"
+category = "harness"
+title = "Count the boolean parameter schema inputs"
+summary = "The payload suite lists the inputs this fix adds; the package writes the same output for every input that generated before."
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]
