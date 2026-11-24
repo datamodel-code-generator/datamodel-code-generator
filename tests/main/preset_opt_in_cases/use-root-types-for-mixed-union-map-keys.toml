@@ -1,0 +1,5 @@
+option = "--use-root-types-for-mixed-union-map-keys"
+input = "jsonschema/property_names_root_model_mixed_union_keys.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]
+off_args = []

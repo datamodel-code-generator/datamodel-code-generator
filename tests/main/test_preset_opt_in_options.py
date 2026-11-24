@@ -13,15 +13,27 @@ from __future__ import annotations
 
 import sys
 from contextlib import AbstractContextManager, nullcontext
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import Literal, NotRequired, TypedDict
 
 import pytest
+import tomllib
 
 from datamodel_code_generator import chdir
-from tests.main.conftest import ASYNC_API_DATA_PATH, JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
+from datamodel_code_generator.preset import get_preset_infos
+from tests.main.conftest import (
+    ASYNC_API_DATA_PATH,
+    DATA_PATH,
+    JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
+    run_main_and_assert,
+)
 
-if TYPE_CHECKING:
-    from pathlib import Path
+CASES_PATH = Path(__file__).parent / "preset_opt_in_cases"
+"""The case files of the options the dates from ``DERIVED_FROM`` on add: ``<test id>.toml`` each."""
+
+DERIVED_FROM = "20261123"
+"""The first date whose options come from the rows that join it and whose cases come from case files."""
 
 ORDER_CONSTRUCTOR_FIELDS_BY: tuple[str, ...] = ("--order-constructor-fields-by", "final-names", "written-defaults")
 """The constructor-order values the 20261027 presets set."""
@@ -142,31 +154,72 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
 """The options the 20261120 presets set beyond the 20261118 presets."""
 
-OPT_IN_OPTIONS_20261123: tuple[str, ...] = (
-    "--read-mapping-keys-by-schema-tag-type",
-    "--keep-null-of-nullable-items",
-    "--keep-string-keywords-beside-formats",
-    "--intersect-merged-allof-members",
-    "--read-allof-parents-as-their-models",
-    "--read-set-item-fields-in-class-order",
-    "--use-root-types-for-mixed-union-map-keys",
-    "--read-refs-in-their-resources",
-    "--keep-bases-beside-generic-base-class",
-    "--rename-redeclared-fields-hiding-types",
-    "--rename-fields-hiding-types-from-type-checkers",
-    "--use-str-for-formats-msgspec-cannot-decode",
-)
-"""The options the 20261123 presets set beyond the 20261120 presets."""
 
-WARNINGS_WITH_OPTION: dict[str, str] = {
+def _added_options(previous: str, date: str) -> tuple[str, ...]:
+    """Return the options of the groups the standard py312 presets of ``date`` list beyond those of ``previous``."""
+    groups = {info.name.value: info.option_groups for info in get_preset_infos()}
+    before = groups[f"standard-py312-{previous}"]
+    return tuple(
+        option for group in groups[f"standard-py312-{date}"] if group not in before for option in group.options
+    )
+
+
+def _argv(options: tuple[str, ...]) -> tuple[str, ...]:
+    """Return the command-line words of options, a value option such as ``--open-enums extensible`` as two."""
+    return tuple(word for option in options for word in option.split())
+
+
+OPT_IN_OPTIONS_20261123: tuple[str, ...] = _argv(_added_options("20261120", "20261123"))
+"""The options the 20261123 presets set beyond the 20261120 presets, from the rows that join them."""
+
+
+class CaseFile(TypedDict):
+    """A case file: the option, its input under tests/data and the arguments of the two tests that generate it.
+
+    ``args`` go beside the preset that sets the option, ``off_args`` beside ``--output-model-type
+    pydantic_v2.BaseModel`` where the option is turned off, a case without them has no turned-off test; ``off`` is the
+    --no- form of an alias, ``warns_with`` and ``warns_without`` the warning the input gives with and without the
+    option, ``filterwarnings`` the warnings left out.
+    """
+
+    option: str
+    input: str
+    input_file_type: str
+    args: list[str]
+    off_args: NotRequired[list[str]]
+    off: NotRequired[str]
+    warns_with: NotRequired[str]
+    warns_without: NotRequired[str]
+    filterwarnings: NotRequired[list[str]]
+
+
+WarningKey = Literal["warns_with", "warns_without"]
+
+CASE_FILES: dict[str, CaseFile] = {
+    path.stem: tomllib.loads(path.read_text(encoding="utf-8")) for path in sorted(CASES_PATH.glob("*.toml"))
+}
+"""The case files by test id."""
+
+RELEASED_WARNINGS_WITH_OPTION: dict[str, str] = {
     "uuid_version_formats.json": "Pydantic does not take max_length on UUID7",
 }
+"""The warning each input of a literal case gives in a generation with its options on, by file name."""
+
+RELEASED_WARNINGS_WITHOUT_OPTION: dict[str, str] = {
+    "uuid_version_formats.json": "format of 'uuid[678]' not understood",
+}
+"""The warning each input of a literal case gives without the option that a turned-off test names, by file name."""
+
+
+def _case_warnings(released: dict[str, str], key: WarningKey) -> dict[str, str]:
+    """Return the warnings of the literal cases and those the case files name under ``key``, by input file name."""
+    return released | {Path(case["input"]).name: case[key] for case in CASE_FILES.values() if key in case}
+
+
+WARNINGS_WITH_OPTION = _case_warnings(RELEASED_WARNINGS_WITH_OPTION, "warns_with")
 """The warning each input gives in a generation with its options on, by file name."""
 
-WARNINGS_WITHOUT_OPTION: dict[str, str] = {
-    "uuid_version_formats.json": "format of 'uuid[678]' not understood",
-    "format_string_keywords.json": "fields holding AnyUrl are written without max_length",
-}
+WARNINGS_WITHOUT_OPTION = _case_warnings(RELEASED_WARNINGS_WITHOUT_OPTION, "warns_without")
 """The warning each input gives in a generation without the option that a turned-off test names, by file name."""
 
 
@@ -611,91 +664,88 @@ CASES_20261120: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261120 presets changes."""
 
-CASES_20261123: tuple[pytest.ParameterSet, ...] = (
+DERIVED_RELEASES: dict[str, tuple[str, ...]] = {
+    date: _added_options(previous, date) for date, (previous, _) in PRESET_RELEASES.items() if date >= DERIVED_FROM
+}
+"""The options each date from ``DERIVED_FROM`` on adds, as its groups list them."""
+
+DERIVED_OPTIONS = frozenset(option for options in DERIVED_RELEASES.values() for option in options)
+"""The options the dates from ``DERIVED_FROM`` on add; a case file of another option is reported, not run."""
+
+
+def _case_release(option: str) -> str:
+    """Return the date that adds the option a case file names."""
+    return next(date for date, options in DERIVED_RELEASES.items() if option in options)
+
+
+def _case_marks(case: CaseFile) -> list[pytest.MarkDecorator]:
+    """Return the marks of a case file: a ``filterwarnings`` mark for each of its patterns."""
+    return [pytest.mark.filterwarnings(pattern) for pattern in case.get("filterwarnings", [])]
+
+
+DERIVED_CASES: tuple[pytest.ParameterSet, ...] = tuple(
     pytest.param(
-        JSON_SCHEMA_DATA_PATH / "discriminator_mapping_key_after_union.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="read-mapping-keys-by-schema-tag-type",
-    ),
-    pytest.param(
-        OPEN_API_DATA_PATH / "nullable_item_forms.yaml",
-        "openapi",
-        ["--output-model-type", "pydantic_v2.BaseModel", "--strict-nullable"],
-        id="keep-null-of-nullable-items",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="keep-string-keywords-beside-formats",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "allof_merged_member_values.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="intersect-merged-allof-members",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "allof_parents_as_models" / "ref_sibling_parents.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="read-allof-parents-as-their-models",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
-        "jsonschema",
-        ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"],
-        id="read-set-item-fields-in-class-order",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "property_names_root_model_mixed_union_keys.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="use-root-types-for-mixed-union-map-keys",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="read-refs-in-their-resources",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json",
-        "jsonschema",
-        [
-            *("--output-model-type", "pydantic_v2.BaseModel", "--use-generic-base-class", "--extra-fields", "forbid"),
-            *("--base-class-map", '{"Tag": "mypkg.base.TagBase"}'),
-        ],
-        id="keep-bases-beside-generic-base-class",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "field_named_like_type_redeclared.json",
-        "jsonschema",
-        ["--output-model-type", "pydantic_v2.BaseModel", "--no-snake-case-field"],
-        id="rename-redeclared-fields-hiding-types",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "field_named_like_type_assigned.json",
-        "jsonschema",
-        ["--output-model-type", "dataclasses.dataclass"],
-        id="rename-fields-hiding-types-from-type-checkers",
-    ),
-    pytest.param(
-        JSON_SCHEMA_DATA_PATH / "use_standard_primitive_types.json",
-        "jsonschema",
-        ["--output-model-type", "msgspec.Struct"],
-        id="use-str-for-formats-msgspec-cannot-decode",
-    ),
+        _case_release(case["option"]),
+        DATA_PATH / case["input"],
+        case["input_file_type"],
+        case["args"],
+        id=test_id,
+        marks=_case_marks(case),
+    )
+    for test_id, case in CASE_FILES.items()
+    if case["option"] in DERIVED_OPTIONS
 )
-"""The inputs each opt-in option of the 20261123 presets changes."""
+"""The inputs each opt-in option of the dates from ``DERIVED_FROM`` on changes, from the case files."""
+
+TURNED_OFF_CASES: tuple[pytest.ParameterSet, ...] = tuple(
+    pytest.param(
+        DATA_PATH / case["input"],
+        case["input_file_type"],
+        off_args,
+        case["option"],
+        case.get("off", f"--no-{case['option'].split()[0].removeprefix('--')}"),
+        id=test_id,
+        marks=_case_marks(case),
+    )
+    for test_id, case in CASE_FILES.items()
+    if case["option"] in DERIVED_OPTIONS and (off_args := case.get("off_args")) is not None
+)
+"""The options of the dates from ``DERIVED_FROM`` on turned off, from the case files."""
+
+
+def _case_file_problems() -> list[str]:
+    """Return what keeps the case files from matching the options the dates from ``DERIVED_FROM`` on add."""
+    named = {case["option"] for case in CASE_FILES.values()}
+    return [
+        *(f"{option}: add {CASES_PATH.name}/<test id>.toml for it" for option in sorted(DERIVED_OPTIONS - named)),
+        *(
+            f"{CASES_PATH.name}/{test_id}.toml: {case['option']} joins no date from {DERIVED_FROM} on; delete the file"
+            for test_id, case in CASE_FILES.items()
+            if case["option"] not in DERIVED_OPTIONS
+        ),
+        *(
+            f"{CASES_PATH.name}/{test_id}.toml: {key} differs from the pattern a literal case names for its input"
+            for test_id, case in CASE_FILES.items()
+            for key, released in (
+                ("warns_with", RELEASED_WARNINGS_WITH_OPTION),
+                ("warns_without", RELEASED_WARNINGS_WITHOUT_OPTION),
+            )
+            if released.get(Path(case["input"]).name, case.get(key)) != case.get(key)
+        ),
+    ]
+
+
+@pytest.mark.allow_direct_assert("states that the case files match the option rows; no generation output shows it")
+def test_case_files_match_the_joined_options() -> None:
+    """Every option a date from DERIVED_FROM on adds has one case file, and every case file names such an option."""
+    assert _case_file_problems() == []
 
 
 @pytest.mark.parametrize("family", ["standard", "practical"])
 @pytest.mark.parametrize(
     ("release", "input_path", "input_file_type", "extra_args"),
     [
-        *(pytest.param("20261123", *case.values, id=case.id, marks=case.marks) for case in CASES_20261123),
+        *DERIVED_CASES,
         *(pytest.param("20261120", *case.values, id=case.id, marks=case.marks) for case in CASES_20261120),
         *(pytest.param("20261118", *case.values, id=case.id, marks=case.marks) for case in CASES_20261118),
         *(pytest.param("20261113", *case.values, id=case.id, marks=case.marks) for case in CASES_20261113),
@@ -1052,100 +1102,7 @@ def test_preset_sets_opt_in_option(
             "--no-read-uuid6-uuid7-uuid8-formats",
             id="read-uuid6-uuid7-uuid8-formats",
         ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "discriminator_mapping_key_after_union.json",
-            "jsonschema",
-            [],
-            "--read-mapping-keys-by-schema-tag-type",
-            "--no-read-mapping-keys-by-schema-tag-type",
-            id="read-mapping-keys-by-schema-tag-type",
-        ),
-        pytest.param(
-            OPEN_API_DATA_PATH / "nullable_item_forms.yaml",
-            "openapi",
-            ["--strict-nullable"],
-            "--keep-null-of-nullable-items",
-            "--no-keep-null-of-nullable-items",
-            id="keep-null-of-nullable-items",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "format_string_keywords.json",
-            "jsonschema",
-            [],
-            "--keep-string-keywords-beside-formats",
-            "--no-keep-string-keywords-beside-formats",
-            id="keep-string-keywords-beside-formats",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "allof_merged_member_values.json",
-            "jsonschema",
-            [],
-            "--intersect-merged-allof-members",
-            "--no-intersect-merged-allof-members",
-            id="intersect-merged-allof-members",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "allof_parents_as_models" / "ref_sibling_parents.json",
-            "jsonschema",
-            [],
-            "--read-allof-parents-as-their-models",
-            "--no-read-allof-parents-as-their-models",
-            id="read-allof-parents-as-their-models",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
-            "jsonschema",
-            ["--output-model-type", "dataclasses.dataclass", "--frozen-dataclasses", "--use-unique-items-as-set"],
-            "--read-set-item-fields-in-class-order",
-            "--no-read-set-item-fields-in-class-order",
-            id="read-set-item-fields-in-class-order",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "property_names_root_model_mixed_union_keys.json",
-            "jsonschema",
-            [],
-            "--use-root-types-for-mixed-union-map-keys",
-            "--no-use-root-types-for-mixed-union-map-keys",
-            id="use-root-types-for-mixed-union-map-keys",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "embedded_resource_definitions.json",
-            "jsonschema",
-            [],
-            "--read-refs-in-their-resources",
-            "--no-read-refs-in-their-resources",
-            id="read-refs-in-their-resources",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "generic_base_class_bases" / "api.json",
-            "jsonschema",
-            [
-                "--use-generic-base-class",
-                "--extra-fields",
-                "forbid",
-                "--base-class-map",
-                '{"Tag": "mypkg.base.TagBase"}',
-            ],
-            "--keep-bases-beside-generic-base-class",
-            "--no-keep-bases-beside-generic-base-class",
-            id="keep-bases-beside-generic-base-class",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "field_named_like_type_assigned.json",
-            "jsonschema",
-            ["--output-model-type", "dataclasses.dataclass"],
-            "--rename-fields-hiding-types-from-type-checkers",
-            "--no-rename-fields-hiding-types-from-type-checkers",
-            id="rename-fields-hiding-types-from-type-checkers",
-        ),
-        pytest.param(
-            JSON_SCHEMA_DATA_PATH / "use_standard_primitive_types.json",
-            "jsonschema",
-            ["--output-model-type", "msgspec.Struct"],
-            "--use-str-for-formats-msgspec-cannot-decode",
-            "--no-use-str-for-formats-msgspec-cannot-decode",
-            id="use-str-for-formats-msgspec-cannot-decode",
-        ),
+        *TURNED_OFF_CASES,
     ],
 )
 def test_preset_option_turned_off(
@@ -1157,15 +1114,15 @@ def test_preset_option_turned_off(
     source: str,
     tmp_path: Path,
 ) -> None:
-    """Turn off one option of a 20261123 preset: the output is that of the preset without the option.
+    """Turn off one option of the newest standard py312 preset: the output is that of the preset without the option.
 
     The --no- form on the command line, or false for the option in the pyproject.toml that selects the preset, gives
-    the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106, 20261111, 20261112, 20261113,
-    20261118, 20261120 and 20261123 presets add but that one; an alias of the option has a --no- form and a key too.
+    the output of the 20261017 preset plus every option the dated presets after it add but that one; an alias of the
+    option has a --no- form and a key too.
     """
     project = tmp_path / "project"
     project.mkdir()
-    preset = "standard-py312-20261123"
+    preset = f"standard-py312-{max(PRESET_RELEASES)}"
     preset_args = ["--preset", preset, off]
     if source == "pyproject":
         (project / "pyproject.toml").write_text(
@@ -1184,19 +1141,14 @@ def test_preset_option_turned_off(
             name="model",
         )
     options = [
-        item
-        for item in (
-            *OPT_IN_OPTIONS,
-            *OPT_IN_OPTIONS_20261104,
-            *OPT_IN_OPTIONS_20261106,
-            *OPT_IN_OPTIONS_20261111,
-            *OPT_IN_OPTIONS_20261112,
-            *OPT_IN_OPTIONS_20261113,
-            *OPT_IN_OPTIONS_20261118,
-            *OPT_IN_OPTIONS_20261120,
-            *OPT_IN_OPTIONS_20261123,
-        )
-        if item != option
+        *(
+            word
+            for date, (_, words) in PRESET_RELEASES.items()
+            if date < DERIVED_FROM
+            for word in words
+            if word != option
+        ),
+        *_argv(tuple(item for item in sorted(DERIVED_OPTIONS) if item != option)),
     ]
     with _warns(WARNINGS_WITHOUT_OPTION, input_path):
         run_main_and_assert(

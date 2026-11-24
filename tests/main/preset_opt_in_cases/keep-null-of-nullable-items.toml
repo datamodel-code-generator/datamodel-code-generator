@@ -1,0 +1,5 @@
+option = "--keep-null-of-nullable-items"
+input = "openapi/nullable_item_forms.yaml"
+input_file_type = "openapi"
+args = ["--output-model-type", "pydantic_v2.BaseModel", "--strict-nullable"]
+off_args = ["--strict-nullable"]

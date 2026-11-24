@@ -1124,6 +1124,24 @@ the cells). `test_static_tables_keep_their_invariants` fails for a join whose da
 not add its group, for a config that sets another field than the row's own, and for a field that two groups of one
 preset set, both for every output model type or both for the same one.
 
+The preset test (`tests/main/test_preset_opt_in_options.py`) reads the options a date adds from the same groups and
+takes the input that shows the option from a case file, `tests/main/preset_opt_in_cases/<test id>.toml`:
+
+```toml
+option = "--my-new-option"
+input = "jsonschema/example.json"  # under tests/data
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]  # beside the preset, where it sets the option
+off_args = []  # beside --output-model-type pydantic_v2.BaseModel, where the option is turned off
+```
+
+A case without `off_args` has no turned-off test. A case may also name the `off` argument that turns the option off
+(an alias's `--no-` form; a value option, written `option = "--my-option value"`, names it always), the `warns_with`
+and `warns_without` patterns its input warns with and `filterwarnings`. `test_case_files_match_the_joined_options`
+fails for a joined option without a case file and for a case file whose option joins no date. The pull request that
+opens a date also adds its `PRESET_RELEASES` entry there, the date before and `_argv(_added_options(previous, date))`,
+and a `PRACTICAL_OPT_IN_OPTIONS` entry when its practical presets add options.
+
 ### Step 2: Add a test with documentation marker (Required)
 
 Create a test that demonstrates the option and add the `@pytest.mark.cli_doc()` marker:
