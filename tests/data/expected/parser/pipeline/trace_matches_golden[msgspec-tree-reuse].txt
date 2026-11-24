@@ -32,6 +32,7 @@ set_reference_default_value_to_field
 collapse_root_models
 restore_inherited_field_names_for_unique_aliases
 apply_discriminator_type
+type_const_narrowed_values
 refresh_field_config
 remove_overridden_models
 type_dict_keys_by_root_types
@@ -42,6 +43,8 @@ tag_fields_of_tagged_bases
 flatten_conflicting_final_layouts
 write_enum_member_tags_as_values
 warn_enums_admitting_other_values
+import_removed_reuse_canonicals
+import_renamed_types
 omit_untaken_union_constraints
 assign_forward_reference_fields
 fix_constructor_field_ordering
@@ -50,6 +53,7 @@ update_type_aliases
 collect_live_models
 set_validate_default_on_fields
 warn_required_assignments_after_defaults
+fix_tag_opt_out_field_ordering
 finalize_rendered_nullability
 collect_all_models
 finalize_type_alias_users

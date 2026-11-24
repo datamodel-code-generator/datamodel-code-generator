@@ -19,7 +19,6 @@ from typing_extensions import Protocol
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator.enums import DefaultValueType, ReuseScope
 from datamodel_code_generator.model.base import DataModel, _refresh_custom_template_paths
-from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser import _type_overrides
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._passes import (
@@ -36,7 +35,6 @@ from datamodel_code_generator.parser._passes import (
 from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._shared import (
     InheritedFieldHost,
-    _context_models,
     override_required_field,
 )
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS
@@ -327,7 +325,6 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     PassSpec(
         "type_const_narrowed_values",
         lambda self, s: modules.type_const_narrowed_values(self, s.model_list, s.imports),
-        trigger=lambda self, _: bool(self._const_narrowed_values),
     ),
     PassSpec(
         "set_one_literal_on_default",
@@ -719,12 +716,10 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "import_removed_reuse_canonicals",
                 late(cross_module.import_removed_reuse_canonicals),
-                trigger=lambda self, _: bool(self._removed_reuse_users),
             ),
             PassSpec(
                 "import_renamed_types",
                 late(cross_module.import_renamed_types),
-                trigger=lambda self, _: any(map(cross_module.leaves_stale_import, self.generation_store.renames)),
             ),
             PassSpec(
                 "import_enum_member_literal_classes",
@@ -784,10 +779,9 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "fix_tag_opt_out_field_ordering",
                 lambda self, run: render_prep.fix_tag_opt_out_field_ordering(
-                    self, self._tag_plan.opted_out, _context_models(run.contexts)
+                    self, self._tag_plan.opted_out, run.contexts
                 ),
                 when=lambda self, _: self._tag_capabilities.struct_tags,
-                trigger=lambda self, _: bool(self._tag_plan.opted_out),
             ),
             HookCall(
                 "finalize_modules",
@@ -834,10 +828,6 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                     self, run.contexts, evaluates_annotations=not run.config.use_deferred_annotations
                 ),
                 when=lambda self, _: imports.alias_loop_failure(self.data_model_type) is not None,
-                trigger=lambda self, run: (
-                    bool(self._self_named_root_models)
-                    or any(isinstance(model, TypeAliasBase) for model in _context_models(run.contexts))
-                ),
             ),
             PassSpec(
                 "reject_lone_surrogates_pydantic_reads",

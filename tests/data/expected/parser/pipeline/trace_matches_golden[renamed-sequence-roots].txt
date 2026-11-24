@@ -29,6 +29,7 @@ reuse_model
 change_field_name
 restore_inherited_field_names_for_unique_aliases
 apply_discriminator_type
+type_const_narrowed_values
 refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
@@ -41,6 +42,7 @@ write_plain_aliases_for_recursive_models
 flatten_conflicting_final_layouts
 warn_enums_admitting_other_values
 import_removed_reuse_canonicals
+import_renamed_types
 unbind_hidden_type_fields
 update_type_aliases
 collect_live_models
@@ -69,6 +71,7 @@ replan_schema_validators_after_renames
 decide_config_items
 record_generated_class_names
 check_model_inheritance
+reject_alias_cycles_without_schema
 reject_lone_surrogates_pydantic_reads
 warn_about_dropped_constraints
 warn_about_variant_discriminator_tags

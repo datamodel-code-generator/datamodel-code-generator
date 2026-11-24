@@ -661,7 +661,6 @@ TYPE_CONST_NARROWED_VALUES = PassDecl(
     writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS),
     after=(After("apply_discriminator_type", "narrows the types that tags wrote"),),
     summary="Types each value by the const that narrows the enum it names.",
-    trigger=Trigger("a const narrows a value to an enum member (_const_narrowed_values)", frozenset()),
 )
 SET_ONE_LITERAL_ON_DEFAULT = PassDecl(
     "set_one_literal_on_default",
@@ -1171,7 +1170,6 @@ IMPORT_REMOVED_REUSE_CANONICALS = PassDecl(
         ),
     ),
     removed_by="the step that writes imports from module import plans",
-    trigger=Trigger("reuse removed a duplicate that a model named (_removed_reuse_users)", frozenset()),
 )
 IMPORT_RENAMED_TYPES = PassDecl(
     "import_renamed_types",
@@ -1199,10 +1197,6 @@ IMPORT_RENAMED_TYPES = PassDecl(
         ),
     ),
     removed_by="the step that writes imports from module import plans",
-    trigger=Trigger(
-        "a field-type rename, or a collapsed-root rename that changed the class name, was recorded",
-        _facts(RenderFact.CLASS_NAMES),
-    ),
 )
 IMPORT_ENUM_MEMBER_LITERAL_CLASSES = PassDecl(
     "import_enum_member_literal_classes",
@@ -1392,7 +1386,6 @@ FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
     ),
     removed_by="the step that validates a default only against the type it belongs to",
     condition="msgspec",
-    trigger=Trigger("a struct opted out of its tag", frozenset()),
 )
 FINALIZE_RENDERED_NULLABILITY = PassDecl(
     "finalize_rendered_nullability",
@@ -1865,10 +1858,6 @@ REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
         RenderFact.MODULE_MEMBERSHIP,
     ),
     condition="output that Pydantic builds or msgspec decodes",
-    trigger=Trigger(
-        "a module holds a type alias, or deduplication left a root model naming itself (_self_named_root_models)",
-        _facts(Fact.MODEL_KIND, Fact.MODELS_EXIST, RenderFact.MODULE_MEMBERSHIP),
-    ),
 )
 REJECT_LONE_SURROGATES_PYDANTIC_READS = PassDecl(
     "reject_lone_surrogates_pydantic_reads",

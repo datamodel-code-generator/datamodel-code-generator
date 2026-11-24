@@ -2551,11 +2551,13 @@ def type_const_narrowed_values(
     makes it a Literal or None, keeps its type. The values that keep the enum type are warned about once msgspec
     tags are final. A value that collapse shares between the root model and its holders is replaced in each holder.
     """
+    if not (narrowings := parser._const_narrowed_values):
+        return
     narrowed: dict[int, DataType] = {}
     for model in models:
         for field in model.fields:
             for owner, data_type in _value_positions(field):
-                entry = parser._const_narrowed_values.get(id(data_type))
+                entry = narrowings.get(id(data_type))
                 if entry is None or entry[0] is not data_type or data_type.reference is None:
                     continue
                 narrowing = entry[1]

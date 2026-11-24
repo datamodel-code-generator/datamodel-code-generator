@@ -771,18 +771,22 @@ def record_decimal_default_warning(parser: RenderPrepHost, model: DataModel, fie
         examples.append(f"{model.class_name}.{field.name or '<root>'}")
 
 
-def fix_tag_opt_out_field_ordering(parser: RenderPrepHost, opted_out: list[DataModel], models: list[DataModel]) -> None:
+def fix_tag_opt_out_field_ordering(
+    parser: RenderPrepHost, opted_out: list[DataModel], contexts: Sequence[ModuleContextView]
+) -> None:
     """Make keyword-only the structs that opted out of a tag, and those inheriting from them, when they need it.
 
     A field named like the inherited tag field is then a field of its own after the inherited ones, as the base
     declares the tag field as a class variable instead, so a required one can follow a default. Bases are fixed
     before the structs inheriting from them, as their keyword-only fields are not positional there.
     """
+    if not opted_out:
+        return
     opted_out_ids = {id(model) for model in opted_out}
     for model, ancestors in sorted(
         (
             (model, ancestors)
-            for model in models
+            for model in _context_models(contexts)
             if (ancestors := constructor_base_models(parser, model, bases="parsed"))
             and not opted_out_ids.isdisjoint(map(id, (model, *ancestors)))
         ),
