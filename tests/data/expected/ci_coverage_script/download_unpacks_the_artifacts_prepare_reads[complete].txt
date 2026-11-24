@@ -1,0 +1,6 @@
+{
+  "code": 0,
+  "prepared": 113,
+  "stderr": "",
+  "stdout": "Downloaded 113 coverage artifacts\nValidated 113 coverage artifacts\n"
+}

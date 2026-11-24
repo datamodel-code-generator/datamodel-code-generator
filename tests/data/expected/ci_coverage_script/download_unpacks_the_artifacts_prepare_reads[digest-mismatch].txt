@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "prepared": 0,
+  "stderr": "Coverage artifact digest mismatch: .coverage.graphqlcore33-ubuntu-24.04\n",
+  "stdout": ""
+}

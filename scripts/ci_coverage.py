@@ -1,4 +1,4 @@
-"""Collect, record and validate this run's complete CI coverage input, then combine and report it.
+"""Collect, record, download and validate this run's complete CI coverage input, then combine and report it.
 
 The report ends with the lines excluded from coverage that the suite executed (`coverage_exclusions.py`); that list
 never changes the exit code.
@@ -7,11 +7,19 @@ never changes the exit code.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import io
 import json
+import os
 import subprocess
 import sys
+import time
+import urllib.error
+import urllib.request
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 SHARD_COUNTS = {
     "py315-parallel": 16,
@@ -56,6 +64,11 @@ EXPECTED_NAMES = PULL_REQUEST_NAMES | {
     for shard in range(1, count + 1)
 }
 COMBINE_GROUPS = 4
+ARTIFACT_PREFIX = ".coverage."
+DOWNLOAD_WORKERS = 32
+DOWNLOAD_ATTEMPTS = 3
+PAGE_SIZE = 100
+TOKEN_ENV = "GH_TOKEN"
 
 
 def _metadata(name: str, run_id: str, sha: str) -> dict[str, str]:
@@ -98,6 +111,89 @@ def _prepare(root: Path, run_id: str, sha: str, expected: frozenset[str]) -> Non
     for name in sorted(expected):
         (root / name / name).replace(root.parent / name)
     print(f"Validated {len(expected)} coverage artifacts")
+
+
+def _read(request: urllib.request.Request) -> bytes:
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return response.read()
+    except urllib.error.HTTPError as error:
+        with error:  # An HTTP error holds its response open until it is closed.
+            raise
+
+
+def _attempt(request: urllib.request.Request) -> bytes | None:
+    """Return the body, or `None` when the request failed."""
+    try:
+        return _read(request)
+    except OSError:
+        return None
+
+
+def _fetch(url: str) -> bytes:
+    """Return the body of a GitHub REST URL, the second attempt at once and the third a second later.
+
+    The token is not sent on: an artifact's zip redirects to blob storage, which refuses a request that carries it.
+    """
+    request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    if token := os.environ.get(TOKEN_ENV):
+        request.add_unredirected_header("Authorization", f"Bearer {token}")
+    for attempt in range(1, DOWNLOAD_ATTEMPTS):
+        if (body := _attempt(request)) is not None:
+            return body
+        time.sleep(attempt - 1)
+    return _read(request)
+
+
+class _Artifact(TypedDict):
+    """The fields of a REST artifact record this script reads."""
+
+    id: int
+    name: str
+    expired: bool
+    digest: NotRequired[str | None]
+
+
+def _artifacts(api: str, repository: str, run_id: str) -> list[_Artifact]:
+    """Return the newest unexpired artifact of each coverage name of a run; a rerun lists the older attempts too."""
+    newest: dict[str, _Artifact] = {}
+    page = 1
+    while True:
+        url = f"{api}/repos/{repository}/actions/runs/{run_id}/artifacts?per_page={PAGE_SIZE}&page={page}"
+        listed: list[_Artifact] = json.loads(_fetch(url))["artifacts"]
+        for artifact in listed:
+            name = artifact["name"]
+            if (
+                name.startswith(ARTIFACT_PREFIX)
+                and not artifact["expired"]
+                and ((current := newest.get(name)) is None or artifact["id"] > current["id"])
+            ):
+                newest[name] = artifact
+        if len(listed) < PAGE_SIZE:
+            return [newest[name] for name in sorted(newest)]
+        page += 1
+
+
+def _download_artifact(api: str, repository: str, artifact: _Artifact, root: Path) -> None:
+    data = _fetch(f"{api}/repos/{repository}/actions/artifacts/{artifact['id']}/zip")
+    if artifact.get("digest") != f"sha256:{hashlib.sha256(data).hexdigest()}":
+        msg = f"Coverage artifact digest mismatch: {artifact['name']}"
+        raise ValueError(msg)
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        archive.extractall(root / str(artifact["name"]))
+
+
+def _download(root: Path, api: str, repository: str, run_id: str) -> None:
+    """Unpack each coverage artifact of a run into a directory of its name below `root`, the layout `prepare` checks.
+
+    A process ends when its downloads do: the artifact action's process stayed up to three minutes after it had
+    written every file. The digest each artifact was uploaded with must match the bytes downloaded.
+    """
+    artifacts = _artifacts(api, repository, run_id)
+    root.mkdir(parents=True, exist_ok=True)
+    with ThreadPoolExecutor(DOWNLOAD_WORKERS) as pool:
+        list(pool.map(lambda artifact: _download_artifact(api, repository, artifact, root), artifacts))
+    print(f"Downloaded {len(artifacts)} coverage artifacts")
 
 
 def _run(commands: list[list[str]]) -> tuple[int, str]:
@@ -187,6 +283,8 @@ def _act(args: argparse.Namespace) -> int:
             _collect(args.data, args.path)
         case "report":
             return _report(args.path, args.compare_branch, _expected_names(args.event))
+        case "download":
+            _download(args.path, args.api_url, args.repository, args.run_id)
         case _:
             _prepare(args.path, args.run_id, args.sha, _expected_names(args.event))
     return 0
@@ -204,6 +302,11 @@ def main(argv: list[str] | None = None) -> None:
     collect = actions.add_parser("collect", help="run with the Python of the environment that ran the tests")
     collect.add_argument("data", type=Path, help="the data file the run wrote (its COVERAGE_FILE)")
     collect.add_argument("path", type=Path, help="the artifact's data file")
+    download = actions.add_parser("download", help=f"read the token from {TOKEN_ENV}")
+    download.add_argument("path", type=Path, help="the directory `prepare` reads")
+    download.add_argument("--repository", required=True, help="OWNER/NAME")
+    download.add_argument("--run-id", required=True)
+    download.add_argument("--api-url", default="https://api.github.com")
     report = actions.add_parser("report")
     report.add_argument("path", type=Path)
     report.add_argument("--compare-branch", required=True)
