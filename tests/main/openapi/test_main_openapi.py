@@ -12409,6 +12409,25 @@ def test_main_openapi_keep_content_parameter_refs(output_file: Path, extra_args:
     )
 
 
+def test_main_openapi_boolean_parameter_schemas(output_file: Path) -> None:
+    """Read a parameter whose schema is `true` or `false` as `Any`, as an empty or boolean media schema is (#7454).
+
+    Query, path, path-item, webhook and referenced parameters take the type; a header parameter and the response
+    headers, which get no field, validate too.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "boolean_parameter_schemas.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *("--openapi-scopes", "schemas", "paths", "parameters", "webhooks", "--include-path-parameters"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [
