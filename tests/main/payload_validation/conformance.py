@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator.format import PythonVersion
 
-from .constants import PAYLOAD_TARGET_PYTHON_VERSION
+from .constants import PAYLOAD_TARGET_PYTHON_VERSION, REJECTION_EXCLUDED_CASES
 from .models import PayloadBackend, SchemaCase
 
 if TYPE_CHECKING:
@@ -171,10 +171,15 @@ PYDANTIC_V2_DATACLASS_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "openapi/enum_models.yaml::components.schemas.nestedNullableEnum": (
         "pydantic dataclass schema construction warns for defaults attached to nullable enum aliases"
     ),
+    "openapi/allof_with_required_inherited_coverage.yaml::components.schemas.MultipleOfBase": (
+        "the generated float multipleOf 0.6 rejects schema-valid values such as 10066330.8, the native float contract "
+        "of tests/data/payloads/native_float_multiple_contract.json that the Pydantic v2 acceptance check holds"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/enum_const_positions.json",
             "jsonschema/integer_enum_null.json",
+            "openapi/single_value_enum_as_const/nullable_branches.yaml::components.schemas.Choice",
         ),
         "Pydantic 2.12+ warns that the Field default of an alias for a null-only enum or a null const beside a "
         "string type is unsupported (UnsupportedFieldAttributeWarning)",
@@ -186,9 +191,6 @@ DATACLASS_FIELD_ORDER_EXCLUDED_CASES: Final[dict[str, str]] = {
     ),
 }
 MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
-    "jsonschema/typed_dict_key_text.json": (
-        "msgspec refuses a NUL character in a property name, which this fixture uses to test key escaping"
-    ),
     "jsonschema/typed_dict_narrowed_keys_python_names.json": (
         "msgspec cannot decode a child struct that redefines a base field under another spelling of its wire name"
     ),
@@ -496,6 +498,9 @@ MSGSPEC_LEGACY_ALIAS_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/compound_property_names/ref_then_any.json": (
         "msgspec conversion cannot resolve forward references in assignment-based property-name aliases"
     ),
+    "openapi/read_only_write_only_variant_graph.yaml::components.schemas.ForwardDictKeyMap": (
+        "msgspec conversion cannot resolve the forward reference of a dict value in an assignment-based alias"
+    ),
 }
 BACKEND_FULL_MATRIX_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = {
     PayloadBackend.PYDANTIC_V2_DATACLASS: {
@@ -512,6 +517,10 @@ BACKEND_REJECTION_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = 
     **BACKEND_FULL_MATRIX_EXCLUDED_CASES,
     PayloadBackend.MSGSPEC: {
         **BACKEND_FULL_MATRIX_EXCLUDED_CASES[PayloadBackend.MSGSPEC],
+        "openapi/discriminator_reuse_variant_base_fields.yaml::components.schemas.Holder": (
+            "msgspec checks the tag of a tagged Struct only where it decodes a union, so the lone variant of a "
+            "discriminated oneOf takes a payload without its tag"
+        ),
         "jsonschema/nested_unique_item_sets.json": (
             "the payloads of arrays of unique arrays of objects are large enough that Hypothesis stops the run with "
             "its data_too_large health check (9 of 29 inputs fit), which the msgspec rejection test does not suppress"
@@ -521,16 +530,6 @@ BACKEND_REJECTION_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = 
 DATACLASSES_FULL_MATRIX_EXCLUSION_REASON: Final[str] = (
     "plain dataclasses remain representative because native construction has no JSON Schema runtime validation"
 )
-OPENAPI_FULL_MATRIX_EXCLUSION_REASONS: Final[dict[PayloadBackend, str]] = {
-    PayloadBackend.PYDANTIC_V2_DATACLASS: (
-        "OpenAPI pydantic dataclass full-matrix coverage remains representative until backend-specific "
-        "alias, default, and composition limits are reduced"
-    ),
-    PayloadBackend.MSGSPEC: (
-        "OpenAPI msgspec full-matrix coverage remains representative until backend-specific enum, null, "
-        "and composition limits are reduced"
-    ),
-}
 PAYLOAD_VALIDATION_BACKENDS: Final[tuple[PayloadBackend, ...]] = (
     PayloadBackend.PYDANTIC_V2,
     PayloadBackend.PYDANTIC_V2_DATACLASS,
@@ -544,6 +543,9 @@ MSGSPEC_FRACTIONAL_MULTIPLE_OF_EXCLUSION_REASON: Final[str] = (
 )
 MSGSPEC_OPTIONAL_NULL_ONLY_EXCLUSION_REASON: Final[str] = (
     "msgspec conversion treats optional null-only properties as omitted-only Unset fields"
+)
+MSGSPEC_REFUSED_PROPERTY_NAME_EXCLUSION_REASON: Final[str] = (
+    "msgspec generation refuses a renamed field name that holds a backslash, a double quote or a control character"
 )
 SCHEMA_KEYWORD_KINDS: Final[dict[str, str]] = {
     **dict.fromkeys(
@@ -672,8 +674,19 @@ def _has_optional_null_only_property(schema: dict[str, object]) -> bool:
 
 
 def _has_binary_format(schema: dict[str, object]) -> bool:
-    """Return whether a string schema uses the binary format annotation."""
-    return "string" in _schema_types(schema) and schema.get("format") == "binary"
+    """Return whether a string schema, or one without a type (beside a ``$ref``), uses the binary format annotation."""
+    return schema.get("format") == "binary" and (not (types := _schema_types(schema)) or "string" in types)
+
+
+def _has_msgspec_refused_property_name(schema: dict[str, object]) -> bool:
+    """Return whether an object schema has a property msgspec generation refuses to rename (an error, not a model).
+
+    msgspec cannot rename a field to a name that holds a backslash, a double quote or a control character.
+    """
+    return isinstance(properties := schema.get("properties"), dict) and any(
+        isinstance(name, str) and any(character in '\\"' or ord(character) < 0x20 for character in name)
+        for name in properties
+    )
 
 
 def _has_fractional_number_multiple_of(schema: dict[str, object]) -> bool:
@@ -691,10 +704,7 @@ def _has_fractional_number_multiple_of(schema: dict[str, object]) -> bool:
 
 
 def _msgspec_schema_exclusion_reason(case: SchemaCase) -> str | None:
-    """Return a schema-derived msgspec compatibility exclusion reason."""
-    if case.input_file_type != "jsonschema":
-        return None
-
+    """Return a schema-derived msgspec compatibility exclusion reason; an OpenAPI case is read with its components."""
     for schema in _iter_schema_nodes(case.source_schema):
         match schema:
             case _ if _has_optional_null_only_property(schema):
@@ -703,6 +713,8 @@ def _msgspec_schema_exclusion_reason(case: SchemaCase) -> str | None:
                 return MSGSPEC_BINARY_FORMAT_EXCLUSION_REASON
             case _ if _has_fractional_number_multiple_of(schema):
                 return MSGSPEC_FRACTIONAL_MULTIPLE_OF_EXCLUSION_REASON
+            case _ if _has_msgspec_refused_property_name(schema):
+                return MSGSPEC_REFUSED_PROPERTY_NAME_EXCLUSION_REASON
             case _:
                 continue
     return None
@@ -747,17 +759,19 @@ def backend_acceptance_exclusion_reason(case: SchemaCase, backend: PayloadBacken
         return reason
     if reason := _backend_schema_exclusion_reason(case, backend):
         return reason
-    if case.input_file_type == "openapi":
-        return OPENAPI_FULL_MATRIX_EXCLUSION_REASONS.get(backend)
     return None
 
 
 def backend_rejection_exclusion_reason(case: SchemaCase, backend: PayloadBackend) -> str | None:
-    """Return why a backend rejection case is outside the full scheduled matrix."""
+    """Return why a backend rejection case is outside the full scheduled matrix.
+
+    A case the Pydantic v2 rejection check leaves out is left out here too: its reasons are the case's (an oracle with
+    no mutation to draw, a model that keeps an optional tag or property), whichever backend writes the model.
+    """
     if reason := BACKEND_REJECTION_EXCLUDED_CASES.get(backend, {}).get(case.id):
+        return reason
+    if reason := REJECTION_EXCLUDED_CASES.get(case.id):
         return reason
     if reason := _backend_schema_exclusion_reason(case, backend):
         return reason
-    if case.input_file_type == "openapi":
-        return OPENAPI_FULL_MATRIX_EXCLUSION_REASONS.get(backend)
     return None

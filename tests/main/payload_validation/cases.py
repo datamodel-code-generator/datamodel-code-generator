@@ -30,7 +30,6 @@ from .models import SchemaCase
 from .schema import (
     _apply_component_discriminator_payload_constraints,
     _apply_every_discriminator_payload_constraints,
-    _has_dotted_openapi_component_name,
     _has_read_only_exclusion,
     _has_unresolved_internal_ref,
     _normalize_schema_dialect,
@@ -197,10 +196,11 @@ def _openapi_file_candidates(path: Path) -> Iterator[SchemaCase]:
 
     Each candidate is judged with the components it references, as its case holds them: alone, a reference to another
     component of the document would be unresolved. A candidate that references a component named like the payload
-    class is left out: its case could not hold both under that name.
+    class is left out: its case could not hold both under that name. A case that holds a dotted component name
+    generates a package (``SchemaCase.modular``).
     """
     document = _load_mapping(path)
-    if not _is_openapi_document(document) or _has_dotted_openapi_component_name(document):
+    if not _is_openapi_document(document):
         return
     for name, schema in _iter_openapi_schema_candidates(document):
         case = _make_openapi_case(path, document, name, schema)
@@ -316,9 +316,7 @@ def discover_unresolved_openapi_candidates() -> list[str]:
     return [
         case.id
         for path, read in _candidate_files()
-        if read is _openapi_file_candidates
-        and _is_openapi_document(document := _load_mapping(path))
-        and not _has_dotted_openapi_component_name(document)
+        if read is _openapi_file_candidates and _is_openapi_document(document := _load_mapping(path))
         for name, schema in _iter_openapi_schema_candidates(document)
         if _has_unresolved_internal_ref((case := _make_openapi_case(path, document, name, schema)).source_schema)
     ]

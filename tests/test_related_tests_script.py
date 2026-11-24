@@ -229,6 +229,31 @@ def test_related_tests_print_the_environments_of_the_diff(
     assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--envs"))
 
 
+ROW_PATH_CASES: dict[str, tuple[str, dict[str, str | None]]] = {
+    "status-row": (
+        "added-inputs",
+        {"tests/data/new.json": "{}\n", "tests/data/b/new.json": "{}\n", "tests/data/old.json": '{"a": 1}\n'},
+    ),
+    "pattern-row": (
+        "pattern-lines",
+        {f"{SRC}/parser/other.py": "value = 2  # the regex\n", f"{SRC}/parser/_names.py": "value = 2\n"},
+    ),
+    "row-that-does-not-fire": ("added-inputs", {"tests/data/old.json": '{"a": 1}\n'}),
+    "unknown-row": ("nobody", {"tests/data/new.json": "{}\n"}),
+}
+"""The row each case asks for with --paths-of, and the head's files."""
+
+
+@pytest.mark.parametrize("case", ROW_PATH_CASES)
+def test_related_tests_print_the_paths_of_a_row(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--paths-of prints the sorted changed paths that fire the row: its status and its pattern hold for each one."""
+    row, head = ROW_PATH_CASES[case]
+    repository = _repository(tmp_path, {}, head)
+    assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--paths-of", row))
+
+
 WORKING_TREES = {
     "tracked-and-untracked": {f"{SRC}/parser/jsonschema.py": "value = 3\n", "tests/data/new.json": "{}\n"},
     "untracked-with-a-pattern": {f"{SRC}/parser/new.py": "value = 1  # the regex\n"},
@@ -384,7 +409,10 @@ paths = ["a"]
 def test_related_tests_rows_print_the_environments_of_the_repository_rules(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """The shipped rows ask for the client and typing environments, the nightly tier and the dispatch run."""
+    """The shipped rows ask for the client, typing and payload environments, the nightly tier and the dispatch run.
+
+    The payload-inputs row also names the added inputs of the payload suite.
+    """
     base = {
         "tests/data/expected/main/generation_platform/MsgspecStruct.txt": "calls 273\n",
         "tests/data/expected/main/jsonschema/model.py": "value = 1\n",
@@ -396,7 +424,13 @@ def test_related_tests_rows_print_the_environments_of_the_repository_rules(
         "tests/data/expected/main/jsonschema/model.py": "value = 2\n",
         ".github/workflows/test.yaml": "python-version: 3.15\n",
         f"{SRC}/_runtime/client/transport.py": "value = 2\n",
+        "tests/data/openapi/added.yaml": "openapi: 3.1.0\n",
+        "tests/data/jsonschema/my dir/added.json": "{}\n",
     }
     repository = _repository(tmp_path, base, head)
     (repository / "related_tests.toml").write_text((ROOT / "scripts/related_tests.toml").read_text("utf-8"), "utf-8")
-    assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--envs"))
+    envs = _select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--envs")
+    inputs = _select(
+        repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--paths-of", "payload-inputs"
+    )
+    assert_output(envs + inputs)

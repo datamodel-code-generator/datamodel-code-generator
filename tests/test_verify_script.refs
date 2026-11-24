@@ -12,6 +12,8 @@ a changed test helper alone	verify_script/verify_compares_the_picked_cells_twice
 a changed test module that fails	verify_script/verify_compares_the_picked_cells_twice[a changed test module that fails].txt
 a changed test module that passes	verify_script/verify_compares_the_picked_cells_twice[a changed test module that passes].txt	= verify_script/verify_compares_the_picked_cells_twice[a changed test helper alone].txt
 a flaky change	verify_script/verify_compares_the_picked_cells_twice[a flaky change].txt
+an added payload input	verify_script/verify_compares_the_picked_cells_twice[an added payload input].txt
+an added payload input the suite fails	verify_script/verify_compares_the_picked_cells_twice[an added payload input the suite fails].txt
 an output change	verify_script/verify_compares_the_picked_cells_twice[an output change].txt
 no catalog yet	verify_script/verify_compares_the_picked_cells_twice[no catalog yet].txt
 src unchanged	verify_script/verify_compares_the_picked_cells_twice[src unchanged].txt

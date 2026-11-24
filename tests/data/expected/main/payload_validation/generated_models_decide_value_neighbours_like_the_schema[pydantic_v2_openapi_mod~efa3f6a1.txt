@@ -1,0 +1,3 @@
+[
+  "/0/stage enum null: invalid, model accepts"
+]
