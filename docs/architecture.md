@@ -1642,11 +1642,10 @@ output's mark made outside its builder and the parts it hands the output to, eac
 declares the member: under `parser/`, a `DataType` (or a subclass) built with `is_dict=True` or `_container_flags` asked
 for the `"dict"` slot, and anywhere, a `Reference` (or a subclass) built by its constructor, `model_construct` or
 `model_validate`. A mark is a call that heki ties to the class or function it names and that binds the parameter to the
-constant (by keyword, by position or through a `**` dict display), so a `Reference` built by `model_copy`, a `DataType`
-built by `model_copy`, `model_construct` or `model_validate` with the flag in its values, a flag computed from a
-variable slot, a flag dict handed on, merged or chosen by a condition before it reaches the call, a call through
-`functools.partial` and a call on a receiver heki cannot type (an unannotated parameter) are not seen; today's bypasses
-are in `scripts/heki_baseline.toml`.
+constant (by keyword, by position or through a `**` dict display), and a call of the class also covers its
+`model_construct`, `model_validate` and `model_copy`, a flag dict handed on, merged or chosen by a condition before it
+reaches the call, and `functools.partial`. A flag computed from a variable slot and a call on a receiver heki cannot
+type (an unannotated parameter) are not seen; today's bypasses are in `scripts/heki_baseline.toml`.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
 names has one record in `scripts/legacy_rows.py`: what it keeps, what deletes it (`fix`: the issue whose fix does, or

@@ -5831,7 +5831,7 @@ attribution = "lexical"
 
 [[call-owners]]
 name = "builder:reference.py:ModelResolver.add"
-targets = ["datamodel_code_generator.reference.Reference", "datamodel_code_generator.reference.Reference.model_construct", "datamodel_code_generator.reference.Reference.model_validate"]
+targets = ["datamodel_code_generator.reference.Reference"]
 allowed-callers = ["datamodel_code_generator.reference:ModelResolver.add", "datamodel_code_generator.reference:ModelResolver.add.*", "datamodel_code_generator.reference:ModelResolver._register_reference", "datamodel_code_generator.reference:ModelResolver._register_reference.*"]
 attribution = "lexical"
 

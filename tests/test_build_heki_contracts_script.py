@@ -525,8 +525,9 @@ SEEDED_BUILDERS = {
         "    return parser._container_flags(obj, 'list')\n"
     ),
     f"{PACKAGE}/model.py": (
+        "from pydantic import BaseModel\n\n"
         "from datamodel_code_generator.types import DataType\n\n\n"
-        "class Ref:\n    @classmethod\n    def model_construct(cls) -> 'Ref':\n        return cls()\n\n\n"
+        "class Ref(BaseModel):\n    pass\n\n\n"
         "def name_model() -> Ref:\n    return Ref()\n\n\n"
         "def outside() -> DataType:\n    return DataType(is_dict=True)\n"
     ),
@@ -575,7 +576,7 @@ SEEDED_BUILDER_RECORDS = (
         output="seeded: a named model",
         prose="",
         builder=Home("model.py", "name_model"),
-        marks=(Mark("datamodel_code_generator.model.Ref"), Mark("datamodel_code_generator.model.Ref.model_construct")),
+        marks=(Mark("datamodel_code_generator.model.Ref"),),
     ),
 )
 
@@ -626,7 +627,7 @@ def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
             ("maps.py", "flags", "MUT204", "types.DataType(is_dict=True)"),
             ("maps.py", "seeded_slot", "MUT204", 'parser.maps.MapsHost._container_flags(slot="dict")'),
             ("maps.py", "subclass_map", "MUT204", "types.DataType(is_dict=True)"),
-            ("naming.py", "construct", "MUT204", "model.Ref.model_construct"),
+            ("naming.py", "construct", "MUT204", "model.Ref"),
             ("naming.py", "rename", "MUT204", "model.Ref"),
         ],
     ), result.stderr
