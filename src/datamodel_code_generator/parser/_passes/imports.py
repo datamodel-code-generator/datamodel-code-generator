@@ -2580,9 +2580,8 @@ def _class_named_like_submodule(
     *,
     treat_dot_as_module: bool | None,
     all_exports_scope: AllExportsScope | None,
-    evaluates_annotations: bool,
-) -> tuple[ModulePath, str, tuple[str, ...], tuple[str, ...]] | None:
-    """Return the first class a package's ``__init__.py`` binds beside a module of its name that replaces it, or None.
+) -> Iterator[tuple[tuple[ModulePath, str, tuple[str, ...], tuple[str, ...]], bool]]:
+    """Yield each class a package's ``__init__.py`` binds beside a module of its name that replaces it, in order.
 
     The module replaces the class where the ``__init__.py`` does not load it while its imports run, before its classes
     are defined (``reject_class_named_like_submodule``); a forwarder loads the modules it re-exports from
@@ -2590,9 +2589,9 @@ def _class_named_like_submodule(
     started before the ``__init__.py``, as loads too (``init_loads`` row ``legacy-running-packages-load``) and wrote
     such output: the ancestor runs first and its import of the module's name gets the class, so a model it reads of
     the module through that name fails where its class evaluates its annotations, and the ancestor fails at import
-    with every module below it. The output is kept where the classes do not evaluate their annotations as they are
-    defined (``_evaluates_class_annotations``). The class comes with the written path of the ``__init__.py``, the
-    module's parts and the path of its file.
+    with every module below it; each class comes with whether that reading loads the module, which keeps the output
+    where the classes do not evaluate their annotations as they are defined (``_evaluates_class_annotations``). The
+    class comes with the written path of the ``__init__.py``, the module's parts and the path of its file.
     """
     written = sorted(
         ((written_path(ctx.module, treat_dot_as_module=treat_dot_as_module), ctx) for ctx in contexts if ctx.models),
@@ -2610,7 +2609,7 @@ def _class_named_like_submodule(
         if (file := submodules.get(module := (*path[:-1], name))) is not None
     ]
     if not clashes:
-        return None
+        return
     edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
     written_modules = {
         ctx.module_key: written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module) for ctx in contexts
@@ -2621,12 +2620,9 @@ def _class_named_like_submodule(
                 written_modules[source] for source, _, _ in forwarder.names
             )
     for path, name, module, file in clashes:
-        if init_loads(edges, path[:-1], [module]) or (
-            not evaluates_annotations and init_loads(edges, path[:-1], [module], row="legacy-running-packages-load")
-        ):
-            continue
-        return path, name, module, file
-    return None
+        if not init_loads(edges, path[:-1], [module]):
+            released = bool(init_loads(edges, path[:-1], [module], row="legacy-running-packages-load"))
+            yield (path, name, module, file), released
 
 
 def _hidden_class_refusal(
@@ -2724,13 +2720,20 @@ def reject_class_named_like_submodule(
     """
     config, treat_dot_as_module = parser.config, parser.treat_dot_as_module
     bindings = _package_bindings(contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module)
-    hidden = _class_named_like_submodule(
-        contexts,
-        bindings,
-        forwarder_map,
-        treat_dot_as_module=treat_dot_as_module,
-        all_exports_scope=all_exports_scope,
-        evaluates_annotations=_evaluates_class_annotations(parser, use_deferred_annotations=use_deferred_annotations),
+    evaluates_annotations = _evaluates_class_annotations(parser, use_deferred_annotations=use_deferred_annotations)
+    hidden = next(
+        (
+            clash
+            for clash, released in _class_named_like_submodule(
+                contexts,
+                bindings,
+                forwarder_map,
+                treat_dot_as_module=treat_dot_as_module,
+                all_exports_scope=all_exports_scope,
+            )
+            if evaluates_annotations or not released
+        ),
+        None,
     )
     refusal = None if hidden is None else _hidden_class_refusal(hidden, config)
     if (
