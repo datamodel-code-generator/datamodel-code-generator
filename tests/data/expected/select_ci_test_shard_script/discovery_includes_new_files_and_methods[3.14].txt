@@ -1,5 +1,5 @@
 {
-  "measured_weight": 627323,
+  "measured_weight": 950974,
   "nodeids": [
     "tests/main/test_payload_validation.py::TestNew::test_async_method",
     "tests/main/test_payload_validation.py::TestNew::test_method",

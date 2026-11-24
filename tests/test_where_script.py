@@ -267,15 +267,15 @@ def _vocabulary() -> set[str]:
 def test_where_spells_no_table_entry() -> None:
     """The script holds nothing that could go stale: no entry of a table it reads, no list that copies one."""
     tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
-    vocabulary = sorted(_vocabulary())
+    patterns = [(entry, re.compile(rf"(?<![\w-]){re.escape(entry)}(?![\w-])")) for entry in sorted(_vocabulary())]
     statements = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Expr)}
     found = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in statements:
             found += [
                 f"{node.lineno}: {node.value!r} holds {entry}"
-                for entry in vocabulary
-                if re.search(rf"(?<![\w-]){re.escape(entry)}(?![\w-])", node.value)
+                for entry, pattern in patterns
+                if pattern.search(node.value)
             ]
         if isinstance(node, (ast.List, ast.Tuple, ast.Set, ast.Dict)):
             items = node.values if isinstance(node, ast.Dict) else node.elts
