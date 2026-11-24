@@ -487,7 +487,8 @@ rule for added and removed outputs. `--verdicts FILE` writes the verdicts by the
 and `declared_changes.py check --verdicts FILE` reads them; a label with no verdict for these contents fails. A change
 of `uv.lock` alone has no verdict, so cover its changed labels with another category than `harness`. A push to `main`
 judges each of its first-parent commits as its own change (a merge commit counts once), so a `harness` record is
-judged against the `src/` change of its own commit, not of the whole push.
+judged against the `src/` change of its own commit, not of the whole push; cells are generated only where the push
+changes `src/` as a whole.
 
 ### Failures and what to do
 

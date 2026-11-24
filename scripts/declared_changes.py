@@ -39,11 +39,11 @@ take the gaps the change may cover: those of the base that the head still moves 
 change moves; `--rest` only what this change moves. The check prints one `declare` command per kind of undeclared
 output, with `--base` unless the base is that merge base.
 
-`check --ci` is the CI step's form: it reads `--verdicts FILE` only where the gate wrote it (the gate writes none for a
-change without `src/`, which needs none). A push of several pull requests to main is judged one squash commit at a time
-(`change_steps`), as each pull request was. When the change touches `COPY_PATHS` and the base has this check, the base's
-copy judges it first and the head's own check after it, and either one fails the step: a change cannot weaken the check
-that judges it, and a change that tightens it obeys it.
+`check --ci` is the CI step's form: it reads `--verdicts FILE` only where the gate wrote it (every gate run writes it;
+CI skips the gate where the change leaves `src/`, the change records and `scripts/` alone). A push of several pull
+requests to main is judged one squash commit at a time (`change_steps`), as each pull request was. When the change
+touches `COPY_PATHS` and the base has this check, the base's copy judges it first and the head's own check after it,
+and either one fails the step: a change cannot weaken the check that judges it, and a change that tightens it obeys it.
 """
 
 from __future__ import annotations

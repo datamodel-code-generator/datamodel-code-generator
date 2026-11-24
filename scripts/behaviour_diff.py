@@ -1213,8 +1213,9 @@ class Plan:
     has no such tag. `judged` are those records, an extending record as its target with its own id, covers and cells;
     `head` and `before` the candidate's and the base's records by id. `presets` are the latest tag's (None: the
     base's own, for a release the repository has no tag of). `changed` are the files below tests/data a PR changes;
-    `src` says whether any change of it, as main takes them (`declared_changes.change_steps`), changes src/, and
-    `oracle` whether it changes the gate's own files (a release run always runs); `groups`
+    `src` says whether the candidate's src/ differs from the base's, which decides whether cells are generated (the
+    stored proofs are judged per change, `stored_problems`), and `oracle` whether it changes the gate's own files (a
+    release run always runs); `groups`
     the (input, output model type) pairs of the run each selector covers, which share a shard (`place`); `spaces` the
     label spaces whose cells the run builds (`build_cells`), which judge the selectors of those spaces only. `landed`
     are the records of a PR run that record a change merged before its base (`landed_records`), by id, with the
@@ -1372,10 +1373,7 @@ def plan_records(ns: argparse.Namespace, candidate: Candidate) -> Plan:
         tag_commit = compare_release.commit_of(f"refs/tags/{tag}", repo) or None
         plan = Plan(base, release=False, tag=tag, tag_commit=tag_commit, head=head, before=before)
         plan.changed = changed_paths(repo, base, candidate.revision, ("tests/data",))
-        plan.src = any(
-            changed_paths(repo, old, new, ("src",))
-            for old, new in declared_changes.change_steps(repo, base, candidate.revision)
-        )
+        plan.src = bool(changed_paths(repo, base, candidate.revision, ("src",)))
         plan.oracle = bool(changed_paths(repo, base, candidate.revision, ORACLE_FILES))
         added = [record for record_id, record in head.items() if record_id not in before]
         problems = [
@@ -1831,13 +1829,14 @@ def stored_label_problem(
 
 
 def stored_problems(gate: Gate) -> list[str]:
-    """Return the stored labels of a src PR whose proof fails: an `output-text` record's covers, a `harness` record's.
+    """Return the stored labels of a PR's src changes whose proof fails: the covers those changes add to records.
 
     The PR is each change from the base as main takes them (`declared_changes.change_steps`), so a push of several
-    pull requests to main is judged as each of them was, and a change that leaves src/ alone needs no proof.
+    pull requests to main is judged as each of them was, also where a later one reverts src/, and a change that
+    leaves src/ alone needs no proof.
     """
     plan, candidate = gate.plan, gate.candidate_info
-    if plan is None or plan.release or not plan.src or plan.base is None:
+    if plan is None or plan.release or plan.base is None:
         return []
     repo, problems = candidate.repo, []
     records = {plan.base: plan.before, candidate.revision: plan.head}
@@ -1885,12 +1884,14 @@ def step_problems(
     return problems
 
 
-def write_verdicts(gate: Gate, ns: argparse.Namespace) -> None:
-    """Write the verdicts on the `harness` labels of a src PR to `--verdicts`, read by `declared_changes.py check`.
+def judge_stored_labels(gate: Gate, ns: argparse.Namespace) -> None:
+    """Judge the stored labels of a PR's src changes and write the verdicts on their `harness` labels to `--verdicts`.
 
-    Shard 1 judges the stored labels (`stored_problems`) and writes the file; the other shards leave it alone, so
-    the shards of one run may share it.
+    `declared_changes.py check` reads the file. Shard 1 judges the stored labels (`stored_problems`, their problems
+    join the plan's) and writes the file; the other shards leave it alone, so the shards of one run may share it.
     """
+    if gate.plan is not None and ns.shard_index == 1:
+        gate.plan.problems += stored_problems(gate)
     if ns.verdicts and ns.shard_index == 1:
         ns.verdicts.parent.mkdir(parents=True, exist_ok=True)
         ns.verdicts.write_text(json.dumps({"verdicts": gate.verdicts}, indent=1) + "\n", encoding="utf-8")
@@ -2494,7 +2495,8 @@ def shortcut(gate: Gate, plan: Plan, ns: argparse.Namespace) -> int:
     A PR record that names cells fails then, as no cell can differ, except a record of a change already merged
     (`Plan.landed`), whose cells the runs against the release judge: its selectors must name released surface only
     (`plan_surface_problems`), as those runs refuse any other. The base's gate still runs on a change of the gate's
-    own files (`base_gate`).
+    own files (`base_gate`). The stored proofs of its src changes (a push to main that reverts one) are judged before
+    (`judge_stored_labels`), and their problems are the plan's.
     """
     base = (plan.base or "")[:12]
     problems = [
@@ -2530,7 +2532,7 @@ def gate_main(ns: argparse.Namespace) -> int:
     gate = build_gate(ns)
     plan = gate.plan
     if plan is not None and not plan.release and not plan.src:
-        write_verdicts(gate, ns)
+        judge_stored_labels(gate, ns)
         return shortcut(gate, plan, ns)
     inventory = option_inventory(gate.base.side.python, gate.base.env)
     offered = option_inventory(gate.candidate.side.python, gate.candidate.env) if gate.identity else inventory
@@ -2559,9 +2561,7 @@ def gate_main(ns: argparse.Namespace) -> int:
         gate.candidate.close()
         if gate.rerun is not None:
             gate.rerun.close()
-    if plan is not None and ns.shard_index == 1:
-        plan.problems += stored_problems(gate)
-    write_verdicts(gate, ns)
+    judge_stored_labels(gate, ns)
     if gate.identity:
         results = not_compared(results)
         if ns.shard_index == 1 and (surface := option_changes(inventory, offered)):
