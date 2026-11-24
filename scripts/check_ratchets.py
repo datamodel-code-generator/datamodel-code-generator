@@ -541,6 +541,12 @@ def _hook_value(text: str, following: list[str], indent: int) -> object:
         return None
 
 
+def _hook_rev(text: str) -> str:
+    """Read a hook's rev: the tag of a rev that ``pre-commit autoupdate --freeze`` pinned to a commit."""
+    frozen = re.search(r"#\s*frozen:\s*(\S+)", text)
+    return frozen[1] if frozen else str(_yaml_value(text))
+
+
 def _ruff_hook(root: Path) -> Hook:
     """Read the rev, exclude pattern and arguments of the ruff check hook, and what it could not read."""
     path = root / ".pre-commit-config.yaml"
@@ -553,7 +559,7 @@ def _ruff_hook(root: Path) -> Hook:
         if match := re.match(r"\s*-\s*repo:\s*(\S+)", line):
             repo, hook = match[1], ""
         elif match := re.match(r"\s*rev:\s*(.+)", line):
-            rev = str(_yaml_value(match[1])) if "ruff-pre-commit" in repo else rev
+            rev = _hook_rev(match[1]) if "ruff-pre-commit" in repo else rev
         elif match := re.match(r"\s*-\s*id:\s*(\S+)", line):
             hook = str(_yaml_value(match[1]))
         elif (match := re.match(r"(\s*)(exclude|args):\s*(.*)", line)) and "ruff-pre-commit" in repo and hook == "ruff":
