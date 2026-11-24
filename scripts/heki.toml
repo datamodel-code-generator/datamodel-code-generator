@@ -4,7 +4,11 @@
 required-version = ">=0.2.7"
 
 [lint]
-select = ["EFF201", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207"]
+select = ["EFF201", "IMP101", "MUT201", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207"]
+fail-on = "warning"
+
+[imports]
+cycle-edges = ["body"]
 
 [[write-owners]]
 name = "cache:no store operation"

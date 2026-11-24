@@ -1,11 +1,13 @@
-"""The import cycles of the package and of ``scripts/``, read from the import graph of `scripts/_source_model.py`.
+"""The import cycles of ``scripts/``, read from the import graph of `scripts/_source_model.py`.
 
-A cycle is a strongly connected component of more than one module. `import_cycles` measures each tree of `TREES`
-three ways, each a key ``import-cycle:<measure>@<area>`` of ``scripts/check_ratchets.py``:
+The import cycles of the package are heki's ``IMP101`` (``scripts/build_heki_contracts.py``, ``scripts/heki.toml``).
+
+A cycle is a strongly connected component of more than one module. `import_cycles` measures ``scripts`` three ways,
+each a key ``import-cycle:<measure>@scripts`` of ``scripts/check_ratchets.py``:
 
 - ``module-level``: the modules on cycles of the imports that run when their module is imported (`runs_at_import`).
-  ``scripts/check_architecture_boundaries.py`` also rejects every such cycle of the package, whatever the base. The
-  scope that runs decides: a class body in a function runs with the function, a module-level comprehension at import.
+  The scope that runs decides: a class body in a function runs with the function, a module-level comprehension at
+  import.
 - ``lazy``: the modules on cycles of every import; function-local and ``TYPE_CHECKING`` imports count too, as code
   scanning reports cycles that they close.
 - ``largest-lazy``: the modules of the largest of those cycles, so that two cycles which merge count as a rise.
@@ -19,19 +21,16 @@ those first), and an import whose module name is computed is not seen (the ``dyn
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from scripts._source_model import SourceTree
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable
+    from collections.abc import Iterable
     from pathlib import Path
 
     from scripts._source_model import Edge
 
-TREES: Final = (("src", "src", "datamodel_code_generator"), ("scripts", ".", "scripts"))
-"""Each tree whose import graph is measured: its ratchet area, the directory that holds the package, the package."""
-AREAS: Final = frozenset(area for area, _, _ in TREES)
 Cycle = dict[str, int]
 """The modules of a cycle, each with the line of its first import of another module of the cycle."""
 
@@ -92,26 +91,17 @@ def tree_cycles(tree: SourceTree) -> dict[str, list[Cycle]]:
     }
 
 
-def _within(files: Iterable[str] | None, directory: str) -> set[str] | None:
-    """Return the files under a tree's directory, relative to it (``None``: no limit)."""
-    prefix = "" if directory == "." else f"{directory}/"
-    return None if files is None else {name.removeprefix(prefix) for name in files if name.startswith(prefix)}
+def import_cycles(root: Path, files: Iterable[str] | None = None) -> dict[str, list[list[tuple[str, int]]]]:
+    """Return the cycles of each key of ``scripts`` under ``root``: each module's path and line.
 
-
-def import_cycles(
-    root: Path, areas: Container[str] = AREAS, files: Iterable[str] | None = None
-) -> dict[str, list[list[tuple[str, int]]]]:
-    """Return the cycles of each key of the trees of ``areas`` under ``root``: each module's path and line.
-
-    ``files`` limits the trees to the files of that set (paths relative to ``root``), as the ratchet selects them.
+    ``files`` limits the tree to the files of that set (paths relative to ``root``), as the ratchet selects them.
     """
-    found: dict[str, list[list[tuple[str, int]]]] = {}
-    for area, directory, package in (tree for tree in TREES if tree[0] in areas):
-        tree = SourceTree(root / directory, [package], files=_within(files, directory))
-        for measure, measured in tree_cycles(tree).items():
-            if measured:
-                found[f"import-cycle:{measure}@{area}"] = [
-                    [(tree.paths[module].relative_to(root).as_posix(), line) for module, line in cycle.items()]
-                    for cycle in measured
-                ]
-    return found
+    tree = SourceTree(root, ["scripts"], files=None if files is None else set(files))
+    return {
+        f"import-cycle:{measure}@scripts": [
+            [(tree.paths[module].relative_to(root).as_posix(), line) for module, line in cycle.items()]
+            for cycle in measured
+        ]
+        for measure, measured in tree_cycles(tree).items()
+        if measured
+    }

@@ -228,6 +228,52 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
     ), result.stderr
 
 
+SEEDED_CYCLES = {
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/body_a.py": "from datamodel_code_generator import body_b\n\nVALUE = body_b\n",
+    f"{PACKAGE}/body_b.py": "from datamodel_code_generator import body_a\n\nVALUE = body_a\n",
+    f"{PACKAGE}/function_a.py": "from datamodel_code_generator import function_b\n\nVALUE = function_b\n",
+    f"{PACKAGE}/function_b.py": (
+        "def load() -> object:\n    from datamodel_code_generator import function_a\n\n    return function_a\n"
+    ),
+    f"{PACKAGE}/typing_a.py": "from datamodel_code_generator import typing_b\n\nVALUE = typing_b\n",
+    f"{PACKAGE}/typing_b.py": (
+        "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from datamodel_code_generator import typing_a\n"
+    ),
+    f"{PACKAGE}/one_way_a.py": "from datamodel_code_generator import one_way_b\n\nVALUE = one_way_b\n",
+    f"{PACKAGE}/one_way_b.py": "VALUE = 1\n",
+}
+"""Three pairs of modules that import each other, by an import at module level, in a function and under
+``TYPE_CHECKING``, and a pair that imports one way: only the first is a cycle of the imports that run while the
+modules load."""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_the_import_cycles_that_run_while_their_modules_load(tmp_path: Path) -> None:
+    """A cycle closed by an import that runs while its module loads fails the check.
+
+    One closed in a function or under ``TYPE_CHECKING`` does not.
+    """
+    for name, text in SEEDED_CYCLES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+
+    (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+
+    result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+
+    found = sorted(
+        (Path(item["path"]).as_posix(), item["rule_code"], item["target"]) for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b"),
+        ],
+    ), result.stderr
+
+
 SEEDED_WRITE_FORMS = """\
 from copy import deepcopy
 
