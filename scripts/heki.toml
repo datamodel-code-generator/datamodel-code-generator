@@ -4921,7 +4921,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:parser/_passes/_import_edges.py:failing_import_reads"
 targets = ["datamodel_code_generator.parser._passes._import_edges.failing_import_reads"]
-allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule.*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:_module_definition_reads", "datamodel_code_generator.parser._passes.imports:_module_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"
@@ -4929,7 +4929,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:parser/_passes/_import_edges.py:import_cycle_seeds"
 targets = ["datamodel_code_generator.parser._passes._import_edges.import_cycle_seeds"]
-allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule.*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:_module_definition_reads", "datamodel_code_generator.parser._passes.imports:_module_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"
@@ -4937,7 +4937,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:parser/_passes/_import_edges.py:import_plan"
 targets = ["datamodel_code_generator.parser._passes._import_edges.import_plan"]
-allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule.*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:_module_definition_reads", "datamodel_code_generator.parser._passes.imports:_module_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"
@@ -4977,7 +4977,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:parser/_passes/_import_edges.py:runs_into_import_cycle"
 targets = ["datamodel_code_generator.parser._passes._import_edges.runs_into_import_cycle"]
-allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule.*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:_module_definition_reads", "datamodel_code_generator.parser._passes.imports:_module_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"
@@ -4985,7 +4985,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:parser/_passes/_import_edges.py:written_import_blocks"
 targets = ["datamodel_code_generator.parser._passes._import_edges.written_import_blocks"]
-allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule.*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:_module_definition_reads", "datamodel_code_generator.parser._passes.imports:_module_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_definition_reads", "datamodel_code_generator.parser._passes.imports:_definition_reads.*", "datamodel_code_generator.parser._passes.imports:check_import_reads", "datamodel_code_generator.parser._passes.imports:check_import_reads.*", "datamodel_code_generator.parser._passes.structure:_module_merges", "datamodel_code_generator.parser._passes.structure:_module_merges.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"

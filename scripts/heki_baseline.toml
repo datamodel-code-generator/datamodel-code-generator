@@ -6968,6 +6968,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
+qualname = "_evaluates_class_annotations"
+rule_code = "MUT203"
+target = "datamodel_code_generator.model.base.DataModel._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "_hidden_class_refusal"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
@@ -6993,13 +7000,6 @@ qualname = "_lone_surrogate_held"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference.named_schema_location"
 count = 3
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/imports.py"
-qualname = "_module_definition_reads"
-rule_code = "MUT203"
-target = "datamodel_code_generator.model.base.DataModel._[!_]*"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"

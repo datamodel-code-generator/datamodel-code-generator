@@ -4219,8 +4219,9 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         (
             "the refusal of a class beside a module of its name in its package reads an import of the module by an "
             "ancestor package, which has started before the package's `__init__.py`, as a load of that `__init__.py`, "
-            "and writes the output where no module that import runs reads through the class's name as it runs "
-            "(`parser/_passes/_import_edges.py:init_loads`, `parser/_passes/imports.py:_class_named_like_submodule`)"
+            "and writes the output where the classes do not evaluate their annotations as they are defined (output "
+            "other than Pydantic, with deferred annotations) (`parser/_passes/_import_edges.py:init_loads`, "
+            "`parser/_passes/imports.py:_class_named_like_submodule`)"
         ),
         fix=KEEP,
         witness=(

@@ -3667,7 +3667,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "below its package, unless the package loads the module first "
             "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders, "
             "and `_class_named_like_submodule`, which keeps the reading of 0.90.0 to 0.100.0 of an ancestor "
-            "package's imports where the output imports, row `legacy-running-packages-load`), "
+            "package's imports where the classes do not evaluate their annotations as they are defined, row "
+            "`legacy-running-packages-load`), "
             "the import of the models of a submodule from the submodule where its package loads it before its class "
             "(`parser/_passes/imports.py:submodules_hidden_by_packages`) "
             "and the packages whose `__init__.py` a module writes (the aliases of `parser/_passes/imports.py` for the "
@@ -3742,17 +3743,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         adapters=(
             "`parser/_passes/imports.py:check_import_reads` (L7, after the last block is written), which reads the "
-            "definition reads from the final facts (`_module_definition_reads`, `_definition_reads`) and maps each "
-            "written module back to the modules of the module structure; "
-            "`parser/_passes/imports.py:_class_named_like_submodule` reads the blocks a module imports a class beside "
-            "a submodule with, to keep the output of 0.90.0 to 0.100.0 where no definition reads through it; "
-            "`parser/_passes/structure.py:_module_merges` joins the seeded merges"
+            "definition reads from the final facts (`_definition_reads`) and maps each written module back to the "
+            "modules of the module structure; `parser/_passes/structure.py:_module_merges` joins the seeded merges"
         ),
         sites=(
             Home("parser/_passes/imports.py", "check_import_reads"),
-            Home("parser/_passes/imports.py", "_module_definition_reads"),
             Home("parser/_passes/imports.py", "_definition_reads"),
-            Home("parser/_passes/imports.py", "_class_named_like_submodule"),
             Home("parser/_passes/structure.py", "_module_merges"),
         ),
     ),

@@ -4627,9 +4627,9 @@ def test_main_jsonschema_submodule_hidden_by_package(
     imports ``pkg``), the refusal waits for the parse again, whose merge into ``_internal.py`` writes the class and
     imports. Where only the root package imports the submodule (``from .pkg import Warn``, ``Warn.Detail``) and
     ``pkg/__init__.py`` imports from the root, 0.90.0 to 0.100.0 wrote the output: the root gets the class, which only
-    fails where the root reads ``Warn.Detail`` as it runs, so a dataclass or a Struct with deferred annotations keeps it
-    and every module imports. The models are decoded after the first module named is imported, in one import of the
-    package.
+    fails where the root's class evaluates ``Warn.Detail`` as it is defined, so a dataclass or a Struct with deferred
+    annotations keeps it and every module imports. The models are decoded after the first module named is imported, in
+    one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -40900,6 +40900,13 @@ _PYDANTIC_BACKENDS = ("pydantic_v2.BaseModel", "pydantic_v2.dataclass")
                 _PYDANTIC_BACKENDS,
             ),
             (
+                "submodule_named_like_package_class_root_import",
+                ["--disable-future-imports"],
+                "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+                "root-import-evaluated",
+                ("dataclasses.dataclass", "msgspec.Struct"),
+            ),
+            (
                 "submodule_named_like_package_class_beside_keyword_directory",
                 [],
                 "the class 'Warn' in the package 'main.pkg' beside the module 'main.pkg.Warn' (main/pkg/Warn.py)",
@@ -40939,9 +40946,11 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
     ``--all-exports-scope`` re-exports a module of it) the output works and is written. An import of the root package
     (``from .. import common``) loads nothing while the ``__init__.py`` runs, as the root has started before it, so the
-    root's own import of ``pkg.Warn`` runs after the class is defined and gets the class: the run fails where the root
-    reads ``Warn.Detail`` as it runs, as Pydantic builds a class as it is defined, and the other backends keep the
-    output of 0.90.0 to 0.100.0 (``test_main_jsonschema_submodule_hidden_by_package``). The refusal is judged before
+    root's own import of ``pkg.Warn`` runs after the class is defined and gets the class: the run fails where the
+    classes evaluate their annotations as they are defined, so that the root's ``Warn.Detail`` fails at import
+    (Pydantic, which builds a class as it is defined, or without ``from __future__ import annotations``), and the other
+    output keeps the form of 0.90.0 to 0.100.0 (``test_main_jsonschema_submodule_hidden_by_package``). The refusal is
+    judged before
     the modules are written, so it is the error a run reports where writing them fails too (a directory named like the
     keyword ``class``). The class names are the final
     ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a
