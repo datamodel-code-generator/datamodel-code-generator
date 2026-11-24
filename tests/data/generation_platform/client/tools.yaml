@@ -6,6 +6,8 @@ servers:
   - url: https://api.example.com/v1
 security:
   - apiKey: []
+  - bearer: []
+  - basic: []
 paths:
   /pets:
     get:
@@ -159,6 +161,12 @@ components:
       type: apiKey
       in: query
       name: key
+    bearer:
+      type: http
+      scheme: bearer
+    basic:
+      type: http
+      scheme: basic
   schemas:
     Species:
       type: string

@@ -2,12 +2,14 @@
 
 A call sends what the client's method sends: the tool takes the operation's parameters and body, never the parameter at
 the API key's position or the request options, so the credential the client holds is the one sent. A refused argument,
-a failed call, and a tool the table has not each return or raise what the tool table documents.
+a failed call, and a tool the table has not each return or raise what the tool table documents. An error value shows no
+credential the client placed where the API echoes one, and strict models take the JSON values their schemas describe.
 """
 
 from __future__ import annotations
 
 import json
+from datetime import date
 from typing import TYPE_CHECKING
 
 import httpx2
@@ -28,10 +30,19 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _PET = {"id": 3, "name": "Rex", "species": "dog", "born": "2020-02-29"}
+_OWNER = "8c2d1f0e-4a5b-4c6d-8e9f-0a1b2c3d4e5f"
+_ERROR_BODY_LIMIT = 64 * 1024
 
 
 def _shown(value: object) -> str:
     return json.dumps(value, sort_keys=True)
+
+
+def _echo(status: int, **headers: str) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of an error body that echoes the request's query and Authorization, as some APIs do."""
+    return lambda request: json_response(
+        status, {"query": request.url.query.decode(), "authorization": request.headers.get("authorization")}, **headers
+    )(request)
 
 
 def tools(package: ModuleType, lines: list[str]) -> None:
@@ -62,6 +73,11 @@ def tools(package: ModuleType, lines: list[str]) -> None:
         safe = module.Toolset(api, read_only=True)
         lines.append(f"  read-only search = {[entry['name'] for entry in safe.search(limit=10)]}")
         record(lines, "read-only create", lambda: safe.call("pets_create_pet", {"body": {"name": "a"}}))
+    for credentials in ({"bearer": "token-1"}, {"basic": ("user-1", "password-1")}):
+        with exchange.client() as http, package.Client(http_client=http, max_retries=0, **credentials) as api:
+            exchange.respond(_echo(401))
+            echoed = module.Toolset(api).call("pets_get_pet", {"petId": 3})
+            lines.append(f"  {next(iter(credentials))} echoed = {_shown(echoed)}")
     run(lambda: _async_tools(package, module, lines))
 
 
@@ -105,6 +121,15 @@ def _calls(module: ModuleType, api: object, exchange: Exchange, lines: list[str]
     failure = table.call("pets_list_pets", {})["error"]
     body = failure.pop("body")
     lines.append(f"  long error body = {_shown(failure)}, body {type(body).__name__} of {len(body)} characters")
+    escaped = b'{"errors": [{"secret\\u002dkey": "key secret\\u002dkey"}], "code": 1}'
+    for label, responder in (
+        ("echoed credential", _echo(401)),
+        ("escaped credential", raw_response(401, escaped, "application/json")),
+        ("echoed credential text", raw_response(401, b"key secret-key refused", "text/plain")),
+        ("cut credential", raw_response(500, b"x" * (_ERROR_BODY_LIMIT - 6) + b"secret-key", "text/plain")),
+    ):
+        exchange.respond(responder)
+        lines.append(f"  {label} = {_shown(table.call('pets_list_pets', {})['error']['body'])[-80:]}")
     for label, name, arguments in (
         ("limit out of range", "pets_list_pets", {"limit": 1000}),
         ("unknown species", "pets_list_pets", {"species": "fish"}),
@@ -143,3 +168,31 @@ def tool_extras(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(201, {**_PET, "colour": "brown"}))
         created = table.call("pets_create_pet", {"body": {"name": "Rex", "species": "dog", "colour": "brown"}})
         lines.append(f"  create = {_shown(created)}")
+
+
+def tool_strict(package: ModuleType, lines: list[str]) -> None:
+    """Call the tools of strict models with JSON values, which they validate as JSON, the mode the schemas describe.
+
+    A strict dataclass takes a JSON object for its body and a date as text; a value that is no JSON value is refused,
+    and the error value of a failure shows the API key neither as given nor as its query field encodes it.
+    """
+    module = import_generated(f"{package.__name__}.tools", copied=True)
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http, api_key="secret/key+1", max_retries=0) as api:
+        table = module.Toolset(api)
+        born = {"name": "Rex", "species": "dog", "born": "2020-02-29"}
+        for label, name, arguments, responder in (
+            ("create", "pets_create_pet", {"body": born}, json_response(201, _PET)),
+            ("replace", "pets_replace_pet", {"petId": 3, "body": {**born, "species": "cat"}}, json_response(200, _PET)),
+            ("list", "pets_list_pets", {"limit": 5, "species": "cat", "X_Trace": "t-1"}, json_response(200, [_PET])),
+            ("owner", "owners_get_owner", {"ownerId": _OWNER}, json_response(200, {"id": _OWNER, "pets": [_PET]})),
+            ("echoed credential", "pets_get_pet", {"petId": 3}, _echo(404, **{"x-request-id": "req-secret/key+1"})),
+        ):
+            exchange.respond(responder)
+            lines.append(f"  {label} = {_shown(table.call(name, arguments))}")
+        for label, name, arguments in (
+            ("invalid date", "pets_create_pet", {"body": {**born, "born": "soon"}}),
+            ("not a JSON number", "pets_list_pets", {"limit": float("nan")}),
+            ("not a JSON value", "pets_create_pet", {"body": {**born, "born": date(2020, 2, 29)}}),
+        ):
+            lines.append(f"  {label} = {_shown(table.call(name, arguments))}")

@@ -1400,11 +1400,19 @@ with the method.
   query lists every tool in operation order.
 - `schema(name)` returns the tool's `description` and the JSON schemas of its arguments object (`input_schema`) and
   of its result (`output_schema`), which Pydantic derives from the models, with the `$defs` each one reaches.
-- `call(name, arguments)` validates each argument through its model type, calls the method, and returns the result
-  as JSON values. Arguments the tool refuses return `{"error": {"type": "invalid_arguments", "problems": [...]}}`,
-  each problem with its `argument`, `location`, `message`, and `kind`, and a call the client fails returns
-  `{"error": {...}}` with the exception's `type`, `reason`, `status_code`, `operation_id`, `request_id`, and the
-  bounded `body`, never its headers, URL, or cause. A name the table has no tool of raises `UnknownToolError`.
+- `call(name, arguments)` validates each argument as JSON through its model type, as the schemas describe it, so a
+  strict model takes a JSON object for a dataclass and text for a date, calls the method, and returns the result as
+  JSON values. Arguments the tool refuses, a value that is no JSON value such as NaN among them, return
+  `{"error": {"type": "invalid_arguments", "problems": [...]}}`, each problem with its `argument`, `location`,
+  `message`, and `kind`, and a call the client fails returns `{"error": {...}}` with the exception's `type`,
+  `reason`, `status_code`, `operation_id`, `request_id`, and the bounded `body`, never its headers, URL, or cause. A
+  name the table has no tool of raises `UnknownToolError`.
+
+An error value shows no credential that the client's security schemes placed on the call's requests, where the API
+echoes one: every API key (also as its query field encodes it), bearer token, Basic user and password, and the
+credentials they write is replaced with `[redacted]` in the request ID and in the body's text and the strings of its
+JSON value, and so is the end of a cut body that begins one. The table does not know a credential that an `auth`, the
+HTTP client, or a default header sends, and a result is the API's data as the models validate it.
 
 The arguments of a tool are the operation's parameters by their Python names and its body as `body`, the body of its
 default request media type, else of its first JSON one. A parameter at the position of a security scheme's
@@ -1421,7 +1429,8 @@ app/client: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of th
 
 A tool's description is its method's docstring: the `description` of `--client-operations`, else, with
 `--use-schema-description`, the operation's summary and description, else its route. Under `--untrusted-input` it
-leaves out the document's text, and generation warns once. The tools need Pydantic v2 models
+is the route, and generation warns once; the tags and routes, the models' descriptions in `schema()`, and the
+`operation_id` of an error value still come from the document. The tools need Pydantic v2 models
 (`--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`), whose library gives the schemas, and the
 option refuses AsyncAPI input.
 

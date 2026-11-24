@@ -6919,5 +6919,14 @@
     "model": {"extra_fields": "allow"},
     "config": {"tools": "functions"},
     "modules": {"pydantic_v2.BaseModel": false, "pydantic_v2.dataclass": [["client", "_generated", "tools.py"]]}
+  },
+  "tools-strict": {
+    "input": "tools.yaml",
+    "backends": ["pydantic_v2.dataclass"],
+    "model": {"extra_template_data": {"#all#": {"config": {"strict": true}}}},
+    "config": {
+      "tools": "functions",
+      "operations": [{"ref": "/paths/~1pets~1{petId}/get", "runtime": {"request_id_header": "X-Request-Id"}}]
+    }
   }
 }

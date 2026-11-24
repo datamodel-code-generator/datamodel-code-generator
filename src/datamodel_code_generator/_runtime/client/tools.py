@@ -1,15 +1,16 @@
 """The tool table of a generated client: one tool per operation, searched, described, and called with JSON values.
 
 A tool's JSON schemas come from the model types of its arguments and result, through the models' own library, and a
-call validates each argument through the codec of its type, calls the client's method, and returns the result as its
-codec writes it. A read-only table leaves out every tool whose HTTP method is not safe. A failure of the client returns
-its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or cause, so no credential
-the client sends reaches the caller; arguments a tool refuses return each problem.
+call validates each argument as JSON through the codec of its type, the mode the schemas describe, calls the client's
+method, and returns the result as its codec writes it. A read-only table leaves out every tool whose HTTP method is not
+safe. A failure of the client returns its class, reason, status, operation, request ID, and bounded body, never its
+headers, URL, or cause, with every credential the client placed on the call's requests replaced in the request ID and
+the body, so an API that echoes one does not hand it to the caller; arguments a tool refuses return each problem.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from operator import itemgetter
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Protocol
@@ -17,9 +18,10 @@ from typing import TYPE_CHECKING, ClassVar, Final, Generic, Protocol
 from pydantic import TypeAdapter, ValidationError
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.media import JSONValue, json_value
+from ..model_codecs.media import JSONValue, json_bytes, json_value
 from ..model_codecs.pydantic_adapters import adapter
 from .errors import APIStatusError, SDKError
+from .positions import placed_credentials
 from .tool_search import score, words
 
 if TYPE_CHECKING:
@@ -29,6 +31,7 @@ if TYPE_CHECKING:
 ClientT = TypeVar("ClientT")
 _NAME: Final = 3
 _SITE: Final = 2
+_REDACTED: Final = "[redacted]"
 
 
 class UnknownToolError(LookupError):
@@ -59,33 +62,69 @@ def refused(problems: list[JSONValue]) -> JSONValue:
     return {"error": {"type": "invalid_arguments", "problems": problems}}
 
 
-def failed(error: SDKError) -> JSONValue:
-    """Return the error value of a call the client failed: the allow-listed metadata of its error."""
+def failed(error: SDKError, placed: Collection[str]) -> JSONValue:
+    """Return the error value of a call the client failed: the allow-listed metadata of its error.
+
+    `placed` holds the texts of the credentials the client placed on the call's requests, which the request ID and the
+    body never show.
+    """
     return {
         "error": {
             "type": type(error).__name__,
             "reason": error.reason,
             "status_code": None if error.info is None else error.info.status_code,
             "operation_id": error.operation_id,
-            "request_id": error.request_id,
-            "body": _body(error) if isinstance(error, APIStatusError) else None,
+            "request_id": None if (request_id := error.request_id) is None else _redacted(request_id, placed),
+            "body": _body(error, placed) if isinstance(error, APIStatusError) else None,
         }
     }
 
 
-def _body(error: APIStatusError) -> JSONValue:
-    """Return the bounded body of a refused call: its JSON value, else its text, or None without one."""
+def _body(error: APIStatusError, placed: Collection[str]) -> JSONValue:
+    """Return the bounded body of a refused call without the credentials placed: its JSON value, else its text, or None.
+
+    The credentials are replaced in the text, and in each string of the JSON value it holds, where an escape spells one.
+    """
     content = error.body_bytes
     if not content:
         return None
+    text = content.decode("utf-8", errors="replace")
+    shown = _redacted(text, placed, cut=error.truncated)
     if not error.truncated:
         try:
-            value = json_value(content)
+            value = json_value(content if shown == text else shown)
         except ValueError:
             pass
         else:
+            return _cleared(value, placed)
+    return shown
+
+
+def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
+    """Return a text with each occurrence of a placed credential replaced, the longest first.
+
+    A text that was `cut` short also has an end that begins a credential replaced.
+    """
+    known = sorted(set(placed), key=len, reverse=True)
+    for secret in known:
+        text = text.replace(secret, _REDACTED)
+    if not cut:
+        return text
+    tail = max((size for secret in known for size in range(1, len(secret)) if text.endswith(secret[:size])), default=0)
+    return f"{text[: len(text) - tail]}{_REDACTED}" if tail else text
+
+
+def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
+    """Return a JSON value whose strings, keys included, hold no placed credential."""
+    match value:
+        case str():
+            return _redacted(value, placed)
+        case list():
+            return [_cleared(item, placed) for item in value]
+        case dict():
+            return {_redacted(key, placed): _cleared(item, placed) for key, item in value.items()}
+        case _:
             return value
-    return content.decode("utf-8", errors="replace")
 
 
 class ToolCodec(Protocol):
@@ -100,8 +139,8 @@ class ToolCodec(Protocol):
         """Return the model type the codec validates and encodes."""
         raise NotImplementedError
 
-    def convert(self, value: object) -> object:
-        """Construct a value of the type from a parsed JSON value, validating it."""
+    def decode(self, content: bytes) -> object:
+        """Construct a value of the type from JSON, validating it in JSON mode."""
         raise NotImplementedError
 
     def encode(self, value: Never) -> bytes:
@@ -212,8 +251,9 @@ class _Table(Generic[ClientT]):
     def _prepared(self, name: str, arguments: Mapping[str, object]) -> tuple[ToolPlan, object, dict[str, object]]:
         """Return a tool, the client resource that has its method, and its keywords, or raise the refusal of them.
 
-        Each argument is validated through the codec of its type; an argument the tool has not, one it requires that is
-        missing, and each value its type refuses is a problem, all reported together.
+        Each argument is written as JSON and validated in JSON mode through the codec of its type, as the schemas
+        describe it; an argument the tool has not, one it requires that is missing, a value that is no JSON value, and
+        each value its type refuses is a problem, all reported together.
         """
         plan = self._plan(name)
         given: object = arguments
@@ -231,7 +271,12 @@ class _Table(Generic[ClientT]):
             if key not in given:
                 continue
             try:
-                values[key] = argument.codec.convert(given[key])
+                content = json_bytes(given[key])
+            except (TypeError, ValueError) as error:
+                problems.append(problem(key, str(error), "json_invalid"))
+                continue
+            try:
+                values[key] = argument.codec.decode(content)
             except ValidationError as error:
                 problems.extend(invalid(key, error))
         if problems:
@@ -256,10 +301,11 @@ class ToolTable(_Table[ClientT]):
             plan, resource, values = self._prepared(name, arguments)
         except _RefusalError as refusal:
             return refusal.value
-        try:
-            result = getattr(resource, plan.method)(**values)
-        except SDKError as error:
-            return failed(error)
+        with placed_credentials() as placed:
+            try:
+                result = getattr(resource, plan.method)(**values)
+            except SDKError as error:
+                return failed(error, placed)
         return _dumped(plan, result)
 
 
@@ -275,10 +321,11 @@ class AsyncToolTable(_Table[ClientT]):
             plan, resource, values = self._prepared(name, arguments)
         except _RefusalError as refusal:
             return refusal.value
-        try:
-            result = await getattr(resource, plan.method)(**values)
-        except SDKError as error:
-            return failed(error)
+        with placed_credentials() as placed:
+            try:
+                result = await getattr(resource, plan.method)(**values)
+            except SDKError as error:
+                return failed(error, placed)
         return _dumped(plan, result)
 
 

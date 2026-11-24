@@ -120,7 +120,7 @@ from tests.api_generation.scenarios.client_streams import (
     streams,
 )
 from tests.api_generation.scenarios.client_streams import stream_lifetimes as event_stream_lifetimes
-from tests.api_generation.scenarios.client_tools import tool_extras, tools
+from tests.api_generation.scenarios.client_tools import tool_extras, tool_strict, tools
 from tests.api_generation.scenarios.client_unions import copied_unions, enum_tag_bodies, split_unions, unions
 from tests.api_generation.scenarios.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.api_generation.scenarios.client_webhook_adapters import (
@@ -999,6 +999,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "asyncapi-perspective": ("asyncapi-perspective", ("pydantic_v2.BaseModel",), asyncapi_perspective),
     "tools": ("tools", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), tools),
     "tools-extras": ("tools-extras", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), tool_extras),
+    "tools-strict": ("tools-strict", ("pydantic_v2.dataclass",), tool_strict),
     "asyncapi-serverless": ("asyncapi-serverless", ("pydantic_v2.BaseModel",), asyncapi_serverless),
     "asyncapi-schema-formats": ("asyncapi-schema-formats", ("pydantic_v2.BaseModel",), asyncapi_schema_formats),
     "asyncapi-message-codecs": ("asyncapi-message-codecs", ("pydantic_v2.BaseModel",), asyncapi_message_codecs),
