@@ -1637,6 +1637,10 @@
     "wrap_string_literal": {
       "not_recommended": "formatting",
       "reason": "Formatter string wrapping."
+    },
+    "write_pyproject_config": {
+      "not_recommended": "command",
+      "reason": "Writes the table of --recommend-options or --generate-pyproject-config into pyproject.toml."
     }
   }
 }

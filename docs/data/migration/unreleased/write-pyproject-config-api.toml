@@ -1,0 +1,14 @@
+[[change]]
+id = "write-pyproject-config-api"
+category = "api"
+title = "Public names for --write-pyproject-config"
+summary = "The option adds a row to the option table and the fast path of --generate-prompt steps aside for it; nothing is removed or changed."
+refs = ["#7495"]
+decision = ["#7495"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.__main__"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

@@ -2536,6 +2536,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
         config=False,
     ),
     flag(
+        Section.GENERAL,
+        "--write-pyproject-config",
+        help="Write the pyproject.toml table that --recommend-options or --generate-pyproject-config prints into "
+        "the project's pyproject.toml, setting only the keys it adds or changes, and print what was written "
+        "(experimental).",
+        config=False,
+        conflicts=_relations("--ignore-pyproject"),
+    ),
+    flag(
         Section.GENERAL, "--ignore-pyproject", help="Ignore pyproject.toml configuration", default=False, config=False
     ),
     toggle(

@@ -6057,11 +6057,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_message_text.py:wrapped_lines`",
         adapters=(
             "`_recommend/_report.py` (the rule texts, trial effects and footnotes, the changes of a migration, the "
-            "notes), `_registry_render.py:_render_registry_table` (the notes of `--list-experimental`)"
+            "notes), `_registry_render.py:_render_registry_table` (the notes of `--list-experimental`), "
+            "`_config_export.py:_written_text` (the notes of `--write-pyproject-config`)"
         ),
         sites=(
             Home("_registry_render.py", "_render_registry_table"),
             Home("_recommend/_report.py"),
+            Home("_config_export.py", "_written_text"),
         ),
     ),
     DecisionHome(

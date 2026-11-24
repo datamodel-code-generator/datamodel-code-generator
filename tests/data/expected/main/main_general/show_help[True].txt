@@ -1809,6 +1809,12 @@ General options:
   --watch-delay WATCH_DELAY
                         Debounce delay in seconds for watch mode (default:
                         0.5)
+  --write-pyproject-config
+                        Write the pyproject.toml table that --recommend-
+                        options or --generate-pyproject-config prints into the
+                        project's pyproject.toml, setting only the keys it
+                        adds or changes, and print what was written
+                        (experimental).
   -h, --help            show this help message and exit
 
 Target generation options (experimental):

@@ -1,0 +1,8 @@
+pyproject.toml already holds these values; nothing was written:
+  [tool.datamodel-codegen]
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --input api.yaml --input-file-type openapi

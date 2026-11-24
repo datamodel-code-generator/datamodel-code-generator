@@ -1,0 +1,8 @@
+Updated pyproject.toml:
+  [tool.datamodel-codegen]
+  input = "api.yaml"
+  output = "models.py"
+  target-python-version = "3.12"
+
+Command
+  datamodel-codegen

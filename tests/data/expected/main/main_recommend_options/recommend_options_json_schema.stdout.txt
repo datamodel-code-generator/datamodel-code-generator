@@ -674,6 +674,59 @@
       ],
       "title": "RecommendTrialPayload",
       "type": "object"
+    },
+    "WrittenConfigPayload": {
+      "additionalProperties": false,
+      "description": "What --write-pyproject-config wrote (experimental).",
+      "properties": {
+        "path": {
+          "description": "The pyproject.toml, relative to the working directory.",
+          "title": "Path",
+          "type": "string"
+        },
+        "table": {
+          "description": "The keys of the table, such as tool and datamodel-codegen.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Table",
+          "type": "array"
+        },
+        "created": {
+          "description": "Whether the file did not exist before.",
+          "title": "Created",
+          "type": "boolean"
+        },
+        "keys": {
+          "description": "The keys written, those the file did not hold with these values.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Keys",
+          "type": "array"
+        },
+        "refused": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Why nothing was written; null when the keys were written.",
+          "title": "Refused"
+        }
+      },
+      "required": [
+        "path",
+        "table",
+        "created",
+        "keys",
+        "refused"
+      ],
+      "title": "WrittenConfigPayload",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -825,6 +878,18 @@
     "content": {
       "title": "Content",
       "type": "string"
+    },
+    "written": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/WrittenConfigPayload"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "What --write-pyproject-config wrote; absent without the option (experimental)."
     }
   },
   "required": [

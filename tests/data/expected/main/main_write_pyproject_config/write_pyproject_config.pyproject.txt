@@ -1,0 +1,10 @@
+[tool.datamodel-codegen]
+collapse-reuse-models = true
+enum-field-as-literal = "all"
+input = "api.yaml"
+input-file-type = "openapi"
+naming-strategy = "enclosing-model"
+preset = "standard-py310-20261124"
+reuse-model = true
+treat-dot-as-module = false
+use-tag-as-union-variant-name = true

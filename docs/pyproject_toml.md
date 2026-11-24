@@ -1,4 +1,4 @@
-<!-- related-cli-options: --all-jobs, --ignore-pyproject, --generate-pyproject-config, --generate-cli-command, --job, --profile, --preset, --watch -->
+<!-- related-cli-options: --all-jobs, --ignore-pyproject, --generate-pyproject-config, --write-pyproject-config, --generate-cli-command, --job, --profile, --preset, --watch -->
 
 # ⚙️ pyproject.toml Configuration
 
@@ -205,6 +205,12 @@ output = "models.py"
 snake-case-field = true
 ```
 
+Add `--write-pyproject-config` (experimental) to write the section into `./pyproject.toml` instead of printing it.
+It creates the file when there is none and sets only the keys to add or change in an existing table, leaving the
+rest of the file as it is. HTTP headers and query parameters are not written, and a URL is written without its user
+information, query, and fragment. `--recommend-options` takes the option too; see
+[Option recommendations](recommend-options.md#apply-it).
+
 Generate CLI command from existing `pyproject.toml`:
 
 ```bash
@@ -224,4 +230,5 @@ datamodel-codegen --profile api --generate-cli-command
 - 🧰 [Presets](presets.md) - Recommended immutable option bundles for modern output
 - 🖥️ [CLI Reference: `--ignore-pyproject`](cli-reference/general-options.md#ignore-pyproject) - Ignore pyproject.toml configuration
 - 🔧 [CLI Reference: `--generate-pyproject-config`](cli-reference/general-options.md#generate-pyproject-config) - Generate pyproject.toml from CLI arguments
+- 🔧 [CLI Reference: `--write-pyproject-config`](cli-reference/general-options.md#write-pyproject-config) - Write the generated or recommended table into pyproject.toml
 - 🖥️ [CLI Reference: `--generate-cli-command`](cli-reference/general-options.md#generate-cli-command) - Generate CLI command from pyproject.toml

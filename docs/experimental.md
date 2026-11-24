@@ -20,6 +20,7 @@ This page lists features that are available but still experimental.
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
 | `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.72.1 | - |
+| `cli-option.write-pyproject-config` | cli-option | `--write-pyproject-config, its report, and the written key of the recommend-options and pyproject-config JSON payloads` | 0.102.0 | - |
 | `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.72.0 | - |
 | `input-format.asyncapi` | input-format | `--input-file-type asyncapi` | 0.59.0 | - |
 | `input-format.avro` | input-format | `--input-file-type avro` | 0.59.0 | - |
@@ -169,6 +170,16 @@ The option replaces root model classes with type aliases where possible. Pydanti
 Runtime TypeAliasType output is experimental and may change as Python typing support evolves.
 
 The option implies --use-type-alias and selects TypeAliasType for Python 3.10 and 3.11. Python 3.12 and newer continue to use native type statements.
+
+### `cli-option.write-pyproject-config`
+
+- **Kind:** cli-option
+- **Target:** `--write-pyproject-config, its report, and the written key of the recommend-options and pyproject-config JSON payloads`
+- **Since:** 0.102.0
+
+Writing the pyproject.toml table is experimental; the file it chooses, the edits it refuses, and its report may change.
+
+It writes the table --recommend-options prints into the pyproject.toml that gives the table, else into ./pyproject.toml, and the table of --generate-pyproject-config into ./pyproject.toml; a missing file is created with the table alone. Only the keys to add or change are set; the file keeps its other text, line endings and byte order mark. An edit that tomllib does not read back as exactly those keys set, such as one of an inline table or dotted keys, is refused: nothing is written and the block is printed as before. HTTP headers and query parameters are never written, and URLs are written without credentials, query and fragment.
 
 ### `extra.httpx2`
 

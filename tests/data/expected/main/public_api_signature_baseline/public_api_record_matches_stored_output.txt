@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 320>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 321>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -381,7 +381,7 @@ schema_output_name = schema_output_option.partition('=')[2]  [case [_, schema_ou
 schema_output_name = datamodel_code_generator.arguments.namespace.output_format_json_schema  [if not any((arg.startswith('--rec') for arg in sys.argv[1:])) and any((arg.startswith(('--generate-prompt', '--output-format-json-schema=')) or arg == '--output-format-json-schema' for arg in sys.argv[1:]))]
 schema_output_option = <match target>  [case [_, schema_output_option] if schema_output_option.startswith('--output-format-json-schema=') and _json_schema_path((schema_output_name := schema_output_option.partition('=')[2])) == 'argv']
 def sig_int_handler(_: int, __: Any) -> None
-steps_aside = _skill_options_given(namespace)  [if not any((arg.startswith('--rec') for arg in sys.argv[1:])) and any((arg.startswith(('--generate-prompt', '--output-format-json-schema=')) or arg == '--output-format-json-schema' for arg in sys.argv[1:]))]
+steps_aside = _skill_options_given(namespace) or namespace.write_pyproject_config  [if not any((arg.startswith('--rec') for arg in sys.argv[1:])) and any((arg.startswith(('--generate-prompt', '--output-format-json-schema=')) or arg == '--output-format-json-schema' for arg in sys.argv[1:]))]
 
 [datamodel_code_generator.agent_skill]
 AgentName = Literal['codex', 'claude-code']
@@ -733,7 +733,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 320>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 321>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -1373,7 +1373,7 @@ class XMLSchemaVersion(Enum)
     Auto = 'auto'
 
 [datamodel_code_generator.experimental]
-EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = <dict of 21>
+EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = <dict of 22>
 @dataclass(frozen=True)
 class ExperimentalFeature
     id: ExperimentalFeatureId
@@ -1384,7 +1384,7 @@ class ExperimentalFeature
     tracking_issue: str | None = None
     note: str | None = None
 ExperimentalFeatureFormat = Literal['table', 'json', 'markdown']
-ExperimentalFeatureId = Literal[<tuple of 21>]
+ExperimentalFeatureId = Literal[<tuple of 22>]
 ExperimentalFeatureKind = Literal['input-format', 'formatter', 'cli-option', 'python-api', 'behavior', 'extra']
 def experimental_feature_as_dict(feature: ExperimentalFeature) -> dict[str, str | None]
 fill = textwrap.fill
@@ -5041,7 +5041,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 320>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 321>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5063,7 +5063,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 316>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 317>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)

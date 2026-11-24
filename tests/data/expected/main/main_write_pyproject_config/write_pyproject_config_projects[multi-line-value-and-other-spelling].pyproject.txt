@@ -1,0 +1,1 @@
+'[tool.datamodel-codegen]\nformatters = [\n  "black",\n]\ntarget-python-version = "3.12"\ninput = "api.yaml"\noutput = "models.py"\n\n# next\n[x]\n'

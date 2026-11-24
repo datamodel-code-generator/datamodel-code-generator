@@ -17,17 +17,20 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
+from datamodel_code_generator._config_export import _shareable_values
 from datamodel_code_generator._document_reader import nesting_limit
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._generation import _infer_input
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
+from datamodel_code_generator._option_names import CONFIG_TABLE, configured_value, option_flag
 from datamodel_code_generator._option_stages import _resolve_preset
 from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
 from datamodel_code_generator._shared_types import DefaultPutDict, Error
 from datamodel_code_generator._source import decoding_from, is_swagger_2, load_data
-from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.base_config import BaseGenerateConfig
+from datamodel_code_generator.cli_options import _option_arguments, _values_arguments
 from datamodel_code_generator.enums import InputFileType, _openapi_scopes_or_default
+from datamodel_code_generator.preset import _pyproject_values, latest_preset_name
 from datamodel_code_generator.util import _load_config_toml, get_yaml_parse_errors
 
 if TYPE_CHECKING:
@@ -278,8 +281,6 @@ def _analyse(request: RecommendRequest) -> _Input:
 
 
 def _option(decision: Decision, values: Mapping[str, OptionValue]) -> Option:
-    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
-
     return Option(decision, dict(values), _values_arguments(values.items()))
 
 
@@ -302,9 +303,6 @@ def _plan(
     ``--preset`` does; the plan keeps the config updates it makes for the trial. An optional rule lists the values the
     user did not set and the preset does not give, for the user to decide.
     """
-    from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
-    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
-
     config = request.config
     resolved = None if configured else _resolve_preset(preset, config, request.explicit_fields)
     preset_values = {} if resolved is None else _pyproject_values(resolved.items)
@@ -345,8 +343,6 @@ def _start(decisions: Sequence[Decision], request: RecommendRequest, recommendat
     The families are tried in rule-data order (standard first), so another family is only chosen when a rule value
     has no option on the families before it; the notes say which value that is.
     """
-    from datamodel_code_generator.preset import latest_preset_name  # noqa: PLC0415
-
     config = request.config
     target = PythonVersion(recommendation.target_python_version)
     if (configured := config.preset) is not None:
@@ -378,21 +374,6 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
         for name, value in decision.values.items()
         if name in request.explicit_fields and (configured := configured_value(config, name)) != value
     ]
-
-
-def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str]]:
-    """Return the command-line values to repeat, leaving out credentials and redacting URLs."""
-    notes: list[str] = []
-    values: dict[str, Any] = {}
-    for name, value in request.cli_values.items():
-        if name in SENSITIVE_FIELDS:
-            notes.append(f"{option_flag(name)} is not repeated here; add it to the command again.")
-            continue
-        if name == "url":
-            notes.append("--url is repeated without its user information, query, and fragment; add them again.")
-            value = redact_url(value)  # noqa: PLW2901
-        values[name] = value
-    return values, notes
 
 
 def _mode(request: RecommendRequest, analysed: _Input, previous: str | None) -> tuple[RecommendMode, str | None]:
@@ -452,8 +433,6 @@ def _merged_values(options: Iterable[Option]) -> dict[str, OptionValue]:
 
 def _applied(options: Sequence[Option]) -> dict[str, Any]:
     """Return the config values of options, validated into the types generation takes."""
-    from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
-
     values = _merged_values(options)
     validated = BaseGenerateConfig.model_validate(values)
     return {name: getattr(validated, name) for name in values}
@@ -826,7 +805,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
         *_disagreements(decisions, request),
         *(Disagreement(name, plan.baseline[name], value, decision, "preset") for decision, name, value in plan.blocked),
     ]
-    command_values, notes = _command_values(request)
+    command_values, notes = _shareable_values(request.cli_values)
     recommendation.notes.extend(notes)
     if project_target is not None:
         recommendation.notes.append(project_target[1])
