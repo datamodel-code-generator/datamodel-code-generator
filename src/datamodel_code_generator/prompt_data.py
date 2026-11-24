@@ -19,6 +19,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--allow-population-by-field-name": "Allow Pydantic model population by field name (not just alias).",
     "--allow-private-network": "Allow HTTP requests to private network schema endpoints.",
     "--allow-remote-refs": "Enable fetching of `$ref` targets over HTTP/HTTPS.",
+    "--apply-default-values-to-true-properties": "Give the default of `--default-values` to a property whose schema...",
     "--apply-field-options-to-every-field": "Give the fields that leave out some field options the ones others take.",
     "--base-class": "Specify a custom base class for generated models.",
     "--base-class-map": "Specify different base classes for specific models via JSON mapping.",

@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 284 | Shared generation options. |
-| `GenerateConfig` | 299 | Public `generate()` configuration. |
-| `ParserConfig` | 238 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 240 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 251 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 254 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 241 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 241 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 240 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 241 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 285 | Shared generation options. |
+| `GenerateConfig` | 300 | Public `generate()` configuration. |
+| `ParserConfig` | 239 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 241 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 252 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 255 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 242 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 242 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 241 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 242 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -775,9 +775,9 @@ other edges. An explicit edge replaces the derived edge of its pair; one that ru
 reads is a provisional read, listed below the table. `scripts/check_pass_pipeline.py` (run by the test suite) checks
 that the tables run every declaration once in `PASS_DECLS` order, in the phase of its segment and with its scope, that
 the segments enter the boundaries in order and satisfy the order rule, that the repair set only shrinks, that every
-decision registry follows the rules of the [Decision Phase](#decision-phase), that only `GenerationStore.seal_facts`
-builds `FinalFacts`, that no code outside `Parser` reaches its name-mangled members, and lists the warnings whose
-`stacklevel` reaches past their caller. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
+decision registry follows the rules of the [Decision Phase](#decision-phase), and lists the warnings whose
+`stacklevel` reaches past their caller. heki's contracts hold the construction of `FinalFacts` to
+`GenerationStore.seal_facts` and the name-mangled members of `Parser` to its body. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
 runs; the test suite keeps the traces of a few inputs and checks that some input runs every declared pass. The finality
 check ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator
 runs; reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and a table
@@ -1642,11 +1642,10 @@ output's mark made outside its builder and the parts it hands the output to, eac
 declares the member: under `parser/`, a `DataType` (or a subclass) built with `is_dict=True` or `_container_flags` asked
 for the `"dict"` slot, and anywhere, a `Reference` (or a subclass) built by its constructor, `model_construct` or
 `model_validate`. A mark is a call that heki ties to the class or function it names and that binds the parameter to the
-constant (by keyword, by position or through a `**` dict display), so a `Reference` built by `model_copy`, a `DataType`
-built by `model_copy`, `model_construct` or `model_validate` with the flag in its values, a flag computed from a
-variable slot, a flag dict handed on, merged or chosen by a condition before it reaches the call, a call through
-`functools.partial` and a call on a receiver heki cannot type (an unannotated parameter) are not seen; today's bypasses
-are in `scripts/heki_baseline.toml`.
+constant (by keyword, by position or through a `**` dict display), and a call of the class also covers its
+`model_construct`, `model_validate` and `model_copy`, a flag dict handed on, merged or chosen by a condition before it
+reaches the call, and `functools.partial`. A flag computed from a variable slot and a call on a receiver heki cannot
+type (an unannotated parameter) are not seen; today's bypasses are in `scripts/heki_baseline.toml`.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
 names has one record in `scripts/legacy_rows.py`: what it keeps, what deletes it (`fix`: the issue whose fix does, or
@@ -1665,6 +1664,7 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | Row | Keeps | Fix |
 | --- | --- | --- |
 | `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it and is written as it | keep |
+| `legacy-default-values-skip-true-properties` | without `--apply-default-values-to-true-properties`, a property whose schema is `true` takes no default from `--default-values`, in the class that declares it and in a child that restates an inherited property as `true` (`parser/jsonschema.py:JsonSchemaParser._true_property_default_state`) | keep |
 | `legacy-generic-base-drops-configured-bases` | without `--keep-bases-beside-generic-base-class`, the generated base class of `--use-generic-base-class` replaces the bases of a model none of whose bases is a generated model, so a class that `--base-class-map`, `customBasePath` or `--base-class` names, or that an `--external-ref-mapping` or `x-python-import` schema the model extends stands for, is not inherited and its import stays unused (`parser/_passes/cross_module.py:_bases_beside_generic`) | keep |
 | `legacy-standard-primitive-types-without-decoder` | without `--use-str-for-formats-msgspec-cannot-decode`, `--use-standard-primitive-types` writes `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network` and `Path` for the formats `ipv4`, `ipv6`, `ipv4-network`, `ipv6-network` and `path` of msgspec output, which msgspec decodes only with a `dec_hook` (`types.py:DataTypeManager.use_str_for_formats_msgspec_cannot_decode`) | keep |
 | `legacy-msgspec-float-bounds` | without `--read-msgspec-union-bounds-exactly`, the check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past `2**53` is the integer of its binary value (`int(1e300)`), where the schema models read the decimal that is written (`10**300`), and the int member of a union can keep a constraint that rejects an integer the float member accepts | keep |

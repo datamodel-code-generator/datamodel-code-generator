@@ -898,6 +898,13 @@ Typing customization:
                         frozenset or Mapping, as in 0.90.0
 
 Field customization:
+  --apply-default-values-to-true-properties, --no-apply-default-values-to-true-properties
+                        Give a property whose schema is `true` the default
+                        that --default-values gives it, in the class that
+                        declares it and in a child that restates an inherited
+                        property as `true` (`name: str | None = 'rex'` for
+                        `Dog.name`); without it such a property takes no
+                        default, as in 0.100.0
   --apply-field-options-to-every-field, --no-apply-field-options-to-every-field
                         Apply the field options to every kind of field: a
                         GraphQL field, a property whose schema is `true` or

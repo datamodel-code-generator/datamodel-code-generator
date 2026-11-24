@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings",
+  "type": "object",
+  "required": ["mode"],
+  "properties": {
+    "mode": true,
+    "forbidden": false,
+    "limit": {},
+    "retry-count": true,
+    "retry-limit": {},
+    "nested": {"type": "object", "properties": {"flag": true, "label": {"type": "string"}}}
+  }
+}

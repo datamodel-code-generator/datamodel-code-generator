@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dog",
+  "allOf": [{"$ref": "parent_document.json#/$defs/Pet"}],
+  "properties": {"name": true, "bark": {"type": "boolean"}}
+}

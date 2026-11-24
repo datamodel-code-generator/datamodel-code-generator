@@ -74,12 +74,11 @@ class BuilderHome(NamedTuple):
     (``parser/_schema_dispatch.py``) and is the only reader of the table besides the scopes that only ask it for
     ``typed_children``, and the parse methods the table's rows hold run only through the tables. A record with ``marks``
     stands for an output: a call with one of those marks is made only in the builder and its ``parts``. A mark is a call
-    of a class or a subclass (or its ``model_construct``/``model_validate``) or of a function, and where it asks for
-    one, a parameter that the call binds to a constant (heki's argument-list targets). An output built by
-    ``model_copy``, by a flag computed from a variable slot (``{CONTAINER_FLAGS[slot]: True}``) or by a flag dict that
-    is handed on, merged or chosen by a condition before it reaches the call carries no mark and is not seen, nor is a
-    call on a receiver heki cannot type (an unannotated parameter), through ``functools.partial``, or of
-    ``DataType.model_construct``/``model_validate``, whose keywords heki cannot bind.
+    of a class or a subclass or of a function, and where it asks for one, a parameter that the call binds to a constant
+    (heki's argument-list targets); a call of the class also covers its ``model_construct``, ``model_validate`` and
+    ``model_copy``, and a flag dict handed on, merged or chosen by a condition before it reaches the call. A flag
+    computed from a variable slot (``{CONTAINER_FLAGS[slot]: True}``) carries no mark and is not seen, nor is a call on
+    a receiver heki cannot type (an unannotated parameter).
     """
 
     output: str
@@ -8302,11 +8301,7 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
         output="the reference that names a model",
         prose="Names come from `ModelResolver.add`.",
         builder=Home("reference.py", "ModelResolver.add"),
-        marks=(
-            Mark(callee="datamodel_code_generator.reference.Reference"),
-            Mark(callee="datamodel_code_generator.reference.Reference.model_construct"),
-            Mark(callee="datamodel_code_generator.reference.Reference.model_validate"),
-        ),
+        marks=(Mark(callee="datamodel_code_generator.reference.Reference"),),
         parts=(Home("reference.py", "ModelResolver._register_reference"),),
     ),
 )

@@ -1382,7 +1382,7 @@
 "references/output_policy_by_origin" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 "references/parameter_shadows_global" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 "references/parser_pass_public_import" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
-"references/pipeline_calls_and_parser_members" = "finding: deep-warning 47 51 51 57; final-facts 19 29 30 31; mangled-member 37 37 42 42"
+"references/pipeline_calls_and_parser_members" = "finding: deep-warning 47 51 51 57"
 "references/portable_names_by_key" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 "references/portable_names_in_paths" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"
 "references/posix_only_across_modules" = "no finding: no FinalFacts call, no mangled Parser member reached from outside its body, no deep warning"

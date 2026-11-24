@@ -1988,6 +1988,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "omit_incomplete_model_defaults",
         "use_default_kwarg",
         "apply_field_options_to_every_field",
+        "apply_default_values_to_true_properties",
         "read_nullable_beside_type_list",
         "keep_null_of_nullable_items",
         "keep_field_defaults_off_branch_roots",

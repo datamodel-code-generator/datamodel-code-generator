@@ -4,6 +4,8 @@
 empty-list-under-preset	main/preset_opt_in_options/option_list_in_pyproject[empty-list-under-preset].model.py
 toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].model.py	= main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
 [test_preset_option_turned_off]
+apply-default-values-to-true-properties-command-line	main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-command-line].model.py
+apply-default-values-to-true-properties-pyproject	main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[apply-default-values-to-true-properties-command-line].model.py
 capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
 distribute-allof-over-object-branches-command-line	main/preset_opt_in_options/preset_option_turned_off[distribute-allof-over-object-branches-command-line].model.py
@@ -61,6 +63,8 @@ use-validate-default-for-root-model-type-aliases-pyproject	main/preset_opt_in_op
 use-x-python-import-for-every-ref-command-line	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].model.py
 use-x-python-import-for-every-ref-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].model.py
 [test_preset_sets_opt_in_option]
+apply-default-values-to-true-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-default-values-to-true-properties-practical].model.py
+apply-default-values-to-true-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-default-values-to-true-properties-standard].model.py
 apply-field-options-to-every-field-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].model.py
 apply-field-options-to-every-field-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].model.py
 capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].model.py
