@@ -700,7 +700,7 @@ def _hand_changes(
         and ((target := fragments.get(record.extends)) is None or target.extends is not None or target.derived)
     )
     unreleased = {entry_id for entry_id, entry in changes.items() if entry["release"] == UNRELEASED}
-    joins = dict(facts.preset_options)
+    joins = facts.preset_options
     for record in fragments.values():
         for entry_id, with_refs in _note_entries(record, unreleased, joins).items():
             entry = changes[entry_id]
@@ -708,14 +708,15 @@ def _hand_changes(
             entry["record_refs"] = [*entry.get("record_refs", []), *(record.refs if with_refs else ())]
 
 
-def _note_entries(record: Record, unreleased: set[str], joins: dict[str, str]) -> dict[str, bool]:
+def _note_entries(record: Record, unreleased: set[str], joins: frozenset[tuple[str, str]]) -> dict[str, bool]:
     """Return the unreleased entries whose release-note item a fragment adds its pull request to, and whether its refs.
 
     A guide record adds both to its own entry and a `new-surface` record to the derived entries of the options, option
     values and preset dates it names; it adds its pull request alone to the entry of each preset date that adds one of
-    those options, so the line of a date names the pull request of every option it adds. A record that extends another
-    only covers more output of the same change, which a later pull request (a stack layer, a test move) may add, so it
-    adds nothing.
+    those options, so the line of a date names the pull request of every option it adds. A bare option (`--name`) also
+    names the options of a date that give it a value (`--name value`); an item with a value matches exactly. A record
+    that extends another only covers more output of the same change, which a later pull request (a stack layer, a test
+    move) may add, so it adds nothing.
     """
     if record.guide:
         return {record.id: True} if record.id in unreleased else {}
@@ -724,7 +725,12 @@ def _note_entries(record: Record, unreleased: set[str], joins: dict[str, str]) -
     named = [
         item if item.startswith(PRESET_SURFACE) else f"option:{item.replace(' ', '=', 1)}" for item in record.surface
     ]
-    joined = [joins[item] for item in record.surface if item in joins]
+    joined = sorted({
+        date
+        for option, date in joins
+        for item in record.surface
+        if option == item or (" " not in item and option.split(" ", 1)[0] == item)
+    })
     entries = dict.fromkeys(joined, False) | dict.fromkeys(named, True)
     return {entry_id: with_refs for entry_id, with_refs in entries.items() if entry_id in unreleased}
 
