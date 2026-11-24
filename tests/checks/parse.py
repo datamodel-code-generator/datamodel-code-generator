@@ -26,6 +26,7 @@ from tests.checks.finality import (
 )
 from tests.checks.model_graph import check_emitted_models, check_model_owners
 from tests.checks.naming import start as start_naming
+from tests.checks.schema_graph import check_loaded_documents
 from tests.checks.schema_locations import check_schema_locations
 from tests.checks.trace import MODULE_TRACE_MARK, TRACE
 
@@ -331,6 +332,7 @@ def _enter_parsed(parser: Any) -> None:
     """Run the checks of L1, then arm the checks of the parse, in the SETTLE scope."""
     check_schema_locations(parser)
     check_model_owners(parser)
+    check_loaded_documents(parser)
     if (checks := PARSE_CHECKS.get()) is not None:
         checks.arm(parser.generation_store)
 
