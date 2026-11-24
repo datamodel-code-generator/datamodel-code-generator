@@ -3,7 +3,7 @@ id = "preset-note-links"
 category = "harness"
 title = "Name the pull requests of a preset date's options on its release-note line"
 summary = "The release-note line of a dated preset names the pull request of the record of each option it adds, and the release stamp refuses a preset date that adds nothing; the package writes the same output."
-refs = ["#1"]
+refs = ["#7472"]
 covers = [
     "build_migration_docs_script/build_migration_docs_preset_line_names_the_records_of_its_options.txt",
     "build_migration_docs_script/build_migration_docs_stamp_refuses_an_empty_preset_date.txt",
