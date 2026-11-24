@@ -660,7 +660,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         """Return a shallow copy that stands for the schema object at ``location``; this object is never written."""
         if location is None or self.__dict__.get(SCHEMA_LOCATION_KEY) == location:
             return self
-        copied = self.model_copy()
+        copied: Self = self.model_copy()
         copied.__dict__[SCHEMA_LOCATION_KEY] = location
         return copied
 

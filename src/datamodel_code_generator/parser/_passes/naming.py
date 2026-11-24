@@ -29,10 +29,10 @@ from datamodel_code_generator.parser._naming import (
     rw_variant_class_name,
 )
 from datamodel_code_generator.reference import (
-    NAME_REQUEST_KEY,
     NameRequest,
     _is_root_path,
     _module_prefix_and_class,
+    _name_request_of,
     location_of,
     snake_to_upper_camel,
 )
@@ -124,7 +124,7 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 role = "allof-member" if claim.position else "allof-shared"
                 position, branches = claim.position, tuple(map(model_key_of, claim.branches))
         location = location_of(reference)
-        request: NameRequest | None = reference.__dict__.get(NAME_REQUEST_KEY)
+        request = _name_request_of(reference)
         module, cls = _module_prefix_and_class(reference.name)
         claims.append(
             NameClaim(
@@ -158,7 +158,7 @@ class _ResolverNamer:
         self._resolver = resolver
         self._held = Counter(reference.name for reference in resolver.references.values())
         self._requests: dict[Any, NameRequest] = {
-            model_key_of(reference): reference.__dict__.get(NAME_REQUEST_KEY) or NameRequest(reference.original_name)
+            model_key_of(reference): _name_request_of(reference) or NameRequest(reference.original_name)
             for reference in references
         }
 

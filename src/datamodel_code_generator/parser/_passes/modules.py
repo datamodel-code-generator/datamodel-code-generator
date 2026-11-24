@@ -80,6 +80,7 @@ from datamodel_code_generator.model.base import (
     _reference_names_model,
     _root_constraint_keywords,
     _share_path_identity,
+    _with_field_origin,
     get_inherited_fields,
     inherited_root_field,
 )
@@ -89,7 +90,6 @@ from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
-from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._import_binding import (
     ModuleImportTarget,
     ReferenceExpressionHost,
@@ -217,12 +217,7 @@ from datamodel_code_generator.parser._type_overrides import (
     mark_untaken_constraints,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
-from datamodel_code_generator.reference import (
-    _ALIAS_RESOLUTION_CLASS_NAME_KEY,
-    ModelResolver,
-    enum_literal_of,
-    schema_path_of,
-)
+from datamodel_code_generator.reference import ModelResolver, enum_literal_of, schema_path_of
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
@@ -2399,7 +2394,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 )
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := with_field_origin(
+                    discriminator_field := _with_field_origin(
                         parser._build_field(
                             "legacy-alias-option-only",
                             new_data_type,
@@ -2417,8 +2412,11 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     ),
                 )
                 if parser.config.aliases:
-                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = parser.model_resolver.class_scope(
-                        "class-name", discriminator_model.reference, discriminator_model.reference.path
+                    builder.record_alias_resolution_scope(
+                        discriminator_field,
+                        parser.model_resolver.class_scope(
+                            "class-name", discriminator_model.reference, discriminator_model.reference.path
+                        ),
                     )
                     parser.model_resolver.prepare_explicit_field_aliases(
                         [discriminator_field], discriminator_model.reference, parser.field_name_model_type

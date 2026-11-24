@@ -1,0 +1,13 @@
+[[change]]
+id = "heki-040-alias-scope-api"
+category = "api"
+title = "A store operation that records the class scope of a field's aliases"
+summary = "GraphBuilder.record_alias_resolution_scope() (and GenerationStore.record_alias_resolution_scope()) records the class scope under which --aliases names a field, which the parser wrote into the field directly before; nothing is removed or changed."
+refs = ["#7515"]
+decision = ["#7515"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

@@ -104,7 +104,16 @@ from datamodel_code_generator.imports import (
     _import_path,
 )
 from datamodel_code_generator.python_literal import represent_python_value, stable_repr
-from datamodel_code_generator.reference import Reference, _BaseModel
+from datamodel_code_generator.reference import (
+    _JSON_NUMBER_KEY,
+    BINARY_CONTENT_KEY,
+    ENUM_LITERAL_KEY,
+    SUBTYPE_REF_KEY,
+    TYPE_ORIGIN_KEY,
+    UNIQUE_ITEMS_KEY,
+    Reference,
+    _BaseModel,
+)
 
 T = TypeVar("T")
 SourceT = TypeVar("SourceT")
@@ -229,6 +238,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
+    from datamodel_code_generator.reference import SchemaLocation
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -2117,6 +2127,54 @@ def _copy_data_type(
     if register_references:
         copied.register_reference()
     return copied
+
+
+def _with_type_origin(data_type: DataType, location: SchemaLocation | None) -> DataType:
+    """Record that ``data_type``, and each node it holds that no nested build recorded, is built at ``location``.
+
+    A record a nested build made first is kept, with the nodes beneath it: they came from that build's schema
+    (TYPE_ORIGIN, ``reference.py:type_origin_of``).
+    """
+    if location is None:
+        return data_type
+    pending = [data_type]
+    while pending:
+        if TYPE_ORIGIN_KEY in (node := pending.pop()).__dict__:
+            continue
+        node.__dict__[TYPE_ORIGIN_KEY] = location
+        pending.extend(type_children(node))
+    return data_type
+
+
+def _with_binary_content(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that the parser reads the string it is built for as raw octets (BINARY_CONTENT)."""
+    data_type.__dict__[BINARY_CONTENT_KEY] = True
+    return data_type
+
+
+def _with_json_number(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that the parser builds it for an ``integer`` or ``number`` schema (JSON_NUMBER)."""
+    data_type.__dict__[_JSON_NUMBER_KEY] = True
+    return data_type
+
+
+def _with_enum_literal(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that it is the ``Literal`` of the values of an ``enum`` (ENUM_LITERAL)."""
+    data_type.__dict__[ENUM_LITERAL_KEY] = True
+    return data_type
+
+
+def _with_subtype_ref(data_type: DataType, ref: str) -> DataType:
+    """Record on ``data_type`` the ``$ref`` of the subtype it stands for, which --distribute-allof-over-unions reads."""
+    data_type.__dict__[SUBTYPE_REF_KEY] = ref
+    return data_type
+
+
+def _with_unique_items(data_type: DataType, *, unique_items: bool | None) -> DataType:
+    """Record on ``data_type`` that the schema it is built from declares ``uniqueItems: true`` (UNIQUE_ITEMS)."""
+    if unique_items is True:
+        data_type.__dict__[UNIQUE_ITEMS_KEY] = True
+    return data_type
 
 
 def _is_plain_none(data_type: DataType) -> bool:
