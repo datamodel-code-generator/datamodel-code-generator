@@ -366,28 +366,28 @@ def _gates(model: SourceModule) -> dict[str, ast.expr]:
     }
 
 
-def _gate_reads(gate: ast.expr) -> set[str]:
+def _gate_reads(model: SourceModule, gate: ast.expr) -> set[str]:
     """Return what a ``when`` names: the attribute chain of each parameter, the helper or class of any other name."""
-    parameters = {argument.arg for argument in gate.args.args} if isinstance(gate, ast.Lambda) else set()
-    parents = {child: parent for parent in ast.walk(gate) for child in ast.iter_child_nodes(parent)}
+    inside = set(ast.walk(gate))
+    parents = {child: parent for parent in inside for child in ast.iter_child_nodes(parent)}
     reads = set()
-    for node in ast.walk(gate):
-        if not isinstance(node, ast.Name):
+    for reference in model.references:
+        if reference.node not in inside or reference.context != "load":
             continue
+        node: ast.AST = reference.node
         parent = parents.get(node)
         qualified = isinstance(parent, ast.Attribute) and parent.value is node
-        if node.id in parameters:
+        if any(binding.kind == "param" for binding in model.resolve(reference.node).bindings):
             chain: list[str] = []
-            inner: ast.AST = node
-            while isinstance(parent, ast.Attribute) and parent.value is inner:
+            while isinstance(parent, ast.Attribute) and parent.value is node:
                 chain.append(parent.attr)
-                inner, parent = parent, parents.get(parent)
+                node, parent = parent, parents.get(parent)
             if chain:
                 reads.add(".".join(chain))
-        elif qualified and isinstance(getattr(_tables, node.id, None), ModuleType):
+        elif qualified and isinstance(getattr(_tables, reference.name, None), ModuleType):
             reads.add(parent.attr)
         else:
-            reads.add(node.id)
+            reads.add(reference.name)
     return reads
 
 
@@ -397,16 +397,17 @@ def _is_option(read: str, allowed: Collection[str]) -> bool:
     return any(".".join(parts[:end]) in allowed for end in range(1, len(parts) + 1))
 
 
-def when_problems(model: SourceModule | None = None, allowed: Collection[str] = CONFIGURATION) -> list[str]:
-    """Return the passes whose ``when`` names a fact that is no option of the run.
+def when_problems(source: str | None = None, allowed: Collection[str] = CONFIGURATION) -> list[str]:
+    """Return the passes whose ``when`` names a fact that is no option of the run, in ``source`` or the tables.
 
     A pass that waits for a produced fact decides on it in its body, or declares a ``trigger``.
     """
     return [
         f"the when of {name} names {', '.join(names)}, which no option of the run sets (CONFIGURATION): decide on it "
         "in the pass, or declare a trigger with its reason"
-        for name, gate in _gates(model or _model(Path(_tables.__file__))).items()
-        if (names := sorted(read for read in _gate_reads(gate) if not _is_option(read, allowed)))
+        for model in [_model(Path(_tables.__file__)) if source is None else SourceModule(source)]
+        for name, gate in _gates(model).items()
+        if (names := sorted(read for read in _gate_reads(model, gate) if not _is_option(read, allowed)))
     ]
 
 

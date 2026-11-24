@@ -264,6 +264,10 @@ class RunContextView(Protocol):
         """Whether collapse keeps every circular root model named (the retry after a collapse recursion)."""
 
     @property
+    def records_model_names(self) -> bool:
+        """Whether the run records the model names for ``--model-name-map`` (``ParserRunContext``)."""
+
+    @property
     def untyped_nullable_maps(self) -> bool:
         """Whether the run parses the values of nullable maps untyped, as earlier releases did."""
 
@@ -280,10 +284,6 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     generated_class_names: tuple[tuple[str, str], ...]
     model_placement: dict[ModulePath, frozenset[str]]
     typed_map_values_may_move_models: bool
-
-    @property
-    def _translates_final_name_keys(self) -> bool:
-        """Whether the run records the output names keys name (``translate_final_name_keys``)."""
 
     @property
     def run_context(self) -> RunContextView:
@@ -2470,9 +2470,16 @@ def translate_final_name_keys(parser: FinishHost, run: FinishRun[Any, ModuleCont
     Such a name is none a lookup at L1 reads: the parse again (``_generation.py:_parse_generation_run``) gives it to the
     model built at the path the model had at L2 (``ModelResolver.final_name_keys``), whose keys then also name it. A
     name is recorded where a ``ConstructionKeys`` key names it or its class name, the part after its last dot, and it
-    is not the name the model had at L2.
+    is not the name the model had at L2. It records none unless a key exists and a model was renamed after L2, in a run
+    that does not apply such names already or record what it names for ``--model-name-map`` (``records_model_names``).
     """
-    if not parser._translates_final_name_keys:
+    keys = parser._construction_keys
+    if not (
+        (keys.class_names or keys.field_scopes)
+        and parser.generation_store.renames
+        and not parser.model_resolver.final_name_keys
+        and not parser.run_context.records_model_names
+    ):
         return
     origins: dict[str, tuple[str, str]] = {}
     for rename in parser.generation_store.renames:
@@ -2480,7 +2487,6 @@ def translate_final_name_keys(parser: FinishHost, run: FinishRun[Any, ModuleCont
             origins.pop(rename.import_path, None) if rename.import_path != rename.path else origins.get(rename.path)
         )
         origins[rename.path] = origin or (rename.import_path, rename.reference_name)
-    keys = parser._construction_keys
     names: dict[str, dict[str, None]] = {}
     for model in _context_models(run.contexts):
         if (origin := origins.get(model.path)) is None:

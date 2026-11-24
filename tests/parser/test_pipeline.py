@@ -17,7 +17,6 @@ from datamodel_code_generator.model.pydantic_v2 import BaseModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from scripts import check_pass_pipeline
-from scripts._source_model import SourceModule
 from tests.conftest import CHECK_FACT_FINALITY_ENV, assert_output
 
 if TYPE_CHECKING:
@@ -276,7 +275,7 @@ WHEN_CASES = {
 @pytest.mark.parametrize("table", WHEN_CASES.values(), ids=WHEN_CASES)
 def test_when_names_only_options(table: str) -> None:
     """A ``when`` that names a produced fact is reported."""
-    problems = check_pass_pipeline.when_problems(SourceModule(table))
+    problems = check_pass_pipeline.when_problems(table)
 
     assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
 
