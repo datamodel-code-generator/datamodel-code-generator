@@ -1,7 +1,7 @@
 [[change]]
 id = "bug-g33-union-shape-warnings-compositions"
 extends = "bug-g33-union-shape-warnings"
-refs = ["#7498"]
+refs = ["#7499"]
 
 [[change.cells]]
 input = ["composition:*/**/union/**", "composition:*/**/tagged/**"]
