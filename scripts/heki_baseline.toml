@@ -6648,13 +6648,6 @@ count = 1
 path = "src/datamodel_code_generator/parser/_passes/_tables.py"
 qualname = "<module>"
 rule_code = "MUT206"
-target = "_has_runtime_expressions"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
 target = "_import_overrides"
 count = 1
 

@@ -437,7 +437,6 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             PassSpec(
                 "merge_runtime_expression_imports",
                 lambda self, s: self._merge_runtime_expression_imports(s.contexts, s.model_imports),
-                trigger=lambda self, _: self._has_runtime_expressions,
             ),
             PassSpec("remove_unused_imports", late(imports.remove_unused_imports)),
             PassSpec("resolve_module_import_conflicts", late(imports.resolve_module_import_conflicts)),

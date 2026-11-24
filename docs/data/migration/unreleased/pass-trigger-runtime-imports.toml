@@ -1,0 +1,10 @@
+[[change]]
+id = "pass-trigger-runtime-imports"
+extends = "derived-triggers"
+covers = [
+    "parser/pipeline/trace_matches_golden[jsonschema].txt",
+    "parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt",
+    "parser/pipeline/trace_matches_golden[openapi-modules].txt",
+    "parser/pipeline/trace_matches_golden[renamed-sequence-roots].txt",
+    "parser/pipeline/trace_matches_golden[typed-dict-import-overrides].txt",
+]
