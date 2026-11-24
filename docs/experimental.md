@@ -118,7 +118,7 @@ Use --install-skill with codex or claude-code. --skill-scope selects a project o
 
 Option recommendations are experimental; the rules, the schema signals they read, the class-name metrics, the report, and the JSON payload may change.
 
---recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. For schemas of up to 3000 estimated models, it also generates the candidate configurations in memory and recommends the one whose class names score best; nothing is written. With --generate-prompt, the prompt embeds the report, and its JSON output carries the recommend-options payload as recommendation.
+--recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. When no option, key or preset sets the target Python version, it takes the lower bound of the project's requires-python (>=, ~= or == forms) and adds it to the command and the block. For schemas of up to 3000 estimated models, it also generates the candidate configurations in memory and recommends the one whose class names score best; nothing is written. With --generate-prompt, the prompt embeds the report, and its JSON output carries the recommend-options payload as recommendation.
 
 ### `cli-option.schema-validator-type`
 

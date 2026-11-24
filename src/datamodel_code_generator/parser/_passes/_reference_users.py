@@ -151,7 +151,6 @@ def alias_loops(models: Sequence[DataModel], self_named: Sequence[DataModel]) ->
     chain of aliases, which recurses as deep as the chain.
     """
     snapshot = GraphSnapshot.ALIAS_LOOPS
-    keyed = keyed_models((*models, *self_named), snapshot.value)
     named = {model_key_of(model.reference) for model in self_named}
     edges = {
         model_key_of(model.reference): (model_key_of(target.reference),)
@@ -159,6 +158,9 @@ def alias_loops(models: Sequence[DataModel], self_named: Sequence[DataModel]) ->
         if (target := _referenced_alias(model)) is not None
     }
     edges.update((key, (key,)) for key in named)
+    if not edges:
+        return {}
+    keyed = keyed_models((*models, *self_named), snapshot.value)
     loops = reference_graph(snapshot, keyed.models, {EdgeKind.ALIAS: edges}).loops(EdgeKind.ALIAS)
     named.update(key for key in {key for loop in loops.values() for key in loop} if _named_alias(keyed.models[key]))
     return {

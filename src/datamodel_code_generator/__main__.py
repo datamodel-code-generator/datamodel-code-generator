@@ -1056,6 +1056,7 @@ def _run_recommend_options(
 
     A server or client target is checked and its implied settings applied as for generation, so the recommendation
     starts from the preset the target can use. With --generate-prompt, the prompt embeds the recommendation instead.
+    The project file is the pyproject.toml that gives the table, else the one in the working directory.
     """
     from datamodel_code_generator._recommend import RecommendRequest, recommend_options  # noqa: PLC0415
     from datamodel_code_generator._recommend._report import (  # noqa: PLC0415
@@ -1088,6 +1089,7 @@ def _run_recommend_options(
                 mode=args.recommend_options if isinstance(args.recommend_options, str) else None,
                 response_observer=_recommend_lock_observer(config, pyproject_path),
                 target=None if target is None else option_flag(target[0]),
+                project_file=None if args.ignore_pyproject else pyproject_path or Path.cwd() / "pyproject.toml",
             )
         )
     except (Error, RemoteLockError) as e:

@@ -9,8 +9,11 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
 * the labels name segments and hooks of the tables, every hook has its body, and the segments enter the boundaries in
   the order ``BOUNDARIES`` gives;
 * the passes of each segment satisfy the order rule (``check_order``);
-* a ``PassSpec`` has a ``trigger`` exactly where its declaration has one, and the trigger reads only facts the pass
-  reads, so that the order rule covers what it reads;
+* a ``PassSpec`` has a ``trigger`` exactly where its declaration has one, the trigger reads only facts the pass
+  reads, so that the order rule covers what it reads, and only the passes ``TRIGGERS`` lists have one, each with the
+  reason its exact form is not the skip (``Trigger.kept_because``);
+* a ``when`` names only what the run's options set (``CONFIGURATION``), so that nothing produced gates a pass except a
+  ``trigger``;
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
 * the decision registry of ``Parser`` and of every parser class that sets one (``_DECISION_PASSES``) holds global
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
@@ -36,6 +39,7 @@ import sys
 from functools import cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,11 +75,12 @@ from scripts.pass_decls import (  # noqa: E402
     PassDecl,
     PassKind,
     Scope,
+    Trigger,
 )
 from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: E402
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
 
 __all__ = [
@@ -90,12 +95,24 @@ __all__ = [
     "Phase",
     "RenderFact",
     "Scope",
+    "Trigger",
     "check_order",
     "decision_order",
 ]
 
 BOUNDARIES = (Boundary.PARSED, Boundary.FACTS_FINAL, Boundary.DECIDED, Boundary.RENDER_READY)
 """The boundaries the segments enter, in order; ``MODULE_DONE`` ends each module body."""
+TRIGGERS = frozenset({
+    "alias_builtin_shadowing_module_imports",
+    "fix_constructor_field_ordering",
+    "fix_constructor_field_ordering_early",
+    "import_enum_member_literal_classes",
+    "import_models_of_hidden_submodules",
+    "merge_runtime_expression_imports",
+    "resolve_circular_imports",
+})
+"""The passes that may have a trigger, a set that only shrinks: a pass skips by the first statement of its body that
+returns on an empty source. A change that removes a trigger removes its entry, and no entry is added."""
 REPAIRS = frozenset({
     "bind_module_field_names",
     "fix_tag_opt_out_field_ordering",
@@ -107,6 +124,50 @@ REPAIRS = frozenset({
     "replan_schema_validators_after_renames",
 })
 """The repair passes: a change that removes one removes its entry, and no entry is added."""
+CONFIGURATION = frozenset({
+    "ReuseScope",
+    "DefaultValueType",
+    "_PYDANTIC_FLOORS",
+    "_import_overrides",
+    "_model_type_override_imports",
+    "_output_model_context",
+    "_tag_capabilities",
+    "_writes_unique_sets_in_modules",
+    "alias_loop_failure",
+    "args",
+    "bool",
+    "collapse_root_models",
+    "collecting_class_names",
+    "config",
+    "custom_template_dir",
+    "data_model_field_type",
+    "data_model_type",
+    "deserialize_default_value_types",
+    "follows_hiding_field_renames",
+    "generate_schema_validators",
+    "generic_base_class_config",
+    "keep_model_order",
+    "model_resolver.model_name_record",
+    "order_constructor_fields_by_final_names",
+    "order_constructor_fields_by_written_defaults",
+    "renames_hiding_fields",
+    "reuse_model",
+    "reuse_scope",
+    "run_context",
+    "set_default_enum_member",
+    "suppress_settle_diagnostics",
+    "type_overrides",
+    "use_annotated",
+    "use_default_factory_for_optional_nested_models",
+    "use_generic_base_class",
+    "use_one_literal_as_default",
+    "use_root_model_sequence_interface",
+    "with_import",
+})
+"""What a ``when`` may name: the options of the run (attributes ``Parser.__init__`` sets from the configuration, the
+settings of a run's state), constants of the output classes, and the helpers that read nothing else. An attribute
+chain of a parameter is an option where it or a leading part of it is listed: ``self.config.aliases`` names
+``config``, and only ``model_name_record`` of ``self.model_resolver`` is an option."""
 DEEP_WARNINGS = {
     "model/pydantic_v2/base_model.py:_warn_template_update": "the caller of render() (L7)",
     "parser/_intersection.py:warn_unsatisfiable": "the parser method that met the unsatisfiable schema (L1)",
@@ -243,18 +304,92 @@ def table_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[
     return problems
 
 
-def trigger_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[str]:
-    """Return the passes whose table entry and declaration disagree on a trigger, and the triggers that read more."""
+def trigger_problems(
+    pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE,
+    decls: Sequence[PassDecl] = PASS_DECLS,
+    kept: Collection[str] = TRIGGERS,
+) -> list[str]:
+    """Return the passes whose table entry and declaration disagree on a trigger, and the triggers that read more.
+
+    A trigger is a second predicate beside its pass, which only the test suite's idle run checks: a pass may have one
+    only where ``kept`` lists it, and its declaration says why the skip cannot be the body's own first statement.
+    """
     triggered = {step.name for step in _walk(pipeline) if isinstance(step, PassSpec) and step.trigger is not None}
-    declared = {decl.name for decl in PASS_DECLS if decl.trigger is not None}
+    declared = {decl.name for decl in decls if decl.trigger is not None}
     return [
         *(f"{name} has a trigger in the tables that its declaration does not" for name in sorted(triggered - declared)),
         *(f"{name} declares a trigger that its table entry does not have" for name in sorted(declared - triggered)),
         *(
             f"the trigger of {decl.name} reads {_facts_text(extra)}, which the pass does not declare as reads"
-            for decl in PASS_DECLS
+            for decl in decls
             if decl.trigger is not None and (extra := decl.trigger.reads - decl.reads)
         ),
+        *(
+            f"{name} has a trigger that TRIGGERS does not list: return early from the first statement of the body "
+            "instead, or list it with the reason the exact form costs more"
+            for name in sorted(declared - set(kept))
+        ),
+        *(f"TRIGGERS lists {name}, which has no trigger: remove it" for name in sorted(set(kept) - declared)),
+        *(
+            f"the trigger of {decl.name} gives no reason it is kept (Trigger.kept_because)"
+            for decl in decls
+            if decl.trigger is not None and not decl.trigger.kept_because.strip()
+        ),
+    ]
+
+
+def _gates(model: SourceModule) -> dict[str, ast.expr]:
+    """Return the ``when`` expression of each ``PassSpec`` of a tables module, by pass name."""
+    return {
+        call.args[0].value: when
+        for call in ast.walk(model.tree)
+        if isinstance(call, ast.Call) and _callee(model, call) == "PassSpec" and isinstance(call.args[0], ast.Constant)
+        for when in [*call.args[2:3], *(keyword.value for keyword in call.keywords if keyword.arg == "when")]
+    }
+
+
+def _gate_reads(model: SourceModule, gate: ast.expr) -> set[str]:
+    """Return what a ``when`` names: the attribute chain of each parameter, the helper or class of any other name."""
+    inside = set(ast.walk(gate))
+    parents = {child: parent for parent in inside for child in ast.iter_child_nodes(parent)}
+    reads = set()
+    for reference in model.references:
+        if reference.node not in inside or reference.context != "load":
+            continue
+        node: ast.AST = reference.node
+        parent = parents.get(node)
+        qualified = isinstance(parent, ast.Attribute) and parent.value is node
+        if any(binding.kind == "param" for binding in model.resolve(reference.node).bindings):
+            chain: list[str] = []
+            while isinstance(parent, ast.Attribute) and parent.value is node:
+                chain.append(parent.attr)
+                node, parent = parent, parents.get(parent)
+            if chain:
+                reads.add(".".join(chain))
+        elif qualified and isinstance(getattr(_tables, reference.name, None), ModuleType):
+            reads.add(parent.attr)
+        else:
+            reads.add(reference.name)
+    return reads
+
+
+def _is_option(read: str, allowed: Collection[str]) -> bool:
+    """Return whether ``read`` or a leading part of its attribute chain is an option of the run."""
+    parts = read.split(".")
+    return any(".".join(parts[:end]) in allowed for end in range(1, len(parts) + 1))
+
+
+def when_problems(source: str | None = None, allowed: Collection[str] = CONFIGURATION) -> list[str]:
+    """Return the passes whose ``when`` names a fact that is no option of the run, in ``source`` or the tables.
+
+    A pass that waits for a produced fact decides on it in its body, or declares a ``trigger``.
+    """
+    return [
+        f"the when of {name} names {', '.join(names)}, which no option of the run sets (CONFIGURATION): decide on it "
+        "in the pass, or declare a trigger with its reason"
+        for model in [_model(Path(_tables.__file__)) if source is None else SourceModule(source)]
+        for name, gate in _gates(model).items()
+        if (names := sorted(read for read in _gate_reads(model, gate) if not _is_option(read, allowed)))
     ]
 
 
@@ -536,6 +671,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     problems = [
         *table_problems(),
+        *when_problems(),
         *registry_problems(),
         *warning_problems(),
     ]

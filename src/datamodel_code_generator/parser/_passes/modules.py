@@ -749,6 +749,7 @@ class ModuleStateView(ModuleScopeView, ModuleImportsView, Protocol):
 
     model_list: list[DataModel]
     model_list_before_override_removal: list[DataModel]
+    all_module_fields: set[str]
     unused_models_start: int
     current_unused_models: Sequence[DataModel]
 
@@ -1149,7 +1150,8 @@ def _get_single_discriminator_default(
 
 def record_decimal_alias_models(parser: ModulesHost, state: ModuleStateView) -> None:
     """Remember the models of a module where a field named ``Decimal`` may shadow the type."""
-    parser._constrained_decimal_alias_model_ids.update(map(id, state.model_list))
+    if "Decimal" in state.all_module_fields:
+        parser._constrained_decimal_alias_model_ids.update(map(id, state.model_list))
 
 
 def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -2038,10 +2040,12 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
     warned about each of them. The class names are final only once every module is processed: a pass of the module
     of either model, processed after a holder's, may rename it.
     """
+    if not (kept_roots := parser._kept_parent_roots):
+        return
     contexts = {id(model): ctx for ctx in run.contexts for model in ctx.models}
     model_path_to_module_name = run.model_path_to_module_name
     graph_builder = parser._graph_builder
-    for kept_root in parser._kept_parent_roots.values():
+    for kept_root in kept_roots.values():
         root_model, inner_model = kept_root.root, kept_root.inner
         if not later_holders_follow(
             replace(kept_root.facts, renamed_apart=root_model.class_name != inner_model.class_name)
@@ -2551,11 +2555,13 @@ def type_const_narrowed_values(
     makes it a Literal or None, keeps its type. The values that keep the enum type are warned about once msgspec
     tags are final. A value that collapse shares between the root model and its holders is replaced in each holder.
     """
+    if not (narrowings := parser._const_narrowed_values):
+        return
     narrowed: dict[int, DataType] = {}
     for model in models:
         for field in model.fields:
             for owner, data_type in _value_positions(field):
-                entry = parser._const_narrowed_values.get(id(data_type))
+                entry = narrowings.get(id(data_type))
                 if entry is None or entry[0] is not data_type or data_type.reference is None:
                     continue
                 narrowing = entry[1]
@@ -3181,7 +3187,8 @@ def apply_base_stand_in_imports(parser: ModulesHost, run: ModulesRun) -> None:
     when they walk the bases of a model of another module; constructor ordering reads it afterwards as model-level
     overrides keep it.
     """
-    stand_ins = parser._base_stand_in_imports
+    if not (stand_ins := parser._base_stand_in_imports):
+        return
     for ctx in run.contexts:
         _replace_bases_by_imports(
             parser, ctx.models, lambda reference: reference is not None and model_key_of(reference) in stand_ins
@@ -3209,10 +3216,12 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
     collapse does not redirect, then name the inner model, and their module imports it as a collapsed field's
     module does.
     """
+    if not (replaced := parser._replaced_root_models):
+        return
     unused = run_unused_models(parser, run)
     inner_references = {
         model_key_of(root_model.reference): inner_model.reference
-        for root_model, inner_model in parser._replaced_root_models.values()
+        for root_model, inner_model in replaced.values()
         if root_model in unused
     }
     for ctx in run.contexts:

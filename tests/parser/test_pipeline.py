@@ -254,6 +254,89 @@ def test_check_order(decls: list[check_pass_pipeline.PassDecl], computed: bool) 
     )
 
 
+WHEN_CASES = {
+    "options-only": (
+        'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations)\n'
+        'PassSpec("b", f, when=lambda self, _: modules.renames_hiding_fields(self) and self.reuse_scope)\n'
+        'PassSpec("c", f, when=lambda *_: _PYDANTIC_FLOORS.get() is not None)\n'
+        'PassSpec("d", f, when=_writes_unique_sets_in_modules)\n'
+        'PassSpec("e", f, when=lambda self, _: self.model_resolver.model_name_record is not None)\n'
+    ),
+    "a-produced-record": 'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.renamed_models)\n',
+    "a-produced-length": 'PassSpec("a", f, when=lambda _, s: len(s.module_models) > 1)\n',
+    "a-helper-of-a-module": 'PassSpec("a", f, when=imports.import_names_class)\n',
+    "a-record-of-an-option-object": 'PassSpec("a", f, when=lambda self, _: bool(self.model_resolver.references))\n',
+    "a-positional-when": 'PassSpec("a", f, lambda self, s: s.renamed_models)\n',
+    "a-record-of-the-parser": 'PassSpec("a", f, when=lambda self, _: bool(self._kept_parent_roots))\n',
+}
+"""Tables of one pass each."""
+
+
+@pytest.mark.parametrize("table", WHEN_CASES.values(), ids=WHEN_CASES)
+def test_when_names_only_options(table: str) -> None:
+    """A ``when`` that names a produced fact is reported."""
+    problems = check_pass_pipeline.when_problems(table)
+
+    assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
+
+
+def _no_run(_parser: object, _state: object) -> None:
+    """Run nothing."""
+
+
+def _trigger_table(*triggers: tuple[str, bool, check_pass_pipeline.Trigger | None, set[str]]) -> tuple[Any, ...]:
+    """Return a pipeline of one pass each, and the declarations.
+
+    Per pass: its name, whether the table has a trigger, and the declared trigger and reads.
+    """
+    steps = tuple(
+        check_pass_pipeline.PassSpec(name, _no_run, trigger=(lambda _parser, _state: False) if in_table else None)
+        for name, in_table, _, _ in triggers
+    )
+    decls = tuple(
+        check_pass_pipeline.PassDecl(
+            name,
+            check_pass_pipeline.Phase.DECIDE,
+            check_pass_pipeline.Scope.GLOBAL,
+            check_pass_pipeline.PassKind.TRANSFORM,
+            reads=frozenset(check_pass_pipeline.Fact[fact] for fact in reads),
+            trigger=trigger,
+        )
+        for name, _, trigger, reads in triggers
+    )
+    return steps, decls
+
+
+def _trigger(reason: str = "the exact form costs more", reads: tuple[str, ...] = ()) -> check_pass_pipeline.Trigger:
+    return check_pass_pipeline.Trigger(
+        "a record is filled", frozenset(check_pass_pipeline.Fact[fact] for fact in reads), reason
+    )
+
+
+TRIGGER_CASES = {
+    "a-listed-trigger": ((("a", True, _trigger(), set()),), ("a",)),
+    "no-trigger": ((("a", False, None, set()),), ()),
+    "an-unlisted-trigger": ((("a", True, _trigger(), set()),), ()),
+    "a-listed-pass-without-trigger": ((("a", False, None, set()),), ("a",)),
+    "a-trigger-without-reason": ((("a", True, _trigger(" "), set()),), ("a",)),
+    "a-trigger-the-declaration-lacks": ((("a", True, None, set()),), ()),
+    "a-trigger-the-table-lacks": ((("a", False, _trigger(), set()),), ("a",)),
+    "a-trigger-reading-more-than-the-pass": ((("a", True, _trigger(reads=("BASES",)), {"DEFAULTS"}),), ("a",)),
+}
+"""Passes with their triggers in the table and the declaration, and the passes ``TRIGGERS`` lists."""
+
+
+@pytest.mark.parametrize(("passes", "kept"), TRIGGER_CASES.values(), ids=TRIGGER_CASES)
+def test_trigger_problems(
+    passes: tuple[tuple[str, bool, check_pass_pipeline.Trigger | None, set[str]], ...], kept: tuple[str, ...]
+) -> None:
+    """A trigger is allowed only for a listed pass that names its reason, in the table and the declaration alike."""
+    steps, decls = _trigger_table(*passes)
+    problems = check_pass_pipeline.trigger_problems(steps, decls, kept)
+
+    assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
+
+
 def _no_decision(_facts: check_pass_pipeline.FinalFacts, _writer: object) -> None:
     """Decide nothing."""
 

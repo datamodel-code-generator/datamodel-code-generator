@@ -127,8 +127,9 @@ CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SW
 CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
 """The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep,
-the others compare only the models a pass touched. `CHECK_PASS_TRIGGERS_ENV` stays off unless the environment sets it:
-the nightly workflow (`tox run -e pass-triggers`) runs the suite on `SWEEP_PYTHON` with it on."""
+the others compare only the models a pass touched. `CHECK_PASS_TRIGGERS_ENV` stays off unless the environment sets it
+or `--check-pass-triggers` is given: the nightly workflow (`tox run -e pass-triggers`) runs the suite on `SWEEP_PYTHON`
+with it on."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
 """What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
 
@@ -268,6 +269,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Collect CLI documentation metadata from tests marked with @pytest.mark.cli_doc",
     )
     parser.addoption(
+        "--check-pass-triggers",
+        action="store_true",
+        default=False,
+        help="Run each pass whose trigger is false anyway and fail on what it changes (PASS_TRIGGERS)",
+    )
+    parser.addoption(
         "--test-shard",
         metavar="INDEX/TOTAL",
         help="Run one of TOTAL shards of the selected tests, split by their measured CI durations",
@@ -312,8 +319,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
-    The finality sweep is turned on only from `SWEEP_PYTHON`; the trigger check only where the environment sets it.
-    `--skip-value-checks` leaves `VALUE_CHECK_AREA_ENVS` unset.
+    The finality sweep is turned on only from `SWEEP_PYTHON`; the trigger check only by `--check-pass-triggers` or where
+    the environment sets it. `--skip-value-checks` leaves `VALUE_CHECK_AREA_ENVS` unset.
     """
     benchmarks = config.getoption("codspeed", default=False)
     skipped = VALUE_CHECK_AREA_ENVS if config.getoption("--skip-value-checks") else ()
@@ -321,6 +328,11 @@ def pytest_configure(config: pytest.Config) -> None:
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
+    os.environ[CHECK_PASS_TRIGGERS_ENV] = (
+        "1"
+        if config.getoption("check_pass_triggers") and not benchmarks
+        else os.environ.get(CHECK_PASS_TRIGGERS_ENV, "0")
+    )
     config.addinivalue_line(
         "markers",
         "value_checks: run the test with the value-comparing check areas on, even under --skip-value-checks",

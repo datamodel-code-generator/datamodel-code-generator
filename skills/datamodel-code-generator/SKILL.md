@@ -164,22 +164,13 @@ uvx --from 'datamodel-code-generator[graphql]' datamodel-codegen \
 
 ## Target Python version
 
-Infer the minimum Python version from:
-
-1. `pyproject.toml` `requires-python`
-2. `.python-version`
-3. `runtime.txt`
-4. CI config
-5. Existing generated model style
-6. User instruction
-
-Then pass it to the recommender, which prints the preset for that target and the `arguments` to run:
+The recommender takes the target from `requires-python` in `pyproject.toml` when no option, key, or preset sets it, and the note in its payload names the source. Pass `--target-python-version X.Y` yourself only when the project declares its minimum Python elsewhere (`.python-version`, `runtime.txt`, CI config) or the user names one:
 
 ```bash
 datamodel-codegen [options] --target-python-version X.Y --recommend-options --output-format json
 ```
 
-Do not accept the CLI default if the project clearly declares a Python version. A command with `--preset` takes its target from the preset name and keeps an explicit `--target-python-version` only when it matches; a command without `--preset` needs `--target-python-version X.Y`.
+A command with `--preset` takes its target from the preset name and keeps an explicit `--target-python-version` only when it matches.
 
 ## Clients and servers (experimental)
 

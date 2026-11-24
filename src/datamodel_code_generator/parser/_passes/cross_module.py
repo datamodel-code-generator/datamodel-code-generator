@@ -327,7 +327,8 @@ def _stale_renamed_import(imports: Imports, data_type: DataType, renamed_types: 
 
 def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Import the kept model where a module processed earlier imported a duplicate that reuse removed."""
-    users = parser._removed_reuse_users
+    if not (users := parser._removed_reuse_users):
+        return
     for ctx in run.contexts:
         if not (
             stale_imports := {
@@ -396,6 +397,8 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     nor a ``from .`` path leads back to the path it was added under.
     """
     by_key, by_path = _stale_import_renames(parser.generation_store.renames)
+    if not by_path:
+        return
     for ctx in run.contexts:
         members = module_members(parser, ctx.models, row="members")
         keyed_members = keyed_module_members(members)

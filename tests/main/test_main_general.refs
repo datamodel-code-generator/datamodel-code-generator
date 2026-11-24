@@ -992,7 +992,7 @@ positional	main/main_general/invalid_cli_option_suggestions[positional].txt
 [test_list_deprecations_json]
 	main/main_general/list_deprecations_json.stdout.txt
 [test_list_experimental]
-	main/main_general/list_experimental.stdout.txt	= main/list_experimental.txt
+	main/main_general/list_experimental.stdout.txt
 [test_list_experimental_json]
 	main/main_general/list_experimental_json.stdout.txt
 [test_list_scheduled_deprecations]
