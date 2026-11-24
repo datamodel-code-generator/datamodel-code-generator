@@ -2144,6 +2144,9 @@ jobs:
       - test-http-backends
       - test-shard
       - test-shard-main
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -2165,12 +2168,11 @@ jobs:
         run: tox run -e coverage --notest
         env:
           UV_PYTHON_PREFERENCE: only-managed
+      # actions/download-artifact stayed up to three minutes after it had written every file (2 of 4 runs on 11-24).
       - name: Download coverage data
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          path: .tox/coverage-input
-          pattern: .coverage.*
-          merge-multiple: false
+        run: python scripts/ci_coverage.py download .tox/coverage-input --repository "$GITHUB_REPOSITORY" --run-id "$GITHUB_RUN_ID" --api-url "$GITHUB_API_URL"
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Validate coverage inputs
         run: python scripts/ci_coverage.py prepare .tox/coverage-input --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA" --event "$GITHUB_EVENT_NAME"
       - name: Combine and report coverage
