@@ -9,6 +9,7 @@ names, and recommends the best one; without a mode, schemas small enough are com
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
@@ -17,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from datamodel_code_generator._document_reader import nesting_limit
+from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._generation import _infer_input
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
@@ -26,6 +28,7 @@ from datamodel_code_generator._shared_types import DefaultPutDict, Error
 from datamodel_code_generator._source import decoding_from, is_swagger_2, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import InputFileType, _openapi_scopes_or_default
+from datamodel_code_generator.util import _load_config_toml, get_yaml_parse_errors
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -48,6 +51,8 @@ _MAX_CANDIDATES = 8
 _CandidateKey: TypeAlias = tuple[bool, frozenset[str]]
 _Pair: TypeAlias = "tuple[Option, tuple[Option, ...], tuple[Option, ...]]"
 _TrialRun: TypeAlias = "tuple[tuple[CandidateOutcome, ...], InputFileType | None]"
+_LOWER_BOUND = re.compile(r"(?:>=|~=|==)\s*3\.(\d+)(?:\.\d+)*(?:\.\*)?")
+_UPPER_BOUND = re.compile(r"(?:<|<=|!=)\s*\d+(?:\.\d+)*(?:\.\*)?")
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,7 +64,8 @@ class RecommendRequest:
     ``cli_values`` are the command-line options as config values, keyed by field name. ``mode`` is None when the
     command names no mode. ``generation_config`` returns the config a generation of this configuration runs with
     after config updates, applied the way ``--preset`` applies its values. ``target`` is the option that selects a
-    server or client target, such as ``--generate-server``.
+    server or client target, such as ``--generate-server``. ``project_file`` is the pyproject.toml whose
+    ``requires-python`` gives the target Python version when nothing sets it.
     """
 
     config: Any
@@ -74,6 +80,7 @@ class RecommendRequest:
     mode: RecommendMode | None = None
     response_observer: Callable[[str, Any, Any, bytes], None] | None = None
     target: str | None = None
+    project_file: Path | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,8 +226,6 @@ def _load(text: str, decoded: DecodedInput | None = None) -> dict[str, Any]:
 
 
 def _load_errors() -> tuple[type[Exception], ...]:
-    from datamodel_code_generator.util import get_yaml_parse_errors  # noqa: PLC0415
-
     return TypeError, ValueError, *get_yaml_parse_errors()
 
 
@@ -343,7 +348,7 @@ def _start(decisions: Sequence[Decision], request: RecommendRequest, recommendat
     from datamodel_code_generator.preset import latest_preset_name  # noqa: PLC0415
 
     config = request.config
-    target = config.target_python_version
+    target = PythonVersion(recommendation.target_python_version)
     if (configured := config.preset) is not None:
         family = configured.partition("-")[0]
         plan = _plan(configured, family, decisions, request, configured=True)
@@ -698,9 +703,16 @@ def _trial_notes(request: RecommendRequest, recommendation: Recommendation, dete
         )
 
 
-def _set_command(request: RecommendRequest, recommendation: Recommendation, command_values: dict[str, Any]) -> None:
-    """Set the command and the pyproject.toml keys that carry the recommendation."""
+def _set_command(
+    request: RecommendRequest, recommendation: Recommendation, command_values: dict[str, Any], *, project_target: bool
+) -> None:
+    """Set the command and the pyproject.toml keys that carry the recommendation.
+
+    A target Python version taken from ``requires-python`` is set beside the preset.
+    """
     additions: dict[str, Any] = {} if request.config.preset is not None else {"preset": recommendation.preset}
+    if project_target:
+        additions["target_python_version"] = recommendation.target_python_version
     additions.update(_merged_values(recommendation.recommendations))
     if request.has_project_config and not request.preset_on_command_line:
         recommendation.command_values = command_values
@@ -712,6 +724,54 @@ def _set_command(request: RecommendRequest, recommendation: Recommendation, comm
     else:
         recommendation.command_values = {**command_values, **additions}
         recommendation.config_values = dict(recommendation.command_values)
+
+
+def _requires_python_minor(specifier: str) -> int | None:
+    """Return the Python 3 minor version a ``requires-python`` specifier starts at, or None for an uncommon form.
+
+    The common forms only: one lower bound (``>=3.12``, ``~=3.12``, ``==3.12.*``) with any upper bounds and
+    exclusions (``<4``, ``!=3.13.1``); anything else, such as ``>3.11`` or two lower bounds, gives None.
+    """
+    bounds: list[int] = []
+    for clause in map(str.strip, specifier.split(",")):
+        if match := _LOWER_BOUND.fullmatch(clause):
+            bounds.append(int(match.group(1)))
+        elif not _UPPER_BOUND.fullmatch(clause):
+            return None
+    return bounds[0] if len(bounds) == 1 else None
+
+
+def _project_target(request: RecommendRequest) -> tuple[PythonVersion, str] | None:
+    """Return the target Python version of the project's ``requires-python`` and the note naming its source.
+
+    Only when no option, pyproject.toml key or preset sets the target. The lower bound is clamped to the supported
+    targets and raised to the lowest one a server or client target supports.
+    """
+    config = request.config
+    if (
+        "target_python_version" in request.explicit_fields
+        or config.preset is not None
+        or (path := request.project_file) is None
+        or not path.is_file()
+    ):
+        return None
+    project = _load_config_toml(path).get("project")
+    specifier = project.get("requires-python") if isinstance(project, Mapping) else None
+    if not isinstance(specifier, str) or (minor := _requires_python_minor(specifier)) is None:
+        return None
+    supported = [version for version in PythonVersion if version.version_key <= (3, minor)]
+    target = max((*supported[-1:], config.target_python_version), key=_version_key)
+    note = f"Target Python {target.value} comes from requires-python {json.dumps(specifier)} in {path.name}"
+    if target.version_key > (3, minor):
+        who = "datamodel-codegen" if request.target is None else request.target
+        note += f"; 3.{minor} is older than the lowest target {who} supports"
+    elif target.version_key < (3, minor):
+        note += f"; 3.{minor} is newer than the newest target datamodel-codegen supports"
+    return target, f"{note}."
+
+
+def _version_key(version: PythonVersion) -> tuple[int, int]:
+    return version.version_key
 
 
 def recommend_options(request: RecommendRequest) -> Recommendation:
@@ -738,6 +798,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
         else _read_file(Path(config.diff_against), config.encoding, _diff_against_label(config))
     )
     mode, mode_note = _mode(request, analysed, previous)
+    project_target = _project_target(request)
     recommendation = Recommendation(
         rules_revision=rules.data.rules_revision,
         calibrated_presets=rules.data.calibrated_presets,
@@ -746,7 +807,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
         input_file_type=analysed.file_type,
         signals=signals,
         output_model_type=output_model_type,
-        target_python_version=config.target_python_version.value,
+        target_python_version=(config.target_python_version if project_target is None else project_target[0]).value,
         preset="",
         family="",
         preset_configured=config.preset is not None,
@@ -767,7 +828,9 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     ]
     command_values, notes = _command_values(request)
     recommendation.notes.extend(notes)
-    if "target_python_version" not in request.explicit_fields and config.preset is None:
+    if project_target is not None:
+        recommendation.notes.append(project_target[1])
+    elif "target_python_version" not in request.explicit_fields and config.preset is None:
         assumed = "the default" if request.target is None else f"the lowest {request.target} supports"
         recommendation.notes.append(
             f"Target Python is not set: the recommendation assumes {recommendation.target_python_version}, {assumed}. "
@@ -784,7 +847,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     if analysed.swagger:
         recommendation.runnable = False
     else:
-        _set_command(request, recommendation, command_values)
+        _set_command(request, recommendation, command_values, project_target=project_target is not None)
     return recommendation
 
 
