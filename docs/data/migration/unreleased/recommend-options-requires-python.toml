@@ -3,8 +3,8 @@ id = "recommend-options-requires-python"
 category = "experimental"
 title = "--recommend-options takes the target Python version from requires-python"
 summary = "When no option, pyproject.toml key or preset sets the target Python version, --recommend-options takes the lower bound of requires-python in the project's pyproject.toml (>=3.12, ~=3.12, ==3.12.*, with upper bounds or exclusions beside it), clamped to the supported targets and to the lowest one a client or server target supports, starts from that preset, and adds --target-python-version to the command and the pyproject.toml block with a note naming the source; other forms keep the note that the default is assumed. Generation never reads requires-python."
-refs = ["#7491"]
-decision = ["#7491"]
+refs = ["#7493"]
+decision = ["#7493"]
 kind = "experimental"
 action = "review"
 affects = { experimental = ["cli-option.recommend-options"] }
