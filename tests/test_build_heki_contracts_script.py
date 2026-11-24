@@ -285,8 +285,9 @@ class DataModelFieldBase:
 def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Path) -> None:
     """Each list mutator, a write through an alias and a store-only call in a callback are findings, once per call.
 
-    The store operation and the copy, which no graph object holds, are none; a function named like a method only the
-    store runs is judged by the attribute it writes, and a write through a receiver heki cannot resolve is ``MUT205``.
+    The write of the store operation and the copy, which no graph object holds, are none, though a pass that calls the
+    operation itself, not through the store's builder, is; a function named like a method only the store runs is
+    judged by the attribute it writes, and a write through a receiver heki cannot resolve is ``MUT205``.
     """
     package = {
         **SEEDED_PACKAGE,
@@ -307,6 +308,7 @@ def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Pat
     assert (result.returncode, found) == (
         1,
         [
+            ("through_the_store", "MUT204", f"{PACKAGE_NAME}.parser.generation:GenerationStore.set_fields", 8),
             ("reorder", "MUT201", "DataModel.fields", 12),
             ("reorder", "MUT201", "DataModel.fields", 13),
             ("reorder", "MUT201", "DataModel.fields", 14),
@@ -1133,3 +1135,81 @@ def test_import_ledger_rows_name_defined_methods(
         build_heki_contracts.import_ledger_contracts(repo, mutators, writers)
 
     assert str(stopped.value) == message
+
+
+SEEDED_STORE_CALLS = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/generation.py": (
+        "class GenerationStore:\n    def __init__(self) -> None:\n        self._builder = GraphBuilder(self)\n\n"
+        "    def builder(self) -> 'GraphBuilder':\n        return self._builder\n\n"
+        "    def omit_field_default(self, field: object) -> None:\n        self.omitted = field\n\n\n"
+        "class GraphBuilder:\n    def __init__(self, store: GenerationStore) -> None:\n        self._store = store\n\n"
+        "    def omit_field_default(self, field: object) -> None:\n        self._store.omit_field_default(field)\n"
+    ),
+    f"{PACKAGE}/parser/passes.py": (
+        "from typing import Any, cast\n\n"
+        "from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder\n\n\n"
+        "def through_the_builder(store: GenerationStore) -> None:\n    store.builder().omit_field_default(1)\n\n\n"
+        "def direct(store: GenerationStore) -> None:\n    store.omit_field_default(1)\n\n\n"
+        "def _helper(store: GenerationStore) -> None:\n    store.omit_field_default(1)\n\n\n"
+        "def through_a_helper(store: GenerationStore) -> None:\n    _helper(store)\n\n\n"
+        "def untyped(store: GenerationStore) -> None:\n    cast('Any', store).omit_field_default(1)\n\n\n"
+        "def own_builder(store: GenerationStore) -> GraphBuilder:\n    return GraphBuilder(store)\n"
+    ),
+}
+"""A pass that changes the graph through the store's builder, and one that calls a store operation directly, in a
+helper, on an untyped value, or that makes a builder of its own."""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_store_operations_called_outside_the_builder(tmp_path: Path) -> None:
+    """A store operation is called only in the store module, and only the store module makes a ``GraphBuilder``.
+
+    A call elsewhere, a helper's in the helper, is a finding, and so is one on a value heki cannot tie to a class.
+    """
+    for name, text in SEEDED_STORE_CALLS.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    contracts.write_text(
+        "\n".join(build_heki_contracts.store_operation_contracts(repo, ("omit_field_default",))), encoding="utf-8"
+    )
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"].rpartition(".")[2])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("passes.py", "_helper", "MUT204", "omit_field_default"),
+            ("passes.py", "direct", "MUT204", "omit_field_default"),
+            ("passes.py", "own_builder", "MUT204", "generation:GraphBuilder"),
+            ("passes.py", "untyped", "MUT207", "omit_field_default"),
+        ],
+    ), result.stderr
+
+
+@pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
+def test_store_operations_name_a_method_of_the_store() -> None:
+    """An operation ``GENERATION_STORE_MUTATION_METHODS`` names is a method ``GenerationStore`` defines."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(SystemExit) as stopped:
+        build_heki_contracts.store_operation_contracts(repo, ("never_defined",))
+
+    assert str(stopped.value) == "GENERATION_STORE_MUTATION_METHODS: GenerationStore defines no never_defined"

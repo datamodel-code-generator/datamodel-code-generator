@@ -2348,6 +2348,11 @@ def _classify_field_assignment(
     return classify_assignment(_assignment_inputs(field, row, written))
 
 
+def _model_of_reference(reference: Reference) -> DataModel | None:
+    """Return the model a reference names, as the written output holds it, or None when it names no model."""
+    return source if isinstance(source := reference.source, DataModel) else None
+
+
 def _field_source_name(field: DataModelFieldBase) -> str | None:
     """Return the name the schema gives the field: its original name, else its name."""
     return field.original_name if field.original_name is not None else field.name

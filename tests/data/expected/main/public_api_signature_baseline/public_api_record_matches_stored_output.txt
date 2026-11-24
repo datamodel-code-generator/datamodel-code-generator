@@ -3664,178 +3664,114 @@ class GenerationStore
     @property
     def renames(self) -> Sequence[ModelRename]
     def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]], member_keywords: Callable[[DataType, Callable[[Reference], DataModel | None]], frozenset[str] | None], options: DecisionOptions, constrained_member: Callable[[DataType, Mapping[str, object]], object | None]) -> FinalFacts
-    @deprecated('Use GenerationStore.builder().register_model() instead.', category=None)
     def register_model(self, model: DataModel) -> None
-    @deprecated('Use GenerationStore.builder().retire_model() instead.', category=None)
     def retire_model(self, model: DataModel) -> None
-    @deprecated('Use GenerationStore.builder().replace_model() instead.', category=None)
     def replace_model(self, model: DataModel, replacement: DataModel) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_module_models() instead.', category=None)
     def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None
     def model_key(self, reference: Reference) -> ModelKey
     @staticmethod
-    @deprecated('Use GenerationStore.builder().record_values_as_written() instead.', category=None)
     def record_values_as_written(owner: DataModel | DataType, values: Sequence[Any]) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().record_dropped_multiple_of() instead.', category=None)
     def record_dropped_multiple_of(data_type: DataType, value: float) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().record_site_constraints() instead.', category=None)
     def record_site_constraints(data_type: DataType, constraints: Mapping[str, Any]) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().write_field_call_in_annotated() instead.', category=None)
     def write_field_call_in_annotated(field_: DataModelFieldBase) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().record_widened_values() instead.', category=None)
     def record_widened_values(data_type: DataType, values: Sequence[object]) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().restore_required_inherited_field() instead.', category=None)
     def restore_required_inherited_field(model: DataModel, field_: DataModelFieldBase) -> bool
     @staticmethod
-    @deprecated('Use GenerationStore.builder().adopt_base_options() instead.', category=None)
     def adopt_base_options(model: DataModel) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().force_field_assignment() instead.', category=None)
     def force_field_assignment(field_: DataModelFieldBase) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().mark_forward_references() instead.', category=None)
     def mark_forward_references(model: DataModel) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().mark_serialized_as_any() instead.', category=None)
     def mark_serialized_as_any(model: DataModel, wrapped: bool) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().mark_target_null() instead.', category=None)
     def mark_target_null(data_type: DataType) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().clear_target_null() instead.', category=None)
     def clear_target_null(data_type: DataType) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().write_rendered_null() instead.', category=None)
     def write_rendered_null(data_type: DataType) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().drop_held_null() instead.', category=None)
     def drop_held_null(data_type: DataType) -> None
-    @deprecated('Use GenerationStore.builder().note_changed_models() instead.', category=None)
     def note_changed_models(self, *models: object) -> None
     def refresh(self) -> None
     def refresh_now(self) -> None
-    @deprecated('Use GenerationStore.builder().discard_derived_facts() instead.', category=None)
     def discard_derived_facts(self) -> None
-    @deprecated('Use GenerationStore.builder().replace_data_type_ref() instead.', category=None)
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None
-    @deprecated('Use GenerationStore.builder().detach_data_type_ref() instead.', category=None)
     def detach_data_type_ref(self, data_type: DataType) -> None
-    @deprecated('Use GenerationStore.builder().update_model_reference() instead.', category=None)
     def update_model_reference(self, model: DataModel, *, new_path: str | None=None, new_file_path: Path | None=None) -> None
-    @deprecated('Use GenerationStore.builder().rename_model() instead.', category=None)
     def rename_model(self, model: DataModel, *, class_name: str | None=None, reference_name: str | None=None, clear_duplicate_name: bool=False, new_path: str | None=None, new_file_path: Path | None=None, scheme: RenameScheme | None=None, schema_path: str | None=None) -> None
-    @deprecated('Use GenerationStore.builder().replace_field_type() instead.', category=None)
     def replace_field_type(self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh='now') -> None
-    @deprecated('Use GenerationStore.builder().swap_data_type() instead.', category=None)
     def swap_data_type(self, data_type: DataType, new_data_type: DataType, *, refresh: Refresh='now') -> None
-    @deprecated('Use GenerationStore.builder().apply_const() instead.', category=None)
     def apply_const(self, field_: DataModelFieldBase, *, refresh: Refresh='now') -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().apply_literal_default() instead.', category=None)
     def apply_literal_default(field_: DataModelFieldBase, decision: LiteralDefault) -> None
-    @deprecated('Use GenerationStore.builder().drop_union_member_constraints() instead.', category=None)
     def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh='now', options: ConstraintOptions | None=None) -> None
-    @deprecated('Use GenerationStore.builder().use_assignment_for_forward_references() instead.', category=None)
     def use_assignment_for_forward_references(self, model: DataModel, positions: Mapping[str, int], index: int, *, refresh: Refresh='now') -> bool
     @staticmethod
-    @deprecated('Use GenerationStore.builder().rename_field() instead.', category=None)
     def rename_field(field_: DataModelFieldBase, name: str, *, alias: str | None=None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_field_identity() instead.', category=None)
     def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None=None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_field_default() instead.', category=None)
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None
     @staticmethod
     def set_field_runtime_default(field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().record_nullable_without_default() instead.', category=None)
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().omit_field_default() instead.', category=None)
     def omit_field_default(field_: DataModelFieldBase) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().require_field() instead.', category=None)
     def require_field(field_: DataModelFieldBase, *, use_default_with_required: bool) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_field_constraints() instead.', category=None)
     def set_field_constraints(field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None=None, union_siblings: Mapping[str, Any] | None=None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_field_extras() instead.', category=None)
     def set_field_extras(field_: DataModelFieldBase, extras: dict[str, Any]) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_field_extra() instead.', category=None)
     def set_field_extra(field_: DataModelFieldBase, key: str, value: Any) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().drop_field_discriminator() instead.', category=None)
     def drop_field_discriminator(field_: DataModelFieldBase) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_type_discriminator() instead.', category=None)
     def set_type_discriminator(data_type: DataType, discriminator: str | None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().drop_union_operator() instead.', category=None)
     def drop_union_operator(data_type: DataType) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().use_typing_generics() instead.', category=None)
     def use_typing_generics(data_type: DataType) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().override_type_import() instead.', category=None)
     def override_type_import(data_type: DataType, import_: Import) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().set_type_expressions() instead.', category=None)
     def set_type_expressions(data_type: DataType, *, type_: str | None=None, import_: Import | None=None, python_type: Any=None, kwargs: dict[str, Any] | None=None, runtime_expression_imports: tuple[Import, ...] | None=None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().name_reference() instead.', category=None)
     def name_reference(data_type: DataType, alias: str | None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().name_enum_member() instead.', category=None)
     def name_enum_member(field_: DataModelFieldBase, member: Member, alias: str | None) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().name_enum_member_literal_class() instead.', category=None)
     def name_enum_member_literal_class(data_type: DataType, enum_class: str) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().add_model_import() instead.', category=None)
     def add_model_import(model: DataModel, import_: Import) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().bind_builtin_names() instead.', category=None)
     def bind_builtin_names(model: DataModel, bindings: Mapping[str, str]) -> None
     @staticmethod
-    @deprecated('Use GenerationStore.builder().replace_additional_properties_type() instead.', category=None)
     def replace_additional_properties_type(model: DataModel, data_type: DataType) -> None
     @staticmethod
     def name_additional_properties_classes(model: DataModel, data_type: DataType, reference_classes: set[str]) -> None
-    @deprecated('Use GenerationStore.builder().replace_nested_data_type() instead.', category=None)
     def replace_nested_data_type(self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType) -> None
-    @deprecated('Use GenerationStore.builder().inline_shared() instead.', category=None)
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType
-    @deprecated('Use GenerationStore.builder().set_nested_data_types() instead.', category=None)
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None
-    @deprecated('Use GenerationStore.builder().append_field() instead.', category=None)
     def append_field(self, model: DataModel, field_: DataModelFieldBase) -> None
-    @deprecated('Use GenerationStore.builder().insert_field() instead.', category=None)
     def insert_field(self, model: DataModel, index: int, field_: DataModelFieldBase) -> None
-    @deprecated('Use GenerationStore.builder().set_fields() instead.', category=None)
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None
-    @deprecated('Use GenerationStore.builder().set_base_classes() instead.', category=None)
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None
-    @deprecated('Use GenerationStore.builder().reset_base_classes() instead.', category=None)
     def reset_base_classes(self, model: DataModel) -> None
-    @deprecated('Use GenerationStore.builder().redirect_reference_users() instead.', category=None)
     def redirect_reference_users(self, old_reference: Reference, new_reference: Reference, *, merged: bool=False, keeps_named: bool=False) -> list[DataType]
     def has_users_in_other_modules(self, model: DataModel) -> bool
-    @deprecated('Use GenerationStore.builder().redirect_model_reference_users() instead.', category=None)
     def redirect_model_reference_users(self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool=False) -> None
-    @deprecated('Use GenerationStore.builder().collapse_root_data_type() instead.', category=None)
     def collapse_root_data_type(self, data_type: DataType, inner_reference: Reference) -> None
-    @deprecated('Use GenerationStore.builder().detach_model_data_type_refs() instead.', category=None)
     def detach_model_data_type_refs(self, model: DataModel) -> None
-    @deprecated('Use GenerationStore.builder().defer_refresh() instead.', category=None)
     @contextmanager
     def defer_refresh(self) -> Generator[None, None, None]
     def __iter__(self) -> Iterator[DataModel]
@@ -3845,7 +3781,7 @@ class GenerationStore
 @final
 class GraphBuilder
     __slots__ = ('_store',)
-    def __init__(self, store: GenerationStore, token: _BuilderToken) -> None
+    def __init__(self, store: GenerationStore) -> None
     def add_model_import(self, model: DataModel, import_: Import) -> None
     def bind_builtin_names(self, model: DataModel, bindings: Mapping[str, str]) -> None
     def set_type_expressions(self, data_type: DataType, *, type_: str | None=None, import_: Import | None=None, python_type: Any=None, kwargs: dict[str, Any] | None=None, runtime_expression_imports: tuple[Import, ...] | None=None) -> None

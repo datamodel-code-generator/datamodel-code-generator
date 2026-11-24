@@ -1523,11 +1523,11 @@ class ParseChecks:
             sweep=areas.mode(Area.FACT_FINALITY_SWEEP) is not None,
         )
         enter_phase = store.enter_phase
-        note_changed_models = store.note_changed_models  # ty: ignore[deprecated]
+        note_changed_models = store.note_changed_models
 
         def note_checked_models(*models: object) -> None:
             finality.mark(models)
-            note_changed_models(*models)  # ty: ignore[deprecated]
+            note_changed_models(*models)
 
         def enter_checked_phase(phase: Phase) -> None:
             finality.leave_phase()

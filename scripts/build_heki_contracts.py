@@ -15,6 +15,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   operations and the generation store module may write the attributes, and each write is judged in the scope that
   holds it. A ``__dict__`` key row names the value of its constant; a
   cached-property row also forbids the decorator on its owner.
+- ``call-owners`` (``MUT204``, ``MUT207``) of the store operations: each operation that
+  ``GENERATION_STORE_MUTATION_METHODS`` names is called only in the store module, where ``GraphBuilder`` calls it for
+  the passes, and only the store module makes a ``GraphBuilder``.
 - ``call-owners``, ``read-owners`` and ``write-owners`` of the members of the graph only the store may use
   (``STORE_MEMBERS`` of ``scripts/fact_tables.py``): each method that writes the graph for the store operations that
   run it is callable by the store module, its own class (through its own receiver too) and the other such methods,
@@ -73,7 +76,7 @@ import tomllib
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
-from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
+from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
 from scripts.check_ratchets import ENVIRONMENT_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
 from scripts.fact_tables import (
@@ -106,6 +109,8 @@ PYPROJECT = ROOT / "pyproject.toml"
 SOURCE_ROOT = ROOT / PACKAGE_DIR
 STORE_MODULE = f"{PACKAGE}.parser.generation"
 """The generation store's module: its functions write the facts the store operations write."""
+GRAPH_BUILDER = f"{STORE_MODULE}.GraphBuilder"
+"""The capability to change the graph, which only the store makes: every store operation is called through it."""
 DECISION_WRITER = f"{PACKAGE}.parser._phases._DecisionWriter"
 """The one writer of the decisions (``parser/_phases.py``), over the store: what a decision calls to write."""
 IMPORTS = f"{PACKAGE}.imports.Imports"
@@ -462,6 +467,43 @@ def import_ledger_contracts(
     ]
 
 
+def store_operation_contracts(repo: Repo, operations: Iterable[str] = GENERATION_STORE_MUTATION_METHODS) -> list[str]:
+    """Return the contracts that route every change of the graph through the store's ``GraphBuilder``.
+
+    A store operation (``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
+    ``parser/generation.py``) is called only in the store module, where the builder calls it, also on a receiver heki
+    cannot tie to a class (``store-op:``); only the store module makes a ``GraphBuilder`` (``graph-builder``).
+    """
+    functions = _package_functions(repo)
+    owner = f"{STORE_MODULE}.GenerationStore"
+    contracts: list[str] = []
+    for operation in sorted(operations):
+        if f"{owner}.{operation}" not in functions:
+            message = f"GENERATION_STORE_MUTATION_METHODS: GenerationStore defines no {operation}"
+            raise SystemExit(message)
+        contracts.append(
+            _table(
+                "call-owners",
+                name=f"store-op:{operation}",
+                targets=[f"{STORE_MODULE}:GenerationStore.{operation}"],
+                allowed_callers=_scope(STORE_MODULE, ""),
+                unresolved="report",
+                attribution="lexical",
+            )
+        )
+    builder_module, _, builder = GRAPH_BUILDER.rpartition(".")
+    return [
+        *contracts,
+        _table(
+            "call-owners",
+            name="graph-builder",
+            targets=[f"{builder_module}:{builder}"],
+            allowed_callers=_scope(STORE_MODULE, ""),
+            attribution="lexical",
+        ),
+    ]
+
+
 class _Protocols:
     """The members the Protocols of the package declare, by name, and the classes of the package, by dotted name."""
 
@@ -629,6 +671,7 @@ def generate() -> str:
     contracts = [
         *write_owner_contracts(repo),
         *store_member_contracts(repo),
+        *store_operation_contracts(repo),
         *decision_home_contracts(repo),
         *decision_writer_contracts(repo),
         *decision_contracts(repo),

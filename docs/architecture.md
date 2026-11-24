@@ -1201,8 +1201,9 @@ its provenance; renames touch no site, since sites store no names.
 Every mutation goes through the store's `GraphBuilder`, the capability that `GenerationStore.builder()` returns
 (`Parser._graph_builder` in the parser): one method per mutation of `GENERATION_STORE_MUTATION_METHODS`, each calling
 the store's operation of the same name, so that a store subclass that overrides an operation and the debug checks that
-wrap the operations on the store keep seeing every call. The operations on `GenerationStore` itself are deprecated for
-every other caller (`@deprecated(category=None)`: ty lists the callers, and no warning is raised at run time).
+wrap the operations on the store keep seeing every call. heki's `store-op:` contracts report a call of an operation
+on `GenerationStore` outside `parser/generation.py`, also on a receiver heki cannot tie to a class, and its
+`graph-builder` contract a `GraphBuilder` made outside it.
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
 counter in its `__dict__`, beside its schema location, and `_model_keys.py:model_key_of` reads it. A reference that

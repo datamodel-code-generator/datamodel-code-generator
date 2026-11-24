@@ -321,18 +321,14 @@ class RecordingGenerationStore(GenerationStore):
     ) -> list[DataType]:
         """Record a global redirect, and whether it merges a model, then redirect every user and return them."""
         self.redirects.append((old_reference, new_reference, merged))
-        return super().redirect_reference_users(  # ty: ignore[deprecated]
-            old_reference, new_reference, merged=merged, keeps_named=keeps_named
-        )
+        return super().redirect_reference_users(old_reference, new_reference, merged=merged, keeps_named=keeps_named)
 
     def redirect_model_reference_users(
         self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False
     ) -> None:
         """Record a redirect scoped to some models, which merges a model, then redirect their users."""
         self.redirects.append((model.reference, new_reference, True))
-        super().redirect_model_reference_users(  # ty: ignore[deprecated]
-            model, models, new_reference, keeps_named=keeps_named
-        )
+        super().redirect_model_reference_users(model, models, new_reference, keeps_named=keeps_named)
 
 
 @dataclass(slots=True)

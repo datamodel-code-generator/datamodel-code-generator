@@ -57,6 +57,7 @@ from datamodel_code_generator.model._render_plan import CallArguments as _FieldA
 from datamodel_code_generator.model.base import (
     _default_state,
     _field_render,
+    _model_of_reference,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
@@ -133,11 +134,6 @@ class _PydanticFieldRenderPlan(NamedTuple):
 
 
 _EMPTY_FIELD_TEXT = _PydanticFieldRenderPlan("", None, (), None)
-
-
-def _model_of_reference(reference: Reference) -> DataModel | None:
-    """Return the model a reference names, as the written output holds it, or None when it names no model."""
-    return source if isinstance(source := reference.source, DataModel) else None
 
 
 def _put_discriminator_last(args: _FieldArguments) -> None:

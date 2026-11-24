@@ -139,6 +139,7 @@ from datamodel_code_generator.model.base import (
     _bind_bare_loads,
     _build_for_target,
     _has_root_field_constraints,
+    _model_of_reference,
     _model_package_class,
     _set_nested_model_default_factory_order,
     forget_model_memos,
@@ -658,7 +659,7 @@ class _ModelShapeSource:
 
     def model_of(self, reference: Reference) -> DataModel | None:  # noqa: PLR6301
         """Return the model a reference names, or None when it names no model."""
-        return source if isinstance(source := reference.source, DataModel) else None
+        return _model_of_reference(reference)
 
     def identity(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
         """Return what tells apart the models that references name: the model key."""
@@ -715,7 +716,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _model_resolver_factory = staticmethod(ModelResolver)
     _copy_model_field = staticmethod(partial(_copy_data_model_field))
     _copy_model_type = staticmethod(partial(_copy_data_type))
-    _copy_inherited_field = staticmethod(partial(_copy_resolved_inherited_field))
 
     _config_class_name: ClassVar[str] = "ParserConfig"
     _cache_local_sources_during_parse: ClassVar[bool] = False
@@ -738,6 +738,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _graph_builder(self) -> GraphBuilder:
         """The capability through which the passes change the graph of the generation store."""
         return self.generation_store.builder()
+
+    def _copy_inherited_field(
+        self, field: DataModelFieldBase, inherited_field: DataModelFieldBase, **options: Any
+    ) -> DataModelFieldBase | None:
+        """Resolve a deferred inherited field without copying its reference graph, writing through the builder."""
+        return _copy_resolved_inherited_field(self._graph_builder, field, inherited_field, **options)
 
     @property
     def _tag_capabilities(self) -> TagCapabilities:
