@@ -150,7 +150,7 @@ jobs:
             shape-compositions-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-
             shape-compositions-
       - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+        run: uv sync --locked --python 3.14.6 --extra all --group dev
       - name: Draw compositions against the base release
         env:
           BASE: ${{ steps.base.outputs.tag }}
@@ -212,7 +212,7 @@ jobs:
           cache-suffix: behaviour-diff
           save-cache: false
       - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+        run: uv sync --locked --python 3.14.6 --extra all --group dev
       - name: Record the catalog of the fixtures' default cells
         run: >-
           .venv/bin/python scripts/behaviour_diff.py catalog "$GITHUB_SHA.json.gz" "$GITHUB_SHA"

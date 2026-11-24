@@ -1,7 +1,14 @@
 version: 2
 updates:
-- package-ecosystem: pip
+- package-ecosystem: uv
   directory: "/"
+  cooldown:
+    default-days: 3
+    # The owner's own tool: its pins follow its releases the same day, as pyproject.toml exempts it from exclude-newer.
+    exclude:
+    - heki
+  # Move only uv.lock: the ranges in pyproject.toml are what users install.
+  versioning-strategy: lockfile-only
   schedule:
     interval: daily
     time: "10:00"
@@ -15,6 +22,8 @@ updates:
   - dependency-name: isort
 - package-ecosystem: github-actions
   directory: "/"
+  cooldown:
+    default-days: 3
   schedule:
     interval: weekly
     day: thursday
@@ -27,6 +36,8 @@ updates:
       - "*"
 - package-ecosystem: docker
   directory: "/"
+  cooldown:
+    default-days: 3
   schedule:
     interval: weekly
     day: thursday

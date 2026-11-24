@@ -2537,7 +2537,7 @@ jobs:
         run: |
           set -euo pipefail
           pin="$(uv run --no-project --python 3.13 python scripts/check_ratchets.py --ruff-pin)"
-          uv run --no-project --python 3.13 --with "ruff==${pin}" \
+          uv run --no-project --python 3.13 --with "ruff==${pin}" --exclude-newer-package ruff=false \
             python scripts/check_ratchets.py --base "$BASE" --enforce
 
   behaviour-gate:
@@ -2600,7 +2600,7 @@ jobs:
           if git diff --quiet "$BASE" HEAD -- src docs/data/migration/unreleased scripts; then
             echo "src/, change records and scripts/ unchanged since the merge base: every cell is equal"; exit 0
           fi
-          uv sync --frozen --python 3.14.6 --extra all --group dev
+          uv sync --locked --python 3.14.6 --extra all --group dev
           .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --shard "$GATE_SHARD" --check -j 4 \
             --verdicts "$RUNNER_TEMP/verdicts.json"
       - name: Check the change records with the merge base's copy of the check

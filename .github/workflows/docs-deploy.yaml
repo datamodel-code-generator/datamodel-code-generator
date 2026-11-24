@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: 3.14.6
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Build the upgrade guide
         run: uv run python scripts/build_migration_docs.py
       - name: Build the preset pages
@@ -69,7 +69,7 @@ jobs:
           # This step executes the checked-out code, so keep the source fixed to the trusted upstream.
           git clone --depth 1 --single-branch --branch main -- https://github.com/datamodel-code-generator/datamodel-code-generator.git "$main_checkout"
           pushd "$main_checkout"
-          uv sync
+          uv sync --locked
           uv build --wheel --out-dir docs/assets/playground/generated .
           uv run --python 3.14.6 --group playground python scripts/build_playground_assets.py
           popd

@@ -7,3 +7,4 @@ source-rules: none missing
 compiled-templates: none missing
 heki-contracts: none missing
 heki: none missing
+zizmor: none missing

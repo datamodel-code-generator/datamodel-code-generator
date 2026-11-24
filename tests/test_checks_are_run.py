@@ -61,7 +61,18 @@ AMBIGUOUS = re.compile(r"""(["'])[;&|]+\1|\\[;&|]|[^\s;&|]#""")
 """Text the lexer reads otherwise than the shell: a quoted or escaped separator, a ``#`` inside a word."""
 SHELL_PREFIXES = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "time", "exec"})
 ASSIGNMENT = re.compile(r"[A-Za-z_]\w*=")
-UV_RUN_VALUES = frozenset({"--python", "-p", "--with", "-w", "--project", "--directory", "--group", "--extra"})
+UV_RUN_VALUES = frozenset({
+    "--exclude-newer-package",
+    "--python",
+    "-p",
+    "--with",
+    "-w",
+    "--project",
+    "--directory",
+    "--group",
+    "--only-group",
+    "--extra",
+})
 """The options of ``uv run`` that take a value; a value-taking option not listed leaves the program unknown."""
 PYTHON = re.compile(r"python(?:\d+(?:\.\d+)*)?")
 PYTHON_OPTIONS = {"-I": 0, "-u": 0, "-B": 0, "-E": 0, "-s": 0, "-S": 0, "-O": 0, "-X": 1, "-W": 1}

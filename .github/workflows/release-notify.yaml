@@ -1,7 +1,8 @@
 name: Release Notification
 
 on:
-  workflow_run:
+  # Publish runs only on a release tag push or a maintainer's dispatch; the job has no checkout and runs no PR code.
+  workflow_run:  # zizmor: ignore[dangerous-triggers] starts only after a trusted Publish run
     workflows: ["Publish"]
     types: [completed]
 

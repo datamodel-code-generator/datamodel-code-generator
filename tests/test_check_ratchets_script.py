@@ -40,7 +40,7 @@ BASE = {
     "pyproject.toml": PYPROJECT + '\n[tool.ty]\nrules.deprecated = "error"\n',
     ".pre-commit-config.yaml": """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.0.0
+  rev: 0123456789abcdef0123456789abcdef01234567  # frozen: v0.0.0
   hooks:
   - id: ruff-format
   - id: ruff

@@ -1,7 +1,8 @@
 name: Behaviour Record
 
 on:
-  workflow_run:
+  # Publish runs only on a release tag push or a maintainer's dispatch; the jobs check out that tag, never PR code.
+  workflow_run:  # zizmor: ignore[dangerous-triggers] starts only after a trusted Publish run
     workflows: ["Publish"]
     types: [completed]
   workflow_dispatch:
@@ -97,7 +98,7 @@ jobs:
         with:
           enable-cache: false
       - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --python-preference only-managed --extra all --group dev
+        run: uv sync --locked --python 3.14.6 --python-preference only-managed --extra all --group dev
       - name: Wait for the release on PyPI
         env:
           RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
@@ -144,7 +145,7 @@ jobs:
         with:
           enable-cache: false
       - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --python-preference only-managed --extra all --group dev
+        run: uv sync --locked --python 3.14.6 --python-preference only-managed --extra all --group dev
       - name: Download the shard records
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

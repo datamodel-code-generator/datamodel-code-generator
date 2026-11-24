@@ -40,10 +40,9 @@ def test_analysis_fast_path_only_skips_claude_and_validation() -> None:
     assert "gh api --paginate" in prepare_diff_script
     assert 'previous_path: (if .status == "renamed" then .previous_filename else null end)' in prepare_diff_script
     assert steps_by_name["Prepare release analysis route"]["id"] == "analysis-route"
-    assert (
-        '--expected-changed-files "${{ needs.resolve-pr.outputs.changed_files }}"'
-        in steps_by_name["Prepare release analysis route"]["run"]
-    )
+    route = steps_by_name["Prepare release analysis route"]
+    assert route["env"]["EXPECTED_CHANGED_FILES"] == "${{ needs.resolve-pr.outputs.changed_files }}"
+    assert '--expected-changed-files "$EXPECTED_CHANGED_FILES"' in route["run"]
     assert steps_by_name["Run Claude Code Analysis"]["if"] == ("steps.analysis-route.outputs.requires_claude == 'true'")
     assert steps_by_name["Parse Claude output"]["if"] == "steps.analysis-route.outputs.requires_claude == 'true'"
     assert "if" not in steps_by_name["Upload analysis artifact"]
@@ -112,7 +111,7 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
                 "analyze_checkout": analysis_steps["Checkout repository"]["with"],
                 "analyze_verify_checkout": analysis_steps["Verify trusted checkout"],
                 "diff_env": analysis_steps["Prepare exact PR diff"]["env"],
-                "route": analysis_steps["Prepare release analysis route"]["run"],
+                "route": {key: analysis_steps["Prepare release analysis route"][key] for key in ("env", "run")},
                 "validator_pr": analysis_steps["Parse Claude output"]["env"]["PR_NUMBER"],
                 "update_needs": update["needs"],
                 "update_env": update["env"],
