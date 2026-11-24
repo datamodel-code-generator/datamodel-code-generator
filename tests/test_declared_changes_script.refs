@@ -7,6 +7,9 @@ a later layer deletes the record of a source-added reference	declared_changes_sc
 a later layer extends a crash-fix record without cells	declared_changes_script/declared_changes_check[a later layer extends a crash-fix record without cells].txt
 a later layer extends a record that extends another	declared_changes_script/declared_changes_check[a later layer extends a record that extends another].txt
 a later layer extends the lower record	declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
+a push to main of a src change a harness record covers, then a test-only change	declared_changes_script/declared_changes_check[a push to main of a src change a harness record covers, then a test-only change].txt
+a push to main of a src change, then a test-only change a harness record covers	declared_changes_script/declared_changes_check[a push to main of a src change, then a test-only change a harness record covers].txt
+a push to main of a test-only change, then a src change a harness record covers	declared_changes_script/declared_changes_check[a push to main of a test-only change, then a src change a harness record covers].txt
 a record changes its category over covered models	declared_changes_script/declared_changes_check[a record changes its category over covered models].txt
 a shipped fragment edited	declared_changes_script/declared_changes_check[a shipped fragment edited].txt
 a source-added reference is backfilled	declared_changes_script/declared_changes_check[a source-added reference is backfilled].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
@@ -64,6 +67,7 @@ split of a shared unit	declared_changes_script/declared_changes_check[split of a
 stamp pending	declared_changes_script/declared_changes_check[stamp pending].txt
 storage renamed, content kept	declared_changes_script/declared_changes_check[storage renamed, content kept].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
 test renamed: a move	declared_changes_script/declared_changes_check[test renamed_ a move].txt
+the head merges a newer commit of main	declared_changes_script/declared_changes_check[the head merges a newer commit of main].txt	= declared_changes_script/declared_changes_check[harness on a src change].txt
 tree member changes	declared_changes_script/declared_changes_check[tree member changes].txt
 [test_declared_changes_check_in_ci]
 no file of the check changes	declared_changes_script/declared_changes_check_in_ci[no file of the check changes].txt

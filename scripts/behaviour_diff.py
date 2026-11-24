@@ -616,7 +616,7 @@ def opt_in_reason(args: list[str], inventory: dict[str, list[str] | None]) -> st
 
 def changed_files(candidate: Candidate, base: str) -> list[str]:
     """Return the files under tests/data that changed between the release and the candidate."""
-    return changed_paths(candidate, base, ("tests/data",))
+    return changed_paths(candidate.repo, base, candidate.revision, ("tests/data",))
 
 
 def added_files(candidate: Candidate, base: str, directory: str) -> list[str]:
@@ -1246,15 +1246,16 @@ def _git_names(repo: Path, *args: str) -> list[str]:
     return [name for name in compare_release.git(repo, *args).stdout.split("\0") if name]
 
 
-def changed_paths(candidate: Candidate, base: str, paths: Sequence[str]) -> list[str]:
-    """Return the files below `paths` that differ between a revision and the candidate.
+def changed_paths(repo: Path, base: str, revision: str | None, paths: Sequence[str]) -> list[str]:
+    """Return the files below `paths` that differ between two revisions of a repository (None: its checkout).
 
     A checkout counts its uncommitted and untracked files too, so a local run sees what CI will see after a commit.
     """
-    revision = [candidate.revision] if candidate.revision else []
-    names = _git_names(candidate.repo, "diff", "--name-only", "--no-renames", "-z", base, *revision, "--", *paths)
-    if not candidate.revision:
-        names += _git_names(candidate.repo, "ls-files", "-z", "--others", "--exclude-standard", "--", *paths)
+    names = _git_names(
+        repo, "diff", "--name-only", "--no-renames", "-z", base, *([revision] if revision else []), "--", *paths
+    )
+    if not revision:
+        names += _git_names(repo, "ls-files", "-z", "--others", "--exclude-standard", "--", *paths)
     return sorted(set(names))
 
 
@@ -1369,9 +1370,9 @@ def plan_records(ns: argparse.Namespace, candidate: Candidate) -> Plan:
         before, _ = read_fragments(fragment_texts(repo, base, candidate.root), strict=False)
         tag_commit = compare_release.commit_of(f"refs/tags/{tag}", repo) or None
         plan = Plan(base, release=False, tag=tag, tag_commit=tag_commit, head=head, before=before)
-        plan.changed = changed_paths(candidate, base, ("tests/data",))
-        plan.src = bool(changed_paths(candidate, base, ("src",)))
-        plan.oracle = bool(changed_paths(candidate, base, ORACLE_FILES))
+        plan.changed = changed_paths(repo, base, candidate.revision, ("tests/data",))
+        plan.src = bool(changed_paths(repo, base, candidate.revision, ("src",)))
+        plan.oracle = bool(changed_paths(repo, base, candidate.revision, ORACLE_FILES))
         added = [record for record_id, record in head.items() if record_id not in before]
         problems = [
             problem for record_id, found in head_problems.items() if record_id not in before for problem in found
@@ -1828,29 +1829,48 @@ def stored_label_problem(
 def stored_problems(gate: Gate) -> list[str]:
     """Return the stored labels of a src PR whose proof fails: an `output-text` record's covers, a `harness` record's.
 
-    The labels are those of the PR's `output-text` records, and those a `harness` record adds to its covers; the
-    verdict on each `harness` label that needs the proof goes to `Gate.verdicts` by its base and head contents.
+    The PR is each change from the base as main takes them (`declared_changes.change_steps`), so a push of several
+    pull requests to main is judged as each of them was, and a change that leaves src/ alone needs no proof.
     """
     plan, candidate = gate.plan, gate.candidate_info
     if plan is None or plan.release or not plan.src or plan.base is None:
         return []
+    repo, problems = candidate.repo, []
+    records = {plan.base: plan.before, candidate.revision: plan.head}
+    for old, new in declared_changes.change_steps(repo, plan.base, candidate.revision):
+        for revision in {old, new} - records.keys():
+            records[revision] = read_fragments(fragment_texts(repo, revision, candidate.root), strict=False)[0]
+        if changed_paths(repo, old, new, ("src",)):
+            problems += step_problems(gate, (old, new), records[old], records[new])
+    return problems
+
+
+def step_problems(
+    gate: Gate, revisions: tuple[str, str | None], before: dict[str, Record], head: dict[str, Record]
+) -> list[str]:
+    """Return the stored labels of one src change whose proof fails, by the records `before` and `head` it.
+
+    The labels are those of the `output-text` records the change adds, and those a `harness` record adds to its
+    covers; the verdict on each `harness` label that needs the proof goes to `Gate.verdicts` by its base and head
+    contents. A revision None is the candidate's checkout.
+    """
     labels: list[tuple[str, Category]] = [
         (label, Category.OUTPUT_TEXT)
-        for record in plan.judged
-        if record.category == Category.OUTPUT_TEXT
-        for label in record.covers
+        for record_id, record in head.items()
+        if record_id not in before
+        and (resolved := resolved_record(record, head)[0]) is not None
+        and resolved.category == Category.OUTPUT_TEXT
+        for label in resolved.covers
     ]
-    for record_id, record in plan.head.items():
-        target, _ = resolved_record(record, plan.head)
+    for record_id, record in head.items():
+        target, _ = resolved_record(record, head)
         if target is not None and target.category == Category.HARNESS:
-            known = set(plan.before[record_id].covers) if record_id in plan.before else set()
+            known = set(before[record_id].covers) if record_id in before else set()
             labels += [(label, Category.HARNESS) for label in record.covers if label not in known]
     if not labels:
         return []
-    sides = (
-        declared_changes.Side(candidate.repo, plan.base),
-        declared_changes.Side(candidate.repo, candidate.revision),
-    )
+    repo = gate.candidate_info.repo
+    sides = (declared_changes.Side(repo, revisions[0]), declared_changes.Side(repo, revisions[1]))
     problems = []
     for label, category in dict.fromkeys(labels):
         problem = stored_label_problem(gate, label, category, sides)
