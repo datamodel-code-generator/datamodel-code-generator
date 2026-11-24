@@ -723,7 +723,7 @@ APPLY_FIELD_TYPE_OVERRIDES = PassDecl(
     after=(
         After("remove_overridden_models", "overrides apply to the models kept after model-level overrides (#4958)"),
     ),
-    trigger=Trigger("--type-overrides gives a key", _facts(Fact.TYPE_OVERRIDES)),
+    condition="--type-overrides gives a key",
 )
 TYPE_DICT_KEYS_BY_ROOT_TYPES = PassDecl(
     "type_dict_keys_by_root_types",
@@ -776,7 +776,7 @@ APPLY_BASE_CLASS_TYPE_OVERRIDES = PassDecl(
             "type_dict_keys_by_root_types", "both add module imports; base overrides come after field types are final"
         ),
     ),
-    trigger=Trigger("--type-overrides gives a model-level key", _facts(Fact.TYPE_OVERRIDES)),
+    condition="--type-overrides gives a model-level key",
 )
 
 FOLLOW_HIDING_FIELD_RENAMES = PassDecl(

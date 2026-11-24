@@ -348,7 +348,7 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     PassSpec(
         "apply_field_type_overrides",
         lambda self, s: modules.apply_field_type_overrides(self, s.model_list),
-        trigger=lambda self, _: bool(self._type_override_imports),
+        when=lambda self, _: bool(self.type_overrides),
     ),
     PassSpec("type_dict_keys_by_root_types", late(modules.type_dict_keys_by_root_types)),
     PassSpec(
@@ -363,7 +363,7 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     PassSpec(
         "apply_base_class_type_overrides",
         lambda self, s: modules.apply_base_class_type_overrides(self, s.model_list),
-        trigger=lambda self, _: bool(self._model_type_override_imports),
+        when=lambda self, _: bool(self._model_type_override_imports),
     ),
 )
 """The passes of ``_process_single_module``, for one output module."""

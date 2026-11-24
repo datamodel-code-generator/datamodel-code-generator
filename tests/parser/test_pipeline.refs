@@ -28,3 +28,10 @@ msgspec-tree-reuse	parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt
 openapi-modules	parser/pipeline/trace_matches_golden[openapi-modules].txt
 renamed-sequence-roots	parser/pipeline/trace_matches_golden[renamed-sequence-roots].txt
 typed-dict-import-overrides	parser/pipeline/trace_matches_golden[typed-dict-import-overrides].txt
+[test_when_names_only_options]
+a-helper-of-a-module	parser/pipeline/when_names_only_options[a-helper-of-a-module].txt
+a-listed-pass	parser/pipeline/when_names_only_options[a-listed-pass].txt
+a-listed-pass-that-waits-for-options	parser/pipeline/when_names_only_options[a-listed-pass-that-waits-for-options].txt
+a-produced-length	parser/pipeline/when_names_only_options[a-produced-length].txt
+a-produced-record	parser/pipeline/when_names_only_options[a-produced-record].txt
+options-only	parser/pipeline/when_names_only_options[options-only].txt	= parser/pipeline/when_names_only_options[a-listed-pass].txt

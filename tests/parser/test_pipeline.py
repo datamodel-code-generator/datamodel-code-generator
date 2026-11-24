@@ -17,6 +17,7 @@ from datamodel_code_generator.model.pydantic_v2 import BaseModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from scripts import check_pass_pipeline
+from scripts._source_model import SourceModule
 from tests.conftest import CHECK_FACT_FINALITY_ENV, assert_output
 
 if TYPE_CHECKING:
@@ -252,6 +253,33 @@ def test_check_order(decls: list[check_pass_pipeline.PassDecl], computed: bool) 
             *(f"provisional read: {read}\n" for read in result.provisional_reads),
         ])
     )
+
+
+WHEN_CASES = {
+    "options-only": (
+        (
+            'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations)\n'
+            'PassSpec("b", f, when=lambda self, _: modules.renames_hiding_fields(self) and self.reuse_scope)\n'
+            'PassSpec("c", f, when=lambda *_: _PYDANTIC_FLOORS.get() is not None)\n'
+            'PassSpec("d", f, when=_writes_unique_sets_in_modules)\n'
+        ),
+        (),
+    ),
+    "a-produced-record": ('PassSpec("a", f, when=lambda self, s: self.use_annotated and s.renamed_models)\n', ()),
+    "a-produced-length": ('PassSpec("a", f, when=lambda _, s: len(s.module_models) > 1)\n', ()),
+    "a-helper-of-a-module": ('PassSpec("a", f, when=imports.import_names_class)\n', ()),
+    "a-listed-pass": ('PassSpec("a", f, when=lambda self, _: bool(self._kept_parent_roots))\n', ("a",)),
+    "a-listed-pass-that-waits-for-options": ('PassSpec("a", f, when=lambda self, _: self.reuse_model)\n', ("a",)),
+}
+"""Tables of one pass each, and the passes ``WHEN_PRODUCED`` lists."""
+
+
+@pytest.mark.parametrize(("table", "produced"), WHEN_CASES.values(), ids=WHEN_CASES)
+def test_when_names_only_options(table: str, produced: tuple[str, ...]) -> None:
+    """A ``when`` naming a produced fact is reported unless its pass is listed; a listed pass must still name one."""
+    problems = check_pass_pipeline.when_problems(SourceModule(table), produced)
+
+    assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
 
 
 class WideWriter(check_pass_pipeline.DecisionWriter, Protocol):
