@@ -23,16 +23,18 @@ from datamodel_code_generator.parser._phases import DecisionPass, live_model_of
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
+    from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
 __all__ = ["OMIT_UNTAKEN_UNION_CONSTRAINTS"]
 
 
 def _keeps_check(  # noqa: PLR0917
     facts: FinalFacts,
-    model_of: Callable[[ReferenceView], ModelView | None],
-    data_type: DataTypeView,
+    model_of: Callable[[Reference], DataModel | None],
+    data_type: DataType,
     keyword: str,
     value: object,
     seen: frozenset[int] = frozenset(),
@@ -67,16 +69,16 @@ def _keeps_check(  # noqa: PLR0917
 
 def _members_constrained_in_place(
     facts: FinalFacts,
-    model_of: Callable[[ReferenceView], ModelView | None],
-    data_type: DataTypeView,
+    model_of: Callable[[Reference], DataModel | None],
+    data_type: DataType,
     untaken: Mapping[str, object],
-) -> list[tuple[DataTypeView, object]] | None:
+) -> list[tuple[DataType, object]] | None:
     """Return each member of ``data_type`` that loses a check of ``untaken`` with the type that holds it in place.
 
     A member keeps a check as ``_keeps_check`` says; one that loses some is written with them where it is a plain
     string (``FinalFacts.constrained_member``). None when a member that loses a check is anything else.
     """
-    planned: list[tuple[DataTypeView, object]] = []
+    planned: list[tuple[DataType, object]] = []
     pending = [data_type]
     while pending:
         current = pending.pop()

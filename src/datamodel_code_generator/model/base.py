@@ -161,6 +161,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DefaultState, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
+    from datamodel_code_generator.model._model_form import ModelForm
     from datamodel_code_generator.model._render_plan import (
         NestedFactoryMetadata,
         Omitted,
@@ -168,7 +169,6 @@ if TYPE_CHECKING:
         RenderInputs,
         RenderReady,
     )
-    from datamodel_code_generator.model._views import FieldView, ModelForm
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -2348,7 +2348,7 @@ def _classify_field_assignment(
     return classify_assignment(_assignment_inputs(field, row, written))
 
 
-def _field_source_name(field: FieldView) -> str | None:
+def _field_source_name(field: DataModelFieldBase) -> str | None:
     """Return the name the schema gives the field: its original name, else its name."""
     return field.original_name if field.original_name is not None else field.name
 

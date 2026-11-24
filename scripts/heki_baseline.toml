@@ -6592,14 +6592,14 @@ count = 1
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "required_fields_a_default_lacks"
 rule_code = "MUT203"
-target = "datamodel_code_generator.model._views.DataTypeView._[!_]*"
+target = "datamodel_code_generator.reference._BaseModel._[!_]*"
 count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "required_fields_a_default_lacks"
 rule_code = "MUT204"
-target = "datamodel_code_generator.model._views.DataTypeView._[!_]*"
+target = "datamodel_code_generator.reference._BaseModel._[!_]*"
 count = 1
 
 [[entries]]
@@ -7824,7 +7824,7 @@ count = 1
 path = "src/datamodel_code_generator/parser/_phases.py"
 qualname = "_DecisionWriter.write_additional_properties_sets"
 rule_code = "MUT201"
-target = "datamodel_code_generator.model._views.ModelView._[!_]*"
+target = "datamodel_code_generator.model.base.DataModel._[!_]*"
 count = 1
 
 [[entries]]

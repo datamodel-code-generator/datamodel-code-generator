@@ -2,7 +2,6 @@ datamodel_code_generator.parser._pipeline:Runner.run_steps <- tests.checks.parse
 datamodel_code_generator.parser._pipeline:Runner.run_pass <- tests.checks.parse.run_pass
 datamodel_code_generator.parser._pipeline:Runner.run_decision <- tests.checks.parse.run_decision
 datamodel_code_generator.parser.base:Parser._process_single_module <- tests.checks.parse.process_single_module (and on each parser class that overrides it)
-datamodel_code_generator.parser.generation:GenerationStore.seal_facts <- tests.checks.parse.seal_facts
 datamodel_code_generator.parser.generation:GenerationStore.refresh_now <- tests.checks.model_graph.refresh_now
 datamodel_code_generator.parser.generation:GenerationStore.model_key <- tests.checks.model_graph.model_key
 datamodel_code_generator.parser._passes.modules:collapse_module_root_models <- tests.checks.model_graph.collapse_module_root_models
@@ -22,13 +21,6 @@ datamodel_code_generator.parser._schema_graph:SchemaGraphBuilder.pointer_value <
 datamodel_code_generator.parser._schema_documents:prepare_schema_resources <- tests.checks.schema_graph.prepare_schema_resources
 datamodel_code_generator.parser.openapi_scope:ApiOpenAPIParser._site_facts <- tests.checks.schema_graph.site_facts
 datamodel_code_generator._site_facts:site_facts_of <- tests.checks.schema_graph.site_facts_of
-datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null
-datamodel_code_generator.parser._phases:_DecisionWriter.drop_field_constraints <- tests.checks.parse.drop_field_constraints
-datamodel_code_generator.parser._phases:_DecisionWriter.mark_serialized_as_any <- tests.checks.parse.mark_serialized_as_any
-datamodel_code_generator.parser._phases:_DecisionWriter.write_sets <- tests.checks.parse.write_sets
-datamodel_code_generator.parser._phases:_DecisionWriter.omit_default <- tests.checks.parse.omit_default
-datamodel_code_generator.parser._phases:_DecisionWriter.merge_str_like_members <- tests.checks.parse.merge_str_like_members
-datamodel_code_generator.parser._phases:_DecisionWriter.write_additional_properties_sets <- tests.checks.parse.write_additional_properties_sets
 datamodel_code_generator.parser._passes._shared:get_inherited_constructor_info <- tests.checks.parse.get_inherited_constructor_info
 datamodel_code_generator.parser.base:Parser._get_module_future_imports <- tests.checks.module_imports.get_module_future_imports
 datamodel_code_generator.parser._imports_plan:ModuleImportLedger.add_name <- tests.checks.module_imports.add_name

@@ -103,7 +103,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
-    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
@@ -1340,15 +1339,14 @@ class GenerationStore:  # noqa: PLR0904
     def seal_facts(  # noqa: PLR6301
         self,
         modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
-        member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
+        member_keywords: Callable[[DataType, Callable[[Reference], DataModel | None]], frozenset[str] | None],
         options: DecisionOptions,
-        constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None],
+        constrained_member: Callable[[DataType, Mapping[str, object]], object | None],
     ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
-        ``member_keywords``, and the type that holds keywords in place of a member through ``constrained_member``. This
-        is the only construction of ``FinalFacts``.
+        A decision reads each model, the keywords of a union member through ``member_keywords``, and the type that holds
+        keywords in place of a member through ``constrained_member``. This is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(

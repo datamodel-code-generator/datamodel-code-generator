@@ -16,8 +16,6 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
   their issue, and satisfy the order rule, which computes the order the registry lists them in;
 * ``FinalFacts`` is built in one place, ``GenerationStore.seal_facts``;
-* every member of the views of ``model/_views.py`` reads an ``ATTRIBUTE_FACTS`` row of its class that holds a fact
-  final at B1, or that holds no fact (identity), unless ``VIEW_ACCESSORS`` lists it;
 * no code outside the body of ``Parser`` reaches a name-mangled member of ``Parser``, which the tables call;
 * every ``warn()`` of the parser, model and type modules whose ``stacklevel`` reaches past its caller is listed in
   ``DEEP_WARNINGS`` with the frame it names, so that a warning the pipeline would attribute to its own frames shows.
@@ -42,8 +40,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
-from typing_extensions import get_protocol_members
-
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 PACKAGE = SRC / "datamodel_code_generator"
@@ -53,12 +49,6 @@ for path in (SRC, ROOT):
         sys.path.insert(0, str(path))
 
 from datamodel_code_generator.__main__ import main as generate_main  # noqa: E402
-from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
-    DataTypeView,
-    FieldView,
-    ModelView,
-    ReferenceView,
-)
 from datamodel_code_generator.parser._facts import Phase  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._passes import _tables  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._passes._tables import PIPELINE  # noqa: E402, PLC2701
@@ -72,7 +62,7 @@ from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
 )
 from datamodel_code_generator.parser.base import Parser  # noqa: E402
 from scripts._source_model import SourceModule, nested_name  # noqa: E402
-from scripts.fact_tables import ATTRIBUTE_FACTS, Fact, RenderFact  # noqa: E402
+from scripts.fact_tables import Fact, RenderFact  # noqa: E402
 from scripts.pass_decls import (  # noqa: E402
     BOUNDARY_BEFORE,
     DECISION_DECLS,
@@ -84,7 +74,6 @@ from scripts.pass_decls import (  # noqa: E402
     PassKind,
     Scope,
 )
-from tests.checks.finality import _reads_render_fact  # noqa: E402, PLC2701
 from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: E402
 
 if TYPE_CHECKING:
@@ -441,72 +430,6 @@ def registry_problems() -> list[str]:
     ]
 
 
-VIEW_OWNERS: dict[type[Any], str] = {
-    DataTypeView: "DataType",
-    FieldView: "DataModelFieldBase",
-    ModelView: "DataModel",
-    ReferenceView: "Reference",
-}
-"""The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
-VIEW_ACCESSORS = {
-    "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
-    "DataTypeView._renders_none": (
-        "the type, the name a type override gives it, the reference, the literals and the container kind of the type"
-        " and of its one member, final at B1: the names import binding and forward references give later go to types"
-        " that name a model"
-    ),
-    "DataTypeView._writes_nothing_of_its_own": (
-        "the type, the name a type override gives it, the reference and the container kind, final at B1: the names"
-        " import binding and forward references give later go to types that name a model"
-    ),
-    "FieldView.nullable_without_default": (
-        "the nullability the parse records without the default (NULLABLE_WITHOUT_DEFAULT_KEY), else NULLABLE, final"
-        " at B1"
-    ),
-    "ModelView.effective_fields": (
-        "the fields of the model and of its bases in C3 order (BASES, FIELD_SET), final at B1"
-    ),
-    "ModelView.additional_properties_type": (
-        "the type of the additional properties that the parser stores for the settings of the class (TypedDict"
-        " extra_items), whose nodes are field types, final at B1"
-    ),
-    "FieldView.union_sibling_constraints": "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
-    "FieldView.written_constraints": "the CONSTRAINTS its call writes for its field type, final at B1",
-    "ModelView.form": "the model kind, final at B1",
-    "ModelView.has_length": (
-        "the sequence interface a root model takes where it is parsed (L1) and the container kind of its root type,"
-        " final at B1"
-    ),
-    "ModelView.holds_null": "the model kind, and the nullability of its root type or its enum members, final at B1",
-    "ModelView.set_item_hash": (
-        "the model kind, the dataclass decorator, the struct options of its chain and the class and field types of a"
-        " frozen Pydantic class, final at B1"
-    ),
-    "ModelView.value_base": "the model kind and the base classes of an enum, final at B1",
-}
-"""The view members that read no row of their own, each with what it reads."""
-
-
-def view_problems() -> list[str]:
-    """Return the view members that read a render fact, read no row, or that ``VIEW_ACCESSORS`` lists for nothing."""
-    rows = {(row.owner, row.attribute): row for row in ATTRIBUTE_FACTS}
-    problems: list[str] = []
-    members: set[str] = set()
-    for view, owner in VIEW_OWNERS.items():
-        for member in sorted(get_protocol_members(view)):
-            members.add(name := f"{view.__name__}.{member}")
-            if name in VIEW_ACCESSORS:
-                continue
-            if (row := rows.get((owner, member))) is None:
-                problems.append(f"{name} reads no row of {owner}: list it in VIEW_ACCESSORS with what it reads")
-            elif _reads_render_fact(row):
-                problems.append(f"{name} reads a render fact ({', '.join(fact.name for fact in row.facts)})")
-    problems.extend(
-        f"VIEW_ACCESSORS lists {name}, which no view has" for name in sorted(VIEW_ACCESSORS.keys() - members)
-    )
-    return problems
-
-
 FINAL_FACTS_SITE = "parser/generation.py:GenerationStore.seal_facts"
 """The one place that builds ``FinalFacts``."""
 
@@ -705,7 +628,6 @@ def main(argv: list[str] | None = None) -> int:
         *table_problems(),
         *registry_problems(),
         *final_facts_problems(),
-        *view_problems(),
         *mangling_problems(),
         *warning_problems(),
     ]

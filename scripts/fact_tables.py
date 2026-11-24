@@ -4,8 +4,8 @@
 ``scripts/check_generation_store_usage.py`` reads this module with ``ast`` (it never imports the package), so every
 row is a literal ``AttributeFact(...)`` call whose arguments are strings, tuples, ``None`` or members of the enums
 below and of ``Phase``, which the generation store enters and ``parser/_facts.py`` defines. Later readers: heki's
-contracts (``scripts/build_heki_contracts.py``), the write guards of the finality check (which attributes to guard per
-class), the finality fingerprints (the ``fact`` rows), the decision phase (what ``FinalFacts`` exposes) and the Fact
+contracts (``scripts/build_heki_contracts.py``, among them the render facts no decision reads), the write guards of the
+finality check (which attributes to guard per class), the finality fingerprints (the ``fact`` rows) and the Fact
 Finality table of ``docs/architecture.md``.
 
 Columns of a row:
@@ -34,6 +34,10 @@ and the record of where a type's None comes from) name ``Fact.NULLABLE`` and fre
 rendered nullability once, and only the null a msgspec field strips from its copied types is written at L7; the
 schema-validator plan cache names ``RenderFact.MODULE_CODE``, the code it holds.
 
+``DECISION_ACCESSORS`` lists the methods and properties of the graph classes that a decision may call although they read
+render facts, each with what it reads, all of it final at B1; ``scripts/build_heki_contracts.py`` lets the decisions
+reach their reads.
+
 ``STORE_MEMBERS`` lists the members of the graph that only the generation store, the member's own class (a method)
 or module (an attribute) and the modules a row names may use: the methods that write the graph for the store
 operations that run them (the hooks a store operation runs and the reference mutators: ``MemberUse.CALL``), and the
@@ -53,16 +57,20 @@ from datamodel_code_generator.parser._facts import Phase  # noqa: PLC2701
 
 __all__ = [
     "ATTRIBUTE_FACTS",
+    "DECISION_ACCESSORS",
     "RENDER_FACT_FREEZE_POINTS",
     "STORE_MEMBERS",
     "Access",
     "AttributeFact",
+    "DecisionAccessor",
     "Fact",
     "FactKind",
     "FreezePoint",
     "MemberUse",
     "RenderFact",
     "StoreMember",
+    "freeze_point",
+    "holds_render_facts",
 ]
 
 
@@ -1216,6 +1224,22 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
 )
 
 
+def freeze_point(row: AttributeFact, fact: Fact | RenderFact) -> FreezePoint:
+    """Return where ``fact`` of ``row`` is final: a render fact at its point, a fact at B1 or its row's later point."""
+    if isinstance(fact, RenderFact):
+        return RENDER_FACT_FREEZE_POINTS[fact]
+    if row.frozen_at is not None and all(isinstance(item, Fact) for item in row.facts):
+        return row.frozen_at
+    return FreezePoint.B1
+
+
+def holds_render_facts(row: AttributeFact) -> bool:
+    """Return whether ``row`` holds facts and none of them is a ``Fact`` final at B1: what no decision may read."""
+    return bool(row.facts) and not any(
+        isinstance(fact, Fact) and freeze_point(row, fact) is FreezePoint.B1 for fact in row.facts
+    )
+
+
 @unique
 class MemberUse(Enum):
     """What only the generation store, the member's class or module and the modules its row names may do with it."""
@@ -1271,3 +1295,99 @@ run (``process_const``, ``set_base_class``, ...) and the reference mutators. The
 inside a store operation. The ``READ`` and ``WRITE`` rows keep the reverse edges and the loading state of a reference
 in its module; the parser asks the generation index for the users of a reference instead.
 """
+
+
+@final
+@record
+class DecisionAccessor:
+    """One row of ``DECISION_ACCESSORS``: a method or property of a graph class, by the package path of its module."""
+
+    path: str
+    owner: str
+    name: str
+    reads: str
+    """What it reads, each final at B1."""
+
+
+DECISION_ACCESSORS: tuple[DecisionAccessor, ...] = (
+    DecisionAccessor(
+        "types.py",
+        "DataType",
+        "admits_none",
+        "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
+    ),
+    DecisionAccessor(
+        "types.py",
+        "DataType",
+        "_renders_none",
+        "the type, the name a type override gives it, the reference, the literals and the container kind of the type"
+        " and of its one member, final at B1: the names import binding and forward references give later go to types"
+        " that name a model",
+    ),
+    DecisionAccessor(
+        "types.py",
+        "DataType",
+        "_writes_nothing_of_its_own",
+        "the type, the name a type override gives it, the reference and the container kind, final at B1: the names"
+        " import binding and forward references give later go to types that name a model",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModelFieldBase",
+        "nullable_without_default",
+        "the nullability the parse records without the default (NULLABLE_WITHOUT_DEFAULT_KEY), else NULLABLE, final"
+        " at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModelFieldBase",
+        "union_sibling_constraints",
+        "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModelFieldBase",
+        "written_constraints",
+        "the CONSTRAINTS its call writes for its field type, final at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModel",
+        "effective_fields",
+        "the fields of the model and of its bases in C3 order (BASES, FIELD_SET), final at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModel",
+        "additional_properties_type",
+        "the type of the additional properties that the parser stores for the settings of the class (TypedDict"
+        " extra_items), whose nodes are field types, final at B1",
+    ),
+    DecisionAccessor("model/base.py", "DataModel", "form", "the model kind, final at B1"),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModel",
+        "has_length",
+        "the sequence interface a root model takes where it is parsed (L1) and the container kind of its root type,"
+        " final at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModel",
+        "holds_null",
+        "the model kind, and the nullability of its root type or its enum members, final at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py",
+        "DataModel",
+        "set_item_hash",
+        "the model kind, the dataclass decorator, the struct options of its chain and the class and field types of a"
+        " frozen Pydantic class, final at B1",
+    ),
+    DecisionAccessor(
+        "model/base.py", "DataModel", "value_base", "the model kind and the base classes of an enum, final at B1"
+    ),
+)
+"""The members of the graph classes a decision may call although they read render facts: each reads only facts final
+at B1. ``scripts/build_heki_contracts.py`` makes them, with their overrides, the allowed callees of the decisions'
+boundary, so the reads inside count as theirs, not the decision's."""

@@ -23,7 +23,7 @@ import tomllib
 
 from scripts import build_heki_contracts, check_ratchets
 from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
-from scripts.fact_tables import MemberUse, StoreMember
+from scripts.fact_tables import ATTRIBUTE_FACTS, DecisionAccessor, MemberUse, StoreMember
 from scripts.pass_decls import DECISION_DECLS
 from tests.capabilities import needs
 
@@ -937,3 +937,98 @@ def test_decision_writes_name_a_method_of_the_writer() -> None:
     assert str(stopped.value) == (
         "DECISION_DECLS: omit_held_null writes through never_defined, which _DecisionWriter does not define"
     )
+
+
+SEEDED_DECISION_READS = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/types.py": (
+        "class DataType:\n    def __init__(self) -> None:\n"
+        "        self.type = 'str'\n        self.is_optional = False\n\n"
+        "    @property\n    def admits_none(self) -> bool:\n        return self.is_optional\n"
+    ),
+    f"{PACKAGE}/model/__init__.py": "",
+    f"{PACKAGE}/model/base.py": (
+        "from datamodel_code_generator.types import DataType\n\n\n"
+        "class DataModel:\n    def __init__(self) -> None:\n        self.class_name = 'Model'\n"
+        "        self.data_type = DataType()\n"
+    ),
+    f"{PACKAGE}/model/helpers.py": (
+        "from datamodel_code_generator.types import DataType\n\n\n"
+        "def reads_render_fact(data_type: DataType) -> bool:\n    return data_type.is_optional\n"
+    ),
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/_phases.py": (
+        "from datamodel_code_generator.model.base import DataModel\n\n\n"
+        "class _DecisionWriter:\n    def rename(self, model: DataModel) -> str:\n        return model.class_name\n"
+    ),
+    f"{PACKAGE}/parser/_held_null.py": (
+        "from datamodel_code_generator.model.base import DataModel\n"
+        "from datamodel_code_generator.model.helpers import reads_render_fact\n"
+        "from datamodel_code_generator.parser._phases import _DecisionWriter\n\n\n"
+        "def reads_facts(model: DataModel, writer: _DecisionWriter) -> object:\n"
+        "    writer.rename(model)\n    return model.data_type.type, model.data_type.admits_none\n\n\n"
+        "def direct(model: DataModel) -> bool:\n    return model.data_type.is_optional\n\n\n"
+        "def name(model: DataModel) -> str:\n    return model.class_name\n\n\n"
+        "def through_a_helper(model: DataModel) -> bool:\n    return reads_render_fact(model.data_type)\n\n\n"
+        "def untyped(data_type) -> bool:\n    return data_type.is_optional\n"
+    ),
+    f"{PACKAGE}/parser/_incomplete_defaults.py": "def decide() -> None:\n    pass\n",
+}
+"""A decision module that reads the facts of a model, the rendered nullability through an accessor and through the
+decision writer, and render facts: directly, the name of a model, through a helper of another module and on an untyped
+value."""
+SEEDED_DECISION_ROWS = [
+    replace(row, owner=owner)
+    for row in ATTRIBUTE_FACTS
+    for owner, attribute in (("DataType", "is_optional"), ("DataModel", "class_name"), ("DataType", "type"))
+    if (row.owner, row.attribute) == (owner, attribute)
+]
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_a_decision_that_reads_a_render_fact(tmp_path: Path) -> None:
+    """A decision reads only the facts final at B1: a render fact it reads, also through a helper, is a finding.
+
+    Reads inside the decision writer and an accessor ``DECISION_ACCESSORS`` lists are theirs; a read of a render
+    fact's attribute on an untyped value is one heki cannot tell, which it reports.
+    """
+    for name, text in SEEDED_DECISION_READS.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    accessors = [DecisionAccessor("types.py", "DataType", "admits_none", "the rendered nullability")]
+    contracts.write_text(
+        "\n".join(
+            build_heki_contracts.decision_contracts(repo, SEEDED_DECISION_DECLS, accessors, SEEDED_DECISION_ROWS)
+        ),
+        encoding="utf-8",
+    )
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = sorted(
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"])
+        for item in json.loads(result.stdout)
+    )
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("_held_null.py", "direct", "EFF201", "decisions-read-final-facts:reads:DataType.is_optional"),
+            ("_held_null.py", "direct", "MUT203", "DataType.is_optional"),
+            ("_held_null.py", "name", "EFF201", "decisions-read-final-facts:reads:DataModel.class_name"),
+            ("_held_null.py", "name", "MUT203", "DataModel.class_name"),
+            ("_held_null.py", "through_a_helper", "EFF201", "decisions-read-final-facts:reads:DataType.is_optional"),
+            ("_held_null.py", "untyped", "MUT206", "is_optional"),
+        ],
+    ), result.stderr

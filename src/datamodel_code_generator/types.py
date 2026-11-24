@@ -222,8 +222,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from types import ModuleType
 
-    from typing_extensions import Self
-
     from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
@@ -231,7 +229,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
-    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
+    from datamodel_code_generator.model.base import DataModel
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -624,26 +622,7 @@ def build_union(
     return data_type(data_types=kept, **values)
 
 
-class _UnionNode(Protocol):
-    """A node of a type tree as the union walk reads it: a ``DataType``, or a view of one (``DataTypeView``)."""
-
-    @property
-    def data_types(self) -> Sequence[Self]:
-        """The member or item types."""
-
-    @property
-    def _writes_nothing_of_its_own(self) -> bool:
-        """Whether the type writes no text, names no model and is no container, so only its members write."""
-
-    @property
-    def _renders_none(self) -> bool:
-        """Whether the type writes ``None``."""
-
-
-_UnionNodeT = TypeVar("_UnionNodeT", bound=_UnionNode)
-
-
-def _sole_member(members: Sequence[_UnionNodeT]) -> _UnionNodeT | None:
+def _sole_member(members: Sequence[DataType]) -> DataType | None:
     """Return the one member of a union that does not write ``None``, or None where it has another number of them.
 
     A default is read by that member (``required_fields_a_default_lacks``, the defaults deserialized where Pydantic
@@ -653,22 +632,18 @@ def _sole_member(members: Sequence[_UnionNodeT]) -> _UnionNodeT | None:
     return rest[0] if len(rest) == 1 else None
 
 
-def _union_members(data_type: _UnionNodeT) -> Sequence[_UnionNodeT]:
+def _union_members(data_type: DataType) -> Sequence[DataType]:
     """Return the members of the union a type is at its top level, or nothing when it is no union there.
 
     A container of several items is no union at its top level: it writes the union of its items inside it.
-    ``union_members`` reads it for a ``DataType``, a decision for a view of one.
     """
     if len(data_type.data_types) < 2 or data_type in CONTAINERS:  # noqa: PLR2004
         return ()
     return data_type.data_types
 
 
-def _written_union_members(data_types: Iterable[_UnionNodeT]) -> Iterator[_UnionNodeT]:
-    """Yield the members of a union as written, spreading each member that is a union at its top level.
-
-    ``written_union_members`` reads them for ``DataType`` nodes, a decision for views of them.
-    """
+def _written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the members of a union as written, spreading each member that is a union at its top level."""
     for data_type in data_types:
         if members := _union_members(data_type):
             yield from _written_union_members(members)
@@ -676,11 +651,8 @@ def _written_union_members(data_types: Iterable[_UnionNodeT]) -> Iterator[_Union
             yield data_type
 
 
-def _written_member(data_type: _UnionNodeT) -> _UnionNodeT:
-    """Return the member a type is written as: the type, or the member of a type that only holds one member.
-
-    The msgspec decoding warnings read it for a ``DataType``, a decision for a view of one.
-    """
+def _written_member(data_type: DataType) -> DataType:
+    """Return the member a type is written as: the type, or the member of a type that only holds one member."""
     while data_type._writes_nothing_of_its_own and len(data_type.data_types) == 1:  # noqa: SLF001
         data_type = data_type.data_types[0]
     return data_type
@@ -2327,7 +2299,7 @@ class DataTypeManager(ABC):
         return self.get_data_type(Types.string, **kwargs)
 
     def constrained_string_member(
-        self, member: DataTypeView, keywords: Mapping[str, Any], **options: Any
+        self, member: DataType, keywords: Mapping[str, Any], **options: Any
     ) -> DataType | None:
         """Return the string type that holds ``keywords`` in place of ``member``, or None where it is no plain string.
 
@@ -2471,9 +2443,9 @@ class DataTypeManager(ABC):
     @classmethod
     def member_constraint_keywords(
         cls,
-        data_type: DataTypeView,
+        data_type: DataType,
         target_version: tuple[int, int],
-        model_of: Callable[[ReferenceView], ModelView | None],
+        model_of: Callable[[Reference], DataModel | None],
         seen: frozenset[int] = frozenset(),
     ) -> frozenset[str] | None:
         """Return the type-dependent keywords the value a union member validates to takes, or None for None.
@@ -2488,7 +2460,7 @@ class DataTypeManager(ABC):
         cls,
         data_type: DataType,
         target_version: tuple[int, int],
-        model_of: Callable[[ReferenceView], ModelView | None],
+        model_of: Callable[[Reference], DataModel | None],
         seen: frozenset[int] = frozenset(),
     ) -> frozenset[str] | None:
         """Return the type-dependent keywords one value of a type takes where every value is the instance of a model.
@@ -2497,7 +2469,7 @@ class DataTypeManager(ABC):
         None, counts: one that names a type alias stands for its type, read the same way, and one that names another
         model takes what ``member_constraint_keywords`` gives (an enum whose base is its value type what that type
         takes; a root model, an object model, a dataclass or a plain enum none), and the length keywords too where its
-        instance has a length (``ModelView.has_length``, the sequence interface of a root model), which Pydantic checks
+        instance has a length (``DataModel.has_length``, the sequence interface of a root model), which Pydantic checks
         by ``len()``. The answer is None where a value is no instance of a model, whose keywords the field assembly
         decided, or names a model ``model_of`` does not hold or an alias that names itself again (``seen``). The values
         of the aliases a member names are read from a stack of their own, so a long chain of aliases takes no call per
@@ -2522,15 +2494,15 @@ class DataTypeManager(ABC):
                     if model.has_length:
                         keywords.update(_applicability.COUNT_KEYWORDS)
                 else:
-                    pending.append((cast("DataType", model.fields[0].data_type), current_seen | {id(reference)}))
+                    pending.append((model.fields[0].data_type, current_seen | {id(reference)}))
         return frozenset(keywords)
 
     @classmethod
     def _constraint_keywords(  # noqa: PLR0911
         cls,
-        data_type: DataTypeView,
+        data_type: DataType,
         target_version: tuple[int, int],
-        model_of: Callable[[ReferenceView], ModelView | None] | None,
+        model_of: Callable[[Reference], DataModel | None] | None,
         seen: frozenset[int],
         *,
         number_values: bool = False,
@@ -2543,13 +2515,13 @@ class DataTypeManager(ABC):
         ``legacy-reference-takes-every-keyword``: the L1 field assembly and msgspec read it so), and the answer is
         never None. With it, the value the type validates to decides: a union takes what every member other than None
         takes, and the type None, an alias of it and a union of only those give None. A type alias
-        (``ModelView.form``) stands for its type; an enum whose base is its value type (``class E(str, Enum)``, a
+        (``DataModel.form``) stands for its type; an enum whose base is its value type (``class E(str, Enum)``, a
         ``StrEnum``, an ``IntEnum``) takes what that type takes; any other model, a root model, an object model, a
         dataclass or a plain enum, takes none, as its instance is no value of a keyword's kind. A model ``model_of``
         does not hold, an alias without a field and an alias the type names again inside itself (``seen``) take them
         all, as without ``model_of``.
         """
-        node = cast("DataType", data_type)
+        node = data_type
         if model_of is not None:
             if (reference := node.reference) is not None:
                 if (model := None if id(reference) in seen else model_of(reference)) is None:

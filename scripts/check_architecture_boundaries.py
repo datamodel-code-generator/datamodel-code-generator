@@ -365,7 +365,7 @@ _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "type_alias.py",
     "types.py",
     "union.py",
-    "_views.py",
+    "_model_form.py",
 })
 
 

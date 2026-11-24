@@ -19,13 +19,13 @@ from datamodel_code_generator.parser._phases import DecisionPass
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from datamodel_code_generator.model._views import DataTypeView
     from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.types import DataType
 
 __all__ = ["OMIT_HELD_NULL"]
 
 
-def _types(data_type: DataTypeView) -> Iterator[DataTypeView]:
+def _types(data_type: DataType) -> Iterator[DataType]:
     """Yield ``data_type`` and every type nested in it (``type_children``), each after the types it holds."""
     for child in type_children(data_type):
         yield from _types(child)

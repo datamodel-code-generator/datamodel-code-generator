@@ -3663,7 +3663,7 @@ class GenerationStore
     def enter_phase(self, phase: Phase) -> None
     @property
     def renames(self) -> Sequence[ModelRename]
-    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]], member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None], options: DecisionOptions, constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None]) -> FinalFacts
+    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]], member_keywords: Callable[[DataType, Callable[[Reference], DataModel | None]], frozenset[str] | None], options: DecisionOptions, constrained_member: Callable[[DataType, Mapping[str, object]], object | None]) -> FinalFacts
     @deprecated('Use GenerationStore.builder().register_model() instead.', category=None)
     def register_model(self, model: DataModel) -> None
     @deprecated('Use GenerationStore.builder().retire_model() instead.', category=None)
@@ -5524,7 +5524,7 @@ class DataTypeManager(ABC)
     @abstractmethod
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType
     def get_map_key_str_type(self, **kwargs: Any) -> DataType
-    def constrained_string_member(self, member: DataTypeView, keywords: Mapping[str, Any], **options: Any) -> DataType | None
+    def constrained_string_member(self, member: DataType, keywords: Mapping[str, Any], **options: Any) -> DataType | None
     @property
     def checks_map_key_patterns(self) -> bool
     def get_default_value_descriptor(self, data_type: DataType) -> DefaultValueDescriptor | None
@@ -5540,9 +5540,9 @@ class DataTypeManager(ABC)
     @classmethod
     def constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], *, number_values: bool=False, target_model_version: TargetPydanticVersion | str | None=None, counts_keys: bool=False) -> frozenset[str]
     @classmethod
-    def member_constraint_keywords(cls, data_type: DataTypeView, target_version: tuple[int, int], model_of: Callable[[ReferenceView], ModelView | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
+    def member_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[Reference], DataModel | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
     @classmethod
-    def model_value_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[ReferenceView], ModelView | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
+    def model_value_constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int], model_of: Callable[[Reference], DataModel | None], seen: frozenset[int]=frozenset()) -> frozenset[str] | None
     @classmethod
     def type_constraint_keywords(cls, path: str, target_version: tuple[int, int], *, number_values: bool=False, target_model_version: TargetPydanticVersion | str | None=None, counts_keys: bool=False) -> frozenset[str]
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType
@@ -6263,9 +6263,9 @@ class ReferenceGraph
 @record
 class FinalFacts
     modules: tuple[ModuleFacts, ...]
-    live_models: tuple[ModelView, ...]
-    member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None]
-    constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None]
+    live_models: tuple[DataModel, ...]
+    member_keywords: Callable[[DataType, Callable[[Reference], DataModel | None]], frozenset[str] | None]
+    constrained_member: Callable[[DataType, Mapping[str, object]], object | None]
     options: DecisionOptions = DecisionOptions()
 # named by the signature of datamodel_code_generator.parser.generation.model_occurrences
 class SiteOccurrence(NamedTuple)

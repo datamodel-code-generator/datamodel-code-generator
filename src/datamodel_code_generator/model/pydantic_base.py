@@ -74,7 +74,6 @@ if TYPE_CHECKING:
     from collections import defaultdict
     from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator.model._views import ModelView, ReferenceView
     from datamodel_code_generator.reference import Reference
 
 # Preserve names that were historically importable from this module.
@@ -136,9 +135,9 @@ class _PydanticFieldRenderPlan(NamedTuple):
 _EMPTY_FIELD_TEXT = _PydanticFieldRenderPlan("", None, (), None)
 
 
-def _model_of_reference(reference: ReferenceView) -> ModelView | None:
+def _model_of_reference(reference: Reference) -> DataModel | None:
     """Return the model a reference names, as the written output holds it, or None when it names no model."""
-    return source if isinstance(source := cast("Reference", reference).source, DataModel) else None
+    return source if isinstance(source := reference.source, DataModel) else None
 
 
 def _put_discriminator_last(args: _FieldArguments) -> None:

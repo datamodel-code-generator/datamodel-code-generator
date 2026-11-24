@@ -102,7 +102,6 @@ from datamodel_code_generator.types import (
     DefaultValueRecipe,
     _sole_member,
     _union_members,
-    _UnionNodeT,
     union_members,
 )
 
@@ -119,7 +118,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
@@ -131,7 +129,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import ModelResolver
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
 
-ModelT = TypeVar("ModelT", bound="ModelView")
+ModelT = TypeVar("ModelT", bound="DataModel")
 
 
 def with_dedupe_request_response_hint(message: str) -> str:
@@ -208,7 +206,7 @@ def follow_type_aliases(data_type: Any, alias_of: Callable[[Any], Any]) -> Any:
 
 
 def required_fields_a_default_lacks(
-    field: FieldView, model_of: Callable[[ReferenceView], ModelT | None]
+    field: DataModelFieldBase, model_of: Callable[[Reference], ModelT | None]
 ) -> tuple[ModelT, list[str]] | None:
     """Return the model a field's object default cannot be, with the names of its required fields the default lacks.
 
@@ -220,10 +218,10 @@ def required_fields_a_default_lacks(
     if requires_value(field) or not isinstance(default := field.default, dict):
         return None
 
-    def alias_of(reference: ReferenceView) -> ModelView | None:
+    def alias_of(reference: Reference) -> DataModel | None:
         return model if (model := model_of(reference)) is not None and model.form == "alias" else None
 
-    data_type: DataTypeView = follow_type_aliases(field.data_type, alias_of)
+    data_type: DataType = follow_type_aliases(field.data_type, alias_of)
     if data_type._writes_nothing_of_its_own:
         if (member := _sole_member(data_type.data_types)) is None:
             return None
@@ -1360,12 +1358,12 @@ def _is_discriminator_wrapper(model: DataModel) -> bool:
     return model.IS_ALIAS or model.IS_ROOT_MODEL
 
 
-def msgspec_union_members(data_type: _UnionNodeT) -> Sequence[_UnionNodeT]:
+def msgspec_union_members(data_type: DataType) -> Sequence[DataType]:
     """Return the members of the union a type writes: its own, or the items of a list, set or map of several types.
 
     Such a container writes its items as a union inside it; the items of a tuple are its positions instead. The msgspec
-    decoding warnings (``imports.py:warn_about_msgspec_decoding``) read it for a ``DataType``, the decision of
-    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) for a view of one.
+    decoding warnings (``imports.py:warn_about_msgspec_decoding``) and the decision of
+    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) read it.
     """
     if members := _union_members(data_type):
         return members
@@ -1914,7 +1912,7 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
     return facts[0]
 
 
-def _tuple_positions_end(data_type: DataTypeView) -> int | None:
+def _tuple_positions_end(data_type: DataType) -> int | None:
     """Return where the positions of a tuple type that a set item reading reads end.
 
     It reads every position of a tuple of any length, and the first of a tuple of a fixed length.
@@ -1922,7 +1920,7 @@ def _tuple_positions_end(data_type: DataTypeView) -> int | None:
     return None if (count := data_type.tuple_item_count) is None else min(count, 1)
 
 
-def _written_hash_slot(data_type: DataTypeView, sets: Collection[int]) -> ContainerSlot | None:
+def _written_hash_slot(data_type: DataType, sets: Collection[int]) -> ContainerSlot | None:
     """Return the container a type is written as, as its values hash (``hash_slot``), or None for no container.
 
     ``sets`` holds the lists that become sets, by id.

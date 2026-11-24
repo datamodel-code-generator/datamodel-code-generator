@@ -32,6 +32,13 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   record's ``within`` directory by no other function. A table, parse method or mark that is a member of a class is
   also named as the member of every Protocol of the package that declares it, since heki judges a use through a value
   typed with a host Protocol by the Protocol's declaration.
+- ``effect-boundaries`` (``EFF201``) and ``read-owners`` (``MUT203``, ``MUT206``) of the decisions: the modules of the
+  decisions (``module`` of ``DECISION_DECLS`` in ``scripts/pass_decls.py``) read no render fact (an attribute or
+  ``__dict__`` key of the graph whose ``ATTRIBUTE_FACTS`` row holds no ``Fact`` final at B1), also through the functions
+  they call, outside the decision writer and the members ``DECISION_ACCESSORS`` lists, nor such an attribute on a value
+  heki cannot tie to a class.
+- ``call-owners`` (``MUT204``, ``MUT207``) of the decision writer: each method ``writer_methods`` of a decision's
+  declaration names is called only in the module of that decision.
 - ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder and by the scopes that only ask
   it for ``typed_children`` (`scripts._decision_home_reads.typed_children_readers`).
 - ``read-owners``, ``call-owners`` and ``write-owners`` of the host rule (``MUT201``, ``MUT203``, ``MUT204``): the
@@ -66,7 +73,18 @@ from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases,
 from scripts.check_generation_store_usage import PARSER_STATE_OWNERS
 from scripts.check_ratchets import ENVIRONMENT_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
-from scripts.fact_tables import ATTRIBUTE_FACTS, STORE_MEMBERS, Access, FactKind, MemberUse, StoreMember
+from scripts.fact_tables import (
+    ATTRIBUTE_FACTS,
+    DECISION_ACCESSORS,
+    STORE_MEMBERS,
+    Access,
+    AttributeFact,
+    DecisionAccessor,
+    FactKind,
+    MemberUse,
+    StoreMember,
+    holds_render_facts,
+)
 from scripts.pass_decls import DECISION_DECLS
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 
@@ -170,15 +188,26 @@ def _attribute(repo: Repo, attribute: str, access: Access) -> str:
     return values.pop()
 
 
-def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
-    """Return the ``CALL`` rows of ``STORE_MEMBERS``, each with the scopes of the method and of its overrides.
+def _package_functions(repo: Repo) -> set[str]:
+    """Return the dotted name of every function and method the package defines."""
+    return {
+        f"{module}.{scope.qualname}"
+        for rel, module in _package_modules(repo).items()
+        for scope in repo.model(rel).scopes
+        if scope.kind == "function"
+    }
+
+
+def _methods(
+    repo: Repo, members: Iterable[StoreMember | DecisionAccessor], table: str
+) -> dict[StoreMember | DecisionAccessor, list[str]]:
+    """Return each row of a table that names a method, with the scopes of the method and of its overrides.
 
     An override is a method of that name in a class of the package that derives from the row's class, through bases
     read by origin.
     """
     index = PackageIndex()
     classes: dict[tuple[str, str], list[str]] = {}
-    functions: set[str] = set()
     for rel, module in _package_modules(repo).items():
         model = repo.model(rel)
         for scope in model.scopes:
@@ -186,8 +215,7 @@ def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
                 classes[module, scope.qualname] = [
                     index.resolve(o) for base in bases(scope) if (o := model.origin(base))
                 ]
-            elif scope.kind == "function":
-                functions.add(f"{module}.{scope.qualname}")
+    functions = _package_functions(repo)
     bases_of = {f"{module}.{qualname}": parents for (module, qualname), parents in classes.items()}
 
     def derives(name: str, root: str) -> bool:
@@ -199,13 +227,11 @@ def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
             todo += [parent for parent in bases_of.get(current, []) if parent not in seen]
         return False
 
-    methods: dict[StoreMember, list[str]] = {}
-    for member in STORE_MEMBERS:
-        if member.use is not MemberUse.CALL:
-            continue
+    methods: dict[StoreMember | DecisionAccessor, list[str]] = {}
+    for member in members:
         owner = f"{_module(member.path)}.{member.owner}"
         if f"{owner}.{member.name}" not in functions:
-            message = f"STORE_MEMBERS: {member.path} defines no method {member.owner}.{member.name}"
+            message = f"{table}: {member.path} defines no method {member.owner}.{member.name}"
             raise SystemExit(message)
         methods[member] = sorted(
             f"{module}:{qualname}.{member.name}"
@@ -213,6 +239,11 @@ def _store_methods(repo: Repo) -> dict[StoreMember, list[str]]:
             if f"{module}.{qualname}.{member.name}" in functions and derives(f"{module}.{qualname}", owner)
         )
     return methods
+
+
+def _store_methods(repo: Repo) -> dict[StoreMember | DecisionAccessor, list[str]]:
+    """Return the ``CALL`` rows of ``STORE_MEMBERS``, each with the scopes of the method and of its overrides."""
+    return _methods(repo, (member for member in STORE_MEMBERS if member.use is MemberUse.CALL), "STORE_MEMBERS")
 
 
 def _store_hooks(repo: Repo) -> list[str]:
@@ -324,12 +355,7 @@ def decision_writer_contracts(repo: Repo, decls: Mapping[str, PassDecl] = DECISI
     finding.
     """
     module, _, owner = DECISION_WRITER.rpartition(".")
-    functions = {
-        f"{name}.{scope.qualname}"
-        for rel, name in _package_modules(repo).items()
-        for scope in repo.model(rel).scopes
-        if scope.kind == "function"
-    }
+    functions = _package_functions(repo)
     contracts: list[str] = []
     for decl in sorted(decls.values(), key=lambda decl: decl.name):
         for method in decl.writer_methods:
@@ -347,6 +373,51 @@ def decision_writer_contracts(repo: Repo, decls: Mapping[str, PassDecl] = DECISI
                 )
             )
     return contracts
+
+
+def decision_contracts(
+    repo: Repo,
+    decls: Mapping[str, PassDecl] = DECISION_DECLS,
+    accessors: Iterable[DecisionAccessor] = DECISION_ACCESSORS,
+    rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS,
+) -> list[str]:
+    """Return the contracts that hold the decisions to the facts final at B1: they read no render fact.
+
+    A render fact is an attribute or ``__dict__`` key of a graph class whose row holds facts none of which is a
+    ``Fact`` final at B1 (``holds_render_facts``); an entry of a dict attribute is not one, as heki reads an entry as a
+    read of the whole attribute. The modules of the decisions (``module`` of ``DECISION_DECLS``) reach none of them,
+    through the functions they call too, outside the decision writer and the members ``DECISION_ACCESSORS`` lists
+    (``effect-boundaries``), and read none on a receiver heki cannot tie to a class (``read-owners``).
+    """
+    modules = sorted({_module(decl.module) for decl in decls.values() if decl.module})
+    targets = sorted({
+        f"{row.owner}.{_attribute(repo, row.attribute, row.access)}"
+        for row in rows
+        if holds_render_facts(row) and row.owner not in PARSER_STATE_OWNERS and row.access is not Access.ITEM
+    })
+    callees = sorted({
+        scope.replace(":", ".")
+        for scopes in _methods(repo, accessors, "DECISION_ACCESSORS").values()
+        for scope in scopes
+    })
+    return [
+        _table(
+            "effect-boundaries",
+            name="decisions-read-final-facts",
+            scopes=modules,
+            forbid=["reads-targets"],
+            read_targets=targets,
+            allowed_callees=[DECISION_WRITER, *callees],
+        ),
+        _table(
+            "read-owners",
+            name="decisions-read-final-facts",
+            targets=targets,
+            forbidden_readers=[f"{module}:*" for module in modules],
+            attribution="lexical",
+            unresolved="report",
+        ),
+    ]
 
 
 class _Protocols:
@@ -518,6 +589,7 @@ def generate() -> str:
         *store_member_contracts(repo),
         *decision_home_contracts(repo),
         *decision_writer_contracts(repo),
+        *decision_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
         *environment_contracts(),

@@ -5,5 +5,9 @@ title = "heki checks what the decision views and writer protocols and the replay
 summary = "The read-only views, the writer protocols of the decisions and the replay half of the MODULE_IMPORTS check give way to heki contracts written from the repository's tables; the package writes the same output."
 refs = ["#1"]
 covers = [
+    "architecture_boundaries/architecture_boundary_source_classification.txt",
+    "checks/checks/check_seams.txt",
+    "parser/fact_finality/reports_render_facts_that_decisions_read.read.txt",
+    "parser/fact_finality/reports_render_facts_that_decisions_read.violations.txt",
     "parser/pipeline/decision_registry[broken].txt",
 ]

@@ -36,12 +36,14 @@ from datamodel_code_generator.types import _union_members, _written_member, _wri
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
 
-    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
+    from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser._phases import FinalFacts, _DecisionWriter
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
 __all__ = ["MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS"]
 
-_Slot: TypeAlias = "tuple[DataTypeView, str | None]"
+_Slot: TypeAlias = "tuple[DataType, str | None]"
 """A written member of a union and the str-like member msgspec counts it as, or None."""
 
 
@@ -51,15 +53,15 @@ class _UnmergeableError(Exception):
 
 _NONE: Final = "None"
 
-_Member: TypeAlias = "DataTypeView | str | tuple[bool | int | str, ...]"
+_Member: TypeAlias = "DataType | str | tuple[bool | int | str, ...]"
 """A member a union is written with: a member it holds, a new plain type by name (``str`` or ``None``), or a new
 ``Literal`` of the values a merged ``Literal`` holds besides its str values."""
 
-_Rewrite: TypeAlias = "tuple[DataTypeView, tuple[_Member, ...]]"
+_Rewrite: TypeAlias = "tuple[DataType, tuple[_Member, ...]]"
 """A union of a field's type tree and the members it is written with."""
 
 
-def _union_roots(data_type: DataTypeView, *, spread: bool = False) -> Iterator[DataTypeView]:
+def _union_roots(data_type: DataType, *, spread: bool = False) -> Iterator[DataType]:
     """Yield each union of a type tree that no enclosing union spreads, inner ones first.
 
     A union member that is a union of its own is written as members of the enclosing union, so only the enclosing one
@@ -80,10 +82,10 @@ class _Classifier:
 
     __slots__ = ("_model_of",)
 
-    def __init__(self, model_of: Callable[[ReferenceView], ModelView | None]) -> None:
+    def __init__(self, model_of: Callable[[Reference], DataModel | None]) -> None:
         self._model_of = model_of
 
-    def slot(self, member: DataTypeView, seen: frozenset[int] = frozenset()) -> str | None:
+    def slot(self, member: DataType, seen: frozenset[int] = frozenset()) -> str | None:
         """Return the str-like member ``member`` counts as, or None; raise ``_UnmergeableError`` where it cannot merge.
 
         A type alias or root model of one type counts as that type, and one of a union whose members are all
@@ -119,11 +121,11 @@ class _Classifier:
                     raise _UnmergeableError
         return None
 
-    def _slots(self, union: DataTypeView, seen: frozenset[int] = frozenset()) -> list[_Slot]:
+    def _slots(self, union: DataType, seen: frozenset[int] = frozenset()) -> list[_Slot]:
         """Return each written member of ``union`` with the str-like member it counts as."""
         return [(member, self.slot(member, seen)) for member in _written_union_members(msgspec_union_members(union))]
 
-    def merge(self, union: DataTypeView) -> Sequence[DataTypeView]:
+    def merge(self, union: DataType) -> Sequence[DataType]:
         """Return the written members of ``union`` that one ``str`` replaces, or nothing when it is left as it is.
 
         Those are its str-like members when msgspec counts them as more than one member and the decision can merge
@@ -138,14 +140,14 @@ class _Classifier:
         return [member for member, counted in slots if counted is not None]
 
 
-def _other_literals(leaf: DataTypeView) -> tuple[bool | int | str, ...]:
+def _other_literals(leaf: DataType) -> tuple[bool | int | str, ...]:
     """Return the values of a ``Literal`` holding a str value besides its str values, which ``str`` does not take."""
     if not any(literal_value_kind(value) == STR for value in leaf.literals):
         return ()
     return tuple(value for value in leaf.literals if literal_value_kind(value) not in {STR, "none"})
 
 
-def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewrite]:
+def _rewrites(union: DataType, merged: Sequence[DataType]) -> list[_Rewrite]:
     """Return the member lists that write ``union`` with one ``str`` in place of ``merged``, inner unions first.
 
     The ``str`` takes the place of the first merged member as the union is written, followed by ``None`` when a
@@ -162,7 +164,7 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
     rewrites: list[_Rewrite] = []
     placed = False
 
-    def rewrite(owner: DataTypeView) -> tuple[_Member, ...]:
+    def rewrite(owner: DataType) -> tuple[_Member, ...]:
         nonlocal placed
         members: list[_Member] = []
         for member in owner.data_types:
