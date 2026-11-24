@@ -602,6 +602,13 @@ unresolved = "report"
 attribution = "lexical"
 
 [[call-owners]]
+name = "store-op:drop_field_extra"
+targets = ["datamodel_code_generator.parser.generation:GenerationStore.drop_field_extra"]
+allowed-callers = ["datamodel_code_generator.parser.generation:*"]
+unresolved = "report"
+attribution = "lexical"
+
+[[call-owners]]
 name = "store-op:drop_held_null"
 targets = ["datamodel_code_generator.parser.generation:GenerationStore.drop_held_null"]
 allowed-callers = ["datamodel_code_generator.parser.generation:*"]
