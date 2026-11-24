@@ -4251,6 +4251,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "builtin",
         ),
     ),
+    LegacyRow(
+        "legacy-running-packages-load",
+        (
+            "the refusal of a class beside a module of its name in its package reads an import of the module by an "
+            "ancestor package, which has started before the package's `__init__.py`, as a load of that `__init__.py`, "
+            "and writes the output where the classes do not evaluate their annotations as they are defined (output "
+            "other than Pydantic, with deferred annotations) (`parser/_passes/_import_edges.py:init_loads`, "
+            "`parser/_passes/imports.py:_class_named_like_submodule`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/submodule_named_like_package_class_root_import.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+    ),
 )
 """Every ``legacy-*`` row of ``src/``, in the order of the page table."""
 

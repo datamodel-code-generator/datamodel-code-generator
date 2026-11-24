@@ -67,8 +67,10 @@ becomes final and where a decision belongs.
   reads that source once. A `when` names only options (`scripts/check_pass_pipeline.py` lists them).
   A `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the facts it reads and why the early return costs more) is
   allowed only for the passes `TRIGGERS` of that script lists, which never grows: false only where running the pass
-  would write nothing. `pytest --check-pass-triggers` runs such passes anyway: "... trigger-absent write: ..." means
-  the trigger is false where the pass writes; widen the trigger.
+  would write nothing. The nightly run of the suite on the newest Python runs such passes anyway (`tox run -e
+  pass-triggers -- <test>`, or `pytest --check-pass-triggers <test>`): "... trigger-absent write: ..." means the
+  trigger is false where the pass writes; widen the trigger. Run it on the tests that reach a trigger you add or change
+  before you push.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.
 
