@@ -757,7 +757,7 @@ method. The diagnostics warnings that name the code calling
 a document collect as they are validated) find that frame however deep the pipeline is (`warn_at_parse_caller`).
 
 A pass whose `PassSpec` has a `trigger` runs only where the fact it rewrites is present; its `when` is an option it
-needs, where running it anyway would not be a no-op. The `Runner` skips a pass whose `when` or `trigger` is false. A
+needs. The `Runner` skips a pass whose `when` or `trigger` is false. A
 trigger reads what the pass reads when it starts (whether the output writes more than one module, the kind of a model
 of its list, an option, or a record of the parser that its producer fills while the parse runs), never what a later
 pass will do, and it is declared (`PassDecl.trigger`, "Skipped unless" in the table below) with the facts it reads,

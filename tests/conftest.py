@@ -308,8 +308,10 @@ def pytest_configure(config: pytest.Config) -> None:
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
-    os.environ.setdefault(
-        CHECK_PASS_TRIGGERS_ENV, "1" if config.getoption("check_pass_triggers") and not benchmarks else "0"
+    os.environ[CHECK_PASS_TRIGGERS_ENV] = (
+        "1"
+        if config.getoption("check_pass_triggers") and not benchmarks
+        else os.environ.get(CHECK_PASS_TRIGGERS_ENV, "0")
     )
     config.addinivalue_line(
         "markers",

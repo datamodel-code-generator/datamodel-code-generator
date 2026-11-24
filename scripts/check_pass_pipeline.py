@@ -165,7 +165,7 @@ CONFIGURATION = frozenset({
     "generate_schema_validators",
     "generic_base_class_config",
     "keep_model_order",
-    "model_resolver",
+    "model_resolver.model_name_record",
     "order_constructor_fields_by_final_names",
     "order_constructor_fields_by_written_defaults",
     "renames_hiding_fields",
@@ -183,8 +183,9 @@ CONFIGURATION = frozenset({
     "with_import",
 })
 """What a ``when`` may name: the options of the run (attributes ``Parser.__init__`` sets from the configuration, the
-settings of a run's state), constants of the output classes, and the helpers that read nothing else. The first
-attribute of a parameter counts, so ``self.config.aliases`` names ``config``."""
+settings of a run's state), constants of the output classes, and the helpers that read nothing else. An attribute
+chain of a parameter is an option where it or a leading part of it is listed: ``self.config.aliases`` names
+``config``, and only ``model_name_record`` of ``self.model_resolver`` is an option."""
 DEEP_WARNINGS = {
     "model/pydantic_v2/base_model.py:_warn_template_update": "the caller of render() (L7)",
     "parser/_intersection.py:warn_unsatisfiable": "the parser method that met the unsatisfiable schema (L1)",
@@ -358,16 +359,15 @@ def trigger_problems(
 def _gates(model: SourceModule) -> dict[str, ast.expr]:
     """Return the ``when`` expression of each ``PassSpec`` of a tables module, by pass name."""
     return {
-        call.args[0].value: keyword.value
+        call.args[0].value: when
         for call in ast.walk(model.tree)
         if isinstance(call, ast.Call) and _callee(model, call) == "PassSpec" and isinstance(call.args[0], ast.Constant)
-        for keyword in call.keywords
-        if keyword.arg == "when"
+        for when in [*call.args[2:3], *(keyword.value for keyword in call.keywords if keyword.arg == "when")]
     }
 
 
 def _gate_reads(gate: ast.expr) -> set[str]:
-    """Return what a ``when`` names: the first attribute of each parameter, the helper or class of any other name."""
+    """Return what a ``when`` names: the attribute chain of each parameter, the helper or class of any other name."""
     parameters = {argument.arg for argument in gate.args.args} if isinstance(gate, ast.Lambda) else set()
     parents = {child: parent for parent in ast.walk(gate) for child in ast.iter_child_nodes(parent)}
     reads = set()
@@ -377,13 +377,24 @@ def _gate_reads(gate: ast.expr) -> set[str]:
         parent = parents.get(node)
         qualified = isinstance(parent, ast.Attribute) and parent.value is node
         if node.id in parameters:
-            if qualified:
-                reads.add(parent.attr)
+            chain: list[str] = []
+            inner: ast.AST = node
+            while isinstance(parent, ast.Attribute) and parent.value is inner:
+                chain.append(parent.attr)
+                inner, parent = parent, parents.get(parent)
+            if chain:
+                reads.add(".".join(chain))
         elif qualified and isinstance(getattr(_tables, node.id, None), ModuleType):
             reads.add(parent.attr)
         else:
             reads.add(node.id)
     return reads
+
+
+def _is_option(read: str, allowed: Collection[str]) -> bool:
+    """Return whether ``read`` or a leading part of its attribute chain is an option of the run."""
+    parts = read.split(".")
+    return any(".".join(parts[:end]) in allowed for end in range(1, len(parts) + 1))
 
 
 def when_problems(model: SourceModule | None = None, allowed: Collection[str] = CONFIGURATION) -> list[str]:
@@ -395,7 +406,7 @@ def when_problems(model: SourceModule | None = None, allowed: Collection[str] = 
         f"the when of {name} names {', '.join(names)}, which no option of the run sets (CONFIGURATION): decide on it "
         "in the pass, or declare a trigger with its reason"
         for name, gate in _gates(model or _model(Path(_tables.__file__))).items()
-        if (names := sorted(_gate_reads(gate) - set(allowed)))
+        if (names := sorted(read for read in _gate_reads(gate) if not _is_option(read, allowed)))
     ]
 
 

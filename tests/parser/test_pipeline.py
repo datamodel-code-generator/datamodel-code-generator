@@ -261,10 +261,13 @@ WHEN_CASES = {
         'PassSpec("b", f, when=lambda self, _: modules.renames_hiding_fields(self) and self.reuse_scope)\n'
         'PassSpec("c", f, when=lambda *_: _PYDANTIC_FLOORS.get() is not None)\n'
         'PassSpec("d", f, when=_writes_unique_sets_in_modules)\n'
+        'PassSpec("e", f, when=lambda self, _: self.model_resolver.model_name_record is not None)\n'
     ),
     "a-produced-record": 'PassSpec("a", f, when=lambda self, s: self.use_annotated and s.renamed_models)\n',
     "a-produced-length": 'PassSpec("a", f, when=lambda _, s: len(s.module_models) > 1)\n',
     "a-helper-of-a-module": 'PassSpec("a", f, when=imports.import_names_class)\n',
+    "a-record-of-an-option-object": 'PassSpec("a", f, when=lambda self, _: bool(self.model_resolver.references))\n',
+    "a-positional-when": 'PassSpec("a", f, lambda self, s: s.renamed_models)\n',
     "a-record-of-the-parser": 'PassSpec("a", f, when=lambda self, _: bool(self._kept_parent_roots))\n',
 }
 """Tables of one pass each."""
