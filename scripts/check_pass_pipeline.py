@@ -108,7 +108,6 @@ TRIGGERS = frozenset({
     "fix_constructor_field_ordering_early",
     "import_enum_member_literal_classes",
     "import_models_of_hidden_submodules",
-    "merge_runtime_expression_imports",
     "resolve_circular_imports",
 })
 """The passes that may have a trigger, a set that only shrinks: a pass skips by the first statement of its body that

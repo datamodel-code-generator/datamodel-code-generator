@@ -2494,6 +2494,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_imports: dict[DataModel, tuple[Import, ...]],
     ) -> None:
         """Merge producer-registered imports only on the runtime-expression path."""
+        if not self._has_runtime_expressions:
+            return
         for ctx in contexts:
             for model in ctx.models:
                 runtime_imports: list[Import] = []
