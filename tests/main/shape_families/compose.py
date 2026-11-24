@@ -35,7 +35,8 @@ compositions of two levels and 14,283,000 of three, before the filter; too many 
 
 A difference of a composition from the validator is known where a rule covers it (``covering``): a rule of
 ``kept.py`` that covers the part one level describes (``views``: a plain level's parameters, a placed level's own
-parameters and what it holds), or a rule of ``COMPOSED``, which names what a placed level holds.
+parameters and what it holds), or a rule of ``COMPOSED``, which names what a placed level holds or, where the view
+of no one level tells the cells apart, the composition's own parameters (``params``).
 """
 
 from __future__ import annotations
@@ -452,6 +453,9 @@ def covering(rules: Iterable[Kept], chain: tuple[Level, ...], backend: str, cont
     )
 
 
+_STRING_SECONDS: Final = ("str", "str_min", "nullable_str", "str_or_arr")
+"""The leaves of a mix's second member that admit a string longer than two characters."""
+
 COMPOSED: Final[tuple[Kept, ...]] = (
     Kept(
         LEGACY_ROW,
@@ -544,8 +548,32 @@ COMPOSED: Final[tuple[Kept, ...]] = (
         "an allOf merge of two refs that both declare p takes p from one member: the other member's type or bounds "
         "are lost",
     ),
+    Kept(
+        LEGACY_ROW,
+        "legacy-length-keywords-across-kinds",
+        COMPOSITION,
+        "rejects-valid",
+        DEFAULT,
+        tuple(
+            {
+                f"{depth}.family": ("mixin",),
+                f"{depth}.second": _STRING_SECONDS,
+                f"{depth + 1}.family": ("extend",),
+                f"{depth + 1}.leaf": ("str_or_arr",),
+                f"{depth + 1}.how": ("narrow",),
+                f"{depth + 1}.via": ("alias", "ref-siblings"),
+                f"{depth + 1}.form": ("beside",),
+            }
+            for depth in range(MAX_LEVELS - 1)
+        ),
+        "maxItems that a child adds beside an alias or a $ref with sibling properties to an inherited string-or-array "
+        "p bounds the length of the string a mix merges it with (the extend rule of the row covers the other parents)",
+    ),
 )
-"""The known differences of compositions that no family rule covers on one level: rules over a placed level's view.
+"""The known differences of compositions that no family rule covers on one level.
 
-They name what a placed level holds (``views``), so a family rule of the plain shape never covers them by accident.
+Most are rules over a placed level's view: they name what a placed level holds (``views``), so a family rule of the
+plain shape never covers them by accident. A rule of ``COMPOSITION`` is keyed by the composition's parameters
+(``params``: ``<depth>.family`` and ``<depth>.<parameter>``) where a placed level's view cannot tell the cells apart,
+such as a difference that needs one parameter of the inner plain shape.
 """
