@@ -11,10 +11,10 @@
 
 [[approved]]
 key = "allowlist:heki-baseline:EFF201"
-head = 66
+head = 67
 pr = 7513
 decision = ["#7513"]
-reason = "the heki pass boundaries of #7513 baseline the 7 findings the runtime finality check already lists as known (8 sites) and 15 sites where heki reads a write to a fresh copy in override_required_field as a write to the input (heki request H31); the runtime check keeps every rule (owner decision, 2026-11-25)"
+reason = "the heki pass boundaries of #7513 baseline the 7 findings the runtime finality check already lists as known (8 sites) and 15 sites where heki reads a write to a fresh copy in override_required_field as a write to the input (heki request H31), and since heki 0.4.0 one write to a field apply_discriminator_type builds in the same pass, which heki also reads as the input; the runtime check keeps every rule (owner decisions, 2026-11-25)"
 
 [[approved]]
 key = "ruff:TID252@src"
