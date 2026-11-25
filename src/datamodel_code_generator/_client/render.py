@@ -430,11 +430,7 @@ class _Facades:
         attributes = (
             Attribute("plans", "TOOLS"),
             *(() if descriptions else (Attribute("descriptions", "False"),)),
-            *(
-                (Attribute("rejected_patterns", f"frozenset({set_display(map(stable_repr, sorted(rejected)))})"),)
-                if rejected
-                else ()
-            ),
+            *((Attribute("rejected_patterns", f"frozenset({name_set(sorted(rejected))})"),) if rejected else ()),
         )
         return facade_module(
             "tools",

@@ -199,16 +199,21 @@ def _subschema(value: JSONValue) -> JSONValue:
 def schema_patterns(schema: Mapping[str, JSONValue]) -> Iterator[str]:
     """Yield the regular expressions of a JSON schema and of the schemas it holds, `pattern` and `patternProperties`."""
     for keyword, value in schema.items():
-        match keyword, value:
-            case "pattern", str():
-                yield value
-            case "patternProperties", dict():
-                yield from value
-        held = value.values() if keyword in _NAMING and isinstance(value, dict) else ()
-        if keyword in _HOLDING:
-            held = value if isinstance(value, list) else (value,)
-        for item in held:
-            yield from schema_patterns(item) if isinstance(item, dict) else ()
+        if keyword == "pattern" and isinstance(value, str):
+            yield value
+        if keyword == "patternProperties" and isinstance(value, dict):
+            yield from value
+        for item in _held_schemas(keyword, value):
+            yield from schema_patterns(item)
+
+
+def _held_schemas(keyword: str, value: JSONValue) -> list[dict[str, JSONValue]]:
+    """Return the schema objects the value of a schema's keyword holds; a boolean schema holds no pattern."""
+    if keyword in _NAMING and isinstance(value, dict):
+        held = list(value.values())
+    else:
+        held = (value if isinstance(value, list) else [value]) if keyword in _HOLDING else []
+    return [item for item in held if isinstance(item, dict)]
 
 
 class ToolCodec(Protocol):
