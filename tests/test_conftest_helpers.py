@@ -792,6 +792,132 @@ def test_test_part_gives_each_test_to_its_most_specific_part(ledger: LedgerProje
     ]
 
 
+OS_SELECTION = """
+ubuntu-only = ["suite/test_tool_script.py"]
+
+[select]
+facts = ["platform"]
+source = ['sys\\.platform']
+modules = ["suite/whole/**/test_*.py"]
+tests = ["suite/test_m.py::test_named", "suite/test_m.py::TestGroup::test_method"]
+"""
+
+
+def _os_selection_project(ledger: LedgerProject) -> None:
+    """Write a suite with a test module for each reason a selection keeps tests, and modules it leaves out."""
+    ledger.write(
+        "test_m.py",
+        """
+        import pytest
+
+
+        @pytest.mark.parametrize("case", range(2))
+        def test_named(case):
+            pass
+
+
+        def test_other():
+            pass
+
+
+        class TestGroup:
+            def test_method(self):
+                pass
+
+            def test_other_method(self):
+                pass
+        """,
+    )
+    ledger.write("whole/deep/test_whole.py", "def test_a():\n    pass\n\n\ndef test_b():\n    pass\n")
+    ledger.write(
+        "test_needs.py",
+        'from tests.capabilities import needs\n\n\n@needs("type-statements", "posix")\n'
+        "def test_posix():\n    pass\n\n\ndef test_beside():\n    pass\n",
+    )
+    ledger.write(
+        "test_varies.py",
+        "from tests.conftest import assert_output\n\n\ndef test_varies():\n"
+        '    assert_output("x\\n", varies_with=("windows",))\n',
+    )
+    ledger.write("test_branch.py", "import sys\n\n\ndef test_branch():\n    assert sys.platform\n")
+    ledger.write("test_keyed.py", "def test_keyed():\n    pass\n")
+    ledger.write("test_keyed.refs", f"{HEADER}[test_keyed]\n\tkeyed/test.txt\t@platform==win32\t= keyed/test.txt\n")
+    ledger.write("test_tool_script.py", "import sys\n\n\ndef test_tool():\n    assert sys.platform\n")
+    ledger.write(
+        "test_plain.py", 'from tests.capabilities import needs\n\n\n@needs("heki")\ndef test_plain():\n    pass\n'
+    )
+    ledger.write("os_selection.toml", OS_SELECTION)
+
+
+def test_os_selection_keeps_the_tests_its_file_selects(ledger: LedgerProject) -> None:
+    """--os-selection keeps each test its file selects, never one other options leave out, and skips other modules.
+
+    A module the file keeps no test of is not even collected, so naming it alone collects nothing.
+    """
+    _os_selection_project(ledger)
+
+    def collected(*args: str) -> list[str]:
+        result = ledger.run("--collect-only", "-q", "suite", "--os-selection=suite/os_selection.toml", *args)
+        return sorted(line for line in result.stdout.lines if "::" in line)
+
+    assert collected() == [
+        "suite/test_branch.py::test_branch",
+        "suite/test_keyed.py::expected_refs",
+        "suite/test_keyed.py::test_keyed",
+        "suite/test_m.py::TestGroup::test_method",
+        "suite/test_m.py::test_named[0]",
+        "suite/test_m.py::test_named[1]",
+        "suite/test_needs.py::test_beside",
+        "suite/test_needs.py::test_posix",
+        "suite/test_varies.py::test_varies",
+        "suite/whole/deep/test_whole.py::test_a",
+        "suite/whole/deep/test_whole.py::test_b",
+    ]
+    assert collected("-k", "named or tool or plain") == [
+        "suite/test_m.py::test_named[0]",
+        "suite/test_m.py::test_named[1]",
+    ]
+    result = ledger.run("--collect-only", "-q", "--os-selection=suite/os_selection.toml", "suite/test_plain.py")
+    assert result.ret == pytest.ExitCode.NO_TESTS_COLLECTED
+
+
+def test_os_selection_shards_split_the_selected_tests(ledger: LedgerProject) -> None:
+    """--test-shard splits the tests --os-selection keeps, each into one shard."""
+    _os_selection_project(ledger)
+
+    def collected(*args: str) -> list[str]:
+        result = ledger.run("--collect-only", "-q", "suite", *args)
+        return [line for line in result.stdout.lines if "::" in line]
+
+    selection = "--os-selection=suite/os_selection.toml"
+    shards = [collected(selection, f"--test-shard={index}/3") for index in (1, 2, 3)]
+    assert all(shards)
+    assert sorted(nodeid for shard in shards for nodeid in shard) == sorted(collected(selection))
+
+
+@pytest.mark.parametrize(
+    ("text", "problem"),
+    [
+        (None, "cannot read the selection"),
+        ("[select]\nfiles = []\n", "unknown keys"),
+        ("select = 1\n", "select is not a table"),
+        ("ubuntu-only = 'x'\n", "ubuntu-only is not a list of strings"),
+        ("[select]\nfacts = ['os']\n", "names no fact"),
+        ("[select]\nsource = ['(']\n", "does not compile"),
+    ],
+)
+def test_os_selection_refuses_an_unknown_or_malformed_file(
+    ledger: LedgerProject, text: str | None, problem: str
+) -> None:
+    """A missing or malformed --os-selection file fails the run before collection."""
+    ledger.write("test_m.py", "def test_m():\n    pass\n")
+    if text is not None:
+        ledger.write("os_selection.toml", text)
+    result = ledger.run("--collect-only", "-q", "suite", "--os-selection=suite/os_selection.toml")
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
+    assert problem in result.stderr.str()
+
+
 def test_ledger_creates_derived_output_and_records_it(ledger: LedgerProject) -> None:
     """A local run stores output under the test's name and records it; later runs only compare it."""
     ledger.write(

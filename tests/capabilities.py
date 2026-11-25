@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.units import condition_holds
+from tests.units import clause_facts, condition_holds
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -124,6 +124,14 @@ def missing(names: tuple[str, ...], facts: Mapping[str, str]) -> list[str]:
         for name in names
         if not all(condition_holds(clause, facts) for clause in CAPABILITIES[name][0])
     ]
+
+
+def reading(facts: Iterable[str]) -> tuple[str, ...]:
+    """Return the capabilities, in table order, with a clause that reads one of the facts (``platform``: ``posix``)."""
+    wanted = set(facts)
+    return tuple(
+        name for name, (clauses, _) in CAPABILITIES.items() if any(wanted & clause_facts(clause) for clause in clauses)
+    )
 
 
 def clauses_of(names: Iterable[str]) -> tuple[str, ...]:

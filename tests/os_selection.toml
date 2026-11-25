@@ -1,0 +1,36 @@
+# The tests the Windows and macOS jobs of a pull request run: `pytest --os-selection=tests/os_selection.toml` keeps
+# the tests this file selects and deselects the others. Pushes to main and the scheduled run keep the whole suite
+# there. scripts/os_selection.py reads the file (its docstring has the rules), checks it and writes `cover`.
+
+# Test modules Windows and macOS never run: the tests of scripts/, which CI runs on Ubuntu only, and the payload checks,
+# which run in the Ubuntu coverage jobs only.
+ubuntu-only = [
+  "tests/main/test_payload_validation.py",
+  "tests/test_*_script.py",
+  "tests/test_architecture_boundaries.py",
+  "tests/test_change_records.py",
+  "tests/test_checks_are_run.py",
+  "tests/test_ci_workflow.py",
+  "tests/test_decision_homes.py",
+  "tests/test_pre_commit_hooks.py",
+  "tests/test_release_draft_workflow.py",
+  "tests/test_source_model.py",
+  "tests/test_source_rules.py",
+]
+
+[select]
+# Whole test modules that need or vary with a platform capability, or store lines keyed on the platform.
+facts = [ "platform" ]
+# Whole test modules that branch on the platform.
+source = [ 'sys\.platform', 'os\.name\s*==' ]
+# Whole test modules: the suite checks and the watch tests.
+modules = [ "tests/checks/**/test_*.py", "tests/main/test_main_watch.py" ]
+# Tests at a depth limit, which the smaller Windows stack reaches first.
+tests = [
+  "tests/main/jsonschema/test_main_jsonschema.py::test_main_nesting_within_recursion_limit",
+  "tests/main/test_untrusted_input.py::test_untrusted_input_size_limits",
+]
+# Written by `python scripts/os_selection.py cover MAP`: the cheapest test functions that run the arcs of the platform
+# functions the rest of the selection leaves unrun.
+cover = [
+]

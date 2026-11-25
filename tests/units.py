@@ -59,6 +59,7 @@ __all__ = [
     "applicable_lines",
     "apply_payloads",
     "class_lines",
+    "clause_facts",
     "clauses_hold",
     "clauses_problem",
     "condition_holds",
@@ -504,6 +505,11 @@ def condition_problem(clause: str) -> str | None:
         if match["op"] in ORDERS and (match["fact"] not in VERSION_FACTS or not _RELEASE.fullmatch(match["value"])):
             return f"{alternative!r} orders a fact that is not a version, or by a value that is not a release"
     return None
+
+
+def clause_facts(clause: str) -> frozenset[str]:
+    """Return the facts a well-formed condition clause (`condition_problem`) reads, one for each of its alternatives."""
+    return frozenset(match["fact"] for match in filter(None, map(_CONDITION.fullmatch, clause.split("|"))))
 
 
 def release(value: str) -> tuple[int, ...]:
