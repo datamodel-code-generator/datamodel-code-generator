@@ -213,7 +213,7 @@ def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
 
 
 def _revealing(scheme: SecurityScheme, value: object, text: str) -> tuple[str, ...]:
-    """Return the texts that reveal a placed credential, which a tool clears from the error values it returns.
+    """Return the texts that reveal a placed credential, which a tool clears from the values it returns.
 
     They are an API key as given and as a query field encodes it, a bearer token, or a Basic user, password, and the
     credentials they write.

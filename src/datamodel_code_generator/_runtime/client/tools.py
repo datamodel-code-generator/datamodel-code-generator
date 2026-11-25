@@ -1,12 +1,13 @@
 """The tool table of a generated client: one tool per operation, searched, described, and called with JSON values.
 
 A tool's JSON schemas come from the model types of its arguments and result, through the models' own library, without
-the description of any schema in a table generated from untrusted input, and a call validates each argument as JSON
-through the codec of its type, the mode the schemas describe, calls the client's method, and returns the result as its
-codec writes it. A read-only table leaves out every tool whose HTTP method is not safe. A failure of the client returns
-its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or cause, with every
-credential the client placed on the call's requests replaced in the request ID and the body, so an API that echoes one
-does not hand it to the caller; arguments a tool refuses return each problem.
+the description, title, or examples of any schema in a table generated from untrusted input, and a call validates each
+argument as JSON through the codec of its type, the mode the schemas describe, calls the client's method, and returns
+the result as its codec writes it. A read-only table leaves out every tool whose HTTP method is not safe. A failure of
+the client returns its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or
+cause; every credential the client placed on the call's requests is replaced in the result, and in the request ID and
+the body of a failure, so an API that echoes one does not hand it to the caller; arguments a tool refuses return each
+problem.
 """
 
 from __future__ import annotations
@@ -58,6 +59,8 @@ _HOLDING: Final = frozenset({
     "unevaluatedProperties",
 })
 """The JSON Schema keywords whose value is a schema or a list of schemas."""
+_PROSE: Final = frozenset({"description", "examples", "title"})
+"""The JSON Schema keywords that hold the text or values of the document, which a table of untrusted documents omits."""
 
 
 class UnknownToolError(LookupError):
@@ -141,7 +144,7 @@ def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
 
 
 def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
-    """Return a JSON value whose strings, keys included, hold no placed credential."""
+    """Return a JSON value, a result or an error's body, whose strings, keys included, hold no placed credential."""
     match value:
         case str():
             return _redacted(value, placed)
@@ -153,37 +156,37 @@ def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
             return value
 
 
-class _Undescribed(GenerateJsonSchema):
-    """Generate JSON schemas without the description of any schema in them, for a table of untrusted documents.
+class _Proseless(GenerateJsonSchema):
+    """Generate JSON schemas without the description, title, or examples of any schema in them, for untrusted documents.
 
-    Only the `description` keyword of a schema is left out: a property named `description` stays, and so do defaults,
-    examples, and every other value.
+    Only those keywords of a schema are left out: a property named `description`, `title`, or `examples` stays, and so
+    do defaults, enum values, patterns, and every other keyword.
     """
 
     @override
     def generate(self, schema: CoreSchema, mode: JsonSchemaMode = "validation") -> JsonSchemaValue:
-        """Generate the JSON schema of a core schema without its descriptions."""
-        return _undescribed(super().generate(schema, mode))
+        """Generate the JSON schema of a core schema without its descriptions, titles, and examples."""
+        return _proseless(super().generate(schema, mode))
 
     @override
     def generate_definitions(
         self, inputs: Sequence[tuple[JsonSchemaKeyT, JsonSchemaMode, CoreSchema]]
     ) -> tuple[dict[tuple[JsonSchemaKeyT, JsonSchemaMode], JsonSchemaValue], dict[DefsRef, JsonSchemaValue]]:
-        """Generate the JSON schemas of several core schemas and their shared definitions without their descriptions."""
+        """Generate the JSON schemas of several core schemas and their shared definitions without their prose."""
         schemas, definitions = super().generate_definitions(inputs)
         return (
-            {key: _undescribed(value) for key, value in schemas.items()},
-            {name: _undescribed(value) for name, value in definitions.items()},
+            {key: _proseless(value) for key, value in schemas.items()},
+            {name: _proseless(value) for name, value in definitions.items()},
         )
 
 
-def _undescribed(schema: Mapping[str, JSONValue]) -> dict[str, JSONValue]:
-    """Return a JSON schema without its `description` keyword and those of the schemas it holds."""
-    return {key: _held(key, value) for key, value in schema.items() if key != "description"}
+def _proseless(schema: Mapping[str, JSONValue]) -> dict[str, JSONValue]:
+    """Return a JSON schema without its description, title, and examples keywords and those of the schemas it holds."""
+    return {key: _held(key, value) for key, value in schema.items() if key not in _PROSE}
 
 
 def _held(keyword: str, value: JSONValue) -> JSONValue:
-    """Return the value of a schema's keyword with the schemas it holds undescribed, and any other value as it is."""
+    """Return the value of a schema's keyword with the schemas it holds without prose, and any other value as it is."""
     if keyword in _NAMING and isinstance(value, dict):
         return {name: _subschema(item) for name, item in value.items()}
     if keyword not in _HOLDING:
@@ -192,8 +195,8 @@ def _held(keyword: str, value: JSONValue) -> JSONValue:
 
 
 def _subschema(value: JSONValue) -> JSONValue:
-    """Return a schema undescribed; a boolean schema has no description."""
-    return _undescribed(value) if isinstance(value, dict) else value
+    """Return a schema without prose; a boolean schema has none."""
+    return _proseless(value) if isinstance(value, dict) else value
 
 
 def schema_patterns(schema: Mapping[str, JSONValue]) -> Iterator[str]:
@@ -288,8 +291,8 @@ class _Table(Generic[ClientT]):
     """What the sync and asyncio tables share: their tools by name, the search, the schemas, and a call's values."""
 
     plans: ClassVar[tuple[ToolPlan, ...]] = ()
-    descriptions: ClassVar[bool] = True
-    """Whether the JSON schemas keep the descriptions of the models; False in a table generated from untrusted input."""
+    prose: ClassVar[bool] = True
+    """Whether the JSON schemas keep the descriptions, titles, and examples of the models; False for untrusted input."""
     rejected_patterns: ClassVar[frozenset[str]] = frozenset()
     """The patterns of the models that Python's `re` rejects, as generation decided, which MCP clients cannot check."""
 
@@ -338,10 +341,10 @@ class _Table(Generic[ClientT]):
     def schemas(self, name: str) -> tuple[dict[str, JSONValue], dict[str, JSONValue]]:
         """Return the JSON schemas of a tool's arguments object and of its result, which the models' library derives.
 
-        A table without `descriptions` leaves the `description` of every schema out of both.
+        A table without `prose` leaves the `description`, `title`, and `examples` of every schema out of both.
         """
         plan = self._plan(name)
-        generator = GenerateJsonSchema if self.descriptions else _Undescribed
+        generator = GenerateJsonSchema if self.prose else _Proseless
         inputs: list[tuple[str, JsonSchemaMode, TypeAdapter[object]]] = [
             (argument.name, "validation", _adapter(argument.codec)) for argument in plan.arguments
         ]
@@ -423,7 +426,7 @@ class ToolTable(_Table[ClientT]):
                 result = getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-        return ToolOutcome(_dumped(plan, result))
+            return ToolOutcome(_cleared(_dumped(plan, result), placed))
 
 
 class AsyncToolTable(_Table[ClientT]):
@@ -447,7 +450,7 @@ class AsyncToolTable(_Table[ClientT]):
                 result = await getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-        return ToolOutcome(_dumped(plan, result))
+            return ToolOutcome(_cleared(_dumped(plan, result), placed))
 
 
 def _adapter(codec: ToolCodec) -> TypeAdapter[object]:

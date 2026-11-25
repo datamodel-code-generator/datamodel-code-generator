@@ -421,15 +421,16 @@ class _Facades:
         )
 
     @staticmethod
-    def tools(*, descriptions: bool, rejected: frozenset[str]) -> Templated:
+    def tools(*, prose: bool, rejected: frozenset[str]) -> Templated:
         """Return the tools module: the tool table of each client, over the plans of every tool.
 
-        A table without `descriptions` leaves the models' descriptions out of the JSON schemas it gives, and
-        `rejected` holds the patterns of the models that Python's `re` rejects, which an MCP server lists no schema of.
+        A table without `prose` leaves the models' descriptions, titles, and examples out of the JSON schemas it gives,
+        and `rejected` holds the patterns of the models that Python's `re` rejects, which an MCP server lists no schema
+        of.
         """
         attributes = (
             Attribute("plans", "TOOLS"),
-            *(() if descriptions else (Attribute("descriptions", "False"),)),
+            *(() if prose else (Attribute("prose", "False"),)),
             *((Attribute("rejected_patterns", f"frozenset({name_set(sorted(rejected))})"),) if rejected else ()),
         )
         return facade_module(
@@ -3460,7 +3461,7 @@ class ClientRenderer:
         The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds. The
         README names the model backend and the runtime dependencies, and a template directory overrides builtin roles.
         Operation methods are documented by the models' docstring options, and `tools` are those of a package with a
-        tool table, whose JSON schemas leave the models' descriptions out for `untrusted_input`.
+        tool table, whose JSON schemas leave the models' descriptions, titles, and examples out for `untrusted_input`.
         """
         self.config = config
         self.plan = plan
@@ -3698,7 +3699,7 @@ class ClientRenderer:
                 PurePosixPath("tools.py"),
                 "tools",
                 facades.tools(
-                    descriptions=not self.untrusted_input,
+                    prose=not self.untrusted_input,
                     rejected=rejected_patterns(self.batch.fields) if self.config.tools == "mcp" else frozenset(),
                 ),
             )

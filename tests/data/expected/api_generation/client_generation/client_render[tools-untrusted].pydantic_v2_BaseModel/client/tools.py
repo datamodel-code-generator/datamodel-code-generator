@@ -15,14 +15,14 @@ class Toolset(ToolTable[Client]):
     """The tools of the synchronous client."""
 
     plans = TOOLS
-    descriptions = False
+    prose = False
 
 
 class AsyncToolset(AsyncToolTable[AsyncClient]):
     """The tools of the asyncio client."""
 
     plans = TOOLS
-    descriptions = False
+    prose = False
 
 
 __all__ = [
