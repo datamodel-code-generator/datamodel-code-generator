@@ -541,6 +541,29 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-typed-dicts-copy-unresolved-parent-placeholders",
+        (
+            "a TypedDict listed before its parent, in a module processed before the parent's, copies a key that it "
+            "restates or requires and that the parent requires as the parent holds it then, without a type, where the "
+            "other output types resolve it through the parent's own bases "
+            "(`parser/_passes/_shared.py:_reads_through_unresolved_bases`); the copy narrows the parent's key, so the "
+            "cross-module flatten makes the TypedDict declare the keys of its bases without them, or, where it keeps "
+            "its bases, the key is typed `None`"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/openapi/inherited_placeholder_module_order/child_first/schema.yaml",
+            "--input-file-type",
+            "openapi",
+            "--output-model-type",
+            "typing.TypedDict",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ),
+    ),
+    LegacyRow(
         "legacy-lookahead-patterns",
         "patterns are joined by lookaheads with no warning; an allOf member merge keeps the later pattern",
         fix=KEEP,

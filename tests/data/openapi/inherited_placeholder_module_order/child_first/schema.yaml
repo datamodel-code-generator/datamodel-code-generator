@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: A subclass listed before its parent in a module processed first
+  version: "1"
+paths: {}
+components:
+  schemas:
+    com.example.pets.Child:
+      allOf:
+        - $ref: '#/components/schemas/com.example.Mid'
+        - properties:
+            x:
+              description: The child's x.
+            c:
+              type: string
+    com.example.Mid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.Base'
+        - required: [x]
+          properties:
+            m:
+              type: string
+    com.example.Base:
+      type: object
+      properties:
+        x:
+          type: integer

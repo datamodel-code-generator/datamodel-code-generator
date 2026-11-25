@@ -4200,14 +4200,19 @@ def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:
 
 def get_inherited_fields(models: list[DataModel]) -> dict[str, DataModelFieldBase]:
     """Build one effective field lookup with exact original names taking priority."""
-    original_names: dict[str, DataModelFieldBase] = {}
-    generated_names: dict[str, DataModelFieldBase] = {}
+    return {name: field for name, (_, field) in _inherited_field_owners(models).items()}
+
+
+def _inherited_field_owners(models: list[DataModel]) -> dict[str, tuple[DataModel, DataModelFieldBase]]:
+    """Return the lookup of `get_inherited_fields` with the model that declares each field."""
+    original_names: dict[str, tuple[DataModel, DataModelFieldBase]] = {}
+    generated_names: dict[str, tuple[DataModel, DataModelFieldBase]] = {}
     for model in linearize_data_models(models):
         for field in model.fields:
             if field.original_name is not None:
-                original_names.setdefault(field.original_name, field)
+                original_names.setdefault(field.original_name, (model, field))
             if field.name is not None:
-                generated_names.setdefault(field.name, field)
+                generated_names.setdefault(field.name, (model, field))
     generated_names.update(original_names)
     return generated_names
 

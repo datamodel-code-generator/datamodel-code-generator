@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: A grandchild in a module processed between its parent's and its grandparent's
+  version: "1"
+paths: {}
+components:
+  schemas:
+    y.GrandChild:
+      allOf:
+        - $ref: '#/components/schemas/z.Child'
+        - properties:
+            x:
+              description: The grandchild's x.
+    z.Child:
+      allOf:
+        - $ref: '#/components/schemas/m.Mid'
+        - properties:
+            x:
+              description: The child's x.
+    m.Mid:
+      allOf:
+        - $ref: '#/components/schemas/a.Base'
+        - required: [x]
+    a.Base:
+      type: object
+      properties:
+        x:
+          type: integer

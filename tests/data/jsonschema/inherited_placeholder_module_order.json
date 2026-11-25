@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A subclass listed before its parent in a module processed first",
+  "$defs": {
+    "com.example.pets.Child": {
+      "allOf": [
+        {"$ref": "#/$defs/com.example.Mid"},
+        {"properties": {"x": {"description": "The child's x."}, "c": {"type": "string"}}}
+      ]
+    },
+    "com.example.Mid": {
+      "allOf": [
+        {"$ref": "#/$defs/com.example.Base"},
+        {"required": ["x"], "properties": {"m": {"type": "string"}}}
+      ]
+    },
+    "com.example.Base": {"type": "object", "properties": {"x": {"type": "integer"}}}
+  }
+}
