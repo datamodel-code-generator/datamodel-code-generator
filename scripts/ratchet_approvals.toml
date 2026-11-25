@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline"
+head = 1862
+pr = 7530
+decision = ["#7530"]
+reason = "#7530 moves the layer import rules into heki import boundaries: the 9 imports the architecture checker allowed by name move into the heki baseline (its own allowlist shrinks by 9), and 14 imports by a computed module name (f-strings, user-given modules, lazy tables) are recorded as IMP202 until they are imported by name (owner decision, 2026-11-25)"
