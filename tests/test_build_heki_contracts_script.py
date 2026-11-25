@@ -1547,11 +1547,7 @@ def test_heki_reports_a_pass_that_writes_beyond_its_declaration(tmp_path: Path) 
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(
-        '[lint]\nselect = ["EFF201"]\n\n'
-        + "\n".join(build_heki_contracts.finality_contracts(repo, SEEDED_PASS_DECLS, {}, SEEDED_PASS_ROWS)),
-        encoding="utf-8",
-    )
+    _contracts_file(contracts, build_heki_contracts.finality_contracts(repo, SEEDED_PASS_DECLS, {}, SEEDED_PASS_ROWS))
 
     result = _heki("--output-format", "json", cwd=tmp_path, config=contracts)
 
