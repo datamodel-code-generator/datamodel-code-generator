@@ -503,9 +503,7 @@ class ArchitectureBoundaryReader:
         if reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS or reading.last_name(func) not in _DYNAMIC_IMPORT_NAMES:
             return
         head = reading.head(func)
-        through_star = (
-            isinstance(func, ast.Name) and head is not None and reading.model.resolve(head.node).kind == "star"
-        )
+        through_star = head is not None and head.node is func and reading.model.resolve(head.node).kind == "star"
         if through_star or (isinstance(func, ast.Attribute) and self.layer != "shared-model"):
             self._add(
                 node,
