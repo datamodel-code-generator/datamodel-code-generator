@@ -6754,7 +6754,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "or an object, unmatched, unevaluated, held as a `JsonSchemaObject` field, definitions); a walker that "
             "visits another set or order than a role gives keeps it as a named view of the table; the keywords that "
             "hold schemas only for references (`DEFINITION_KEYS`) and those whose values are instance data; the "
-            "subschemas one keyword holds, read by its shape, and the walk over every value of a loaded JSON value"
+            "subschemas one keyword holds, read by its shape, and the walk over every value of a loaded JSON value "
+            "(the tool table of a generated client keeps its own copy of the keywords that hold schemas, "
+            "`_runtime/client/tools.py`: `_NAMING` and `_HOLDING`, as the runtime never imports the generator)"
         ),
         homes=(
             Home("_json_schema.py", "SCHEMA_POSITIONS"),
