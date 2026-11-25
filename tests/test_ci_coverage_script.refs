@@ -13,11 +13,8 @@ entrypoint-data-directory	ci_coverage_script/coverage_artifact_cli[entrypoint-da
 entrypoint-duplicate	ci_coverage_script/coverage_artifact_cli[entrypoint-duplicate].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-artifact-file].txt
 entrypoint-empty	ci_coverage_script/coverage_artifact_cli[entrypoint-empty].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-data-directory].txt
 entrypoint-invalid-json	ci_coverage_script/coverage_artifact_cli[entrypoint-invalid-json].txt
-entrypoint-main-only-missing	ci_coverage_script/coverage_artifact_cli[entrypoint-main-only-missing].txt
 entrypoint-missing	ci_coverage_script/coverage_artifact_cli[entrypoint-missing].txt
 entrypoint-missing-root	ci_coverage_script/coverage_artifact_cli[entrypoint-missing-root].txt
-entrypoint-pull-request-complete	ci_coverage_script/coverage_artifact_cli[entrypoint-pull-request-complete].txt
-entrypoint-pull-request-main-only	ci_coverage_script/coverage_artifact_cli[entrypoint-pull-request-main-only].txt
 entrypoint-record-empty	ci_coverage_script/coverage_artifact_cli[entrypoint-record-empty].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-data-directory].txt
 entrypoint-record-missing	ci_coverage_script/coverage_artifact_cli[entrypoint-record-missing].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-data-directory].txt
 entrypoint-record-unknown	ci_coverage_script/coverage_artifact_cli[entrypoint-record-unknown].txt
@@ -26,7 +23,6 @@ entrypoint-report-executed-exclusion	ci_coverage_script/coverage_artifact_cli[en
 entrypoint-report-missing-input	ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-input].txt
 entrypoint-report-missing-lines	ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-lines].txt
 entrypoint-report-no-source	ci_coverage_script/coverage_artifact_cli[entrypoint-report-no-source].txt
-entrypoint-report-pull-request	ci_coverage_script/coverage_artifact_cli[entrypoint-report-pull-request].txt
 entrypoint-report-stale-data	ci_coverage_script/coverage_artifact_cli[entrypoint-report-stale-data].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-input].txt
 entrypoint-stale-destination	ci_coverage_script/coverage_artifact_cli[entrypoint-stale-destination].txt
 entrypoint-unexpected	ci_coverage_script/coverage_artifact_cli[entrypoint-unexpected].txt
@@ -39,11 +35,8 @@ subprocess-data-directory	ci_coverage_script/coverage_artifact_cli[subprocess-da
 subprocess-duplicate	ci_coverage_script/coverage_artifact_cli[subprocess-duplicate].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-artifact-file].txt
 subprocess-empty	ci_coverage_script/coverage_artifact_cli[subprocess-empty].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-data-directory].txt
 subprocess-invalid-json	ci_coverage_script/coverage_artifact_cli[subprocess-invalid-json].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-invalid-json].txt
-subprocess-main-only-missing	ci_coverage_script/coverage_artifact_cli[subprocess-main-only-missing].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-main-only-missing].txt
 subprocess-missing	ci_coverage_script/coverage_artifact_cli[subprocess-missing].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-missing].txt
 subprocess-missing-root	ci_coverage_script/coverage_artifact_cli[subprocess-missing-root].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-missing-root].txt
-subprocess-pull-request-complete	ci_coverage_script/coverage_artifact_cli[subprocess-pull-request-complete].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-pull-request-complete].txt
-subprocess-pull-request-main-only	ci_coverage_script/coverage_artifact_cli[subprocess-pull-request-main-only].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-pull-request-main-only].txt
 subprocess-record-empty	ci_coverage_script/coverage_artifact_cli[subprocess-record-empty].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-data-directory].txt
 subprocess-record-missing	ci_coverage_script/coverage_artifact_cli[subprocess-record-missing].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-data-directory].txt
 subprocess-record-unknown	ci_coverage_script/coverage_artifact_cli[subprocess-record-unknown].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-record-unknown].txt
@@ -52,7 +45,6 @@ subprocess-report-executed-exclusion	ci_coverage_script/coverage_artifact_cli[su
 subprocess-report-missing-input	ci_coverage_script/coverage_artifact_cli[subprocess-report-missing-input].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-input].txt
 subprocess-report-missing-lines	ci_coverage_script/coverage_artifact_cli[subprocess-report-missing-lines].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-lines].txt
 subprocess-report-no-source	ci_coverage_script/coverage_artifact_cli[subprocess-report-no-source].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-report-no-source].txt
-subprocess-report-pull-request	ci_coverage_script/coverage_artifact_cli[subprocess-report-pull-request].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-report-pull-request].txt
 subprocess-report-stale-data	ci_coverage_script/coverage_artifact_cli[subprocess-report-stale-data].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-report-missing-input].txt
 subprocess-stale-destination	ci_coverage_script/coverage_artifact_cli[subprocess-stale-destination].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-stale-destination].txt
 subprocess-unexpected	ci_coverage_script/coverage_artifact_cli[subprocess-unexpected].txt	= ci_coverage_script/coverage_artifact_cli[entrypoint-unexpected].txt
