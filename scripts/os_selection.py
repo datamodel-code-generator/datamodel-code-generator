@@ -217,8 +217,14 @@ def _defined_tests(path: Path) -> frozenset[str]:
     return frozenset(
         scope.qualname.replace(".", "::")
         for scope in module.scopes
-        if scope.kind == "function" and "<locals>" not in scope.qualname
+        if scope.kind == "function" and "<locals>" not in scope.qualname and _collectible(scope.qualname)
     )
+
+
+def _collectible(qualname: str) -> bool:
+    """Tell whether pytest collects a function of this name: ``test*``, at module level or in a ``Test*`` class."""
+    *classes, name = qualname.split(".")
+    return name.startswith("test") and all(part.startswith("Test") for part in classes)
 
 
 def platform_functions(root: Path) -> dict[str, set[str]]:

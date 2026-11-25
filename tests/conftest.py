@@ -692,6 +692,7 @@ class SlowTestOrdering:
         if (
             (selection := self.selection) is None
             or not collection_path.is_relative_to(config.rootpath)
+            or collection_path.is_dir()
             or not any(fnmatch(collection_path.name, pattern) for pattern in config.getini("python_files"))
             or selection.may_hold(collection_path.relative_to(config.rootpath).as_posix())
         ):
