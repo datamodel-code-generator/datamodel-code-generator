@@ -33,6 +33,7 @@ _PET = {"id": 3, "name": "Rex", "species": "dog", "born": "2020-02-29"}
 _OWNER = "8c2d1f0e-4a5b-4c6d-8e9f-0a1b2c3d4e5f"
 _CREDENTIALS: tuple[dict[str, object], ...] = (
     {"api_key": _CANARY},
+    {"header_key": _CANARY},
     {"bearer": _CANARY},
     {"basic": (_CANARY, _CANARY)},
 )
@@ -43,9 +44,19 @@ def _shown(value: object) -> str:
 
 
 def _echo(request: httpx2.Request) -> httpx2.Response:
-    """Answer 401 with a body that echoes the request's query and Authorization, as some APIs do."""
-    echoed = {"query": request.url.query.decode(), "authorization": request.headers.get("authorization")}
+    """Answer 401 with a body that echoes the request's query, Authorization and API key, as some APIs do."""
+    echoed = {
+        "query": request.url.query.decode(),
+        "authorization": request.headers.get("authorization"),
+        "api_key": request.headers.get("x-api-key"),
+    }
     return json_response(401, echoed)(request)
+
+
+def _echoed_pet(request: httpx2.Request) -> httpx2.Response:
+    """Answer 200 with a pet whose name echoes the request's URL and credential headers, as a `next` link would."""
+    sent = (str(request.url), request.headers.get("authorization"), request.headers.get("x-api-key"))
+    return json_response(200, {**_PET, "name": " ".join(filter(None, sent))})(request)
 
 
 def tool_server(package: ModuleType, lines: list[str]) -> None:
@@ -128,18 +139,22 @@ async def _listed_and_called(package: ModuleType, module: ModuleType, lines: lis
 
 
 def _canary(package: ModuleType, module: ModuleType, lines: list[str]) -> None:
-    """Call a tool with each kind of credential set to a marker the API echoes; no message holds the marker."""
+    """Call a tool with each kind of credential set to a marker the API echoes; no message holds the marker.
+
+    The API echoes it in a refusal and in a result; a result that echoes nothing is the API's data.
+    """
     exchange = Exchange(lines)
     messages = [
         {
             "jsonrpc": "2.0",
-            "id": 2,
+            "id": index,
             "method": "tools/call",
             "params": {"name": "pets_get_pet", "arguments": {"petId": 3}},
-        },
+        }
+        for index in (2, 3, 4)
     ]
     for credentials in _CREDENTIALS:
-        exchange.respond(_echo)
+        exchange.respond(_echo, _echoed_pet, json_response(200, _PET))
         sent = _stdio(partial(module.serve, _clients(package, exchange, max_retries=0, **credentials)), messages)
         lines.append(f"  canary {next(iter(credentials))} sent the marker: {any(_CANARY in line for line in sent)}")
         lines.extend(f"    {line}" for line in _summary(sent)[1:])
@@ -234,7 +249,7 @@ def _summary(sent: list[str]) -> list[str]:
 def tool_descriptions(package: ModuleType, lines: list[str]) -> None:
     """List the tools of a document with hostile text: each description and schema as the server sends them.
 
-    Under --untrusted-input no schema the server sends has a description.
+    Under --untrusted-input no schema the server sends has a description, title, or examples.
     """
     module = import_generated(f"{package.__name__}.mcp_server", copied=True)
     messages: list[dict[str, object]] = [{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}]

@@ -51,16 +51,44 @@
   read-only create ! -32602 No tool is named 'pets_create_pet'
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   canary api_key sent the marker: False
-    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null}}}
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null,"api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3?key=[redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3?key=[redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  canary header_key sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":null,"api_key":"[redacted]"}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 [redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3 [redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
   canary bearer sent the marker: False
-    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Bearer [redacted]"}}}
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Bearer [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Bearer [redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3 Bearer [redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
   canary basic sent the marker: False
-    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Basic [redacted]"}}}
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Basic [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3 Basic [redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
   > GET https://api.example.com/v1/pets/3?key=k
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   stdio 1 server tools_mcp_pydantic_v2_basemodel 2025-11-25
@@ -123,16 +151,44 @@
   read-only create ! -32602 No tool is named 'pets_create_pet'
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   canary api_key sent the marker: False
-    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null}}}
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null,"api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3?key=[redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3?key=[redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  canary header_key sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":null,"api_key":"[redacted]"}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 [redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3 [redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
   canary bearer sent the marker: False
-    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Bearer [redacted]"}}}
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Bearer [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Bearer [redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3 Bearer [redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
   canary basic sent the marker: False
-    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Basic [redacted]"}}}
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Basic [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3 Basic [redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
   > GET https://api.example.com/v1/pets/3?key=k
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   stdio 1 server tools_mcp_pydantic_v2_dataclass 2025-11-25
