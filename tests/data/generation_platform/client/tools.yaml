@@ -6,6 +6,7 @@ servers:
   - url: https://api.example.com/v1
 security:
   - apiKey: []
+  - headerKey: []
   - bearer: []
   - basic: []
 paths:
@@ -161,6 +162,10 @@ components:
       type: apiKey
       in: query
       name: key
+    headerKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
     bearer:
       type: http
       scheme: bearer
@@ -179,7 +184,7 @@ components:
         id: {type: integer}
         name: {type: string, description: What the pet answers to.}
         species: {$ref: '#/components/schemas/Species'}
-        born: {type: string, format: date}
+        born: {type: string, format: date, title: Birthday, examples: ['2020-02-29']}
     NewPet:
       type: object
       required: [name, species]

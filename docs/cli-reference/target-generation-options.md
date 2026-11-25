@@ -3313,14 +3313,14 @@ tool for each operation, named by its client method with `_`, such as `pets_get_
 tools by the words of their names, tags, routes, descriptions, and signatures; `schema(name)` gives the JSON schemas
 of a tool's arguments and result, which Pydantic derives from the models; `call(name, arguments)` validates the JSON
 arguments as JSON through the models, calls the client's method, and returns the JSON result, or an error value with
-the failure's class, status, and bounded body, never its headers or URL, and with each credential the client placed on
-the call's requests replaced by `[redacted]`. The arguments are the operation's parameters by their Python names and
-its JSON body as `body`, never a parameter at a credential's position or the request options, so the credentials stay
-in the client. `read_only=True` leaves out the tools of methods that are not safe. An
+the failure's class, status, and bounded body, never its headers or URL; each credential the client placed on the
+call's requests is replaced by `[redacted]` in both. The arguments are the operation's parameters by their Python
+names and its JSON body as `body`, never a parameter at a credential's position or the request options, so the
+credentials stay in the client. `read_only=True` leaves out the tools of methods that are not safe. An
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
 method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
-summary and description, and `schema(name)` leaves out the `description` of every JSON schema, while the models keep
-theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
+summary and description, and `schema(name)` leaves out the `description`, `title`, and `examples` of every JSON
+schema, while the models keep theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
 
 **Option relationships:**
 
@@ -3347,6 +3347,7 @@ theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the opti
       - url: https://api.example.com/v1
     security:
       - apiKey: []
+      - headerKey: []
       - bearer: []
       - basic: []
     paths:
@@ -3502,6 +3503,10 @@ theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the opti
           type: apiKey
           in: query
           name: key
+        headerKey:
+          type: apiKey
+          in: header
+          name: X-API-Key
         bearer:
           type: http
           scheme: bearer
@@ -3520,7 +3525,7 @@ theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the opti
             id: {type: integer}
             name: {type: string, description: What the pet answers to.}
             species: {$ref: '#/components/schemas/Species'}
-            born: {type: string, format: date}
+            born: {type: string, format: date, title: Birthday, examples: ['2020-02-29']}
         NewPet:
           type: object
           required: [name, species]

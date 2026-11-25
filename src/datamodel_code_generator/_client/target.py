@@ -426,7 +426,7 @@ def _tools(
 
     Under `--untrusted-input` a tool's description leaves out the operation's summary and description, which
     `--use-schema-description` would put in, and generation warns of it once; the JSON schemas of `schema()` leave out
-    every description too, while the models keep their `Field(description=...)` and docstrings.
+    every description, title, and examples keyword too, while the models keep their `Field(...)` and docstrings.
     """
     model_config = request.model_config
     schema = model_config.use_schema_description
@@ -435,9 +435,9 @@ def _tools(
     if schema and model_config.untrusted_input:
         warn(
             f"{output}: Tool descriptions name each operation's route only and the JSON schemas of schema() leave "
-            "out every description, since --untrusted-input keeps the operations' summaries and descriptions and "
-            "the schemas' descriptions out of what agents read; the models keep their Field(description=...) and "
-            "docstrings",
+            "out every description, title and examples keyword, since --untrusted-input keeps the operations' "
+            "summaries and descriptions and the schemas' descriptions, titles and examples out of what agents read; "
+            "the models keep their Field(description=..., title=..., examples=...) and docstrings",
             stacklevel=3,
         )
     for subject, why in left_out:

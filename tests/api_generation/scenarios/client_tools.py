@@ -3,7 +3,8 @@
 A call sends what the client's method sends: the tool takes the operation's parameters and body, never the parameter at
 the API key's position or the request options, so the credential the client holds is the one sent. A refused argument,
 a failed call, and a tool the table has not each return or raise what the tool table documents. An error value shows no
-credential the client placed where the API echoes one, and strict models take the JSON values their schemas describe.
+credential the client placed where the API echoes one, nor does a result that echoes one, and strict models take the
+JSON values their schemas describe.
 """
 
 from __future__ import annotations
@@ -39,10 +40,22 @@ def _shown(value: object) -> str:
 
 
 def _echo(status: int, **headers: str) -> Callable[[httpx2.Request], httpx2.Response]:
-    """Return a responder of an error body that echoes the request's query and Authorization, as some APIs do."""
+    """Return a responder of an error body that echoes the request's query, Authorization and API key, as some do."""
     return lambda request: json_response(
-        status, {"query": request.url.query.decode(), "authorization": request.headers.get("authorization")}, **headers
+        status,
+        {
+            "query": request.url.query.decode(),
+            "authorization": request.headers.get("authorization"),
+            "api_key": request.headers.get("x-api-key"),
+        },
+        **headers,
     )(request)
+
+
+def _echoed_pet(request: httpx2.Request) -> httpx2.Response:
+    """Answer 200 with a pet whose name echoes the request's URL and credential headers, as a `next` link would."""
+    sent = (str(request.url), request.headers.get("authorization"), request.headers.get("x-api-key"))
+    return json_response(200, {**_PET, "name": " ".join(filter(None, sent))})(request)
 
 
 def tools(package: ModuleType, lines: list[str]) -> None:
@@ -73,11 +86,19 @@ def tools(package: ModuleType, lines: list[str]) -> None:
         safe = module.Toolset(api, read_only=True)
         lines.append(f"  read-only search = {[entry['name'] for entry in safe.search(limit=10)]}")
         record(lines, "read-only create", lambda: safe.call("pets_create_pet", {"body": {"name": "a"}}))
-    for credentials in ({"bearer": "token-1"}, {"basic": ("user-1", "password-1")}):
+    for credentials in (
+        {"api_key": "secret/key+1"},
+        {"header_key": "header-key-1"},
+        {"bearer": "token-1"},
+        {"basic": ("user-1", "password-1")},
+    ):
         with exchange.client() as http, package.Client(http_client=http, max_retries=0, **credentials) as api:
+            table = module.Toolset(api)
             exchange.respond(_echo(401))
-            echoed = module.Toolset(api).call("pets_get_pet", {"petId": 3})
-            lines.append(f"  {next(iter(credentials))} echoed = {_shown(echoed)}")
+            lines.append(f"  {next(iter(credentials))} echoed = {_shown(table.call('pets_get_pet', {'petId': 3}))}")
+            exchange.respond(_echoed_pet)
+            echoed = table.call("pets_get_pet", {"petId": 3})
+            lines.append(f"  {next(iter(credentials))} echoed result = {_shown(echoed)}")
     run(lambda: _async_tools(package, module, lines))
 
 
@@ -150,8 +171,9 @@ async def _async_tools(package: ModuleType, module: ModuleType, lines: list[str]
         package.AsyncClient(http_client=http, api_key="secret-key", max_retries=0) as api,
     ):
         table = module.AsyncToolset(api)
-        exchange.respond(json_response(200, _PET), raw_response(404, b'{"code": 4}', "application/json"))
+        exchange.respond(json_response(200, _PET), _echoed_pet, raw_response(404, b'{"code": 4}', "application/json"))
         await arecord(lines, "async get", lambda: table.call("pets_get_pet", {"petId": 3}))
+        await arecord(lines, "async echoed result", lambda: table.call("pets_get_pet", {"petId": 3}))
         await arecord(lines, "async get missing", lambda: table.call("pets_get_pet", {"petId": 4}))
         await arecord(lines, "async refused", lambda: table.call("pets_get_pet", {"petId": "x"}))
         await arecord(lines, "async unknown tool", lambda: table.call("nope", {}))
@@ -199,9 +221,9 @@ def tool_strict(package: ModuleType, lines: list[str]) -> None:
 
 
 def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
-    """Read the schemas of a table generated from untrusted input: no schema in them has a description.
+    """Read the schemas of a table generated from untrusted input: no schema has a description, title, or examples.
 
-    The property named `description` stays, and the models keep their descriptions.
+    The property named `description` stays, and the models keep their descriptions, titles and examples.
     """
     module = import_generated(f"{package.__name__}.tools", copied=True)
     with package.Client(api_key="secret-key") as api:
@@ -214,5 +236,6 @@ def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
     lines.extend((
         f"  model Pet description = {models.Pet.model_json_schema()['description']!r}",
         f"  model Owner.description = {_shown(owner)}",
+        f"  model Pet.born = {_shown(models.Pet.model_json_schema()['properties']['born'])}",
         f"  async schema = {_shown(module.AsyncToolset(object()).schema('pets_get_pet'))}",
     ))

@@ -21,7 +21,7 @@ class Pet(BaseModel):
     id: int
     name: str = Field(..., description='What the pet answers to.')
     species: Species
-    born: date | None = None
+    born: date | None = Field(None, examples=['2020-02-29'], title='Birthday')
 
 
 class NewPet(BaseModel):

@@ -419,12 +419,12 @@ class _Facades:
         )
 
     @staticmethod
-    def tools(*, descriptions: bool) -> Templated:
+    def tools(*, prose: bool) -> Templated:
         """Return the tools module: the tool table of each client, over the plans of every tool.
 
-        A table without `descriptions` leaves the models' descriptions out of the JSON schemas it gives.
+        A table without `prose` leaves the models' descriptions, titles, and examples out of the JSON schemas it gives.
         """
-        attributes = (Attribute("plans", "TOOLS"), *(() if descriptions else (Attribute("descriptions", "False"),)))
+        attributes = (Attribute("plans", "TOOLS"), *(() if prose else (Attribute("prose", "False"),)))
         return facade_module(
             "tools",
             "Tools over this package's operations, for agents: search them, read their JSON schemas, and call them.",
@@ -3433,7 +3433,7 @@ class ClientRenderer:
         The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds. The
         README names the model backend and the runtime dependencies, and a template directory overrides builtin roles.
         Operation methods are documented by the models' docstring options, and `tools` are those of a package with a
-        tool table, whose JSON schemas leave the models' descriptions out for `untrusted_input`.
+        tool table, whose JSON schemas leave the models' descriptions, titles, and examples out for `untrusted_input`.
         """
         self.config = config
         self.plan = plan
@@ -3666,7 +3666,7 @@ class ClientRenderer:
         if (protocols := facades.protocols()) is not None:
             yield self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols)
         if self.tools is not None:
-            yield self.file(PurePosixPath("tools.py"), "tools", facades.tools(descriptions=not self.untrusted_input))
+            yield self.file(PurePosixPath("tools.py"), "tools", facades.tools(prose=not self.untrusted_input))
         resources_docstring = facade_module("resources", "The resources of the clients.")
         yield self.file(PurePosixPath("resources", "__init__.py"), "package", resources_docstring)
 
