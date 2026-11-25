@@ -12,4 +12,8 @@ covers = [
     "architecture_boundaries/architecture_boundary_detector_rejects_root_and_main_imports.txt",
     "architecture_boundaries/architecture_boundary_detector_reports_cross_layer_dependencies.txt",
     "architecture_boundaries/reference_allowlist_is_symbol_specific.txt",
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
+    "where_script/where_grammar[line-in-a-comprehension].txt",
+    "where_script/where_grammar[line-in-a-script].txt",
+    "where_script/where_grammar[path-with-no-rows].txt",
 ]
