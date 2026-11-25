@@ -208,8 +208,6 @@ def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
     parser._graph_builder.adopt_base_options(model)
     fields = model.flatten_base_layouts(adopt)
     with parser._graph_builder.defer_refresh():
-        for base_class in model.base_classes:
-            parser._graph_builder.detach_data_type_ref(base_class)
         parser._graph_builder.set_fields(model, fields)
         parser._graph_builder.reset_base_classes(model)
 
