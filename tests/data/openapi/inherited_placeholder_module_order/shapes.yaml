@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Subclasses listed before parents whose own bases give an inherited property
+  version: "1"
+paths: {}
+components:
+  schemas:
+    com.example.pets.dogs.FourChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.FourMid'
+        - properties:
+            x:
+              description: Four child x.
+    com.example.pets.FourMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.FourMid2'
+        - properties:
+            x:
+              description: Four mid x.
+    com.example.FourMid2:
+      allOf:
+        - $ref: '#/components/schemas/com.example.FourBase'
+        - required: [x]
+    com.example.FourBase:
+      type: object
+      properties:
+        x:
+          type: integer
+    com.example.pets.dogs.PairChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.PairMid'
+        - $ref: '#/components/schemas/com.example.PairOther'
+        - properties:
+            x:
+              description: Pair child x.
+    com.example.pets.PairMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.PairBase'
+        - required: [x]
+    com.example.PairOther:
+      type: object
+      properties:
+        o:
+          type: string
+    com.example.PairBase:
+      type: object
+      properties:
+        x:
+          type: integer
+    com.example.pets.dogs.AliasChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.AliasMid'
+        - properties:
+            x-y:
+              description: Alias child x-y.
+    com.example.pets.AliasMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.AliasBase'
+        - required: [x-y]
+    com.example.AliasBase:
+      type: object
+      properties:
+        x-y:
+          $ref: '#/components/schemas/com.example.AliasOther'
+    com.example.AliasOther:
+      type: object
+      properties:
+        o:
+          type: string
+    com.example.pets.dogs.ListChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.ListMid'
+        - properties:
+            x:
+              description: List child x.
+    com.example.pets.ListMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.ListBase'
+        - required: [x]
+    com.example.ListBase:
+      type: object
+      properties:
+        x:
+          type: array
+          items:
+            type: string
+          default: [a]
+          nullable: true
+    com.example.pets.dogs.BoundChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.BoundMid'
+        - properties:
+            x:
+              description: Bound child x.
+            c:
+              type: string
+    com.example.pets.BoundMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.BoundBase'
+        - required: [x]
+          properties:
+            x:
+              description: Bound mid x.
+              maximum: 10
+    com.example.BoundBase:
+      type: object
+      properties:
+        x:
+          type: integer
+          minimum: 0
+    com.example.pets.dogs.TagHolder:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: '#/components/schemas/com.example.pets.dogs.TagChild'
+            - $ref: '#/components/schemas/com.example.pets.TagMid'
+          discriminator:
+            propertyName: kind
+            mapping:
+              child: '#/components/schemas/com.example.pets.dogs.TagChild'
+              mid: '#/components/schemas/com.example.pets.TagMid'
+    com.example.pets.dogs.TagChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.TagMid'
+        - properties:
+            kind:
+              description: Tag child kind.
+    com.example.pets.TagMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.TagBase'
+        - required: [kind]
+    com.example.TagBase:
+      type: object
+      properties:
+        kind:
+          type: string
+        b:
+          type: integer
+    com.example.pets.dogs.MetaChild:
+      allOf:
+        - $ref: '#/components/schemas/com.example.pets.MetaMid'
+        - properties:
+            x:
+              description: Meta child x.
+    com.example.pets.MetaMid:
+      allOf:
+        - $ref: '#/components/schemas/com.example.MetaBase'
+        - required: [x]
+    com.example.MetaBase:
+      type: object
+      properties:
+        x:
+          type: integer
+          minimum: 1
+          example: 4

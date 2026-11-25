@@ -19,6 +19,7 @@ from typing_extensions import TypedDict
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from datamodel_code_generator.enums import AllOfMergeMode
     from datamodel_code_generator.model.base import DataModelFieldBase
 
 __all__ = [
@@ -31,6 +32,7 @@ __all__ = [
     "FieldFacts",
     "FieldIdentity",
     "FieldRow",
+    "InheritedCopyOptions",
     "RequiredFieldHost",
     "field_options_left_out",
     "require_field",
@@ -111,6 +113,19 @@ class FieldCopyFacts(TypedDict, total=False):
     default: Any
     has_default: bool
     use_default_with_required: bool
+
+
+class InheritedCopyOptions(TypedDict):
+    """The options a copy of a deferred inherited field takes (``_field_copies.py:_copy_resolved_inherited_field``).
+
+    ``register_references`` registers the copy with the references its types name; a copy that only another copy reads
+    is made without.
+    """
+
+    force_optional: bool
+    partial_merge_mode: AllOfMergeMode
+    reserved_names: set[str]
+    register_references: bool
 
 
 class FieldFacts(TypedDict, total=False):

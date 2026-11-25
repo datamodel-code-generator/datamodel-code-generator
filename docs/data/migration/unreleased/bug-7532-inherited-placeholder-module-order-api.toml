@@ -1,0 +1,13 @@
+[[change]]
+id = "bug-7532-inherited-placeholder-module-order-api"
+category = "api"
+title = "A model method that says whether a subclass keeps the types of inherited fields"
+summary = "DataModel.keeps_inherited_field_types() returns whether a subclass declares an inherited field as its bases declare it, as a TypedDict does; the parser reads it to decide how a subclass written before its parent takes a property the parent requires. Nothing is removed or changed."
+refs = ["#7535"]
+decision = ["#7535"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: Equal subclasses of a parent processed after them, one listed before it
+  version: "1"
+paths: {}
+components:
+  schemas:
+    z.Holder:
+      type: object
+      properties:
+        one:
+          $ref: '#/components/schemas/z.Child1'
+        three:
+          $ref: '#/components/schemas/z.Child3'
+    z.Child1:
+      allOf:
+        - $ref: '#/components/schemas/m.Mid'
+        - properties:
+            x:
+              description: The child's x.
+    m.Mid:
+      allOf:
+        - $ref: '#/components/schemas/b.Base'
+        - required: [x]
+    z.Child3:
+      allOf:
+        - $ref: '#/components/schemas/m.Mid'
+        - properties:
+            x:
+              description: The child's x.
+    b.Base:
+      type: object
+      properties:
+        x:
+          type: integer

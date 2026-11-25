@@ -1830,6 +1830,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     def opt_out_of_inherited_tag(self) -> None
     def has_keyword_only_definition(self) -> bool
     def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None
+    def keeps_inherited_field_types(self) -> bool
     def adopt_base_options(self) -> None
     def flatten_base_layouts(self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]) -> list[DataModelFieldBase]
     def orders_required_assignments_before_defaults(self) -> bool
