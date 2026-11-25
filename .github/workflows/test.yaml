@@ -863,6 +863,7 @@ jobs:
       EXTRA_TESTS: ${{ matrix.extra_tests }}
       EXCLUDE_TESTS: ${{ matrix.exclude_tests }}
       SHARD_PROFILE: ${{ matrix.profile }}
+      OS_SELECTION: ${{ matrix.os_selection }}
       WINDOWS_TOX_UV_VERSION: "1.35.2"
       WINDOWS_TOX_VERSION: "4.56.1"
       WINDOWS_UV_VERSION: "0.13.4"
@@ -911,9 +912,21 @@ jobs:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Select test shard
       run: |
+        if [ -n "$OS_SELECTION" ]; then
+          echo tests > .tox/ci-shard-tests.txt
+          exit 0
+        fi
         exclude_args=()
         if [ -n "$EXCLUDE_TESTS" ]; then
           exclude_args=(--exclude "$EXCLUDE_TESTS")
+        fi
+        if [ "$OS" != "ubuntu-24.04" ]; then
+          python_bin=".tox/$TOX_ENV/bin/python"
+          [ -x "$python_bin" ] || python_bin=".tox/$TOX_ENV/Scripts/python.exe"
+          "$python_bin" scripts/os_selection.py ubuntu-only > .tox/ubuntu-only.txt
+          while IFS= read -r module; do
+            exclude_args+=(--exclude "${module%$'\r'}")
+          done < .tox/ubuntu-only.txt
         fi
         python scripts/select_ci_test_shard.py --profile "$SHARD_PROFILE" "${exclude_args[@]}" --write-recipe .tox/ci-shard-recipe.json
         python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
@@ -958,6 +971,10 @@ jobs:
         if [ "${{ github.event_name == 'pull_request' && (matrix.coverage != true || matrix.tox_env != 'py314-parallel') }}" = "true" ]; then
           value_check_args=(--skip-value-checks)
         fi
+        selection_args=()
+        if [ -n "$OS_SELECTION" ]; then
+          selection_args=("--os-selection=$OS_SELECTION" "--test-shard=$SHARD_INDEX/$SHARD_TOTAL")
+        fi
         tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
           -n auto \
           --dist=worksteal \
@@ -966,6 +983,7 @@ jobs:
           --junitxml ".tox/junit.$TOX_ENV-shard$SHARD_INDEX-$OS.xml" \
           "${coverage_args[@]}" \
           "${value_check_args[@]}" \
+          "${selection_args[@]}" \
           "${part_args[@]}" \
           "${test_paths[@]}"
       shell: bash
@@ -1021,276 +1039,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 2
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 3
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 4
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 5
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 6
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 7
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 8
-            shard_total: 9
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 9
-            shard_total: 9
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 2
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 3
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 4
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 5
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 6
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 7
-            shard_total: 8
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "windows"
-            os: windows-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 8
-            shard_total: 8
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 7
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 2
-            shard_total: 7
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 3
-            shard_total: 7
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 4
-            shard_total: 7
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 5
-            shard_total: 7
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 6
-            shard_total: 7
-          - tox_env: py315-nocov-parallel
-            name: "3.15"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 7
-            shard_total: 7
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 1
-            shard_total: 6
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 2
-            shard_total: 6
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 3
-            shard_total: 6
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 4
-            shard_total: 6
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 5
-            shard_total: 6
-          - tox_env: py311-nocov-parallel
-            name: "3.11"
-            profile: "macos"
-            os: macos-latest
-            coverage: false
-            extra_tests: ""
-            exclude_tests: tests/main/test_payload_validation.py
-            shard: 6
-            shard_total: 6
           - tox_env: py312-blacklatest-nocov-parallel
             name: "py312-black-latest"
             profile: "3.12"
@@ -1367,9 +1115,85 @@ jobs:
     env: *test-shard-env
     steps: *test-shard-steps
 
+  test-shard-os-selection:
+    # Pull requests run on Windows and macOS only the tests tests/os_selection.toml selects (scripts/os_selection.py);
+    # after merging, test-shard-nocov-main runs the whole suite there.
+    name: >-
+      ${{ matrix.name }} selection on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || 'macOS' }}
+      shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: >-
+      github.event_name == 'pull_request' && (github.event.pull_request.stack == null
+      || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
+      || github.event.pull_request.stack.position == github.event.pull_request.stack.size)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 1
+            shard_total: 2
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 2
+            shard_total: 2
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 1
+            shard_total: 2
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 2
+            shard_total: 2
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 1
+            shard_total: 2
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 2
+            shard_total: 2
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            os_selection: tests/os_selection.toml
+            shard: 1
+            shard_total: 1
+    runs-on: ${{ matrix.os }}
+    env: *test-shard-env
+    steps: *test-shard-steps
+
   test-shard-nocov-main:
-    # Ubuntu on Python 3.12 and 3.13 and Windows and macOS on Python 3.12 to 3.14 run after merging, without coverage;
-    # pull requests cover every line on Ubuntu 3.11, 3.14 and 3.15 and test Windows and macOS on 3.11 and 3.15.
+    # Ubuntu on Python 3.12 and 3.13 and Windows and macOS on Python 3.11 to 3.15 run after merging, without coverage;
+    # pull requests cover every line on Ubuntu 3.11, 3.14 and 3.15 and run the tests of tests/os_selection.toml on
+    # Windows and macOS 3.11 and 3.15 (test-shard-os-selection).
     name: >-
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
@@ -1937,6 +1761,276 @@ jobs:
             exclude_tests: tests/main/test_payload_validation.py
             shard: 12
             shard_total: 12
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 8
+            shard_total: 9
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 9
+            shard_total: 9
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 8
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 8
+            shard_total: 8
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 7
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 7
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 7
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 7
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 7
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 7
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
     runs-on: ${{ matrix.os }}
     env: *test-shard-env
     steps: *test-shard-steps
@@ -2558,6 +2652,7 @@ jobs:
       - test-shard
       - test-shard-nocov
       - test-shard-nocov-main
+      - test-shard-os-selection
       - test-formatter-subset
       - coverage
       - check
@@ -2573,6 +2668,7 @@ jobs:
             || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
             || github.event.pull_request.stack.position == github.event.pull_request.stack.size }}
           MAIN_ONLY_JOBS: ${{ github.event_name == 'pull_request' && 'test-shard-nocov-main' || '' }}
+          PR_ONLY_JOBS: ${{ github.event_name != 'pull_request' && 'test-shard-os-selection' || '' }}
           ALWAYS_ON_JOBS: ratchets behaviour-gate
         run: |
           import json
@@ -2582,7 +2678,7 @@ jobs:
           results = {name: job["result"] for name, job in json.loads(os.environ["NEEDS"]).items()}
           print(json.dumps(results, sort_keys=True))
           expected = "success" if os.environ.get("FULL_TEST_RUN", "true") == "true" else "skipped"
-          main_only = set(os.environ.get("MAIN_ONLY_JOBS", "").split())
+          main_only = set(os.environ.get("MAIN_ONLY_JOBS", "").split()) | set(os.environ.get("PR_ONLY_JOBS", "").split())
           always_on = set(os.environ.get("ALWAYS_ON_JOBS", "").split())
 
           def wanted(name):

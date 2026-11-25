@@ -254,6 +254,21 @@
     "results_match": true,
     "stderr": ""
   },
+  "mid-stack:test-shard-os-selection:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-os-selection:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-os-selection:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "mid-stack:test-shard:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -509,6 +524,26 @@
     "results_match": true,
     "stderr": ""
   },
+  "pull-request:test-shard-os-selection:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-os-selection:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-os-selection:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-os-selection:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
   "pull-request:test-shard:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -650,6 +685,21 @@
     "stderr": ""
   },
   "test-shard-nocov:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-os-selection:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-os-selection:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-os-selection:skipped": {
     "exit": 1,
     "results_match": true,
     "stderr": ""
