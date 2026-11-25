@@ -1050,8 +1050,8 @@ SIGNATURE_CASES: dict[str, tuple[str, dict[str, str], list[dict[str, Any]] | Non
     "stub_beside_module": (
         "pydantic_v2.BaseModel",
         {
-            "model.py": "from mcp_types._wire_base import WireModel\n\n\nclass Model(WireModel):\n    name: str\n",
-            "mcp_types/_wire_base.py": "from pydantic import BaseModel\n\n\nclass WireModel(BaseModel):\n    pass\n",
+            "model.py": "from stub_types._wire_base import WireModel\n\n\nclass Model(WireModel):\n    name: str\n",
+            "stub_types/_wire_base.py": "from pydantic import BaseModel\n\n\nclass WireModel(BaseModel):\n    pass\n",
         },
         None,
     ),
