@@ -102,6 +102,15 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic dXNlci0xOnBhc3N3b3JkLTE=] b''
   basic echoed result = {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential result = {"born": "2020-02-29", "id": "[redacted]", "name": "Rex", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential body = {"escaped": "[redacted]", "number": "[redacted]", "other": 1234}
+  > GET https://api.example.com/v1/pets/3?key=secret%2Fkey%2B1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  slash-escaped body = "{\"detail\": \"key [redacted] refused\""
   > GET https://api.example.com/v1/pets/3?key=secret-key
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   async get = {'id': 3, 'name': 'Rex', 'species': 'dog', 'born': '2020-02-29'}
@@ -217,6 +226,15 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic dXNlci0xOnBhc3N3b3JkLTE=] b''
   basic echoed result = {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential result = {"born": "2020-02-29", "id": "[redacted]", "name": "Rex", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential body = {"escaped": "[redacted]", "number": "[redacted]", "other": 1234}
+  > GET https://api.example.com/v1/pets/3?key=secret%2Fkey%2B1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  slash-escaped body = "{\"detail\": \"key [redacted] refused\""
   > GET https://api.example.com/v1/pets/3?key=secret-key
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   async get = {'id': 3, 'species': 'dog', 'name': 'Rex', 'born': '2020-02-29'}

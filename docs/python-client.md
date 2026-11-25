@@ -1411,8 +1411,8 @@ with the method.
 A result or an error value shows no credential that the client's security schemes placed on the call's requests,
 where the API echoes one, such as a `next` link that repeats the query: every API key (also as its query field encodes
 it), bearer token, Basic user and password, and the credentials they write is replaced with `[redacted]` in the
-strings of the result, keys included, in the request ID, and in the body's text and the strings of its JSON value, and
-so is the end of a cut body that begins one. The table does not know a credential that an `auth`, the HTTP client, or a
+strings and numbers of the result, keys included, in the request ID, in the strings and numbers of a JSON body, and in
+the text of any other body, also as a JSON string escapes it, and so is the end of a cut body that begins one. The table does not know a credential that an `auth`, the HTTP client, or a
 default header sends; otherwise a result is the API's data as the models validate and write it.
 
 The arguments of a tool are the operation's parameters by their Python names and its body as `body`, the body of its

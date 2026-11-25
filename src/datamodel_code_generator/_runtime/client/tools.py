@@ -112,21 +112,29 @@ def failed(error: SDKError, placed: Collection[str]) -> JSONValue:
 def _body(error: APIStatusError, placed: Collection[str]) -> JSONValue:
     """Return the bounded body of a refused call without the credentials placed: its JSON value, else its text, or None.
 
-    The credentials are replaced in the text, and in each string of the JSON value it holds, where an escape spells one.
+    A whole JSON body is parsed before anything is replaced, so the credentials are replaced in the values it holds,
+    where an escape spells one too; the text of any other body has each spelling a JSON string gives one replaced.
     """
     content = error.body_bytes
     if not content:
         return None
-    text = content.decode("utf-8", errors="replace")
-    shown = _redacted(text, placed, cut=error.truncated)
     if not error.truncated:
         try:
-            value = json_value(content if shown == text else shown)
+            value = json_value(content)
         except ValueError:
             pass
         else:
             return _cleared(value, placed)
-    return shown
+    return _redacted(content.decode("utf-8", errors="replace"), _spellings(placed), cut=error.truncated)
+
+
+def _spellings(placed: Collection[str]) -> set[str]:
+    """Return each placed credential and the forms a JSON string may write it in: escaped, ASCII-only, slash-escaped."""
+    forms: set[str] = set()
+    for secret in placed:
+        for escaped in (json_bytes(secret).decode()[1:-1], json_bytes(secret, ascii_only=True).decode()[1:-1]):
+            forms.update((secret, escaped, escaped.replace("/", "\\/")))
+    return forms
 
 
 def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
@@ -144,10 +152,19 @@ def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
 
 
 def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
-    """Return a JSON value, a result or an error's body, whose strings, keys included, hold no placed credential."""
+    """Return a JSON value, a result or an error's body, with no placed credential in its strings, keys or numbers.
+
+    A number whose text holds one becomes the text with it replaced.
+    """
     match value:
         case str():
             return _redacted(value, placed)
+        case bool():
+            return value
+        case int() | float():
+            text = json_bytes(value).decode()
+            shown = _redacted(text, placed)
+            return value if shown == text else shown
         case list():
             return [_cleared(item, placed) for item in value]
         case dict():

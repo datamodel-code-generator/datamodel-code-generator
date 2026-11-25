@@ -99,7 +99,23 @@ def tools(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(_echoed_pet)
             echoed = table.call("pets_get_pet", {"petId": 3})
             lines.append(f"  {next(iter(credentials))} echoed result = {_shown(echoed)}")
+    _spelled_credentials(package, module, exchange, lines)
     run(lambda: _async_tools(package, module, lines))
+
+
+def _spelled_credentials(package: ModuleType, module: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """Echo a credential as a JSON number, in escapes of a JSON body, and slash-escaped in a body that is not JSON."""
+    with exchange.client() as http, package.Client(http_client=http, api_key="123456", max_retries=0) as api:
+        table = module.Toolset(api)
+        exchange.respond(json_response(200, {**_PET, "id": 123456}))
+        lines.append(f"  numeric credential result = {_shown(table.call('pets_get_pet', {'petId': 3}))}")
+        spelled = b'{"number": 123456, "escaped": "\\u0031\\u0032\\u0033\\u0034\\u0035\\u0036", "other": 1234}'
+        exchange.respond(raw_response(401, spelled, "application/json"))
+        lines.append(f"  numeric credential body = {_shown(table.call('pets_get_pet', {'petId': 3})['error']['body'])}")
+    with exchange.client() as http, package.Client(http_client=http, api_key="secret/key+1", max_retries=0) as api:
+        table = module.Toolset(api)
+        exchange.respond(raw_response(401, b'{"detail": "key secret\\/key+1 refused"', "application/json"))
+        lines.append(f"  slash-escaped body = {_shown(table.call('pets_get_pet', {'petId': 3})['error']['body'])}")
 
 
 def _calls(module: ModuleType, api: object, exchange: Exchange, lines: list[str]) -> None:

@@ -1,0 +1,7 @@
+[[change]]
+id = "client-tools-mcp-redaction"
+extends = "client-tools-functions"
+refs = ["#7527"]
+covers = [
+    "api_generation/client_runtime/client_runtime[tools].txt",
+]
