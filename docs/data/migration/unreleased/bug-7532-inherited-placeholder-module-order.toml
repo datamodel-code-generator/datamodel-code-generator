@@ -213,3 +213,10 @@ input = ["tests/data/openapi/inherited_placeholder_module_order/**", "tests/data
 backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct"]
 options = "*"
 aspects = ["type", "default", "numbered-name-removed"]
+
+[[change.cells]]
+input = ["payload:openapi/inherited_placeholder_module_order/**"]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct"]
+options = "*"
+input_file_type = "openapi"
+aspects = ["type"]
