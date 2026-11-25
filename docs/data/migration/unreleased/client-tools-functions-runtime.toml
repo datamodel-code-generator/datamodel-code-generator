@@ -1,0 +1,13 @@
+[[change]]
+id = "client-tools-functions-runtime"
+category = "experimental"
+title = "The copied client runtime notes the credentials a call places"
+summary = "positions.py of every generated client package gains placed_credentials() and note_placed(), which the auth runtime calls for each credential it places on a request, so the tools of --client-tools can leave them out of error values. Requests, responses and errors of a client are unchanged."
+kind = "experimental"
+action = "none"
+source = "release-note"
+refs = ["#7517"]
+affects = { experimental = ["cli-option.generate-client"] }
+covers = [
+    "api_generation/client_publication/client_capabilities[minimal].txt",
+]
