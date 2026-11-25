@@ -448,6 +448,7 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/main/test_main_general.py::test_list_experimental*", "*", Owner.LISTING),
     ("tests/main/test_main_general.py::test_invalid_cli_option_suggestions*", "*", Owner.LISTING),
     ("tests/main/test_main_recommend_options.py::*", "*", Owner.LISTING),
+    ("tests/main/test_main_write_pyproject_config.py::*", "*", Owner.LISTING),
     ("tests/main/test_option_stage_order.py::test_cli_option_relation_rows*", "*", Owner.LISTING),
     ("tests/main/test_agent_skill.py::*", "*", Owner.LISTING),
     ("tests/skills/*", "*", Owner.LISTING),
