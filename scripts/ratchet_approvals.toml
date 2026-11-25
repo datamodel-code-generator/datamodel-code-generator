@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline:EFF201"
+head = 66
+pr = 7513
+decision = ["#7513"]
+reason = "the heki pass boundaries of #7513 baseline the 7 findings the runtime finality check already lists as known (8 sites) and 15 sites where heki reads a write to a fresh copy in override_required_field as a write to the input (heki request H31); the runtime check keeps every rule (owner decision, 2026-11-25)"
