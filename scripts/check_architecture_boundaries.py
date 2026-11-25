@@ -496,15 +496,21 @@ class ArchitectureBoundaryReader:
     def _check_unjudged_dynamic_import(self, node: ast.Call) -> None:
         """Refuse a dynamic import call that heki cannot read as ``importlib.import_module`` or ``__import__``.
 
-        A name only a star import may bind and, outside shared model code, an attribute of that name on any other
-        object count as dynamic imports; heki's import boundaries see neither, so they stay out of the code unjudged.
+        heki reads a call only when its name resolves to one of them alone. A name that may resolve to one on some
+        path but not on all (bound to importlib on one branch, or rebound later), a name only a star import may bind
+        and, outside shared model code, an attribute of that name on any other object count as dynamic imports; heki's
+        import boundaries see none of them, so they stay out of the code unjudged.
         """
         reading, func = self.reading, node.func
-        if reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS or reading.last_name(func) not in _DYNAMIC_IMPORT_NAMES:
+        if reading.last_name(func) not in _DYNAMIC_IMPORT_NAMES:
+            return
+        single = reading.model.origin(func)
+        if single is not None and {single, reading.package.resolve(single)} & _DYNAMIC_IMPORT_ORIGINS:
             return
         head = reading.head(func)
         through_star = head is not None and head.node is func and reading.model.resolve(head.node).kind == "star"
-        if through_star or (isinstance(func, ast.Attribute) and self.layer != "shared-model"):
+        partly = bool(reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS)
+        if partly or through_star or (isinstance(func, ast.Attribute) and self.layer != "shared-model"):
             self._add(
                 node,
                 "unjudged-dynamic-import",

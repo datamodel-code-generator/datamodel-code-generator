@@ -1128,7 +1128,7 @@
 "references/reference_backend_definitions" = "finding: reference/reference-backend-definition 15 19"
 "references/relative_dynamic_imports_by_origin" = "no finding: its layer imports are judged by the heki import boundaries of scripts/heki.toml"
 "references/shared_model_dynamic_import_neutral" = "no finding: the form imports and reads nothing a layer rule reports"
-"references/shared_model_dynamic_import_providers" = "no finding: its layer imports are judged by the heki import boundaries of scripts/heki.toml"
+"references/shared_model_dynamic_import_providers" = "finding: shared-model/unjudged-dynamic-import 43 55"
 "references/shared_model_importlib_dunder_import" = "no finding: its layer imports are judged by the heki import boundaries of scripts/heki.toml"
 "references/skip_markers_by_origin" = "no finding: the form imports and reads nothing a layer rule reports"
 "references/star_import_hides_builtins" = "no finding: the form imports and reads nothing a layer rule reports"
