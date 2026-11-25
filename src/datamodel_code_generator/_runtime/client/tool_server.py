@@ -22,7 +22,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import INVALID_PARAMS, CallToolResult, ListToolsResult, TextContent, Tool, ToolAnnotations
 
 from ..model_codecs.media import json_text
-from .tools import UnknownToolError
+from .tools import UnknownToolError, schema_patterns
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -109,8 +109,13 @@ def _result(outcome: ToolOutcome, *, wrapped: bool) -> CallToolResult:
 
 
 def _described(table: AsyncToolTable[TableClientT], plan: ToolPlan) -> tuple[Tool, bool]:
-    """Return how the server lists a tool, and whether its result is the `result` member of its structured content."""
+    """Return how the server lists a tool, and whether its result is the `result` member of its structured content.
+
+    A result schema that holds a pattern Python's `re` rejects (`rejected_patterns` of the table) is not listed, as an
+    MCP client checks structured content against the output schema with it; the result is the same.
+    """
     arguments, result = table.schemas(plan.name)
+    checkable = table.rejected_patterns.isdisjoint(schema_patterns(result))
     wrapped = result.get("type") != "object"
     if wrapped:
         properties: dict[str, JSONValue] = {_RESULT: {key: value for key, value in result.items() if key != "$defs"}}
@@ -121,7 +126,7 @@ def _described(table: AsyncToolTable[TableClientT], plan: ToolPlan) -> tuple[Too
         name=plan.name,
         description=plan.description,
         input_schema=arguments,
-        output_schema=result,
+        output_schema=result if checkable else None,
         annotations=annotations,
     )
     return tool, wrapped

@@ -10,20 +10,35 @@ method and is left out of the table, with the reasons.
 from __future__ import annotations
 
 import re
+from ast import literal_eval
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.plan import STREAMED
+from datamodel_code_generator._regex_syntax import python_rejects
 from datamodel_code_generator._runtime.client.positions import protected_positions, secret_names
 from datamodel_code_generator._runtime.model_codecs.media import essence, media_range
+from datamodel_code_generator._target_contract import (
+    ConstructorType,
+    GenericType,
+    LiteralScalar,
+    SourceExpression,
+    UnionType,
+)
 from datamodel_code_generator._target_operations import CLIENT, operation_docstring
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator
+    from collections.abc import Container, Iterable, Iterator
 
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec
-    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_contract import (
+        FieldUseBinding,
+        TypeArgument,
+        TypeUseBinding,
+        TypeUseId,
+        TypeView,
+    )
 
 MCP_DEPENDENCY: Final = "mcp>=2.3.0"
 """The requirement of a package whose tools are served over MCP: the release of the SDK its server is tested with."""
@@ -116,6 +131,48 @@ def plan_tools(
             )
         )
     return tuple(tools), left_out
+
+
+def rejected_patterns(fields: Iterable[FieldUseBinding]) -> frozenset[str]:
+    """Return the patterns of the models' fields that Python's `re` rejects, decided statically (`python_rejects`).
+
+    They are those of each field's call and of its constrained types, as the models write them and as their JSON
+    schemas hold them; an MCP client, which checks a result against its schema with Python's `re`, cannot read them.
+    """
+    return frozenset(
+        pattern
+        for member in fields
+        if (facts := member.model_facts) is not None
+        for pattern in (*_keyword_patterns(facts.backend.emitted.constructor_keywords), *_type_patterns(facts.type))
+        if python_rejects(pattern)
+    )
+
+
+def _type_patterns(value: TypeView) -> Iterator[str]:
+    """Yield the patterns of a type's constrained strings, those of its arguments and members included."""
+    match value:
+        case ConstructorType():
+            yield from _keyword_patterns(value.keywords)
+        case GenericType():
+            for item in value.arguments:
+                yield from _type_patterns(item)
+        case UnionType():
+            for item in value.members:
+                yield from _type_patterns(item)
+
+
+def _keyword_patterns(keywords: Iterable[tuple[str, TypeArgument]]) -> Iterator[str]:
+    """Yield the pattern a call's `pattern` keyword writes as a string; a compiled one is one Python's `re` read."""
+    for name, value in keywords:
+        if name == "pattern" and isinstance(text := _written(value), str):
+            yield text
+
+
+def _written(value: TypeArgument) -> object:
+    """Return the value a keyword argument writes: a literal's, that of the source text of one, else None."""
+    if isinstance(value, SourceExpression):
+        return literal_eval(value.text)
+    return value.value if isinstance(value, LiteralScalar) else None
 
 
 def _argument(

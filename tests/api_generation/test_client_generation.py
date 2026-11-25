@@ -305,6 +305,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "tools-adversarial",
         "tools-extras",
         "tools-mcp",
+        "tools-mcp-patterns",
+        "tools-mcp-patterns-fields",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

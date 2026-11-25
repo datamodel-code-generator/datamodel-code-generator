@@ -11,7 +11,7 @@ does not hand it to the caller; arguments a tool refuses return each problem.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Iterator, Mapping
 from dataclasses import dataclass
 from operator import itemgetter
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Protocol
@@ -196,6 +196,21 @@ def _subschema(value: JSONValue) -> JSONValue:
     return _undescribed(value) if isinstance(value, dict) else value
 
 
+def schema_patterns(schema: Mapping[str, JSONValue]) -> Iterator[str]:
+    """Yield the regular expressions of a JSON schema and of the schemas it holds, `pattern` and `patternProperties`."""
+    for keyword, value in schema.items():
+        match keyword, value:
+            case "pattern", str():
+                yield value
+            case "patternProperties", dict():
+                yield from value
+        held = value.values() if keyword in _NAMING and isinstance(value, dict) else ()
+        if keyword in _HOLDING:
+            held = value if isinstance(value, list) else (value,)
+        for item in held:
+            yield from schema_patterns(item) if isinstance(item, dict) else ()
+
+
 class ToolCodec(Protocol):
     """The codec of a model type, as a Pydantic backend's: its type, its validation, and its JSON encoding.
 
@@ -270,6 +285,8 @@ class _Table(Generic[ClientT]):
     plans: ClassVar[tuple[ToolPlan, ...]] = ()
     descriptions: ClassVar[bool] = True
     """Whether the JSON schemas keep the descriptions of the models; False in a table generated from untrusted input."""
+    rejected_patterns: ClassVar[frozenset[str]] = frozenset()
+    """The patterns of the models that Python's `re` rejects, as generation decided, which MCP clients cannot check."""
 
     def __init__(self, client: ClientT, *, read_only: bool = False) -> None:
         """Keep the client the tools call, and the tools, without those of unsafe methods when read-only."""

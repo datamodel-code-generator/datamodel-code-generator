@@ -171,7 +171,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "`--client-tools mcp` also adds `mcp_server.py`, which serves the tools of the asyncio client over MCP "
             "through the low-level server of the `mcp` SDK: `server(client)` returns the server, `serve(make_client)` "
             "and `python -m <package>.mcp_server` serve it on stdin and stdout. Each tool is listed with the JSON "
-            "schemas `schema(name)` gives and with read-only and idempotent annotations from its HTTP method; a "
+            "schemas `schema(name)` gives, without the output schema where it holds a pattern Python's `re` rejects, "
+            "and with read-only and idempotent annotations from its HTTP method; a "
             "refused argument or a failed call is a result marked as an error, and an unknown tool a protocol error. "
             "The server looks up no credentials, and the printed requirements gain `mcp`."
         ),

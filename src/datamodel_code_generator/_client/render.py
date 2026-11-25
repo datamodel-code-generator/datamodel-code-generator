@@ -59,6 +59,7 @@ from datamodel_code_generator._client.runtime import (
 )
 from datamodel_code_generator._client.sockets import MessageRoute, SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
+from datamodel_code_generator._client.tools import rejected_patterns
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._openapi_codec_plan import EXTRAS, codec_module
@@ -420,12 +421,21 @@ class _Facades:
         )
 
     @staticmethod
-    def tools(*, descriptions: bool) -> Templated:
+    def tools(*, descriptions: bool, rejected: frozenset[str]) -> Templated:
         """Return the tools module: the tool table of each client, over the plans of every tool.
 
-        A table without `descriptions` leaves the models' descriptions out of the JSON schemas it gives.
+        A table without `descriptions` leaves the models' descriptions out of the JSON schemas it gives, and
+        `rejected` holds the patterns of the models that Python's `re` rejects, which an MCP server lists no schema of.
         """
-        attributes = (Attribute("plans", "TOOLS"), *(() if descriptions else (Attribute("descriptions", "False"),)))
+        attributes = (
+            Attribute("plans", "TOOLS"),
+            *(() if descriptions else (Attribute("descriptions", "False"),)),
+            *(
+                (Attribute("rejected_patterns", f"frozenset({set_display(map(stable_repr, sorted(rejected)))})"),)
+                if rejected
+                else ()
+            ),
+        )
         return facade_module(
             "tools",
             "Tools over this package's operations, for agents: search them, read their JSON schemas, and call them.",
@@ -3688,7 +3698,14 @@ class ClientRenderer:
         if (protocols := facades.protocols()) is not None:
             yield self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols)
         if self.tools is not None:
-            yield self.file(PurePosixPath("tools.py"), "tools", facades.tools(descriptions=not self.untrusted_input))
+            yield self.file(
+                PurePosixPath("tools.py"),
+                "tools",
+                facades.tools(
+                    descriptions=not self.untrusted_input,
+                    rejected=rejected_patterns(self.batch.fields) if self.config.tools == "mcp" else frozenset(),
+                ),
+            )
         if self.config.tools == "mcp":
             yield self.file(PurePosixPath("mcp_server.py"), "mcp_server", facades.mcp_server(self.config.package))
         resources_docstring = facade_module("resources", "The resources of the clients.")

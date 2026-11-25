@@ -614,6 +614,10 @@ tools-left-out	api_generation/client_generation/client_render[tools-left-out].py
 tools-left-out	api_generation/client_generation/client_render[tools-left-out].txt
 tools-mcp	api_generation/client_generation/client_render[tools-mcp].pydantic_v2_BaseModel/
 tools-mcp	api_generation/client_generation/client_render[tools-mcp].txt
+tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].pydantic_v2_BaseModel/
+tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].txt
+tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].pydantic_v2_BaseModel/
+tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].txt
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].pydantic_v2_BaseModel/
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].txt
 type-checking-imports	api_generation/client_generation/client_render[type-checking-imports].msgspec_Struct/

@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: Patterns in tool results
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /letters:
+    get:
+      operationId: getLetters
+      responses:
+        '200':
+          description: A name of letters in any script.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [name]
+                properties:
+                  name: {type: string, pattern: '^\p{L}+$'}
+  /counts:
+    get:
+      operationId: getCounts
+      responses:
+        '200':
+          description: Counts by names that start with a capital letter.
+          content:
+            application/json:
+              schema:
+                type: object
+                patternProperties:
+                  '^\p{Lu}': {type: integer}
+  /codes:
+    get:
+      operationId: getCodes
+      responses:
+        '200':
+          description: A code of lowercase letters.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code]
+                properties:
+                  code: {type: string, pattern: '^[a-z]+$'}

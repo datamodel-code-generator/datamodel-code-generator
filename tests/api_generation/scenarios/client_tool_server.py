@@ -244,3 +244,29 @@ def tool_descriptions(package: ModuleType, lines: list[str]) -> None:
         f"    output {_shown(tool['outputSchema'])}"
         for tool in json.loads(sent[1])["result"]["tools"]
     )
+
+
+def tool_patterns(package: ModuleType, lines: list[str]) -> None:
+    """List and call tools whose results hold patterns; one Python's `re` rejects leaves out the tool's output schema.
+
+    The MCP client validates structured content against an output schema with Python's `re`, so it can call such a tool
+    only when the server lists none; its result is the same either way, and a plain pattern keeps the output schema.
+    """
+    module = import_generated(f"{package.__name__}.mcp_server", copied=True)
+    run(lambda: _patterns_called(package, module, lines))
+
+
+async def _patterns_called(package: ModuleType, module: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    async with (
+        exchange.async_client() as http,
+        package.AsyncClient(http_client=http, max_retries=0) as api,
+        MCPClient(module.server(api)) as session,
+    ):
+        tools = (await session.list_tools()).tools
+        lines.extend(f"  tool {tool.name} output {_shown(tool.output_schema)}" for tool in tools)
+        bodies = ({"name": "Ωmega"}, {"Ärzte": 2}, {"code": "abc"})
+        for name, body in zip((tool.name for tool in tools), bodies, strict=True):
+            exchange.respond(json_response(200, body))
+            result = await session.call_tool(name, {})
+            lines.append(f"  {name} error={result.is_error} {_shown(result.structured_content)}")

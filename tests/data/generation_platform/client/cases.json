@@ -6944,5 +6944,16 @@
     "input": "tools-adversarial.yaml",
     "model": {"use_schema_description": true, "untrusted_input": true},
     "config": {"tools": "mcp"}
+  },
+  "tools-mcp-patterns": {
+    "input": "tools-patterns.yaml",
+    "config": {"tools": "mcp"},
+    "modules": [["client", "tools.py"]]
+  },
+  "tools-mcp-patterns-fields": {
+    "input": "tools-patterns.yaml",
+    "model": {"field_constraints": true},
+    "config": {"tools": "mcp"},
+    "modules": [["client", "tools.py"], ["models.py"]]
   }
 }

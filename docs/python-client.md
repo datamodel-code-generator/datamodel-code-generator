@@ -1464,13 +1464,16 @@ serve(lambda: AsyncClient(base_url="https://eu.shelter.example/v1", bearer=os.en
 
 `tools/list` lists each tool with its description, the JSON schemas `schema(name)` gives as `inputSchema` and
 `outputSchema`, and annotations from its HTTP method: `readOnlyHint` for a safe method and `idempotentHint` for a safe
-method, PUT, and DELETE, as RFC 9110 defines them. A result that is not a JSON object, such as a list or the `None` of
-a 204 response, is the `result` member of the structured content, since protocol revisions before 2026-07-28 take an
-object only. The server only advertises the schemas: `tools/call` validates the arguments through the models, as
-`call` does. A refusal or a failure of the client is a result with `isError: true` whose text is the error value
-`call` returns, with the credentials redacted the same way, and a tool name the server does not list is a protocol
-error (`-32602`). `read_only=True` and `--read-only` leave out the tools of unsafe methods instead of relying on the
-annotations, which the protocol calls hints.
+method, PUT, and DELETE, as RFC 9110 defines them. A tool whose result schema holds a pattern Python's `re` rejects,
+such as the Unicode property `\p{L}` that the models' default engine reads, is listed without `outputSchema`: MCP
+clients check structured content against it with Python's `re`, and could not call the tool. Generation decides which
+patterns those are from their text (`rejected_patterns` of the tool table), and the result is the same. A result that is
+not a JSON object, such as a list or the `None` of a 204 response, is the `result` member of the structured content,
+since protocol revisions before 2026-07-28 take an object only. The server only advertises the schemas: `tools/call`
+validates the arguments through the models, as `call` does. A refusal or a failure of the client is a result with
+`isError: true` whose text is the error value `call` returns, with the credentials redacted the same way, and a tool
+name the server does not list is a protocol error (`-32602`). `read_only=True` and `--read-only` leave out the tools of
+unsafe methods instead of relying on the annotations, which the protocol calls hints.
 
 ## Test code that uses the client
 
