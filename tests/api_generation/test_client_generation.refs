@@ -49,6 +49,7 @@ sockets	api_generation/client_generation/client_documentation[sockets]/
 stream-resume	api_generation/client_generation/client_documentation[stream-resume]/
 streams	api_generation/client_generation/client_documentation[streams]/
 templates	api_generation/client_generation/client_documentation[templates]/
+tools-mcp-empty	api_generation/client_generation/client_documentation[tools-mcp-empty]/
 uploads	api_generation/client_generation/client_documentation[uploads]/
 [test_client_helper_spellings]
 pagination-root-pagination-documents-helper-documents	api_generation/client_generation/client_helper_spellings[pagination-root-pagination-documents-helper-documents].client/

@@ -504,6 +504,7 @@ def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> Non
         "templates",
         "asyncapi-market-v3",
         "asyncapi-events",
+        "tools-mcp-empty",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

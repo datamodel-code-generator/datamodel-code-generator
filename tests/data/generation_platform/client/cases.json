@@ -6955,5 +6955,10 @@
     "model": {"field_constraints": true},
     "config": {"tools": "mcp"},
     "modules": [["client", "tools.py"], ["models.py"]]
+  },
+  "tools-mcp-empty": {
+    "input": "tools.yaml",
+    "model": {"openapi_include_paths": ["/none"]},
+    "config": {"tools": "mcp"}
   }
 }

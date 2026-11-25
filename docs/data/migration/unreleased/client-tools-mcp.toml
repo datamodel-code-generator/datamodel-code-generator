@@ -8,6 +8,7 @@ surface = ["--client-tools"]
 covers = [
     "api_generation/client_cli/tools_mcp.notice.txt",
     "api_generation/client_cli/tools_mcp.py",
+    "api_generation/client_generation/client_documentation[tools-mcp-empty]/",
     "api_generation/client_generation/client_render[tools-mcp-patterns-fields].pydantic_v2_BaseModel/",
     "api_generation/client_generation/client_render[tools-mcp-patterns-fields].txt",
     "api_generation/client_generation/client_render[tools-mcp-patterns].pydantic_v2_BaseModel/",
