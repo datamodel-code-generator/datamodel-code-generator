@@ -1,0 +1,9 @@
+[[change]]
+id = "os-selection-gate-files"
+category = "harness"
+title = "The behaviour gate counts the OS selection script as its own file"
+summary = "tests/conftest.py imports scripts/os_selection.py, so the gate lists it among its files; the package writes the same output."
+refs = ["#7537"]
+covers = [
+    "pre_commit_hooks/oracle_files_are_the_files_the_gate_runs.txt",
+]
