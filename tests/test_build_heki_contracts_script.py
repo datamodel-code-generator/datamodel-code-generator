@@ -396,11 +396,48 @@ def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
     ``IMP202``. The ``allowed.py`` fixtures and the composition root give none; a name bound to ``importlib`` on one
     branch and to another module on the other is no import heki can name.
     """
+    found = _layer_import_reports(tmp_path, SEEDED_LAYER_STUBS, SEEDED_LAYERS)
+
+    assert_output(found)
+
+
+ROOT_IMPORT_FIXTURES = {
+    "__init__.py": "__init__.py",
+    "__main__.py": "__main__.py",
+    "errors.py": "errors.py",
+    "leaf.py": "_caches.py",
+    "shadowed.py": "shadowed.py",
+    "star.py": "_scc.py",
+    "sub/__init__.py": "parser/__init__.py",
+    "sub/module.py": "parser/module.py",
+}
+"""The package of the ``root_import`` fixture, each module at a module the root-import boundary names as importer."""
+
+
+@needs("heki")
+def test_heki_reports_every_import_of_the_package_root_and_main(tmp_path: Path) -> None:
+    """No module below the root imports the root or ``__main__``, in any import form; its submodules may be read.
+
+    The fixture is the package of the former checker rule: relative imports two levels up, a star import, a name the
+    root binds to shadow a submodule, a name its ``__getattr__`` serves and by-name imports. Each import of a name of
+    the root or of ``__main__`` is ``IMP201`` or ``IMP202``; ``__main__`` and the root's own re-exports give none.
+    """
+    places = {
+        f"root_import/datamodel_code_generator/{fixture}": place for fixture, place in ROOT_IMPORT_FIXTURES.items()
+    }
+    found = _layer_import_reports(tmp_path, (), places)
+
+    assert_output(found)
+
+
+def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[str, str]) -> str:
+    """Place the fixtures at modules of their layers and return the import boundaries' findings as stored text."""
     package = tmp_path / PACKAGE
-    for stub in SEEDED_LAYER_STUBS:
+    for stub in stubs:
         (package / stub).parent.mkdir(parents=True, exist_ok=True)
         (package / stub).write_text("", encoding="utf-8")
-    for fixture, place in SEEDED_LAYERS.items():
+    for fixture, place in places.items():
+        (package / place).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(LAYER_FIXTURES / fixture, package / place)
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
@@ -413,9 +450,8 @@ def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
         (Path(item["path"]).relative_to(PACKAGE).as_posix(), item["line"], item["rule_code"], item["target"])
         for item in json.loads(result.stdout)
     )
-    assert_output(
-        f"exit: {result.returncode}\n"
-        + "".join(f"{path}:{line}: {rule} {target}\n" for path, line, rule, target in found)
+    return f"exit: {result.returncode}\n" + "".join(
+        f"{path}:{line}: {rule} {target}\n" for path, line, rule, target in found
     )
 
 
