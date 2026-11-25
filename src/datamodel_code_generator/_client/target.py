@@ -413,6 +413,7 @@ def _render(  # ruff: ignore[too-many-locals]
         use_schema_description=request.model_config.use_schema_description,
         use_single_line_docstring=request.model_config.use_single_line_docstring,
         tools=None if config.tools is None else _tools(request, config, plan, coded),
+        untrusted_input=request.model_config.untrusted_input,
     )
     return TargetRender(
         files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan, sockets, streams)
@@ -425,8 +426,8 @@ def _tools(
     """Plan the tool table of the final plan, warning of each operation left out of it.
 
     Under `--untrusted-input` a tool's description leaves out the operation's summary and description, which
-    `--use-schema-description` would put in, and generation warns of it once; the models' `Field(description=...)` text
-    still reaches agents through `schema()`.
+    `--use-schema-description` would put in, and generation warns of it once; the JSON schemas of `schema()` leave out
+    every description too, while the models keep their `Field(description=...)` and docstrings.
     """
     model_config = request.model_config
     schema = model_config.use_schema_description
@@ -434,9 +435,10 @@ def _tools(
     output = shown(config.output, request.shown_root).as_posix()
     if schema and model_config.untrusted_input:
         warn(
-            f"{output}: Tool descriptions name each operation's route only, since --untrusted-input keeps the "
-            "operation's summary and description out of them; the models' Field(description=...) text still "
-            "reaches agents through schema()",
+            f"{output}: Tool descriptions name each operation's route only and the JSON schemas of schema() leave "
+            "out every description, since --untrusted-input keeps the operations' summaries and descriptions and "
+            "the schemas' descriptions out of what agents read; the models keep their Field(description=...) and "
+            "docstrings",
             stacklevel=3,
         )
     for subject, why in left_out:

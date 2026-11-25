@@ -173,17 +173,18 @@ components:
       enum: [cat, dog]
     Pet:
       type: object
+      description: A pet of the store.
       required: [id, name, species]
       properties:
         id: {type: integer}
-        name: {type: string}
+        name: {type: string, description: What the pet answers to.}
         species: {$ref: '#/components/schemas/Species'}
         born: {type: string, format: date}
     NewPet:
       type: object
       required: [name, species]
       properties:
-        name: {type: string, minLength: 1}
+        name: {type: string, minLength: 1, description: What the pet answers to.}
         species: {$ref: '#/components/schemas/Species'}
         born: {type: string, format: date}
     Owner:
@@ -191,6 +192,7 @@ components:
       required: [id, pets]
       properties:
         id: {type: string, format: uuid}
+        description: {type: string, description: Notes on the owner.}
         pets:
           type: array
           items: {$ref: '#/components/schemas/Pet'}

@@ -3318,16 +3318,17 @@ the call's requests replaced by `[redacted]`. The arguments are the operation's 
 its JSON body as `body`, never a parameter at a credential's position or the request options, so the credentials stay
 in the client. `read_only=True` leaves out the tools of methods that are not safe. An
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
-method and has no tool; generation warns why. The models must be Pydantic v2 ones, and AsyncAPI input refuses the
-option.
+method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
+summary and description, and `schema(name)` leaves out the `description` of every JSON schema, while the models keep
+theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
 
 `--client-tools mcp` also adds `mcp_server.py`, which serves the same tools of the asyncio client over MCP through
 the low-level server of the `mcp` SDK, whose release the printed requirements name. `server(client)` returns the
 server, and `serve(make_client)` serves it on stdin and stdout with the client a function of yours builds, so the
 credentials stay in your script; `python -m <package>.mcp_server --base-url URL` serves a client without credentials.
-Each tool is listed with the JSON schemas of the models and with read-only and idempotent annotations from its HTTP
-method, `read_only=True` or `--read-only` lists only the tools of safe methods, a refused argument or a failed call is a
-result marked as an error, and an unknown tool name is a protocol error.
+Each tool is listed with the JSON schemas `schema(name)` gives and with read-only and idempotent annotations from its
+HTTP method, `read_only=True` or `--read-only` lists only the tools of safe methods, a refused argument or a failed call
+is a result marked as an error, and an unknown tool name is a protocol error.
 
 **Option relationships:**
 
@@ -3521,17 +3522,18 @@ result marked as an error, and an unknown tool name is a protocol error.
           enum: [cat, dog]
         Pet:
           type: object
+          description: A pet of the store.
           required: [id, name, species]
           properties:
             id: {type: integer}
-            name: {type: string}
+            name: {type: string, description: What the pet answers to.}
             species: {$ref: '#/components/schemas/Species'}
             born: {type: string, format: date}
         NewPet:
           type: object
           required: [name, species]
           properties:
-            name: {type: string, minLength: 1}
+            name: {type: string, minLength: 1, description: What the pet answers to.}
             species: {$ref: '#/components/schemas/Species'}
             born: {type: string, format: date}
         Owner:
@@ -3539,6 +3541,7 @@ result marked as an error, and an unknown tool name is a protocol error.
           required: [id, pets]
           properties:
             id: {type: string, format: uuid}
+            description: {type: string, description: Notes on the owner.}
             pets:
               type: array
               items: {$ref: '#/components/schemas/Pet'}

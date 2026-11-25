@@ -19,19 +19,20 @@ class Species(StrEnum):
 
 class Pet(BaseModel):
     id: int
-    name: str
+    name: str = Field(..., description='What the pet answers to.')
     species: Species
     born: date | None = None
 
 
 class NewPet(BaseModel):
-    name: constr(min_length=1)
+    name: constr(min_length=1) = Field(..., description='What the pet answers to.')
     species: Species
     born: date | None = None
 
 
 class Owner(BaseModel):
     id: UUID
+    description: str | None = Field(None, description='Notes on the owner.')
     pets: list[Pet]
 
 

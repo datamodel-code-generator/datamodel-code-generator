@@ -1428,9 +1428,12 @@ app/client: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of th
 ```
 
 A tool's description is its method's docstring: the `description` of `--client-operations`, else, with
-`--use-schema-description`, the operation's summary and description, else its route. Under `--untrusted-input` it
-is the route, and generation warns once; the tags and routes, the models' descriptions in `schema()`, and the
-`operation_id` of an error value still come from the document. The tools need Pydantic v2 models
+`--use-schema-description`, the operation's summary and description, else its route. Under `--untrusted-input` the
+document's summaries and descriptions reach no agent: a tool's description is the `description` of
+`--client-operations`, else its route, generation warns once, and `schema()` leaves out the `description` of every
+JSON schema, while the models keep their `Field(description=...)` and docstrings. The tags and routes, the other
+keywords of the schemas (names, titles, enum values, defaults, and patterns), and the `operation_id` of an error value
+still come from the document. The tools need Pydantic v2 models
 (`--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`), whose library gives the schemas, and the
 option refuses AsyncAPI input.
 
