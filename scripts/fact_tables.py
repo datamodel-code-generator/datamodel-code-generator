@@ -24,7 +24,9 @@ Columns of a row:
   placeholder, which no module resolves then (#7532), and the cross-module passes that make a model declare the
   fields of its bases (``tag_fields_of_tagged_bases``, ``flatten_conflicting_final_layouts``,
   ``flatten_narrowed_inherited_fields``) resolve it: they copy the inherited field and restore inherited names
-  (``plans.flatten_base_layouts``, ``override_required_field``).
+  (``plans.flatten_base_layouts``, ``override_required_field``). The phase is shared, so ``apply_generic_base_class``,
+  which declares the bases too, may also write these rows without a heki report; it writes none of them. These rows go
+  back to ``MODULES`` once placeholders resolve bases-first across modules (#7532).
 * ``frozen_at``: the latest freeze point among the row's facts (every ``Fact`` freezes at B1, every ``RenderFact`` at
   its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts), after which no pass may write the attribute
   in the target pipeline. The finality checks still check each ``Fact`` at B1 unless a pass declares an exception.

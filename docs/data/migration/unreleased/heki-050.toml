@@ -1,7 +1,7 @@
 [[change]]
 id = "heki-050"
 extends = "heki-040"
-refs = ["#1"]
+refs = ["#7533"]
 covers = [
     "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
 ]
