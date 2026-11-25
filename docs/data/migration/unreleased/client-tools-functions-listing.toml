@@ -1,8 +1,9 @@
 [[change]]
 id = "client-tools-functions-listing"
-extends = "recommend-options-requires-python"
+category = "docs-text"
+title = "Listings that name the client tools templates"
+summary = "The builtin template inventory names the new client tools templates; the package writes the same output for every option set that worked before."
+refs = ["#7517"]
 covers = [
-    "api_generation/fastapi_cli/information.stdout.txt",
-    "change_records/owner_of[the list of the builtin templates is a listing].txt",
     "model/compiled_templates/template_inventory_is_derived_from_all_builtin_sources[client].txt",
 ]

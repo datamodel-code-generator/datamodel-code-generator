@@ -5,8 +5,6 @@ title = "Oracle and import listing of the tool table's template and runtime"
 summary = "The Jinja oracle and the runtime import listing gain the tools.jinja2 role and the copied tool runtime modules."
 refs = ["#7517"]
 covers = [
-    "change_records/owner_of[a Jinja oracle of the builtin templates is internal].txt",
-    "change_records/owner_of[the rendering of real models through the compiled templates stays model output].txt",
     "model/compiled_templates/target_templates_match_jinja_oracle[client].rendered.txt",
     "model_codecs/wire_values/runtime_imports_stay_embeddable.txt",
 ]
