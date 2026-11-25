@@ -302,5 +302,18 @@
       ]
     },
     "backend": "msgspec.Struct"
+  },
+  "tools": {
+    "input": "publication/minimal.json",
+    "config": {
+      "tools": "functions"
+    }
+  },
+  "tools-pydantic-dataclass": {
+    "input": "publication/minimal.json",
+    "config": {
+      "tools": "functions"
+    },
+    "backend": "pydantic_v2.dataclass"
   }
 }

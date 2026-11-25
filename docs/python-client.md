@@ -538,6 +538,7 @@ Its client adds two settings to the quick start's table, explained in [Request b
 [tool.datamodel-codegen]
 client-body-arguments = "both"
 client-operations = '{"/paths/~1pets/get": {"runtime": {"request_id_header": "X-Request-Id"}}}'
+client-tools = "functions"
 ```
 
 <!-- fmt: on -->
@@ -1339,6 +1340,104 @@ Each also has `reason`, `operation_id`, `info` (the `ResponseInfo` when a respon
 `elapsed`, and `request_id`. Messages name no payload, header, or credential. See
 [Errors](python-client-reference.md#errors) for every field and reason.
 
+## Give the operations to an agent as tools
+
+!!! warning "Experimental"
+
+    The tool table is experimental: its tools, their names, schemas, search, and error values may change. See
+    [Experimental Features](experimental.md).
+
+[`--client-tools functions`](cli-reference/target-generation-options.md#client-tools) adds `app/client/tools.py`, a
+tool for each operation that an agent, or the code that runs one, calls by name with JSON values. `Toolset(client)`
+holds the tools of a `Client`, and `AsyncToolset(client)` those of an `AsyncClient`, whose `call` is a coroutine.
+The shelter's project above sets the option:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.agent_tools -->
+<!-- fmt: off -->
+
+```python
+import json
+
+from app.client import Client
+from app.client.tools import Toolset
+from fake import http_client
+
+with Client(bearer="s3cret", http_client=http_client()) as client:
+    tools = Toolset(client, read_only=True)
+    print([entry["name"] for entry in tools.search("pet")])
+    print(json.dumps(tools.schema("pets_get_pet")["input_schema"]))
+    print(json.dumps(tools.call("pets_get_pet", {"pet_id": 1})))
+    print(json.dumps(tools.call("pets_get_pet", {"pet_id": "one"})))
+    print(json.dumps(tools.call("pets_get_pet", {"pet_id": 99})))
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.howto.agent_tools -->
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.agent_tools-output -->
+<!-- fmt: off -->
+
+```text
+['pets_get_pet', 'pets_list_pets']
+{"type": "object", "properties": {"pet_id": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "additionalProperties": false, "required": ["pet_id"], "$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}}
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer s3cret
+{"id": 1, "name": "Mimi", "tag": "cat"}
+{"error": {"type": "invalid_arguments", "problems": [{"argument": "pet_id", "location": [], "message": "Input should be a valid integer, unable to parse string as an integer", "kind": "int_parsing"}]}}
+> GET https://eu.shelter.example/v1/pets/99 authorization: Bearer s3cret
+{"error": {"type": "NotFoundError", "reason": null, "status_code": 404, "operation_id": "getPet", "request_id": null, "body": {"message": "/pets/99 not found"}}}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.howto.agent_tools-output -->
+
+A tool is named by its client method, its resource and method joined with `_`, such as `pets_get_pet` for
+`client.pets.get_pet`; the `name` and `resource` keys of [`--client-operations`](#per-operation-settings) rename it
+with the method.
+
+- `search(query, tag=None, limit=10)` returns the tools that match a query best, each with its `name`, `route`,
+  `tags`, `description`, and `signature`, the method's stub: a word of the query scores in the name first, then the
+  tags and route, then the description and signature, and a word that begins a word of them scores half. An empty
+  query lists every tool in operation order.
+- `schema(name)` returns the tool's `description` and the JSON schemas of its arguments object (`input_schema`) and
+  of its result (`output_schema`), which Pydantic derives from the models, with the `$defs` each one reaches.
+- `call(name, arguments)` validates each argument as JSON through its model type, as the schemas describe it, so a
+  strict model takes a JSON object for a dataclass and text for a date, calls the method, and returns the result as
+  JSON values. Arguments the tool refuses, a value that is no JSON value such as NaN among them, return
+  `{"error": {"type": "invalid_arguments", "problems": [...]}}`, each problem with its `argument`, `location`,
+  `message`, and `kind`, and a call the client fails returns `{"error": {...}}` with the exception's `type`,
+  `reason`, `status_code`, `operation_id`, `request_id`, and the bounded `body`, never its headers, URL, or cause. A
+  name the table has no tool of raises `UnknownToolError`.
+
+A result or an error value shows no credential that the client's security schemes placed on the call's requests,
+where the API echoes one, such as a `next` link that repeats the query: every API key (also as its query field encodes
+it), bearer token, Basic user and password, and the credentials they write is replaced with `[redacted]` in the
+strings of the result, keys included, in the request ID, and in the body's text and the strings of its JSON value, and
+so is the end of a cut body that begins one. The table does not know a credential that an `auth`, the HTTP client, or a
+default header sends; otherwise a result is the API's data as the models validate and write it.
+
+The arguments of a tool are the operation's parameters by their Python names and its body as `body`, the body of its
+default request media type, else of its first JSON one. A parameter at the position of a security scheme's
+credential, such as an API key query parameter, and the request options are never arguments, so the credentials and
+the base URL stay those of the client. `read_only=True` leaves out every tool whose HTTP method is not safe (GET,
+HEAD, OPTIONS, and TRACE are).
+
+An operation whose arguments or success results are no JSON value has no tool and keeps its method: a HEAD
+operation, a binary or form-data body, a binary success response, and an event stream. Generation warns of each:
+
+```text
+app/client: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+```
+
+A tool's description is its method's docstring: the `description` of `--client-operations`, else, with
+`--use-schema-description`, the operation's summary and description, else its route. Under `--untrusted-input` the
+document's summaries and descriptions reach no agent: a tool's description is the `description` of
+`--client-operations`, else its route, generation warns once, and `schema()` leaves out the `description`, `title`,
+and `examples` of every JSON schema, while the models keep their `Field(description=..., title=..., examples=...)` and
+docstrings. The tags and routes, the other keywords of the schemas (property and definition names, enum values,
+defaults, and patterns), and the `operation_id` of an error value still come from the document. The tools need Pydantic v2 models
+(`--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`), whose library gives the schemas, and the
+option refuses AsyncAPI input.
+
 ## Test code that uses the client
 
 Test your own code against an `httpx2.MockTransport` instead of a server: pass an HTTPX2 client with that transport as
@@ -1592,6 +1691,7 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 | [`--client-protocols`](cli-reference/target-generation-options.md#client-protocols) | `client-protocols` | `client_protocols` | none; see [Protocol Helpers](python-client-helpers.md) |
 | [`--client-deep-object-brackets`](cli-reference/target-generation-options.md#client-deep-object-brackets) | `client-deep-object-brackets` | `client_deep_object_brackets` | off; see below |
 | [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) | `client-asyncapi-perspective` | `client_asyncapi_perspective` | `"server"`; see [AsyncAPI](asyncapi.md#generate-a-client) |
+| [`--client-tools`](cli-reference/target-generation-options.md#client-tools) | `client-tools` | `client_tools` | off; see [Give the operations to an agent as tools](#give-the-operations-to-an-agent-as-tools) |
 
 `--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file, and in
@@ -1695,6 +1795,7 @@ from pathlib import Path
 
 from datamodel_code_generator import (
     ClientBodyArguments,
+    ClientTools,
     ClientType,
     DataModelType,
     InputFileType,
@@ -1715,6 +1816,7 @@ generate(
     client_model_package="app.models",
     client_body_arguments=ClientBodyArguments.Both,
     client_operations={"/paths/~1pets/get": {"runtime": {"request_id_header": "X-Request-Id"}}},
+    client_tools=ClientTools.Functions,
 )
 ```
 

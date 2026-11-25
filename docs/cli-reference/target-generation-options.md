@@ -16,6 +16,7 @@
 | [`--client-resource-names`](#client-resource-names) | Name the resources of tags (experimental). |
 | [`--client-server-base-url`](#client-server-base-url) | Resolve relative server URLs against this base URL (experime... |
 | [`--client-signature-style`](#client-signature-style) | Declare the arguments of the operation methods (experimental... |
+| [`--client-tools`](#client-tools) | Add a tool table over the client's operations for agents (ex... |
 | [`--generate-client`](#generate-client) | Generate an HTTPX2 client package for the models (experiment... |
 | [`--generate-server`](#generate-server) | Generate a FastAPI server package for the models (experiment... |
 | [`--server-body-mode`](#server-body-mode) | Choose how service methods receive request bodies (experimen... |
@@ -3297,6 +3298,293 @@ Declare the arguments of the operation methods (experimental).
                 options=kwargs.get('options'),
                 response_media_type=kwargs.get('response_media_type'),
             )
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--client-tools` {#client-tools}
+
+Add a tool table over the client's operations for agents (experimental).
+
+`--client-tools functions` adds `tools.py` to the client package: `Toolset(client)` and `AsyncToolset(client)` hold a
+tool for each operation, named by its client method with `_`, such as `pets_get_pet`. `search(query)` ranks the
+tools by the words of their names, tags, routes, descriptions, and signatures; `schema(name)` gives the JSON schemas
+of a tool's arguments and result, which Pydantic derives from the models; `call(name, arguments)` validates the JSON
+arguments as JSON through the models, calls the client's method, and returns the JSON result, or an error value with
+the failure's class, status, and bounded body, never its headers or URL; each credential the client placed on the
+call's requests is replaced by `[redacted]` in both. The arguments are the operation's parameters by their Python
+names and its JSON body as `body`, never a parameter at a credential's position or the request options, so the
+credentials stay in the client. `read_only=True` leaves out the tools of methods that are not safe. An
+operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
+method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
+summary and description, and `schema(name)` leaves out the `description`, `title`, and `examples` of every JSON
+schema, while the models keep theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-client`](target-generation-options.md#generate-client) - `--client-tools` requires `--generate-client httpx2`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input tools.yaml --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-tools functions # (1)!
+    ```
+
+    1. :material-arrow-left: `--client-tools` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Pet store tools
+      version: 1.0.0
+    servers:
+      - url: https://api.example.com/v1
+    security:
+      - apiKey: []
+      - headerKey: []
+      - bearer: []
+      - basic: []
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          summary: List the pets of the store.
+          description: Pets come newest first.
+          parameters:
+            - name: limit
+              in: query
+              schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+            - name: species
+              in: query
+              schema: {$ref: '#/components/schemas/Species'}
+            - name: key
+              in: query
+              schema: {type: string}
+            - name: X-Trace
+              in: header
+              schema: {type: string}
+          responses:
+            '200':
+              description: The pets.
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items: {$ref: '#/components/schemas/Pet'}
+            default:
+              description: An error.
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Error'}
+        post:
+          operationId: createPet
+          tags: [pets]
+          summary: Add a pet to the store.
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: '#/components/schemas/NewPet'}
+              text/plain:
+                schema: {type: string}
+          responses:
+            '201':
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Pet'}
+            '4XX':
+              description: Rejected.
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Error'}
+      /pets/{petId}:
+        parameters:
+          - name: petId
+            in: path
+            required: true
+            schema: {type: integer}
+        get:
+          operationId: getPet
+          tags: [pets]
+          responses:
+            '200':
+              description: The pet.
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Pet'}
+                text/plain:
+                  schema: {type: string}
+            '404':
+              description: Not found.
+        put:
+          operationId: replacePet
+          tags: [pets]
+          requestBody:
+            content:
+              application/json:
+                schema: {$ref: '#/components/schemas/NewPet'}
+          responses:
+            '200':
+              description: Replaced.
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Pet'}
+        delete:
+          operationId: deletePet
+          tags: [pets]
+          responses:
+            '204':
+              description: Deleted.
+        head:
+          operationId: checkPet
+          tags: [pets]
+          responses:
+            '200':
+              description: Present.
+      /pets/{petId}/photo:
+        put:
+          operationId: uploadPhoto
+          tags: [pets]
+          parameters:
+            - name: petId
+              in: path
+              required: true
+              schema: {type: integer}
+          requestBody:
+            required: true
+            content:
+              application/octet-stream:
+                schema: {type: string, format: binary}
+          responses:
+            '204':
+              description: Stored.
+      /pets/{petId}/events:
+        get:
+          operationId: watchPet
+          tags: [pets]
+          parameters:
+            - name: petId
+              in: path
+              required: true
+              schema: {type: integer}
+          responses:
+            '200':
+              description: The pet's events.
+              content:
+                text/event-stream:
+                  schema: {type: string}
+      /owners/{ownerId}:
+        get:
+          operationId: getOwner
+          tags: [owners]
+          summary: Show an owner and their pets.
+          parameters:
+            - name: ownerId
+              in: path
+              required: true
+              schema: {type: string, format: uuid}
+          responses:
+            '200':
+              description: The owner.
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Owner'}
+    components:
+      securitySchemes:
+        apiKey:
+          type: apiKey
+          in: query
+          name: key
+        headerKey:
+          type: apiKey
+          in: header
+          name: X-API-Key
+        bearer:
+          type: http
+          scheme: bearer
+        basic:
+          type: http
+          scheme: basic
+      schemas:
+        Species:
+          type: string
+          enum: [cat, dog]
+        Pet:
+          type: object
+          description: A pet of the store.
+          required: [id, name, species]
+          properties:
+            id: {type: integer}
+            name: {type: string, description: What the pet answers to.}
+            species: {$ref: '#/components/schemas/Species'}
+            born: {type: string, format: date, title: Birthday, examples: ['2020-02-29']}
+        NewPet:
+          type: object
+          required: [name, species]
+          properties:
+            name: {type: string, minLength: 1, description: What the pet answers to.}
+            species: {$ref: '#/components/schemas/Species'}
+            born: {type: string, format: date}
+        Owner:
+          type: object
+          required: [id, pets]
+          properties:
+            id: {type: string, format: uuid}
+            description: {type: string, description: Notes on the owner.}
+            pets:
+              type: array
+              items: {$ref: '#/components/schemas/Pet'}
+        Error:
+          type: object
+          required: [code]
+          properties:
+            code: {type: integer}
+            message: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  tools.yaml
+
+    """Tools over this package's operations, for agents: search them, read their JSON schemas, and call them."""
+
+    from __future__ import annotations
+
+    from ._async_client import AsyncClient
+    from ._client import Client
+    from ._generated.tools import TOOLS
+    from ._runtime.client.tools import AsyncToolTable, ToolTable, UnknownToolError
+
+
+    class Toolset(ToolTable[Client]):
+        """The tools of the synchronous client."""
+
+        plans = TOOLS
+
+
+    class AsyncToolset(AsyncToolTable[AsyncClient]):
+        """The tools of the asyncio client."""
+
+        plans = TOOLS
+
+
+    __all__ = [
+        'AsyncToolset',
+        'Toolset',
+        'UnknownToolError',
+    ]
     ```
 
     <!-- fmt: on -->

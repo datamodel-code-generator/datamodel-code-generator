@@ -2,6 +2,7 @@ from pathlib import Path
 
 from datamodel_code_generator import (
     ClientBodyArguments,
+    ClientTools,
     ClientType,
     DataModelType,
     InputFileType,
@@ -22,4 +23,5 @@ generate(
     client_model_package="app.models",
     client_body_arguments=ClientBodyArguments.Both,
     client_operations={"/paths/~1pets/get": {"runtime": {"request_id_header": "X-Request-Id"}}},
+    client_tools=ClientTools.Functions,
 )

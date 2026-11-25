@@ -10,6 +10,7 @@ This page lists features that are available but still experimental.
 | `behavior.naming-hint` | behavior | `NamingHintWarning` | 0.86.0 | - |
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
+| `cli-option.client-tools` | cli-option | `--client-tools functions (client-tools in [tool.datamodel-codegen], client_tools in generate())` | 0.103.0 | - |
 | `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
 | `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
@@ -70,6 +71,16 @@ Define named generation jobs in [tool.datamodel-codegen.jobs] and select them wi
 Remote reference integrity locking is experimental: the lock document schema and request-identity compatibility may evolve, but integrity mismatches remain fail-closed and credentials are never persisted.
 
 The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests, never response bodies or request values directly. Each saved display origin contains only the scheme, host, and explicit port—never a path, query, or request headers.
+
+### `cli-option.client-tools`
+
+- **Kind:** cli-option
+- **Target:** `--client-tools functions (client-tools in [tool.datamodel-codegen], client_tools in generate())`
+- **Since:** 0.103.0
+
+The tool table of a generated client is experimental; its tools, their names, schemas, search, and error values may change.
+
+`--client-tools functions` adds `tools.py` to a client package of Pydantic v2 models: `Toolset(client)` and `AsyncToolset(client)` hold a tool for each operation whose arguments and success results are JSON values, named by its client method, such as `pets_get_pet`. `search(query)` ranks the tools by their names, tags, routes, descriptions, and signatures, `schema(name)` gives the JSON schemas of a tool's arguments and result from the models, and `call(name, arguments)` validates the arguments as JSON through the models, calls the client's method, and returns the JSON result, or an error value that holds no header or URL, with each credential the client placed on the call's requests replaced in the result and in an error's request ID and body. The arguments are the operation's parameters and body, never a parameter at a credential's position or the request options; `read_only=True` leaves out the tools of unsafe methods. An operation left out of the tools keeps its method, and generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's summary and description, and `schema(name)` leaves out the `description`, `title`, and `examples` of every JSON schema, while the models keep theirs.
 
 ### `cli-option.generate-client`
 

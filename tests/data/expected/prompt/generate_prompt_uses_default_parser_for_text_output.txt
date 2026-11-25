@@ -448,6 +448,7 @@
 - `--client-resource-names`: Name the resources of tags (experimental).
 - `--client-server-base-url`: Resolve relative server URLs against this base URL (experimental).
 - `--client-signature-style`: Declare the arguments of the operation methods (experimental).
+- `--client-tools`: Add a tool table over the client's operations for agents (experimental).
 - `--generate-client`: Generate an HTTPX2 client package for the models (experimental).
 - `--generate-server`: Generate a FastAPI server package for the models (experimental).
 - `--no-client-deep-object-brackets`

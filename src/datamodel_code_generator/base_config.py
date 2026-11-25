@@ -47,6 +47,7 @@ from datamodel_code_generator.enums import (
     ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
+    ClientTools,
     ClientType,
     CollapseRootModelsNameStrategy,
     ConstructorFieldOrder,
@@ -258,6 +259,21 @@ def _target_options_error(config: Any, *, output: bool = True) -> str | None:
         return "--client-protocols cannot be used with --input-file-type asyncapi, whose channels the client opens"
     if not asyncapi and config.client_asyncapi_perspective is not None:
         return "--client-asyncapi-perspective requires --input-file-type asyncapi"
+    return _tools_error(selector, config.client_tools, DataModelType(config.output_model_type), asyncapi=asyncapi)
+
+
+def _tools_error(selector: str, tools: ClientTools | None, model_type: DataModelType, *, asyncapi: bool) -> str | None:
+    """Return why a client cannot hold tools: the channels of AsyncAPI are sessions, and a backend must describe types.
+
+    A tool's JSON schema comes from the models, so the backend both validates and describes them: a Pydantic one.
+    """
+    if selector != "generate_client" or tools is None:
+        return None
+    if asyncapi:
+        return "--client-tools cannot be used with --input-file-type asyncapi, whose channels are sessions, not calls"
+    if model_type not in _PYDANTIC_MODEL_TYPES:
+        types = english_list(sorted(model_type.value for model_type in _PYDANTIC_MODEL_TYPES), "or")
+        return f"--client-tools requires --output-model-type {types}"
     return None
 
 
@@ -639,6 +655,7 @@ class BaseGenerateConfig(BaseModel):
     client_deep_object_brackets: bool | None = None
     client_asyncapi_perspective: ClientAsyncAPIPerspective | None = None
     client_protocols: Mapping[str, Any] | None = None
+    client_tools: ClientTools | None = None
 
     @field_validator("additional_imports")
     @classmethod

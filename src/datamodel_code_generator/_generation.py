@@ -145,8 +145,8 @@ ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 # without increasing tracemalloc peaks. Higher thresholds or gc.disable() raised peaks by 17%.
 _GC_YOUNG_THRESHOLD: int = 100_000
 _gc_tuning_lock = threading.Lock()
-# This one-slot holder keeps the process-wide scope count mutable without allocating state per call.
 _gc_tuning_depth: list[int] = [0]
+"""A one-slot holder that keeps the process-wide scope count mutable without allocating state per call."""
 _gc_saved_threshold: tuple[int, int, int]
 
 

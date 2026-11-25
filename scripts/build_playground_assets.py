@@ -108,6 +108,7 @@ BROWSER_UNAVAILABLE_OPTIONS = {
             "client_deep_object_brackets",
             "client_asyncapi_perspective",
             "client_protocols",
+            "client_tools",
         ),
         "Server and client packages are not generated in the browser playground.",
     ),

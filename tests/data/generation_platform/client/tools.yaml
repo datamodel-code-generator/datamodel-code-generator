@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: Pet store tools
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+security:
+  - apiKey: []
+  - headerKey: []
+  - bearer: []
+  - basic: []
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      summary: List the pets of the store.
+      description: Pets come newest first.
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - name: species
+          in: query
+          schema: {$ref: '#/components/schemas/Species'}
+        - name: key
+          in: query
+          schema: {type: string}
+        - name: X-Trace
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Pet'}
+        default:
+          description: An error.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+    post:
+      operationId: createPet
+      tags: [pets]
+      summary: Add a pet to the store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/NewPet'}
+          text/plain:
+            schema: {type: string}
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+        '4XX':
+          description: Rejected.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema: {type: integer}
+    get:
+      operationId: getPet
+      tags: [pets]
+      responses:
+        '200':
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+            text/plain:
+              schema: {type: string}
+        '404':
+          description: Not found.
+    put:
+      operationId: replacePet
+      tags: [pets]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/NewPet'}
+      responses:
+        '200':
+          description: Replaced.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+    delete:
+      operationId: deletePet
+      tags: [pets]
+      responses:
+        '204':
+          description: Deleted.
+    head:
+      operationId: checkPet
+      tags: [pets]
+      responses:
+        '200':
+          description: Present.
+  /pets/{petId}/photo:
+    put:
+      operationId: uploadPhoto
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /pets/{petId}/events:
+    get:
+      operationId: watchPet
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        '200':
+          description: The pet's events.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /owners/{ownerId}:
+    get:
+      operationId: getOwner
+      tags: [owners]
+      summary: Show an owner and their pets.
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: The owner.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Owner'}
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: query
+      name: key
+    headerKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearer:
+      type: http
+      scheme: bearer
+    basic:
+      type: http
+      scheme: basic
+  schemas:
+    Species:
+      type: string
+      enum: [cat, dog]
+    Pet:
+      type: object
+      description: A pet of the store.
+      required: [id, name, species]
+      properties:
+        id: {type: integer}
+        name: {type: string, description: What the pet answers to.}
+        species: {$ref: '#/components/schemas/Species'}
+        born: {type: string, format: date, title: Birthday, examples: ['2020-02-29']}
+    NewPet:
+      type: object
+      required: [name, species]
+      properties:
+        name: {type: string, minLength: 1, description: What the pet answers to.}
+        species: {$ref: '#/components/schemas/Species'}
+        born: {type: string, format: date}
+    Owner:
+      type: object
+      required: [id, pets]
+      properties:
+        id: {type: string, format: uuid}
+        description: {type: string, description: Notes on the owner.}
+        pets:
+          type: array
+          items: {$ref: '#/components/schemas/Pet'}
+    Error:
+      type: object
+      required: [code]
+      properties:
+        code: {type: integer}
+        message: {type: string}

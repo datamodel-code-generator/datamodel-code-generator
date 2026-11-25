@@ -158,6 +158,10 @@ stream-events	api_generation/client_runtime/client_runtime[stream-events].txt
 stream-lifetimes	api_generation/client_runtime/client_runtime[stream-lifetimes].txt
 stream-resume	api_generation/client_runtime/client_runtime[stream-resume].txt
 streams	api_generation/client_runtime/client_runtime[streams].txt
+tools	api_generation/client_runtime/client_runtime[tools].txt
+tools-extras	api_generation/client_runtime/client_runtime[tools-extras].txt
+tools-strict	api_generation/client_runtime/client_runtime[tools-strict].txt
+tools-untrusted	api_generation/client_runtime/client_runtime[tools-untrusted].txt
 type-checking-imports	api_generation/client_runtime/client_runtime[type-checking-imports].txt
 type-checking-imports-on	api_generation/client_runtime/client_runtime[type-checking-imports-on].txt
 unions	api_generation/client_runtime/client_runtime[unions].txt

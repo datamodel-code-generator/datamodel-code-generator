@@ -1,0 +1,15 @@
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+
+TOOLS: {{ annotation }} = (
+{%- for plan in tools %}
+    {{ plan.constructor }}(
+{%- for argument in plan.arguments %}
+        {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+    ),
+{%- endfor %}
+)

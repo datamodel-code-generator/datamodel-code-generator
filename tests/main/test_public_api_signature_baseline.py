@@ -46,6 +46,7 @@ from datamodel_code_generator.enums import (
     ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
+    ClientTools,
     ClientType,
     CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
@@ -402,6 +403,7 @@ def _baseline_generate(
     client_deep_object_brackets: bool | None = None,
     client_asyncapi_perspective: ClientAsyncAPIPerspective | None = None,
     client_protocols: Mapping[str, Any] | None = None,
+    client_tools: ClientTools | None = None,
 ) -> str | object | None:
     raise NotImplementedError
 

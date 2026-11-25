@@ -11,13 +11,6 @@
 
 [[approved]]
 key = "ruff:TID252@src"
-head = 366
-pr = 7517
-decision = ["#7517"]
-reason = "the client tools runtime of #7517 is copied into every generated client like the rest of _runtime/client, so its four new imports of sibling runtime packages stay relative, as the copied modules need (owner decision, 2026-11-25)"
-
-[[approved]]
-key = "ruff:TID252@src"
 head = 368
 pr = 7527
 decision = ["#7527"]

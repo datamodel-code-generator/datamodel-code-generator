@@ -1,0 +1,25 @@
+warning UserWarning: <root>/pets: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+warning UserWarning: <root>/pets: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+warning UserWarning: <root>/pets: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+mypy pets and tools.py: clean
+pyright pets and tools.py: clean
+ty pets and tools.py: clean
+tools_negative.py 5 marked lines
+mypy tools_negative.py: 5/5 marked lines with one error, 0 elsewhere, 0 in other files
+  11 arg-type
+  12 arg-type
+  13 arg-type
+  14 arg-type
+  15 arg-type
+pyright tools_negative.py: 5/5 marked lines with one error, 0 elsewhere, 0 in other files
+  11 reportArgumentType
+  12 reportArgumentType
+  13 reportArgumentType
+  14 reportArgumentType
+  15 reportArgumentType
+ty tools_negative.py: 5/5 marked lines with one error, 0 elsewhere, 0 in other files
+  11 invalid-argument-type
+  12 invalid-argument-type
+  13 invalid-argument-type
+  14 invalid-argument-type
+  15 invalid-argument-type

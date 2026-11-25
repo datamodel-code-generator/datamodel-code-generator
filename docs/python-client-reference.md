@@ -1008,11 +1008,12 @@ into SDK requests; its `Accept-Encoding` is.
 The client templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
 as model templates do: the files of its `client` directory replace the builtin roles of the same name:
 `facade.jinja2` (the package initializers and the public modules `options`, `errors`, `responses`, `auth`, `bodies`,
-and `protocols`, and the webhook packages' initializers and `webhooks/keys.py`), `client.jinja2` (`_client.py` and `_async_client.py`), `resource.jinja2` (each
+`protocols`, and `tools`, and the webhook packages' initializers and `webhooks/keys.py`), `client.jinja2` (`_client.py` and `_async_client.py`), `resource.jinja2` (each
 resource's `_sync.py` and `_async.py`), `types.jinja2` (each resource's `types/<resource>/_operations.py`),
 `arguments.jinja2` (`_generated/client_arguments.py`), `operations.jinja2` (`_operations.py`), `security.jinja2`
 (`_generated/security.py`), `model_bindings.jinja2` (`_generated/model_bindings.py`), `helper_plans.jinja2`
-(`protocols/_plans.py`), `helpers.jinja2` (`protocols/_helpers.py` and `protocols/_async_helpers.py`),
+(`protocols/_plans.py`), `helpers.jinja2` (`protocols/_helpers.py` and `protocols/_async_helpers.py`), `tools.jinja2`
+(`_generated/tools.py`),
 `webhook.jinja2` (each webhook helper's module), `readme.jinja2`, and `runtime.jinja2` (the runtime reference). A
 role the directory does not hold, or a custom template directory without a `client` directory, keeps its builtin
 template. The builtin templates are in the `_client/templates` directory of the installed package; copy
@@ -1046,10 +1047,11 @@ in the package, empty for the package itself:
 | `helpers.jinja2` | `asynchronous`, `docstring`, `imports`, `core`, `cached_property`, `namespaces`, `helpers` |
 | `model_bindings.jinja2` | `imports`, `codec_imports`, `models_annotation`, `models`, `codecs` |
 | `operations.jinja2` | `docstring`, `imports`, `servers`, `operations` |
-| `readme.jinja2` | `package`, `public_modules`, `reference`, `signature_style`, `body_arguments`, `backend`, `model_package`, `operations`, `contracts`, `helpers`, `stream_label`, `resumes`, `sockets`, `kinds`, `compression`, `dependencies`, `security`, `capabilities`, `runtime` |
+| `readme.jinja2` | `package`, `public_modules`, `reference`, `signature_style`, `body_arguments`, `backend`, `model_package`, `operations`, `contracts`, `helpers`, `stream_label`, `resumes`, `sockets`, `kinds`, `compression`, `dependencies`, `security`, `capabilities`, `runtime`, `tools`, `tool_example`, `tool_listing` |
 | `resource.jinja2` | `docstring`, `imports`, `core`, `cached_property`, `overload_decorator`, `views` |
 | `runtime.jinja2` | `package`, `oauth`, `schemes`, `security`, `raw_bytes`, `multipart_requests`, `credentials`, `example`, `flows`, `pagination`, `polling`, `cache`, `uploads`, `streams`, `sockets`, `compression` |
 | `security.jinja2` | `docstring`, `imports`, `schemes`, `root_annotation`, `root`, `operations` |
+| `tools.jinja2` | `docstring`, `imports`, `annotation`, `tools` |
 | `types.jinja2` | `docstring`, `imports`, `type_alias`, `overload_decorator`, `aliases` |
 | `webhook.jinja2` | `kind`, `name`, `algorithm`, `timestamp`, `imports`, `exports`, `typevar`, `plan`, `functions` |
 
@@ -1060,7 +1062,8 @@ in the package, empty for the package itself:
 unpacked call with, and its `call` of the client core: the `operation`, the `parameters` tuple, and the keyword
 `arguments`. The plan constants of `operations.jinja2`, `security.jinja2`, and `arguments.jinja2` have a `name`, an
 `annotation`, a `constructor`, and `arguments`, each with a `keyword`, empty for a positional one, and a `value`; so
-do the `plans` of `helper_plans.jinja2` and the `plan` of `webhook.jinja2`. `helper_plans.jinja2` also receives the
+do the `plans` of `helper_plans.jinja2`, the `tools` of `tools.jinja2`, whose `annotation` is empty, and the `plan` of
+`webhook.jinja2`. `helper_plans.jinja2` also receives the
 typed `accessors` the plans read items and results with: each has a `name`, the `data` type it reads, the type it
 `returns`, its `docstring`, the `checks` that end its read early (the `value` local, the `read` it keeps, whether it
 ends at `none`, the `unset` type it ends at, when there is one, and the `missing` sentinel it ends at, when there is

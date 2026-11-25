@@ -219,11 +219,10 @@ def _get_config_class() -> type[Config]:
                 msg = f"Invalid URL: {redact_url(value)}: {exc}"
                 raise Error(msg) from exc
 
-        # Pydantic 1.5.1 doesn't support each_item=True correctly
         @field_validator("http_headers", mode="before")
         @classmethod
         def validate_http_headers(cls, value: Any) -> list[tuple[str, str]] | None:
-            """Validate HTTP headers."""
+            """Validate HTTP headers, the whole list at once, as each_item=True of Pydantic 1.5.1 could not."""
             return _validate_http_key_value_options(
                 value,
                 separator=":",

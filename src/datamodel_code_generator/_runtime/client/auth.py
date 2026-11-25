@@ -16,7 +16,7 @@ import httpx2
 from ..model_codecs.media import TCHARS
 from ..model_codecs.parameters import cookie_octets, header_text
 from .errors import ConfigurationError, SDKError, called
-from .positions import cookie_name
+from .positions import cookie_name, note_placed
 from .security import Credentials
 from .timing import checked_instance
 from .urls import request_origin
@@ -212,6 +212,19 @@ def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
     request.headers["Cookie"] = "; ".join((*kept, f"{name}={text}"))
 
 
+def _revealing(scheme: SecurityScheme, value: object, text: str) -> tuple[str, ...]:
+    """Return the texts that reveal a placed credential, which a tool clears from the values it returns.
+
+    They are an API key as given and as a query field encodes it, a bearer token, or a Basic user, password, and the
+    credentials they write.
+    """
+    if scheme.kind != "api_key":
+        return (text.partition(" ")[2], *(_pair(value) or ()))
+    if scheme.location == "query":
+        return (text, str(httpx2.QueryParams({scheme.wire_name: text})).partition("=")[2])
+    return (text,)
+
+
 def _rejected(response: httpx2.Response, request: httpx2.Request, *, challenge_less: bool) -> bool:
     """Return whether the resource itself rejected the token: a 401 with a Bearer invalid_token challenge.
 
@@ -273,7 +286,9 @@ class SchemeAuth(httpx2.Auth):
 
     def _applied(self, request: httpx2.Request, values: list[object]) -> None:
         for (scheme, _), value in zip(self.placements, values, strict=True):
-            _place(request, scheme, _text(scheme, value))
+            text = _text(scheme, value)
+            _place(request, scheme, text)
+            note_placed(*_revealing(scheme, value, text))
 
     def _values(self, request: httpx2.Request, stale: dict[int, str] | None) -> tuple[list[object], dict[int, str]]:
         send = _timed(request, self.send)
