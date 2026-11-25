@@ -24,11 +24,21 @@ facts = [ "platform" ]
 # Whole test modules that branch on the platform.
 source = [ 'sys\.platform', 'os\.name\s*==' ]
 # Whole test modules: the suite checks and the watch tests.
-modules = [ "tests/checks/**/test_*.py", "tests/main/test_main_watch.py" ]
+modules = [
+  "tests/checks/**/test_*.py",
+  "tests/main/test_main_watch.py",
+  # Modules that caught a Windows/macOS-only failure before (#4871 yaml fixture ids, #7128 .DS_Store).
+  "tests/test_yaml_fast_constructor.py",
+  "tests/main/test_directory_input_hidden_files.py",
+]
 # Tests at a depth limit, which the smaller Windows stack reaches first.
 tests = [
   "tests/main/jsonschema/test_main_jsonschema.py::test_main_nesting_within_recursion_limit",
   "tests/main/test_untrusted_input.py::test_untrusted_input_size_limits",
+  # Tests that caught a Windows/macOS-only failure before (#4681, #6254, #5648).
+  "tests/main/test_dynamic_models.py::test_generated_root_model_aliases",
+  "tests/main/test_generation_attempts.py::test_generation_attempt_lifetime",
+  "tests/main/openapi/test_main_openapi.py::test_main_openapi_include_paths_match_case_and_slash_on_every_os",
 ]
 # Written by `python scripts/os_selection.py cover MAP`: the cheapest test functions that run the arcs of the platform
 # functions the rest of the selection leaves unrun.
