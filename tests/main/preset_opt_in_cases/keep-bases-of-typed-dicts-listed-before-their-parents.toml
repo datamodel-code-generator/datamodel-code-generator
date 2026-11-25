@@ -1,0 +1,4 @@
+option = "--keep-bases-of-typed-dicts-listed-before-their-parents"
+input = "openapi/inherited_placeholder_module_order/child_first"
+input_file_type = "openapi"
+args = ["--output-model-type", "typing.TypedDict"]

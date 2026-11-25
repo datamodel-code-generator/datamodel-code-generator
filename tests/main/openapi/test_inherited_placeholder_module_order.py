@@ -3,7 +3,7 @@
 The parent requires a property that only its own base declares, so its field is a placeholder until its module is
 processed. A subclass in a module processed before the parent's takes the field through the parent's bases, as it does
 when the parent is listed first: ``x: int``, not ``x: None``. A TypedDict copies the parent's placeholder and declares
-the keys of its bases itself, as 0.102.0 does.
+the keys of its bases itself, as 0.102.0 does, unless --keep-bases-of-typed-dicts-listed-before-their-parents is set.
 """
 
 from __future__ import annotations
@@ -15,12 +15,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
+from tests.main.conftest import DATA_PATH, JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 DATA = OPEN_API_DATA_PATH / "inherited_placeholder_module_order"
+KEEP_BASES = "--keep-bases-of-typed-dicts-listed-before-their-parents"
+KEEP_BASES_OFF = "--no-keep-bases-of-typed-dicts-listed-before-their-parents"
 MSGSPEC_ARGS = ("--output-model-type", "msgspec.Struct")
 UNTAGGED_UNION = "msgspec cannot decode the discriminated union TagHolder.pet"
 """The warning of the union of shapes.yaml, whose Struct types msgspec decodes only with --use-msgspec-tagged-unions."""
@@ -29,6 +31,7 @@ UNTAKEN_DECIMAL_BOUND = "msgspec.Meta does not take ge on Decimal; MetaChild.x"
 MODEL_ARGS = {
     "pydantic": ("--output-model-type", "pydantic_v2.BaseModel"),
     "typeddict": ("--output-model-type", "typing.TypedDict"),
+    "typeddict-kept-bases": ("--output-model-type", "typing.TypedDict", KEEP_BASES),
 }
 NAMINGS = {
     "child-first-modules": ("z.Child", "m.Mid", "a.Base"),
@@ -78,8 +81,8 @@ def test_subclass_takes_the_inherited_type_in_every_definition_and_module_order(
 ) -> None:
     """Child gives x the type Base declares for every order of the schemas and of their modules.
 
-    Each naming yields one output for every definition order. The TypedDict yields two where Child's module is
-    processed before Mid's: it declares the keys of Mid itself where Child is listed before Mid.
+    Each naming yields one output for every definition order. The TypedDict without the option yields two where
+    Child's module is processed before Mid's: it declares the keys of Mid itself where Child is listed before Mid.
     """
     run_main_and_assert(
         input_path=_write_schema(tmp_path, naming, tuple(role.title() for role in order.split("-"))),
@@ -114,6 +117,31 @@ def test_subclass_takes_the_inherited_type_under_class_scoped_type_overrides(
     )
 
 
+@pytest.mark.cli_doc(
+    options=[KEEP_BASES],
+    option_description="""Keep the generated bases of a TypedDict listed before its parent.
+
+A schema that extends a parent through `allOf` and restates or requires a property the parent requires, where the
+parent takes the property from its own base, is written in a module processed before the parent's when its package is
+deeper (`com.example.pets.Child` over `com.example.Mid`) or its module name sorts later. Listed before the parent, it
+takes the property through the parent's bases, as when the parent is listed first. Without this option a TypedDict
+copies the parent's key before the key has a type, as 0.102.0 does: the copy narrows the key, so the TypedDict declares
+the keys of its bases itself and drops them (`class Child(TypedDict)`), and where it keeps its bases, under a custom
+template or a base the output imports in place of a generated model, the key is typed `None`. With this option the
+TypedDict keeps `Mid` and types the key as Mid's bases declare it (`class Child(Mid)` with `x: int`). Other output
+model types type such a key either way.""",
+    input_schema="openapi/inherited_placeholder_module_order/child_first/schema.yaml",
+    cli_args=["--output-model-type", "typing.TypedDict", KEEP_BASES],
+    golden_output=(
+        "main/openapi/inherited_placeholder_module_order/"
+        "subclass_takes_the_inherited_type_in_every_definition_and_module_order[packages-base-child-mid-typeddict]/"
+    ),
+    comparison_output=(
+        "main/openapi/inherited_placeholder_module_order/"
+        "subclass_listed_before_its_parent_takes_the_inherited_type[typeddict]/"
+    ),
+    related_options=["--output-model-type"],
+)
 @pytest.mark.parametrize(
     "model_args",
     [
@@ -122,17 +150,43 @@ def test_subclass_takes_the_inherited_type_under_class_scoped_type_overrides(
         pytest.param(("--output-model-type", "dataclasses.dataclass"), id="dataclass"),
         pytest.param(("--output-model-type", "msgspec.Struct"), id="msgspec"),
         pytest.param(MODEL_ARGS["typeddict"], id="typeddict"),
+        pytest.param(MODEL_ARGS["typeddict-kept-bases"], id="typeddict-kept-bases"),
+        pytest.param((*MODEL_ARGS["typeddict-kept-bases"], KEEP_BASES_OFF), id="typeddict-no-kept-bases"),
     ],
 )
 def test_subclass_listed_before_its_parent_takes_the_inherited_type(
     output_dir: Path, model_args: tuple[str, ...]
 ) -> None:
-    """Child, in a deeper package than Mid, gives x the type of Base; a TypedDict declares the keys of Mid instead."""
+    """Child, in a deeper package than Mid, gives x the type of Base; a TypedDict keeps Mid only with the option."""
     run_main_and_assert(
         input_path=DATA / "child_first" / "schema.yaml",
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=[*model_args, "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize("option_args", [pytest.param((), id="off"), pytest.param((KEEP_BASES,), id="on")])
+@pytest.mark.parametrize(
+    "kept_by",
+    [
+        pytest.param(("--type-overrides", '{"Base": "mypkg.models.Base"}'), id="stand-in-base"),
+        pytest.param(("--custom-template-dir", str(DATA_PATH / "templates_docstring_escaping")), id="custom-template"),
+    ],
+)
+def test_typed_dict_that_keeps_its_bases_types_the_key_with_the_option(
+    output_dir: Path, kept_by: tuple[str, ...], option_args: tuple[str, ...]
+) -> None:
+    """A TypedDict that keeps its bases types the copied key None without the option, as 0.102.0 does.
+
+    A base that the output imports in place of a generated model, or a custom TypedDict template, keeps Child's bases,
+    so nothing declares the keys of Mid again; with the option Child takes x through Mid's bases.
+    """
+    run_main_and_assert(
+        input_path=DATA / "child_first" / "schema.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[*MODEL_ARGS["typeddict"], *kept_by, *option_args, "--formatters", "builtin"],
     )
 
 
@@ -177,6 +231,7 @@ def test_subclass_listed_before_its_parent_under_field_options(
         pytest.param(MODEL_ARGS["pydantic"], id="pydantic"),
         pytest.param(MSGSPEC_ARGS, id="msgspec"),
         pytest.param(MODEL_ARGS["typeddict"], id="typeddict"),
+        pytest.param(MODEL_ARGS["typeddict-kept-bases"], id="typeddict-kept-bases"),
     ],
 )
 def test_subclasses_listed_before_parents_whose_bases_give_the_property(
@@ -230,7 +285,10 @@ def test_subclass_type_override_keeps_the_inherited_metadata(output_dir: Path, m
 
 @pytest.mark.parametrize("model", MODEL_ARGS)
 def test_grandchild_in_a_module_between_its_parent_and_grandparent(output_dir: Path, model: str) -> None:
-    """GrandChild copies Child's x after Child's module typed it; a TypedDict copies the placeholder and flattens."""
+    """GrandChild copies Child's x after Child's module typed it; a TypedDict copies the placeholder and flattens.
+
+    With the option the TypedDict reads through as the other output model types do, and GrandChild keeps Child.
+    """
     run_main_and_assert(
         input_path=DATA / "grandchild.yaml",
         output_path=output_dir,
@@ -246,6 +304,7 @@ def test_grandchild_in_a_module_between_its_parent_and_grandparent(output_dir: P
         pytest.param(MODEL_ARGS["pydantic"], ("--reuse-model", "--collapse-reuse-models"), id="pydantic-collapse"),
         pytest.param(MODEL_ARGS["pydantic"], ("--reuse-model", "--reuse-scope", "tree"), id="pydantic-tree"),
         pytest.param(MODEL_ARGS["typeddict"], ("--reuse-model",), id="typeddict-reuse"),
+        pytest.param(MODEL_ARGS["typeddict-kept-bases"], ("--reuse-model",), id="typeddict-kept-bases-reuse"),
     ],
 )
 def test_equal_subclasses_reuse_one_model(

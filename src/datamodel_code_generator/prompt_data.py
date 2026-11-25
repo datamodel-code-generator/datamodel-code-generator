@@ -118,6 +118,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--intersect-combined-schema-keywords": "Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...",
     "--intersect-merged-allof-members": "Read the allOf members that are merged into one schema keyword by keyword.",
     "--keep-bases-beside-generic-base-class": "Keep configured base classes beside the generated base class.",
+    "--keep-bases-of-typed-dicts-listed-before-their-parents": "Keep the generated bases of a TypedDict listed befo...",
     "--keep-constrained-root-models-in-every-container": "Keep constrained root models named in every container of ...",
     "--keep-content-parameter-refs": "Type a parameter whose content media schema is a `$ref` by the model the `$re...",
     "--keep-defaults-of-inherited-required-fields": "Keep under `--use-default` the default of a property only an i...",

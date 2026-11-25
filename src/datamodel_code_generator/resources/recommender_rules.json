@@ -968,6 +968,10 @@
       "not_recommended": "preset",
       "reason": "With --use-generic-base-class only: set by the 20261123 presets; the recommendation starts from a preset."
     },
+    "keep_bases_of_typed_dicts_listed_before_their_parents": {
+      "not_recommended": "preset",
+      "reason": "typing.TypedDict output only: set by the 20261125 presets; the recommendation starts from a preset."
+    },
     "keep_content_parameter_refs": {
       "not_recommended": "preset",
       "reason": "OpenAPI parameters scope only: set by the 20261106 presets; the recommendation starts from a preset."

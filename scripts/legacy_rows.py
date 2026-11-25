@@ -562,6 +562,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "builtin",
             "--disable-timestamp",
         ),
+        option="--keep-bases-of-typed-dicts-listed-before-their-parents",
     ),
     LegacyRow(
         "legacy-lookahead-patterns",

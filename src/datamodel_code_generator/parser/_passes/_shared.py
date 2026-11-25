@@ -506,6 +506,10 @@ class InheritedFieldHost(Protocol):
         """The generation store of the parse."""
 
     @property
+    def keep_bases_of_typed_dicts_listed_before_their_parents(self) -> bool:
+        """Whether a TypedDict resolves the unresolved placeholder of a base (``_reads_through_unresolved_bases``)."""
+
+    @property
     def model_resolver(self) -> ModelResolver:
         """The resolver of model and field names."""
 
@@ -756,17 +760,18 @@ def _inherited_placeholder_name(field: DataModelFieldBase) -> str | None:
     return field.original_name
 
 
-def _reads_through_unresolved_bases(model: DataModel) -> bool:
+def _reads_through_unresolved_bases(host: InheritedFieldHost, model: DataModel) -> bool:
     """Return whether ``model`` resolves a base's placeholder that its own module has not resolved yet (#7532).
 
     The base's module is processed after the module of ``model``, so its placeholder has no type yet; its own bases
-    give the field it takes there. Row ``legacy-typed-dicts-copy-unresolved-parent-placeholders``, a TypedDict, copies
-    the base's placeholder instead, as 0.102.0 does: the copy has no type and narrows the base's key, so the
-    cross-module flatten makes the TypedDict declare the keys of its bases.
+    give the field it takes there. Row ``legacy-typed-dicts-copy-unresolved-parent-placeholders``, a TypedDict without
+    ``--keep-bases-of-typed-dicts-listed-before-their-parents``, copies the base's placeholder instead, as 0.102.0
+    does: the copy has no type and narrows the base's key, so the cross-module flatten makes the TypedDict declare the
+    keys of its bases, and a TypedDict that keeps its bases types the key None.
     """
     row: Literal["read-through", "legacy-typed-dicts-copy-unresolved-parent-placeholders"] = (
         "legacy-typed-dicts-copy-unresolved-parent-placeholders"
-        if model.keeps_inherited_field_types()
+        if model.keeps_inherited_field_types() and not host.keep_bases_of_typed_dicts_listed_before_their_parents
         else "read-through"
     )
     return row != "legacy-typed-dicts-copy-unresolved-parent-placeholders"
@@ -800,7 +805,7 @@ def _inherited_declaration(
             (owner_name := _inherited_placeholder_name(field)) is None
             or id(owner) in path
             or not _resolves_placeholders(host, owner)
-            or not _reads_through_unresolved_bases(subclass)
+            or not _reads_through_unresolved_bases(host, subclass)
         ):
             return field, placeholders[::-1]
         placeholders.append((field, {owner_field.name for owner_field in owner.fields if owner_field.name}))

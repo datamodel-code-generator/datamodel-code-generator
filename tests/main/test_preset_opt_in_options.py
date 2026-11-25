@@ -6,8 +6,9 @@ presets add those of the next release to the 20261106 presets, the 20261112 pres
 them to the 20261111 presets, the 20261113 presets add the opt-in options after those to the 20261112 presets, the
 20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, the 20261120 presets
 add the opt-in options after those to the 20261118 presets, the 20261123 presets add the opt-in options of the
-release after 0.100.0 to the 20261120 presets, and the 20261124 presets add the opt-in options of the release after
-0.101.0 to the 20261123 presets.
+release after 0.100.0 to the 20261120 presets, the 20261124 presets add the opt-in options of the release after
+0.101.0 to the 20261123 presets, and the 20261125 presets add the opt-in options of the release after 0.102.0 to the
+20261124 presets.
 """
 
 from __future__ import annotations
@@ -176,6 +177,9 @@ OPT_IN_OPTIONS_20261123: tuple[str, ...] = _argv(_added_options("20261120", "202
 OPT_IN_OPTIONS_20261124: tuple[str, ...] = _argv(_added_options("20261123", "20261124"))
 """The options the 20261124 presets set beyond the 20261123 presets, from the rows that join them."""
 
+OPT_IN_OPTIONS_20261125: tuple[str, ...] = _argv(_added_options("20261124", "20261125"))
+"""The options the 20261125 presets set beyond the 20261124 presets, from the rows that join them."""
+
 
 class CaseFile(TypedDict):
     """A case file: the option, its input under tests/data and the arguments of the two tests that generate it.
@@ -239,6 +243,7 @@ PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
     "20261120": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261123": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261124": ("--untyped-value-type", "pydantic.JsonValue"),
+    "20261125": ("--untyped-value-type", "pydantic.JsonValue"),
 }
 """The options the practical presets of a date set beyond its standard options, for Pydantic output."""
 
@@ -253,6 +258,7 @@ PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261120": ("20261118", OPT_IN_OPTIONS_20261120),
     "20261123": ("20261120", OPT_IN_OPTIONS_20261123),
     "20261124": ("20261123", OPT_IN_OPTIONS_20261124),
+    "20261125": ("20261124", OPT_IN_OPTIONS_20261125),
 }
 """The preset before each dated preset and the options it adds to it."""
 

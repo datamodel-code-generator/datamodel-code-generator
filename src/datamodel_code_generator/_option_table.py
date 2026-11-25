@@ -906,6 +906,28 @@ OPTIONS: Final[tuple[Option, ...]] = (
         ),
     ),
     toggle(
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--keep-bases-of-typed-dicts-listed-before-their-parents",
+        help="Type a key that a TypedDict restates or requires and that its parent requires as the parent's bases "
+        "declare it, also where the TypedDict is listed before its parent in a module written before the parent's, "
+        "as when the parent is listed first, so the TypedDict keeps its generated bases (`class Child(Mid)` with "
+        "`x: int`). Without it such a TypedDict copies the parent's key before the key has a type, as in 0.102.0: it "
+        "declares the keys of its bases itself and drops them, and where it keeps its bases (a custom template, or a "
+        "base the output imports in place of a generated model) the key is typed `None`. Other output model types "
+        "type such a key either way.",
+        preset=PresetJoin(
+            "20261125",
+            {"keep_bases_of_typed_dicts_listed_before_their_parents": True},
+            title="Bases of TypedDicts listed before their parents",
+            description=(
+                "Type a key that a TypedDict restates or requires and that its parent requires as the parent's bases "
+                "declare it, also where the TypedDict is listed before its parent in a module written first, so the "
+                "TypedDict keeps its generated bases as when the parent is listed first, and no such key is typed "
+                "None."
+            ),
+        ),
+    ),
+    toggle(
         (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
     ),
     toggle((Section.MODEL, _C.FIELD), "--use-title-as-name", help="use titles as class names of models"),

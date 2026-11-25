@@ -1,0 +1,14 @@
+[[change]]
+id = "keep-bases-of-typed-dicts-listed-before-their-parents-api"
+category = "api"
+title = "Public names for --keep-bases-of-typed-dicts-listed-before-their-parents and the 20261125 presets"
+summary = "The option adds its config field and the 20261125 presets add their names; nothing is removed or changed."
+refs = ["#1"]
+decision = ["#1"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
