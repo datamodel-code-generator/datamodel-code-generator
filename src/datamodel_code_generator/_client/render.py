@@ -14,11 +14,13 @@ from datamodel_code_generator._client._compiled_templates import arguments as ar
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import helper_plans as helper_plans_template
 from datamodel_code_generator._client._compiled_templates import helpers as helpers_template
+from datamodel_code_generator._client._compiled_templates import mcp_server as mcp_server_template
 from datamodel_code_generator._client._compiled_templates import operations as operations_template
 from datamodel_code_generator._client._compiled_templates import readme as readme_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import runtime as runtime_template
 from datamodel_code_generator._client._compiled_templates import security as security_template
+from datamodel_code_generator._client._compiled_templates import tools as tools_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.codec_render import render_model_bindings
@@ -57,8 +59,10 @@ from datamodel_code_generator._client.runtime import (
 )
 from datamodel_code_generator._client.sockets import MessageRoute, SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
+from datamodel_code_generator._client.tools import rejected_patterns
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._message_text import english_list, for_count
+from datamodel_code_generator._openapi_codec_plan import EXTRAS, codec_module
 from datamodel_code_generator._python_syntax import (
     call_text,
     escape_docstring,
@@ -86,7 +90,7 @@ from datamodel_code_generator._target_contract import NoneType, UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope
-from datamodel_code_generator._target_operations import CLIENT, coded_use, operation_docstring
+from datamodel_code_generator._target_operations import CLIENT, coded_use, operation_docstring, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -123,6 +127,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._client.runtime import Helper, RawBody
     from datamodel_code_generator._client.security import CredentialSpec
+    from datamodel_code_generator._client.tools import ToolSpec
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import (
@@ -413,6 +418,66 @@ class _Facades:
             exports=sorted(name for names in groups.values() for name in names),
             lazy=tuple(Lazy(name_set(sorted(groups[module])), ".._runtime.protocols", module) for module in lazy),
             loader="Load a helper's session, handle, or memory store type when its name is first requested.",
+        )
+
+    @staticmethod
+    def tools(*, prose: bool, rejected: frozenset[str]) -> Templated:
+        """Return the tools module: the tool table of each client, over the plans of every tool.
+
+        A table without `prose` leaves the models' descriptions, titles, and examples out of the JSON schemas it gives,
+        and `rejected` holds the patterns of the models that Python's `re` rejects, which an MCP server lists no schema
+        of.
+        """
+        attributes = (
+            Attribute("plans", "TOOLS"),
+            *(() if prose else (Attribute("prose", "False"),)),
+            *((Attribute("rejected_patterns", f"frozenset({name_set(sorted(rejected))})"),) if rejected else ()),
+        )
+        return facade_module(
+            "tools",
+            "Tools over this package's operations, for agents: search them, read their JSON schemas, and call them.",
+            future=True,
+            imports=(
+                from_import("._async_client", ("AsyncClient",)),
+                from_import("._client", ("Client",)),
+                from_import("._generated.tools", ("TOOLS",)),
+                from_import("._runtime.client.tools", ("AsyncToolTable", "ToolTable", "UnknownToolError")),
+            ),
+            classes=(
+                Subclass(
+                    "Toolset",
+                    "ToolTable[Client]",
+                    "The tools of the synchronous client.",
+                    attributes,
+                ),
+                Subclass(
+                    "AsyncToolset",
+                    "AsyncToolTable[AsyncClient]",
+                    "The tools of the asyncio client.",
+                    attributes,
+                ),
+            ),
+            exports=("AsyncToolset", "Toolset", "UnknownToolError"),
+        )
+
+    @staticmethod
+    def mcp_server(package: str) -> Templated:
+        """Return the MCP server module: a server over the asyncio client's tool table, served over stdio by `main`."""
+        return templated(
+            "mcp_server.jinja2",
+            mcp_server_template.render_with_scope,
+            docstring=f"An MCP server over this package's tools, for agents: `python -m {package}.mcp_server` runs it.",
+            imports="\n".join((
+                from_import("collections.abc", ("Callable", "Sequence")),
+                "",
+                from_import("mcp.server", ("Server",)),
+                "",
+                from_import("._async_client", ("AsyncClient",)),
+                from_import("._runtime.client.tool_server", ("command_line", "serve_stdio", "tool_server")),
+                from_import(".tools", ("AsyncToolset",)),
+            )),
+            name=stable_repr(package),
+            prog=stable_repr(f"python -m {package}.mcp_server"),
         )
 
     @staticmethod
@@ -2133,6 +2198,112 @@ class _Security:
         )
 
 
+class _Tools:
+    """Render the tool table: each tool's plan, with the codecs of its arguments and result and its search text."""
+
+    def __init__(self, resources: _Resources, tools: tuple[ToolSpec, ...], codecs: ClientCodecs) -> None:
+        """Keep the resources that spell the signatures, the tools, and the codecs of the package's backend."""
+        self.resources = resources
+        self.tools = tools
+        self.codecs = codecs
+
+    def module(self) -> Templated:
+        """Return the module of the tool plans, in operation order."""
+        module = TargetModule(self.resources.types, {"TOOLS"}, level=2)
+        table = "_runtime.client.tools"
+        plan, argument = module.local(table, "ToolPlan"), module.local(table, "ToolArgument")
+        plans = [self.plan(module, tool, plan, argument) for tool in self.tools]
+        return templated(
+            "tools.jinja2",
+            tools_template.render_with_scope,
+            docstring="The tools of this package's operations; regenerate them instead of editing.",
+            annotation=subscript_text(module.name("typing", "Final"), (f"tuple[{plan}, ...]",)),
+            imports=module.imports(),
+            tools=plans,
+        )
+
+    def plan(self, module: TargetModule, tool: ToolSpec, plan: str, argument: str) -> Plan:
+        """Return one tool's plan: its name, method, route, tags, text, promises, arguments, and result codec."""
+        spec = tool.operation
+        found = tags(spec.contract)
+        entries = (
+            ("name", stable_repr(tool.name)),
+            ("resource", stable_repr(spec.resource)),
+            ("method", stable_repr(spec.name)),
+            ("route", stable_repr(_label(spec.contract))),
+            *((("tags", tuple_display(map(stable_repr, found))),) if found else ()),
+            ("description", stable_repr(tool.description)),
+            ("signature", stable_repr(self.signature(tool))),
+            *((("safe", "True"),) if tool.safe else ()),
+            *((("idempotent", "True"),) if tool.idempotent else ()),
+            *(
+                (
+                    (
+                        "arguments",
+                        tuple_display(
+                            _call(
+                                argument,
+                                (
+                                    ("name", stable_repr(item.name)),
+                                    ("codec", self.resources.codec(module, item.use)),
+                                    *((("required", "True"),) if item.required else ()),
+                                ),
+                            )
+                            for item in tool.arguments
+                        ),
+                    ),
+                )
+                if tool.arguments
+                else ()
+            ),
+            *((("media_type", stable_repr(tool.media_type)),) if tool.media_type is not None else ()),
+            ("result", self.result(module, spec)),
+        )
+        return Plan(tool.name, "", plan, _arguments(entries))
+
+    def result(self, module: TargetModule, spec: OperationSpec) -> str:
+        """Return the codec of an operation's result type, the type its method returns, by the backend's codec class.
+
+        The class is subscripted with the type, which its constructor cannot infer from a type form, and the codec
+        writes the extra members of Pydantic dataclasses when the codec of a success body does.
+        """
+        runtime = self.codecs.runtime
+        uses = {
+            media.use.id
+            for response in spec.responses
+            if response.success
+            for media in response.media
+            if media.use is not None
+        }
+        extras = any(item.extras for item in self.codecs.uses if item.use in uses)
+        result = _response_type(module, spec)
+        return call_text(
+            subscript_text(module.local(codec_module(runtime.module), runtime.codec), (result,)),
+            (result, *((module.local(EXTRAS.module, EXTRAS.serializer),) if extras else ())),
+        )
+
+    def signature(self, tool: ToolSpec) -> str:
+        """Return a tool's signature as the README spells its method's: its arguments as keywords, and its result."""
+        spec = tool.operation
+        resource = next(item for item in self.resources.plan.resources if item.namespace == spec.resource)
+        module = self.resources.resource_module(resource, "")
+        names = {item.name for item in tool.arguments}
+        parameters = [
+            self.resources.parameter(module, parameter).record(module)
+            for parameter in spec.parameters
+            if parameter.python_name in names
+        ]
+        if (body := next((item for item in tool.arguments if item.name == "body"), None)) is not None:
+            assert body.use.type is not None
+            surface = module.hint(body.use.type)
+            unset = module.local("options", "UNSET")
+            parameters.append(
+                Parameter("body", surface) if body.required else Parameter("body", module.union(surface, unset), unset)
+            )
+        returns = _response_type(module, spec)
+        return _stub(tool.name, parameters, returns) if parameters else f"def {tool.name}() -> {returns}: ..."
+
+
 class _Registry(_Typing):
     """Render the operation registry: each operation's servers, parameters, body, and response decoder."""
 
@@ -3282,12 +3453,15 @@ class ClientRenderer:
         templates: TemplateOverlay | None = None,
         use_schema_description: bool = False,
         use_single_line_docstring: bool = False,
+        tools: tuple[ToolSpec, ...] | None = None,
+        untrusted_input: bool = False,
     ) -> None:
         """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
 
         The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds. The
         README names the model backend and the runtime dependencies, and a template directory overrides builtin roles.
-        Operation methods are documented by the models' docstring options.
+        Operation methods are documented by the models' docstring options, and `tools` are those of a package with a
+        tool table, whose JSON schemas leave the models' descriptions, titles, and examples out for `untrusted_input`.
         """
         self.config = config
         self.plan = plan
@@ -3307,6 +3481,8 @@ class ClientRenderer:
         self.role: Role = roles(templates)
         self.use_schema_description = use_schema_description
         self.use_single_line_docstring = use_single_line_docstring
+        self.tools = tools
+        self.untrusted_input = untrusted_input
 
     @cached_property
     def bindings(self) -> RenderedBindings:
@@ -3366,6 +3542,14 @@ class ClientRenderer:
             security=sorted(capabilities.security),
             capabilities=sorted(capabilities.helpers),
             runtime=[{"package": package, "modules": modules} for package, modules in groups.items()],
+            tools=self.tools is not None,
+            mcp=self.config.tools == "mcp",
+            tool_example=next((tool.name for tool in self.tools or ()), "..."),
+            tool_listing=json.dumps(
+                [{"tool": tool.name, **_named(tool.operation, "operation")} for tool in self.tools or ()],
+                indent=2,
+                ensure_ascii=True,
+            ),
         )
 
     def example(self, keywords: list[tuple[str, ...]], resources: _Resources) -> dict[str, object]:
@@ -3510,6 +3694,17 @@ class ClientRenderer:
             yield self.file(PurePosixPath("bodies.py"), "bodies", bodies)
         if (protocols := facades.protocols()) is not None:
             yield self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols)
+        if self.tools is not None:
+            yield self.file(
+                PurePosixPath("tools.py"),
+                "tools",
+                facades.tools(
+                    prose=not self.untrusted_input,
+                    rejected=rejected_patterns(self.batch.fields) if self.config.tools == "mcp" else frozenset(),
+                ),
+            )
+        if self.config.tools == "mcp":
+            yield self.file(PurePosixPath("mcp_server.py"), "mcp_server", facades.mcp_server(self.config.package))
         resources_docstring = facade_module("resources", "The resources of the clients.")
         yield self.file(PurePosixPath("resources", "__init__.py"), "package", resources_docstring)
 
@@ -3543,7 +3738,7 @@ class ClientRenderer:
                 self.plan,
             ),
             signatures=self.signatures,
-            backends=declared_backends(self.codecs),
+            backends=declared_backends(self.codecs, tools=self.tools is not None),
             keywords=config.signature_style == "unpack",
             schemes=bool(self.plan.security_schemes) or any(spec.security is not None for spec in operations),
             binary_bodies=any(media.kind == "binary" for media in sent),
@@ -3554,6 +3749,8 @@ class ClientRenderer:
             response_headers=any(response.headers for spec in operations for response in spec.responses),
             multipart_responses=any(media.kind == "multipart" for media in received),
             extras=self.codecs.extras,
+            tools=self.tools is not None,
+            mcp=self.config.tools == "mcp",
         )
         assert self.batch.names is not None
         resources = _Resources(
@@ -3600,6 +3797,9 @@ class ClientRenderer:
                     _Security(self.plan, self.types).source(),
                 )
             )
+        if self.tools is not None:
+            tools = _Tools(resources, self.tools, self.codecs).module()
+            files.append(self.file(PurePosixPath("_generated", "tools.py"), "tools", tools))
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         helpers = (*self.helper_files(resources), *webhooks)
         runtime = tuple(runtime_files(capabilities.modules()))

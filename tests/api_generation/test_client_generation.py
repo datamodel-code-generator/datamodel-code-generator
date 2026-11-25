@@ -298,6 +298,15 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-missing-messages",
         "asyncapi-missing-messages-v2",
         "asyncapi-missing-messages-external",
+        "tools",
+        "tools-left-out",
+        "tools-descriptions",
+        "tools-untrusted",
+        "tools-adversarial",
+        "tools-extras",
+        "tools-mcp",
+        "tools-mcp-patterns",
+        "tools-mcp-patterns-fields",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -495,6 +504,7 @@ def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> Non
         "templates",
         "asyncapi-market-v3",
         "asyncapi-events",
+        "tools-mcp-empty",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

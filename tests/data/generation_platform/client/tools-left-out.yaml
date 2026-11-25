@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info:
+  title: Operations without tools
+  version: 1.0.0
+servers:
+  - url: https://files.example.com
+paths:
+  /files:
+    get:
+      operationId: listFiles
+      tags: [files]
+      parameters:
+        - name: Authorization
+          in: header
+          schema: {type: string}
+        - name: filter
+          in: query
+          content:
+            application/json: {}
+      responses:
+        '200':
+          description: The file names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string}
+    post:
+      operationId: addFile
+      tags: [files]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        '204':
+          description: Added.
+    put:
+      operationId: replaceFiles
+      tags: [files]
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {type: string}
+          application/xml:
+            schema: {type: string}
+      responses:
+        '204':
+          description: Replaced.
+  /files/{name}:
+    get:
+      operationId: readFile
+      tags: [files]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The file.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+    delete:
+      operationId: removeFile
+      tags: [files]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '204':
+          description: Removed.
+  /archive:
+    get:
+      operationId: listArchive
+      tags: [archive]
+      responses:
+        '200':
+          description: The archived names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string}
+    post:
+      operationId: archive
+      tags: [archive]
+      summary: Archive every file.
+      responses:
+        '204':
+          description: Archived.
+  /health:
+    get:
+      operationId: health
+      responses:
+        '200':
+          description: The service is up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: {type: string}

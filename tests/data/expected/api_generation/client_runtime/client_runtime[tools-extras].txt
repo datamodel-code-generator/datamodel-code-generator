@@ -1,0 +1,20 @@
+# tools-extras pydantic_v2.BaseModel
+  warning UserWarning: <root>/tools_extras_pydantic_v2_basemodel: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/tools_extras_pydantic_v2_basemodel: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/tools_extras_pydantic_v2_basemodel: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get = {"born": "2020-02-29", "colour": "brown", "id": 3, "name": "Rex", "species": "dog"}
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 47] b'{"name":"Rex","species":"dog","colour":"brown"}'
+  create = {"born": "2020-02-29", "colour": "brown", "id": 3, "name": "Rex", "species": "dog"}
+# tools-extras pydantic_v2.dataclass
+  warning UserWarning: <root>/tools_extras_pydantic_v2_dataclass: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/tools_extras_pydantic_v2_dataclass: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/tools_extras_pydantic_v2_dataclass: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get = {"born": "2020-02-29", "colour": "brown", "id": 3, "name": "Rex", "species": "dog"}
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 47] b'{"species":"dog","name":"Rex","colour":"brown"}'
+  create = {"born": "2020-02-29", "colour": "brown", "id": 3, "name": "Rex", "species": "dog"}

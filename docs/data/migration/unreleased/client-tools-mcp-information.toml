@@ -1,0 +1,6 @@
+[[change]]
+id = "client-tools-mcp-information"
+extends = "client-tools-functions-runtime"
+covers = [
+    "api_generation/fastapi_cli/information.stdout.txt",
+]

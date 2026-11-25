@@ -50,6 +50,17 @@ async def _async(profile: str, backend: str, url: str, context: ssl.SSLContext) 
             print("async", _result(await client.pets.create_pet(body=_body(backend, profile), **({"media_type": "application/json"} if profile == "all" else {}))))
 
 
+async def _mcp(url: str, context: ssl.SSLContext) -> None:
+    from mcp import Client as MCPClient
+    from publication_client.mcp_server import server
+
+    async with httpx2.AsyncClient(verify=context, trust_env=False) as native:
+        async with AsyncClient(base_url=url, http_client=native) as client, MCPClient(server(client)) as session:
+            print("mcp tools", [tool.name for tool in (await session.list_tools()).tools])
+            result = await session.call_tool("pets_create_pet", {"body": {"id": 7, "name": "installed"}})
+            print("mcp", result.is_error, json.dumps(result.structured_content, sort_keys=True))
+
+
 def main() -> None:
     profile, backend, url, authority = sys.argv[1:]
     print("installed package", Path(publication_client.__file__).is_relative_to(sys.prefix))
@@ -57,13 +68,15 @@ def main() -> None:
         importlib.import_module(module.name)
     print("all package modules imported")
     installed = {distribution.metadata["Name"].lower().replace("_", "-") for distribution in distributions()}
-    names = ("datamodel-code-generator", "jsonschema", "referencing", "google-re2", "pydantic", "msgspec", "websockets", "cryptography")
+    names = ("datamodel-code-generator", "jsonschema", "referencing", "google-re2", "pydantic", "msgspec", "websockets", "cryptography", "mcp")
     print("optional distributions", [name for name in names if name in installed])
     context = ssl.create_default_context(cafile=authority)
     with httpx2.Client(verify=context, trust_env=False) as native:
         with Client(base_url=url, http_client=native, **_credentials(profile, url)) as client:
             print("sync", _result(client.pets.create_pet(body=_body(backend, profile), **({"media_type": "application/json"} if profile == "all" else {}))))
     asyncio.run(_async(profile, backend, url, context))
+    if profile == "tools-mcp":
+        asyncio.run(_mcp(url, context))
 
 
 main()

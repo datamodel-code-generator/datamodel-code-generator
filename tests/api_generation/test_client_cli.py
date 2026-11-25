@@ -531,6 +531,14 @@ def test_client_cli_selector_replaces_pyproject(
             ],
             "--generate-server requires --input-file-type openapi, not asyncapi",
         ),
+        (
+            [*OPTIONS, *CLIENT, "--input-file-type", "asyncapi", "--client-tools", "functions"],
+            "--client-tools cannot be used with --input-file-type asyncapi, whose channels are sessions, not calls",
+        ),
+        (
+            [*OPTIONS, *CLIENT, "--output-model-type", "dataclasses.dataclass", "--client-tools", "functions"],
+            "--client-tools requires --output-model-type pydantic_v2.BaseModel or pydantic_v2.dataclass",
+        ),
     ],
     ids=[
         "client-option",
@@ -543,6 +551,8 @@ def test_client_cli_selector_replaces_pyproject(
         "asyncapi-perspective-openapi",
         "asyncapi-protocols",
         "asyncapi-server",
+        "tools-asyncapi",
+        "tools-backend",
     ],
 )
 def test_client_cli_usage(
@@ -1635,6 +1645,66 @@ def test_client_cli_asyncapi_perspective(tmp_path: Path, monkeypatch: pytest.Mon
     assert_output(
         (tmp_path / "client" / "protocols" / "_plans.py").read_text(encoding="utf-8"), name="plans", suffix=".py"
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--client-tools"],
+    option_description="""Add a tool table over the client's operations for agents (experimental).
+
+`--client-tools functions` adds `tools.py` to the client package: `Toolset(client)` and `AsyncToolset(client)` hold a
+tool for each operation, named by its client method with `_`, such as `pets_get_pet`. `search(query)` ranks the
+tools by the words of their names, tags, routes, descriptions, and signatures; `schema(name)` gives the JSON schemas
+of a tool's arguments and result, which Pydantic derives from the models; `call(name, arguments)` validates the JSON
+arguments as JSON through the models, calls the client's method, and returns the JSON result, or an error value with
+the failure's class, status, and bounded body, never its headers or URL; each credential the client placed on the
+call's requests is replaced by `[redacted]` in both. The arguments are the operation's parameters by their Python
+names and its JSON body as `body`, never a parameter at a credential's position or the request options, so the
+credentials stay in the client. `read_only=True` leaves out the tools of methods that are not safe. An
+operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
+method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
+summary and description, and `schema(name)` leaves out the `description`, `title`, and `examples` of every JSON
+schema, while the models keep theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
+
+`--client-tools mcp` also adds `mcp_server.py`, which serves the same tools of the asyncio client over MCP through
+the low-level server of the `mcp` SDK, whose release the printed requirements name. `server(client)` returns the
+server, and `serve(make_client)` serves it on stdin and stdout with the client a function of yours builds, so the
+credentials stay in your script; `python -m <package>.mcp_server --base-url URL` serves a client without credentials.
+Each tool is listed with the JSON schemas `schema(name)` gives, without the output schema where it holds a pattern
+Python's `re` rejects, which MCP clients cannot check, and with read-only and idempotent annotations from its HTTP
+method, `read_only=True` or `--read-only` lists only the tools of safe methods, a refused argument or a failed call
+is a result marked as an error, and an unknown tool name is a protocol error.""",
+    input_schema="generation_platform/client/tools.yaml",
+    cli_args=["--output", "models.py", *OPTIONS, *CLIENT, "--client-tools", "functions"],
+    golden_output="api_generation/client_cli/tools.table.py",
+)
+def test_client_cli_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Add the tool table to a client package, leaving out the operations whose calls take or return no JSON value."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.warns(UserWarning, match=r"Leaving \S+ \S+ \(client\.pets\.\w+\) out of the tools, since "):
+        run_main_and_assert(
+            input_path=Path("tools.yaml"),
+            output_path=Path("models.py"),
+            input_file_type="openapi",
+            extra_args=[*OPTIONS, *CLIENT, "--client-tools", "functions"],
+            copy_files=[(SOURCE / "tools.yaml", tmp_path / "tools.yaml")],
+        )
+    assert_output((tmp_path / "client" / "tools.py").read_text(encoding="utf-8"), name="table", suffix=".py")
+
+
+def test_client_cli_tools_mcp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Add the MCP server module beside the tool table; the printed requirements gain the MCP SDK."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.warns(UserWarning, match=r"Leaving \S+ \S+ \(client\.pets\.\w+\) out of the tools, since "):
+        run_main_and_assert(
+            input_path=Path("tools.yaml"),
+            output_path=Path("models.py"),
+            input_file_type="openapi",
+            extra_args=[*OPTIONS, *CLIENT, "--client-tools", "mcp"],
+            copy_files=[(SOURCE / "tools.yaml", tmp_path / "tools.yaml")],
+        )
+    assert_output(capsys.readouterr().err, name="notice")
 
 
 @pytest.mark.parametrize(

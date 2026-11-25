@@ -47,6 +47,10 @@
     "browser_supported": false,
     "unsupported_reason": "Server and client packages are not generated in the browser playground."
   },
+  "client_tools": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
   "generate_client": {
     "browser_supported": false,
     "unsupported_reason": "Server and client packages are not generated in the browser playground."

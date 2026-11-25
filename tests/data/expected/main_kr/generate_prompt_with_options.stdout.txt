@@ -454,6 +454,7 @@ What other options should I use?
 - `--client-resource-names`: Name the resources of tags (experimental).
 - `--client-server-base-url`: Resolve relative server URLs against this base URL (experimental).
 - `--client-signature-style`: Declare the arguments of the operation methods (experimental).
+- `--client-tools`: Add a tool table over the client's operations for agents (experimental).
 - `--generate-client`: Generate an HTTPX2 client package for the models (experimental).
 - `--generate-server`: Generate a FastAPI server package for the models (experimental).
 - `--no-client-deep-object-brackets`
@@ -2342,6 +2343,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --client-signature-style {explicit,unpack}
                         Declare operation arguments as keywords (default) or
                         as one Unpack[TypedDict] (experimental).
+  --client-tools {functions,mcp}
+                        Add a tool table over the client's operations for
+                        agents: tools.py, whose Toolset and AsyncToolset
+                        search the tools, give their JSON schemas from the
+                        models, and call them with JSON arguments; mcp also
+                        adds mcp_server.py, which serves them over MCP
+                        (experimental).
   --generate-client {httpx2}
                         Generate an HTTPX2 client package for the models; the
                         --client-* options configure it (experimental).

@@ -172,6 +172,8 @@ def escape_docstring(value: str | None) -> str | None:
     - Null bytes: written as `\\x00`, as a module cannot hold one
     - Lone surrogates: replaced by U+FFFD, as a module cannot hold one and no escape compiles in a docstring
 
+    A string that needs no escape is returned as it is, so the fast paths of custom templates allocate nothing.
+
     Args:
         value: The string to escape, or None.
 
@@ -183,8 +185,6 @@ def escape_docstring(value: str | None) -> str | None:
     if type(value) is _EscapedDocstring:
         return value
     value = _normalize_string(value)
-    # Escape backslashes first, then triple quotes. Retain the original string
-    # when no escaping is needed so custom-template fast paths stay allocation-free.
     escaped = _without_surrogates(value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').replace("\0", "\\x00"))
     return _EscapedDocstring(escaped) if escaped != value else value
 

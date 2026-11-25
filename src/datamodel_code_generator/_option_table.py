@@ -34,6 +34,7 @@ from datamodel_code_generator.enums import (
     ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
+    ClientTools,
     ClientType,
     CollapseRootModelsNameStrategy,
     ConstructorFieldOrder,
@@ -2746,6 +2747,14 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
         help="Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a "
         "JSON file path (experimental).",
+    ),
+    value(
+        Section.TARGET,
+        "--client-tools",
+        choices=_values(ClientTools),
+        help="Add a tool table over the client's operations for agents: tools.py, whose Toolset and AsyncToolset "
+        "search the tools, give their JSON schemas from the models, and call them with JSON arguments; mcp also adds "
+        "mcp_server.py, which serves them over MCP (experimental).",
     ),
 )
 COMMAND_DESTS: Final = frozenset(option.dest for option in OPTIONS if not option.config)

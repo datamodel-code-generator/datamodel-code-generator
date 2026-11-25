@@ -1,0 +1,212 @@
+# tools-mcp pydantic_v2.BaseModel
+  warning UserWarning: <root>/tools_mcp_pydantic_v2_basemodel: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/tools_mcp_pydantic_v2_basemodel: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/tools_mcp_pydantic_v2_basemodel: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  tool pets_list_pets ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call GET /pets.'
+    input {"$defs": {"PetsGetHeaderXTraceParameter": {"type": "string"}, "PetsGetQueryLimitParameter": {"maximum": 100, "minimum": 1, "type": "integer"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"X_Trace": {"$ref": "#/$defs/PetsGetHeaderXTraceParameter"}, "limit": {"$ref": "#/$defs/PetsGetQueryLimitParameter"}, "species": {"$ref": "#/$defs/Species"}}, "type": "object"}
+    output {"$defs": {"Error": {"properties": {"code": {"title": "Code", "type": "integer"}, "message": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Message"}}, "required": ["code"], "title": "Error", "type": "object"}, "Pet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "examples": ["2020-02-29"], "title": "Birthday"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "PetsGetResponse": {"items": {"$ref": "#/$defs/Pet"}, "title": "PetsGetResponse", "type": "array"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"result": {"anyOf": [{"$ref": "#/$defs/PetsGetResponse"}, {"$ref": "#/$defs/Error"}]}}, "required": ["result"], "type": "object"}
+  tool pets_create_pet ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=False, open_world_hint=None) 'Call POST /pets.'
+    input {"$defs": {"NewPet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "title": "Born"}, "name": {"description": "What the pet answers to.", "minLength": 1, "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["name", "species"], "title": "NewPet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"body": {"$ref": "#/$defs/NewPet"}}, "required": ["body"], "type": "object"}
+    output {"$defs": {"Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "examples": ["2020-02-29"], "title": "Birthday"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}
+  tool pets_get_pet ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call GET /pets/{petId}.'
+    input {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}
+    output {"$defs": {"Pet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "examples": ["2020-02-29"], "title": "Birthday"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "PetsPetIdGetResponse": {"title": "PetsPetIdGetResponse", "type": "string"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"result": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/PetsPetIdGetResponse"}]}}, "required": ["result"], "type": "object"}
+  tool pets_replace_pet ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call PUT /pets/{petId}.'
+    input {"$defs": {"NewPet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "title": "Born"}, "name": {"description": "What the pet answers to.", "minLength": 1, "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["name", "species"], "title": "NewPet", "type": "object"}, "PetsPetIdGetPathPetIdParameter": {"type": "integer"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"body": {"$ref": "#/$defs/NewPet"}, "petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}
+    output {"$defs": {"Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "examples": ["2020-02-29"], "title": "Birthday"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}
+  tool pets_delete_pet ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call DELETE /pets/{petId}.'
+    input {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}
+    output {"properties": {"result": {"type": "null"}}, "required": ["result"], "type": "object"}
+  tool owners_get_owner ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call GET /owners/{ownerId}.'
+    input {"$defs": {"OwnersOwnerIdGetPathOwnerIdParameter": {"format": "uuid", "type": "string"}}, "additionalProperties": false, "properties": {"ownerId": {"$ref": "#/$defs/OwnersOwnerIdGetPathOwnerIdParameter"}}, "required": ["ownerId"], "type": "object"}
+    output {"$defs": {"Pet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "examples": ["2020-02-29"], "title": "Birthday"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"description": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "description": "Notes on the owner.", "title": "Description"}, "id": {"format": "uuid", "title": "Id", "type": "string"}, "pets": {"items": {"$ref": "#/$defs/Pet"}, "title": "Pets", "type": "array"}}, "required": ["id", "pets"], "title": "Owner", "type": "object"}
+  > GET https://api.example.com/v1/pets?limit=5&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list error=False {"result": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]} ['{"result":[{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}]}']
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"name":"Rex","species":"dog"}'
+  create error=False {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"} ['{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} ['{"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get text error=False {"result": "Rex"} ['{"result":"Rex"}']
+  > DELETE https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete error=False {"result": null} ['{"result":null}']
+  > GET https://api.example.com/v1/owners/<call>?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  owner error=False {"id": "<call>", "pets": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]} ['{"id":"<call>","pets":[{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}]}']
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get missing error=True null ['{"error":{"type":"NotFoundError","reason":null,"status_code":404,"operation_id":"getPet","request_id":null,"body":{"code":4}}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  connection failure error=True null ['{"error":{"type":"APIConnectionError","reason":null,"status_code":null,"operation_id":"getPet","request_id":null,"body":null}}']
+  refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"options","location":[],"message":"Unknown argument","kind":"extra_forbidden"},{"argument":"petId","location":[],"message":"Input should be a valid integer, unable to parse string as an integer","kind":"int_parsing"}]}}']
+  no arguments error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"petId","location":[],"message":"Field required","kind":"missing"}]}}']
+  unknown tool ! -32602 No tool is named 'nope'
+  read-only tools = ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  read-only create ! -32602 No tool is named 'pets_create_pet'
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential in a name error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex [redacted]", "species": "dog"}} ['{"result":{"id":3,"name":"Rex [redacted]","species":"dog","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential id error=True null ['{"error":{"type":"redacted_result","result":{"id":"[redacted]","name":"Rex","species":"dog","born":"2020-02-29"}}}']
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  canary api_key sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null,"api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3?key=[redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3?key=[redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  canary header_key sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":null,"api_key":"[redacted]"}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 [redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3 [redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  canary bearer sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Bearer [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Bearer [redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3 Bearer [redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  canary basic sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Basic [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}} {"result":{"id":3,"name":"https://api.example.com/v1/pets/3 Basic [redacted]","species":"dog","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3?key=k
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  stdio 1 server tools_mcp_pydantic_v2_basemodel 2025-11-25
+  stdio 2 tools ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet', 'owners_get_owner']
+  stdio 3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}
+  stdio 4 error -32602 No tool is named 'nope'
+  main 1 server tools_mcp_pydantic_v2_basemodel 2025-11-25
+  main 2 tools ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  main 3 isError=True null {"error":{"type":"ConfigurationError","reason":"missing_credentials","status_code":null,"operation_id":"getPet","request_id":null,"body":null}}
+# tools-mcp pydantic_v2.dataclass
+  warning UserWarning: <root>/tools_mcp_pydantic_v2_dataclass: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
+  warning UserWarning: <root>/tools_mcp_pydantic_v2_dataclass: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
+  warning UserWarning: <root>/tools_mcp_pydantic_v2_dataclass: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  tool pets_list_pets ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call GET /pets.'
+    input {"$defs": {"PetsGetHeaderXTraceParameter": {"type": "string"}, "PetsGetQueryLimitParameter": {"maximum": 100, "minimum": 1, "type": "integer"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"X_Trace": {"$ref": "#/$defs/PetsGetHeaderXTraceParameter"}, "limit": {"$ref": "#/$defs/PetsGetQueryLimitParameter"}, "species": {"$ref": "#/$defs/Species"}}, "type": "object"}
+    output {"$defs": {"Error": {"properties": {"code": {"title": "Code", "type": "integer"}, "message": {"title": "Message", "type": "string"}}, "required": ["code"], "title": "Error", "type": "object"}, "Pet": {"properties": {"born": {"examples": ["2020-02-29"], "format": "date", "title": "Birthday", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "species", "name"], "title": "Pet", "type": "object"}, "PetsGetResponse": {"items": {"$ref": "#/$defs/Pet"}, "type": "array"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"result": {"anyOf": [{"$ref": "#/$defs/PetsGetResponse"}, {"$ref": "#/$defs/Error"}]}}, "required": ["result"], "type": "object"}
+  tool pets_create_pet ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=False, open_world_hint=None) 'Call POST /pets.'
+    input {"$defs": {"NewPet": {"properties": {"born": {"format": "date", "title": "Born", "type": "string"}, "name": {"description": "What the pet answers to.", "minLength": 1, "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["species", "name"], "title": "NewPet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"body": {"$ref": "#/$defs/NewPet"}}, "required": ["body"], "type": "object"}
+    output {"$defs": {"Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"born": {"examples": ["2020-02-29"], "format": "date", "title": "Birthday", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "species", "name"], "title": "Pet", "type": "object"}
+  tool pets_get_pet ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call GET /pets/{petId}.'
+    input {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}
+    output {"$defs": {"Pet": {"properties": {"born": {"examples": ["2020-02-29"], "format": "date", "title": "Birthday", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "species", "name"], "title": "Pet", "type": "object"}, "PetsPetIdGetResponse": {"type": "string"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"result": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/PetsPetIdGetResponse"}]}}, "required": ["result"], "type": "object"}
+  tool pets_replace_pet ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call PUT /pets/{petId}.'
+    input {"$defs": {"NewPet": {"properties": {"born": {"format": "date", "title": "Born", "type": "string"}, "name": {"description": "What the pet answers to.", "minLength": 1, "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["species", "name"], "title": "NewPet", "type": "object"}, "PetsPetIdGetPathPetIdParameter": {"type": "integer"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "additionalProperties": false, "properties": {"body": {"$ref": "#/$defs/NewPet"}, "petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}
+    output {"$defs": {"Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"born": {"examples": ["2020-02-29"], "format": "date", "title": "Birthday", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "species", "name"], "title": "Pet", "type": "object"}
+  tool pets_delete_pet ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call DELETE /pets/{petId}.'
+    input {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}
+    output {"properties": {"result": {"type": "null"}}, "required": ["result"], "type": "object"}
+  tool owners_get_owner ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Call GET /owners/{ownerId}.'
+    input {"$defs": {"OwnersOwnerIdGetPathOwnerIdParameter": {"format": "uuid", "type": "string"}}, "additionalProperties": false, "properties": {"ownerId": {"$ref": "#/$defs/OwnersOwnerIdGetPathOwnerIdParameter"}}, "required": ["ownerId"], "type": "object"}
+    output {"$defs": {"Pet": {"properties": {"born": {"examples": ["2020-02-29"], "format": "date", "title": "Birthday", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "species", "name"], "title": "Pet", "type": "object"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "properties": {"description": {"description": "Notes on the owner.", "title": "Description", "type": "string"}, "id": {"format": "uuid", "title": "Id", "type": "string"}, "pets": {"items": {"$ref": "#/$defs/Pet"}, "title": "Pets", "type": "array"}}, "required": ["id", "pets"], "title": "Owner", "type": "object"}
+  > GET https://api.example.com/v1/pets?limit=5&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list error=False {"result": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]} ['{"result":[{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}]}']
+  > POST https://api.example.com/v1/pets?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"species":"dog","name":"Rex"}'
+  create error=False {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"} ['{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} ['{"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get text error=False {"result": "Rex"} ['{"result":"Rex"}']
+  > DELETE https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete error=False {"result": null} ['{"result":null}']
+  > GET https://api.example.com/v1/owners/<call>?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  owner error=False {"id": "<call>", "pets": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]} ['{"id":"<call>","pets":[{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}]}']
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  get missing error=True null ['{"error":{"type":"NotFoundError","reason":null,"status_code":404,"operation_id":"getPet","request_id":null,"body":{"code":4}}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  connection failure error=True null ['{"error":{"type":"APIConnectionError","reason":null,"status_code":null,"operation_id":"getPet","request_id":null,"body":null}}']
+  refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"options","location":[],"message":"Unknown argument","kind":"extra_forbidden"},{"argument":"petId","location":[],"message":"Input should be a valid integer, unable to parse string as an integer","kind":"int_parsing"}]}}']
+  no arguments error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"petId","location":[],"message":"Field required","kind":"missing"}]}}']
+  unknown tool ! -32602 No tool is named 'nope'
+  read-only tools = ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  read-only create ! -32602 No tool is named 'pets_create_pet'
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential in a name error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex [redacted]", "species": "dog"}} ['{"result":{"id":3,"species":"dog","name":"Rex [redacted]","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential id error=True null ['{"error":{"type":"redacted_result","result":{"id":"[redacted]","species":"dog","name":"Rex","born":"2020-02-29"}}}']
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/v1/pets/3?key=canary-7f3e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  canary api_key sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null,"api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3?key=[redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3?key=[redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, x-api-key: canary-7f3e] b''
+  canary header_key sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":null,"api_key":"[redacted]"}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 [redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3 [redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Bearer canary-7f3e] b''
+  canary bearer sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Bearer [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Bearer [redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3 Bearer [redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic Y2FuYXJ5LTdmM2U6Y2FuYXJ5LTdmM2U=] b''
+  canary basic sent the marker: False
+    2 isError=True null {"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"","authorization":"Basic [redacted]","api_key":null}}}
+    3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3 Basic [redacted]","born":"2020-02-29"}}
+    4 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  > GET https://api.example.com/v1/pets/3?key=k
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  stdio 1 server tools_mcp_pydantic_v2_dataclass 2025-11-25
+  stdio 2 tools ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'pets_delete_pet', 'owners_get_owner']
+  stdio 3 isError=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} {"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}
+  stdio 4 error -32602 No tool is named 'nope'
+  main 1 server tools_mcp_pydantic_v2_dataclass 2025-11-25
+  main 2 tools ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  main 3 isError=True null {"error":{"type":"ConfigurationError","reason":"missing_credentials","status_code":null,"operation_id":"getPet","request_id":null,"body":null}}

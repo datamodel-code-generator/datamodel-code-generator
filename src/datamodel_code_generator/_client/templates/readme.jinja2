@@ -208,6 +208,46 @@ These operations declare request compression. Their bodies are gzipped by defaul
 {{ compression }}
 ```
 {%- endif %}
+{%- if tools %}
+
+## Tools
+
+`{{ package }}.tools` holds a tool for each operation below, which an agent calls by name with JSON arguments.
+`Toolset(client)` and `AsyncToolset(client)` search the tools, give each one's JSON schemas from the models, and call
+it, returning its JSON result or an error value; `read_only=True` leaves out the tools of unsafe methods.
+
+```python
+from {{ package }} import Client
+from {{ package }}.tools import Toolset
+
+with Client(base_url=...) as client:
+    tools = Toolset(client)
+    found = tools.search("...")
+    schema = tools.schema({{ tool_example | repr }})
+    result = tools.call({{ tool_example | repr }}, {...})
+```
+
+```json
+{{ tool_listing }}
+```
+{%- if mcp %}
+
+`{{ package }}.mcp_server` serves the same tools over MCP on stdin and stdout, through the low-level server of the `mcp`
+SDK: each tool is listed with its JSON schemas and with annotations from its HTTP method, a refused argument or a failed
+call is a result marked as an error, and an unknown tool name is a protocol error. The server looks up no credentials:
+build the client in a script of yours and name the script in the agent's MCP configuration.
+
+```python
+from {{ package }} import AsyncClient
+from {{ package }}.mcp_server import serve
+
+serve(lambda: AsyncClient({% if example %}{{ example.arguments }}{% else %}base_url=...{% endif %}))
+```
+
+`server(client)` returns the server for another transport, `read_only=True` lists only the tools of safe methods, and
+`python -m {{ package }}.mcp_server [--base-url URL] [--read-only]` serves a client without credentials.
+{%- endif %}
+{%- endif %}
 
 ## Dependencies
 

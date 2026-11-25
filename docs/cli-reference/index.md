@@ -16,7 +16,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 28 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
+| 🚀 [Target Generation Options](target-generation-options.md) | 28 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -82,6 +82,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--client-resource-names`](target-generation-options.md#client-resource-names) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-resource-names` requires `--generate-client httpx2`. |
 | [`--client-server-base-url`](target-generation-options.md#client-server-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-server-base-url` requires `--generate-client httpx2`. |
 | [`--client-signature-style`](target-generation-options.md#client-signature-style) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-signature-style` requires `--generate-client httpx2`. |
+| [`--client-tools`](target-generation-options.md#client-tools) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-tools` requires `--generate-client httpx2`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
@@ -157,6 +158,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--client-resource-names`](target-generation-options.md#client-resource-names)
 - [`--client-server-base-url`](target-generation-options.md#client-server-base-url)
 - [`--client-signature-style`](target-generation-options.md#client-signature-style)
+- [`--client-tools`](target-generation-options.md#client-tools)
 - [`--collapse-constrained-root-models-as-annotated`](model-customization.md#collapse-constrained-root-models-as-annotated)
 - [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models)
 - [`--collapse-root-models`](model-customization.md#collapse-root-models)

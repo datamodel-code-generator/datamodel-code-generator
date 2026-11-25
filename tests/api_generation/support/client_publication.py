@@ -46,6 +46,8 @@ def capability_arguments(profile: str, root: Path) -> list[str]:
     if "operations" in config:
         operations = client_options({"operations": config["operations"]}, root, PACKAGE)["client_operations"]
         arguments.extend(("--client-operations", json.dumps(operations)))
+    if "tools" in config:
+        arguments.extend(("--client-tools", config["tools"]))
     return arguments
 
 

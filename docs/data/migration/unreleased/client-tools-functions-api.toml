@@ -1,0 +1,14 @@
+[[change]]
+id = "client-tools-functions-api"
+category = "api"
+title = "Public names for --client-tools"
+summary = "The option adds the ClientTools enum, its config field and the client_tools option of generate(); nothing is removed or changed."
+refs = ["#7517"]
+decision = ["#7517"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.ClientTools", "datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

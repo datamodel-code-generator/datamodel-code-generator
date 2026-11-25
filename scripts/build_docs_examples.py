@@ -43,7 +43,7 @@ CLIENT_HOWTO = DOCS_PROJECTS / "client-howto"
 CLIENT_HOWTO_TEST = "docs_client_howto"
 SNIPPETS = DOCS_PROJECTS / "snippets"
 PRESET_PLACEHOLDER = "<newest-standard-py312-preset>"
-CLIENT_HOWTO_SCRIPTS = ("calls", "responses", "options", "retries", "auth", "oauth", "signing", "errors")
+CLIENT_HOWTO_SCRIPTS = ("calls", "responses", "options", "retries", "auth", "oauth", "signing", "errors", "agent_tools")
 API_TARGET_OPTIONS: dict[str, tuple[str, ...]] = {
     "server": (
         "--generate-server",
@@ -83,6 +83,8 @@ DOCS_PROJECT_OPTIONS: dict[str, tuple[str, tuple[str, ...]]] = {
             "both",
             "--client-operations",
             '{"/paths/~1pets/get": {"runtime": {"request_id_header": "X-Request-Id"}}}',
+            "--client-tools",
+            "functions",
         ),
     ),
 }

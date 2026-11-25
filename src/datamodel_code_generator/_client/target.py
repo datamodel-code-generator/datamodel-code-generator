@@ -41,6 +41,7 @@ from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import _Sockets, plan_sockets, routed_streams, socket_uses
 from datamodel_code_generator._client.streams import item_protocols, plan_streams, stream_uses
 from datamodel_code_generator._client.templates import ClientTemplates
+from datamodel_code_generator._client.tools import MCP_DEPENDENCY, plan_tools
 from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.webhooks import (
     key_class,
@@ -84,6 +85,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._client.sockets import MessageRoute, SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
+    from datamodel_code_generator._client.tools import ToolSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -94,6 +96,7 @@ if TYPE_CHECKING:
         OperationId,
         SymbolId,
         TypeUseBinding,
+        TypeUseId,
         TypeView,
     )
     from datamodel_code_generator._target_documents import JSONObject
@@ -389,6 +392,7 @@ def _render(  # ruff: ignore[too-many-locals]
         *_backend_dependencies(backend, request.model_imports),
         *webhook_dependencies(webhooks),
         *model_dependencies(request.model_imports),
+        *((MCP_DEPENDENCY,) if config.tools == "mcp" else ()),
     )
     renderer = ClientRenderer(
         config=config,
@@ -408,10 +412,38 @@ def _render(  # ruff: ignore[too-many-locals]
         templates=ClientTemplates.custom(request.model_config, request.cwd),
         use_schema_description=request.model_config.use_schema_description,
         use_single_line_docstring=request.model_config.use_single_line_docstring,
+        tools=None if config.tools is None else _tools(request, config, plan, coded),
+        untrusted_input=request.model_config.untrusted_input,
     )
     return TargetRender(
         files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan, sockets, streams)
     )
+
+
+def _tools(
+    request: TargetRequest, config: ClientGenerationConfig, plan: ClientPlan, coded: frozenset[TypeUseId]
+) -> tuple[ToolSpec, ...]:
+    """Plan the tool table of the final plan, warning of each operation left out of it.
+
+    Under `--untrusted-input` a tool's description leaves out the operation's summary and description, which
+    `--use-schema-description` would put in, and generation warns of it once; the JSON schemas of `schema()` leave out
+    every description, title, and examples keyword too, while the models keep their `Field(...)` and docstrings.
+    """
+    model_config = request.model_config
+    schema = model_config.use_schema_description
+    tools, left_out = plan_tools(plan, coded, schema=schema and not model_config.untrusted_input)
+    output = shown(config.output, request.shown_root).as_posix()
+    if schema and model_config.untrusted_input:
+        warn(
+            f"{output}: Tool descriptions name each operation's route only and the JSON schemas of schema() leave "
+            "out every description, title and examples keyword, since --untrusted-input keeps the operations' "
+            "summaries and descriptions and the schemas' descriptions, titles and examples out of what agents read; "
+            "the models keep their Field(description=..., title=..., examples=...) and docstrings",
+            stacklevel=3,
+        )
+    for subject, why in left_out:
+        warn(f"{output}: Leaving {subject} out of the tools, since {why}", stacklevel=3)
+    return tools
 
 
 def _refused(

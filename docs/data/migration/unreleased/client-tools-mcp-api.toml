@@ -1,0 +1,6 @@
+[[change]]
+id = "client-tools-mcp-api"
+extends = "client-tools-functions-api"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

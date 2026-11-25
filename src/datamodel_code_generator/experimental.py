@@ -24,6 +24,7 @@ ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
     "behavior.naming-hint",
     "behavior.remote-reference-lock",
+    "cli-option.client-tools",
     "cli-option.generate-client",
     "cli-option.generate-schema-validators",
     "cli-option.generate-server",
@@ -141,6 +142,40 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or "
             "`HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency "
             "errors do not fall back."
+        ),
+    ),
+    "cli-option.client-tools": ExperimentalFeature(
+        id="cli-option.client-tools",
+        kind="cli-option",
+        target=(
+            "--client-tools functions and mcp (client-tools in [tool.datamodel-codegen], client_tools in generate())"
+        ),
+        message=(
+            "The tool table of a generated client and its MCP server are experimental; its tools, their names, "
+            "schemas, annotations, search, and error values may change."
+        ),
+        since_version="0.103.0",
+        note=(
+            "`--client-tools functions` adds `tools.py` to a client package of Pydantic v2 models: `Toolset(client)` "
+            "and `AsyncToolset(client)` hold a tool for each operation whose arguments and success results are JSON "
+            "values, named by its client method, such as `pets_get_pet`. `search(query)` ranks the tools by their "
+            "names, tags, routes, descriptions, and signatures, `schema(name)` gives the JSON schemas of a tool's "
+            "arguments and result from the models, and `call(name, arguments)` validates the arguments as JSON "
+            "through the models, calls the client's method, and returns the JSON result, or an error value that "
+            "holds no header or URL, with each credential the client placed on the call's requests replaced in the "
+            "result and in an error's request ID and body. The arguments are the operation's parameters and body, "
+            "never a parameter at a credential's position or the request options; `read_only=True` leaves out the "
+            "tools of unsafe methods. An operation left out of the tools keeps its method, and generation warns why. "
+            "Under `--untrusted-input` a tool's description leaves out the operation's summary and description, and "
+            "`schema(name)` leaves out the `description`, `title`, and `examples` of every JSON schema, while the "
+            "models keep theirs. "
+            "`--client-tools mcp` also adds `mcp_server.py`, which serves the tools of the asyncio client over MCP "
+            "through the low-level server of the `mcp` SDK: `server(client)` returns the server, `serve(make_client)` "
+            "and `python -m <package>.mcp_server` serve it on stdin and stdout. Each tool is listed with the JSON "
+            "schemas `schema(name)` gives, without the output schema where it holds a pattern Python's `re` rejects, "
+            "and with read-only and idempotent annotations from its HTTP method; a "
+            "refused argument or a failed call is a result marked as an error, and an unknown tool a protocol error. "
+            "The server looks up no credentials, and the printed requirements gain `mcp`."
         ),
     ),
     "cli-option.generate-client": ExperimentalFeature(

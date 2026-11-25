@@ -6,13 +6,15 @@ for type checkers alone, so this module never imports HTTPX2 at run time and the
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import lru_cache
 from typing import TYPE_CHECKING, Final
 
 from ..model_codecs.parameters import parameter_key
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Collection, Hashable, Mapping
+    from collections.abc import Awaitable, Callable, Collection, Generator, Hashable, Mapping
     from typing import Any, Protocol, TypeAlias, TypeVar
 
     import httpx2
@@ -97,6 +99,23 @@ if TYPE_CHECKING:
 
 
 CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
+_PLACED: Final[ContextVar[list[str]]] = ContextVar("placed_credentials")
+
+
+@contextmanager
+def placed_credentials() -> Generator[list[str], None, None]:
+    """Collect the texts of the credentials the auth module places on the requests that the block sends."""
+    placed: list[str] = []
+    token = _PLACED.set(placed)
+    try:
+        yield placed
+    finally:
+        _PLACED.reset(token)
+
+
+def note_placed(*texts: str) -> None:
+    """Add the texts of a credential placed on a request to the block that collects them, outside one to none."""
+    _PLACED.get([]).extend(filter(None, texts))
 
 
 def cookie_name(pair: str) -> str:

@@ -167,3 +167,9 @@ values	api_generation/client_cli/setting_errors[values].txt
 	api_generation/client_cli/shared_models_jobs.model.py	= main/generation_platform/client/cli/options/models.py
 	api_generation/client_cli/shared_models_jobs.server.py
 	api_generation/client_cli/shared_models_jobs.stderr.txt	= api_generation/client_cli/generation_json.jobs_notice.txt
+[test_client_cli_tools]
+	api_generation/client_cli/tools.py
+	api_generation/client_cli/tools.table.py
+[test_client_cli_tools_mcp]
+	api_generation/client_cli/tools_mcp.notice.txt
+	api_generation/client_cli/tools_mcp.py	= api_generation/client_cli/tools.py

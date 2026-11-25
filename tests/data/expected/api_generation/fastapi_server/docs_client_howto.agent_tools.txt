@@ -1,0 +1,8 @@
+exit 0
+['pets_get_pet', 'pets_list_pets']
+{"type": "object", "properties": {"pet_id": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "additionalProperties": false, "required": ["pet_id"], "$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}}
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer s3cret
+{"id": 1, "name": "Mimi", "tag": "cat"}
+{"error": {"type": "invalid_arguments", "problems": [{"argument": "pet_id", "location": [], "message": "Input should be a valid integer, unable to parse string as an integer", "kind": "int_parsing"}]}}
+> GET https://eu.shelter.example/v1/pets/99 authorization: Bearer s3cret
+{"error": {"type": "NotFoundError", "reason": null, "status_code": 404, "operation_id": "getPet", "request_id": null, "body": {"message": "/pets/99 not found"}}}

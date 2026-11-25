@@ -49,6 +49,7 @@ sockets	api_generation/client_generation/client_documentation[sockets]/
 stream-resume	api_generation/client_generation/client_documentation[stream-resume]/
 streams	api_generation/client_generation/client_documentation[streams]/
 templates	api_generation/client_generation/client_documentation[templates]/
+tools-mcp-empty	api_generation/client_generation/client_documentation[tools-mcp-empty]/
 uploads	api_generation/client_generation/client_documentation[uploads]/
 [test_client_helper_spellings]
 pagination-root-pagination-documents-helper-documents	api_generation/client_generation/client_helper_spellings[pagination-root-pagination-documents-helper-documents].client/
@@ -601,6 +602,25 @@ text-bound-types	api_generation/client_generation/client_render[text-bound-types
 text-bound-types-errors	api_generation/client_generation/client_render[text-bound-types-errors].txt	= main/generation_platform/client/text-bound-types-errors.txt
 text-bound-types-reuse	api_generation/client_generation/client_render[text-bound-types-reuse].pydantic_v2_BaseModel/	= api_generation/client_generation/client_render[text-bound-types].pydantic_v2_BaseModel/
 text-bound-types-reuse	api_generation/client_generation/client_render[text-bound-types-reuse].txt
+tools	api_generation/client_generation/client_render[tools].pydantic_v2_BaseModel/
+tools	api_generation/client_generation/client_render[tools].pydantic_v2_dataclass/
+tools	api_generation/client_generation/client_render[tools].txt
+tools-adversarial	api_generation/client_generation/client_render[tools-adversarial].pydantic_v2_BaseModel/
+tools-adversarial	api_generation/client_generation/client_render[tools-adversarial].txt
+tools-descriptions	api_generation/client_generation/client_render[tools-descriptions].pydantic_v2_BaseModel/
+tools-descriptions	api_generation/client_generation/client_render[tools-descriptions].txt
+tools-extras	api_generation/client_generation/client_render[tools-extras].pydantic_v2_dataclass/
+tools-extras	api_generation/client_generation/client_render[tools-extras].txt
+tools-left-out	api_generation/client_generation/client_render[tools-left-out].pydantic_v2_BaseModel/
+tools-left-out	api_generation/client_generation/client_render[tools-left-out].txt
+tools-mcp	api_generation/client_generation/client_render[tools-mcp].pydantic_v2_BaseModel/
+tools-mcp	api_generation/client_generation/client_render[tools-mcp].txt
+tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].pydantic_v2_BaseModel/
+tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].txt
+tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].pydantic_v2_BaseModel/
+tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].txt
+tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].pydantic_v2_BaseModel/
+tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].txt
 type-checking-imports	api_generation/client_generation/client_render[type-checking-imports].msgspec_Struct/
 type-checking-imports	api_generation/client_generation/client_render[type-checking-imports].txt
 type-checking-imports-off	api_generation/client_generation/client_render[type-checking-imports-off].txt

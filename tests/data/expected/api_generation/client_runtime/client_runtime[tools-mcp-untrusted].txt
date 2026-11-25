@@ -1,0 +1,5 @@
+# tools-mcp-untrusted pydantic_v2.BaseModel
+  warning UserWarning: <root>/tools_mcp_untrusted_pydantic_v2_basemodel: Tool descriptions name each operation's route only and the JSON schemas of schema() leave out every description, title and examples keyword, since --untrusted-input keeps the operations' summaries and descriptions and the schemas' descriptions, titles and examples out of what agents read; the models keep their Field(description=..., title=..., examples=...) and docstrings
+  tool it_s_odd_operation 'Call GET /odd\'path/"quoted"/{id}/猫/\\.'
+    input {"$defs": {"OddPathQuotedId_GetPathIdParameter": {"type": "integer"}, "OddPathQuotedId_GetQueryQUoteSParameter": {"type": "string"}, "OddPathQuotedId_GetQuery_Parameter": {"type": "string"}}, "additionalProperties": false, "properties": {"id": {"$ref": "#/$defs/OddPathQuotedId_GetPathIdParameter"}, "q_uote_s": {"$ref": "#/$defs/OddPathQuotedId_GetQueryQUoteSParameter"}, "猫": {"$ref": "#/$defs/OddPathQuotedId_GetQuery_Parameter"}}, "required": ["id"], "type": "object"}
+    output {"properties": {"result": {"type": "string"}}, "required": ["result"], "type": "object"}

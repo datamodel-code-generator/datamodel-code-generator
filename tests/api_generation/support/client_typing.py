@@ -69,7 +69,7 @@ def client_typing_report(
     for sample in samples:
         marked = marked_lines(root / (name := f"{sample}_negative.py"))
         lines.extend((f"{name} {len(marked)} marked lines", *negative(root, name, marked)))
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
 
 
 def _generate_pets(source: Path, root: Path) -> None:

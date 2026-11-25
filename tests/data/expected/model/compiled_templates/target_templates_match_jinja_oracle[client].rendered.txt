@@ -530,6 +530,39 @@ class AsyncJobsRunHandle(AsyncLroHandle[models.Report, GetJobResponse]):
         """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
         return await self._cancel_remote(_plans.CANCEL_1)
 
+=== mcp_server.jinja2 / populated
+"""An MCP server over this package's tools 日本 {braces}; run it with `python -m client.mcp_server`."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Sequence
+
+from mcp.server import Server
+
+from ._async_client import AsyncClient
+from ._runtime.client.tool_server import command_line, serve_stdio, tool_server
+from .tools import AsyncToolset
+
+
+def server(client: AsyncClient, *, read_only: bool = False) -> Server[object]:
+    """Return an MCP server whose tools call the asyncio client's operations; `read_only` keeps only safe ones."""
+    return tool_server(AsyncToolset(client, read_only=read_only), 'client')
+
+
+def serve(make_client: Callable[[], AsyncClient], *, read_only: bool = False) -> None:
+    """Serve the tools over stdin and stdout until stdin ends, through a client `make_client` builds, then closed."""
+    serve_stdio(make_client, lambda client: server(client, read_only=read_only))
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    """Serve the tools from the command line: `--base-url` sets the API's base URL, `--read-only` keeps safe tools."""
+    command = command_line(argv, 'python -m client.mcp_server')
+    serve(lambda: AsyncClient(base_url=command.base_url), read_only=command.read_only)
+
+
+if __name__ == "__main__":
+    main()
+
 === model_bindings.jinja2 / stdlib
 """Native model codecs of this generated package; regenerate them instead of editing."""
 
@@ -765,6 +798,44 @@ These operations declare request compression. Their bodies are gzipped by defaul
 {"gzip": ["create"]}
 ```
 
+## Tools
+
+`client.tools` holds a tool for each operation below, which an agent calls by name with JSON arguments.
+`Toolset(client)` and `AsyncToolset(client)` search the tools, give each one's JSON schemas from the models, and call
+it, returning its JSON result or an error value; `read_only=True` leaves out the tools of unsafe methods.
+
+```python
+from client import Client
+from client.tools import Toolset
+
+with Client(base_url=...) as client:
+    tools = Toolset(client)
+    found = tools.search("...")
+    schema = tools.schema('pets_get_pet')
+    result = tools.call('pets_get_pet', {...})
+```
+
+```json
+[
+  {"tool": "pets_get_pet"}
+]
+```
+
+`client.mcp_server` serves the same tools over MCP on stdin and stdout, through the low-level server of the `mcp`
+SDK: each tool is listed with its JSON schemas and with annotations from its HTTP method, a refused argument or a failed
+call is a result marked as an error, and an unknown tool name is a protocol error. The server looks up no credentials:
+build the client in a script of yours and name the script in the agent's MCP configuration.
+
+```python
+from client import AsyncClient
+from client.mcp_server import serve
+
+serve(lambda: AsyncClient(base_url="https://api.example.com/v1", bearer="..."))
+```
+
+`server(client)` returns the server for another transport, `read_only=True` lists only the tools of safe methods, and
+`python -m client.mcp_server [--base-url URL] [--read-only]` serves a client without credentials.
+
 ## Dependencies
 
 The package needs these distributions at run time:
@@ -871,6 +942,42 @@ The signatures spell types as `resources/<resource>/_sync.py` imports them: from
 The `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response.
 
 This package has no operations.
+
+## Tools
+
+`client.tools` holds a tool for each operation below, which an agent calls by name with JSON arguments.
+`Toolset(client)` and `AsyncToolset(client)` search the tools, give each one's JSON schemas from the models, and call
+it, returning its JSON result or an error value; `read_only=True` leaves out the tools of unsafe methods.
+
+```python
+from client import Client
+from client.tools import Toolset
+
+with Client(base_url=...) as client:
+    tools = Toolset(client)
+    found = tools.search("...")
+    schema = tools.schema('...')
+    result = tools.call('...', {...})
+```
+
+```json
+[]
+```
+
+`client.mcp_server` serves the same tools over MCP on stdin and stdout, through the low-level server of the `mcp`
+SDK: each tool is listed with its JSON schemas and with annotations from its HTTP method, a refused argument or a failed
+call is a result marked as an error, and an unknown tool name is a protocol error. The server looks up no credentials:
+build the client in a script of yours and name the script in the agent's MCP configuration.
+
+```python
+from client import AsyncClient
+from client.mcp_server import serve
+
+serve(lambda: AsyncClient(base_url=...))
+```
+
+`server(client)` returns the server for another transport, `read_only=True` lists only the tools of safe methods, and
+`python -m client.mcp_server [--base-url URL] [--read-only]` serves a client without credentials.
 
 ## Dependencies
 
@@ -2419,6 +2526,31 @@ from .._runtime.client.security import SecurityBinding, SecurityScheme
 
 
 ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = ()
+
+=== tools.jinja2 / populated
+"""The tools of this package's operations 日本 {braces}."""
+
+from __future__ import annotations
+
+from typing import Final
+from .._runtime.client.tools import ToolPlan
+
+TOOLS: Final[tuple[ToolPlan, ...]] = (
+    ToolPlan(
+        name='pets_get_pet',
+        description='Show one pet 日本.',
+    ),
+)
+
+=== tools.jinja2 / empty
+"""The tools of this package's operations."""
+
+from __future__ import annotations
+
+from typing import Final
+
+TOOLS: Final[tuple[ToolPlan, ...]] = (
+)
 
 === types.jinja2 / populated
 """Types 日本 {braces}"""

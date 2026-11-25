@@ -1,0 +1,13 @@
+# tools-mcp-patterns pydantic_v2.BaseModel
+  tool default_get_letters output null
+  tool default_get_counts output null
+  tool default_get_codes output {"properties": {"code": {"pattern": "^[a-z]+$", "title": "Code", "type": "string"}}, "required": ["code"], "title": "CodesGetResponse", "type": "object"}
+  > GET https://api.example.com/v1/letters
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default_get_letters error=False {"name": "Ωmega"}
+  > GET https://api.example.com/v1/counts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default_get_counts error=False {"Ärzte": 2}
+  > GET https://api.example.com/v1/codes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default_get_codes error=False {"code": "abc"}
