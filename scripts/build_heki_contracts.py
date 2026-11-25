@@ -70,6 +70,14 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   group is a new report. heki reports it as a warning, so ``fail-on = "warning"`` makes it fail the check. A cycle of
   the imports that run while their modules load inside a group adds no report: the ``heki`` lane refuses every such
   cycle with ``IMP101`` over those imports alone (``tests/test_build_heki_contracts_script.py``).
+- ``import-boundaries`` (``IMP201``, ``IMP202``) of the layers of the package (`_classify_source_path` of
+  ``scripts/check_architecture_boundaries.py``, which keeps the reads an import boundary cannot name): each leaf layer
+  imports only the standard library, ``typing_extensions`` and the modules `_LEAF_IMPORTS` lists, the runtime its
+  third-party packages and its own modules only relatively; no module imports the package root or ``__main__``, the
+  pass modules no parser module but `PARSER_PASS_IMPORTS`, the parser, configuration, shared model and reference code
+  no concrete backend, configuration and the targets no parser module, the core no target and no code outside the
+  parser a private parser module. Every import counts, under ``TYPE_CHECKING`` and by name too, and an import heki
+  cannot name is reported (``IMP202``), so the baseline counts the imports of modules only the run knows.
 - ``effect-boundaries`` (``EFF201``) of the passes, from ``scripts/pass_decls.py`` and the pipeline tables
   (``parser/_passes/_tables.py``): each pass after L1 and each decision, over the functions its step or its
   ``DecisionPass`` runs and those they call, writes only the fact and presentation rows its declaration lets it write
@@ -107,7 +115,15 @@ import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
-from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
+from scripts.check_architecture_boundaries import (
+    _PARSER_LAYERS,
+    _TARGET_MODULES,
+    CONCRETE_BACKEND_ROOTS,
+    PackageIndex,
+    _classify_source_path,
+    _protocol_bases,
+    bases,
+)
 from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
 from scripts.check_ratchets import DECISION_READ_ADVICE, ENVIRONMENT_ADVICE, GLUE_ADVICE, PASS_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
@@ -157,7 +173,7 @@ IMPORTS = f"{PACKAGE}.imports.Imports"
 IMPORT_LEDGER = "parser/_imports_plan.py"
 """The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
-RULES = ("EFF201", "IMP101", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
+RULES = ("EFF201", "IMP101", "IMP201", "IMP202", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
 FAIL_ON = "warning"
 """The severity that fails the check: contract findings are heuristic warnings, which heki's default lets pass."""
 SHARED_PRODUCERS = (
@@ -795,6 +811,254 @@ def host_contracts(repo: Repo) -> list[str]:
     ]
 
 
+_ROOT_MESSAGE: Final = (
+    "no module of the package imports the package root, and none but __main__ imports __main__: import the name from "
+    "the module that defines it (the root only re-exports it for users)"
+)
+_LEAF_IMPORTS: Final[dict[str, tuple[tuple[str, ...], str]]] = {
+    "facts": (("_records",), "the attribute-to-fact table is read by checkers without the package"),
+    "schema-graph": (
+        ("_json_pointer", "_records", "reference"),
+        "the schema graph is the L0 core the parsers build, and takes parser rules as arguments",
+    ),
+    "json-pointer": ((), "the RFC 6901 pointer codec is a leaf that every layer reads"),
+    "free-names": ((), "the free-name numbering is a leaf that every layer reads"),
+    "name-words": ((), "the class name made from the words of a text is a leaf that every layer reads"),
+    "naming": (
+        ("_free_names", "_model_keys", "_records"),
+        "the names of the models are a leaf that the parsers and their passes read",
+    ),
+    "graph-links": (
+        (),
+        (
+            "the back links of the generation graph are a leaf that reference.py, types.py and the model package "
+            "import while they import each other"
+        ),
+    ),
+    "container-kinds": (
+        (),
+        (
+            "the container slots and kinds of a type tree node are a leaf that types.py, the model package, the parser "
+            "and the targets read"
+        ),
+    ),
+    "context-scope": (
+        (),
+        (
+            "the context variable scope is a leaf that the command line, the parser, the model package and the "
+            "reference resolver import"
+        ),
+    ),
+    "warning-control": (
+        (),
+        (
+            "how the generator's own warnings are shown is a leaf that the entry point, the recommender, the parser "
+            "and its passes import"
+        ),
+    ),
+    "message-text": (
+        (),
+        (
+            "how the generator's messages write English is a leaf that the command line, the recommender, the parser, "
+            "the model package and the targets import"
+        ),
+    ),
+    "module-paths": ((), "the paths of the written modules are a leaf that every layer reads"),
+    "openapi-paths": (
+        (),
+        (
+            "the operation fields of a path item and the paths --openapi-include-paths selects are a leaf that the "
+            "parsers, the targets and the recommender read"
+        ),
+    ),
+    "python-syntax": (
+        (),
+        "the Python display writer is a leaf that the model backends, the formatter and the targets read",
+    ),
+    "requirements": (("_message_text", "_records", "enums"), "the requirement table is a leaf"),
+    "constraints": (
+        ("_records", "_regex_syntax", "_requirements", "enums"),
+        "the constraint applicability table is a leaf that types.py reads while it is imported",
+    ),
+    "regex": (
+        ("_python_syntax", "_records"),
+        "the static regex scan is a leaf that the keyword table, the literal check and the backends read",
+    ),
+    "json-schema": (("_json_pointer",), "the subschema position table is a leaf that every schema walker reads"),
+    "parser-core": (
+        ("_json_schema", "_model_keys", "_records", "_regex_syntax"),
+        "a pure parser core computes from the dumped schemas it is given",
+    ),
+}
+"""The leaf layers of `_classify_source_path`: the modules of the package each may import besides the standard
+library and ``typing_extensions`` (with their submodules), and why."""
+RUNTIME_PACKAGE: Final = f"{PACKAGE}._runtime"
+RUNTIME_IMPORTS: Final = (
+    "annotationlib",
+    "anyio",
+    "cryptography",
+    "fastapi",
+    "httpcore2",
+    "httpx2",
+    "msgspec",
+    "pydantic",
+    "pydantic_core",
+    "python_multipart",
+    "starlette",
+    "typing_extensions",
+    "wsproto",
+)
+"""What the runtime imports besides the standard library: the packages generated code depends on (``annotationlib``
+from Python 3.14), and its own modules, relatively."""
+PARSER_PASS_IMPORTS: Final = (
+    "_facts",
+    "_field_rows",
+    "_graph_ids",
+    "_imports_plan",
+    "_init_exports",
+    "_intersection",
+    "_model_shapes",
+    "_naming",
+    "_null_facts",
+    "_passes",
+    "_phases",
+    "_pipeline",
+    "_python_type_imports",
+    "_tag_plan",
+    "_type_overrides",
+    "generation",
+)
+"""The parser modules a pass module may import: none imports ``parser/base.py``, so no pass closes a cycle."""
+
+
+def _below(*modules: str) -> list[str]:
+    """Return the patterns of modules and every module below them."""
+    return [pattern for module in modules for pattern in (module, f"{module}.*")]
+
+
+def _listing(names: Iterable[str]) -> str:
+    """Return names as an English list: ``a``, ``a and b``, ``a, b and c``."""
+    *rest, last = names
+    return f"{', '.join(rest)} and {last}" if rest else last
+
+
+def import_layers(repo: Repo) -> dict[str, list[str]]:
+    """Return the modules of the package by their layer (`_classify_source_path` of the architecture check)."""
+    layers: dict[str, list[str]] = defaultdict(list)
+    for rel, module in sorted(_package_modules(repo).items()):
+        layers[_classify_source_path(SOURCE_ROOT / Path(rel).relative_to(PACKAGE_DIR))].append(module)
+    return layers
+
+
+def import_boundary_contracts(repo: Repo) -> list[str]:
+    """Return the import boundaries of the layers (``IMP201``, ``IMP202``), one per rule of the layer table.
+
+    Every import counts: in a function, by a name ``importlib.import_module`` or ``__import__`` is given, and under
+    ``TYPE_CHECKING``; an import heki cannot name is reported (``IMP202``).
+    """
+    layers = import_layers(repo)
+    backends = _below(*(f"{PACKAGE}.model.{root}" for root in sorted(CONCRETE_BACKEND_ROOTS)))
+    parser = _below(f"{PACKAGE}.parser")
+    leaves = {module for layer in _LEAF_IMPORTS.keys() | {"runtime"} for module in layers[layer]}
+    parsers = [*layers["parser"], *layers["parser-passes"]]
+    main = f"{PACKAGE}.__main__"
+    others = sorted(m for found in layers.values() for m in found if m not in {PACKAGE, main})
+    rows: list[tuple[str, list[str], dict[str, object], str]] = [
+        ("root-import", others, {"forbidden_imports": [PACKAGE, main]}, _ROOT_MESSAGE),
+        ("root-main-import", [PACKAGE], {"forbidden_imports": [main]}, _ROOT_MESSAGE),
+    ]
+    for layer, (modules, why) in _LEAF_IMPORTS.items():
+        allowed = ["the standard library", "typing_extensions", *(f"{PACKAGE}.{module}" for module in modules)]
+        keys = {"allowed_imports": ["<stdlib>", *_below("typing_extensions", *allowed[2:])]}
+        rows.append((f"{layer}-import", layers[layer], keys, f"{why}: import only {_listing(allowed)}"))
+    rows += [
+        (
+            "runtime-import",
+            layers["runtime"],
+            {"allowed_imports": ["<stdlib>", *_below(*RUNTIME_IMPORTS)], "relative_imports": _below(RUNTIME_PACKAGE)},
+            (
+                "the runtime is copied into the generated packages: import only the standard library, the third-party "
+                "packages generated code depends on and other runtime modules, relatively"
+            ),
+        ),
+        (
+            "parser-passes-import",
+            layers["parser-passes"],
+            {
+                "forbidden_imports": parser,
+                "allowed_imports": _below(*(f"{PACKAGE}.parser.{m}" for m in PARSER_PASS_IMPORTS)),
+            },
+            (
+                "pass modules must not import parser/base.py or the format parsers, not even for typing: take the "
+                "parser through a narrow Protocol and import only the store, the import ledger and other pass modules"
+            ),
+        ),
+        (
+            "backend-import",
+            parsers,
+            {"forbidden_imports": backends},
+            "parser code must depend on neutral model capabilities, not a concrete output backend",
+        ),
+        (
+            "config-backend-import",
+            layers["config"],
+            {"forbidden_imports": backends},
+            "configuration must receive output implementations through a neutral registry or injection",
+        ),
+        (
+            "config-parser-import",
+            layers["config"],
+            {"forbidden_imports": parser},
+            "configuration must not depend on parser implementation modules",
+        ),
+        (
+            "shared-model-backend-import",
+            layers["shared-model"],
+            {"forbidden_imports": backends},
+            "shared model code must not depend on a concrete backend; expose a neutral capability instead",
+        ),
+        (
+            "reference-backend-import",
+            layers["reference"],
+            {"forbidden_imports": [*backends, *_below("msgspec")]},
+            "reference code must not import concrete output backends except bounded compatibility exports",
+        ),
+        (
+            "target-parser-import",
+            layers["target"],
+            {"forbidden_imports": parser},
+            "target generation must consume accepted contracts, not parser modules",
+        ),
+        (
+            "target-reverse-import",
+            sorted(m for layer, found in layers.items() if layer != "target" for m in found if m not in leaves),
+            {"forbidden_imports": _below(*sorted(_TARGET_MODULES))},
+            "model generation must not depend on target generation; targets depend on the core",
+        ),
+        (
+            "private-parser-import",
+            sorted(
+                m for layer, found in layers.items() if layer not in _PARSER_LAYERS for m in found if m not in leaves
+            ),
+            {"forbidden_imports": [f"{PACKAGE}.parser._*", f"{PACKAGE}.parser.*._*"]},
+            "code outside parser must move reusable helpers to a neutral package module",
+        ),
+    ]
+    return [
+        _table(
+            "import-boundaries",
+            name=name,
+            importers=importers,
+            **keys,
+            type_checking="report",
+            unresolved="report",
+            message=message,
+        )
+        for name, importers, keys, message in rows
+        if importers
+    ]
+
+
 def environment_contracts() -> list[str]:
     """Return the effect boundary that keeps the package's functions and module bodies from reading the environment."""
     return [
@@ -1130,6 +1394,7 @@ def generate() -> str:
         *import_ledger_contracts(repo),
         *builder_contracts(repo),
         *host_contracts(repo),
+        *import_boundary_contracts(repo),
         *pipeline_contracts(repo),
         *shared_object_contracts(repo),
         *environment_contracts(),

@@ -1298,8 +1298,8 @@ it, the `Phase` whose passes write it last today and its freeze point: the lates
 pass pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
 Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
 kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
-library and `typing_extensions` (`scripts/check_architecture_boundaries.py` registers it as the `facts` leaf layer), so
-the checkers can read it without importing the package.
+library and `typing_extensions` (`scripts/check_architecture_boundaries.py` classifies it as the `facts` leaf layer,
+whose import boundary in `scripts/heki.toml` holds that), so the checkers can read it without importing the package.
 
 heki checks the writes against that table: `scripts/build_heki_contracts.py` turns the `fact`, `presentation` and
 `cache` rows of model-graph owners, and the model lists of the parser run state (`Parser.results`,
@@ -1416,7 +1416,7 @@ place cell does not name, for a pass the cell names that the record leaves out, 
 over dumped schemas or frozen schema facts, in a pure parser core (`parser/_intersection.py`,
 `parser/_null_facts.py`, `parser/_model_shapes.py`); the adapter that reads those facts is the only
 code that reads the live objects, and callers are to go through it (readers of the stored `is_optional` move in a later
-step). `scripts/check_architecture_boundaries.py` keeps the package free of concrete backends and the parser cores free
+step). The import boundaries of `scripts/heki.toml` keep the package free of concrete backends and the parser cores free
 of everything but the standard library and the leaves they read (`_json_schema.py`, `_model_keys.py`, `_records`,
 `_regex_syntax`).
 A table that `types.py` reads while it is imported is a top-level leaf instead, as the model package imports
@@ -2115,8 +2115,12 @@ paths:
   decision): the public tables of `DataTypeManager` and its Pydantic and msgspec subclasses, and the keyword groups
   `types.py` exports, are views of its rows.
 
-Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
-backend inspection with the Python AST, including lazy and dynamic imports. No module of the package imports the
+heki holds the imports of these rules: `scripts/build_heki_contracts.py` writes one `[[import-boundaries]]` contract
+per rule into `scripts/heki.toml`, its importers the modules of a layer that `scripts/check_architecture_boundaries.py`
+classifies, and every import counts, lazy, by name and under `TYPE_CHECKING` too; an import heki cannot name is
+reported (`IMP202`), so the baseline counts the imports of modules only the run knows. `python
+scripts/check_architecture_boundaries.py` holds what an import boundary cannot name: semantic backend inspection, a
+root name read through the bound root package, and a private name imported from a parser module. No module of the package imports the
 package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
 `TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root
 re-exports the names of the modules that define them for users, so the package imports each name from its module. A

@@ -39,7 +39,7 @@ def test_source_tree_respects_architecture_boundaries() -> None:
 
 
 def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> None:
-    """Cover static, relative, dynamic, semantic, and private import violations."""
+    """Cover the reads of each layer that bypass its capabilities: attributes, identities and private names."""
     files: list[tuple[Path, check_architecture_boundaries.Layer]] = [
         (FIXTURE_ROOT / "entrypoint" / "forbidden.py", "entrypoint"),
         (FIXTURE_ROOT / "parser" / "forbidden.py", "parser"),
@@ -66,29 +66,13 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
     )
 
 
-@pytest.mark.parametrize(
-    "fixture",
-    [
-        pytest.param(FIXTURE_ROOT / "shared_model_dynamic_import" / "forbidden.py", id="shared_model_dynamic_import"),
-        pytest.param(FIXTURE_ROOT / "shared_model_dynamic_import" / "allowed.py", id="clean"),
-    ],
-)
-def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(fixture: Path) -> None:
-    """Reject concrete dynamic imports while allowing shadowed aliases without a target."""
-    violations = check_architecture_boundaries.check_files([(fixture, "shared-model")], allowlist={})
-
-    assert_output(check_architecture_boundaries.format_report(violations))
-
-
 def test_architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read(tmp_path: Path) -> None:
-    """Report an import that leaves the top-level package and a module the source model refuses, as violations."""
-    stored = [FIXTURE_ROOT / "unreadable" / "import.py.txt", FIXTURE_ROOT / "unreadable" / "source.py.txt"]
-    files: list[tuple[Path, check_architecture_boundaries.Layer]] = []
-    for path in stored:
-        copied = tmp_path / path.name.removesuffix(".txt")
-        copyfile(path, copied)
-        files.append((copied, "shared"))
-    report = check_architecture_boundaries.format_report(check_architecture_boundaries.check_files(files, allowlist={}))
+    """Report a module the source model refuses as a violation: no rule can read it, so none is silently skipped."""
+    copied = tmp_path / "source.py"
+    copyfile(FIXTURE_ROOT / "unreadable" / "source.py.txt", copied)
+    report = check_architecture_boundaries.format_report(
+        check_architecture_boundaries.check_files([(copied, "shared")], allowlist={})
+    )
 
     assert_output(report.replace(tmp_path.as_posix(), "tests/data/architecture_boundaries/unreadable"))
 
@@ -213,27 +197,6 @@ def test_architecture_boundary_detector_reports_stale_allowlist_entries() -> Non
     )
 
 
-def test_reference_allowlist_is_symbol_specific() -> None:
-    """Do not let a compatibility import allowance hide another backend symbol."""
-    fixture = FIXTURE_ROOT / "reference" / "symbol_specific.py"
-    key = check_architecture_boundaries.BoundaryKey(
-        "tests/data/architecture_boundaries/reference/symbol_specific.py",
-        "load_unrelated_backend_symbol",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.PydanticFieldNameResolver",
-    )
-    violations = check_architecture_boundaries.check_files(
-        [(fixture, "reference")],
-        allowlist={
-            key: check_architecture_boundaries.AllowlistEntry("fixture for symbol-specific compatibility import")
-        },
-    )
-
-    assert_output(
-        check_architecture_boundaries.format_report(violations),
-    )
-
-
 def test_architecture_boundary_allowlist_contract_and_file_discovery(tmp_path: Path) -> None:
     """Cover invalid allowlist metadata, outside paths, and direct file targets."""
 
@@ -276,13 +239,13 @@ def test_architecture_boundary_cli_reports_actionable_failures(
     clean_output = capsys.readouterr()
 
     legacy_key = check_architecture_boundaries.BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "_default_field_name_resolver_class",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.PydanticFieldNameResolver",
+        "src/datamodel_code_generator/config.py",
+        "ParserConfig",
+        "config-backend-reference",
+        "datamodel_code_generator.model.pydantic_v2.RootModel",
     )
     monkeypatch.delitem(check_architecture_boundaries.DEFAULT_ALLOWLIST, legacy_key)
-    failure_code = check_architecture_boundaries.main([str(ROOT / "src" / "datamodel_code_generator" / "reference.py")])
+    failure_code = check_architecture_boundaries.main([str(ROOT / "src" / "datamodel_code_generator" / "config.py")])
     failure_by_symbol = re.sub(r"^(src/[^:]+):\d+:\d+:", r"\1:", capsys.readouterr().err, flags=re.MULTILINE)
     monkeypatch.undo()
 
@@ -324,7 +287,6 @@ def test_architecture_boundary_cli_checks_the_full_source_tree() -> None:
     "fixture",
     [
         pytest.param(FIXTURE_ROOT / "shared_model" / "forbidden.py", id="forbidden"),
-        pytest.param(FIXTURE_ROOT / "shared_model_dynamic_import" / "forbidden.py", id="shared_model_dynamic_import"),
     ],
 )
 def test_architecture_boundary_cli_reports_shared_model_backend_access(tmp_path: Path, fixture: Path) -> None:

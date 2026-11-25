@@ -563,13 +563,14 @@ leaves the table once a check enforces its rule. `--head <revision>` reviews a c
 Before adding a dependency between layers, check `docs/architecture.md` and run:
 
 ```bash
+heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
 python scripts/check_architecture_boundaries.py
 ```
 
-The guard rejects concrete output-backend imports and backend-name inspection in
-parsers, concrete backend imports or `sys.modules` lookups from shared model
-modules, private `parser._*` imports from shared code, parser/backend dependencies
-from configuration, and local output-family mappings in `input_model.py`. Move
+heki's import boundaries (`scripts/heki.toml`) reject concrete output-backend imports in parsers, configuration and
+shared model modules, private `parser._*` imports from shared code and parser imports from configuration. The guard
+rejects backend-name inspection in parsers, `sys.modules` lookups from shared model modules, backend references from
+configuration, and local output-family mappings in `input_model.py`. Move
 output behavior to a neutral capability on `DataModel` or `DataModelFieldBase`,
 keep backend lifecycle and cache management with its backend or the model
 composition root, and move reusable helpers to a neutral package module. Do not

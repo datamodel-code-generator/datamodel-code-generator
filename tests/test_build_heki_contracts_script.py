@@ -35,6 +35,7 @@ from scripts.fact_tables import (
 )
 from scripts.pass_decls import DECISION_DECLS, PASS_DECLS, PassDecl, PassKind, Scope
 from tests.capabilities import needs
+from tests.conftest import assert_output
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -325,6 +326,97 @@ def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
         ],
     ), result.stderr
     assert (module_level.returncode, _cycle_reports(module_level)) == (1, [body]), module_level.stderr
+
+
+LAYER_FIXTURES = Path(__file__).parent / "data" / "architecture_boundaries"
+SEEDED_LAYERS = {
+    "entrypoint/forbidden.py": "_facade.py",
+    "parser/forbidden.py": "parser/seeded.py",
+    "parser_passes/forbidden.py": "parser/_passes/seeded.py",
+    "parser_core/forbidden.py": "parser/_intersection.py",
+    "facts/forbidden.py": "parser/_facts.py",
+    "schema_graph/forbidden.py": "parser/_schema_graph.py",
+    "config/forbidden.py": "config.py",
+    "input_model/forbidden.py": "input_model.py",
+    "reference/forbidden.py": "reference.py",
+    "output_model/forbidden.py": "model/pydantic_v2/seeded.py",
+    "shared_model/forbidden.py": "model/union.py",
+    "shared_model/allowed.py": "model/types.py",
+    "shared_model_dynamic_import/forbidden.py": "model/base.py",
+    "shared_model_dynamic_import/allowed.py": "model/enum.py",
+    "model_composition/allowed.py": "model/__init__.py",
+    "shared/forbidden.py": "seeded_shared.py",
+    "target/forbidden.py": "_target_config.py",
+    "requirements/forbidden.py": "_requirements.py",
+    "constraints/forbidden.py": "_constraint_applicability.py",
+    "regex/forbidden.py": "_regex_syntax.py",
+    "runtime/forbidden.py": "_runtime/seeded.py",
+}
+"""The fixtures of the layers (``tests/data/architecture_boundaries``), each placed at a module of its layer."""
+SEEDED_LAYER_STUBS = (
+    "__init__.py",
+    "_api_generation.py",
+    "_api_types.py",
+    "_json_schema.py",
+    "_runtime/__init__.py",
+    "_runtime/client.py",
+    "_source.py",
+    "_target_documents.py",
+    "enums.py",
+    "format.py",
+    "imports.py",
+    "model/dataclass.py",
+    "model/field_name.py",
+    "model/msgspec.py",
+    "model/output.py",
+    "model/pydantic_base.py",
+    "model/pydantic_v2/__init__.py",
+    "model/pydantic_v2/base_model.py",
+    "model/typed_dict.py",
+    "parser/__init__.py",
+    "parser/_graph.py",
+    "parser/_passes/__init__.py",
+    "parser/base.py",
+    "parser/generation.py",
+    "parser/jsonschema.py",
+    "parser/mcp.py",
+    "parser/openapi.py",
+    "types.py",
+)
+"""The empty modules the fixtures import: heki judges an import of a module the package has."""
+
+
+@needs("heki")
+def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
+    """Each import a layer may not make is a finding, however it is written; an import heki cannot name is one too.
+
+    The import boundaries come from the layers of `check_architecture_boundaries._classify_source_path`. An import
+    counts in a function, under ``TYPE_CHECKING``, guarded and by name (``importlib.import_module`` with a constant,
+    an alias, a relative name and its package, ``__import__``); a by-name import of a name the code does not fix is
+    ``IMP202``. The ``allowed.py`` fixtures and the composition root give none; a name bound to ``importlib`` on one
+    branch and to another module on the other is no import heki can name.
+    """
+    package = tmp_path / PACKAGE
+    for stub in SEEDED_LAYER_STUBS:
+        (package / stub).parent.mkdir(parents=True, exist_ok=True)
+        (package / stub).write_text("", encoding="utf-8")
+    for fixture, place in SEEDED_LAYERS.items():
+        shutil.copyfile(LAYER_FIXTURES / fixture, package / place)
+    (tmp_path / "scripts").mkdir()
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    _contracts_file(contracts, build_heki_contracts.import_boundary_contracts(repo))
+
+    result = _heki("--output-format", "json", cwd=tmp_path, config=contracts)
+
+    found = sorted(
+        (Path(item["path"]).relative_to(PACKAGE).as_posix(), item["line"], item["rule_code"], item["target"])
+        for item in json.loads(result.stdout)
+    )
+    assert_output(
+        f"exit: {result.returncode}\n"
+        + "".join(f"{path}:{line}: {rule} {target}\n" for path, line, rule, target in found)
+    )
 
 
 SEEDED_SHARED = {

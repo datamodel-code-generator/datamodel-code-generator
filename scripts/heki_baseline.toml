@@ -31,6 +31,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/__main__.py"
+qualname = "_publish_staged_files"
+rule_code = "IMP201"
+target = "datamodel_code_generator._target_cli"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/__main__.py"
 qualname = "_recommend_generation_config.<locals>.generation_config"
 rule_code = "MUT205"
 target = "*"
@@ -63,6 +70,13 @@ qualname = "_run_jobs_json"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/__main__.py"
+qualname = "_run_target"
+rule_code = "IMP201"
+target = "datamodel_code_generator._target_cli"
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/__main__.py"
@@ -2258,6 +2272,13 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/_facade.py"
 qualname = "generate"
+rule_code = "IMP201"
+target = "datamodel_code_generator._target_selection"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_facade.py"
+qualname = "generate"
 rule_code = "MUT204"
 target = "datamodel_code_generator._lock_plan.owns_lock_update"
 count = 1
@@ -2880,6 +2901,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/_generation.py"
+qualname = "_build_parser"
+rule_code = "IMP202"
+target = "datamodel_code_generator.parser.*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_generation.py"
 qualname = "_emit_results"
 rule_code = "MUT204"
 target = "datamodel_code_generator._paths.layout_refusal"
@@ -2942,6 +2970,13 @@ target = "datamodel_code_generator.util.yaml_numbers_read_where_strings_required
 count = 1
 
 [[entries]]
+path = "src/datamodel_code_generator/_json_output.py"
+qualname = "json_schema_text"
+rule_code = "IMP202"
+target = "datamodel_code_generator.*"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/_json_schema.py"
 qualname = "_local_definition_ref_name"
 rule_code = "MUT204"
@@ -2953,6 +2988,13 @@ path = "src/datamodel_code_generator/_lazy_exports.py"
 qualname = "_load"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/_lazy_exports.py"
+qualname = "_load"
+rule_code = "IMP202"
+target = "*"
 count = 2
 
 [[entries]]
@@ -3929,6 +3971,13 @@ target = "datamodel_code_generator.deprecations.cli_deprecations"
 count = 1
 
 [[entries]]
+path = "src/datamodel_code_generator/config.py"
+qualname = "<module>"
+rule_code = "IMP201"
+target = "datamodel_code_generator.model.pydantic_v2"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/dynamic.py"
 qualname = "_bind_to_parent_package"
 rule_code = "MUT205"
@@ -3972,6 +4021,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/dynamic.py"
+qualname = "_parent_import_error"
+rule_code = "IMP202"
+target = "*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/dynamic.py"
 qualname = "_refuse_unregistrable_name"
 rule_code = "MUT204"
 target = "datamodel_code_generator._message_text.english_list"
@@ -3982,6 +4038,13 @@ path = "src/datamodel_code_generator/dynamic.py"
 qualname = "_run_locked"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/dynamic.py"
+qualname = "_run_locked"
+rule_code = "IMP202"
+target = "*"
 count = 1
 
 [[entries]]
@@ -3996,6 +4059,13 @@ path = "src/datamodel_code_generator/format.py"
 qualname = "CodeFormatter._load_custom_formatter"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/format.py"
+qualname = "CodeFormatter._load_custom_formatter"
+rule_code = "IMP202"
+target = "*"
 count = 1
 
 [[entries]]
@@ -4035,9 +4105,23 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/format.py"
+qualname = "_is_formatter_available"
+rule_code = "IMP202"
+target = "*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/format.py"
 qualname = "_load_watch_formatter_module"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/format.py"
+qualname = "_load_watch_formatter_module"
+rule_code = "IMP202"
+target = "*"
 count = 1
 
 [[entries]]
@@ -4056,6 +4140,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/http.py"
+qualname = "_HTTPStack.transport_type"
+rule_code = "IMP202"
+target = "*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/http.py"
 qualname = "_get_http_stack"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
@@ -4066,6 +4157,13 @@ path = "src/datamodel_code_generator/http.py"
 qualname = "_load_http_stack"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/http.py"
+qualname = "_load_http_stack"
+rule_code = "IMP202"
+target = "*"
 count = 1
 
 [[entries]]
@@ -4123,6 +4221,13 @@ qualname = "_load_input_model_module"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
 count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/input_model.py"
+qualname = "_load_input_model_module"
+rule_code = "IMP202"
+target = "*"
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/input_model.py"
@@ -4213,6 +4318,13 @@ path = "src/datamodel_code_generator/model/_compiled_templates/registry.py"
 qualname = "_load_renderer"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/model/_compiled_templates/registry.py"
+qualname = "_load_renderer"
+rule_code = "IMP202"
+target = "*"
 count = 1
 
 [[entries]]
@@ -8732,9 +8844,23 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"
+qualname = "_dataclass_model"
+rule_code = "IMP201"
+target = "datamodel_code_generator.model.dataclass"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
 qualname = "_format_body_safe"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "_msgspec_model"
+rule_code = "IMP201"
+target = "datamodel_code_generator.model.msgspec"
 count = 1
 
 [[entries]]
@@ -9270,6 +9396,13 @@ target = "datamodel_code_generator.parser._schema_object._type_null_sources"
 count = 1
 
 [[entries]]
+path = "src/datamodel_code_generator/parser/jsonschema.py"
+qualname = "_typed_dict_model"
+rule_code = "IMP201"
+target = "datamodel_code_generator.model.typed_dict"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/parser/mcp.py"
 qualname = "_tool_validation_error"
 rule_code = "MUT204"
@@ -9656,6 +9789,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
+qualname = "_default_field_name_resolver_class"
+rule_code = "IMP201"
+target = "datamodel_code_generator.model.field_name"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/reference.py"
 qualname = "_import_inflect_without_typeguard_instrumentation"
 rule_code = "EFF201"
 target = "no-environment-reads:reads-environment"
@@ -9673,6 +9813,13 @@ path = "src/datamodel_code_generator/reference.py"
 qualname = "_load_private_inflect"
 rule_code = "MUT205"
 target = "name"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/reference.py"
+qualname = "_load_private_inflect.<locals>.import_without_typeguard"
+rule_code = "IMP202"
+target = "*"
 count = 1
 
 [[entries]]
