@@ -2221,8 +2221,13 @@ class GenerationStore:  # noqa: PLR0904
         _settle_alias_forms(model)
 
     def reset_base_classes(self, model: DataModel) -> None:
-        """Reset ``model`` to its default base classes and invalidate derived facts; its new sites are overridden."""
+        """Reset ``model`` to its default base classes and invalidate derived facts; its new sites are overridden.
+
+        The bases it drops leave the graph: each stops being a child of the model it names, as no model holds it.
+        """
         self._state_model_sites("reset_base_classes", model)
+        for base_class in model.base_classes:
+            base_class.unregister_reference()
         model.set_base_class()
         self._model_changed(model)
 
@@ -2686,7 +2691,7 @@ class GraphBuilder:
         self._store.require_field(field_, use_default_with_required=use_default_with_required)
 
     def reset_base_classes(self, model: DataModel) -> None:
-        """Reset ``model`` to its default base classes and invalidate derived facts; its new sites are overridden."""
+        """Reset ``model`` to its default bases, the ones it drops leaving the graph; its new sites are overridden."""
         self._store.reset_base_classes(model)
 
     def restore_required_inherited_field(self, model: DataModel, field_: DataModelFieldBase) -> bool:

@@ -2583,9 +2583,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`types.py`: `_copied_node`, `_copy_data_type`, `DataType.__deepcopy__`",
         adapters=(
             "`types.py:DataTypeManager.copy_data_type` (a leaf prototype takes a node copy, a nested one a deep copy), "
-            "`parser/base.py:Parser._copy_model_type`, `model/msgspec.py:DataModelField._copy_data_type`"
+            "the callers of the overridable `parser/base.py:Parser._copy_model_type` hook "
+            "(`parser/_passes/modules.py:collapse_root_models_in_scope`, `parser/jsonschema.py`: "
+            "`JsonSchemaParser._copy_schema_runtime_validation_for_variant`, "
+            "`JsonSchemaParser._get_inherited_field_type`), `model/msgspec.py:DataModelField._copy_data_type`"
         ),
-        sites=(Home("types.py", "DataTypeManager.copy_data_type"),),
+        sites=(
+            Home("types.py", "DataTypeManager.copy_data_type"),
+            Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._copy_schema_runtime_validation_for_variant"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_inherited_field_type"),
+        ),
     ),
     DecisionHome(
         decision=(

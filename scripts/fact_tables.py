@@ -18,7 +18,15 @@ Columns of a row:
   ``bookkeeping`` (identity, holder edges and pending markers; writes no ``Fact`` and no ``RenderFact``).
 * ``facts``: the ``Fact`` and ``RenderFact`` members a write of the attribute changes; empty for bookkeeping rows,
   for caches that hold no fact of their own, and for construction-time option copies.
-* ``final_after``: the last phase that writes the attribute in today's pipeline.
+* ``final_after``: the last phase that writes the attribute in today's pipeline. The name, alias, ``has_default``,
+  raw schema default and nullability without a default of a field and the container flags of a data type are final
+  after ``CROSS_MODULE``: a subclass whose module is processed before its parent's copies the parent's inherited
+  placeholder, which no module resolves then (#7532), and the cross-module passes that make a model declare the
+  fields of its bases (``tag_fields_of_tagged_bases``, ``flatten_conflicting_final_layouts``,
+  ``flatten_narrowed_inherited_fields``) resolve it: they copy the inherited field and restore inherited names
+  (``plans.flatten_base_layouts``, ``override_required_field``). The phase is shared, so ``apply_generic_base_class``,
+  which declares the bases too, may also write these rows without a heki report; it writes none of them. These rows go
+  back to ``MODULES`` once placeholders resolve bases-first across modules (#7532).
 * ``frozen_at``: the latest freeze point among the row's facts (every ``Fact`` freezes at B1, every ``RenderFact`` at
   its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts), after which no pass may write the attribute
   in the target pipeline. The finality checks still check each ``Fact`` at B1 unless a pass declares an exception.
@@ -291,14 +299,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B2,
         store_ops=("drop_held_null", "write_rendered_null"),
     ),
-    AttributeFact("DataType", "is_dict", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "is_list", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "is_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "is_frozen_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "is_mapping", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "is_sequence", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "is_tuple", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataType", "tuple_item_count", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact("DataType", "is_dict", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact("DataType", "is_list", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact("DataType", "is_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact("DataType", "is_frozen_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact("DataType", "is_mapping", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact("DataType", "is_sequence", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact("DataType", "is_tuple", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
+    AttributeFact(
+        "DataType", "tuple_item_count", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1
+    ),
     AttributeFact("DataType", "given_container", FactKind.FACT, (Fact.CONTAINERS,), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataType", "is_custom_type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
@@ -502,7 +512,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "name",
         FactKind.FACT,
         (Fact.FIELD_NAMES,),
-        Phase.MODULES,
+        Phase.CROSS_MODULE,
         FreezePoint.B1,
         store_ops=("rename_field", "set_field_identity"),
     ),
@@ -529,7 +539,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "alias",
         FactKind.FACT,
         (Fact.FIELD_ALIASES,),
-        Phase.MODULES,
+        Phase.CROSS_MODULE,
         FreezePoint.B1,
         store_ops=("rename_field", "set_field_identity"),
     ),
@@ -682,7 +692,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         store_ops=("write_field_call_in_annotated",),
     ),
     AttributeFact("DataModelFieldBase", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModelFieldBase", "has_default", FactKind.FACT, (Fact.DEFAULTS,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact(
+        "DataModelFieldBase", "has_default", FactKind.FACT, (Fact.DEFAULTS,), Phase.CROSS_MODULE, FreezePoint.B1
+    ),
     AttributeFact(
         "DataModelFieldBase", "use_field_description", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
     ),
@@ -803,7 +815,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "NULLABLE_WITHOUT_DEFAULT_KEY",
         FactKind.FACT,
         (Fact.NULLABLE,),
-        Phase.MODULES,
+        Phase.CROSS_MODULE,
         FreezePoint.B1,
         store_ops=("record_nullable_without_default", "apply_literal_default"),
         access=Access.DICT_KEY,
@@ -813,7 +825,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "_RAW_SCHEMA_DEFAULT_KEY",
         FactKind.FACT,
         (Fact.DEFAULTS,),
-        Phase.MODULES,
+        Phase.CROSS_MODULE,
         FreezePoint.B1,
         store_ops=("record_raw_schema_default",),
         access=Access.DICT_KEY,
