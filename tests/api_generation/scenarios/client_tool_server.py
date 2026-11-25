@@ -232,11 +232,15 @@ def _summary(sent: list[str]) -> list[str]:
 
 
 def tool_descriptions(package: ModuleType, lines: list[str]) -> None:
-    """List the tools of a document with hostile text: each description and schema as the server sends them."""
+    """List the tools of a document with hostile text: each description and schema as the server sends them.
+
+    Under --untrusted-input no schema the server sends has a description.
+    """
     module = import_generated(f"{package.__name__}.mcp_server", copied=True)
     messages: list[dict[str, object]] = [{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}]
     sent = _stdio(lambda: module.serve(_clients(package, Exchange(lines))), messages)
     lines.extend(
-        f"  tool {tool['name']} {tool['description']!r}\n    input {_shown(tool['inputSchema'])}"
+        f"  tool {tool['name']} {tool['description']!r}\n    input {_shown(tool['inputSchema'])}\n"
+        f"    output {_shown(tool['outputSchema'])}"
         for tool in json.loads(sent[1])["result"]["tools"]
     )
