@@ -3,7 +3,7 @@ id = "client-tools-mcp"
 category = "new-surface"
 title = "Serve the tools of a generated client over MCP"
 summary = "--client-tools mcp (experimental) adds mcp_server.py beside tools.py: server(client) returns a server of the low-level Server of the official mcp SDK over the tools of the asyncio client, and serve(make_client) and python -m <package>.mcp_server serve it on stdin and stdout. Each tool is listed with the JSON schemas of the models, without the output schema where it holds a pattern Python's re rejects (such as \\p{L}, which MCP clients cannot check), and with read-only and idempotent annotations from its HTTP method; a call validates its arguments through the models, a refused argument or a failed call is a result marked as an error, with the credentials the client placed redacted, and an unknown tool name is a protocol error. read_only=True lists only the tools of safe methods. The server looks up no credentials, and the printed requirements gain mcp>=2.3.0. Without the option a package is unchanged."
-refs = ["#1"]
+refs = ["#7527"]
 surface = ["--client-tools"]
 covers = [
     "api_generation/client_cli/tools_mcp.notice.txt",
