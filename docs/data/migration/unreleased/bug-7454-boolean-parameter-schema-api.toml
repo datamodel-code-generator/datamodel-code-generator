@@ -1,6 +1,0 @@
-[[change]]
-id = "bug-7454-boolean-parameter-schema-api"
-extends = "heki-026-additional-properties-classes-api"
-covers = [
-    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
-]
