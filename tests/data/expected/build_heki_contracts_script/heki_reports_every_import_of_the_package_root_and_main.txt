@@ -1,0 +1,20 @@
+exit: 1
+__init__.py:5: IMP201 datamodel_code_generator.__main__
+_caches.py:6: IMP201 datamodel_code_generator
+_caches.py:7: IMP201 datamodel_code_generator
+_caches.py:8: IMP201 datamodel_code_generator.__main__
+_caches.py:10: IMP201 datamodel_code_generator
+_caches.py:12: IMP201 datamodel_code_generator.__main__
+_caches.py:13: IMP201 datamodel_code_generator
+_caches.py:14: IMP201 datamodel_code_generator
+_caches.py:15: IMP201 datamodel_code_generator.__main__
+_caches.py:18: IMP201 datamodel_code_generator
+_caches.py:20: IMP201 datamodel_code_generator.__main__
+_caches.py:23: IMP201 datamodel_code_generator
+_caches.py:27: IMP201 datamodel_code_generator
+_caches.py:33: IMP201 datamodel_code_generator
+_caches.py:35: IMP202 *
+_caches.py:36: IMP201 datamodel_code_generator.__main__
+_scc.py:3: IMP201 datamodel_code_generator
+parser/__init__.py:3: IMP201 datamodel_code_generator
+parser/__init__.py:5: IMP201 datamodel_code_generator.__main__

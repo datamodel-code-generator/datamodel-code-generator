@@ -563,13 +563,14 @@ leaves the table once a check enforces its rule. `--head <revision>` reviews a c
 Before adding a dependency between layers, check `docs/architecture.md` and run:
 
 ```bash
+heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
 python scripts/check_architecture_boundaries.py
 ```
 
-The guard rejects concrete output-backend imports and backend-name inspection in
-parsers, concrete backend imports or `sys.modules` lookups from shared model
-modules, private `parser._*` imports from shared code, parser/backend dependencies
-from configuration, and local output-family mappings in `input_model.py`. Move
+heki's import boundaries (`scripts/heki.toml`) reject concrete output-backend imports in parsers, configuration and
+shared model modules, private `parser._*` imports from shared code and parser imports from configuration. The guard
+rejects backend-name inspection in parsers, `sys.modules` lookups from shared model modules, backend references from
+configuration, and local output-family mappings in `input_model.py`. Move
 output behavior to a neutral capability on `DataModel` or `DataModelFieldBase`,
 keep backend lifecycle and cache management with its backend or the model
 composition root, and move reusable helpers to a neutral package module. Do not
@@ -578,11 +579,14 @@ have bounded occurrence counts, and fail when stale.
 
 The guard reads names through `scripts/_source_model.py`, which does not say which
 binding of a name a read reaches, so a name holds every binding of its scope and the
-guard fails closed: a name bound both to a concrete backend (a module string,
-`importlib`, `sys.modules`) and to something else is read as the backend wherever it
-is read. Rename the variable, or import the name once. A name another module of
-the package re-exports (`DataModelType`, `import_module`) is read as what that module
-imports.
+guard fails closed: a name bound both to a concrete backend (a module string or
+`sys.modules`) and to something else is read as the backend wherever it is read. Rename
+the variable, or import the name once. A name another module of the package re-exports
+(`DataModelType`) is read as what that module imports. Imports belong to heki; the
+guard refuses what heki cannot read: a relative import that leaves the top-level
+package (`unreadable-import`), and a call of `import_module` or `__import__` through a
+star import or, outside shared model code, through another object
+(`unjudged-dynamic-import`). Call `importlib.import_module` by its own name.
 
 In the parser concern modules (every module below a `parser/_*` module or
 package, and `model/_field_imports.py`: the files where the `pyproject.toml`

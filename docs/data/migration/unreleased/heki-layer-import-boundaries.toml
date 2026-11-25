@@ -1,0 +1,19 @@
+[[change]]
+id = "heki-layer-import-boundaries"
+category = "harness"
+title = "Hold the layer imports with heki import boundaries"
+summary = "The architecture checker's import rules moved to heki import boundaries; the package writes the same output"
+covers = [
+    "architecture_boundaries/architecture_boundary_cli_reports_actionable_failures.txt",
+    "architecture_boundaries/architecture_boundary_cli_reports_shared_model_backend_access[forbidden].txt",
+    "architecture_boundaries/architecture_boundary_cli_reports_shared_model_backend_access[shared_model_dynamic_import].txt",
+    "architecture_boundaries/architecture_boundary_detector_handles_shared_model_dynamic_imports[clean].txt",
+    "architecture_boundaries/architecture_boundary_detector_handles_shared_model_dynamic_imports[shared_model_dynamic_import].txt",
+    "architecture_boundaries/architecture_boundary_detector_rejects_root_and_main_imports.txt",
+    "architecture_boundaries/architecture_boundary_detector_reports_cross_layer_dependencies.txt",
+    "architecture_boundaries/reference_allowlist_is_symbol_specific.txt",
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
+    "where_script/where_grammar[line-in-a-comprehension].txt",
+    "where_script/where_grammar[line-in-a-script].txt",
+    "where_script/where_grammar[path-with-no-rows].txt",
+]

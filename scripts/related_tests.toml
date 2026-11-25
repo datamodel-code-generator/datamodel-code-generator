@@ -216,6 +216,37 @@ tests = [
 ]
 
 [[rule]]
+id = "source-model-rules"
+prs = [7530]
+incident = "#7530 moved the layer rules to heki; the architecture checker's verdicts in tests/data/source_forms went stale and failed only on hosted CI"
+paths = [
+  "scripts/_behaviour_classify.py",
+  "scripts/_change_units.py",
+  "scripts/_decision_home_reads.py",
+  "scripts/_import_cycles.py",
+  "scripts/_source_model.py",
+  "scripts/check_architecture_boundaries.py",
+  "scripts/check_generation_store_usage.py",
+  "scripts/check_pass_pipeline.py",
+  "scripts/check_ratchets.py",
+  "scripts/check_source_rules.py",
+  "scripts/coverage_exclusions.py",
+  "scripts/legacy_row_reads.py",
+  "scripts/related_tests.py",
+  "scripts/where.py",
+  "tests/checks/template_assignments.py",
+  "tests/expected_access.py",
+  "tests/main/public_api_record.py",
+  "tests/main/shape_families/relations.py",
+  "tests/test_assert_helper_usage.py",
+  "tests/test_checks_are_run.py",
+  "tests/test_ci_workflow.py",
+  "tests/test_generated_import_closure.py",
+  "tests/test_pre_commit_hooks.py",
+]
+tests = ["tests/test_source_model.py::test_every_rule_states_its_verdicts"]
+
+[[rule]]
 id = "client-runtime-e2e"
 prs = [6600, 6636]
 incident = "the client runtime and plans ran only in client-e2e: a changed websocket line and new scenario calls were missed by the full suite"

@@ -1,10 +1,15 @@
-"""Reject cross-layer dependencies that bypass declared architecture capabilities."""
+"""Reject cross-layer reads that bypass declared architecture capabilities.
+
+Which module may import which is heki's (the ``import-boundaries`` of scripts/heki.toml, built from the layers of
+`_classify_source_path` by scripts/build_heki_contracts.py); this check keeps what an import boundary cannot
+name: what a module reads of another one (attributes, ``__module__``, ``sys.modules``, names of the root), the
+private names of the parser modules it imports, and backend definitions in reference code.
+"""
 
 from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -77,13 +82,8 @@ PARSER_BACKEND_ATTRIBUTES: Final = frozenset({
 PARSER_BACKEND_REQUIREMENT_READERS: Final = frozenset({"_meets", "python_target_meets"})
 PARSER_BACKEND_REQUIREMENT_PREFIX: Final = "python.typed_dict_"
 REFERENCE_BACKEND_DEFINITION_MARKERS: Final = ("dataclass", "msgspec", "pydantic", "typeddict")
-REFERENCE_EXTERNAL_BACKEND_ROOTS: Final = frozenset({"msgspec"})
 DYNAMIC_ATTRIBUTE_MIN_ARGS: Final = 2
 _BACKEND_MODULE_PART_COUNT: Final = 3
-_DYNAMIC_IMPORT_ATTRIBUTE_NAMES: Final = frozenset({"__import__", "import_module"})
-_UNREADABLE_IMPORT_MESSAGE: Final = (
-    "the import leaves the top-level package, so no module name can be read from it: import by an absolute name"
-)
 _ROOT_PACKAGE: Final = "datamodel_code_generator"
 _MAIN_MODULE: Final = "datamodel_code_generator.__main__"
 _ROOT_READERS: Final = frozenset({_ROOT_PACKAGE, _MAIN_MODULE})
@@ -92,9 +92,16 @@ _ROOT_IMPORT_MESSAGE: Final = (
     "no module of the package imports the package root, and none but __main__ imports __main__: import the name from "
     "the module that defines it (the root only re-exports it for users)"
 )
-_SHARED_MODEL_BACKEND_IMPORT_MESSAGE: Final = (
-    "shared model code must not depend on a concrete backend; expose a neutral capability instead"
+_PRIVATE_PARSER_IMPORT_MESSAGE: Final = "code outside parser must move reusable helpers to a neutral package module"
+_UNREADABLE_IMPORT_MESSAGE: Final = (
+    "the import leaves the top-level package, so no module name can be read from it: import by an absolute name"
 )
+_UNJUDGED_DYNAMIC_IMPORT_MESSAGE: Final = (
+    "heki judges a dynamic import only where the callee is importlib.import_module or __import__ read through an "
+    "import: call importlib.import_module (or __import__) by its own name, not through a star import or another object"
+)
+_DYNAMIC_IMPORT_NAMES: Final = frozenset({"__import__", "import_module"})
+_DYNAMIC_IMPORT_ORIGINS: Final = frozenset({"builtins.__import__", "importlib.__import__", "importlib.import_module"})
 _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE: Final = (
     "shared model code must not inspect a concrete backend through sys.modules; "
     "move backend lifecycle or cache management to the backend or composition root"
@@ -113,232 +120,8 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
 })
-_LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
-    "facts": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._records"}),
-        (
-            "the attribute-to-fact table is read by checkers without the package: import only the standard library, "
-            "typing_extensions and datamodel_code_generator._records"
-        ),
-    ),
-    "schema-graph": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "typing_extensions",
-            "datamodel_code_generator._json_pointer",
-            "datamodel_code_generator._records",
-            "datamodel_code_generator.reference",
-        }),
-        (
-            "the schema graph is the L0 core the parsers build: import only the standard library, typing_extensions, "
-            "datamodel_code_generator._json_pointer, datamodel_code_generator._records and "
-            "datamodel_code_generator.reference, and take parser rules as arguments"
-        ),
-    ),
-    "json-pointer": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the RFC 6901 pointer codec is a leaf that every layer reads: import only the standard library and "
-            "typing_extensions"
-        ),
-    ),
-    "free-names": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the free-name numbering is a leaf that every layer reads: import only the standard library and "
-            "typing_extensions"
-        ),
-    ),
-    "name-words": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the class name made from the words of a text is a leaf that every layer reads: import only the standard "
-            "library and typing_extensions"
-        ),
-    ),
-    "naming": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "typing_extensions",
-            "datamodel_code_generator._free_names",
-            "datamodel_code_generator._model_keys",
-            "datamodel_code_generator._records",
-        }),
-        (
-            "the names of the models are a leaf that the parsers and their passes read: import only the standard "
-            "library, typing_extensions, datamodel_code_generator._free_names, datamodel_code_generator._model_keys "
-            "and datamodel_code_generator._records"
-        ),
-    ),
-    "graph-links": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the back links of the generation graph are a leaf that reference.py, types.py and the model package "
-            "import while they import each other: import only the standard library and typing_extensions"
-        ),
-    ),
-    "container-kinds": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the container slots and kinds of a type tree node are a leaf that types.py, the model package, the "
-            "parser and the targets read: import only the standard library and typing_extensions"
-        ),
-    ),
-    "context-scope": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the context variable scope is a leaf that the command line, the parser, the model package and the "
-            "reference resolver import: import only the standard library and typing_extensions"
-        ),
-    ),
-    "warning-control": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "how the generator's own warnings are shown is a leaf that the entry point, the recommender, the parser "
-            "and its passes import: import only the standard library and typing_extensions"
-        ),
-    ),
-    "message-text": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "how the generator's messages write English is a leaf that the command line, the recommender, the parser, "
-            "the model package and the targets import: import only the standard library and typing_extensions"
-        ),
-    ),
-    "module-paths": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the paths of the written modules are a leaf that every layer reads: import only the standard library and "
-            "typing_extensions"
-        ),
-    ),
-    "openapi-paths": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the operation fields of a path item and the paths --openapi-include-paths selects are a leaf that the "
-            "parsers, the targets and the recommender read: import only the standard library and typing_extensions"
-        ),
-    ),
-    "python-syntax": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the Python display writer is a leaf that the model backends, the formatter and the targets read: import "
-            "only the standard library and typing_extensions"
-        ),
-    ),
-    "requirements": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "typing_extensions",
-            "datamodel_code_generator._message_text",
-            "datamodel_code_generator._records",
-            "datamodel_code_generator.enums",
-        }),
-        (
-            "the requirement table is a leaf: import only the standard library, typing_extensions, "
-            "datamodel_code_generator._message_text, datamodel_code_generator._records and "
-            "datamodel_code_generator.enums"
-        ),
-    ),
-    "constraints": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "typing_extensions",
-            "datamodel_code_generator._records",
-            "datamodel_code_generator._regex_syntax",
-            "datamodel_code_generator._requirements",
-            "datamodel_code_generator.enums",
-        }),
-        (
-            "the constraint applicability table is a leaf that types.py reads while it is imported: import only the "
-            "standard library, typing_extensions, datamodel_code_generator._records, "
-            "datamodel_code_generator._regex_syntax, datamodel_code_generator._requirements and "
-            "datamodel_code_generator.enums"
-        ),
-    ),
-    "regex": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "typing_extensions",
-            "datamodel_code_generator._python_syntax",
-            "datamodel_code_generator._records",
-        }),
-        (
-            "the static regex scan is a leaf that the keyword table, the literal check and the backends read: import "
-            "only the standard library, typing_extensions, datamodel_code_generator._python_syntax and "
-            "datamodel_code_generator._records"
-        ),
-    ),
-    "json-schema": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._json_pointer"}),
-        (
-            "the subschema position table is a leaf that every schema walker reads: import only the standard library, "
-            "typing_extensions and datamodel_code_generator._json_pointer"
-        ),
-    ),
-    "runtime": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "annotationlib",
-            "anyio",
-            "cryptography",
-            "fastapi",
-            "httpcore2",
-            "httpx2",
-            "mcp",
-            "msgspec",
-            "pydantic",
-            "pydantic_core",
-            "python_multipart",
-            "starlette",
-            "typing_extensions",
-            "wsproto",
-        }),
-        (
-            "the runtime is copied into the generated packages: import only the standard library (annotationlib from "
-            "Python 3.14), the third-party packages generated code depends on and other runtime modules, relatively"
-        ),
-    ),
-    "parser-core": (
-        frozenset({
-            *sys.stdlib_module_names,
-            "typing_extensions",
-            "datamodel_code_generator._json_schema",
-            "datamodel_code_generator._model_keys",
-            "datamodel_code_generator._records",
-            "datamodel_code_generator._regex_syntax",
-        }),
-        (
-            "a pure parser core computes from the dumped schemas it is given: import only the standard library, "
-            "typing_extensions, datamodel_code_generator._json_schema, datamodel_code_generator._model_keys, "
-            "datamodel_code_generator._records and datamodel_code_generator._regex_syntax"
-        ),
-    ),
-}
-"""Leaf layers: the modules (with their submodules) each may import, and the reason shown on a violation."""
-_RUNTIME_PACKAGE: Final = "datamodel_code_generator._runtime"
-"""The runtime package: the generated packages copy it, so its modules import each other only relatively."""
 _PARSER_LAYERS: Final = frozenset({"parser", "parser-passes"})
 """Layers of parser code: the parser modules and the pass modules under ``parser/_passes/``."""
-_PARSER_PASS_IMPORTS: Final = frozenset({
-    "datamodel_code_generator.parser._facts",
-    "datamodel_code_generator.parser._field_rows",
-    "datamodel_code_generator.parser._graph_ids",
-    "datamodel_code_generator.parser._imports_plan",
-    "datamodel_code_generator.parser._init_exports",
-    "datamodel_code_generator.parser._intersection",
-    "datamodel_code_generator.parser._model_shapes",
-    "datamodel_code_generator.parser._naming",
-    "datamodel_code_generator.parser._null_facts",
-    "datamodel_code_generator.parser._passes",
-    "datamodel_code_generator.parser._phases",
-    "datamodel_code_generator.parser._pipeline",
-    "datamodel_code_generator.parser._python_type_imports",
-    "datamodel_code_generator.parser._tag_plan",
-    "datamodel_code_generator.parser._type_overrides",
-    "datamodel_code_generator.parser.generation",
-})
-"""The parser modules a pass module may import: none imports ``parser/base.py``, so no pass closes a cycle."""
 _PARSER_CORE_FILENAMES: Final = frozenset({
     "_intersection.py",
     "_model_shapes.py",
@@ -415,30 +198,6 @@ class Violation:
 
 DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
     BoundaryKey(
-        "src/datamodel_code_generator/_facade.py",
-        "generate",
-        "target-reverse-import",
-        "datamodel_code_generator._target_selection",
-    ): AllowlistEntry("generate() hands a selected generation target to its lazily imported runner"),
-    BoundaryKey(
-        "src/datamodel_code_generator/__main__.py",
-        "_run_target",
-        "target-reverse-import",
-        "datamodel_code_generator._target_cli",
-    ): AllowlistEntry("The CLI hands a selected generation target to its lazily imported runner"),
-    BoundaryKey(
-        "src/datamodel_code_generator/__main__.py",
-        "_publish_staged_files",
-        "target-reverse-import",
-        "datamodel_code_generator._target_cli",
-    ): AllowlistEntry("Batch publication hands the targets of server jobs to the lazily imported runner's journal"),
-    BoundaryKey(
-        "src/datamodel_code_generator/config.py",
-        "<module>",
-        "config-backend-import",
-        "datamodel_code_generator.model.pydantic_v2",
-    ): AllowlistEntry("ParserConfig keeps its historical concrete default types until a separate public-API migration"),
-    BoundaryKey(
         "src/datamodel_code_generator/config.py",
         "ParserConfig",
         "config-backend-reference",
@@ -462,36 +221,6 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
         "config-backend-reference",
         "datamodel_code_generator.model.pydantic_v2.DataModelField",
     ): AllowlistEntry("Preserve the public ParserConfig default field model"),
-    BoundaryKey(
-        "src/datamodel_code_generator/parser/base.py",
-        "_dataclass_model",
-        "backend-import",
-        "datamodel_code_generator.model.dataclass",
-    ): AllowlistEntry("Keep the lazy legacy parser.base.dataclass_model compatibility export"),
-    BoundaryKey(
-        "src/datamodel_code_generator/parser/base.py",
-        "_msgspec_model",
-        "backend-import",
-        "datamodel_code_generator.model.msgspec",
-    ): AllowlistEntry("Keep the lazy legacy parser.base.msgspec_model compatibility export"),
-    BoundaryKey(
-        "src/datamodel_code_generator/parser/jsonschema.py",
-        "_typed_dict_model",
-        "backend-import",
-        "datamodel_code_generator.model.typed_dict",
-    ): AllowlistEntry("Keep the lazy legacy parser.jsonschema.TypedDictModel compatibility export"),
-    BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "_default_field_name_resolver_class",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.PydanticFieldNameResolver",
-    ): AllowlistEntry("Keep the lazy legacy default Pydantic field-name resolver lookup"),
-    BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "_default_field_name_resolver_class",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.MsgspecFieldNameResolver",
-    ): AllowlistEntry("Keep the lazy legacy default msgspec field-name resolver lookup"),
 }
 
 
@@ -523,7 +252,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "requirements": "datamodel_code_generator.requirements_fixture",
             "constraints": "datamodel_code_generator.constraints_fixture",
             "regex": "datamodel_code_generator.regex_fixture",
-            "runtime": f"{_RUNTIME_PACKAGE}.fixture",
+            "runtime": "datamodel_code_generator._runtime.fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -545,18 +274,6 @@ def _concrete_backend_module(target: str) -> str | None:
     return ".".join((*prefix, parts[2]))
 
 
-def _is_reference_backend_import(target: str) -> bool:
-    """Return whether a reference import owns output-framework policy."""
-    return bool(_concrete_backend_module(target) or target.partition(".")[0] in REFERENCE_EXTERNAL_BACKEND_ROOTS)
-
-
-_STAR_SPELLINGS: Final = {
-    "__import__": "builtins.__import__",
-    "import_module": "importlib.import_module",
-    "super": "builtins.super",
-}
-"""What a name that only a star import may bind reads as, by its spelling: the names the rules look for."""
-_DYNAMIC_IMPORT_ORIGINS: Final = frozenset({"builtins.__import__", "importlib.__import__", "importlib.import_module"})
 _DATA_MODEL_TYPE_ORIGINS: Final = frozenset({
     "datamodel_code_generator.DataModelType",
     "datamodel_code_generator.enums.DataModelType",
@@ -601,17 +318,11 @@ class _Reading:
     def origins(self, node: ast.expr) -> set[str]:
         """Return every dotted path a name or attribute chain may name.
 
-        A path through a name the package re-exports from another module counts as that module's path too. A name that
-        only a star import may bind reads as what its spelling says, for the names the rules look for.
+        A path through a name the package re-exports from another module counts as that module's path too.
         """
         found = {path for path, _ in self.model.origins(node)}
         if (single := self.model.origin(node)) is not None:
             found.add(single)
-        head = self.head(node)
-        if not found and head is not None and self.model.resolve(head.node).kind == "star":
-            spelled = self.spelled(node) or ""
-            if head.name in _STAR_SPELLINGS:
-                found.add(_STAR_SPELLINGS[head.name] + spelled.removeprefix(head.name))
         return found | {self.package.resolve(path) for path in found}
 
     def strings(self, node: ast.AST | None, seen: frozenset[ast.AST] = frozenset()) -> list[str]:
@@ -650,16 +361,8 @@ def _scope_qualname(scope: Scope | None) -> str:
     return ".".join(reversed(parts)) or "<module>"
 
 
-def _absolute_name(name: str, anchor: str) -> str:
-    """Return a relative module name counted from a package, the name itself where it leaves the package."""
-    try:
-        return importlib.util.resolve_name(name, anchor)
-    except ImportError:
-        return name
-
-
 class ArchitectureBoundaryReader:
-    """Find forbidden imports and semantic backend inspection for one layer, from the source model's answers."""
+    """Find semantic backend inspection and private parser names for one layer, from the source model's answers."""
 
     def __init__(self, path: Path, layer: Layer, reading: _Reading) -> None:
         """Create a reader for one file; the model knows its module name, so relative imports read as absolute."""
@@ -671,10 +374,9 @@ class ArchitectureBoundaryReader:
         self.violations: list[Violation] = []
 
     def run(self) -> list[Violation]:
-        """Return the violations of the file: its imports, its definitions and what its expressions read."""
+        """Return the violations of the file: the names it imports, its definitions and what its expressions read."""
         for item in self.model.imports:
-            if item.kind != "dynamic":
-                self._imported(item)
+            self._imported(item)
         if self.layer == "reference":
             self._definitions()
         for node in ast.walk(self.model.tree):
@@ -703,61 +405,32 @@ class ArchitectureBoundaryReader:
                 )
 
     def _imported(self, item: Import) -> None:
-        """Check one import: an absolute, relative or package-root form, a star import included."""
+        """Refuse an import source no module name can be read from, and a private name of a parser module.
+
+        heki's import boundaries judge the module an import loads: a relative import that leaves the top-level package
+        names none, and heki's ``private-parser-import`` does not see the name an import takes; both are this check's.
+        """
         if isinstance(item.source, Unreadable):
             self._add(item.node, "unreadable-import", str(item.source), _UNREADABLE_IMPORT_MESSAGE)
             return
-        root_name = (
-            self._root_attribute(item.alias.name)
-            if item.kind == "from" and item.source == _ROOT_PACKAGE and item.alias is not None
-            else self._entry_module(str(item.target))
-        )
-        if root_name is not None:
-            self._add(item.node, "root-import", root_name, _ROOT_IMPORT_MESSAGE)
-        if item.alias is None or item.kind == "import":
-            self._check_import(item.node, item.source)
-            return
-        module, name = item.source, item.alias.name
-        if self.layer == "runtime" and item.level and _is_below(module, _RUNTIME_PACKAGE):
-            return
-        target = f"{module}.{name}" if module else name
-        if module == "datamodel_code_generator.model" and name in CONCRETE_BACKEND_ROOTS:
-            self._check_import(item.node, target)
-            return
-        a_pass_module = (
-            self.layer == "parser-passes"
-            and module == "datamodel_code_generator.parser"
-            and any(_is_below(target, allowed) for allowed in _PARSER_PASS_IMPORTS)
-        )
-        self._check_import(
-            item.node,
-            target
-            if self.layer in {"reference", "target", "requirements", "constraints", "regex"}
-            or name.startswith("_")
-            or a_pass_module
-            else module,
-        )
+        name = item.alias.name if item.kind == "from" and item.alias is not None else ""
+        if (
+            name.startswith("_")
+            and self.layer not in _PARSER_LAYERS
+            and isinstance(item.source, str)
+            and _is_below(item.source, "datamodel_code_generator.parser")
+        ):
+            self._add(
+                item.node,
+                "private-parser-import",
+                f"{item.source}.{name}",
+                _PRIVATE_PARSER_IMPORT_MESSAGE,
+            )
 
     def _call(self, node: ast.Call) -> None:
-        """Check dynamic imports, semantic getattr, and backend module identity helpers."""
+        """Check semantic getattr, backend module identity helpers and module registry reads."""
         reading = self.reading
-        for target in self._dynamic_targets(node):
-            if (root_name := self._entry_module(target)) is not None:
-                self._add(node, "root-import", root_name, _ROOT_IMPORT_MESSAGE)
-            if self.layer in _LEAF_LAYER_IMPORTS:
-                self._check_import(node, target)
-            elif (
-                not self._check_parser_pass_import(node, target)
-                and not self._check_target_boundary(node, target)
-                and self.layer in {*_PARSER_LAYERS, "config", "reference", "shared-model"}
-                and (
-                    _is_reference_backend_import(target)
-                    if self.layer == "reference"
-                    else _concrete_backend_module(target)
-                )
-            ):
-                self._dynamic_backend_import(node, target)
-
+        self._check_unjudged_dynamic_import(node)
         if (
             self.layer == "shared-model"
             and node.args
@@ -820,24 +493,30 @@ class ArchitectureBoundaryReader:
                 "parser code must not identify an output backend by module/name; declare a neutral capability",
             )
 
-    def _dynamic_backend_import(self, node: ast.Call, target: str) -> None:
-        match self.layer:
-            case "reference":
-                self._add(
-                    node,
-                    "reference-backend-import",
-                    target,
-                    "reference code must not import concrete output backends except bounded compatibility exports",
-                )
-            case "shared-model":
-                self._add(node, "shared-model-backend-import", target, _SHARED_MODEL_BACKEND_IMPORT_MESSAGE)
-            case _:
-                self._add(
-                    node,
-                    "backend-dynamic-import",
-                    target,
-                    "parser/config layers must not dynamically import output backends; declare a neutral capability",
-                )
+    def _check_unjudged_dynamic_import(self, node: ast.Call) -> None:
+        """Refuse a dynamic import call that heki cannot read as ``importlib.import_module`` or ``__import__``.
+
+        heki reads a call only when its name resolves to one of them alone. A name, under any spelling, that may
+        resolve to one on some path but not on all (bound to importlib on one branch, or rebound later), a name only a
+        star import may bind and, outside shared model code, an attribute of that name on any other object count as
+        dynamic imports; heki's import boundaries see none of them, so they stay out of the code unjudged.
+        """
+        reading, func = self.reading, node.func
+        single = reading.model.origin(func)
+        if single is not None and {single, reading.package.resolve(single)} & _DYNAMIC_IMPORT_ORIGINS:
+            return
+        partly = bool(reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS)
+        if not partly and reading.last_name(func) not in _DYNAMIC_IMPORT_NAMES:
+            return
+        head = reading.head(func)
+        through_star = head is not None and head.node is func and reading.model.resolve(head.node).kind == "star"
+        if partly or through_star or (isinstance(func, ast.Attribute) and self.layer != "shared-model"):
+            self._add(
+                node,
+                "unjudged-dynamic-import",
+                reading.spelled(func) or reading.last_name(func),
+                _UNJUDGED_DYNAMIC_IMPORT_MESSAGE,
+            )
 
     def _compare(self, node: ast.Compare) -> None:
         """Check direct ``__module__`` comparisons to concrete backends."""
@@ -958,49 +637,6 @@ class ArchitectureBoundaryReader:
             "entrypoint code must use the Parser public lifecycle and run-context API",
         )
 
-    def _is_dynamic_import(self, func: ast.expr) -> bool:
-        """Whether a callee is ``importlib.import_module`` or ``__import__``, or any attribute of those names.
-
-        Outside shared model code an attribute of those names counts whatever it is read from.
-        """
-        if self.reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS:
-            return True
-        return (
-            self.layer != "shared-model"
-            and isinstance(func, ast.Attribute)
-            and func.attr in _DYNAMIC_IMPORT_ATTRIBUTE_NAMES
-        )
-
-    def _dynamic_targets(self, node: ast.Call) -> list[str]:
-        """Return the modules a dynamic import call may load, the strings its name argument may hold."""
-        if not self._is_dynamic_import(node.func) or (argument := call_argument(node, 0, "name")) is None:
-            return []
-        targets = (target for value in self.reading.strings(argument) for target in self._resolved_targets(node, value))
-        return list(dict.fromkeys(target for target in targets if target))
-
-    def _resolved_targets(self, node: ast.Call, target: str) -> list[str]:
-        """Return the absolute modules a relative ``import_module`` name reads from each ``package`` it may have."""
-        reads_relative = "importlib.import_module" in self.reading.origins(node.func) or (
-            self.reading.last_name(node.func) == "import_module"
-        )
-        package = call_argument(node, 1, "package")
-        anchors = [] if package is None or not reads_relative or not target.startswith(".") else self._packages(package)
-        resolved = [_absolute_name(target, anchor) for anchor in anchors]
-        if not resolved and not reads_relative and not target.startswith("."):
-            level = call_argument(node, 4, "level")
-            if isinstance(level, ast.Constant) and isinstance(level.value, int) and level.value > 0:
-                resolved = [_absolute_name("." * level.value + target, self._packages_of_module())]
-        return resolved or [target]
-
-    def _packages_of_module(self) -> str:
-        return self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]
-
-    def _packages(self, node: ast.expr) -> list[str]:
-        """Return the package names an expression may give: ``__package__`` of this module, or its strings."""
-        if self.reading.spelled(node) == "__package__":
-            return [self._packages_of_module()]
-        return self.reading.strings(node)
-
     def _is_sys_modules_registry(self, node: ast.expr) -> bool:
         return "sys.modules" in self.reading.origins(node)
 
@@ -1028,107 +664,6 @@ class ArchitectureBoundaryReader:
         if self.model.module in _ROOT_READERS or self.reading.package.reads_submodule(_ROOT_PACKAGE, name):
             return None
         return f"{_ROOT_PACKAGE}.{name}"
-
-    def _check_target_boundary(self, node: ast.AST, target: str) -> bool:
-        if self.layer == "target" and (
-            target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser.")
-        ):
-            self._add(
-                node,
-                "target-parser-import",
-                target,
-                "target generation must consume accepted contracts, not parser modules",
-            )
-            return True
-        if self.layer != "target" and any(
-            target == module or target.startswith(f"{module}.") for module in _TARGET_MODULES
-        ):
-            self._add(
-                node,
-                "target-reverse-import",
-                target,
-                "model generation must not depend on target generation; targets depend on the core",
-            )
-            return True
-        return False
-
-    def _check_parser_pass_import(self, node: ast.AST, target: str) -> bool:
-        if (
-            self.layer == "parser-passes"
-            and (target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser."))
-            and not any(target == module or target.startswith(f"{module}.") for module in _PARSER_PASS_IMPORTS)
-        ):
-            self._add(
-                node,
-                "parser-passes-import",
-                target,
-                "pass modules must not import parser/base.py or the format parsers, not even for typing: take the "
-                "parser through a narrow Protocol and import only the store, the import ledger and other pass modules",
-            )
-            return True
-        return False
-
-    def _check_import(self, node: ast.AST, target: str) -> None:
-        if (leaf := _LEAF_LAYER_IMPORTS.get(self.layer)) is not None:
-            allowed, reason = leaf
-            if not any(_is_below(target, module) for module in allowed):
-                self._add(node, f"{self.layer}-import", target, reason)
-            return
-        self._check_parser_pass_import(node, target)
-        if self.layer == "reference" and _is_reference_backend_import(target):
-            self._add(
-                node,
-                "reference-backend-import",
-                target,
-                "reference code must not import concrete output backends except bounded compatibility exports",
-            )
-            return
-        if self.layer in _PARSER_LAYERS and _concrete_backend_module(target):
-            self._add(
-                node,
-                "backend-import",
-                target,
-                "parser code must depend on neutral model capabilities, not a concrete output backend",
-            )
-            return
-        if self.layer == "config" and _concrete_backend_module(target):
-            self._add(
-                node,
-                "config-backend-import",
-                target,
-                "configuration must receive output implementations through a neutral registry or injection",
-            )
-            return
-        if self.layer == "shared-model" and _concrete_backend_module(target):
-            self._add(
-                node,
-                "shared-model-backend-import",
-                target,
-                _SHARED_MODEL_BACKEND_IMPORT_MESSAGE,
-            )
-            return
-        if self._check_target_boundary(node, target):
-            return
-        if (
-            self.layer not in _PARSER_LAYERS
-            and target.startswith("datamodel_code_generator.parser.")
-            and any(part.startswith("_") for part in target.split(".")[2:])
-        ):
-            self._add(
-                node,
-                "private-parser-import",
-                target,
-                "code outside parser must move reusable helpers to a neutral package module",
-            )
-        elif self.layer == "config" and (
-            target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser.")
-        ):
-            self._add(
-                node,
-                "config-parser-import",
-                target,
-                "configuration must not depend on parser implementation modules",
-            )
 
     def _add(self, node: ast.AST, rule: str, target: str, message: str, *, qualname: str = "") -> None:
         self.violations.append(
