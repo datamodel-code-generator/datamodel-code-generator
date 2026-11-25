@@ -6,7 +6,7 @@ action = "review"
 source = "release-note"
 title = "A subclass listed before its parent, in a module written first, types a property the parent requires"
 summary = "Where a schema extends a parent through allOf and restates or requires a property that the parent requires and takes from its own base, and the subclass is listed before the parent in a module processed first (a deeper package such as com.example.pets.Child over com.example.Mid, or a module name that sorts later), Pydantic, dataclass and msgspec output now type the property as the parent's base declares it (x: int), as when the parent is listed first. Since 0.72.0 it was typed None, so the model rejected every valid value and accepted null. The copy also carries what the parent's base declares beside the type: a type override of the restated property keeps the inherited examples and constraints (a Pydantic Field takes examples=[4] and, under --field-constraints, ge=1, so it rejects values below the bound, as the schema does), and a subclass that now equals another one reuses it under --reuse-model and is collapsed into it under --collapse-reuse-models. TypedDict output is unchanged."
-refs = ["#1", "#7532"]
+refs = ["#7535", "#7532"]
 decision = ["#7532"]
 covers = [
     "main/openapi/inherited_placeholder_module_order/equal_subclasses_reuse_one_model[pydantic-collapse]/",

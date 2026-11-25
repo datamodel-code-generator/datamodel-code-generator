@@ -9,6 +9,7 @@ the keys of its bases itself, as 0.102.0 does.
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from itertools import permutations
 from typing import TYPE_CHECKING
 
@@ -20,8 +21,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 DATA = OPEN_API_DATA_PATH / "inherited_placeholder_module_order"
-UNTAGGED_UNION = pytest.mark.filterwarnings("ignore:msgspec cannot decode the discriminated union TagHolder.pet")
-"""The union of shapes.yaml, whose Struct types msgspec decodes only with --use-msgspec-tagged-unions."""
+MSGSPEC_ARGS = ("--output-model-type", "msgspec.Struct")
+UNTAGGED_UNION = "msgspec cannot decode the discriminated union TagHolder.pet"
+"""The warning of the union of shapes.yaml, whose Struct types msgspec decodes only with --use-msgspec-tagged-unions."""
+UNTAKEN_DECIMAL_BOUND = "msgspec.Meta does not take ge on Decimal; MetaChild.x"
+"""The warning of the bound of MetaChild.x, which msgspec leaves out of the Meta of a Decimal."""
 MODEL_ARGS = {
     "pydantic": ("--output-model-type", "pydantic_v2.BaseModel"),
     "typeddict": ("--output-model-type", "typing.TypedDict"),
@@ -171,7 +175,7 @@ def test_subclass_listed_before_its_parent_under_field_options(
     "model_args",
     [
         pytest.param(MODEL_ARGS["pydantic"], id="pydantic"),
-        pytest.param(("--output-model-type", "msgspec.Struct"), id="msgspec", marks=UNTAGGED_UNION),
+        pytest.param(MSGSPEC_ARGS, id="msgspec"),
         pytest.param(MODEL_ARGS["typeddict"], id="typeddict"),
     ],
 )
@@ -181,41 +185,47 @@ def test_subclasses_listed_before_parents_whose_bases_give_the_property(
     """Four levels, two bases, an aliased reference, a nullable list default, bounds, a discriminator and examples.
 
     Every parent's field is a placeholder that its own base resolves; FourMid's resolves through FourMid2's. BoundMid
-    declares x with its bounds, so BoundChild takes its type already.
+    declares x with its bounds, so BoundChild takes its type already. msgspec warns that it cannot decode TagHolder.pet.
     """
-    run_main_and_assert(
-        input_path=DATA / "shapes.yaml",
-        output_path=output_dir,
-        input_file_type="openapi",
-        extra_args=[*model_args, "--formatters", "builtin"],
-    )
+    with pytest.warns(UserWarning, match=UNTAGGED_UNION) if model_args == MSGSPEC_ARGS else nullcontext():
+        run_main_and_assert(
+            input_path=DATA / "shapes.yaml",
+            output_path=output_dir,
+            input_file_type="openapi",
+            extra_args=[*model_args, "--formatters", "builtin"],
+        )
 
 
 @pytest.mark.parametrize(
     "model_args",
     [
         pytest.param((*MODEL_ARGS["pydantic"], "--field-constraints"), id="pydantic-field-constraints"),
-        pytest.param(
-            ("--output-model-type", "msgspec.Struct"),
-            id="msgspec",
-            marks=[
-                UNTAGGED_UNION,
-                pytest.mark.filterwarnings("ignore:msgspec.Meta does not take ge on Decimal; MetaChild.x"),
-            ],
-        ),
+        pytest.param(MSGSPEC_ARGS, id="msgspec"),
     ],
 )
 def test_subclass_type_override_keeps_the_inherited_metadata(output_dir: Path, model_args: tuple[str, ...]) -> None:
     """A type override of the restated x keeps the bounds and examples MetaChild inherits, as with MetaMid first.
 
-    msgspec warns that its Meta takes no bound on a Decimal and leaves the bound out.
+    msgspec warns that its Meta takes no bound on a Decimal and leaves the bound out, and that it cannot decode
+    TagHolder.pet.
     """
-    run_main_and_assert(
-        input_path=DATA / "shapes.yaml",
-        output_path=output_dir,
-        input_file_type="openapi",
-        extra_args=[*model_args, "--type-overrides", '{"MetaChild.x": "decimal.Decimal"}', "--formatters", "builtin"],
-    )
+    msgspec = model_args == MSGSPEC_ARGS
+    with (
+        pytest.warns(UserWarning, match=UNTAGGED_UNION) if msgspec else nullcontext(),
+        pytest.warns(UserWarning, match=UNTAKEN_DECIMAL_BOUND) if msgspec else nullcontext(),
+    ):
+        run_main_and_assert(
+            input_path=DATA / "shapes.yaml",
+            output_path=output_dir,
+            input_file_type="openapi",
+            extra_args=[
+                *model_args,
+                "--type-overrides",
+                '{"MetaChild.x": "decimal.Decimal"}',
+                "--formatters",
+                "builtin",
+            ],
+        )
 
 
 @pytest.mark.parametrize("model", MODEL_ARGS)

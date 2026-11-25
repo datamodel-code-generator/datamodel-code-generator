@@ -119,7 +119,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
+    from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity, InheritedCopyOptions
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
@@ -513,11 +513,7 @@ class InheritedFieldHost(Protocol):
         self,
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
-        *,
-        force_optional: bool,
-        partial_merge_mode: AllOfMergeMode,
-        reserved_names: set[str],
-        register_references: bool = True,
+        **options: Unpack[InheritedCopyOptions],
     ) -> DataModelFieldBase | None:
         """Copy a deferred inherited field, or return None when it is not deferred."""
 
@@ -770,10 +766,15 @@ def _reads_through_unresolved_bases(model: DataModel) -> bool:
     """
     row: Literal["read-through", "legacy-typed-dicts-copy-unresolved-parent-placeholders"] = (
         "legacy-typed-dicts-copy-unresolved-parent-placeholders"
-        if model._KEEPS_INHERITED_FIELD_TYPES
+        if model.keeps_inherited_field_types()
         else "read-through"
     )
     return row != "legacy-typed-dicts-copy-unresolved-parent-placeholders"
+
+
+def _resolves_placeholders(host: InheritedFieldHost, model: DataModel) -> bool:
+    """Return whether ``override_required_field`` resolves the placeholders of ``model``: not an enum or root model."""
+    return not (isinstance(model, Enum) or host._is_root_model(model))
 
 
 def _inherited_declaration(
@@ -781,94 +782,46 @@ def _inherited_declaration(
     model: DataModel,
     name: str,
     inherited_fields: Mapping[str, tuple[DataModel, DataModelFieldBase]],
-    path: frozenset[int],
-) -> DataModelFieldBase | None:
-    """Return the field ``model`` inherits under ``name``, None when no base declares it.
+) -> tuple[DataModelFieldBase, list[tuple[DataModelFieldBase, set[str]]]] | None:
+    """Return the field ``model`` inherits under ``name`` and the placeholders its copy resolves first, else None.
 
-    ``inherited_fields`` holds the fields of the bases of ``model`` with the model that declares each. Where ``model``
-    reads through unresolved bases, a base's placeholder is resolved through that base's own bases by the step its own
-    module takes, without writing the base. ``path`` holds the ids of the models the resolution came through, so an
-    inheritance cycle takes the placeholder.
+    None where no base declares the field. ``inherited_fields`` holds the fields of the bases of ``model`` with the
+    model that declares each. Where ``model`` reads through unresolved bases, a base's placeholder is resolved through
+    that base's own bases by the step its own module takes, without writing the base: each such placeholder comes with
+    the field names of its model, the innermost first, and ``override_required_field`` copies it onto the field before
+    it. A model the resolution already came through takes the placeholder, so an inheritance cycle ends there.
     """
-    if (inherited := inherited_fields.get(name)) is None:
-        return None
-    owner, field = inherited
-    if (
-        (owner_name := _inherited_placeholder_name(field)) is None
-        or id(owner) in path
-        or isinstance(owner, Enum)
-        or host._is_root_model(owner)
-        or not _reads_through_unresolved_bases(model)
-    ):
-        return field
-    declaration = _inherited_declaration(
-        host, owner, owner_name, _inherited_field_owners(_find_base_classes(owner)), path | {id(owner)}
-    )
-    return declaration and _copied_placeholder(
-        host,
-        field,
-        declaration,
-        {owner_field.name for owner_field in owner.fields if owner_field.name},
-        register_references=False,
-    )
-
-
-def _copied_placeholder(
-    host: InheritedFieldHost,
-    placeholder: DataModelFieldBase,
-    original_field: DataModelFieldBase,
-    reserved_names: set[str],
-    *,
-    register_references: bool,
-) -> DataModelFieldBase:
-    """Return the copy of ``original_field``, the inherited declaration, that replaces ``placeholder``.
-
-    ``register_references`` registers the copy with the references its types name; a copy that only the copy of a
-    subclass reads is made without (``_inherited_declaration``).
-    """
-    if (
-        copied_original_field := host._copy_inherited_field(
-            placeholder,
-            original_field,
-            force_optional=host.force_optional_for_required_fields,
-            partial_merge_mode=host.allof_merge_mode,
-            reserved_names=reserved_names,
-            register_references=register_references,
-        )
-    ) is None:
-        copied_original_field = host._copy_model_field(
-            original_field,
-            identity=placeholder_identity(placeholder),
-            required=True,
-            register_references=register_references,
-        )
-    default_source = original_field
-    if not (scope := placeholder.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
-        scope := placeholder.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
-    ):
-        default_source = inherited_default_source(host.allof_merge_mode, placeholder, original_field)
-    if scope:
-        apply_inherited_field_default(
-            copied_original_field,
-            default_source,
-            scope=scope,
-            model_resolver=host.model_resolver,
-            apply_default_values_for_required_fields=host.apply_default_values_for_required_fields,
-        )
-    elif host.apply_default_values_for_required_fields and copied_original_field.has_default:
-        copied_original_field.use_default_with_required = True
-    return copied_original_field
+    placeholders: list[tuple[DataModelFieldBase, set[str]]] = []
+    path = {id(model)}
+    subclass, key, fields = model, name, inherited_fields
+    while (inherited := fields.get(key)) is not None:
+        owner, field = inherited
+        if (
+            (owner_name := _inherited_placeholder_name(field)) is None
+            or id(owner) in path
+            or not _resolves_placeholders(host, owner)
+            or not _reads_through_unresolved_bases(subclass)
+        ):
+            return field, placeholders[::-1]
+        placeholders.append((field, {owner_field.name for owner_field in owner.fields if owner_field.name}))
+        path.add(id(owner))
+        subclass, key, fields = owner, owner_name, _inherited_field_owners(_find_base_classes(owner))
+    return None
 
 
 def override_required_field(
     host: InheritedFieldHost,
     models: list[DataModel],
 ) -> None:
-    """Replace the placeholder fields that name an inherited property by copies of the inherited fields."""
+    """Replace the placeholder fields that name an inherited property by copies of the inherited fields.
+
+    Only the copy that replaces a model's own placeholder registers the references its types name; the copies of the
+    placeholders of its bases that it resolves first (``_inherited_declaration``) are read by the next copy alone.
+    """
     pending_models = (
         model
         for model in models
-        if not (isinstance(model, Enum) or host._is_root_model(model))
+        if _resolves_placeholders(host, model)
         and any(_inherited_placeholder_name(field) is not None for field in model.fields)
     )
     if (first_model := next(pending_models, None)) is None:
@@ -892,16 +845,44 @@ def override_required_field(
                 continue
 
             _detach_deferred_inherited_field_parents(model_field)
-            if (
-                original_field := _inherited_declaration(
-                    host, model, original_name, inherited_fields, frozenset((id(model),))
-                )
-            ) is None:
+            if (inherited := _inherited_declaration(host, model, original_name, inherited_fields)) is None:
                 continue
-            declarations[original_name] = original_field
-            resolved_fields.append(
-                _copied_placeholder(host, model_field, original_field, reserved_names, register_references=True)
-            )
+            original_field, placeholders = inherited
+            for placeholder, names in (*placeholders, (model_field, reserved_names)):
+                declarations[original_name] = original_field
+                if (
+                    copied_original_field := host._copy_inherited_field(
+                        placeholder,
+                        original_field,
+                        force_optional=host.force_optional_for_required_fields,
+                        partial_merge_mode=host.allof_merge_mode,
+                        reserved_names=names,
+                        register_references=placeholder is model_field,
+                    )
+                ) is None:
+                    copied_original_field = host._copy_model_field(
+                        original_field,
+                        identity=placeholder_identity(placeholder),
+                        required=True,
+                        register_references=placeholder is model_field,
+                    )
+                default_source = original_field
+                if not (scope := placeholder.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
+                    scope := placeholder.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
+                ):
+                    default_source = inherited_default_source(host.allof_merge_mode, placeholder, original_field)
+                if scope:
+                    apply_inherited_field_default(
+                        copied_original_field,
+                        default_source,
+                        scope=scope,
+                        model_resolver=host.model_resolver,
+                        apply_default_values_for_required_fields=host.apply_default_values_for_required_fields,
+                    )
+                elif host.apply_default_values_for_required_fields and copied_original_field.has_default:
+                    copied_original_field.use_default_with_required = True
+                original_field = copied_original_field
+            resolved_fields.append(original_field)
         if model.REQUIRES_UNIQUE_FIELD_ALIASES:
             _restore_inherited_field_names_for_unique_aliases(builder, resolved_fields, declarations)
         builder.set_fields(model, resolved_fields)

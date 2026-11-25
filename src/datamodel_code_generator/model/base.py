@@ -2588,6 +2588,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether the model declares the fields of its bases itself (`_KEEPS_INHERITED_FIELD_TYPES`)."""
         return False
 
+    def keeps_inherited_field_types(self) -> bool:
+        """Return whether a subclass declares an inherited field as its bases do (`_KEEPS_INHERITED_FIELD_TYPES`)."""
+        return self._KEEPS_INHERITED_FIELD_TYPES
+
     @staticmethod
     def _base_layout_key(field: DataModelFieldBase) -> object:
         """Return the name that ``flatten_base_layouts`` merges the declarations of a field by: its Python name."""
