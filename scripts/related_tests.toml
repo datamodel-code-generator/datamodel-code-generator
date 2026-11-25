@@ -404,3 +404,10 @@ id = "src-heki-baseline"
 incident = "the review of the environment boundary's move to heki: a change under src/ that added a read of the environment passed the local quick check, because no selected test ran heki and the baseline file it counts did not change"
 paths = ["src/*"]
 tests = ["tests/test_build_heki_contracts_script.py::test_the_package_has_no_heki_finding_beyond_the_baseline"]
+
+[[rule]]
+id = "heki-pin"
+prs = [7515]
+incident = "the move to heki 0.4.0 passed the local quick check and failed seven tests that run heki on seeded packages in CI: a pin rewrites scripts/heki.toml, and no row selected those tests"
+paths = ["scripts/heki.toml"]
+tests = ["tests/test_build_heki_contracts_script.py"]

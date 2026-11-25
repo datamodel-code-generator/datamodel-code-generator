@@ -6148,55 +6148,6 @@ target = "_property_names_forbids_all_keys"
 count = 2
 
 [[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_binary_content"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_enum_literal"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_field_origin"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_json_number"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_subtype_ref"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_type_origin"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_unique_items"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_import_aliases.py"
 qualname = "_alias_additional_imports"
 rule_code = "MUT201"
@@ -6551,6 +6502,90 @@ path = "src/datamodel_code_generator/parser/_passes/_shared.py"
 qualname = "normalize_default_value_constraints"
 rule_code = "MUT203"
 target = "datamodel_code_generator.parser._passes._shared.RuntimeExpressionFlags._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataModelFieldBase._nullable_without_default"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.data_types"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_dict"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_frozen_set"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_list"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_mapping"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_optional"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_sequence"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_set"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.is_tuple"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.kwargs"
+count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/_shared.py"
+qualname = "override_required_field"
+rule_code = "EFF201"
+target = "pass:override_required_field:DataType.tuple_item_count"
 count = 1
 
 [[entries]]
@@ -7018,6 +7053,13 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
 qualname = "name_final_classes_of_additional_properties"
+rule_code = "EFF201"
+target = "pass:name_final_classes_of_additional_properties:DataModel._internal_template_data"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/imports.py"
+qualname = "name_final_classes_of_additional_properties"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModel._[!_]*"
 count = 1
@@ -7049,6 +7091,13 @@ qualname = "record_pydantic_floor"
 rule_code = "MUT204"
 target = "datamodel_code_generator.model.base.DataModelFieldBase._[!_]*"
 count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/imports.py"
+qualname = "refresh_sequence_interface_after_renames"
+rule_code = "EFF201"
+target = "pass:refresh_sequence_interface_after_renames:DataModel._internal_template_data"
+count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/imports.py"
@@ -7193,8 +7242,8 @@ count = 1
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "apply_discriminator_type"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
+rule_code = "EFF201"
+target = "pass:apply_discriminator_type:DataModelFieldBase._alias_resolution_class_name"
 count = 1
 
 [[entries]]
@@ -7251,6 +7300,13 @@ path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "derived_override_import"
 rule_code = "MUT203"
 target = "datamodel_code_generator.reference.Reference._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/modules.py"
+qualname = "process_each_module"
+rule_code = "EFF201"
+target = "pass-glue:Parser._recursion_facts"
 count = 1
 
 [[entries]]
@@ -7556,6 +7612,13 @@ count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
+qualname = "fix_constructor_field_ordering_bases_first"
+rule_code = "EFF201"
+target = 'pass:fix_constructor_field_ordering:DataModelFieldBase.extras["init"]'
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "freeze_field_render_plans"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModel._[!_]*"
@@ -7594,6 +7657,13 @@ path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
 qualname = "mark_set_item_models_hashable"
 rule_code = "MUT203"
 target = "datamodel_code_generator.model.base.DataModel._[!_]*"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/render_prep.py"
+qualname = "order_constructor_fields_by_decided_nested_factories"
+rule_code = "EFF201"
+target = 'pass:order_constructor_fields_by_decided_nested_factories:DataModelFieldBase.extras["init"]'
 count = 1
 
 [[entries]]
@@ -7923,13 +7993,6 @@ path = "src/datamodel_code_generator/parser/_schema_object.py"
 qualname = "JsonSchemaObject.collect_extra_fields"
 rule_code = "MUT206"
 target = "_python_field_overrides"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_schema_object.py"
-qualname = "JsonSchemaObject.with_schema_location"
-rule_code = "MUT205"
-target = "*"
 count = 1
 
 [[entries]]
@@ -8606,13 +8669,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._apply_final_class_field_aliases"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._model_resolver_class"
 rule_code = "IMP101"
 target = "datamodel_code_generator.parser._api_reference, datamodel_code_generator.parser._schema_object, datamodel_code_generator.parser._schema_reading, datamodel_code_generator.parser.base"
@@ -8644,6 +8700,20 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._refuse_untrusted_code"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "Parser._set_nested_model_default_factory_metadata"
+rule_code = "EFF201"
+target = "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_order"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/base.py"
+qualname = "Parser._set_nested_model_default_factory_metadata"
+rule_code = "EFF201"
+target = "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_recursive_keys"
 count = 1
 
 [[entries]]
@@ -9159,13 +9229,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser.parse_object_fields"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser.resolve_ref"
 rule_code = "MUT201"
 target = "Reference.loaded"
@@ -9184,20 +9247,6 @@ qualname = "_get_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "_mark_location_conflict"
-rule_code = "MUT205"
-target = "Reference"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "_set_schema_location"
-rule_code = "MUT205"
-target = "Reference"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
@@ -9274,13 +9323,6 @@ path = "src/datamodel_code_generator/parser/openapi.py"
 qualname = "OpenAPIParser._validated_object"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._schema_object._named_path"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/openapi.py"
-qualname = "OpenAPIParser.parse_object_fields"
-rule_code = "MUT205"
-target = "*"
 count = 1
 
 [[entries]]
@@ -9537,13 +9579,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
-qualname = "FieldNameResolver.prepare_explicit_field_aliases"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
 qualname = "FieldNameResolver.validate_explicit_field_aliases"
 rule_code = "MUT204"
 target = "datamodel_code_generator._target_unicode.is_python_name"
@@ -9582,13 +9617,6 @@ path = "src/datamodel_code_generator/reference.py"
 qualname = "ModelResolver._register_reference"
 rule_code = "MUT201"
 target = "Reference.original_name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver._register_reference"
-rule_code = "MUT205"
-target = "Reference"
 count = 1
 
 [[entries]]
@@ -9645,13 +9673,6 @@ path = "src/datamodel_code_generator/reference.py"
 qualname = "_load_private_inflect"
 rule_code = "MUT205"
 target = "name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "keep_node_records"
-rule_code = "MUT205"
-target = "*"
 count = 1
 
 [[entries]]

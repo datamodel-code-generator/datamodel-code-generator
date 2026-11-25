@@ -834,6 +834,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_ALIASES,),
         Phase.MODULES,
         FreezePoint.B1,
+        store_ops=("record_alias_resolution_scope",),
         access=Access.DICT_KEY,
     ),
     AttributeFact(

@@ -1,0 +1,8 @@
+[[change]]
+id = "r3-ratchet-boundary-advice"
+category = "harness"
+title = "Print the help of each heki boundary kind on a rise of its baseline sites"
+summary = "Only the check_ratchets report names the boundary kind of a rising EFF201 site and prints its help; the package writes the same output."
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[heki-baseline-environment-swap].txt",
+]

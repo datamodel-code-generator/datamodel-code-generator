@@ -1,8 +1,8 @@
 [[change]]
-id = "combine-ci-jobs-1124"
+id = "main-nocov-312-313"
 category = "harness"
-title = "Run the CI jobs on counts that balance the lanes and split the behaviour gate"
-summary = "The Ubuntu coverage lanes, the macOS lanes and the Python 3.15 lanes change their shard counts and the behaviour gate runs on four jobs, and pull request runs leave six value-comparing check areas off outside the Python 3.14 coverage shards (`--skip-value-checks`), so the stored workflow contract and the coverage artifact names carry the new counts; the package writes the same output."
+title = "Run Ubuntu Python 3.12 and 3.13 without coverage after merging"
+summary = "The Ubuntu 3.12 and 3.13 shards run without coverage after merging and the coverage artifacts of a run are the same in pull requests and on main, so the coverage script drops its event option and its pull request cases, and the stored workflow contract carries the new job list; the package writes the same output."
 covers = [
     "ci_coverage_script/coverage_artifact_cli[entrypoint-complete].txt",
     "ci_coverage_script/coverage_artifact_cli[entrypoint-main-only-missing].txt",
@@ -26,6 +26,8 @@ covers = [
     "ci_coverage_script/coverage_artifact_cli[subprocess-report-no-source].txt",
     "ci_coverage_script/coverage_artifact_cli[subprocess-report-pull-request].txt",
     "ci_coverage_script/coverage_artifact_cli[subprocess-report-stale-data].txt",
+    "ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[complete].txt",
+    "ci_coverage_script/download_unpacks_the_artifacts_prepare_reads[flaky].txt",
     "ci_workflow/gate_rejects_every_unsuccessful_group.txt",
     "ci_workflow/workflow_matrix_and_coverage_contract.txt",
 ]

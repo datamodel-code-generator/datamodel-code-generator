@@ -157,9 +157,7 @@ def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-m
     root.mkdir()
     report = case.startswith("report-")
     payload = _report_payload(case, tmp_path) if report else (DATA / "coverage.txt").read_bytes()
-    event = ["--event", "pull_request"] if "pull-request" in case else []
-    pull_request_artifacts = case in {"pull-request-complete", "report-pull-request", "main-only-missing"}
-    for name in sorted(ci_coverage.PULL_REQUEST_NAMES if pull_request_artifacts else ci_coverage.EXPECTED_NAMES):
+    for name in sorted(ci_coverage.EXPECTED_NAMES):
         directory = root / name
         directory.mkdir()
         path = directory / name
@@ -212,7 +210,7 @@ def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-m
                     target = directory / "unknown"
                     target.write_bytes(payload)
     if report:
-        ci_coverage.main(["prepare", str(root), "--run-id", "123", "--sha", "abc", *event])
+        ci_coverage.main(["prepare", str(root), "--run-id", "123", "--sha", "abc"])
         match case:
             case "report-no-source":
                 (tmp_path / "sign.py").unlink()
@@ -221,8 +219,8 @@ def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-m
             case "report-stale-data":
                 (tmp_path / name).unlink()
                 (tmp_path / ".coverage").write_bytes(payload)
-        return ["report", ".", "--compare-branch", "base", *event]
-    return [action, str(target), "--run-id", "123", "--sha", "abc", *event]
+        return ["report", ".", "--compare-branch", "base"]
+    return [action, str(target), "--run-id", "123", "--sha", "abc"]
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -405,7 +403,7 @@ DOWNLOAD_CASES = ("complete", "flaky", "unavailable", "digest-mismatch", "no-tok
 def _artifact_server(case: str, staged: Path) -> _ArtifactServer:
     """Serve every coverage artifact a push run uploads, with the case's fault, beside other listed artifacts.
 
-    The listing spans pages and also holds an artifact of another kind, an expired one and an older attempt of a name.
+    The listing spans pages and also holds artifacts of another kind, an expired one and an older attempt of a name.
     """
     artifacts: list[dict[str, object]] = []
     blobs: dict[int, bytes] = {}
@@ -422,11 +420,20 @@ def _artifact_server(case: str, staged: Path) -> _ArtifactServer:
         artifacts.append({"id": number, "name": name, "expired": False, "digest": f"sha256:{digest}"})
     stale = {**artifacts[0], "id": 1, "digest": "sha256:older"}
     expired = {"id": 500, "name": ".coverage.expired", "expired": True, "digest": "sha256:none"}
-    other = {"id": 501, "name": "junit.py314-parallel-shard1-ubuntu-24.04", "expired": False, "digest": "sha256:none"}
+    # A run also uploads an artifact of another kind per job, so the listing spans pages whatever the coverage count.
+    others = [
+        {
+            "id": 501 + shard,
+            "name": f"junit.py314-parallel-shard{shard}-ubuntu-24.04",
+            "expired": False,
+            "digest": "sha256:none",
+        }
+        for shard in range(1, ci_coverage.PAGE_SIZE + 1)
+    ]
     if case == "digest-mismatch":
         artifacts[5]["digest"] = "sha256:foreign"
     failures = {13: {"flaky": 1, "unavailable": 3}.get(case, 0)}
-    return _ArtifactServer([*artifacts[:60], stale, expired, other, *artifacts[60:]], blobs, failures)
+    return _ArtifactServer([*artifacts[:60], stale, expired, *others, *artifacts[60:]], blobs, failures)
 
 
 @pytest.mark.parametrize("case", DOWNLOAD_CASES)

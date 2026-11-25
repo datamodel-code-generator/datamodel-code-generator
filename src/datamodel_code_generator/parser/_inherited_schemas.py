@@ -44,7 +44,7 @@ from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
-from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
+from datamodel_code_generator.model.base import _field_source_name, _with_field_origin, get_inherited_fields
 from datamodel_code_generator.parser import _rw_split, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._all_of_values import conjoined_declarations, holds_union_member
 from datamodel_code_generator.parser._field_copies import _get_inherited_type_modifiers
@@ -59,7 +59,6 @@ from datamodel_code_generator.parser._intersection import (
     merge_inherited_value,
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
-from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._keys import _DEFERRED_INHERITED_FIELD_KEY, _DEFERRED_INHERITED_TYPE_KEY
 from datamodel_code_generator.parser._rw_split import RwSplitHost
 from datamodel_code_generator.parser._schema_documents import current_document
@@ -87,12 +86,7 @@ from datamodel_code_generator.parser._schema_reading import (
 )
 from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import (
-    Reference,
-    _is_special_path,
-    context_variable,
-    get_inferred_module_name,
-)
+from datamodel_code_generator.reference import Reference, _is_special_path, context_variable, get_inferred_module_name
 from datamodel_code_generator.types import DataType, untyped_value_data_type
 
 if TYPE_CHECKING:
@@ -2401,7 +2395,7 @@ def build_missing_required_field(  # noqa: PLR0917
         required=True,
         original_name=required_field_name,
     )
-    with_field_origin(field, "required-only", None)
+    _with_field_origin(field, "required-only", None)
     if deferred:
         field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = scope
     return field

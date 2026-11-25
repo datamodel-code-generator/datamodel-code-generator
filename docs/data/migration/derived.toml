@@ -17,8 +17,11 @@
 "20261118" = "0.98.0"
 "20261120" = "0.100.0"
 "20261123" = "0.101.0"
+"20261124" = "0.102.0"
 
 [options]
+"--apply-default-values-to-true-properties" = "0.102.0"
+"--distribute-allof-over-object-branches" = "0.102.0"
 "--infer-union-discriminators" = "0.97.0"
 "--intersect-merged-allof-members" = "0.101.0"
 "--keep-bases-beside-generic-base-class" = "0.101.0"
@@ -51,3 +54,4 @@
 "--use-unmapped-variant-tag-values" = "0.98.0"
 "--use-validate-default-for-root-model-type-aliases" = "0.98.0"
 "--use-x-python-import-for-every-ref" = "0.97.0"
+"--write-pyproject-config" = "0.102.0"

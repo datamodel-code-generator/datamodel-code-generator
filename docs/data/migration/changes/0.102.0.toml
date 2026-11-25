@@ -1,0 +1,174 @@
+# The changes of 0.102.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "all-exports-import-from-loaded-submodule-other-backends"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "A package class beside a same-named submodule no longer binds the class name through the import of the submodule's models"
+summary = "In dataclass, msgspec and TypedDict output the modules that use a model of the submodule now import it from the submodule, so they no longer bind the class name of the package (from .pkg import Warn) through that import. They read the class through it, and resolving their annotations (type hints, msgspec decoding) failed."
+refs = ["#7444"]
+decision = ["#7120"]
+
+[[change]]
+id = "all-exports-import-from-loaded-submodule"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "A package class beside a same-named submodule that its __init__.py loads first no longer hides the submodule's models"
+summary = "Where a package's __init__.py loads a submodule while its imports run (--all-exports-scope re-exports it, or a module it imports loads it) and also defines a class of the submodule's name, the modules that use a model of the submodule now import it from the submodule, as the output already did where the __init__.py names a type of the submodule. They read the class through the package: a Pydantic module failed at import with AttributeError, and the other backends failed where the annotations are resolved (type hints, msgspec decoding). They no longer bind the class name through that import."
+refs = ["#7444"]
+
+[[change]]
+id = "apply-default-values-to-true-properties-api"
+category = "api"
+title = "Public names for --apply-default-values-to-true-properties"
+summary = "The option adds its config field; nothing is removed or changed."
+refs = ["#7455"]
+decision = ["#7455"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+
+[[change]]
+id = "bug-7452-dataclass-regex-engine-warning"
+category = "notice"
+kind = "warning"
+action = "warn"
+title = "A pydantic dataclass that redeclares an inherited field without a pattern Python's re rejects warns"
+summary = "Where a pydantic_v2.dataclass selects python-re for a look-around pattern of a base and another base has a pattern Python's re rejects, such as \\p{L}, the dataclass redeclares that field of a base of its module without the pattern and warns that the field is generated without the constraint. Such a module failed at import before."
+refs = ["#7489"]
+source = "release-note"
+
+[[change]]
+id = "bug-7452-dataclass-regex-engine"
+category = "crash-fix"
+title = "Select python-re in a pydantic dataclass that builds a base's lookaround"
+summary = "A pydantic_v2.dataclass whose config does not select python-re, such as one with its own config under --extra-fields, or one that takes the config of another first base, now selects it when a base it inherits has a pattern only Python's re reads, keeping every item of a config it took from a base, such as extra='forbid'. Such a module failed at import with a SchemaError. Where a base of its module also has a pattern Python's re rejects, such as \\p{L}, the dataclass redeclares the inherited field without it and warns, and the base keeps its output."
+refs = ["#7489", "#7452"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "bug-7454-boolean-parameter-schema"
+category = "crash-fix"
+title = "Read a boolean parameter schema as Any"
+summary = "An OpenAPI parameter or response header whose schema is true or false no longer stops the paths and parameters scopes with a validation error; the parameter is typed Any, like an empty schema."
+refs = ["#7483", "#7454"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "bug-g10-msgspec-reuse-warnings"
+category = "notice"
+title = "Show the warnings of msgspec runs that now generate"
+summary = "A msgspec run that stopped with incompatible layouts under --reuse-model now generates, so it shows the warnings its models raise, such as that msgspec cannot decode a union whose Struct types are not all tagged; a directory input shows those of every module, and the single-file attempt before its modular output now stops on the modular references."
+refs = ["#7446"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "bug-g10-msgspec-reuse"
+category = "crash-fix"
+title = "Flatten msgspec bases under --reuse-model by the models reuse merges"
+summary = "With --output-model-type msgspec.Struct, a model with two generated bases whose layouts still conflict once every module is processed stopped with incompatible layouts, for instance under --reuse-model when one base has the field names of another base's ancestor but a different type, default, description or constraint, or when a discriminator field of a base is not tagged. It declares the fields of its bases itself, as it does without --reuse-model."
+refs = ["#7446"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "bug-g33-allof-over-object-branches-api"
+category = "api"
+title = "Public names for --distribute-allof-over-object-branches"
+summary = "The option adds its config field; nothing is removed or changed."
+refs = ["#7445"]
+decision = ["#7445"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+
+[[change]]
+id = "bug-g33-union-shape-warnings"
+category = "notice"
+title = "Warn where an allOf over a union drops what the union checks"
+summary = "Without --distribute-allof-over-unions an allOf member naming an allOf over a union warns that the model checks none of its branches (#5305), and without --distribute-allof-over-object-branches so does a branch of an allOf's union that is itself a union or an alias (#6869). The generated output does not change."
+refs = ["#7445"]
+kind = "warning"
+action = "warn"
+source = "release-note"
+
+[[change]]
+id = "class-beside-submodule-reached-through-root"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "A Pydantic package class beside a same-named submodule is refused where only the root package loads the submodule"
+summary = "Where a package's __init__.py defines a class named like one of its submodules and imports from the root package (from .. import common), the root's own import of the submodule (from .pkg import Warn) was taken as a load of the __init__.py. The root runs first, so that import ran after the class was defined and bound the class, and the root's model of the submodule (Warn.Detail) read the class. Where the classes evaluate their annotations as they are defined (Pydantic, which builds a class as it is defined, or output without from __future__ import annotations) the root failed at import with AttributeError, so no module of the package imported: those runs now refuse the class as for other packages that do not load the submodule, and name --rename-submodules-hidden-by-classes. Dataclasses, TypedDict and msgspec with deferred annotations, where every module imported, keep their output; the stored outputs of the root-imported and cyclic layouts pin that."
+refs = ["#7444"]
+decision = ["#7120"]
+
+[[change]]
+id = "heki-026-additional-properties-classes-api"
+category = "api"
+title = "A store operation that names the classes of the additional properties"
+summary = "GraphBuilder.name_additional_properties_classes() (and GenerationStore.name_additional_properties_classes()) gives a model the type of its additional properties with the classes they name, which replace those recorded; nothing is removed or changed."
+refs = ["#7473"]
+decision = ["#7473"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "r3-blockers-drop-field-extra-api"
+category = "api"
+title = "A store operation that drops one entry of a field's extras"
+summary = "GraphBuilder.drop_field_extra() (and GenerationStore.drop_field_extra()) drops one key of a field's extras in place, as drop_field_discriminator() does for the discriminator; nothing is removed or changed."
+refs = ["#7494"]
+decision = ["#7494"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "recommend-options-requires-python"
+category = "experimental"
+title = "--recommend-options takes the target Python version from requires-python"
+summary = "When no option, pyproject.toml key or preset sets the target Python version, --recommend-options takes the lower bound of requires-python in the project's pyproject.toml (>=3.12, ~=3.12, ==3.12.*, with upper bounds or exclusions beside it), clamped to the supported targets and to the lowest one a client or server target supports, starts from that preset, and adds --target-python-version to the command and the pyproject.toml block with a note naming the source; other forms keep the note that the default is assumed. Generation never reads requires-python."
+refs = ["#7493"]
+decision = ["#7493"]
+kind = "experimental"
+action = "review"
+affects = { experimental = ["cli-option.recommend-options"] }
+source = "release-note"
+
+[[change]]
+id = "src-checkers-heki-api"
+category = "api"
+title = "Store signatures name the graph classes, and its operations lose their deprecation markers"
+summary = "GenerationStore.seal_facts, FinalFacts and the union keyword methods of DataTypeManager name DataType, DataModel and Reference where they named the read-only views of model/_views.py, which are gone. The operations of GenerationStore lose their @deprecated(category=None) markers, which warned no caller at run time, and GraphBuilder(store) takes no token; heki keeps the package's own calls of the operations inside the generation store."
+refs = ["#7484"]
+decision = ["#7484"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "write-pyproject-config-api"
+category = "api"
+title = "Public names for --write-pyproject-config"
+summary = "The option adds a row to the option table and the fast path of --generate-prompt steps aside for it; nothing is removed or changed."
+refs = ["#7495"]
+decision = ["#7495"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.__main__"] }
+source = "release-note"

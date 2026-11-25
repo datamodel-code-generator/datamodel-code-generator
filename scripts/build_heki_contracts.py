@@ -70,10 +70,25 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   group is a new report. heki reports it as a warning, so ``fail-on = "warning"`` makes it fail the check. A cycle of
   the imports that run while their modules load inside a group adds no report: the ``heki`` lane refuses every such
   cycle with ``IMP101`` over those imports alone (``tests/test_build_heki_contracts_script.py``).
+- ``effect-boundaries`` (``EFF201``) of the passes, from ``scripts/pass_decls.py`` and the pipeline tables
+  (``parser/_passes/_tables.py``): each pass after L1 and each decision, over the functions its step or its
+  ``DecisionPass`` runs and those they call, writes only the fact and presentation rows its declaration lets it write
+  in its phase (``may_write``: a fact it declares, not frozen at a freeze point the phase has passed, not after the
+  row's ``final_after``), and never the phase of the store; an ``Access.ITEM`` row is its entry
+  (``extras["init"]``), which heki follows through the key a store operation is given. The glue between the passes
+  (the hooks of the tables and the parser methods they call, the runner, the decision phase) writes no fact row. The
+  baseline keeps the findings ``KNOWN_FINDINGS`` lists, each with what removes it. The boundaries leave ``unresolved``
+  at its default: most passes reach calls and writes heki cannot resolve, where a boundary reports nothing, so they
+  check the declarations only through the calls heki follows, beside the finality check of the test suite
+  (``tests/checks/finality.py``), which holds every rule.
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
-  depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
-  sites, ``allowlist:heki-baseline:EFF201`` of ``scripts/check_ratchets.py``.
+  depends on the environment cost review rounds.
+
+Each effect boundary's report carries the help of its kind, ``BOUNDARY_ADVICE`` of ``scripts/check_ratchets.py``
+(``ENVIRONMENT_ADVICE``, ``PASS_ADVICE``, ``GLUE_ADVICE``, ``DECISION_READ_ADVICE``): the ratchet key that counts
+the baseline sites of these boundaries, one key per kind (``allowlist:heki-baseline:EFF201:<kind>``), prints the same
+help for the kind whose sites rose.
 
 The file also sets ``required-version`` to at least the heki that the ``heki`` dependency group of pyproject.toml pins,
 so an older heki stops with a clear error instead of failing on a key it does not know.
@@ -86,7 +101,7 @@ import ast
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final, NamedTuple
 
 import tomllib
 
@@ -94,7 +109,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
 from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
-from scripts.check_ratchets import ENVIRONMENT_ADVICE
+from scripts.check_ratchets import DECISION_READ_ADVICE, ENVIRONMENT_ADVICE, GLUE_ADVICE, PASS_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
@@ -105,13 +120,18 @@ from scripts.fact_tables import (
     Access,
     AttributeFact,
     DecisionAccessor,
+    Fact,
     FactKind,
+    FreezePoint,
     LedgerWriter,
     MemberUse,
+    Phase,
+    RenderFact,
     StoreMember,
+    freeze_point,
     holds_render_facts,
 )
-from scripts.pass_decls import DECISION_DECLS
+from scripts.pass_decls import DECISION_DECLS, PASS_DECLS
 from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 
 if TYPE_CHECKING:
@@ -138,6 +158,8 @@ IMPORT_LEDGER = "parser/_imports_plan.py"
 """The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
 RULES = ("EFF201", "IMP101", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
+FAIL_ON = "warning"
+"""The severity that fails the check: contract findings are heuristic warnings, which heki's default lets pass."""
 SHARED_PRODUCERS = (
     ("parser/_schema_graph.py", "SchemaGraphBuilder.schema"),
     ("parser/_schema_graph.py", "SchemaGraphBuilder.pointer_value"),
@@ -246,6 +268,45 @@ def _package_functions(repo: Repo) -> set[str]:
     }
 
 
+class _Classes:
+    """The classes of the package by dotted name, each with its bases read by origin, and its functions."""
+
+    def __init__(self, repo: Repo) -> None:
+        """Read the class scopes of the package's modules."""
+        index = PackageIndex()
+        self.modules: dict[str, list[str]] = {}
+        """The classes by the module that defines them, as ``module`` and ``qualname`` joined by a dot."""
+        self.bases: dict[str, list[str]] = {}
+        for rel, module in _package_modules(repo).items():
+            model = repo.model(rel)
+            for scope in model.scopes:
+                if scope.kind == "class" and "<locals>" not in scope.qualname:
+                    self.modules.setdefault(module, []).append(scope.qualname)
+                    self.bases[f"{module}.{scope.qualname}"] = [
+                        index.resolve(o) for base in bases(scope) if (o := model.origin(base))
+                    ]
+        self.functions = _package_functions(repo)
+
+    def derives(self, name: str, root: str) -> bool:
+        """Return whether the class ``name`` is ``root`` or derives from it."""
+        todo, seen = [name], set()
+        while todo:
+            if (current := todo.pop()) == root:
+                return True
+            seen.add(current)
+            todo += [parent for parent in self.bases.get(current, []) if parent not in seen]
+        return False
+
+    def definers(self, root: str, name: str) -> list[str]:
+        """Return the scopes of the methods ``name`` that ``root`` and the classes deriving from it define."""
+        return sorted(
+            f"{module}:{qualname}.{name}"
+            for module, qualnames in self.modules.items()
+            for qualname in qualnames
+            if f"{module}.{qualname}.{name}" in self.functions and self.derives(f"{module}.{qualname}", root)
+        )
+
+
 def _methods(
     repo: Repo, members: Iterable[StoreMember | DecisionAccessor], table: str
 ) -> dict[StoreMember | DecisionAccessor, list[str]]:
@@ -254,38 +315,14 @@ def _methods(
     An override is a method of that name in a class of the package that derives from the row's class, through bases
     read by origin.
     """
-    index = PackageIndex()
-    classes: dict[tuple[str, str], list[str]] = {}
-    for rel, module in _package_modules(repo).items():
-        model = repo.model(rel)
-        for scope in model.scopes:
-            if scope.kind == "class" and "<locals>" not in scope.qualname:
-                classes[module, scope.qualname] = [
-                    index.resolve(o) for base in bases(scope) if (o := model.origin(base))
-                ]
-    functions = _package_functions(repo)
-    bases_of = {f"{module}.{qualname}": parents for (module, qualname), parents in classes.items()}
-
-    def derives(name: str, root: str) -> bool:
-        todo, seen = [name], set()
-        while todo:
-            if (current := todo.pop()) == root:
-                return True
-            seen.add(current)
-            todo += [parent for parent in bases_of.get(current, []) if parent not in seen]
-        return False
-
+    classes = _Classes(repo)
     methods: dict[StoreMember | DecisionAccessor, list[str]] = {}
     for member in members:
         owner = f"{_module(member.path)}.{member.owner}"
-        if f"{owner}.{member.name}" not in functions:
+        if f"{owner}.{member.name}" not in classes.functions:
             message = f"{table}: {member.path} defines no method {member.owner}.{member.name}"
             raise SystemExit(message)
-        methods[member] = sorted(
-            f"{module}:{qualname}.{member.name}"
-            for module, qualname in classes
-            if f"{module}.{qualname}.{member.name}" in functions and derives(f"{module}.{qualname}", owner)
-        )
+        methods[member] = classes.definers(owner, member.name)
     return methods
 
 
@@ -482,6 +519,7 @@ def decision_contracts(
             forbid=["reads-targets"],
             read_targets=targets,
             allowed_callees=[DECISION_WRITER, *callees],
+            message=DECISION_READ_ADVICE,
         ),
         _table(
             "read-owners",
@@ -784,6 +822,295 @@ def shared_object_contracts(repo: Repo, producers: Iterable[tuple[str, str]] = S
     return [_table("readonly-returns", name="schema-graph-shared-objects", producers=names, deep=True)]
 
 
+TABLES = "parser/_passes/_tables.py"
+"""The pipeline tables of ``Parser``: their steps name the functions each pass and hook runs."""
+PIPELINE_RUNNER = "parser/_pipeline.py"
+"""The module that runs the tables: segments, module loops, hook calls and passes."""
+PARSER_CLASS = f"{PACKAGE}.parser.base.Parser"
+"""The parser a table step's ``self`` is: a method it calls is any parser class's method of that name."""
+MODEL_CLASS = f"{PACKAGE}.model.base.DataModel"
+"""The model class a table step's ``self.data_model_type`` is."""
+STEP_CLASSES = {f"{PACKAGE}.parser._pipeline.PassSpec": "pass", f"{PACKAGE}.parser._pipeline.HookCall": "hook"}
+DECISION_CLASS = f"{PACKAGE}.parser._phases.DecisionPass"
+LATE = f"{PACKAGE}.parser._pipeline.late"
+"""The marker of a step whose function the parser instance looks up when the step runs."""
+FREEZE_PHASES = {FreezePoint.B1: Phase.RENDER_PREPARATION, FreezePoint.B2: Phase.IMPORTS}
+"""The first phase in which the facts final at each freeze point are frozen.
+
+The facts final at B1 stay writable for the decisions that declare them until the decision phase ends.
+"""
+PHASE_TARGET = "GenerationStore.phase"
+"""The phase of the pipeline: no pass enters a phase, the pipeline does."""
+FINALITY_KINDS = (FactKind.FACT, FactKind.PRESENTATION)
+
+
+class KnownFinding(NamedTuple):
+    """A finding of the pass boundaries that ``scripts/heki_baseline.toml`` keeps, with what removes it."""
+
+    target: str
+    """The target of the baseline entry: ``pass:<pass>:<row>`` or ``pass-glue:<row>``."""
+    removed_by: str
+
+
+_B2_FREEZE: Final = (
+    "the owner's call on BACKEND_CONFIG and DEFAULT_EXPRESSION, final at B2, which the import passes write after "
+    "renaming classes: either they freeze later or the writes move before B2"
+)
+_FIELD_PLAN_C: Final = "the step that renders msgspec, dataclass, TypedDict and enum fields from one plan"
+_FRESH_COPY: Final = (
+    "a heki that reads the copy Parser._copy_inherited_field makes (copy_owning, model_copy) as a fresh object: "
+    "the pass writes these rows on that copy, never on a field of the input"
+)
+_COPIED_ROWS: Final = (
+    "DataModelFieldBase._nullable_without_default",
+    "DataType.data_types",
+    "DataType.is_dict",
+    "DataType.is_frozen_set",
+    "DataType.is_list",
+    "DataType.is_mapping",
+    "DataType.is_optional",
+    "DataType.is_sequence",
+    "DataType.is_set",
+    "DataType.is_tuple",
+    "DataType.kwargs",
+    "DataType.tuple_item_count",
+)
+"""The rows ``override_required_field`` writes on the copy of an inherited field before the copy replaces the
+placeholder; heki counts each as a write of the pass's input."""
+_FRESH_FIELD: Final = (
+    "a heki that reads the field Parser._build_field constructs as a fresh object: apply_discriminator_type records "
+    "the alias scope of the tag field it builds and appends in the same pass, never of a field of the input"
+)
+KNOWN_FINDINGS: Final = (
+    KnownFinding("pass:name_final_classes_of_additional_properties:DataModel._internal_template_data", _B2_FREEZE),
+    KnownFinding("pass:refresh_sequence_interface_after_renames:DataModel._internal_template_data", _B2_FREEZE),
+    KnownFinding(
+        "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_order", _B2_FREEZE
+    ),
+    KnownFinding(
+        "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_recursive_keys",
+        _B2_FREEZE,
+    ),
+    KnownFinding('pass:fix_constructor_field_ordering:DataModelFieldBase.extras["init"]', _FIELD_PLAN_C),
+    KnownFinding(
+        'pass:order_constructor_fields_by_decided_nested_factories:DataModelFieldBase.extras["init"]', _FIELD_PLAN_C
+    ),
+    KnownFinding(
+        "pass-glue:Parser._recursion_facts",
+        "#7417: the module loop settles the update actions of each module, outside every pass",
+    ),
+    *(KnownFinding(f"pass:override_required_field:{row}", _FRESH_COPY) for row in _COPIED_ROWS),
+    KnownFinding("pass:apply_discriminator_type:DataModelFieldBase._alias_resolution_class_name", _FRESH_FIELD),
+)
+"""The findings of the pass boundaries that the baseline keeps; the baseline holds exactly these.
+
+Constructor ordering, after B1, gives a required field back the ``init`` entry (``REQUIRED``) its base left out; the
+dataclass field plan will hold it. The import passes write the backend config of the template data and the order of
+the nested default factories after B2, where those facts are final. ``override_required_field`` writes the copy of an
+inherited field, which heki cannot tell from the field it copies, and ``apply_discriminator_type`` the tag field it
+builds, which heki cannot tell from a field of the input.
+"""
+
+
+def _names(spec: ast.expr, name: str) -> bool:
+    """Return whether ``spec`` is a dict display whose ``"name"`` entry is ``name``."""
+    return isinstance(spec, ast.Dict) and any(
+        isinstance(key, ast.Constant) and key.value == "name" and ast.literal_eval(value) == name
+        for key, value in zip(spec.keys, spec.values, strict=True)
+    )
+
+
+class _TableSteps:
+    """The functions the steps of the pipeline tables and the decisions run, read from their sources.
+
+    A step's run is a function (``late(f)`` or ``f``) or a lambda; a lambda runs every function it calls. A method
+    called on the step's parser (its first parameter) is the method of every parser class that defines it, and one
+    called on ``self.data_model_type`` that of every model class. A name that leads outside the package (a builtin,
+    ``typing.cast``) runs nothing of the package; any other call that names no function or class stops the build.
+    """
+
+    def __init__(self, repo: Repo) -> None:
+        """Read the tables module and the classes of the package."""
+        self.repo = repo
+        self.classes = _Classes(repo)
+        self.index = PackageIndex()
+        self.model = repo.model(f"{PACKAGE_DIR}{TABLES}")
+        self.modules = set(_package_modules(repo).values())
+        self.lambdas = {id(scope.node): scope for scope in self.model.scopes if scope.kind == "lambda"}
+
+    def _symbol(self, dotted: str) -> str | None:
+        """Return a function or class of the package as ``module:qualname``, or None outside the package."""
+        dotted = self.index.resolve(dotted)
+        for module in sorted(self.modules, key=len, reverse=True):
+            if dotted.startswith(f"{module}."):
+                qualname = dotted.removeprefix(f"{module}.")
+                if dotted in self.classes.functions or qualname in self.classes.modules.get(module, ()):
+                    return f"{module}:{qualname}"
+                break
+        if not dotted.startswith(f"{PACKAGE}."):
+            return None
+        message = f"{TABLES}: {dotted} is no function or class of the package"
+        raise SystemExit(message)
+
+    def _callee(self, func: ast.expr, receiver: str | None) -> list[str]:
+        """Return the scopes of the functions a call of ``func`` runs, ``receiver`` being the step's parser."""
+        root = None
+        if isinstance(func, ast.Attribute) and receiver is not None:
+            roots = {receiver: PARSER_CLASS, f"{receiver}.data_model_type": MODEL_CLASS}
+            if (root := roots.get(self.model.source(func.value))) is not None and (
+                found := self.classes.definers(root, func.attr)
+            ):
+                return found
+        if root is None and (origin := self.model.origin(func)) is not None:
+            return [] if (symbol := self._symbol(origin)) is None else [symbol]
+        message = f"{TABLES}: cannot tell which function `{ast.unparse(func)}` calls"
+        raise SystemExit(message)
+
+    def run(self, node: ast.expr) -> list[str]:
+        """Return the scopes of the functions a step's run runs."""
+        if isinstance(node, ast.Call) and self.model.origin(node.func) == LATE and node.args:
+            return self._callee(node.args[0], None)
+        if (scope := self.lambdas.get(id(node))) is not None:
+            receiver = next((name for name, bound in scope.bindings.items() if bound[0].kind == "param"), None)
+            calls = (call.func for call in ast.walk(scope.node) if isinstance(call, ast.Call))
+            return sorted({symbol for func in calls for symbol in self._callee(func, receiver)})
+        return self._callee(node, None)
+
+    def steps(self) -> dict[str, tuple[str, list[str]]]:
+        """Return each pass and hook of the tables by name, with whether it is one and the scopes it runs."""
+        found: dict[str, tuple[str, list[str]]] = {}
+        for call in ast.walk(self.model.tree):
+            if (
+                isinstance(call, ast.Call)
+                and (kind := STEP_CLASSES.get(self.model.origin(call.func) or ""))
+                and isinstance(name := call.args[0], ast.Constant)
+                and isinstance(step := name.value, str)
+            ):
+                found[step] = (kind, self.run(call.args[1]))
+        return found
+
+    def decisions(self, decls: Mapping[str, PassDecl]) -> dict[str, list[str]]:
+        """Return the scope of the function each decision runs: its ``DecisionPass`` in the module it declares."""
+        found: dict[str, list[str]] = {}
+        for decl in decls.values():
+            model = self.repo.model(f"{PACKAGE_DIR}{decl.module}")
+            for call in ast.walk(model.tree):
+                if (
+                    isinstance(call, ast.Call)
+                    and model.origin(call.func) == DECISION_CLASS
+                    and _names(call.args[0], decl.name)
+                    and (origin := model.origin(call.args[1])) is not None
+                    and (symbol := self._symbol(origin)) is not None
+                ):
+                    found[decl.name] = [symbol]
+            if decl.name not in found:
+                message = f"DECISION_DECLS: {decl.module} makes no DecisionPass named {decl.name}"
+                raise SystemExit(message)
+        return found
+
+
+def finality_targets(repo: Repo, rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS) -> dict[str, list[AttributeFact]]:
+    """Return the fact and presentation rows by the target heki names their writes by.
+
+    An ``Access.ITEM`` row is its entry (``extras["init"]``) and its dict attribute too, which a write of the whole
+    dict changes; a ``__dict__`` key row is the value of its constant. A cached property is computed, not written.
+    """
+    targets: dict[str, list[AttributeFact]] = defaultdict(list)
+    for row in rows:
+        if row.kind not in FINALITY_KINDS or row.access is Access.CACHED_PROPERTY:
+            continue
+        if row.access is Access.ITEM:
+            targets[f"{row.owner}.{_container(row)}"].append(row)
+            targets[f"{row.owner}.{row.attribute}"].append(row)
+        else:
+            targets[f"{row.owner}.{_attribute(repo, row.attribute, row.access)}"].append(row)
+    return dict(targets)
+
+
+def _frozen(fact: Fact | RenderFact, row: AttributeFact, phase: Phase) -> bool:
+    """Return whether ``fact`` of ``row`` is frozen in ``phase``: its freeze point has passed."""
+    return (first := FREEZE_PHASES.get(freeze_point(row, fact))) is not None and phase.value >= first.value
+
+
+def may_write(decl: PassDecl, row: AttributeFact) -> bool:
+    """Return whether the pass of ``decl``, in the phase it declares, may write ``row``.
+
+    It declares one of the row's facts (a fact row), or ``BASES`` for a fact row of a base; not every fact it declares
+    of the row is frozen in its phase; and the phase is not later than the row's ``final_after`` (a fact row), which
+    for a decision is the end of the decision phase at the earliest.
+    """
+    facts = {*row.facts, *((Fact.BASES,) if any(isinstance(fact, Fact) for fact in row.facts) else ())}
+    declared = facts & decl.writes
+    if row.kind is FactKind.FACT and not declared:
+        return False
+    if declared and all(_frozen(fact, row, decl.phase) for fact in declared):
+        return False
+    final_after = row.final_after
+    if decl.phase is Phase.DECIDE and final_after.value < Phase.DECIDE.value:
+        final_after = Phase.DECIDE
+    return row.kind is not FactKind.FACT or decl.phase.value <= final_after.value
+
+
+def finality_contracts(
+    repo: Repo,
+    decls: Iterable[PassDecl] = PASS_DECLS,
+    decisions: Mapping[str, PassDecl] = DECISION_DECLS,
+    rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS,
+) -> list[str]:
+    """Return the effect boundaries that hold each pass to its declaration, and the pipeline between them to none.
+
+    Every pass after L1 (the ``parse`` segment, whose passes build the graph) and every decision is a boundary over
+    the functions it runs, which reaches only the rows of its universe that ``may_write`` lets it write, and never the
+    phase. The glue (the hooks of the tables, the parser methods they call, the runner and the decision phase) writes
+    no fact row.
+    """
+    steps = _TableSteps(repo)
+    tables = steps.steps()
+    targets = finality_targets(repo, rows)
+    universe = sorted([*targets, PHASE_TARGET])
+    runs = {name: scopes for name, (kind, scopes) in tables.items() if kind == "pass"} | steps.decisions(decisions)
+    contracts: list[str] = []
+    for decl in [*decls, *decisions.values()]:
+        if decl.phase is Phase.PARSE:
+            continue
+        if decl.name not in runs:
+            message = f"{decl.name}: no step of {TABLES} and no decision runs it"
+            raise SystemExit(message)
+        contracts.append(
+            _table(
+                "effect-boundaries",
+                name=f"pass:{decl.name}",
+                scopes=runs[decl.name],
+                write_universe=universe,
+                allow_writes=sorted(
+                    target for target, written in targets.items() if all(may_write(decl, row) for row in written)
+                ),
+                message=PASS_ADVICE,
+            )
+        )
+    hooks = [(name, scopes) for name, (kind, scopes) in tables.items() if kind == "hook"]
+    glue = sorted({
+        *(scope for _, scopes in hooks for scope in scopes),
+        *(scope for name, _ in hooks for scope in steps.classes.definers(PARSER_CLASS, f"_{name}")),
+        *_scope(_module(PIPELINE_RUNNER), ""),
+        *_scope(_module(DECISION_PHASE), ""),
+    })
+    fact_targets = sorted(
+        target for target, written in targets.items() if any(r.kind is FactKind.FACT for r in written)
+    )
+    contracts.append(
+        _table(
+            "effect-boundaries",
+            name="pass-glue",
+            scopes=glue,
+            forbid=["writes-targets"],
+            write_targets=fact_targets,
+            message=GLUE_ADVICE,
+        )
+    )
+    return contracts
+
+
 def required_version() -> str:
     """Return the ``required-version`` of the contracts: at least the heki that the ``heki`` dependency group pins."""
     group = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["dependency-groups"]["heki"]
@@ -806,6 +1133,7 @@ def generate() -> str:
         *pipeline_contracts(repo),
         *shared_object_contracts(repo),
         *environment_contracts(),
+        *finality_contracts(repo),
     ]
     head = "\n".join([
         HEADER,
@@ -813,7 +1141,7 @@ def generate() -> str:
         "",
         "[lint]",
         f"select = {_array(RULES)}",
-        'fail-on = "warning"',
+        f"fail-on = {_quote(FAIL_ON)}",
         "",
         "[imports]",
         f"cycle-edges = {_array(IMPORT_EDGES)}",

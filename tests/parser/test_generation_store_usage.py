@@ -369,6 +369,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "note_changed_models",
             "omit_field_default",
             "override_type_import",
+            "record_alias_resolution_scope",
             "record_dropped_multiple_of",
             "record_nullable_without_default",
             "record_raw_schema_default",

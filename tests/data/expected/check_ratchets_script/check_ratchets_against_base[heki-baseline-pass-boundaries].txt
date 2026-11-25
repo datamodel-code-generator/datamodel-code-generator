@@ -1,0 +1,24 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                                    base    head  change
+allowlist:heki-baseline                                   1       1       0
+allowlist:heki-baseline:EFF201:no-environment-reads       1       1       0
+allowlist:heki-baseline:EFF201:pass                       0       1      +1
+allowlist:heki-baseline:EFF201:pass-glue                  0       1      +1
+ruff-config:exclude:scripts                               1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/              1       1       0
+ruff-config:ignore:CPY                                    1       1       0
+ruff-config:ignore:D                                      1       1       0
+ruff-config:ignore:ERA001                                 1       1       0
+ruff-config:ignore:INP                                    1       1       0
+ruff-config:per-file:tests/**/*.py:S101                   1       1       0
+ruff:PLC0415@src                                          1       1       0
+
+allowlist:heki-baseline:EFF201:pass rose by 1 (0 -> 1). A pass writes only the facts its declaration in scripts/pass_decls.py lists, before they are final: declare the fact, or move the write to a pass that runs before its freeze point.
+  scripts/heki_baseline.toml: 0 -> 1
+
+allowlist:heki-baseline:EFF201:pass-glue rose by 1 (0 -> 1). The pipeline between the passes writes no fact: move the write into a pass and declare it.
+  scripts/heki_baseline.toml: 0 -> 1
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

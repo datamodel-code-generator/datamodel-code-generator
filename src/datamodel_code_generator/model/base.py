@@ -136,7 +136,7 @@ from datamodel_code_generator.python_literal import (
     stable_pformat,
     stable_repr,
 )
-from datamodel_code_generator.reference import Reference, _BaseModel
+from datamodel_code_generator.reference import FIELD_ORIGIN_KEY, FieldOrigin, Reference, _BaseModel
 from datamodel_code_generator.types import (
     ANY,
     NONE,
@@ -169,6 +169,7 @@ if TYPE_CHECKING:
         RenderReady,
     )
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
+    from datamodel_code_generator.reference import FieldOriginKind, SchemaLocation
     from datamodel_code_generator.types import ModelForm
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -1390,6 +1391,17 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             self.data_type = new_data_type
             new_data_type.parent = self
         self.invalidate_semantic_caches()
+
+
+def _with_field_origin(
+    field: DataModelFieldBase, kind: FieldOriginKind, location: SchemaLocation | None
+) -> DataModelFieldBase:
+    """Record that ``field`` is built as ``kind`` from the schema object at ``location``, replacing a record.
+
+    The parser's builders record it when they build the field (FIELD_ORIGIN, ``reference.py:field_origin_of``).
+    """
+    field.__dict__[FIELD_ORIGIN_KEY] = FieldOrigin(kind, location)
+    return field
 
 
 def _apply_literal_default(field: DataModelFieldBase, decision: LiteralDefault) -> None:
