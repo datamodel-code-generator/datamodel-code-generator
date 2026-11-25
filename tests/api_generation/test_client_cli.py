@@ -1661,8 +1661,9 @@ the call's requests replaced by `[redacted]`. The arguments are the operation's 
 its JSON body as `body`, never a parameter at a credential's position or the request options, so the credentials stay
 in the client. `read_only=True` leaves out the tools of methods that are not safe. An
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
-method and has no tool; generation warns why. The models must be Pydantic v2 ones, and AsyncAPI input refuses the
-option.""",
+method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
+summary and description, and `schema(name)` leaves out the `description` of every JSON schema, while the models keep
+theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.""",
     input_schema="generation_platform/client/tools.yaml",
     cli_args=["--output", "models.py", *OPTIONS, *CLIENT, "--client-tools", "functions"],
     golden_output="api_generation/client_cli/tools.table.py",

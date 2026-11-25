@@ -3318,8 +3318,9 @@ the call's requests replaced by `[redacted]`. The arguments are the operation's 
 its JSON body as `body`, never a parameter at a credential's position or the request options, so the credentials stay
 in the client. `read_only=True` leaves out the tools of methods that are not safe. An
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
-method and has no tool; generation warns why. The models must be Pydantic v2 ones, and AsyncAPI input refuses the
-option.
+method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
+summary and description, and `schema(name)` leaves out the `description` of every JSON schema, while the models keep
+theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
 
 **Option relationships:**
 
@@ -3513,17 +3514,18 @@ option.
           enum: [cat, dog]
         Pet:
           type: object
+          description: A pet of the store.
           required: [id, name, species]
           properties:
             id: {type: integer}
-            name: {type: string}
+            name: {type: string, description: What the pet answers to.}
             species: {$ref: '#/components/schemas/Species'}
             born: {type: string, format: date}
         NewPet:
           type: object
           required: [name, species]
           properties:
-            name: {type: string, minLength: 1}
+            name: {type: string, minLength: 1, description: What the pet answers to.}
             species: {$ref: '#/components/schemas/Species'}
             born: {type: string, format: date}
         Owner:
@@ -3531,6 +3533,7 @@ option.
           required: [id, pets]
           properties:
             id: {type: string, format: uuid}
+            description: {type: string, description: Notes on the owner.}
             pets:
               type: array
               items: {$ref: '#/components/schemas/Pet'}

@@ -164,7 +164,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "request ID and body. The arguments are the operation's parameters and body, never a parameter at a "
             "credential's position or the request options; `read_only=True` leaves out the tools of unsafe methods. "
             "An operation left out of the tools keeps its method, and generation warns why. Under "
-            "`--untrusted-input` a tool's description names its route only."
+            "`--untrusted-input` a tool's description leaves out the operation's summary and description, and "
+            "`schema(name)` leaves out the `description` of every JSON schema, while the models keep theirs."
         ),
     ),
     "cli-option.generate-client": ExperimentalFeature(

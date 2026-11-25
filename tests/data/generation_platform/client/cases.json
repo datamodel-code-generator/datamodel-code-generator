@@ -6905,7 +6905,7 @@
     "input": "tools.yaml",
     "model": {"use_schema_description": true, "untrusted_input": true},
     "config": {"tools": "functions", "operations": [{"ref": "/paths/~1pets~1{petId}/get", "description": "Show one pet by its id."}]},
-    "modules": [["client", "_generated", "tools.py"]]
+    "modules": [["client", "tools.py"], ["client", "_generated", "tools.py"]]
   },
   "tools-adversarial": {
     "input": "tools-adversarial.yaml",

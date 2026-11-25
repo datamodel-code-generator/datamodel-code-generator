@@ -419,8 +419,12 @@ class _Facades:
         )
 
     @staticmethod
-    def tools() -> Templated:
-        """Return the tools module: the tool table of each client, over the plans of every tool."""
+    def tools(*, descriptions: bool) -> Templated:
+        """Return the tools module: the tool table of each client, over the plans of every tool.
+
+        A table without `descriptions` leaves the models' descriptions out of the JSON schemas it gives.
+        """
+        attributes = (Attribute("plans", "TOOLS"), *(() if descriptions else (Attribute("descriptions", "False"),)))
         return facade_module(
             "tools",
             "Tools over this package's operations, for agents: search them, read their JSON schemas, and call them.",
@@ -436,13 +440,13 @@ class _Facades:
                     "Toolset",
                     "ToolTable[Client]",
                     "The tools of the synchronous client.",
-                    (Attribute("plans", "TOOLS"),),
+                    attributes,
                 ),
                 Subclass(
                     "AsyncToolset",
                     "AsyncToolTable[AsyncClient]",
                     "The tools of the asyncio client.",
-                    (Attribute("plans", "TOOLS"),),
+                    attributes,
                 ),
             ),
             exports=("AsyncToolset", "Toolset", "UnknownToolError"),
@@ -3422,13 +3426,14 @@ class ClientRenderer:
         use_schema_description: bool = False,
         use_single_line_docstring: bool = False,
         tools: tuple[ToolSpec, ...] | None = None,
+        untrusted_input: bool = False,
     ) -> None:
         """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
 
         The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds. The
         README names the model backend and the runtime dependencies, and a template directory overrides builtin roles.
         Operation methods are documented by the models' docstring options, and `tools` are those of a package with a
-        tool table.
+        tool table, whose JSON schemas leave the models' descriptions out for `untrusted_input`.
         """
         self.config = config
         self.plan = plan
@@ -3449,6 +3454,7 @@ class ClientRenderer:
         self.use_schema_description = use_schema_description
         self.use_single_line_docstring = use_single_line_docstring
         self.tools = tools
+        self.untrusted_input = untrusted_input
 
     @cached_property
     def bindings(self) -> RenderedBindings:
@@ -3660,7 +3666,7 @@ class ClientRenderer:
         if (protocols := facades.protocols()) is not None:
             yield self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols)
         if self.tools is not None:
-            yield self.file(PurePosixPath("tools.py"), "tools", facades.tools())
+            yield self.file(PurePosixPath("tools.py"), "tools", facades.tools(descriptions=not self.untrusted_input))
         resources_docstring = facade_module("resources", "The resources of the clients.")
         yield self.file(PurePosixPath("resources", "__init__.py"), "package", resources_docstring)
 

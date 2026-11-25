@@ -16,5 +16,5 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   get = {"born": "2020-02-29", "colour": "brown", "id": 3, "name": "Rex", "species": "dog"}
   > POST https://api.example.com/v1/pets?key=secret-key
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 47] b'{"name":"Rex","species":"dog","colour":"brown"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 47] b'{"species":"dog","name":"Rex","colour":"brown"}'
   create = {"born": "2020-02-29", "colour": "brown", "id": 3, "name": "Rex", "species": "dog"}

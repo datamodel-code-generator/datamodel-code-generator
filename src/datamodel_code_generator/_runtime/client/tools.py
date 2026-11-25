@@ -1,11 +1,12 @@
 """The tool table of a generated client: one tool per operation, searched, described, and called with JSON values.
 
-A tool's JSON schemas come from the model types of its arguments and result, through the models' own library, and a
-call validates each argument as JSON through the codec of its type, the mode the schemas describe, calls the client's
-method, and returns the result as its codec writes it. A read-only table leaves out every tool whose HTTP method is not
-safe. A failure of the client returns its class, reason, status, operation, request ID, and bounded body, never its
-headers, URL, or cause, with every credential the client placed on the call's requests replaced in the request ID and
-the body, so an API that echoes one does not hand it to the caller; arguments a tool refuses return each problem.
+A tool's JSON schemas come from the model types of its arguments and result, through the models' own library, without
+the description of any schema in a table generated from untrusted input, and a call validates each argument as JSON
+through the codec of its type, the mode the schemas describe, calls the client's method, and returns the result as its
+codec writes it. A read-only table leaves out every tool whose HTTP method is not safe. A failure of the client returns
+its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or cause, with every
+credential the client placed on the call's requests replaced in the request ID and the body, so an API that echoes one
+does not hand it to the caller; arguments a tool refuses return each problem.
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Protocol
 
 from pydantic import TypeAdapter, ValidationError
-from typing_extensions import TypeIs, TypeVar
+from pydantic.json_schema import GenerateJsonSchema
+from typing_extensions import TypeIs, TypeVar, override
 
 from ..model_codecs.media import JSONValue, json_bytes, json_value
 from ..model_codecs.pydantic_adapters import adapter
@@ -25,13 +27,37 @@ from .positions import placed_credentials
 from .tool_search import score, words
 
 if TYPE_CHECKING:
-    from pydantic.json_schema import JsonSchemaMode
+    from collections.abc import Sequence
+
+    from pydantic.json_schema import DefsRef, JsonSchemaKeyT, JsonSchemaMode, JsonSchemaValue
+    from pydantic_core import CoreSchema
     from typing_extensions import Never, TypeForm
 
 ClientT = TypeVar("ClientT")
 _NAME: Final = 3
 _SITE: Final = 2
 _REDACTED: Final = "[redacted]"
+_NAMING: Final = frozenset({"$defs", "definitions", "dependentSchemas", "patternProperties", "properties"})
+"""The JSON Schema keywords whose value maps names to schemas."""
+_HOLDING: Final = frozenset({
+    "additionalItems",
+    "additionalProperties",
+    "allOf",
+    "anyOf",
+    "contains",
+    "contentSchema",
+    "else",
+    "if",
+    "items",
+    "not",
+    "oneOf",
+    "prefixItems",
+    "propertyNames",
+    "then",
+    "unevaluatedItems",
+    "unevaluatedProperties",
+})
+"""The JSON Schema keywords whose value is a schema or a list of schemas."""
 
 
 class UnknownToolError(LookupError):
@@ -127,6 +153,49 @@ def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
             return value
 
 
+class _Undescribed(GenerateJsonSchema):
+    """Generate JSON schemas without the description of any schema in them, for a table of untrusted documents.
+
+    Only the `description` keyword of a schema is left out: a property named `description` stays, and so do defaults,
+    examples, and every other value.
+    """
+
+    @override
+    def generate(self, schema: CoreSchema, mode: JsonSchemaMode = "validation") -> JsonSchemaValue:
+        """Generate the JSON schema of a core schema without its descriptions."""
+        return _undescribed(super().generate(schema, mode))
+
+    @override
+    def generate_definitions(
+        self, inputs: Sequence[tuple[JsonSchemaKeyT, JsonSchemaMode, CoreSchema]]
+    ) -> tuple[dict[tuple[JsonSchemaKeyT, JsonSchemaMode], JsonSchemaValue], dict[DefsRef, JsonSchemaValue]]:
+        """Generate the JSON schemas of several core schemas and their shared definitions without their descriptions."""
+        schemas, definitions = super().generate_definitions(inputs)
+        return (
+            {key: _undescribed(value) for key, value in schemas.items()},
+            {name: _undescribed(value) for name, value in definitions.items()},
+        )
+
+
+def _undescribed(schema: Mapping[str, JSONValue]) -> dict[str, JSONValue]:
+    """Return a JSON schema without its `description` keyword and those of the schemas it holds."""
+    return {key: _held(key, value) for key, value in schema.items() if key != "description"}
+
+
+def _held(keyword: str, value: JSONValue) -> JSONValue:
+    """Return the value of a schema's keyword with the schemas it holds undescribed, and any other value as it is."""
+    if keyword in _NAMING and isinstance(value, dict):
+        return {name: _subschema(item) for name, item in value.items()}
+    if keyword not in _HOLDING:
+        return value
+    return [_subschema(item) for item in value] if isinstance(value, list) else _subschema(value)
+
+
+def _subschema(value: JSONValue) -> JSONValue:
+    """Return a schema undescribed; a boolean schema has no description."""
+    return _undescribed(value) if isinstance(value, dict) else value
+
+
 class ToolCodec(Protocol):
     """The codec of a model type, as a Pydantic backend's: its type, its validation, and its JSON encoding.
 
@@ -191,6 +260,8 @@ class _Table(Generic[ClientT]):
     """What the sync and asyncio tables share: their tools by name, the search, the schemas, and a call's values."""
 
     plans: ClassVar[tuple[ToolPlan, ...]] = ()
+    descriptions: ClassVar[bool] = True
+    """Whether the JSON schemas keep the descriptions of the models; False in a table generated from untrusted input."""
 
     def __init__(self, client: ClientT, *, read_only: bool = False) -> None:
         """Keep the client the tools call, and the tools, without those of unsafe methods when read-only."""
@@ -224,12 +295,16 @@ class _Table(Generic[ClientT]):
         return [_entry(plan) for _, _, plan in ranked[:limit]]
 
     def schema(self, name: str) -> dict[str, JSONValue]:
-        """Return a tool's name, description, and the JSON schemas of its arguments object and of its result."""
+        """Return a tool's name, description, and the JSON schemas of its arguments object and of its result.
+
+        A table without `descriptions` leaves the `description` of every schema out of both.
+        """
         plan = self._plan(name)
+        generator = GenerateJsonSchema if self.descriptions else _Undescribed
         inputs: list[tuple[str, JsonSchemaMode, TypeAdapter[object]]] = [
             (argument.name, "validation", _adapter(argument.codec)) for argument in plan.arguments
         ]
-        schemas, definitions = TypeAdapter.json_schemas(inputs)
+        schemas, definitions = TypeAdapter.json_schemas(inputs, schema_generator=generator)
         properties: dict[str, JSONValue] = {
             argument.name: schemas[argument.name, "validation"] for argument in plan.arguments
         }
@@ -240,7 +315,7 @@ class _Table(Generic[ClientT]):
             "name": plan.name,
             "description": plan.description,
             "input_schema": {**arguments, **definitions},
-            "output_schema": _adapter(plan.result).json_schema(mode="serialization"),
+            "output_schema": _adapter(plan.result).json_schema(mode="serialization", schema_generator=generator),
         }
 
     def _plan(self, name: str) -> ToolPlan:

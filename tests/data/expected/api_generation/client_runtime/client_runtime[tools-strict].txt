@@ -3,10 +3,10 @@
   warning UserWarning: <root>/tools_strict_pydantic_v2_dataclass: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
   warning UserWarning: <root>/tools_strict_pydantic_v2_dataclass: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
   > POST https://api.example.com/v1/pets?key=secret%2Fkey%2B1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 50] b'{"name":"Rex","species":"dog","born":"2020-02-29"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 50] b'{"species":"dog","name":"Rex","born":"2020-02-29"}'
   create = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
   > PUT https://api.example.com/v1/pets/3?key=secret%2Fkey%2B1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 50] b'{"name":"Rex","species":"cat","born":"2020-02-29"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 50] b'{"species":"cat","name":"Rex","born":"2020-02-29"}'
   replace = {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}
   > GET https://api.example.com/v1/pets?limit=5&species=cat&key=secret%2Fkey%2B1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t-1] b''

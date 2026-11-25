@@ -8,6 +8,7 @@ credential the client placed where the API echoes one, and strict models take th
 
 from __future__ import annotations
 
+import importlib
 import json
 from datetime import date
 from typing import TYPE_CHECKING
@@ -196,3 +197,23 @@ def tool_strict(package: ModuleType, lines: list[str]) -> None:
             ("not a JSON value", "pets_create_pet", {"body": {**born, "born": date(2020, 2, 29)}}),
         ):
             lines.append(f"  {label} = {_shown(table.call(name, arguments))}")
+
+
+def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
+    """Read the schemas of a table generated from untrusted input: no schema in them has a description.
+
+    The property named `description` stays, and the models keep their descriptions.
+    """
+    module = import_generated(f"{package.__name__}.tools", copied=True)
+    with package.Client(api_key="secret-key") as api:
+        table = module.Toolset(api)
+        lines.extend(
+            f"  schema {name} = {_shown(table.schema(name))}" for name in ("pets_create_pet", "owners_get_owner")
+        )
+    models = importlib.import_module(f"{package.__name__}_models")
+    owner = models.Owner.model_json_schema()["properties"]["description"]
+    lines.extend((
+        f"  model Pet description = {models.Pet.model_json_schema()['description']!r}",
+        f"  model Owner.description = {_shown(owner)}",
+        f"  async schema = {_shown(module.AsyncToolset(object()).schema('pets_get_pet'))}",
+    ))
