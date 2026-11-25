@@ -57,7 +57,6 @@ from datamodel_code_generator.enums import (
 from datamodel_code_generator.parser import _schema_documents, _schema_refs, _union_tags
 from datamodel_code_generator.parser._api_reference import pointer_fragment as _pointer_fragment
 from datamodel_code_generator.parser._naming import composed_name
-from datamodel_code_generator.parser._origins import with_subtype_ref, with_type_origin
 from datamodel_code_generator.parser._rw_split import update_field_refs_for_variant
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref, validate_resolved_ref
@@ -93,6 +92,8 @@ from datamodel_code_generator.reference import (
 )
 from datamodel_code_generator.types import (
     DataType,
+    _with_subtype_ref,
+    _with_type_origin,
     build_union,
 )
 from datamodel_code_generator.types import EmptyDataType as EmptyDataType
@@ -891,7 +892,7 @@ class OpenAPIParser(JsonSchemaParser):
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
         """Resolve one subtype without recursively expanding its discriminator, recording the `$ref` it stands for."""
         self.resolve_ref(ref)
-        return with_subtype_ref(super().get_ref_data_type(ref), ref)
+        return _with_subtype_ref(super().get_ref_data_type(ref), ref)
 
     def _get_discriminator_union_type(self, ref: str) -> DataType | None:
         """Create a union type for discriminator subtypes if available.
@@ -975,7 +976,7 @@ class OpenAPIParser(JsonSchemaParser):
                 origin = field_obj.__dict__.get(FIELD_ORIGIN_KEY)
                 field_obj = self.data_model_field_type(**{  # noqa: PLW2901
                     **field_obj.__dict__,
-                    "data_type": with_type_origin(new_field_type, field.schema_location),
+                    "data_type": _with_type_origin(new_field_type, field.schema_location),
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},
                 })
                 field_obj.__dict__[FIELD_ORIGIN_KEY] = origin

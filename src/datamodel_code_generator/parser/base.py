@@ -252,7 +252,6 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
-    _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     ModelResolver,
     ModelType,
     Reference,
@@ -1612,7 +1611,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 row="final-class",
                 inherits=bool(base_classes),
             )
-            field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = scope
+            self._graph_builder.record_alias_resolution_scope(field, scope)
 
     @staticmethod
     def _parse_type_mappings(type_mappings: list[str] | None) -> dict[tuple[str, str], str]:

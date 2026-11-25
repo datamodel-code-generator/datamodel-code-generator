@@ -6148,55 +6148,6 @@ target = "_property_names_forbids_all_keys"
 count = 2
 
 [[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_binary_content"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_enum_literal"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_field_origin"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_json_number"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_subtype_ref"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_type_origin"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_origins.py"
-qualname = "with_unique_items"
-rule_code = "MUT205"
-target = "DataType"
-count = 1
-
-[[entries]]
 path = "src/datamodel_code_generator/parser/_passes/_import_aliases.py"
 qualname = "_alias_additional_imports"
 rule_code = "MUT201"
@@ -7192,13 +7143,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "apply_discriminator_type"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "change_field_name"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference.ModelResolver._[!_]*"
@@ -7926,13 +7870,6 @@ target = "_python_field_overrides"
 count = 1
 
 [[entries]]
-path = "src/datamodel_code_generator/parser/_schema_object.py"
-qualname = "JsonSchemaObject.with_schema_location"
-rule_code = "MUT205"
-target = "*"
-count = 1
-
-[[entries]]
 path = "src/datamodel_code_generator/parser/_schema_reading.py"
 qualname = "<module>"
 rule_code = "MUT204"
@@ -8606,13 +8543,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._apply_final_class_field_aliases"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._model_resolver_class"
 rule_code = "IMP101"
 target = "datamodel_code_generator.parser._api_reference, datamodel_code_generator.parser._schema_object, datamodel_code_generator.parser._schema_reading, datamodel_code_generator.parser.base"
@@ -9159,13 +9089,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "JsonSchemaParser.parse_object_fields"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
 qualname = "JsonSchemaParser.resolve_ref"
 rule_code = "MUT201"
 target = "Reference.loaded"
@@ -9184,20 +9107,6 @@ qualname = "_get_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "_mark_location_conflict"
-rule_code = "MUT205"
-target = "Reference"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/jsonschema.py"
-qualname = "_set_schema_location"
-rule_code = "MUT205"
-target = "Reference"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/jsonschema.py"
@@ -9274,13 +9183,6 @@ path = "src/datamodel_code_generator/parser/openapi.py"
 qualname = "OpenAPIParser._validated_object"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._schema_object._named_path"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/openapi.py"
-qualname = "OpenAPIParser.parse_object_fields"
-rule_code = "MUT205"
-target = "*"
 count = 1
 
 [[entries]]
@@ -9537,13 +9439,6 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/reference.py"
-qualname = "FieldNameResolver.prepare_explicit_field_aliases"
-rule_code = "MUT205"
-target = "DataModelFieldBase"
-count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
 qualname = "FieldNameResolver.validate_explicit_field_aliases"
 rule_code = "MUT204"
 target = "datamodel_code_generator._target_unicode.is_python_name"
@@ -9582,13 +9477,6 @@ path = "src/datamodel_code_generator/reference.py"
 qualname = "ModelResolver._register_reference"
 rule_code = "MUT201"
 target = "Reference.original_name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "ModelResolver._register_reference"
-rule_code = "MUT205"
-target = "Reference"
 count = 1
 
 [[entries]]
@@ -9645,13 +9533,6 @@ path = "src/datamodel_code_generator/reference.py"
 qualname = "_load_private_inflect"
 rule_code = "MUT205"
 target = "name"
-count = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/reference.py"
-qualname = "keep_node_records"
-rule_code = "MUT205"
-target = "*"
 count = 1
 
 [[entries]]

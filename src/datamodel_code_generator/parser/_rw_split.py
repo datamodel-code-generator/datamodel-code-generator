@@ -27,13 +27,12 @@ from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.enums import AllOfMergeMode, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator.model import DataModel
-from datamodel_code_generator.model.base import _field_source_name
+from datamodel_code_generator.model.base import _field_source_name, _with_field_origin
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
 from datamodel_code_generator.parser import _all_of_values, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._all_of_values import AllOfValuesHost
 from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._naming import rw_variant_class_name
-from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._keys import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
@@ -646,7 +645,7 @@ def overlay_inherited_field(
     ) is not None:
         prepare_required_inherited_field(parser, resolved_field, inherited_field, overriding_field=field)
         if (origin := field_origin_of(field)) is not None and origin.kind == "property":
-            with_field_origin(resolved_field, origin.kind, origin.location)
+            _with_field_origin(resolved_field, origin.kind, origin.location)
     return resolved_field
 
 
