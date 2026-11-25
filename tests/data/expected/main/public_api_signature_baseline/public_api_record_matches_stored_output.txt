@@ -3736,6 +3736,8 @@ class GenerationStore
     @staticmethod
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None
     @staticmethod
+    def record_alias_resolution_scope(field_: DataModelFieldBase, scope: ClassScope | None) -> None
+    @staticmethod
     def record_raw_schema_default(field_: DataModelFieldBase) -> None
     @staticmethod
     def omit_field_default(field_: DataModelFieldBase) -> None
@@ -3853,6 +3855,7 @@ class GraphBuilder
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None
     def set_field_runtime_default(self, field_: DataModelFieldBase, default: object, runtime_expression_imports: tuple[Import, ...]) -> None
     def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None
+    def record_alias_resolution_scope(self, field_: DataModelFieldBase, scope: ClassScope | None) -> None
     def record_raw_schema_default(self, field_: DataModelFieldBase) -> None
     def omit_field_default(self, field_: DataModelFieldBase) -> None
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None
@@ -3890,7 +3893,7 @@ class ModelRename
     new_class_name: str
     scheme: RenameScheme | None
     reference_name: str
-NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 50>)
+NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 51>)
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
     uses _OrderedSetItem = TypeVar('_OrderedSetItem')
 OwnerModels = typing.Any

@@ -55,9 +55,13 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, heki's baseline (the sum of the site counts of its entries:
-  ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other key budgets,
-  ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture checks
-  (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
+  ``allowlist:heki-baseline:EFF201:<kind>`` for the effect boundaries, the reads of the environment the package runs
+  in, the fact writes of the passes and the facts a decision reads, one key per kind of boundary (`BOUNDARY_ADVICE`),
+  so that no other key and no other kind budgets a site and a rise prints the help of its kind;
+  ``allowlist:heki-baseline`` for the rest; an entry of no known kind counts under
+  ``allowlist:heki-baseline:EFF201:unreadable``, which always fails), and the allowlists of the test
+  style and architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot
+  read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -143,14 +147,41 @@ if TYPE_CHECKING:
 SCRIPT = "scripts/check_ratchets.py"
 HEKI_BASELINE = "scripts/heki_baseline.toml"
 HEKI_OWN_KEY_RULES = frozenset({"EFF201"})
-"""The heki rules whose baseline sites count under a key of their own: no other key budgets them, so a new site cannot
-be paid for by a site of another rule."""
+"""The heki rules whose baseline sites count under a key per kind of boundary (`heki_boundary_key`): no other key
+budgets them, so a new site cannot be paid for by a site of another rule or of another kind."""
 ENVIRONMENT_ADVICE = (
     "Output must not depend on the environment the generator runs in: key the decision on an option or a static rule, "
     "not on the interpreter, the platform, a variable or an installed package. A read that belongs to the runtime "
     "itself (an optional dependency) is paid for by removing another one."
 )
-"""How to fix a read of the environment: the advice of its key, and the help of heki's environment boundary."""
+"""How to fix a read of the environment: the help of heki's environment boundary."""
+PASS_ADVICE = (
+    "A pass writes only the facts its declaration in scripts/pass_decls.py lists, before they are final: declare the "
+    "fact, or move the write to a pass that runs before its freeze point."
+)
+"""How to fix a write a pass does not declare: the help of heki's boundary of each pass."""
+GLUE_ADVICE = "The pipeline between the passes writes no fact: move the write into a pass and declare it."
+"""How to fix a fact write between the passes: the help of heki's ``pass-glue`` boundary."""
+DECISION_READ_ADVICE = (
+    "A decision reads only the facts final at B1, never a render fact: read what it needs of such an attribute through "
+    "a member that DECISION_ACCESSORS of scripts/fact_tables.py lists."
+)
+"""How to fix a read of a render fact in a decision: the help of heki's ``decisions-read-final-facts`` boundary."""
+BOUNDARY_ADVICE = {
+    "no-environment-reads": ENVIRONMENT_ADVICE,
+    "pass": PASS_ADVICE,
+    "pass-glue": GLUE_ADVICE,
+    "decisions-read-final-facts": DECISION_READ_ADVICE,
+}
+"""The help of each kind of heki effect boundary (its name up to the first ``:``): the kinds the baseline tally knows,
+each with the help its key prints on a rise."""
+
+
+def heki_boundary_key(rule: str, kind: str) -> str:
+    """Return the key of the baseline sites of one rule of `HEKI_OWN_KEY_RULES` and one kind of its boundary."""
+    return f"allowlist:heki-baseline:{rule}:{kind}"
+
+
 EXPECTED_ROOT = "tests/data/expected"
 TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
@@ -196,7 +227,7 @@ HEKI_RULES = {
     "iterator-double-consumption": "MUT106",
     "hash-attr-mutation": "MUT107",
     "readonly-type-mutation": "MUT108",
-    "write-without-invalidation": "MUT109",
+    "write-without-invalidation": "MUT208",
     "readonly-param-mutation": "MUT110",
     "cached-property-stale-read": "MUT111",
     "conditional-ownership-mutation": "MUT112",
@@ -214,10 +245,8 @@ HEKI_RULES = {
     "unresolved-guarded-read": "MUT206",
     "unresolved-guarded-call": "MUT207",
     "async-blocking-call": "EFF101",
-    "async-possibly-blocking-call": "EFF111",
     "loop-unpooled-client": "EFF102",
     "loop-db-query": "EFF103",
-    "loop-possible-db-query": "EFF113",
     "async-blocking-fs": "EFF105",
     "lock-or-tx-held-across-io": "EFF106",
     "lock-reacquired-while-held": "EFF109",
@@ -229,8 +258,12 @@ HEKI_RULES = {
     "unretained-async-task": "EFF107",
     "effect-boundary-violation": "EFF201",
     "import-cycle": "IMP101",
-    "import-owner-violation": "IMP201",
+    "circular-import-failure": "IMP102",
+    "development-code-import": "IMP104",
+    "import-boundary-violation": "IMP201",
     "unresolved-guarded-import": "IMP202",
+    "development-dependency-at-import-time": "IMP301",
+    "optional-dependency-at-import-time": "IMP302",
     "loop-carried-concat": "DATA101",
     "list-quadratic-concat": "OPT101",
     "set-dict-quadratic-merge": "OPT102",
@@ -331,6 +364,7 @@ Comments the source model reports as suppressions (``noqa``, ``pragma``, ``ruff:
 REPORT_ONLY = frozenset({"expected"})
 """The kinds of keys that are reported in the table and never fail."""
 ADVICE = {
+    **{heki_boundary_key("EFF201", kind): help_text for kind, help_text in BOUNDARY_ADVICE.items()},
     "ruff": (
         "Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore "
         "count the same, so moving one changes nothing; if one must stay, remove another suppression of this rule in "
@@ -353,7 +387,6 @@ ADVICE = {
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
     "type-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "heki-ignore": "Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.",
-    "allowlist:heki-baseline:EFF201": ENVIRONMENT_ADVICE,
     "cast": "Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().",
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
@@ -411,6 +444,10 @@ ADVICE = {
     "unreadable-source-rule": (
         "The source model refuses the file (the error is named), so no source rule can read its sites. Fix the file, "
         "or give the model a rule and a form for it (scripts/_source_model.py, tests/data/source_forms/)."
+    ),
+    f"unreadable-{heki_boundary_key('EFF201', 'unreadable')}": (
+        "The baseline holds an effect-boundary entry of a kind this script has no help for: add the kind and its help "
+        "to BOUNDARY_ADVICE, so that a rise of its key says how to fix it."
     ),
     "unreadable-allowlist": (
         "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
@@ -978,21 +1015,40 @@ def _method_owner(statement: ast.stmt, names: frozenset[str]) -> str:
 
 
 def _heki_baseline_tally(tally: Tally, root: Path) -> None:
-    """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule.
+    """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule and kind of boundary.
 
-    A file that is not entries with integer counts is unreadable.
+    The kind is the one the entry's target names (`boundary_kind`), so each kind is budgeted on its own
+    (`heki_boundary_key`). A file that is not entries with integer counts is unreadable, and so is an entry of those
+    rules whose kind `BOUNDARY_ADVICE` does not know: no help could say how to fix it.
     """
     file = root / HEKI_BASELINE
     try:
         entries = tomllib.loads(file.read_text(encoding="utf-8")).get("entries", []) if file.is_file() else []
-        counted = [(entry.get("count"), entry.get("rule_code")) for entry in entries]
+        counted = [(entry.get("count"), entry.get("rule_code"), entry.get("target", "")) for entry in entries]
     except (tomllib.TOMLDecodeError, AttributeError, TypeError):
-        counted = [(None, None)]
-    for count, rule in counted:
-        own = f":{rule}" if rule in HEKI_OWN_KEY_RULES else ""
-        key = "allowlist:heki-baseline" + (own if type(count) is int else ":unreadable")
+        counted = [(None, None, "")]
+    for count, rule, target in counted:
+        kind = boundary_kind(str(target))
+        key, site = "allowlist:heki-baseline", HEKI_BASELINE
+        if type(count) is not int:
+            key += ":unreadable"
+        elif rule not in HEKI_OWN_KEY_RULES:
+            pass
+        elif kind in BOUNDARY_ADVICE:
+            key = heki_boundary_key(rule, kind)
+        else:
+            key, site = heki_boundary_key(rule, "unreadable"), f"{HEKI_BASELINE} (no boundary kind {kind!r})"
         for _ in range(count if type(count) is int else 1):
-            tally.add(key, HEKI_BASELINE)
+            tally.add(key, site)
+
+
+def boundary_kind(name: str) -> str:
+    """Return the kind of a heki effect boundary from its name or a baseline target: the part before the first ``:``.
+
+    ``pass:<pass>`` and ``pass:<pass>:<row>`` are of kind ``pass``, ``no-environment-reads:reads-environment`` of kind
+    ``no-environment-reads``.
+    """
+    return name.partition(":")[0]
 
 
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
@@ -1333,12 +1389,15 @@ def _rise_lines(
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
-    advice = ADVICE.get(key, ADVICE.get(_kind(key), ""))
-    if key in judging.absolute:
-        lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
+    absolute = key in judging.absolute
+    if absolute:
         changes = [(path, base.get(key, {}).get(path, 0), count) for path, count in sorted(head[key].items())]
     else:
         changes = _risen(key, base, head, judging.lanes)
+    advice = ADVICE.get(key, ADVICE.get(_kind(key), ""))
+    if absolute:
+        lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
+    else:
         added = f"{len(changes)} new {'line' if len(changes) == 1 else 'lines'}"
         change = f"has {added}" if _kind(key) == STORED_LIST else f"rose by {after - before}"
         lines = ["", f"{key} {change} ({before} -> {after}). {advice}"]
@@ -1418,6 +1477,11 @@ def _report_copy(
     return [*header, *body] if body else []
 
 
+def _unreadable_advice(key: str) -> str:
+    """Return how to fix an unreadable setting: the advice of its key, else of its family, else the general one."""
+    return ADVICE.get(f"unreadable-{key}", ADVICE.get(f"unreadable-{key.partition(':')[0]}", ADVICE["unreadable"]))
+
+
 def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
     """Describe the settings the counter could not read: what they hide cannot be counted, so they always fail."""
     return [
@@ -1426,10 +1490,7 @@ def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
         if _kind(key) == "unreadable"
         for line in (
             "",
-            (
-                f"{key} in {', '.join(files)}: the counter cannot read it. "
-                f"{ADVICE.get('unreadable-' + key.partition(':')[0], ADVICE['unreadable'])}"
-            ),
+            f"{key} in {', '.join(files)}: the counter cannot read it. {_unreadable_advice(key)}",
         )
     ]
 

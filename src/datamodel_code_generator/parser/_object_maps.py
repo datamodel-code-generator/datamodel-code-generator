@@ -13,15 +13,15 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.model.base import _with_field_origin
 from datamodel_code_generator.parser import _all_of_values, _lightweight_types
 from datamodel_code_generator.parser._all_of_values import AllOfValuesHost
 from datamodel_code_generator.parser._naming import Composed, composed_name
-from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _object_map_other_types, _with_ref_siblings
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.reference import unique_items_of
-from datamodel_code_generator.types import ANY, Types, build_union
+from datamodel_code_generator.types import ANY, Types, _with_type_origin, build_union
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
@@ -266,11 +266,11 @@ def get_typed_additional_properties_field(
     location = additional_props.schema_location
     field = parser.data_model_type.create_typed_extra_field(
         field_model=parser.data_model_field_type,
-        data_type=with_type_origin(
+        data_type=_with_type_origin(
             parser.data_type(data_types=[extra_value_type], is_dict=True, dict_key=dict_key), location
         ),
     )
-    return None if field is None else with_field_origin(field, "additional", location)
+    return None if field is None else _with_field_origin(field, "additional", location)
 
 
 def flatten_additional_properties_all_of(
@@ -872,7 +872,7 @@ def get_additional_properties_root_field(
                     additional_properties=additional_properties,
                 )
     location = obj.schema_location
-    map_type = with_type_origin(parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type), location)
+    map_type = _with_type_origin(parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type), location)
     field = parser.get_object_field(
         field_name=None,
         field=parser._schema_object(counts),
@@ -885,7 +885,7 @@ def get_additional_properties_root_field(
         ),
         alias=None,
     )
-    with_type_origin(with_field_origin(field, "root", location).data_type, location)
+    _with_type_origin(_with_field_origin(field, "root", location).data_type, location)
     return field
 
 
@@ -933,7 +933,7 @@ def object_map_key_type(
         if isinstance(schema, JsonSchemaObject):
             schema = _with_ref_siblings(parser, schema)
         if isinstance(schema, JsonSchemaObject) and (schema.anyOf or schema.oneOf or schema.allOf):
-            return with_type_origin(
+            return _with_type_origin(
                 parser._parse_combined_property_names_key_type(name, schema, [*path]),
                 schema.schema_location,
             )
@@ -941,7 +941,7 @@ def object_map_key_type(
         schema = cast("JsonSchemaObject", property_names)
     else:
         return None
-    return with_type_origin(
+    return _with_type_origin(
         parse_property_name_key_schema(parser, schema),
         schema.schema_location if isinstance(schema, JsonSchemaObject) else None,
     )

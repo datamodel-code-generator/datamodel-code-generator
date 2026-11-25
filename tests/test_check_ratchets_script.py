@@ -140,6 +140,33 @@ target = "no-environment-reads:reads-environment"
 count = 1
 """
 """A baseline entry of the environment boundary, whose sites count under their own key."""
+HEKI_PASS = """
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "run"
+rule_code = "EFF201"
+target = "pass:run:Model.fields"
+count = 1
+"""
+"""A baseline entry of a pass boundary, which counts under the key of its own kind."""
+HEKI_GLUE = """
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "loop"
+rule_code = "EFF201"
+target = "pass-glue:Parser.state"
+count = 1
+"""
+"""A baseline entry of the glue between the passes, which counts under the key of its own kind."""
+HEKI_UNKNOWN_KIND = """
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "run"
+rule_code = "EFF201"
+target = "new-boundary:Model.fields"
+count = 1
+"""
+"""A baseline entry of a boundary kind the counter has no key and no help for."""
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -655,6 +682,31 @@ def show(flag: bool) -> None:
     "heki-baseline-environment-swap": {
         "base": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2") + HEKI_ENVIRONMENT},
         "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT.replace("count = 1", "count = 2")},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-pass-boundaries": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT + HEKI_PASS + HEKI_GLUE},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-kind-swap": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT + HEKI_PASS},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT.replace("count = 1", "count = 2")},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-kind-moves": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT + HEKI_PASS + HEKI_GLUE},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_PASS.replace("count = 1", "count = 2") + HEKI_GLUE},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-effect-boundaries-shrink": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT + HEKI_PASS + HEKI_GLUE},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_PASS + HEKI_GLUE},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-unknown-boundary-kind": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_UNKNOWN_KIND},
         "args": ["--enforce"],
     },
     "heki-baseline-shrinks": {

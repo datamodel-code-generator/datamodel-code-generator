@@ -642,11 +642,14 @@ read or call inside its owners instead of recording it, and after a change that
 removes findings run the same command with `--update-baseline`. If the findings
 only moved (a function was renamed or moved), `--update-baseline` refuses the
 new ones: delete `scripts/heki_baseline.toml` and run the command with
-`--update-baseline` again; the keys must not rise. The sites of the
-environment boundary count under a key of their own,
-`allowlist:heki-baseline:EFF201`, so a new read of the environment is never
-paid for by another finding; every other site counts under
-`allowlist:heki-baseline`.
+`--update-baseline` again; the keys must not rise. The sites of the effect
+boundaries (the environment boundary, the boundaries of the passes and the
+facts a decision reads) count under one key per kind of boundary,
+`allowlist:heki-baseline:EFF201:<kind>`, so a new read of the environment or an
+undeclared write of a pass is never paid for by another finding, nor by a site
+of another kind; a rise of such a key prints that kind's help. An entry of no
+known kind counts under `allowlist:heki-baseline:EFF201:unreadable`, which
+always fails. Every other site counts under `allowlist:heki-baseline`.
 `# heki: ignore[...]` comments and `# noqa` comments that name a heki rule
 count as `heki-ignore:<rule>` keys.
 
@@ -818,8 +821,8 @@ same package. `python -m tests.checks <datamodel-codegen args>` runs the command
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run.
-`--skip-value-checks` leaves `MODEL_GRAPH`, `SCHEMA_GRAPH`, `RENDER_PLANS`, `RENDER_MEMOS`, `NAMING` and
-`TEMPLATE_ASSIGNMENTS` unset; the CI shards of a pull request pass it except in the Python 3.14 coverage shards, while
+`--skip-value-checks` leaves `MODEL_GRAPH`, `SCHEMA_GRAPH`, `RENDER_PLANS`, `RENDER_MEMOS`, `FACT_FINALITY`, `NAMING`
+and `TEMPLATE_ASSIGNMENTS` unset; the CI shards of a pull request pass it except in the Python 3.14 coverage shards, while
 runs of `main`, the schedule and manual runs keep every area on in every shard. Under
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
@@ -830,7 +833,13 @@ test suite) run the witnesses and fail for an entry whose witness no longer make
 list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
 tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
 script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
-made a write its pass does not declare.
+made a write its pass does not declare. heki checks the same declarations statically, only for the calls it resolves:
+the `pass:<name>` boundaries of `scripts/heki.toml`, which `scripts/build_heki_contracts.py` builds from the
+declarations and the fact tables, report a write of a row whose facts the pass does not declare, or after they are
+frozen, and the `pass-glue` boundary a fact write between the passes. Most passes also reach calls and writes heki
+cannot resolve (a `getattr` call, a method of a protocol or of an object of unknown class, a callable kept in a table),
+where a boundary reports nothing; the boundaries leave `unresolved` at its default, so a write there passes heki, and
+`FACT_FINALITY` keeps every rule, on the shards and runs that keep the value checks on.
 
 | Area | Checks |
 | --- | --- |
@@ -850,7 +859,7 @@ to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps t
 not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
 installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` and `PASS_TRIGGERS` are the exceptions: `tests/conftest.py`
 sets `FACT_FINALITY_SWEEP` to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full
-comparison, and leaves `PASS_TRIGGERS` off unless the environment sets it or `pytest --check-pass-triggers` is given, so
+comparison where `FACT_FINALITY` is on (`main`, the schedule and manual runs), and leaves `PASS_TRIGGERS` off unless the environment sets it or `pytest --check-pass-triggers` is given, so
 the pull request and push runs skip the passes whose trigger is false as users do. The nightly workflow runs the suite
 on the newest Python with it on (`tox run -e pass-triggers`); run `pytest --check-pass-triggers` on a test of your own,
 for example after changing a trigger.

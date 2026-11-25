@@ -86,7 +86,14 @@ def test_generic_model_keeps_reference_import_boundary() -> None:
         for alias in node.names
     }
 
-    assert reference_imports == {"Reference", "_BaseModel"}
+    assert reference_imports == {
+        "FIELD_ORIGIN_KEY",
+        "FieldOrigin",
+        "FieldOriginKind",
+        "Reference",
+        "SchemaLocation",
+        "_BaseModel",
+    }
     assert "ModelType" not in vars(model_base_module)
 
 

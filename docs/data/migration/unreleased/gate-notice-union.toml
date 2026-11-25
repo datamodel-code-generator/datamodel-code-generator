@@ -1,9 +1,0 @@
-[[change]]
-id = "gate-notice-union"
-category = "harness"
-title = "Judge the change records that cover one gate cell together"
-summary = "The behaviour gate passes a differing cell when the records that cover it explain every difference together: decisions and notices the change lines their selectors select, other categories their kinds as a whole, and a record whose evidence fails there is no failure where the others explain all it admits; the package writes the same output."
-refs = ["#7485"]
-covers = [
-    "behaviour_diff_script/judge[a decision and a notice, a warning line only the notice selects].txt",
-]
