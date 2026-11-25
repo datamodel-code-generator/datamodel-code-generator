@@ -12,7 +12,8 @@ without a row: heki can judge a write only of an attribute or key some row names
 heki checks the writes themselves: ``scripts/build_heki_contracts.py`` turns the rows into the ``write-owners``
 contracts of ``scripts/heki.toml``, and ``scripts/heki_baseline.toml`` records the writes outside store operations that
 exist today. A ``cached_property``, which writes its own name into ``__dict__``, is heki's too: the cache contract
-forbids one on every class the table describes and the classes deriving from them.
+forbids one on every class the table describes and the classes deriving from them. A row of a ``__dict__`` key that
+the sources only read stays this check's: heki counts a read as naming the key.
 """
 
 from __future__ import annotations
