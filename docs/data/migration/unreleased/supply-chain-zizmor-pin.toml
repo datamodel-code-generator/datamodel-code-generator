@@ -1,7 +1,0 @@
-[[change]]
-id = "supply-chain-zizmor-pin"
-extends = "heki-026"
-refs = ["#7500"]
-covers = [
-    "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
-]
