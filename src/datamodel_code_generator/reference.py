@@ -1059,6 +1059,11 @@ class NameRequest(NamedTuple):
     preserve_class_name: bool = False
 
 
+def _name_request_of(reference: object) -> NameRequest | None:
+    """Return the ``NameRequest`` the resolver recorded on a reference when it named its model, if it recorded one."""
+    return reference.__dict__.get(NAME_REQUEST_KEY)
+
+
 class _YieldingName(NamedTuple):
     """A reference whose name moves aside when a reference that does not yield asks for it."""
 

@@ -392,6 +392,18 @@ OWNER_CASES: dict[str, tuple[str, str]] = {
         PAYLOAD_NODE + "test_allof_payload_strategy_classification",
         "main/payload_validation/allof_payload_strategy_classification.txt",
     ),
+    "a Jinja oracle of the builtin templates is internal": (
+        "tests/model/test_compiled_templates.py::test_target_templates_match_jinja_oracle[client]",
+        "model/compiled_templates/target_templates_match_jinja_oracle[client].rendered.txt",
+    ),
+    "the list of the builtin templates is a listing": (
+        "tests/model/test_compiled_templates.py::test_template_inventory_is_derived_from_all_builtin_sources[client]",
+        "model/compiled_templates/template_inventory_is_derived_from_all_builtin_sources[client].txt",
+    ),
+    "the rendering of real models through the compiled templates stays model output": (
+        "tests/model/test_compiled_templates.py::test_model_rendering_uses_generated_renderers_with_real_model_objects",
+        "model/compiled_templates/model_rendering_uses_generated_renderers_with_real_model_objects.txt",
+    ),
 }
 
 

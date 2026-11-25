@@ -23,11 +23,17 @@ from datamodel_code_generator.parser._intersection import (
     intersect_multiple_of,
     intersects_all_of_constraints,
 )
-from datamodel_code_generator.parser._origins import with_unique_items
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
 from datamodel_code_generator.parser._value_keywords import ValueKeywordsHost
-from datamodel_code_generator.types import ANY, DataType, UnionIntFloat, build_union, untyped_value_data_type
+from datamodel_code_generator.types import (
+    ANY,
+    DataType,
+    UnionIntFloat,
+    _with_unique_items,
+    build_union,
+    untyped_value_data_type,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -204,7 +210,7 @@ def build_lightweight_array_type(  # noqa: PLR0917
     )
     if not item_types and not (is_homogeneous_tuple and tuple_item_count == 0):
         item_types = [untyped_value_data_type(DataType, parser.data_type_manager.untyped_value)]
-    array_type = with_unique_items(
+    array_type = _with_unique_items(
         parser.data_type(
             data_types=item_types,
             is_list=not is_homogeneous_tuple,

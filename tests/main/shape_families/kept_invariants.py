@@ -237,9 +237,19 @@ TYPES: Final[tuple[Kept, ...]] = (
         _MUTABLE_NARROWING,
         "union",
         INVALID_MUTABLE_OVERRIDE,
-        BOTH,
+        DEFAULT,
         ({"how": ("require",), "form": ("beside",), "child_first": (False,)},),
         "each variant redeclares the name its union member declares optional as a required string",
+    ),
+    Kept(
+        ISSUE,
+        _MUTABLE_NARROWING,
+        "union",
+        INVALID_MUTABLE_OVERRIDE,
+        PRESET,
+        ({"how": ("require",)},),
+        "the same for every child that requires the name under the preset, whose "
+        "--distribute-allof-over-object-branches gives each variant the required name",
     ),
     Kept(
         ISSUE,

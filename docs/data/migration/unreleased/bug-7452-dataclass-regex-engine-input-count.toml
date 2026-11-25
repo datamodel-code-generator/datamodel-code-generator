@@ -1,9 +1,0 @@
-[[change]]
-id = "bug-7452-dataclass-regex-engine-input-count"
-category = "docs-text"
-title = "The payload test lists the input of the dataclass regex engine test"
-summary = "One OpenAPI input was added for the dataclass regex engine test, so the count of discovered schema files moves."
-refs = ["#7452"]
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

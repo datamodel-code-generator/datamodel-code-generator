@@ -1,6 +1,0 @@
-[[change]]
-id = "apply-default-values-to-true-properties-input-count"
-extends = "apply-default-values-to-true-properties"
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

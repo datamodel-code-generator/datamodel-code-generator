@@ -173,7 +173,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "unless `legacy-ref-branch-without-site-parts`) and `JsonSchemaParser._parse_ref_branch_model` (the class "
             "of a `$ref` branch: with the allOf members beside its union, `parse_all_of` of both, unless that row; a "
             "`$ref` branch a discriminator expanded is one such class per subtype, read from the `$ref` the expansion "
-            "records on each member, `_expanded_variants` over `parser/_origins.py:with_subtype_ref`), "
+            "records on each member, `_expanded_variants` over `types.py:_with_subtype_ref`), "
             "`JsonSchemaParser._parse_all_of_union_parts` and `_all_of_union_combinations` (the union parts of an "
             "allOf, a part at `union_part-<p>` below the site, and a union model per combination of one branch of each "
             "over `branch_combinations` by model, unless `legacy-union-parts-joined`); `parser/_schema_refs.py`: "
@@ -220,7 +220,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/jsonschema.py", "JsonSchemaParser._parse_ref_branch_model"),
             Home("parser/jsonschema.py", "JsonSchemaParser.parse_all_of"),
             Home("parser/jsonschema.py", "_expanded_variants"),
-            Home("parser/_origins.py", "with_subtype_ref"),
+            Home("types.py", "_with_subtype_ref"),
             Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_union_parts"),
             Home("parser/jsonschema.py", "JsonSchemaParser._all_of_union_combinations"),
             Home("parser/_schema_refs.py", "intersect_ref_siblings_schema"),
@@ -2749,7 +2749,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         adapters=(
             "every caller calls the core: the walks of a type tree (`types.py`: `DataType.walk`, `_link_parts`; "
-            "`_parse_memo.py:ParseMemo._references`; `parser/_origins.py:with_type_origin`; `parser/generation.py`: "
+            "`_parse_memo.py:ParseMemo._references`; `types.py:_with_type_origin`; `parser/generation.py`: "
             "`_tree_nodes`, `GenerationIndex.inlined_holders_of`; `parser/_passes/render_prep.py`: "
             "`_contains_model_reference`, `_iter_alias_references`; `parser/_passes/modules.py:_value_positions`; "
             "`parser/_type_overrides.py:apply_override_to_data_type`; "
@@ -2771,7 +2771,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("types.py", "DataType.walk"),
             Home("types.py", "_link_parts"),
             Home("_parse_memo.py", "ParseMemo._references"),
-            Home("parser/_origins.py", "with_type_origin"),
+            Home("types.py", "_with_type_origin"),
             Home("parser/generation.py", "_tree_nodes"),
             Home("parser/generation.py", "GenerationIndex.inlined_holders_of"),
             Home("parser/_passes/render_prep.py", "_contains_model_reference"),

@@ -1625,11 +1625,7 @@ MERGE_RUNTIME_EXPRESSION_IMPORTS = PassDecl(
             "both add module imports; runtime expressions come after validator helpers",
         ),
     ),
-    trigger=Trigger(
-        "a pass created a runtime expression (_has_runtime_expressions)",
-        frozenset(),
-        "the exact form walks every data type; the producers of a runtime expression set the flag instead",
-    ),
+    condition="a pass created a runtime expression (_has_runtime_expressions)",
 )
 REMOVE_UNUSED_IMPORTS = PassDecl(
     "remove_unused_imports",

@@ -154,6 +154,8 @@ IMPORT_LEDGER = "parser/_imports_plan.py"
 """The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
 RULES = ("EFF201", "IMP101", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
+FAIL_ON = "warning"
+"""The severity that fails the check: contract findings are heuristic warnings, which heki's default lets pass."""
 SHARED_PRODUCERS = (
     ("parser/_schema_graph.py", "SchemaGraphBuilder.schema"),
     ("parser/_schema_graph.py", "SchemaGraphBuilder.pointer_value"),
@@ -1133,7 +1135,7 @@ def generate() -> str:
         "",
         "[lint]",
         f"select = {_array(RULES)}",
-        'fail-on = "warning"',
+        f"fail-on = {_quote(FAIL_ON)}",
         "",
         "[imports]",
         f"cycle-edges = {_array(IMPORT_EDGES)}",
