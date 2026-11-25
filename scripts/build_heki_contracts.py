@@ -969,7 +969,7 @@ def import_boundary_contracts(repo: Repo) -> list[str]:
     ]
     for layer, (modules, why) in _LEAF_IMPORTS.items():
         allowed = ["the standard library", "typing_extensions", *(f"{PACKAGE}.{module}" for module in modules)]
-        keys = {"allowed_imports": ["<stdlib>", *_below("typing_extensions", *allowed[2:])]}
+        keys: dict[str, object] = {"allowed_imports": ["<stdlib>", *_below("typing_extensions", *allowed[2:])]}
         rows.append((f"{layer}-import", layers[layer], keys, f"{why}: import only {_listing(allowed)}"))
     rows += [
         (
