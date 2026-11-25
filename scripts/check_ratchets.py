@@ -55,9 +55,11 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, heki's baseline (the sum of the site counts of its entries:
-  ``allowlist:heki-baseline:EFF201`` for the reads of the environment the package runs in, which no other key budgets,
-  ``allowlist:heki-baseline`` for the rest), and the allowlists of the test style and architecture checks
-  (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
+  ``allowlist:heki-baseline:EFF201`` for the effect boundaries, the reads of the environment the package runs in and
+  the fact writes of the passes, which no other key budgets, counted per kind of boundary so that a rise prints the
+  help of the boundaries it comes from; ``allowlist:heki-baseline`` for the rest), and the allowlists of the test
+  style and architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot
+  read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -150,7 +152,27 @@ ENVIRONMENT_ADVICE = (
     "not on the interpreter, the platform, a variable or an installed package. A read that belongs to the runtime "
     "itself (an optional dependency) is paid for by removing another one."
 )
-"""How to fix a read of the environment: the advice of its key, and the help of heki's environment boundary."""
+"""How to fix a read of the environment: the help of heki's environment boundary."""
+PASS_ADVICE = (
+    "A pass writes only the facts its declaration in scripts/pass_decls.py lists, before they are final: declare the "
+    "fact, or move the write to a pass that runs before its freeze point."
+)
+"""How to fix a write a pass does not declare: the help of heki's boundary of each pass."""
+GLUE_ADVICE = "The pipeline between the passes writes no fact: move the write into a pass and declare it."
+"""How to fix a fact write between the passes: the help of heki's ``pass-glue`` boundary."""
+DECISION_READ_ADVICE = (
+    "A decision reads only the facts final at B1, never a render fact: read what it needs of such an attribute through "
+    "a member that DECISION_ACCESSORS of scripts/fact_tables.py lists."
+)
+"""How to fix a read of a render fact in a decision: the help of heki's ``decisions-read-final-facts`` boundary."""
+BOUNDARY_ADVICE = {
+    "no-environment-reads": ENVIRONMENT_ADVICE,
+    "pass": PASS_ADVICE,
+    "pass-glue": GLUE_ADVICE,
+    "decisions-read-final-facts": DECISION_READ_ADVICE,
+}
+"""The help of each kind of heki effect boundary (its name up to the first ``:``), which the rise of a baseline entry of
+that kind prints too."""
 EXPECTED_ROOT = "tests/data/expected"
 TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
@@ -355,7 +377,6 @@ ADVICE = {
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
     "type-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "heki-ignore": "Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.",
-    "allowlist:heki-baseline:EFF201": ENVIRONMENT_ADVICE,
     "cast": "Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().",
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
@@ -982,19 +1003,36 @@ def _method_owner(statement: ast.stmt, names: frozenset[str]) -> str:
 def _heki_baseline_tally(tally: Tally, root: Path) -> None:
     """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule.
 
-    A file that is not entries with integer counts is unreadable.
+    The sites of those rules count per kind of the boundary their entry names (`boundary_site`), so a rise names the
+    boundaries it comes from and prints their help. A file that is not entries with integer counts is unreadable.
     """
     file = root / HEKI_BASELINE
     try:
         entries = tomllib.loads(file.read_text(encoding="utf-8")).get("entries", []) if file.is_file() else []
-        counted = [(entry.get("count"), entry.get("rule_code")) for entry in entries]
+        counted = [(entry.get("count"), entry.get("rule_code"), entry.get("target", "")) for entry in entries]
     except (tomllib.TOMLDecodeError, AttributeError, TypeError):
-        counted = [(None, None)]
-    for count, rule in counted:
+        counted = [(None, None, "")]
+    for count, rule, target in counted:
         own = f":{rule}" if rule in HEKI_OWN_KEY_RULES else ""
-        key = "allowlist:heki-baseline" + (own if type(count) is int else ":unreadable")
-        for _ in range(count if type(count) is int else 1):
-            tally.add(key, HEKI_BASELINE)
+        readable = type(count) is int
+        key = "allowlist:heki-baseline" + (own if readable else ":unreadable")
+        site = boundary_site(boundary_kind(str(target))) if own and readable else HEKI_BASELINE
+        for _ in range(count if readable else 1):
+            tally.add(key, site)
+
+
+def boundary_kind(name: str) -> str:
+    """Return the kind of a heki effect boundary from its name or a baseline target: the part before the first ``:``.
+
+    ``pass:<pass>`` and ``pass:<pass>:<row>`` are of kind ``pass``, ``no-environment-reads:reads-environment`` of kind
+    ``no-environment-reads``.
+    """
+    return name.partition(":")[0]
+
+
+def boundary_site(kind: str) -> str:
+    """Return where the rise of a key counts the baseline sites of one kind of boundary: the baseline, with the kind."""
+    return f"{HEKI_BASELINE} ({kind})" if kind else HEKI_BASELINE
 
 
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
@@ -1335,12 +1373,17 @@ def _rise_lines(
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
-    advice = ADVICE.get(key, ADVICE.get(_kind(key), ""))
-    if key in judging.absolute:
-        lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
+    absolute = key in judging.absolute
+    if absolute:
         changes = [(path, base.get(key, {}).get(path, 0), count) for path, count in sorted(head[key].items())]
     else:
         changes = _risen(key, base, head, judging.lanes)
+    by_site = {boundary_site(kind): help_text for kind, help_text in BOUNDARY_ADVICE.items()}
+    boundaries = dict.fromkeys(by_site[path] for path, _, _ in changes if path in by_site)
+    advice = " ".join(boundaries) or ADVICE.get(key, ADVICE.get(_kind(key), ""))
+    if absolute:
+        lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
+    else:
         added = f"{len(changes)} new {'line' if len(changes) == 1 else 'lines'}"
         change = f"has {added}" if _kind(key) == STORED_LIST else f"rose by {after - before}"
         lines = ["", f"{key} {change} ({before} -> {after}). {advice}"]

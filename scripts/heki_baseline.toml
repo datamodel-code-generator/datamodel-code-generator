@@ -7241,6 +7241,13 @@ count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
+qualname = "apply_discriminator_type"
+rule_code = "EFF201"
+target = "pass:apply_discriminator_type:DataModelFieldBase._alias_resolution_class_name"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "change_field_name"
 rule_code = "MUT204"
 target = "datamodel_code_generator.reference.ModelResolver._[!_]*"

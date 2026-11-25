@@ -1622,6 +1622,26 @@ def test_pass_boundaries_name_the_function_each_decision_runs() -> None:
     assert str(stopped.value) == "DECISION_DECLS: parser/_unique_sets.py makes no DecisionPass named omit_held_null"
 
 
+@pytest.mark.allow_direct_assert("a boundary without the help of its kind must fail, not be stored as an output")
+def test_each_effect_boundary_carries_the_help_its_ratchet_prints() -> None:
+    """Each effect boundary's message is the help of its kind, which the rise of its baseline sites prints too."""
+    boundaries = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))["effect-boundaries"]
+    targets = [
+        entry["target"]
+        for entry in tomllib.loads(BASELINE.read_text(encoding="utf-8"))["entries"]
+        if entry["rule_code"] in check_ratchets.HEKI_OWN_KEY_RULES
+    ]
+    kinds = {check_ratchets.boundary_kind(boundary["name"]) for boundary in boundaries}
+
+    assert {
+        boundary["name"]: boundary.get("message")
+        for boundary in boundaries
+        if boundary.get("message") != check_ratchets.BOUNDARY_ADVICE.get(check_ratchets.boundary_kind(boundary["name"]))
+    } == {}
+    assert kinds == set(check_ratchets.BOUNDARY_ADVICE)
+    assert {check_ratchets.boundary_kind(target) for target in targets} <= kinds
+
+
 @pytest.mark.allow_direct_assert("a finding the baseline keeps without a reason must fail, not be stored as an output")
 def test_the_baseline_keeps_the_known_pass_findings_only() -> None:
     """The findings of the pass boundaries in the baseline are those ``KNOWN_FINDINGS`` lists with what removes them.

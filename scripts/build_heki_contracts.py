@@ -83,8 +83,12 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   (``tests/checks/finality.py``), which holds every rule.
 - ``effect-boundaries`` (``EFF201``): no function or module body of the package reads the environment it runs in
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
-  depends on the environment cost review rounds. Each report carries the advice of the ratchet key that counts these
-  sites, ``allowlist:heki-baseline:EFF201`` of ``scripts/check_ratchets.py``.
+  depends on the environment cost review rounds.
+
+Each effect boundary's report carries the help of its kind, ``BOUNDARY_ADVICE`` of ``scripts/check_ratchets.py``
+(``ENVIRONMENT_ADVICE``, ``PASS_ADVICE``, ``GLUE_ADVICE``, ``DECISION_READ_ADVICE``): the ratchet key that counts
+the baseline sites of these boundaries, ``allowlist:heki-baseline:EFF201``, prints the same help for the kinds whose
+sites rose.
 
 The file also sets ``required-version`` to at least the heki that the ``heki`` dependency group of pyproject.toml pins,
 so an older heki stops with a clear error instead of failing on a key it does not know.
@@ -105,7 +109,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import PackageIndex, _protocol_bases, bases
 from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
-from scripts.check_ratchets import ENVIRONMENT_ADVICE
+from scripts.check_ratchets import DECISION_READ_ADVICE, ENVIRONMENT_ADVICE, GLUE_ADVICE, PASS_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
@@ -515,6 +519,7 @@ def decision_contracts(
             forbid=["reads-targets"],
             read_targets=targets,
             allowed_callees=[DECISION_WRITER, *callees],
+            message=DECISION_READ_ADVICE,
         ),
         _table(
             "read-owners",
@@ -837,11 +842,6 @@ The facts final at B1 stay writable for the decisions that declare them until th
 PHASE_TARGET = "GenerationStore.phase"
 """The phase of the pipeline: no pass enters a phase, the pipeline does."""
 FINALITY_KINDS = (FactKind.FACT, FactKind.PRESENTATION)
-PASS_ADVICE = (
-    "a pass writes only the facts its declaration in scripts/pass_decls.py lists, before they are final: declare the "
-    "fact, or move the write to a pass that runs before its freeze point"
-)
-GLUE_ADVICE = "the pipeline between the passes writes no fact: move the write into a pass and declare it"
 
 
 class KnownFinding(NamedTuple):
@@ -877,6 +877,10 @@ _COPIED_ROWS: Final = (
 )
 """The rows ``override_required_field`` writes on the copy of an inherited field before the copy replaces the
 placeholder; heki counts each as a write of the pass's input."""
+_FRESH_FIELD: Final = (
+    "a heki that reads the field Parser._build_field constructs as a fresh object: apply_discriminator_type records "
+    "the alias scope of the tag field it builds and appends in the same pass, never of a field of the input"
+)
 KNOWN_FINDINGS: Final = (
     KnownFinding("pass:name_final_classes_of_additional_properties:DataModel._internal_template_data", _B2_FREEZE),
     KnownFinding("pass:refresh_sequence_interface_after_renames:DataModel._internal_template_data", _B2_FREEZE),
@@ -896,13 +900,15 @@ KNOWN_FINDINGS: Final = (
         "#7417: the module loop settles the update actions of each module, outside every pass",
     ),
     *(KnownFinding(f"pass:override_required_field:{row}", _FRESH_COPY) for row in _COPIED_ROWS),
+    KnownFinding("pass:apply_discriminator_type:DataModelFieldBase._alias_resolution_class_name", _FRESH_FIELD),
 )
 """The findings of the pass boundaries that the baseline keeps; the baseline holds exactly these.
 
 Constructor ordering, after B1, gives a required field back the ``init`` entry (``REQUIRED``) its base left out; the
 dataclass field plan will hold it. The import passes write the backend config of the template data and the order of
 the nested default factories after B2, where those facts are final. ``override_required_field`` writes the copy of an
-inherited field, which heki cannot tell from the field it copies.
+inherited field, which heki cannot tell from the field it copies, and ``apply_discriminator_type`` the tag field it
+builds, which heki cannot tell from a field of the input.
 """
 
 

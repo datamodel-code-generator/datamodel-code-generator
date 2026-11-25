@@ -140,6 +140,22 @@ target = "no-environment-reads:reads-environment"
 count = 1
 """
 """A baseline entry of the environment boundary, whose sites count under their own key."""
+HEKI_PASS_BOUNDARIES = """
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "run"
+rule_code = "EFF201"
+target = "pass:run:Model.fields"
+count = 1
+
+[[entries]]
+path = "src/pkg/a.py"
+qualname = "loop"
+rule_code = "EFF201"
+target = "pass-glue:Parser.state"
+count = 1
+"""
+"""Baseline entries of a pass boundary and of the glue between the passes, which count under the environment's key."""
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -655,6 +671,11 @@ def show(flag: bool) -> None:
     "heki-baseline-environment-swap": {
         "base": {"scripts/heki_baseline.toml": HEKI_BASELINE.replace("count = 1", "count = 2") + HEKI_ENVIRONMENT},
         "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT.replace("count = 1", "count = 2")},
+        "args": ["--enforce"],
+    },
+    "heki-baseline-pass-boundaries": {
+        "base": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT},
+        "head": {"scripts/heki_baseline.toml": HEKI_BASELINE + HEKI_ENVIRONMENT + HEKI_PASS_BOUNDARIES},
         "args": ["--enforce"],
     },
     "heki-baseline-shrinks": {
