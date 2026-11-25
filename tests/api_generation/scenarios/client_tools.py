@@ -8,7 +8,6 @@ credential the client placed where the API echoes one, and strict models take th
 
 from __future__ import annotations
 
-import importlib
 import json
 from datetime import date
 from typing import TYPE_CHECKING
@@ -210,7 +209,7 @@ def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
         lines.extend(
             f"  schema {name} = {_shown(table.schema(name))}" for name in ("pets_create_pet", "owners_get_owner")
         )
-    models = importlib.import_module(f"{package.__name__}_models")
+    models = import_generated(f"{package.__name__}_models", copied=True)
     owner = models.Owner.model_json_schema()["properties"]["description"]
     lines.extend((
         f"  model Pet description = {models.Pet.model_json_schema()['description']!r}",
