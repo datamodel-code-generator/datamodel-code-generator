@@ -14,6 +14,6 @@ ruff-config:ignore:INP                                    1       1       0
 ruff-config:per-file:tests/**/*.py:S101                   1       1       0
 ruff:PLC0415@src                                          1       1       0
 
-allowlist:heki-baseline:EFF201:unreadable in scripts/heki_baseline.toml (no boundary kind 'new-boundary'): the counter cannot read it. Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer counts), so that the counter can read it.
+allowlist:heki-baseline:EFF201:unreadable in scripts/heki_baseline.toml (no boundary kind 'new-boundary'): the counter cannot read it. The baseline holds an effect-boundary entry of a kind this script has no help for: add the kind and its help to BOUNDARY_ADVICE, so that a rise of its key says how to fix it.
 
 Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

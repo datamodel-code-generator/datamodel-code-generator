@@ -2,7 +2,7 @@
 id = "eff201-ratchet-kinds"
 category = "harness"
 title = "Budget the heki effect boundaries of each kind under a ratchet key of its own"
-summary = "The check_ratchets script counts the baseline sites of each effect boundary kind under its own key, so a removed pass-boundary site no longer pays for a new read of the environment, and a baseline entry of an unknown kind is unreadable; the package writes the same output."
+summary = "The check_ratchets script counts the baseline sites of each effect boundary kind under its own key, so a removed pass-boundary site no longer pays for a new read of the environment, and a baseline entry of an unknown kind is unreadable and says to add the kind to BOUNDARY_ADVICE; the package writes the same output."
 covers = [
     "check_ratchets_script/check_ratchets_against_base[heki-baseline-effect-boundaries-shrink].txt",
     "check_ratchets_script/check_ratchets_against_base[heki-baseline-environment-swap].txt",

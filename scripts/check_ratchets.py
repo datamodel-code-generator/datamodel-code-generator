@@ -445,6 +445,10 @@ ADVICE = {
         "The source model refuses the file (the error is named), so no source rule can read its sites. Fix the file, "
         "or give the model a rule and a form for it (scripts/_source_model.py, tests/data/source_forms/)."
     ),
+    f"unreadable-{heki_boundary_key('EFF201', 'unreadable')}": (
+        "The baseline holds an effect-boundary entry of a kind this script has no help for: add the kind and its help "
+        "to BOUNDARY_ADVICE, so that a rise of its key says how to fix it."
+    ),
     "unreadable-allowlist": (
         "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
         "counts), so that the counter can read it."
@@ -1473,6 +1477,11 @@ def _report_copy(
     return [*header, *body] if body else []
 
 
+def _unreadable_advice(key: str) -> str:
+    """Return how to fix an unreadable setting: the advice of its key, else of its family, else the general one."""
+    return ADVICE.get(f"unreadable-{key}", ADVICE.get(f"unreadable-{key.partition(':')[0]}", ADVICE["unreadable"]))
+
+
 def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
     """Describe the settings the counter could not read: what they hide cannot be counted, so they always fail."""
     return [
@@ -1481,10 +1490,7 @@ def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
         if _kind(key) == "unreadable"
         for line in (
             "",
-            (
-                f"{key} in {', '.join(files)}: the counter cannot read it. "
-                f"{ADVICE.get('unreadable-' + key.partition(':')[0], ADVICE['unreadable'])}"
-            ),
+            f"{key} in {', '.join(files)}: the counter cannot read it. {_unreadable_advice(key)}",
         )
     ]
 
