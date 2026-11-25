@@ -619,6 +619,92 @@ def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Pat
     ), result.stderr
 
 
+SEEDED_CACHED_PROPERTIES = """\
+from functools import cached_property
+
+from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+from datamodel_code_generator.reference import Reference
+from datamodel_code_generator.types import DataType
+
+
+class Model(DataModel):
+    @cached_property
+    def label(self) -> str:
+        return ""
+
+
+class Type(DataType):
+    @cached_property
+    def label(self) -> str:
+        return ""
+
+
+class Field(DataModelFieldBase):
+    @cached_property
+    def label(self) -> str:
+        return ""
+
+
+class Link(Reference):
+    @cached_property
+    def label(self) -> str:
+        return ""
+
+
+class Helper:
+    @cached_property
+    def label(self) -> str:
+        return ""
+"""
+"""Cached properties of classes deriving from owners of fact rows, and of a class the table does not describe."""
+SEEDED_CACHES = {
+    "pyproject.toml": SEEDED_PACKAGE["pyproject.toml"],
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/model/__init__.py": "",
+    f"{PACKAGE}/model/base.py": (
+        "from functools import cached_property\n\n\n"
+        'class DataModel:\n    @cached_property\n    def path(self) -> str:\n        return ""\n\n\n'
+        "class DataModelFieldBase:\n    pass\n"
+    ),
+    f"{PACKAGE}/types.py": "class DataType:\n    pass\n",
+    f"{PACKAGE}/reference.py": "class Reference:\n    pass\n",
+    f"{PACKAGE}/model/cached.py": SEEDED_CACHED_PROPERTIES,
+}
+"""A package whose ``DataModel`` has the cached property of the cache row ``DataModel.path``, and whose
+``model/cached.py`` holds `SEEDED_CACHED_PROPERTIES`; ``DataType``, ``DataModelFieldBase`` and ``Reference`` own rows
+of other kinds."""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_a_cached_property_on_a_class_the_table_describes(tmp_path: Path) -> None:
+    """A ``cached_property`` on an owner of a fact row or a class deriving from one is a finding, a cache row's too.
+
+    A cached property writes its own name outside the store, so the baseline holds the ones of today's cache rows; the
+    one of a class the table does not describe is none.
+    """
+    for name, text in SEEDED_CACHES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+
+    result = _heki("--output-format", "json", cwd=tmp_path)
+
+    found = [
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["line"])
+        for item in json.loads(result.stdout)
+    ]
+    assert (result.returncode, found) == (
+        1,
+        [
+            ("base.py", "DataModel.path", "MUT201", 5),
+            ("cached.py", "Model.label", "MUT201", 9),
+            ("cached.py", "Type.label", "MUT201", 15),
+            ("cached.py", "Field.label", "MUT201", 21),
+            ("cached.py", "Link.label", "MUT201", 27),
+        ],
+    ), result.stderr
+
+
 @pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
 def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
     """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.

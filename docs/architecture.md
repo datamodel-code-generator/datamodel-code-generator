@@ -1306,9 +1306,9 @@ heki checks the writes against that table: `scripts/build_heki_contracts.py` tur
 `ModuleContext.models`), into `write-owners` contracts of `scripts/heki.toml` that only the store operations a row
 names, and the store module, may write. heki judges each write in the function that makes it (`attribution =
 "lexical"`): an assignment, `del`, augmented assignment, `setattr` with a literal name, an item write or a list, dict
-or set mutator, also through an alias, a `__dict__` entry whose key a row names, and a `cached_property` on an owner of
-a cache row; a write through an object or a name it cannot resolve is a finding of its own. Construction writes to
-the object being built are allowed. `scripts/heki_baseline.toml` records the writes that bypass the store today by
+or set mutator, also through an alias, a `__dict__` entry whose key a row names, and a `cached_property` on a
+model-graph owner of any row or a class deriving from one (it writes its own name into `__dict__`); a write through an
+object or a name it cannot resolve is a finding of its own. Construction writes to the object being built are allowed. `scripts/heki_baseline.toml` records the writes that bypass the store today by
 path, function, rule and target, with a count each; it only shrinks, so a change that routes a write through the store
 removes its entry, and a new write outside the store fails. The methods a store operation runs to write the graph,
 and the bookkeeping of a reference (`STORE_MEMBERS` of the same file), get contracts of their own: only the store, the

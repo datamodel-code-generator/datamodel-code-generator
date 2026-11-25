@@ -300,7 +300,7 @@ def enclosing(field):
 
 
 def test_dict_key_writes_of_model_code(tmp_path: Path) -> None:
-    """Model code writes its own keys through ``self``; a cached property writes its name."""
+    """Model code writes its own keys through ``self``; a cached property is heki's (the cache contract forbids it)."""
     source = tmp_path / "model.py"
     source.write_text(
         """
@@ -326,11 +326,7 @@ class Field:
 """,
     )
 
-    assert _key_writes(source, "model") == snapshot("""\
-10 Field.path path
-7 Field.mark _marked
-19 Field.Inner.nested nested
-""")
+    assert _key_writes(source, "model") == snapshot("7 Field.mark _marked\n")
 
 
 def test_checker_uses_generation_store_api_surface() -> None:
