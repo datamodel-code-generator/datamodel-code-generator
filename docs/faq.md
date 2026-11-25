@@ -1844,12 +1844,12 @@ class Tree(RootModel[Node]):
 
 ### Crash and import fixes in the default output
 
-These fixes apply without any option: the old result could not be generated or imported, or its model rejected every
-payload its schema allows, so nothing could depend on it.
+These fixes apply without any option: the old result could not be generated or imported, or it gave a property the type
+`None` where its schema allows other values, so nothing that worked changes.
 
 - A property that a parent makes required, in a subclass whose module is processed before the parent's, takes the type
-  the parent inherits instead of `None`, which rejected every valid value (pydantic, dataclasses and msgspec; TypedDict
-  output stays as it was)
+  the parent inherits instead of `None`: pydantic and msgspec rejected every value but null, and dataclasses, which do not
+  validate, only had the wrong annotation. TypedDict output stays as it was
   ([#7532](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7532)).
 - Map keys that reference a root model are typed by the root type instead of failing ([#5017](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5017)).
 - Object bodies in the `paths` scope of the legacy parser now get models ([#5024](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5024)).
