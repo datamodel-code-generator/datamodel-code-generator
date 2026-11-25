@@ -159,13 +159,11 @@ def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
 def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
     """Return a JSON value, a result or an error's body, with no placed credential in its strings, keys or numbers.
 
-    A number whose text holds one becomes the text with it replaced.
+    A number or Boolean whose JSON text holds one becomes that text with it replaced.
     """
     match value:
         case str():
             return _redacted(value, placed)
-        case bool():
-            return value
         case int() | float():
             text = json_bytes(value).decode()
             shown = _redacted(text, placed)
