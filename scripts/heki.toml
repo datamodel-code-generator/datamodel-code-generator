@@ -6262,7 +6262,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:types.py:_copied_node"
 targets = ["datamodel_code_generator.types._copied_node"]
-allowed-callers = ["datamodel_code_generator.types:*", "datamodel_code_generator.types:DataTypeManager.copy_data_type", "datamodel_code_generator.types:DataTypeManager.copy_data_type.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes.modules:collapse_root_models_in_scope", "datamodel_code_generator.parser._passes.modules:collapse_root_models_in_scope.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._copy_schema_runtime_validation_for_variant", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._copy_schema_runtime_validation_for_variant.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_inherited_field_type", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_inherited_field_type.*", "datamodel_code_generator.types:*", "datamodel_code_generator.types:DataTypeManager.copy_data_type", "datamodel_code_generator.types:DataTypeManager.copy_data_type.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"
@@ -6270,7 +6270,7 @@ attribution = "lexical"
 [[call-owners]]
 name = "home:types.py:_copy_data_type"
 targets = ["datamodel_code_generator.types._copy_data_type"]
-allowed-callers = ["datamodel_code_generator.types:*", "datamodel_code_generator.types:DataTypeManager.copy_data_type", "datamodel_code_generator.types:DataTypeManager.copy_data_type.*"]
+allowed-callers = ["datamodel_code_generator.parser._passes.modules:collapse_root_models_in_scope", "datamodel_code_generator.parser._passes.modules:collapse_root_models_in_scope.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._copy_schema_runtime_validation_for_variant", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._copy_schema_runtime_validation_for_variant.*", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_inherited_field_type", "datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_inherited_field_type.*", "datamodel_code_generator.types:*", "datamodel_code_generator.types:DataTypeManager.copy_data_type", "datamodel_code_generator.types:DataTypeManager.copy_data_type.*"]
 references = "reads"
 subclasses = false
 attribution = "lexical"
