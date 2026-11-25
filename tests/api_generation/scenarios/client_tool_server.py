@@ -3,7 +3,8 @@
 An MCP client lists each tool with the JSON schemas of the models and the annotations of its HTTP method, and calls
 it: a result is structured content that matches its output schema, a refused argument or a failed call is a result
 marked as an error, and an unknown tool is a protocol error. No message the server sends holds a credential the client
-placed, even where the API echoes one, and document text reaches tool descriptions as the description options say.
+placed, even where the API echoes one, a result whose model refuses the text that replaced one is a result marked as an
+error too, and document text reaches tool descriptions as the description options say.
 """
 
 from __future__ import annotations
@@ -136,6 +137,27 @@ async def _listed_and_called(package: ModuleType, module: ModuleType, lines: lis
             await session.call_tool("pets_create_pet", {"body": {"name": "Rex", "species": "dog"}})
         except MCPError as error:
             lines.append(f"  read-only create ! {error.code} {error.message}")
+    await _redacted_results(package, module, exchange, lines)
+
+
+async def _redacted_results(package: ModuleType, module: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """Call a tool whose result echoes the API key: in a name it is structured content, as an integer id an error.
+
+    The MCP client checks the structured content against the output schema, which `[redacted]` in an integer fails.
+    """
+    async with (
+        exchange.async_client() as http,
+        package.AsyncClient(http_client=http, api_key="123456", max_retries=0) as api,
+        MCPClient(module.server(api)) as session,
+    ):
+        for label, pet in (
+            ("credential in a name", {**_PET, "name": "Rex 123456"}),
+            ("credential id", {**_PET, "id": 123456}),
+        ):
+            exchange.respond(json_response(200, pet))
+            result = await session.call_tool("pets_get_pet", {"petId": 3})
+            structured = _shown(result.structured_content)
+            lines.append(f"  {label} error={result.is_error} {structured} {[item.text for item in result.content]}")
 
 
 def _canary(package: ModuleType, module: ModuleType, lines: list[str]) -> None:

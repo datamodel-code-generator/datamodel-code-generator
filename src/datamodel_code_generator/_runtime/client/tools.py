@@ -6,8 +6,8 @@ argument as JSON through the codec of its type, the mode the schemas describe, c
 the result as its codec writes it. A read-only table leaves out every tool whose HTTP method is not safe. A failure of
 the client returns its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or
 cause; every credential the client placed on the call's requests is replaced in the result, and in the request ID and
-the body of a failure, so an API that echoes one does not hand it to the caller; arguments a tool refuses return each
-problem.
+the body of a failure, so an API that echoes one does not hand it to the caller, and a result its model refuses once
+they are replaced returns an error value that holds it; arguments a tool refuses return each problem.
 """
 
 from __future__ import annotations
@@ -89,6 +89,11 @@ def invalid(argument: str, error: ValidationError) -> list[JSONValue]:
 def refused(problems: list[JSONValue]) -> JSONValue:
     """Return the error value of a call whose arguments the tool refuses."""
     return {"error": {"type": "invalid_arguments", "problems": problems}}
+
+
+def redacted_result(value: JSONValue) -> JSONValue:
+    """Return the error value of a result that its model refuses once the credentials placed in it are replaced."""
+    return {"error": {"type": "redacted_result", "result": value}}
 
 
 def failed(error: SDKError, placed: Collection[str]) -> JSONValue:
@@ -290,7 +295,11 @@ class ToolPlan:
 
 @dataclass(frozen=True, slots=True)
 class ToolOutcome:
-    """What a call of a tool returned: its JSON value, and whether that is the error value of a refusal or failure."""
+    """What a call of a tool returned: its JSON value, and whether that is an error value.
+
+    An error value is that of a refusal, of a failure, or of a result its model refuses with the placed credentials
+    replaced.
+    """
 
     value: JSONValue
     error: bool = False
@@ -443,7 +452,7 @@ class ToolTable(_Table[ClientT]):
                 result = getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-            return ToolOutcome(_cleared(_dumped(plan, result), placed))
+            return _answered(plan, result, placed)
 
 
 class AsyncToolTable(_Table[ClientT]):
@@ -467,7 +476,7 @@ class AsyncToolTable(_Table[ClientT]):
                 result = await getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-            return ToolOutcome(_cleared(_dumped(plan, result), placed))
+            return _answered(plan, result, placed)
 
 
 def _adapter(codec: ToolCodec) -> TypeAdapter[object]:
@@ -482,6 +491,23 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 def _dumped(plan: ToolPlan, result: Never) -> JSONValue:
     """Return a tool's result as the JSON its codec writes, parsed into builtin values."""
     return json_value(plan.result.encode(result))
+
+
+def _answered(plan: ToolPlan, result: Never, placed: Collection[str]) -> ToolOutcome:
+    """Return the outcome of a call the client answered: its result without the credentials placed on its requests.
+
+    A result they were replaced in is validated again as JSON through its model, since the text that replaces one may
+    no longer match the result's schema, such as an integer that became text: one the model refuses is the error value
+    of `redacted_result`. A result that held none is returned as the codec wrote it, without a second validation.
+    """
+    value = _dumped(plan, result)
+    if (cleared := _cleared(value, placed)) == value:
+        return ToolOutcome(value)
+    try:
+        plan.result.decode(json_bytes(cleared))
+    except ValidationError:
+        return ToolOutcome(redacted_result(cleared), error=True)
+    return ToolOutcome(cleared)
 
 
 def _entry(plan: ToolPlan) -> dict[str, JSONValue]:

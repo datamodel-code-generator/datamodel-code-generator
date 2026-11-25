@@ -3,8 +3,9 @@
 A call sends what the client's method sends: the tool takes the operation's parameters and body, never the parameter at
 the API key's position or the request options, so the credential the client holds is the one sent. A refused argument,
 a failed call, and a tool the table has not each return or raise what the tool table documents. An error value shows no
-credential the client placed where the API echoes one, nor does a result that echoes one, and strict models take the
-JSON values their schemas describe.
+credential the client placed where the API echoes one, nor does a result that echoes one; such a result whose model
+refuses the text that replaced the credential is an error value. Strict models take the JSON values their schemas
+describe.
 """
 
 from __future__ import annotations
@@ -104,11 +105,16 @@ def tools(package: ModuleType, lines: list[str]) -> None:
 
 
 def _spelled_credentials(package: ModuleType, module: ModuleType, exchange: Exchange, lines: list[str]) -> None:
-    """Echo a credential as a JSON number, in escapes of a JSON body, and slash-escaped in a body that is not JSON."""
+    """Echo a credential as a JSON number, in escapes of a JSON body, and slash-escaped in a body that is not JSON.
+
+    A result whose integer or UUID was the credential is an error value, since its model refuses `[redacted]` there.
+    """
     with exchange.client() as http, package.Client(http_client=http, api_key="123456", max_retries=0) as api:
         table = module.Toolset(api)
         exchange.respond(json_response(200, {**_PET, "id": 123456}))
         lines.append(f"  numeric credential result = {_shown(table.call('pets_get_pet', {'petId': 3}))}")
+        exchange.respond(json_response(200, {**_PET, "name": "Rex 123456"}))
+        lines.append(f"  credential in a name = {_shown(table.call('pets_get_pet', {'petId': 3}))}")
         spelled = b'{"number": 123456, "escaped": "\\u0031\\u0032\\u0033\\u0034\\u0035\\u0036", "other": 1234}'
         exchange.respond(raw_response(401, spelled, "application/json"))
         lines.append(f"  numeric credential body = {_shown(table.call('pets_get_pet', {'petId': 3})['error']['body'])}")
@@ -116,6 +122,10 @@ def _spelled_credentials(package: ModuleType, module: ModuleType, exchange: Exch
         table = module.Toolset(api)
         exchange.respond(raw_response(401, b'{"detail": "key secret\\/key+1 refused"', "application/json"))
         lines.append(f"  slash-escaped body = {_shown(table.call('pets_get_pet', {'petId': 3})['error']['body'])}")
+    with exchange.client() as http, package.Client(http_client=http, api_key=_OWNER, max_retries=0) as api:
+        table = module.Toolset(api)
+        exchange.respond(json_response(200, {"id": _OWNER, "pets": [_PET]}))
+        lines.append(f"  owner credential result = {_shown(table.call('owners_get_owner', {'ownerId': _OWNER}))}")
 
 
 def _calls(module: ModuleType, api: object, exchange: Exchange, lines: list[str]) -> None:
@@ -180,7 +190,10 @@ def _calls(module: ModuleType, api: object, exchange: Exchange, lines: list[str]
 
 
 async def _async_tools(package: ModuleType, module: ModuleType, lines: list[str]) -> None:
-    """Call tools through the asyncio table: a result and a failure, which it returns as the synchronous one does."""
+    """Call tools through the asyncio table: a result and a failure, which it returns as the synchronous one does.
+
+    A credential that is an enum value of the result is an error value, and one that is a name stays a result.
+    """
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as http,
@@ -193,6 +206,14 @@ async def _async_tools(package: ModuleType, module: ModuleType, lines: list[str]
         await arecord(lines, "async get missing", lambda: table.call("pets_get_pet", {"petId": 4}))
         await arecord(lines, "async refused", lambda: table.call("pets_get_pet", {"petId": "x"}))
         await arecord(lines, "async unknown tool", lambda: table.call("nope", {}))
+    async with (
+        exchange.async_client() as http,
+        package.AsyncClient(http_client=http, api_key="dog", max_retries=0) as api,
+    ):
+        table = module.AsyncToolset(api)
+        exchange.respond(json_response(200, _PET), json_response(200, {**_PET, "species": "cat", "name": "dog"}))
+        await arecord(lines, "async species credential", lambda: table.call("pets_get_pet", {"petId": 3}))
+        await arecord(lines, "async name credential", lambda: table.call("pets_get_pet", {"petId": 3}))
 
 
 def tool_extras(package: ModuleType, lines: list[str]) -> None:

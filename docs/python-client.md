@@ -1412,8 +1412,12 @@ A result or an error value shows no credential that the client's security scheme
 where the API echoes one, such as a `next` link that repeats the query: every API key (also as its query field encodes
 it), bearer token, Basic user and password, and the credentials they write is replaced with `[redacted]` in the
 strings and numbers of the result, keys included, in the request ID, in the strings and numbers of a JSON body, and in
-the text of any other body, also as a JSON string escapes it, and so is the end of a cut body that begins one. The table does not know a credential that an `auth`, the HTTP client, or a
-default header sends; otherwise a result is the API's data as the models validate and write it.
+the text of any other body, also as a JSON string escapes it, and so is the end of a cut body that begins one. A result
+that held one is validated again as JSON through its model: where the model refuses `[redacted]`, such as an integer
+ID, a UUID, or an enum value that was the credential, the result no longer matches its schema, and the call returns
+`{"error": {"type": "redacted_result", "result": ...}}` with the redacted result. The table does not know a credential
+that an `auth`, the HTTP client, or a default header sends; otherwise a result is the API's data as the models validate
+and write it.
 
 The arguments of a tool are the operation's parameters by their Python names and its body as `body`, the body of its
 default request media type, else of its first JSON one. A parameter at the position of a security scheme's
@@ -1471,9 +1475,10 @@ clients check structured content against it with Python's `re`, and could not ca
 patterns those are from their text (`rejected_patterns` of the tool table), and the result is the same. A result that is
 not a JSON object, such as a list or the `None` of a 204 response, is the `result` member of the structured content,
 since protocol revisions before 2026-07-28 take an object only. The server only advertises the schemas: `tools/call`
-validates the arguments through the models, as `call` does. A refusal or a failure of the client is a result with
-`isError: true` whose text is the error value `call` returns, with the credentials redacted the same way, and a tool
-name the server does not list is a protocol error (`-32602`). `read_only=True` and `--read-only` leave out the tools of
+validates the arguments through the models, as `call` does. A refusal, a failure of the client, and a
+`redacted_result` are each a result with `isError: true` whose text is the error value `call` returns, with the
+credentials redacted the same way, and without structured content, so no output schema checks them; a tool name the
+server does not list is a protocol error (`-32602`). `read_only=True` and `--read-only` leave out the tools of
 unsafe methods instead of relying on the annotations, which the protocol calls hints.
 
 ## Test code that uses the client

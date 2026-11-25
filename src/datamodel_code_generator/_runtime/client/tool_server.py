@@ -3,8 +3,9 @@
 `tools/list` lists each tool of an asyncio tool table with the JSON schemas of its arguments and result, which the
 table derives from the models, and with annotations from what its HTTP method promises (RFC 9110): a safe method is
 read-only, and PUT and DELETE are idempotent. The server only advertises the schemas; a call validates its arguments
-through the models, as the table's `call` does. A refusal of the arguments or a failure of the client is a result
-marked as an error, and a name the table holds no tool of is a protocol error. A result that is no JSON object is the
+through the models, as the table's `call` does. A refusal of the arguments, a failure of the client, and a result that
+its model refuses once the credentials placed in it are replaced are each a result marked as an error, whose text no
+output schema checks, and a name the table holds no tool of is a protocol error. A result that is no JSON object is the
 `result` member of one, since revisions of the protocol before 2026-07-28 take only an object as structured content.
 """
 

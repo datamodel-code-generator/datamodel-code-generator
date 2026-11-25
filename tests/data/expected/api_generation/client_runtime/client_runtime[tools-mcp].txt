@@ -49,6 +49,12 @@
   unknown tool ! -32602 No tool is named 'nope'
   read-only tools = ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
   read-only create ! -32602 No tool is named 'pets_create_pet'
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential in a name error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex [redacted]", "species": "dog"}} ['{"result":{"id":3,"name":"Rex [redacted]","species":"dog","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential id error=True null ['{"error":{"type":"redacted_result","result":{"id":"[redacted]","name":"Rex","species":"dog","born":"2020-02-29"}}}']
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
@@ -149,6 +155,12 @@
   unknown tool ! -32602 No tool is named 'nope'
   read-only tools = ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
   read-only create ! -32602 No tool is named 'pets_create_pet'
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential in a name error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex [redacted]", "species": "dog"}} ['{"result":{"id":3,"species":"dog","name":"Rex [redacted]","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential id error=True null ['{"error":{"type":"redacted_result","result":{"id":"[redacted]","species":"dog","name":"Rex","born":"2020-02-29"}}}']
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
