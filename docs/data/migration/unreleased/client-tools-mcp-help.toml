@@ -1,6 +1,6 @@
 [[change]]
 id = "client-tools-mcp-help"
-extends = "apply-default-values-to-true-properties"
+extends = "client-tools-mcp"
 covers = [
     "input_model/config_class.txt",
     "main/main_general/show_help[False].txt",

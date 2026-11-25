@@ -1,7 +1,6 @@
 [[change]]
 id = "client-tools-mcp-listing"
-extends = "recommend-options-requires-python"
+extends = "client-tools-functions-listing"
 covers = [
-    "api_generation/fastapi_cli/information.stdout.txt",
     "model/compiled_templates/template_inventory_is_derived_from_all_builtin_sources[client].txt",
 ]
