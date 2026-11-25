@@ -17,7 +17,7 @@ import sysconfig
 from dataclasses import replace
 from fnmatch import fnmatchcase
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import tomllib
@@ -27,6 +27,9 @@ from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
 from scripts.fact_tables import ATTRIBUTE_FACTS, DecisionAccessor, LedgerWriter, MemberUse, StoreMember
 from scripts.pass_decls import DECISION_DECLS
 from tests.capabilities import needs
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
@@ -138,6 +141,13 @@ builds ``results``, the store and the model's own initialization call ``set_base
 the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them all. ``seeded_env.py`` holds
 `SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
 """
+
+
+def _contracts_file(path: Path, contracts: Iterable[str]) -> None:
+    """Write ``contracts`` under the fail-on of scripts/heki.toml, so their findings fail the run as they do there."""
+    path.write_text(
+        "\n".join(["[lint]", f'fail-on = "{build_heki_contracts.FAIL_ON}"', "", *contracts]), encoding="utf-8"
+    )
 
 
 def _heki(*args: str, cwd: Path, config: Path = CONTRACTS) -> subprocess.CompletedProcess[str]:
@@ -564,9 +574,7 @@ def test_heki_reports_reads_of_a_home_outside_its_modules_and_sites(tmp_path: Pa
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(
-        "\n".join(build_heki_contracts.decision_home_contracts(repo, [SEEDED_HOME_RECORD])), encoding="utf-8"
-    )
+    _contracts_file(contracts, build_heki_contracts.decision_home_contracts(repo, [SEEDED_HOME_RECORD]))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -732,9 +740,7 @@ def test_heki_reports_what_bypasses_a_builder_home(tmp_path: Path) -> None:
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(
-        "\n".join(build_heki_contracts.builder_contracts(repo, SEEDED_BUILDER_RECORDS)), encoding="utf-8"
-    )
+    _contracts_file(contracts, build_heki_contracts.builder_contracts(repo, SEEDED_BUILDER_RECORDS))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -851,7 +857,7 @@ def test_heki_reports_private_access_of_the_concern_modules(tmp_path: Path) -> N
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text("\n".join(build_heki_contracts.host_contracts(repo)), encoding="utf-8")
+    _contracts_file(contracts, build_heki_contracts.host_contracts(repo))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -1053,9 +1059,7 @@ def test_heki_reports_a_decision_that_calls_the_write_of_another(tmp_path: Path)
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(
-        "\n".join(build_heki_contracts.decision_writer_contracts(repo, SEEDED_DECISION_DECLS)), encoding="utf-8"
-    )
+    _contracts_file(contracts, build_heki_contracts.decision_writer_contracts(repo, SEEDED_DECISION_DECLS))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -1190,11 +1194,8 @@ def test_heki_reports_a_decision_that_reads_a_render_fact(tmp_path: Path) -> Non
         DecisionAccessor("types.py", "DataType", "admits_none", "the rendered nullability"),
         DecisionAccessor("model/base.py", "DataModelFieldBase", "has_default_factory", "the default factory entry"),
     ]
-    contracts.write_text(
-        "\n".join(
-            build_heki_contracts.decision_contracts(repo, SEEDED_DECISION_DECLS, accessors, SEEDED_DECISION_ROWS)
-        ),
-        encoding="utf-8",
+    _contracts_file(
+        contracts, build_heki_contracts.decision_contracts(repo, SEEDED_DECISION_DECLS, accessors, SEEDED_DECISION_ROWS)
     )
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
@@ -1257,11 +1258,12 @@ SEEDED_IMPORT_WRITES = {
         "def direct(ctx: ModuleContext) -> None:\n    ctx.imports.append('os')\n\n\n"
         "def _add(imports: Imports) -> None:\n    imports.append('os')\n\n\n"
         "def through_a_helper(ctx: ModuleContext) -> None:\n    _add(ctx.imports)\n\n\n"
-        "def untyped(ctx: ModuleContext) -> None:\n    cast('Any', ctx).imports.append('os')\n"
+        "def through_a_cast(ctx: ModuleContext) -> None:\n    cast('Any', ctx).imports.append('os')\n\n\n"
+        "def untyped(ctx: Any) -> None:\n    ctx.imports.append('os')\n"
     ),
 }
 """The ledger and the imports module change an ``Imports``, and so does a ``LEDGER_WRITERS`` def; another def of the
-writer's module, a pass directly and through a helper, and a pass on an untyped value change it too."""
+writer's module, a pass directly, through a helper or a ``cast``, and a pass on an untyped value change it too."""
 
 
 @needs("heki")
@@ -1270,7 +1272,8 @@ def test_heki_reports_imports_written_outside_the_ledger(tmp_path: Path) -> None
     """A method that changes an ``Imports`` is called only in the ledger, the ``imports`` module and the writers.
 
     A call in another def, also of a writer's module, is a finding in the scope that makes it, a helper's included;
-    one on a value heki cannot type is not seen (a gap of heki, which a write-owners form would close).
+    a ``cast`` keeps the class heki knows; one on a value only ``Any`` types is not seen (a gap of heki, which a
+    write-owners form would close).
     """
     for name, text in SEEDED_IMPORT_WRITES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -1279,9 +1282,7 @@ def test_heki_reports_imports_written_outside_the_ledger(tmp_path: Path) -> None
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
     writers = [LedgerWriter("parser/_init_exports.py", "build_all_exports_code", "re-exports")]
-    contracts.write_text(
-        "\n".join(build_heki_contracts.import_ledger_contracts(repo, ("append",), writers)), encoding="utf-8"
-    )
+    _contracts_file(contracts, build_heki_contracts.import_ledger_contracts(repo, ("append",), writers))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -1302,6 +1303,7 @@ def test_heki_reports_imports_written_outside_the_ledger(tmp_path: Path) -> None
             ("_init_exports.py", "beside_the_writer", "MUT204", "append"),
             ("passes.py", "_add", "MUT204", "append"),
             ("passes.py", "direct", "MUT204", "append"),
+            ("passes.py", "through_a_cast", "MUT204", "append"),
         ],
     ), result.stderr
 
@@ -1349,12 +1351,13 @@ SEEDED_STORE_CALLS = {
         "def direct(store: GenerationStore) -> None:\n    store.omit_field_default(1)\n\n\n"
         "def _helper(store: GenerationStore) -> None:\n    store.omit_field_default(1)\n\n\n"
         "def through_a_helper(store: GenerationStore) -> None:\n    _helper(store)\n\n\n"
-        "def untyped(store: GenerationStore) -> None:\n    cast('Any', store).omit_field_default(1)\n\n\n"
+        "def through_a_cast(store: GenerationStore) -> None:\n    cast('Any', store).omit_field_default(1)\n\n\n"
+        "def untyped(store: Any) -> None:\n    store.omit_field_default(1)\n\n\n"
         "def own_builder(store: GenerationStore) -> GraphBuilder:\n    return GraphBuilder(store)\n"
     ),
 }
 """A pass that changes the graph through the store's builder, and one that calls a store operation directly, in a
-helper, on an untyped value, or that makes a builder of its own."""
+helper, through a ``cast``, on an untyped value, or that makes a builder of its own."""
 
 
 @needs("heki")
@@ -1370,9 +1373,7 @@ def test_heki_reports_store_operations_called_outside_the_builder(tmp_path: Path
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    contracts.write_text(
-        "\n".join(build_heki_contracts.store_operation_contracts(repo, ("omit_field_default",))), encoding="utf-8"
-    )
+    _contracts_file(contracts, build_heki_contracts.store_operation_contracts(repo, ("omit_field_default",)))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -1393,6 +1394,7 @@ def test_heki_reports_store_operations_called_outside_the_builder(tmp_path: Path
             ("passes.py", "_helper", "MUT204", "omit_field_default"),
             ("passes.py", "direct", "MUT204", "omit_field_default"),
             ("passes.py", "own_builder", "MUT204", "generation:GraphBuilder"),
+            ("passes.py", "through_a_cast", "MUT204", "omit_field_default"),
             ("passes.py", "untyped", "MUT207", "omit_field_default"),
         ],
     ), result.stderr
