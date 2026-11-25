@@ -218,6 +218,7 @@ security	api_generation/fastapi_server/generated_client[security].txt
 streams	api_generation/fastapi_server/generated_client[streams].txt
 styles	api_generation/fastapi_server/generated_client[styles].txt
 tag_forms	api_generation/fastapi_server/generated_client[tag_forms].txt
+tools	api_generation/fastapi_server/generated_client[tools].txt
 union_parts	api_generation/fastapi_server/generated_client[union_parts].txt
 upper_alike	api_generation/fastapi_server/generated_client[upper_alike].txt
 variants	api_generation/fastapi_server/generated_client[variants].txt

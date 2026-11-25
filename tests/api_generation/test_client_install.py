@@ -28,10 +28,14 @@ BACKENDS = (
     "typing.TypedDict",
     "msgspec.Struct",
 )
-CASES = [("minimal", backend) for backend in BACKENDS] + [
-    (profile, backend)
-    for profile in ("api-key", "oauth2-client-credentials", "all")
-    for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+CASES = [
+    *(("minimal", backend) for backend in BACKENDS),
+    *(
+        (profile, backend)
+        for profile in ("api-key", "oauth2-client-credentials", "all")
+        for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+    ),
+    ("tools-mcp", "pydantic_v2.BaseModel"),
 ]
 
 
@@ -79,6 +83,8 @@ def test_client_install(
     ]
     if protocols := case.get("config", {}).get("protocols"):
         arguments.extend(("--client-protocols", str(tmp_path / protocols)))
+    if tools := case.get("config", {}).get("tools"):
+        arguments.extend(("--client-tools", tools))
     if operations := case.get("config", {}).get("operations"):
         arguments.extend((
             "--client-operations",

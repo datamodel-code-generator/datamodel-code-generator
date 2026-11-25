@@ -1013,7 +1013,7 @@ resource's `_sync.py` and `_async.py`), `types.jinja2` (each resource's `types/<
 `arguments.jinja2` (`_generated/client_arguments.py`), `operations.jinja2` (`_operations.py`), `security.jinja2`
 (`_generated/security.py`), `model_bindings.jinja2` (`_generated/model_bindings.py`), `helper_plans.jinja2`
 (`protocols/_plans.py`), `helpers.jinja2` (`protocols/_helpers.py` and `protocols/_async_helpers.py`), `tools.jinja2`
-(`_generated/tools.py`),
+(`_generated/tools.py`), `mcp_server.jinja2` (`mcp_server.py`),
 `webhook.jinja2` (each webhook helper's module), `readme.jinja2`, and `runtime.jinja2` (the runtime reference). A
 role the directory does not hold, or a custom template directory without a `client` directory, keeps its builtin
 template. The builtin templates are in the `_client/templates` directory of the installed package; copy
@@ -1045,9 +1045,10 @@ in the package, empty for the package itself:
 | `facade.jinja2` | `module`, `docstring`, `future`, `imports`, `checking`, `classes`, `exports`, `lazy`, `loader`, `listing` |
 | `helper_plans.jinja2` | `docstring`, `imports`, `accessors`, `plans` |
 | `helpers.jinja2` | `asynchronous`, `docstring`, `imports`, `core`, `cached_property`, `namespaces`, `helpers` |
+| `mcp_server.jinja2` | `docstring`, `imports`, `name`, `prog` |
 | `model_bindings.jinja2` | `imports`, `codec_imports`, `models_annotation`, `models`, `codecs` |
 | `operations.jinja2` | `docstring`, `imports`, `servers`, `operations` |
-| `readme.jinja2` | `package`, `public_modules`, `reference`, `signature_style`, `body_arguments`, `backend`, `model_package`, `operations`, `contracts`, `helpers`, `stream_label`, `resumes`, `sockets`, `kinds`, `compression`, `dependencies`, `security`, `capabilities`, `runtime`, `tools`, `tool_example`, `tool_listing` |
+| `readme.jinja2` | `package`, `public_modules`, `reference`, `signature_style`, `body_arguments`, `backend`, `model_package`, `operations`, `contracts`, `helpers`, `stream_label`, `resumes`, `sockets`, `kinds`, `compression`, `dependencies`, `security`, `capabilities`, `runtime`, `tools`, `mcp`, `tool_example`, `tool_listing` |
 | `resource.jinja2` | `docstring`, `imports`, `core`, `cached_property`, `overload_decorator`, `views` |
 | `runtime.jinja2` | `package`, `oauth`, `schemes`, `security`, `raw_bytes`, `multipart_requests`, `credentials`, `example`, `flows`, `pagination`, `polling`, `cache`, `uploads`, `streams`, `sockets`, `compression` |
 | `security.jinja2` | `docstring`, `imports`, `schemes`, `root_annotation`, `root`, `operations` |

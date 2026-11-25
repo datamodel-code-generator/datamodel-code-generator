@@ -927,7 +927,8 @@
           "retry_statuses": "408, 429, 500, 502, 503, and 504",
           "tools": true,
           "tool_example": "pets_get_pet",
-          "tool_listing": "[\n  {\"tool\": \"pets_get_pet\"}\n]"
+          "tool_listing": "[\n  {\"tool\": \"pets_get_pet\"}\n]",
+          "mcp": true
         }
       },
       {
@@ -962,7 +963,11 @@
           "runtime": [],
           "example": null,
           "credentials": [],
-          "retry_statuses": "408, 429, 500, 502, 503, and 504"
+          "retry_statuses": "408, 429, 500, 502, 503, and 504",
+          "tools": true,
+          "mcp": true,
+          "tool_example": "...",
+          "tool_listing": "[]"
         }
       },
       {
@@ -2423,6 +2428,17 @@
           "imports": "from typing import Final",
           "annotation": "Final[tuple[ToolPlan, ...]]",
           "tools": []
+        }
+      }
+    ],
+    "mcp_server.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "An MCP server over this package's tools 日本 {braces}; run it with `python -m client.mcp_server`.",
+          "imports": "from collections.abc import Callable, Sequence\n\nfrom mcp.server import Server\n\nfrom ._async_client import AsyncClient\nfrom ._runtime.client.tool_server import command_line, serve_stdio, tool_server\nfrom .tools import AsyncToolset",
+          "name": "'client'",
+          "prog": "'python -m client.mcp_server'"
         }
       }
     ]

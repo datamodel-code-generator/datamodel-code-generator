@@ -49,6 +49,7 @@ sockets	api_generation/client_generation/client_documentation[sockets]/
 stream-resume	api_generation/client_generation/client_documentation[stream-resume]/
 streams	api_generation/client_generation/client_documentation[streams]/
 templates	api_generation/client_generation/client_documentation[templates]/
+tools-mcp-empty	api_generation/client_generation/client_documentation[tools-mcp-empty]/
 uploads	api_generation/client_generation/client_documentation[uploads]/
 [test_client_helper_spellings]
 pagination-root-pagination-documents-helper-documents	api_generation/client_generation/client_helper_spellings[pagination-root-pagination-documents-helper-documents].client/
@@ -612,6 +613,12 @@ tools-extras	api_generation/client_generation/client_render[tools-extras].pydant
 tools-extras	api_generation/client_generation/client_render[tools-extras].txt
 tools-left-out	api_generation/client_generation/client_render[tools-left-out].pydantic_v2_BaseModel/
 tools-left-out	api_generation/client_generation/client_render[tools-left-out].txt
+tools-mcp	api_generation/client_generation/client_render[tools-mcp].pydantic_v2_BaseModel/
+tools-mcp	api_generation/client_generation/client_render[tools-mcp].txt
+tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].pydantic_v2_BaseModel/
+tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].txt
+tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].pydantic_v2_BaseModel/
+tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].txt
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].pydantic_v2_BaseModel/
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].txt
 type-checking-imports	api_generation/client_generation/client_render[type-checking-imports].msgspec_Struct/

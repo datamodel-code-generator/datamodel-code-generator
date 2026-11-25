@@ -102,6 +102,21 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic dXNlci0xOnBhc3N3b3JkLTE=] b''
   basic echoed result = {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential result = {"error": {"result": {"born": "2020-02-29", "id": "[redacted]", "name": "Rex", "species": "dog"}, "type": "redacted_result"}}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential in a name = {"born": "2020-02-29", "id": 3, "name": "Rex [redacted]", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential body = {"escaped": "[redacted]", "number": "[redacted]", "other": 1234}
+  > GET https://api.example.com/v1/pets/3?key=secret%2Fkey%2B1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  slash-escaped body = "{\"detail\": \"key [redacted] refused\""
+  > GET https://api.example.com/v1/owners/<call>?key=<call>
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  owner credential result = {"error": {"result": {"id": "[redacted]", "pets": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]}, "type": "redacted_result"}}
   > GET https://api.example.com/v1/pets/3?key=secret-key
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   async get = {'id': 3, 'name': 'Rex', 'species': 'dog', 'born': '2020-02-29'}
@@ -113,6 +128,12 @@
   async get missing = {'error': {'type': 'NotFoundError', 'reason': None, 'status_code': 404, 'operation_id': 'getPet', 'request_id': None, 'body': {'code': 4}}}
   async refused = {'error': {'type': 'invalid_arguments', 'problems': [{'argument': 'petId', 'location': [], 'message': 'Input should be a valid integer, unable to parse string as an integer', 'kind': 'int_parsing'}]}}
   async unknown tool ! UnknownToolError: No tool is named 'nope' []
+  > GET https://api.example.com/v1/pets/3?key=dog
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async species credential = {'error': {'type': 'redacted_result', 'result': {'id': 3, 'name': 'Rex', 'species': '[redacted]', 'born': '2020-02-29'}}}
+  > GET https://api.example.com/v1/pets/3?key=dog
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async name credential = {'id': 3, 'name': '[redacted]', 'species': 'cat', 'born': '2020-02-29'}
 # tools pydantic_v2.dataclass
   warning UserWarning: <root>/tools_pydantic_v2_dataclass: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
   warning UserWarning: <root>/tools_pydantic_v2_dataclass: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
@@ -217,6 +238,21 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, authorization: Basic dXNlci0xOnBhc3N3b3JkLTE=] b''
   basic echoed result = {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3 Basic [redacted]", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential result = {"error": {"result": {"born": "2020-02-29", "id": "[redacted]", "name": "Rex", "species": "dog"}, "type": "redacted_result"}}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  credential in a name = {"born": "2020-02-29", "id": 3, "name": "Rex [redacted]", "species": "dog"}
+  > GET https://api.example.com/v1/pets/3?key=123456
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  numeric credential body = {"escaped": "[redacted]", "number": "[redacted]", "other": 1234}
+  > GET https://api.example.com/v1/pets/3?key=secret%2Fkey%2B1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  slash-escaped body = "{\"detail\": \"key [redacted] refused\""
+  > GET https://api.example.com/v1/owners/<call>?key=<call>
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  owner credential result = {"error": {"result": {"id": "[redacted]", "pets": [{"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}]}, "type": "redacted_result"}}
   > GET https://api.example.com/v1/pets/3?key=secret-key
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   async get = {'id': 3, 'species': 'dog', 'name': 'Rex', 'born': '2020-02-29'}
@@ -228,3 +264,9 @@
   async get missing = {'error': {'type': 'NotFoundError', 'reason': None, 'status_code': 404, 'operation_id': 'getPet', 'request_id': None, 'body': {'code': 4}}}
   async refused = {'error': {'type': 'invalid_arguments', 'problems': [{'argument': 'petId', 'location': [], 'message': 'Input should be a valid integer, unable to parse string as an integer', 'kind': 'int_parsing'}]}}
   async unknown tool ! UnknownToolError: No tool is named 'nope' []
+  > GET https://api.example.com/v1/pets/3?key=dog
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async species credential = {'error': {'type': 'redacted_result', 'result': {'id': 3, 'species': '[redacted]', 'name': 'Rex', 'born': '2020-02-29'}}}
+  > GET https://api.example.com/v1/pets/3?key=dog
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async name credential = {'id': 3, 'species': 'cat', 'name': '[redacted]', 'born': '2020-02-29'}

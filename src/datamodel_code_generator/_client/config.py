@@ -33,7 +33,7 @@ Transport: TypeAlias = Literal["httpx2"]
 SignatureStyle: TypeAlias = Literal["explicit", "unpack"]
 BodyArguments: TypeAlias = Literal["body", "both"]
 AsyncAPIPerspective: TypeAlias = Literal["server", "client"]
-Tools: TypeAlias = Literal["functions"]
+Tools: TypeAlias = Literal["functions", "mcp"]
 RecordT = TypeVar("RecordT")
 
 OPTION_PREFIX: Final = "client"

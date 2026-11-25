@@ -41,7 +41,7 @@ from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import _Sockets, plan_sockets, routed_streams, socket_uses
 from datamodel_code_generator._client.streams import item_protocols, plan_streams, stream_uses
 from datamodel_code_generator._client.templates import ClientTemplates
-from datamodel_code_generator._client.tools import plan_tools
+from datamodel_code_generator._client.tools import MCP_DEPENDENCY, plan_tools
 from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.webhooks import (
     key_class,
@@ -392,6 +392,7 @@ def _render(  # ruff: ignore[too-many-locals]
         *_backend_dependencies(backend, request.model_imports),
         *webhook_dependencies(webhooks),
         *model_dependencies(request.model_imports),
+        *((MCP_DEPENDENCY,) if config.tools == "mcp" else ()),
     )
     renderer = ClientRenderer(
         config=config,

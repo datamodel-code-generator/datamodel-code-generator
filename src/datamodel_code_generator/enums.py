@@ -529,6 +529,7 @@ class ClientTools(Enum):
     """Which tool table a generated client adds over its operations, for agents that call them by name."""
 
     Functions = "functions"
+    Mcp = "mcp"
 
 
 __all__ = [

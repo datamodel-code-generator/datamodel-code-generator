@@ -45,7 +45,7 @@ ClientBodyArguments: TypeAlias = Literal['body', 'both']
 ClientSignatureStyle: TypeAlias = Literal['explicit', 'unpack']
 
 
-ClientTools: TypeAlias = Literal['functions']
+ClientTools: TypeAlias = Literal['functions', 'mcp']
 
 
 ClientType: TypeAlias = Literal['httpx2']

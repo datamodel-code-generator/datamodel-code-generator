@@ -170,3 +170,6 @@ values	api_generation/client_cli/setting_errors[values].txt
 [test_client_cli_tools]
 	api_generation/client_cli/tools.py
 	api_generation/client_cli/tools.table.py
+[test_client_cli_tools_mcp]
+	api_generation/client_cli/tools_mcp.notice.txt
+	api_generation/client_cli/tools_mcp.py	= api_generation/client_cli/tools.py

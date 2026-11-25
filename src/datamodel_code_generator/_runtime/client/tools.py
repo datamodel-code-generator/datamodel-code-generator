@@ -6,13 +6,13 @@ argument as JSON through the codec of its type, the mode the schemas describe, c
 the result as its codec writes it. A read-only table leaves out every tool whose HTTP method is not safe. A failure of
 the client returns its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or
 cause; every credential the client placed on the call's requests is replaced in the result, and in the request ID and
-the body of a failure, so an API that echoes one does not hand it to the caller; arguments a tool refuses return each
-problem.
+the body of a failure, so an API that echoes one does not hand it to the caller, and a result its model refuses once
+they are replaced returns an error value that holds it; arguments a tool refuses return each problem.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Iterator, Mapping
 from dataclasses import dataclass
 from operator import itemgetter
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Protocol
@@ -91,6 +91,11 @@ def refused(problems: list[JSONValue]) -> JSONValue:
     return {"error": {"type": "invalid_arguments", "problems": problems}}
 
 
+def redacted_result(value: JSONValue) -> JSONValue:
+    """Return the error value of a result that its model refuses once the credentials placed in it are replaced."""
+    return {"error": {"type": "redacted_result", "result": value}}
+
+
 def failed(error: SDKError, placed: Collection[str]) -> JSONValue:
     """Return the error value of a call the client failed: the allow-listed metadata of its error.
 
@@ -112,21 +117,29 @@ def failed(error: SDKError, placed: Collection[str]) -> JSONValue:
 def _body(error: APIStatusError, placed: Collection[str]) -> JSONValue:
     """Return the bounded body of a refused call without the credentials placed: its JSON value, else its text, or None.
 
-    The credentials are replaced in the text, and in each string of the JSON value it holds, where an escape spells one.
+    A whole JSON body is parsed before anything is replaced, so the credentials are replaced in the values it holds,
+    where an escape spells one too; the text of any other body has each spelling a JSON string gives one replaced.
     """
     content = error.body_bytes
     if not content:
         return None
-    text = content.decode("utf-8", errors="replace")
-    shown = _redacted(text, placed, cut=error.truncated)
     if not error.truncated:
         try:
-            value = json_value(content if shown == text else shown)
+            value = json_value(content)
         except ValueError:
             pass
         else:
             return _cleared(value, placed)
-    return shown
+    return _redacted(content.decode("utf-8", errors="replace"), _spellings(placed), cut=error.truncated)
+
+
+def _spellings(placed: Collection[str]) -> set[str]:
+    """Return each placed credential and the forms a JSON string may write it in: escaped, ASCII-only, slash-escaped."""
+    forms: set[str] = set()
+    for secret in placed:
+        for escaped in (json_bytes(secret).decode()[1:-1], json_bytes(secret, ascii_only=True).decode()[1:-1]):
+            forms.update((secret, escaped, escaped.replace("/", "\\/")))
+    return forms
 
 
 def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
@@ -144,10 +157,17 @@ def _redacted(text: str, placed: Collection[str], *, cut: bool = False) -> str:
 
 
 def _cleared(value: JSONValue, placed: Collection[str]) -> JSONValue:
-    """Return a JSON value, a result or an error's body, whose strings, keys included, hold no placed credential."""
+    """Return a JSON value, a result or an error's body, with no placed credential in its strings, keys or numbers.
+
+    A number or Boolean whose JSON text holds one becomes that text with it replaced.
+    """
     match value:
         case str():
             return _redacted(value, placed)
+        case int() | float():
+            text = json_bytes(value).decode()
+            shown = _redacted(text, placed)
+            return value if shown == text else shown
         case list():
             return [_cleared(item, placed) for item in value]
         case dict():
@@ -197,6 +217,26 @@ def _held(keyword: str, value: JSONValue) -> JSONValue:
 def _subschema(value: JSONValue) -> JSONValue:
     """Return a schema without prose; a boolean schema has none."""
     return _proseless(value) if isinstance(value, dict) else value
+
+
+def schema_patterns(schema: Mapping[str, JSONValue]) -> Iterator[str]:
+    """Yield the regular expressions of a JSON schema and of the schemas it holds, `pattern` and `patternProperties`."""
+    for keyword, value in schema.items():
+        if keyword == "pattern" and isinstance(value, str):
+            yield value
+        if keyword == "patternProperties" and isinstance(value, dict):
+            yield from value
+        for item in _held_schemas(keyword, value):
+            yield from schema_patterns(item)
+
+
+def _held_schemas(keyword: str, value: JSONValue) -> list[dict[str, JSONValue]]:
+    """Return the schema objects the value of a schema's keyword holds; a boolean schema holds no pattern."""
+    if keyword in _NAMING and isinstance(value, dict):
+        held = list(value.values())
+    else:
+        held = (value if isinstance(value, list) else [value]) if keyword in _HOLDING else []
+    return [item for item in held if isinstance(item, dict)]
 
 
 class ToolCodec(Protocol):
@@ -251,6 +291,18 @@ class ToolPlan:
     result: ToolCodec
 
 
+@dataclass(frozen=True, slots=True)
+class ToolOutcome:
+    """What a call of a tool returned: its JSON value, and whether that is an error value.
+
+    An error value is that of a refusal, of a failure, or of a result its model refuses with the placed credentials
+    replaced.
+    """
+
+    value: JSONValue
+    error: bool = False
+
+
 class _RefusalError(Exception):
     """The error value of a call whose arguments a tool refuses, raised to the call that returns it."""
 
@@ -265,12 +317,19 @@ class _Table(Generic[ClientT]):
     plans: ClassVar[tuple[ToolPlan, ...]] = ()
     prose: ClassVar[bool] = True
     """Whether the JSON schemas keep the descriptions, titles, and examples of the models; False for untrusted input."""
+    rejected_patterns: ClassVar[frozenset[str]] = frozenset()
+    """The patterns of the models that Python's `re` rejects, as generation decided, which MCP clients cannot check."""
 
     def __init__(self, client: ClientT, *, read_only: bool = False) -> None:
         """Keep the client the tools call, and the tools, without those of unsafe methods when read-only."""
         self.client = client
         self.read_only = read_only
         self._tools = {plan.name: plan for plan in self.plans if plan.safe or not read_only}
+
+    @property
+    def available(self) -> tuple[ToolPlan, ...]:
+        """Return the tools the table holds, in table order, without those a read-only table leaves out."""
+        return tuple(self._tools.values())
 
     def search(self, query: str = "", *, tag: str | None = None, limit: int = 10) -> list[dict[str, JSONValue]]:
         """Return the tools that match a query best, at most `limit`, each by its name, route, tags, and text.
@@ -298,7 +357,13 @@ class _Table(Generic[ClientT]):
         return [_entry(plan) for _, _, plan in ranked[:limit]]
 
     def schema(self, name: str) -> dict[str, JSONValue]:
-        """Return a tool's name, description, and the JSON schemas of its arguments object and of its result.
+        """Return a tool's name, description, and the JSON schemas of its arguments object and of its result."""
+        plan = self._plan(name)
+        arguments, result = self.schemas(name)
+        return {"name": plan.name, "description": plan.description, "input_schema": arguments, "output_schema": result}
+
+    def schemas(self, name: str) -> tuple[dict[str, JSONValue], dict[str, JSONValue]]:
+        """Return the JSON schemas of a tool's arguments object and of its result, which the models' library derives.
 
         A table without `prose` leaves the `description`, `title`, and `examples` of every schema out of both.
         """
@@ -314,12 +379,9 @@ class _Table(Generic[ClientT]):
         arguments: dict[str, JSONValue] = {"type": "object", "properties": properties, "additionalProperties": False}
         if required := [argument.name for argument in plan.arguments if argument.required]:
             arguments["required"] = [*required]
-        return {
-            "name": plan.name,
-            "description": plan.description,
-            "input_schema": {**arguments, **definitions},
-            "output_schema": _adapter(plan.result).json_schema(mode="serialization", schema_generator=generator),
-        }
+        return {**arguments, **definitions}, _adapter(plan.result).json_schema(
+            mode="serialization", schema_generator=generator
+        )
 
     def _plan(self, name: str) -> ToolPlan:
         if (plan := self._tools.get(name)) is None:
@@ -375,16 +437,20 @@ class ToolTable(_Table[ClientT]):
 
         A name the table holds no tool of raises UnknownToolError.
         """
+        return self.outcome(name, arguments).value
+
+    def outcome(self, name: str, arguments: Mapping[str, object]) -> ToolOutcome:
+        """Call a tool as `call` does, and return its JSON value with whether it is an error value."""
         try:
             plan, resource, values = self._prepared(name, arguments)
         except _RefusalError as refusal:
-            return refusal.value
+            return ToolOutcome(refusal.value, error=True)
         with placed_credentials() as placed:
             try:
                 result = getattr(resource, plan.method)(**values)
             except SDKError as error:
-                return failed(error, placed)
-            return _cleared(_dumped(plan, result), placed)
+                return ToolOutcome(failed(error, placed), error=True)
+            return _answered(plan, result, placed)
 
 
 class AsyncToolTable(_Table[ClientT]):
@@ -395,16 +461,20 @@ class AsyncToolTable(_Table[ClientT]):
 
         A name the table holds no tool of raises UnknownToolError.
         """
+        return (await self.outcome(name, arguments)).value
+
+    async def outcome(self, name: str, arguments: Mapping[str, object]) -> ToolOutcome:
+        """Call a tool as `call` does, and return its JSON value with whether it is an error value."""
         try:
             plan, resource, values = self._prepared(name, arguments)
         except _RefusalError as refusal:
-            return refusal.value
+            return ToolOutcome(refusal.value, error=True)
         with placed_credentials() as placed:
             try:
                 result = await getattr(resource, plan.method)(**values)
             except SDKError as error:
-                return failed(error, placed)
-            return _cleared(_dumped(plan, result), placed)
+                return ToolOutcome(failed(error, placed), error=True)
+            return _answered(plan, result, placed)
 
 
 def _adapter(codec: ToolCodec) -> TypeAdapter[object]:
@@ -419,6 +489,23 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 def _dumped(plan: ToolPlan, result: Never) -> JSONValue:
     """Return a tool's result as the JSON its codec writes, parsed into builtin values."""
     return json_value(plan.result.encode(result))
+
+
+def _answered(plan: ToolPlan, result: Never, placed: Collection[str]) -> ToolOutcome:
+    """Return the outcome of a call the client answered: its result without the credentials placed on its requests.
+
+    A result they were replaced in is validated again as JSON through its model, since the text that replaces one may
+    no longer match the result's schema, such as an integer that became text: one the model refuses is the error value
+    of `redacted_result`. A result that held none is returned as the codec wrote it, without a second validation.
+    """
+    value = _dumped(plan, result)
+    if (cleared := _cleared(value, placed)) == value:
+        return ToolOutcome(value)
+    try:
+        plan.result.decode(json_bytes(cleared))
+    except ValidationError:
+        return ToolOutcome(redacted_result(cleared), error=True)
+    return ToolOutcome(cleared)
 
 
 def _entry(plan: ToolPlan) -> dict[str, JSONValue]:

@@ -1,0 +1,6 @@
+[[change]]
+id = "client-tools-mcp-listing"
+extends = "client-tools-functions-listing"
+covers = [
+    "model/compiled_templates/template_inventory_is_derived_from_all_builtin_sources[client].txt",
+]

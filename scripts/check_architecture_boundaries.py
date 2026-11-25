@@ -285,6 +285,7 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "fastapi",
             "httpcore2",
             "httpx2",
+            "mcp",
             "msgspec",
             "pydantic",
             "pydantic_core",

@@ -2753,7 +2753,8 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--client-tools",
         choices=_values(ClientTools),
         help="Add a tool table over the client's operations for agents: tools.py, whose Toolset and AsyncToolset "
-        "search the tools, give their JSON schemas from the models, and call them with JSON arguments (experimental).",
+        "search the tools, give their JSON schemas from the models, and call them with JSON arguments; mcp also adds "
+        "mcp_server.py, which serves them over MCP (experimental).",
     ),
 )
 COMMAND_DESTS: Final = frozenset(option.dest for option in OPTIONS if not option.config)

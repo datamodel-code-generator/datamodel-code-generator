@@ -147,10 +147,12 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "cli-option.client-tools": ExperimentalFeature(
         id="cli-option.client-tools",
         kind="cli-option",
-        target="--client-tools functions (client-tools in [tool.datamodel-codegen], client_tools in generate())",
+        target=(
+            "--client-tools functions and mcp (client-tools in [tool.datamodel-codegen], client_tools in generate())"
+        ),
         message=(
-            "The tool table of a generated client is experimental; its tools, their names, schemas, search, and "
-            "error values may change."
+            "The tool table of a generated client and its MCP server are experimental; its tools, their names, "
+            "schemas, annotations, search, and error values may change."
         ),
         since_version="0.103.0",
         note=(
@@ -166,7 +168,14 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "tools of unsafe methods. An operation left out of the tools keeps its method, and generation warns why. "
             "Under `--untrusted-input` a tool's description leaves out the operation's summary and description, and "
             "`schema(name)` leaves out the `description`, `title`, and `examples` of every JSON schema, while the "
-            "models keep theirs."
+            "models keep theirs. "
+            "`--client-tools mcp` also adds `mcp_server.py`, which serves the tools of the asyncio client over MCP "
+            "through the low-level server of the `mcp` SDK: `server(client)` returns the server, `serve(make_client)` "
+            "and `python -m <package>.mcp_server` serve it on stdin and stdout. Each tool is listed with the JSON "
+            "schemas `schema(name)` gives, without the output schema where it holds a pattern Python's `re` rejects, "
+            "and with read-only and idempotent annotations from its HTTP method; a "
+            "refused argument or a failed call is a result marked as an error, and an unknown tool a protocol error. "
+            "The server looks up no credentials, and the printed requirements gain `mcp`."
         ),
     ),
     "cli-option.generate-client": ExperimentalFeature(

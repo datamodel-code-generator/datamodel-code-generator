@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
-PACKAGE_SAMPLES = {"tools": ("tools",)}
+PACKAGE_SAMPLES = {"tools": ("tools",), "tools-mcp": ("tools", "mcp_server")}
 """The samples a package case checks besides the package: the tool tables over each client kind."""
 
 
@@ -171,6 +171,7 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
         "asyncapi-market-v3",
         "asyncapi-events",
         "tools",
+        "tools-mcp",
     ],
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
@@ -180,7 +181,8 @@ def test_client_typing_package(case: str, tmp_path: Path) -> None:
     The naming packages check methods and arguments named by the model's naming rules, with their suffixes.
     The type-checking import package imports the names its annotations alone use only for type checkers, and the
     AsyncAPI packages open WebSocket channels, one of which sends no message, and server-sent event channels. The
-    tools package builds each tool table over its own client kind and types its search, schema, and call results.
+    tools package builds each tool table over its own client kind and types its search, schema, and call results, and
+    the MCP package builds its server over the asyncio client and serves it through a factory of them.
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")

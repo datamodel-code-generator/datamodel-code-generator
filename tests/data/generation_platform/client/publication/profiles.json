@@ -315,5 +315,11 @@
       "tools": "functions"
     },
     "backend": "pydantic_v2.dataclass"
+  },
+  "tools-mcp": {
+    "input": "publication/minimal.json",
+    "config": {
+      "tools": "mcp"
+    }
   }
 }
