@@ -1,0 +1,12 @@
+[[change]]
+id = "stamp-upgrade-guide-0102"
+category = "docs-text"
+title = "Preset pages after the 0.102.0 stamp"
+summary = "The preset pages list the 20261124 presets as released in 0.102.0; the package writes the same output."
+refs = ["#7522"]
+covers = [
+    "build_preset_docs_script/build_preset_docs_json_format.txt",
+    "build_preset_docs_script/preset_metadata_renderers.preset_history_markdown.txt",
+    "build_preset_docs_script/preset_metadata_renderers.presets_json.txt",
+    "build_preset_docs_script/preset_metadata_renderers.presets_markdown.txt",
+]
